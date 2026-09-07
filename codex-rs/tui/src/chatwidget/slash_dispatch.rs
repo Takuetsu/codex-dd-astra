@@ -608,7 +608,12 @@ impl ChatWidget {
             self.transcript.last_status_copy_targets = None;
         }
         if cmd == SlashCommand::Adaptive {
-            self.dispatch_adaptive_command(&args);
+            let Some((prepared_args, _prepared_elements)) =
+                self.prepare_live_inline_args(args, text_elements)
+            else {
+                return;
+            };
+            self.dispatch_adaptive_command(&prepared_args);
             return;
         }
         if !self.ensure_slash_command_allowed_in_side_conversation(cmd) {

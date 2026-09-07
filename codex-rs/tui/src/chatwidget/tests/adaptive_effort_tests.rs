@@ -1985,6 +1985,19 @@ async fn non_manual_turn_endings_do_not_record_user_interruption() {
     assert!(!chat.adaptive_effort.paused_by_user);
 }
 
+#[tokio::test]
+async fn adaptive_model_command_clears_composer_after_submit() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+
+    chat.bottom_pane
+        .set_composer_text("/adaptive model".to_string(), Vec::new(), Vec::new());
+
+    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+
+    assert_eq!(chat.bottom_pane.composer_text(), "");
+    assert_no_submit_op(&mut op_rx);
+}
+
 #[test]
 fn adaptive_is_discoverable_and_accepts_inline_args() {
     assert!(
