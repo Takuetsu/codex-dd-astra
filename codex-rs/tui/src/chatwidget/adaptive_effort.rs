@@ -258,8 +258,6 @@ impl ChatWidget {
             Some(AdaptiveEffort::Low) => "Low",
             Some(AdaptiveEffort::Medium) => "Medium",
             Some(AdaptiveEffort::High) => "High",
-            Some(AdaptiveEffort::XHigh) => "XHigh",
-            Some(AdaptiveEffort::Max) => "Max",
             None => "-",
         };
         let outcome = match state.last_outcome {
