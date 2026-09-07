@@ -10,6 +10,7 @@ use codex_app_server_protocol::ThreadItem;
 use codex_protocol::ThreadId;
 
 pub(crate) const ADAPTIVE_FAILURE_PRESSURE_THRESHOLD: usize = 2;
+pub(crate) const AUTO_FAILURE_PRESSURE_DIAGNOSTIC: &str = "native_failure_pressure_threshold";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptiveEvidenceOutcome {
