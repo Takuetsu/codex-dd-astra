@@ -2,11 +2,15 @@ use super::super::ForkGoalContinuation;
 use super::super::ForkPermissionMode;
 use super::super::ResumeModelSettings;
 use super::super::ThreadParamsMode;
+use crate::adaptive_worker::AdaptiveWorkerContext;
+use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::legacy_core::config::Config;
 use crate::legacy_core::config::ConfigBuilder;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_rollout;
 use codex_app_server_protocol::ThreadHistoryMode;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
+use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_features::Feature;
 use codex_protocol::ThreadId;
 use color_eyre::eyre::Result;
@@ -440,6 +444,62 @@ async fn stale_legacy_history_mode_is_revalidated_before_resume() -> Result<()> 
     );
     assert_eq!(app_server.next_request_id, next_request_id + 2);
 
+    app_server.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn initial_resume_applies_only_the_current_startup_worker_binding() -> Result<()> {
+    let codex_home = tempfile::tempdir().expect("tempdir");
+    let config = build_config(&codex_home).await;
+    let thread_id = ThreadId::from_string(
+        &create_fake_rollout(
+            codex_home.path(),
+            "2025-01-05T12-00-00",
+            "2025-01-05T12:00:00Z",
+            "Saved user message",
+            Some(config.model_provider_id.as_str()),
+            /*git_info*/ None,
+        )
+        .expect("create source rollout"),
+    )?;
+
+    let mut bound_config = config.clone();
+    bound_config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("scope-a".to_string()),
+    });
+    let mut app_server = crate::start_embedded_app_server_for_picker(&bound_config).await?;
+    let bound = app_server
+        .resume_initial_thread(
+            &crate::local_settings::LocalSettings::from(&bound_config),
+            bound_config,
+            thread_id,
+            ResumeModelSettings::RestoreFromThread,
+        )
+        .await?;
+    assert_eq!(
+        bound.session.adaptive_effort.worker_context,
+        AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some("scope-a".to_string()),
+        }
+    );
+    app_server.shutdown().await?;
+
+    let mut app_server = crate::start_embedded_app_server_for_picker(&config).await?;
+    let unbound = app_server
+        .resume_initial_thread(
+            &crate::local_settings::LocalSettings::from(&config),
+            config,
+            thread_id,
+            ResumeModelSettings::RestoreFromThread,
+        )
+        .await?;
+    assert_eq!(
+        unbound.session.adaptive_effort.worker_context,
+        AdaptiveWorkerContext::default()
+    );
     app_server.shutdown().await?;
     Ok(())
 }

@@ -6,6 +6,32 @@
       "description": "A path that is guaranteed to be absolute and normalized (though it is not guaranteed to be canonicalized or exist on the filesystem).\n\nIMPORTANT: When deserializing an `AbsolutePathBuf`, a base path must be set using [AbsolutePathBufGuard::new]. If no base path is set, the deserialization will fail unless the path being deserialized is already absolute.",
       "type": "string"
     },
+    "AdaptiveWorkerConfigToml": {
+      "additionalProperties": false,
+      "description": "Immutable governance context bound to the initial Worker by its launcher.",
+      "properties": {
+        "authorized_scope": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/AdaptiveWorkerRoleToml"
+        }
+      },
+      "required": [
+        "role"
+      ],
+      "type": "object"
+    },
+    "AdaptiveWorkerRoleToml": {
+      "description": "Externally assigned role for the initial adaptive Worker created by a TUI startup.",
+      "enum": [
+        "unspecified",
+        "implementation",
+        "validation",
+        "repair"
+      ],
+      "type": "string"
+    },
     "AgentRoleToml": {
       "additionalProperties": false,
       "properties": {
@@ -5831,6 +5857,14 @@
   },
   "description": "Base config deserialized from ~/.codex/config.toml.",
   "properties": {
+    "adaptive_worker": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AdaptiveWorkerConfigToml"
+        }
+      ],
+      "description": "Startup-only external authority for the initial adaptive Worker."
+    },
     "agents": {
       "allOf": [
         {

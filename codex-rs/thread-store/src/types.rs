@@ -221,6 +221,8 @@ pub struct PreparedFork {
     pub history_base: Option<HistoryPosition>,
     /// Bounded model context selected by the requested fork boundary.
     pub model_context: Arc<Vec<RolloutItem>>,
+    /// Effective codex-dd workflow state from the exact source rollout.
+    pub workflow_state: codex_rollout::RestoredWorkflowState,
     /// Blocks source deletion until the child's history reference is durable.
     _source_reservation: Box<dyn std::fmt::Debug + Send>,
 }
@@ -231,12 +233,14 @@ impl PreparedFork {
         source_thread_id: ThreadId,
         history_base: Option<HistoryPosition>,
         model_context: Arc<Vec<RolloutItem>>,
+        workflow_state: codex_rollout::RestoredWorkflowState,
         source_reservation: impl std::fmt::Debug + Send + 'static,
     ) -> Self {
         Self {
             source_thread_id,
             history_base,
             model_context,
+            workflow_state,
             _source_reservation: Box::new(source_reservation),
         }
     }

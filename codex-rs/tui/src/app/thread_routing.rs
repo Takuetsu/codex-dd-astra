@@ -1365,10 +1365,24 @@ impl App {
 
     pub(super) async fn enqueue_primary_thread_session_with_presentation(
         &mut self,
-        session: ThreadSessionState,
+        mut session: ThreadSessionState,
         turns: Vec<Turn>,
         presentation: ThreadAttachPresentation,
     ) -> Result<()> {
+        if session.adaptive_effort == Default::default()
+            && let Some(parent_id) = session.forked_from_id
+        {
+            let parent = if self.primary_thread_id == Some(parent_id) {
+                self.primary_session_configured.clone()
+            } else if let Some(channel) = self.thread_event_channels.get(&parent_id) {
+                channel.store.lock().await.session.clone()
+            } else {
+                None
+            };
+            if let Some(parent) = parent {
+                session.inherit_adaptive_effort_from(&parent);
+            }
+        }
         if let Err(err) = self
             .config
             .permissions

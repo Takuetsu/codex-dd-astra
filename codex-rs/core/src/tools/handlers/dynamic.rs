@@ -139,7 +139,7 @@ impl DynamicToolHandler {
         let response = request_dynamic_tool(
             &session,
             turn.as_ref(),
-            call_id,
+            call_id.clone(),
             self.tool_name.clone(),
             args,
         )
@@ -158,10 +158,9 @@ impl DynamicToolHandler {
             .into_iter()
             .map(FunctionCallOutputContentItem::from)
             .collect::<Vec<_>>();
-        Ok(boxed_tool_output(FunctionToolOutput::from_content(
-            body,
-            Some(success),
-        )))
+        Ok(boxed_tool_output(
+            FunctionToolOutput::from_content(body, Some(success)).with_evidence_id(call_id),
+        ))
     }
 }
 

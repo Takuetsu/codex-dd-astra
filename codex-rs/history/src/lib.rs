@@ -72,6 +72,72 @@ pub struct CodexHarnessMetadata {
     pub inherited_user_message: bool,
 }
 
+pub const WORKFLOW_STATE_SCHEMA_VERSION: u32 = 1;
+
+/// A codex-dd workflow-terminal mutation persisted in canonical rollout order.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+pub struct WorkflowStateItem {
+    pub schema_version: u32,
+    pub operation: WorkflowStateOperation,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_turn_id: Option<String>,
+}
+
+impl WorkflowStateItem {
+    pub fn set_ready_for_owner_qa(source_turn_id: Option<String>) -> Self {
+        Self {
+            schema_version: WORKFLOW_STATE_SCHEMA_VERSION,
+            operation: WorkflowStateOperation::Set,
+            source_turn_id,
+        }
+    }
+
+    pub fn clear() -> Self {
+        Self {
+            schema_version: WORKFLOW_STATE_SCHEMA_VERSION,
+            operation: WorkflowStateOperation::Clear,
+            source_turn_id: None,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkflowStateOperation {
+    Set,
+    Clear,
+    #[serde(other)]
+    Unsupported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RestoredWorkflowState {
+    None,
+    ReadyForOwnerQa,
+    Unsupported,
+}
+
+pub fn restored_workflow_state<'a>(
+    items: impl IntoIterator<Item = &'a RolloutItem>,
+) -> RestoredWorkflowState {
+    let mut restored = RestoredWorkflowState::None;
+    for item in items {
+        let RolloutItem::WorkflowState(item) = item else {
+            continue;
+        };
+        if item.schema_version != WORKFLOW_STATE_SCHEMA_VERSION {
+            restored = RestoredWorkflowState::Unsupported;
+            continue;
+        }
+        restored = match item.operation {
+            WorkflowStateOperation::Set => RestoredWorkflowState::ReadyForOwnerQa,
+            WorkflowStateOperation::Clear => RestoredWorkflowState::None,
+            WorkflowStateOperation::Unsupported => RestoredWorkflowState::Unsupported,
+        };
+    }
+    restored
+}
+
 impl ResponseItemEnvelope {
     /// Wraps a raw Responses API item for persisted history.
     pub fn new(item: ResponseItem) -> Self {
@@ -128,6 +194,7 @@ pub enum RolloutItem {
     WorldState(WorldStateItem),
     SecurityRiskScore(SecurityRiskScore),
     RetainedContext(RetainedContextEvent),
+    WorkflowState(WorkflowStateItem),
     EventMsg(EventMsg),
     /// Sparse, model-invisible facts used to reconstruct realtime presentation.
     RealtimeItem(RealtimeItem),
@@ -475,6 +542,7 @@ fn multi_agent_version_from_items(
             | RolloutItem::RetainedContext(_)
             | RolloutItem::SecurityRiskScore(_)
             | RolloutItem::RealtimeItem(_)
+            | RolloutItem::WorkflowState(_)
             | RolloutItem::EventMsg(_) => None,
         })
     })

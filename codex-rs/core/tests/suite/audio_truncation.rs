@@ -146,6 +146,9 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
         FunctionCallOutputPayload {
             body: FunctionCallOutputBody::ContentItems(vec![
                 FunctionCallOutputContentItem::InputText {
+                    text: format!(r#"{{"evidence_id":"{call_id}"}}"#),
+                },
+                FunctionCallOutputContentItem::InputText {
                     text: OMITTED_AUDIO_MARKER.to_string(),
                 },
             ]),

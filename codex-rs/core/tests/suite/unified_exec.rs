@@ -1969,6 +1969,89 @@ async fn exec_command_reports_chunk_and_exit_metadata() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn completed_exec_evidence_id_survives_into_next_model_request_and_signal() -> Result<()> {
+    skip_if_no_network!(Ok(()));
+    skip_if_sandbox!(Ok(()));
+
+    let server = start_mock_server().await;
+    let mut builder = test_codex();
+    let test = builder.build_with_auto_env(&server).await?;
+
+    let call_id = "runtime-native-evidence-id";
+    let exec_args = json!({
+        "cmd": "git rev-parse --show-toplevel",
+        "yield_time_ms": 5_000,
+    });
+    let signal_call_id = "report-ready-for-owner-qa";
+    let signal_args = json!({
+        "kind": "ready_for_owner_qa",
+        "evidence_refs": [call_id],
+    });
+    let response_mock = mount_sse_sequence(
+        &server,
+        vec![
+            sse(vec![
+                ev_response_created("resp-1"),
+                ev_function_call(call_id, "exec_command", &serde_json::to_string(&exec_args)?),
+                ev_completed("resp-1"),
+            ]),
+            sse(vec![
+                ev_response_created("resp-2"),
+                ev_function_call(
+                    signal_call_id,
+                    "report_adaptive_signal",
+                    &serde_json::to_string(&signal_args)?,
+                ),
+                ev_completed("resp-2"),
+            ]),
+            sse(vec![
+                ev_assistant_message("msg-1", "READY_FOR_OWNER_QA"),
+                ev_completed("resp-3"),
+            ]),
+        ],
+    )
+    .await;
+
+    submit_unified_exec_turn(
+        &test,
+        "run git rev-parse --show-toplevel and report the result",
+        PermissionProfile::Disabled,
+    )
+    .await?;
+
+    let mut completed_command_id = None;
+    let mut reported_evidence_refs = None;
+    wait_for_event(&test.codex, |event| match event {
+        EventMsg::ExecCommandEnd(event) if event.call_id == call_id => {
+            completed_command_id = Some(event.call_id.clone());
+            false
+        }
+        EventMsg::AdaptiveRuntimeSignal(event) => {
+            reported_evidence_refs = Some(event.evidence_refs.clone());
+            false
+        }
+        EventMsg::TurnComplete(_) => true,
+        _ => false,
+    })
+    .await;
+
+    let requests = response_mock.requests();
+    assert_eq!(requests.len(), 3);
+    let model_visible_output = requests[1]
+        .function_call_output_text(call_id)
+        .expect("completed command output should be plain model-visible text");
+    let metadata = model_visible_output
+        .lines()
+        .next()
+        .and_then(|line| serde_json::from_str::<Value>(line).ok())
+        .expect("command output should start with structured evidence metadata");
+    assert_eq!(metadata, json!({"evidence_id": call_id}));
+    assert_eq!(completed_command_id.as_deref(), Some(call_id));
+    assert_eq!(reported_evidence_refs, Some(vec![call_id.to_string()]));
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn exec_command_clamps_model_requested_max_output_tokens_to_policy() -> Result<()> {
     // TODO(anp): Remove after unified-exec fixtures use target-native commands.
     skip_if_target_windows!(Ok(()), "uses a POSIX-only command fixture");

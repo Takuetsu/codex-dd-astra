@@ -1342,6 +1342,32 @@ pub struct Event {
     pub msg: EventMsg,
 }
 
+/// Inert data carried by the private adaptive runtime signal transport.
+///
+/// These values have no policy meaning until a later trusted producer slice
+/// validates and consumes them at the matching turn boundary.
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(rename_all = "snake_case")]
+pub enum AdaptiveRuntimeSignalKind {
+    Capability,
+    ReadyForValidation,
+    RepairRequired,
+    ReadyForOwnerQa,
+}
+
+/// Core-side payload for the private adaptive runtime signal transport.
+///
+/// Source thread and turn identity are deliberately absent. The runtime binds
+/// them from the owning session and enclosing [`Event`] instead of accepting
+/// caller-supplied identity.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]
+pub struct AdaptiveRuntimeSignalEvent {
+    pub signal_kind: AdaptiveRuntimeSignalKind,
+    pub evidence_refs: Vec<String>,
+    pub diagnostic_note: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]
 pub struct EnvironmentConnectionEvent {
     pub environment_id: String,
@@ -1354,6 +1380,9 @@ pub struct EnvironmentConnectionEvent {
 #[ts(tag = "type")]
 #[strum(serialize_all = "snake_case")]
 pub enum EventMsg {
+    /// Private, inert adaptive runtime transport data.
+    AdaptiveRuntimeSignal(AdaptiveRuntimeSignalEvent),
+
     /// Error while executing a submission
     Error(ErrorEvent),
 

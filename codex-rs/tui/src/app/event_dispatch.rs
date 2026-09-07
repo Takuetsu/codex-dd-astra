@@ -1633,6 +1633,29 @@ impl App {
                 self.update_luna_reserve_reasoning(app_server, thread_id, effort)
                     .await;
             }
+            AppEvent::UpdateAdaptiveEffortState(state) => {
+                self.sync_active_thread_adaptive_effort_to_cached_session(state)
+                    .await;
+            }
+            AppEvent::PersistWorkflowState {
+                thread_id,
+                operation,
+                source_turn_id,
+            } => {
+                match app_server
+                    .thread_workflow_state_update(thread_id, operation, source_turn_id)
+                    .await
+                {
+                    Ok(_) => self
+                        .chat_widget
+                        .on_workflow_state_persisted(thread_id, operation),
+                    Err(err) => self.chat_widget.on_workflow_state_persistence_failed(
+                        thread_id,
+                        operation,
+                        &err.to_string(),
+                    ),
+                }
+            }
             AppEvent::UpdateModel(model) => {
                 if self
                     .active_thread_model_setting_update_params(model.clone())

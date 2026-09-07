@@ -9,6 +9,7 @@ use codex_protocol::user_input::UserInput;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
+use core_test_support::responses::ev_custom_tool_call;
 use core_test_support::responses::ev_exec_command_call;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::start_websocket_server;
@@ -564,6 +565,86 @@ async fn websocket_v2_next_turn_uses_updated_service_tier() -> Result<()> {
             .get("input")
             .and_then(Value::as_array)
             .is_some_and(|items| !items.is_empty())
+    );
+
+    server.shutdown().await;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn websocket_code_mode_nested_exec_result_reaches_final_request() -> Result<()> {
+    skip_if_no_network!(Ok(()));
+
+    let outer_call_id = "code-mode-exec";
+    let mut code_mode_call = ev_custom_tool_call(
+        outer_call_id,
+        "exec",
+        r#"
+const result = await tools.exec_command({ cmd: "echo code-mode-evidence" });
+text(JSON.stringify(result));
+"#,
+    );
+    code_mode_call["item"]["id"] = serde_json::json!("custom_code_mode_exec");
+    let server = start_websocket_server(vec![vec![
+        vec![ev_response_created("warm-1"), ev_completed("warm-1")],
+        vec![
+            ev_response_created("resp-1"),
+            code_mode_call,
+            ev_completed("resp-1"),
+        ],
+        vec![
+            ev_response_created("resp-2"),
+            ev_assistant_message("msg_1", "done"),
+            ev_completed("resp-2"),
+        ],
+    ]])
+    .await;
+
+    let mut builder = test_codex()
+        .with_model_info_override("gpt-5.2", |model_info| {
+            model_info.tool_mode = Some(ToolMode::CodeMode);
+        })
+        .with_config(|config| {
+            let _ = config.features.enable(Feature::CodeMode);
+            let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
+            config
+                .features
+                .enable(Feature::ResponsesWebsocketsV2)
+                .expect("test config should allow WebSocket v2");
+        });
+    let test = builder.build_with_websocket_server(&server).await?;
+    test.submit_turn("run nested code mode exec").await?;
+
+    let connection = server.single_connection();
+    assert_eq!(connection.len(), 3);
+    let final_request = connection
+        .get(2)
+        .expect("missing final WebSocket response.create request")
+        .body_json();
+    let output = final_request["input"]
+        .as_array()
+        .expect("final request input should be an array")
+        .iter()
+        .find(|item| {
+            item["type"].as_str() == Some("custom_tool_call_output")
+                && item["call_id"].as_str() == Some(outer_call_id)
+        })
+        .unwrap_or_else(|| {
+            panic!("final request should contain the code-mode output: {final_request}")
+        });
+    let result_text = output["output"]
+        .as_array()
+        .and_then(|items| items.last())
+        .and_then(|item| item["text"].as_str())
+        .expect("code-mode output should retain the nested exec result");
+    let result: Value = serde_json::from_str(result_text)?;
+
+    assert!(
+        result
+            .get("evidence_id")
+            .and_then(Value::as_str)
+            .is_some_and(|evidence_id| evidence_id.starts_with("exec-")),
+        "code_mode_result should expose the nested runtime-native evidence ID"
     );
 
     server.shutdown().await;

@@ -75,10 +75,22 @@ impl ChatWidget {
     }
 
     pub(super) fn submit_user_message(&mut self, user_message: UserMessage) {
+        self.invalidate_adaptive_successor_for_manual_input();
         let _accepted = self.submit_user_message_with_history_record(
             user_message,
             UserMessageHistoryRecord::UserMessageText,
         );
+    }
+
+    pub(super) fn invalidate_adaptive_successor_for_manual_input(&mut self) {
+        if self.adaptive_effort.successor_admission.is_none()
+            && self.adaptive_effort.pending_attempt.is_none()
+        {
+            return;
+        }
+        self.adaptive_effort.successor_admission = None;
+        self.adaptive_effort.pending_attempt = None;
+        self.save_adaptive_effort_for_current_thread();
     }
 
     pub(super) fn submit_user_message_with_history_record(

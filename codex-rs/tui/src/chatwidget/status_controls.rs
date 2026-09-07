@@ -259,6 +259,7 @@ impl ChatWidget {
             collaboration_mode,
             reasoning_effort_override,
             agents_summary,
+            Some(self.adaptive_effort_status_text()),
             refreshing_rate_limits,
         );
         if let Some(request_id) = request_id {

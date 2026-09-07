@@ -1,3 +1,4 @@
+mod adaptive_signal;
 pub(crate) mod apply_patch;
 pub(crate) mod apply_patch_spec;
 mod current_time;
@@ -54,6 +55,7 @@ use crate::session::session::Session;
 use crate::session::turn_context::TurnEnvironment;
 pub(crate) use crate::tools::code_mode::CodeModeExecuteHandler;
 pub(crate) use crate::tools::code_mode::CodeModeWaitHandler;
+pub use adaptive_signal::AdaptiveSignalHandler;
 pub use apply_patch::ApplyPatchHandler;
 use codex_protocol::models::AdditionalPermissionProfile;
 use codex_protocol::protocol::AskForApproval;

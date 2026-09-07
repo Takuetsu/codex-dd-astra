@@ -717,6 +717,17 @@ impl CodexThread {
         live_thread.append_items(items).await
     }
 
+    /// Appends and flushes one codex-dd workflow-state mutation on this exact thread.
+    pub async fn persist_workflow_state(
+        &self,
+        item: codex_history::WorkflowStateItem,
+    ) -> CodexResult<()> {
+        self.append_rollout_items(&[RolloutItem::WorkflowState(item)])
+            .await
+            .map_err(|err| CodexErr::Fatal(format!("failed to append workflow state: {err}")))?;
+        self.flush_rollout().await.map_err(CodexErr::Io)
+    }
+
     pub fn state_db(&self) -> Option<StateDbHandle> {
         self.session.state_db()
     }

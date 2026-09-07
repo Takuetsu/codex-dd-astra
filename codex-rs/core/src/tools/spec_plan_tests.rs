@@ -870,6 +870,30 @@ async fn update_plan_tool_respects_config_gate() {
 }
 
 #[tokio::test]
+async fn adaptive_signal_tool_is_registered_with_runtime_bound_authority() {
+    let plan = probe(|_| {}).await;
+
+    plan.assert_visible_contains(&["report_adaptive_signal"]);
+    plan.assert_registered_contains(&["report_adaptive_signal"]);
+    assert_eq!(
+        plan.exposure("report_adaptive_signal"),
+        ToolExposure::DirectModelOnly
+    );
+    let ToolSpec::Function(tool) = plan.visible_spec("report_adaptive_signal") else {
+        panic!("expected function tool");
+    };
+    let properties = tool
+        .parameters
+        .properties
+        .as_ref()
+        .expect("object properties");
+    assert_eq!(
+        properties.keys().map(String::as_str).collect::<Vec<_>>(),
+        vec!["diagnostic_note", "evidence_refs", "kind"]
+    );
+}
+
+#[tokio::test]
 async fn request_user_input_stays_direct_in_code_mode_only() {
     let plan = probe(|turn| {
         set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);

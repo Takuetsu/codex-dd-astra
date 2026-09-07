@@ -3613,6 +3613,7 @@ async fn inactive_thread_approval_bubbles_into_active_view() -> Result<()> {
                 approval_policy: AskForApproval::OnRequest,
                 permission_profile: PermissionProfile::workspace_write(),
                 rollout_path: Some(test_path_buf("/tmp/agent-rollout.jsonl")),
+                adaptive_effort: Default::default(),
                 ..test_thread_session(agent_thread_id, test_path_buf("/tmp/agent"))
             },
             Vec::new(),
@@ -3774,6 +3775,7 @@ async fn side_defers_subagent_approval_overlay_until_side_exits() -> Result<()> 
                 approval_policy: AskForApproval::OnRequest,
                 permission_profile: PermissionProfile::workspace_write(),
                 rollout_path: Some(test_path_buf("/tmp/agent-rollout.jsonl")),
+                adaptive_effort: Default::default(),
                 ..test_thread_session(agent_thread_id, test_path_buf("/tmp/agent"))
             },
             Vec::new(),
@@ -4284,6 +4286,7 @@ async fn inactive_thread_approval_badge_clears_after_turn_completion_notificatio
                 approval_policy: AskForApproval::OnRequest,
                 permission_profile: PermissionProfile::workspace_write(),
                 rollout_path: Some(test_path_buf("/tmp/agent-rollout.jsonl")),
+                adaptive_effort: Default::default(),
                 ..test_thread_session(agent_thread_id, test_path_buf("/tmp/agent"))
             },
             Vec::new(),
@@ -5053,6 +5056,7 @@ async fn side_thread_snapshot_does_not_refresh_from_fork_history() {
     let snapshot = ThreadEventSnapshot {
         session: Some(ThreadSessionState {
             rollout_path: None,
+            adaptive_effort: Default::default(),
             ..test_thread_session(side_thread_id, test_path_buf("/tmp/side"))
         }),
         turns: Vec::new(),
@@ -5677,6 +5681,7 @@ async fn render_clear_ui_header_after_long_transcript_for_snapshot() -> String {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
+            adaptive_effort: Default::default(),
         };
         Arc::new(new_session_info(
             app.chat_widget.config_ref(),
@@ -6211,6 +6216,7 @@ fn test_thread_session(thread_id: ThreadId, cwd: PathBuf) -> ThreadSessionState 
         message_history: None,
         network_proxy: None,
         rollout_path: Some(PathBuf::new()),
+        adaptive_effort: Default::default(),
     }
 }
 
@@ -7101,6 +7107,7 @@ async fn backtrack_selection_preserves_selected_prompt_and_requests_branch() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
+            adaptive_effort: Default::default(),
         };
         Arc::new(new_session_info(
             app.chat_widget.config_ref(),
@@ -7173,6 +7180,7 @@ async fn backtrack_selection_preserves_selected_prompt_and_requests_branch() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
+            adaptive_effort: Default::default(),
         });
 
     app.backtrack.base_id = Some(base_id);
@@ -8338,6 +8346,7 @@ async fn new_session_requests_shutdown_for_previous_conversation() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
+            adaptive_effort: Default::default(),
         };
 
         app.chat_widget.handle_thread_session(event);
@@ -9070,6 +9079,7 @@ async fn clear_only_ui_reset_preserves_chat_session_state() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
+            adaptive_effort: Default::default(),
         });
     app.chat_widget
         .apply_external_edit("draft prompt".to_string());

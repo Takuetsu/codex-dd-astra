@@ -253,6 +253,7 @@ fn rollout_item_type(item: &RolloutItem) -> String {
                 "realtime.session_closed".to_string()
             }
         },
+        RolloutItem::WorkflowState(_) => "codex_dd_workflow_state".to_string(),
         RolloutItem::EventMsg(EventMsg::ItemCompleted(event)) => {
             format!("event.item_completed.{}", turn_item_type(&event.item))
         }

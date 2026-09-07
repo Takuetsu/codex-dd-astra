@@ -1,4 +1,6 @@
 use super::*;
+use crate::adaptive_worker::AdaptiveWorkerContext;
+use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::app_event::TranscriptExportDestination;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_parented_rollout_with_source;
@@ -17,6 +19,8 @@ use codex_app_server_protocol::ThreadHistoryMode;
 use codex_app_server_protocol::ThreadItemsListParams;
 use codex_app_server_protocol::ThreadItemsListResponse;
 use codex_app_server_protocol::ThreadStatus;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
+use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_protocol::AgentPath;
 use codex_protocol::items::AgentMessageContent;
 use codex_protocol::items::AgentMessageItem;
@@ -627,7 +631,11 @@ fn spawn_approved_task_tool_call(
 
 #[tokio::test]
 async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (mut app, _codex_home) = make_history_test_app().await?;
+    app.config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("opaque/startup-scope".to_string()),
+    });
     let (mut app_server, requests, proxy) = start_recording_app_server(
         &app.config,
         /*blocked_thread_list*/ None,
@@ -636,6 +644,10 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
     .await?;
 
     let started = app_server.start_thread(&app.config).await?;
+    assert_eq!(
+        started.session.adaptive_effort.worker_context,
+        AdaptiveWorkerContext::default()
+    );
     assert!(started.task_tools_available);
     assert!(app_server.task_tools_available(started.session.thread_id));
     let startup = crate::app_server_session::start_thread_with_request_handle(
@@ -648,6 +660,13 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
     )
     .await?;
     assert!(startup.task_tools_available);
+    assert_eq!(
+        startup.session.adaptive_effort.worker_context,
+        AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some("opaque/startup-scope".to_string()),
+        }
+    );
 
     let starts = recorded_params(&requests, "thread/start");
     assert_eq!(starts.len(), 2);

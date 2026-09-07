@@ -401,6 +401,7 @@ impl ThreadHistoryBuilder {
             | RolloutItem::RealtimeItem(_)
             | RolloutItem::RetainedContext(_)
             | RolloutItem::SecurityRiskScore(_)
+            | RolloutItem::WorkflowState(_)
             | RolloutItem::SessionMeta(_) => {}
         }
     }

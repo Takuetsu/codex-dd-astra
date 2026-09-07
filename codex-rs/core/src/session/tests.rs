@@ -3523,7 +3523,8 @@ async fn start_new_context_window_persists_checkpoint_state() {
         | RolloutItem::SecurityRiskScore(_)
         | RolloutItem::TokenUsageRecord(_)
         | RolloutItem::RealtimeItem(_)
-        | RolloutItem::EventMsg(_) => None,
+        | RolloutItem::EventMsg(_)
+        | RolloutItem::WorkflowState(_) => None,
     });
     assert_eq!(
         persisted_compacted.and_then(|compacted| compacted.replacement_history.clone()),
@@ -3613,7 +3614,8 @@ async fn record_initial_history_assigns_and_persists_id_for_forked_response_item
         | RolloutItem::SecurityRiskScore(_)
         | RolloutItem::TokenUsageRecord(_)
         | RolloutItem::RealtimeItem(_)
-        | RolloutItem::EventMsg(_) => None,
+        | RolloutItem::EventMsg(_)
+        | RolloutItem::WorkflowState(_) => None,
     });
     let persisted_item = persisted_item.expect("forked response item should be persisted");
     assert_eq!(

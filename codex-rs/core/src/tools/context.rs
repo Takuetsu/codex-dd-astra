@@ -130,7 +130,7 @@ impl ToolOutput for McpToolOutput {
     fn to_response_item(&self, call_id: &str, _payload: &ToolPayload) -> ResponseInputItem {
         ResponseInputItem::FunctionCallOutput {
             call_id: call_id.to_string(),
-            output: self.response_payload(),
+            output: self.response_payload(call_id),
         }
     }
 
@@ -148,7 +148,7 @@ impl ToolOutput for McpToolOutput {
 }
 
 impl McpToolOutput {
-    fn response_payload(&self) -> FunctionCallOutputPayload {
+    fn response_payload(&self, evidence_id: &str) -> FunctionCallOutputPayload {
         let mut payload = self.result.as_function_call_output_payload();
         if let Some(items) = payload.content_items_mut() {
             sanitize_original_image_detail(self.original_image_detail_supported, items);
@@ -170,6 +170,7 @@ impl McpToolOutput {
             }
         }
 
+        payload = with_evidence_id(payload, evidence_id);
         // History receives this budget in tokens. Code Mode keeps the raw result.
         truncate_function_output_payload(
             &mut payload,
@@ -225,6 +226,7 @@ pub struct FunctionToolOutput {
     pub body: Vec<FunctionCallOutputContentItem>,
     pub success: Option<bool>,
     pub post_tool_use_response: Option<JsonValue>,
+    evidence_id: Option<String>,
 }
 
 impl FunctionToolOutput {
@@ -233,6 +235,7 @@ impl FunctionToolOutput {
             body: vec![FunctionCallOutputContentItem::InputText { text }],
             success,
             post_tool_use_response: None,
+            evidence_id: None,
         }
     }
 
@@ -244,7 +247,13 @@ impl FunctionToolOutput {
             body: content,
             success,
             post_tool_use_response: None,
+            evidence_id: None,
         }
+    }
+
+    pub fn with_evidence_id(mut self, evidence_id: String) -> Self {
+        self.evidence_id = Some(evidence_id);
+        self
     }
 
     pub fn into_text(self) -> String {
@@ -262,7 +271,11 @@ impl ToolOutput for FunctionToolOutput {
     }
 
     fn to_response_item(&self, call_id: &str, payload: &ToolPayload) -> ResponseInputItem {
-        function_tool_response(call_id, payload, self.body.clone(), self.success)
+        let body = match &self.evidence_id {
+            Some(evidence_id) => evidence_content_items(self.body.clone(), evidence_id),
+            None => self.body.clone(),
+        };
+        function_tool_response(call_id, payload, body, self.success)
     }
 
     fn post_tool_use_response(&self, _call_id: &str, _payload: &ToolPayload) -> Option<JsonValue> {
@@ -377,14 +390,15 @@ impl ToolOutput for ExecCommandToolOutput {
     }
 
     fn to_response_item(&self, call_id: &str, payload: &ToolPayload) -> ResponseInputItem {
-        function_tool_response(
-            call_id,
-            payload,
-            vec![FunctionCallOutputContentItem::InputText {
-                text: self.response_text(),
-            }],
-            Some(true),
-        )
+        let evidence_id = if self.exit_code.is_some() {
+            Some(self.post_tool_use_id(call_id))
+        } else {
+            None
+        };
+        let body = vec![FunctionCallOutputContentItem::InputText {
+            text: self.response_text(evidence_id.as_deref()),
+        }];
+        function_tool_response(call_id, payload, body, Some(true))
     }
 
     fn post_tool_use_id(&self, call_id: &str) -> String {
@@ -415,6 +429,8 @@ impl ToolOutput for ExecCommandToolOutput {
         #[derive(Serialize)]
         struct UnifiedExecCodeModeResult {
             #[serde(skip_serializing_if = "Option::is_none")]
+            evidence_id: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
             chunk_id: Option<String>,
             wall_time_seconds: f64,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -427,6 +443,7 @@ impl ToolOutput for ExecCommandToolOutput {
         }
 
         let result = UnifiedExecCodeModeResult {
+            evidence_id: (!self.event_call_id.is_empty()).then(|| self.event_call_id.clone()),
             chunk_id: (!self.chunk_id.is_empty()).then(|| self.chunk_id.clone()),
             wall_time_seconds: self.wall_time.as_secs_f64(),
             exit_code: self.exit_code,
@@ -513,11 +530,19 @@ impl ExecCommandToolOutput {
         sections.join("\n")
     }
 
-    fn response_text(&self) -> String {
+    fn response_text(&self, evidence_id: Option<&str>) -> String {
         let header = self.response_header();
-        let output_budget = (self.truncation_policy * 1.2)
-            .byte_budget()
-            .saturating_sub(header.len().saturating_add(/*rhs*/ 1));
+        let evidence_metadata_len = evidence_id
+            .map(evidence_metadata_text)
+            .map_or(0, |metadata| {
+                metadata.len().saturating_add(/*newline*/ 1)
+            });
+        let output_budget = (self.truncation_policy * 1.2).byte_budget().saturating_sub(
+            header
+                .len()
+                .saturating_add(/*rhs*/ 1)
+                .saturating_add(evidence_metadata_len),
+        );
         let mut policy = self.model_output_policy();
         let mut output = self.truncated_output_with_policy(policy);
 
@@ -537,7 +562,13 @@ impl ExecCommandToolOutput {
             output = self.truncated_output_with_policy(policy);
         }
 
-        format!("{header}\n{output}")
+        match evidence_id {
+            Some(evidence_id) => format!(
+                "{}\n{header}\n{output}",
+                evidence_metadata_text(evidence_id)
+            ),
+            None => format!("{header}\n{output}"),
+        }
     }
 }
 
@@ -566,6 +597,37 @@ fn function_tool_response(
         call_id: call_id.to_string(),
         output: FunctionCallOutputPayload { body, success },
     }
+}
+
+fn with_evidence_id(
+    mut output: FunctionCallOutputPayload,
+    evidence_id: &str,
+) -> FunctionCallOutputPayload {
+    let body = match output.body {
+        FunctionCallOutputBody::Text(text) => {
+            vec![FunctionCallOutputContentItem::InputText { text }]
+        }
+        FunctionCallOutputBody::ContentItems(items) => items,
+    };
+    output.body = FunctionCallOutputBody::ContentItems(evidence_content_items(body, evidence_id));
+    output
+}
+
+fn evidence_content_items(
+    mut items: Vec<FunctionCallOutputContentItem>,
+    evidence_id: &str,
+) -> Vec<FunctionCallOutputContentItem> {
+    items.insert(
+        0,
+        FunctionCallOutputContentItem::InputText {
+            text: evidence_metadata_text(evidence_id),
+        },
+    );
+    items
+}
+
+fn evidence_metadata_text(evidence_id: &str) -> String {
+    serde_json::json!({ "evidence_id": evidence_id }).to_string()
 }
 
 #[cfg(test)]

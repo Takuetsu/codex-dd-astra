@@ -24,6 +24,7 @@ use codex_config::ResidencyRequirement;
 use codex_config::SandboxModeRequirement;
 use codex_config::Sourced;
 use codex_config::ThreadConfigLoader;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_config::config_toml::ConfigToml;
 use codex_config::config_toml::DEFAULT_PROJECT_DOC_MAX_BYTES;
 use codex_config::config_toml::ProjectConfig;
@@ -616,6 +617,9 @@ pub struct Config {
 
     /// Optional override of model selection.
     pub model: Option<String>,
+
+    /// Startup-only external authority for the initial adaptive Worker.
+    pub adaptive_worker: Option<AdaptiveWorkerConfigToml>,
 
     /// Effective service tier request id preference for new turns.
     /// `default` means the user explicitly selected standard routing.
@@ -4151,6 +4155,7 @@ impl Config {
         let otel = otel::resolve_config(cfg.otel.unwrap_or_default(), &mut startup_warnings);
         let config = Self {
             model,
+            adaptive_worker: cfg.adaptive_worker,
             service_tier,
             review_model,
             model_context_window: cfg.model_context_window,

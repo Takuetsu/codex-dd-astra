@@ -28,12 +28,16 @@ pub mod state_db;
 pub use codex_history::CompactedItem;
 pub use codex_history::InitialHistory;
 pub use codex_history::ResponseItemEnvelope;
+pub use codex_history::RestoredWorkflowState;
 pub use codex_history::ResumedHistory;
 pub use codex_history::RetainedContextEntry;
 pub use codex_history::RetainedContextEvent;
 pub use codex_history::RetainedInputSource;
 pub use codex_history::RolloutItem;
 pub use codex_history::RolloutLine;
+pub use codex_history::WorkflowStateItem;
+pub use codex_history::WorkflowStateOperation;
+pub use codex_history::restored_workflow_state;
 pub(crate) use codex_protocol::protocol;
 
 /// Decodes a persisted rollout record without Serde's flattened-envelope buffering.

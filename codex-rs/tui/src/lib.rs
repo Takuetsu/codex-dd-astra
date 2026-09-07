@@ -100,6 +100,25 @@ pub(crate) use codex_app_server_client::legacy_core;
 
 pub(crate) use worktree_startup::ManagedTuiWorktree;
 
+#[allow(dead_code)] // Slice 5 adapters are intentionally not wired into runtime behavior yet.
+mod adaptive_classification;
+#[allow(dead_code)] // Slice 6 controller is intentionally not wired into runtime behavior yet.
+mod adaptive_controller;
+#[cfg(test)]
+#[path = "adaptive_controller_tests.rs"]
+mod adaptive_controller_tests;
+#[allow(dead_code)] // Slice 7C-B resolution APIs are consumed by the deferred 7C-C producers.
+mod adaptive_evidence;
+#[cfg(test)]
+#[path = "adaptive_evidence_tests.rs"]
+mod adaptive_evidence_tests;
+#[allow(dead_code)] // Slice 4 policy is intentionally not wired into runtime behavior yet.
+mod adaptive_policy;
+#[allow(dead_code)] // Slice 7A records typed handoffs; trusted runtime producers are deferred.
+mod adaptive_worker;
+#[cfg(test)]
+#[path = "adaptive_worker_tests.rs"]
+mod adaptive_worker_tests;
 mod additional_dirs;
 mod app;
 mod app_backtrack;
@@ -129,6 +148,9 @@ mod experimental_features;
 mod permission_discovery;
 mod pets;
 mod worktree_browser;
+#[cfg(test)]
+#[path = "slice5_classification_tests.rs"]
+mod slice5_classification_tests;
 pub use custom_terminal::Terminal;
 mod assistant_directives;
 mod auto_review_denials;

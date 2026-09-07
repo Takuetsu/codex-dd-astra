@@ -560,6 +560,7 @@ fn session_configured_event(model: &str) -> ThreadSessionState {
         message_history: None,
         network_proxy: None,
         rollout_path: Some(PathBuf::new()),
+        adaptive_effort: Default::default(),
     }
 }
 

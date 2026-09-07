@@ -772,6 +772,7 @@ async fn status_uses_server_provider_id_and_auth_requirement() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        None,
         /*refreshing_rate_limits*/ false,
     );
     let rendered =
@@ -803,6 +804,7 @@ async fn status_uses_server_provider_id_and_auth_requirement() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        None,
         /*refreshing_rate_limits*/ false,
     );
     let rendered =
@@ -1655,6 +1657,9 @@ async fn status_snapshot_uses_default_reasoning_when_config_empty() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ Some(Some(ReasoningEffort::Medium)),
         "<none>".to_string(),
+        Some(
+            "Adaptive Effort\n  Enabled: yes\n  Start: Terra\n  Current: Terra Low\n  Attempt: 1\n  Paused: no\n  Last outcome: None\n  Last failure: None\n  Worker role: Repair\n  Workflow terminal: REPAIR_REQUIRED".to_string(),
+        ),
         /*refreshing_rate_limits*/ false,
     );
     let mut rendered_lines = render_lines(&composite.display_lines(/*width*/ 80));
@@ -1766,6 +1771,7 @@ async fn transcript_overlay_remeasures_status_after_rate_limit_refresh() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        None,
         /*refreshing_rate_limits*/ true,
     );
     let mut overlay =

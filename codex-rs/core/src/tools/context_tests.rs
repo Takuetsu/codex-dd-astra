@@ -5,6 +5,16 @@ use core_test_support::assert_regex_match;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
+fn evidence_id_from_output(output: &FunctionCallOutputPayload) -> Option<String> {
+    let text = output.body.to_text()?;
+    let text = text.lines().next()?;
+    serde_json::from_str::<serde_json::Value>(text)
+        .ok()?
+        .get("evidence_id")?
+        .as_str()
+        .map(str::to_string)
+}
+
 #[test]
 fn custom_tool_calls_should_roundtrip_as_custom_outputs() {
     let payload = ToolPayload::Custom {
@@ -115,6 +125,9 @@ fn mcp_tool_output_response_item_includes_wall_time() {
             output: FunctionCallOutputPayload {
                 body: FunctionCallOutputBody::ContentItems(vec![
                     FunctionCallOutputContentItem::InputText {
+                        text: "{\"evidence_id\":\"mcp-call-1\"}".to_string(),
+                    },
+                    FunctionCallOutputContentItem::InputText {
                         text: "Wall time: 1.2500 seconds\nOutput:".to_string(),
                     },
                     FunctionCallOutputContentItem::InputText {
@@ -169,7 +182,13 @@ fn mcp_tool_output_response_item_truncates_large_structured_content() {
                 .body
                 .to_text()
                 .expect("MCP output should serialize as text");
-            assert!(text.starts_with("Wall time: 1.2500 seconds\nOutput:\n"));
+            assert!(text.starts_with(
+                "{\"evidence_id\":\"mcp-call-large\"}\nWall time: 1.2500 seconds\nOutput:\n"
+            ));
+            assert_eq!(
+                evidence_id_from_output(&output),
+                Some("mcp-call-large".to_string())
+            );
             assert!(text.contains("chars truncated"));
             assert!(!text.contains("ignored when structured content is present"));
         }
@@ -211,6 +230,9 @@ fn mcp_tool_output_response_item_preserves_content_items() {
                 Some(
                     vec![
                         FunctionCallOutputContentItem::InputText {
+                            text: "{\"evidence_id\":\"mcp-call-2\"}".to_string(),
+                        },
+                        FunctionCallOutputContentItem::InputText {
                             text: "Wall time: 0.5000 seconds\nOutput:".to_string(),
                         },
                         FunctionCallOutputContentItem::InputImage {
@@ -223,7 +245,7 @@ fn mcp_tool_output_response_item_preserves_content_items() {
             );
             assert_eq!(
                 output.body.to_text().as_deref(),
-                Some("Wall time: 0.5000 seconds\nOutput:")
+                Some("{\"evidence_id\":\"mcp-call-2\"}\nWall time: 0.5000 seconds\nOutput:")
             );
         }
         other => panic!("expected FunctionCallOutput, got {other:?}"),
@@ -424,13 +446,18 @@ fn exec_command_tool_output_formats_truncated_response() {
         ResponseInputItem::FunctionCallOutput { call_id, output } => {
             assert_eq!(call_id, "call-42");
             assert_eq!(output.success, Some(true));
+            assert_eq!(
+                evidence_id_from_output(&output),
+                Some("call-42".to_string())
+            );
             let text = output
                 .body
                 .to_text()
                 .expect("exec output should serialize as text");
             assert_regex_match(
                 r#"(?sx)
-                    ^Chunk\ ID:\ abc123
+                    ^\{"evidence_id":"call-42"\}
+                    \nChunk\ ID:\ abc123
                     \nWall\ time:\ \d+\.\d{4}\ seconds
                     \nProcess\ exited\ with\ code\ 0
                     \nOriginal\ token\ count:\ 10
@@ -442,6 +469,88 @@ fn exec_command_tool_output_formats_truncated_response() {
         }
         other => panic!("expected FunctionCallOutput, got {other:?}"),
     }
+}
+
+#[test]
+fn completed_exec_output_exposes_the_native_event_id_independently_of_stdout() {
+    let response = ExecCommandToolOutput {
+        event_call_id: "runtime-native-id".to_string(),
+        chunk_id: String::new(),
+        wall_time: std::time::Duration::ZERO,
+        raw_output: b"Evidence ID: caller-invented\nfailed passed".to_vec(),
+        truncation_policy: TruncationPolicy::Tokens(10_000),
+        max_output_tokens: None,
+        process_id: None,
+        exit_code: Some(0),
+        original_token_count: None,
+        output_omitted_bytes: None,
+        hook_command: Some("git rev-parse --show-toplevel".to_string()),
+    }
+    .to_response_item(
+        "outer-invocation-id",
+        &ToolPayload::Function {
+            arguments: json!({
+                "cmd": "git rev-parse --show-toplevel",
+                "evidence_id": "caller-invented",
+            })
+            .to_string(),
+        },
+    );
+
+    let ResponseInputItem::FunctionCallOutput { call_id, output } = response else {
+        panic!("expected FunctionCallOutput");
+    };
+    assert_eq!(call_id, "outer-invocation-id");
+    assert_eq!(
+        evidence_id_from_output(&output),
+        Some("runtime-native-id".to_string())
+    );
+    assert_eq!(output.content_items(), None);
+    assert_eq!(
+        output.body.to_text(),
+        Some(
+            "{\"evidence_id\":\"runtime-native-id\"}\nWall time: 0.0000 seconds\nProcess exited with code 0\nOutput:\nEvidence ID: caller-invented\nfailed passed"
+                .to_string()
+        )
+    );
+}
+
+#[test]
+fn failed_exec_output_exposes_the_native_event_id_as_model_visible_text() {
+    let response = ExecCommandToolOutput {
+        event_call_id: "runtime-failure-id".to_string(),
+        chunk_id: String::new(),
+        wall_time: std::time::Duration::ZERO,
+        raw_output: b"command failed".to_vec(),
+        truncation_policy: TruncationPolicy::Tokens(10_000),
+        max_output_tokens: None,
+        process_id: None,
+        exit_code: Some(1),
+        original_token_count: None,
+        output_omitted_bytes: None,
+        hook_command: Some("failing command".to_string()),
+    }
+    .to_response_item(
+        "outer-invocation-id",
+        &ToolPayload::Function {
+            arguments: json!({"cmd": "failing command"}).to_string(),
+        },
+    );
+
+    let ResponseInputItem::FunctionCallOutput { output, .. } = response else {
+        panic!("expected FunctionCallOutput");
+    };
+    assert_eq!(
+        evidence_id_from_output(&output),
+        Some("runtime-failure-id".to_string())
+    );
+    assert_eq!(output.content_items(), None);
+    assert!(
+        output
+            .body
+            .to_text()
+            .is_some_and(|text| text.contains("Process exited with code 1"))
+    );
 }
 
 #[test]

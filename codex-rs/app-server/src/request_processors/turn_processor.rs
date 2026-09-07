@@ -192,6 +192,24 @@ impl TurnRequestProcessor {
             .map(|response| Some(response.into()))
     }
 
+    pub(crate) async fn thread_workflow_state_update(
+        &self,
+        params: ThreadWorkflowStateUpdateParams,
+    ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
+        let (_, thread) = self.load_thread(&params.thread_id).await?;
+        let item = match params.operation {
+            ThreadWorkflowStateOperation::SetReadyForOwnerQa => {
+                codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(params.source_turn_id)
+            }
+            ThreadWorkflowStateOperation::Clear => codex_rollout::WorkflowStateItem::clear(),
+        };
+        thread
+            .persist_workflow_state(item)
+            .await
+            .map_err(|err| internal_error(format!("failed to persist workflow state: {err}")))?;
+        Ok(Some(ThreadWorkflowStateUpdateResponse {}.into()))
+    }
+
     pub(crate) async fn thread_settings_update(
         &self,
         request_id: &ConnectionRequestId,

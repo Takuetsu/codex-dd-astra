@@ -198,6 +198,7 @@ struct ForkHistory {
     snapshot: ForkSnapshot,
     initial_history: InitialHistory,
     persistence: ForkPersistence,
+    workflow_state: Option<codex_history::RestoredWorkflowState>,
 }
 
 /// Preserve legacy `fork_thread(usize, ...)` callsites by mapping them to the
@@ -1320,6 +1321,7 @@ impl ThreadManager {
                 snapshot: snapshot.into(),
                 initial_history: history,
                 persistence: ForkPersistence::Copied,
+                workflow_state: None,
             },
             thread_source,
             parent_trace,
@@ -1339,6 +1341,7 @@ impl ThreadManager {
         client_mcp_extensions: ClientMcpExtensions,
         reserved_thread_id: Option<ThreadId>,
     ) -> CodexResult<NewThread> {
+        let workflow_state = prepared.workflow_state;
         let history = InitialHistory::Resumed(ResumedHistory {
             conversation_id: prepared.source_thread_id,
             history: Arc::clone(&prepared.model_context),
@@ -1355,6 +1358,7 @@ impl ThreadManager {
                     snapshot: ForkSnapshot::Interrupted,
                     initial_history: history,
                     persistence: fork_persistence,
+                    workflow_state: Some(workflow_state),
                 },
                 thread_source,
                 parent_trace,
@@ -1379,6 +1383,7 @@ impl ThreadManager {
             snapshot,
             initial_history: history,
             persistence: fork_persistence,
+            workflow_state,
         } = fork_history;
         // `forked_from_id()` describes this history's existing lineage. When
         // forking a resumed thread, the child copies the resumed thread itself.
@@ -1399,7 +1404,12 @@ impl ThreadManager {
             .await;
         let interrupted_marker =
             InterruptedTurnHistoryMarker::from_config_and_version(&config, multi_agent_version);
-        let history = fork_history_from_snapshot(snapshot, history, interrupted_marker);
+        let workflow_state =
+            workflow_state.unwrap_or_else(|| workflow_state_from_history(&history));
+        let history = append_child_workflow_state_snapshot(
+            fork_history_from_snapshot(snapshot, history, interrupted_marker),
+            workflow_state,
+        );
         let agent_control = self.agent_control_for_config(&config);
         let options = StartThreadOptions {
             initial_history: history,
@@ -2312,6 +2322,46 @@ fn fork_history_from_snapshot(
             } else {
                 history
             }
+        }
+    }
+}
+
+fn workflow_state_from_history(history: &InitialHistory) -> codex_history::RestoredWorkflowState {
+    match history {
+        InitialHistory::New | InitialHistory::Cleared => codex_history::RestoredWorkflowState::None,
+        InitialHistory::Resumed(history) => {
+            codex_history::restored_workflow_state(history.history.iter())
+        }
+        InitialHistory::Forked(history) => codex_history::restored_workflow_state(history.iter()),
+    }
+}
+
+fn append_child_workflow_state_snapshot(
+    history: InitialHistory,
+    workflow_state: codex_history::RestoredWorkflowState,
+) -> InitialHistory {
+    let snapshot = match workflow_state {
+        codex_history::RestoredWorkflowState::None => return history,
+        codex_history::RestoredWorkflowState::ReadyForOwnerQa => {
+            codex_history::WorkflowStateItem::set_ready_for_owner_qa(None)
+        }
+        codex_history::RestoredWorkflowState::Unsupported => codex_history::WorkflowStateItem {
+            schema_version: codex_history::WORKFLOW_STATE_SCHEMA_VERSION,
+            operation: codex_history::WorkflowStateOperation::Unsupported,
+            source_turn_id: None,
+        },
+    };
+    let item = RolloutItem::WorkflowState(snapshot);
+    match history {
+        InitialHistory::New | InitialHistory::Cleared => InitialHistory::Forked(vec![item]),
+        InitialHistory::Forked(mut history) => {
+            history.push(item);
+            InitialHistory::Forked(history)
+        }
+        InitialHistory::Resumed(history) => {
+            let mut items = Arc::unwrap_or_clone(history.history);
+            items.push(item);
+            InitialHistory::Forked(items)
         }
     }
 }

@@ -1864,7 +1864,8 @@ pub(super) fn realtime_text_for_event(msg: &EventMsg) -> Option<(String, Option<
                 .ok()
                 .map(|request| (format!("{message}\n\n{request}"), None))
         }
-        EventMsg::Error(_)
+        EventMsg::AdaptiveRuntimeSignal(_)
+        | EventMsg::Error(_)
         | EventMsg::Warning(_)
         | EventMsg::AuthRecoveryStarted(_)
         | EventMsg::AuthRecoveryCompleted(_)

@@ -451,7 +451,7 @@ impl App {
                 let resumed = match startup_draft
                     .run_until(
                         tui,
-                        app_server.resume_thread(
+                        app_server.resume_initial_thread(
                             &local_settings,
                             config.clone(),
                             target_session.thread_id,

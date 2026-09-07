@@ -178,6 +178,7 @@ impl ChatWidget {
             mask.reasoning_effort = Some(effort);
         }
         self.refresh_model_dependent_surfaces();
+        self.maybe_submit_adaptive_successor();
     }
 
     /// Set the personality in the widget's config copy.
@@ -283,6 +284,7 @@ impl ChatWidget {
         }
         self.refresh_effective_service_tier();
         self.refresh_model_dependent_surfaces();
+        self.maybe_submit_adaptive_successor();
     }
 
     pub(crate) fn current_model(&self) -> &str {

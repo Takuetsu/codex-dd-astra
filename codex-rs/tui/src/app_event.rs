@@ -35,6 +35,7 @@ use codex_app_server_protocol::SkillsListResponse;
 use codex_app_server_protocol::Thread;
 use codex_app_server_protocol::ThreadGoalStatus;
 use codex_app_server_protocol::ThreadItemsListResponse;
+use codex_app_server_protocol::ThreadWorkflowStateOperation;
 use codex_connectors::AppInfo;
 use codex_file_search::FileMatch;
 use codex_message_history::HistoryBatchCursor;
@@ -55,6 +56,7 @@ use crate::chatwidget::ConnectorScopeGeneration;
 use crate::chatwidget::ThreadUsageOutcome;
 use crate::chatwidget::UserMessage;
 use crate::experimental_features::FeatureWriteResult;
+use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
 use crate::goal_files::GoalDraft;
 use codex_app_server_protocol::AskForApproval;
 use codex_config::types::ApprovalsReviewer;
@@ -264,6 +266,14 @@ pub(crate) enum AppEvent {
     ReviewMisalignment(Arc<crate::chatwidget::MisalignmentReview>),
     ContinueMisalignment(Arc<crate::chatwidget::MisalignmentReview>),
     CloseMisalignmentReview,
+    /// Persist the active widget's adaptive state into its canonical thread session.
+    UpdateAdaptiveEffortState(AdaptiveEffortState),
+    /// Persist a human/trusted workflow-state mutation on the exact displayed thread.
+    PersistWorkflowState {
+        thread_id: ThreadId,
+        operation: ThreadWorkflowStateOperation,
+        source_turn_id: Option<String>,
+    },
     /// Open the daemon-wide overview of recent and locally retained root sessions.
     OpenAgentsOverview,
     /// Update the daemon-wide overview after a background thread listing finishes.

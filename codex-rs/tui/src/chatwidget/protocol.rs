@@ -63,6 +63,7 @@ impl ChatWidget {
                 if replay_kind.is_none() {
                     self.clear_misalignment_for_new_turn(&notification.turn.id);
                 }
+                self.clear_stale_pending_adaptive_signal(&notification.turn.id);
                 self.turn_lifecycle.last_turn_id = Some(notification.turn.id);
                 self.last_non_retry_error = None;
                 if !matches!(replay_kind, Some(ReplayKind::ResumeInitialMessages)) {
@@ -73,10 +74,18 @@ impl ChatWidget {
             ServerNotification::TurnCompleted(notification) => {
                 self.handle_turn_completed_notification(notification, replay_kind);
             }
+            ServerNotification::AdaptiveRuntimeSignal(notification) => {
+                if replay_kind.is_none() {
+                    self.handle_adaptive_runtime_signal(notification);
+                }
+            }
             ServerNotification::ItemStarted(notification) => {
                 self.handle_item_started_notification(notification, replay_kind);
             }
             ServerNotification::ItemCompleted(notification) => {
+                if replay_kind.is_none() {
+                    self.register_adaptive_evidence(&notification);
+                }
                 self.handle_item_completed_notification(notification, replay_kind);
             }
             ServerNotification::AgentMessageDelta(notification) => {
@@ -296,6 +305,20 @@ impl ChatWidget {
         self.last_rendered_user_message_display = None;
         let was_replaying_turn_completion = self.thread_usage.replaying_turn_completion;
         self.thread_usage.replaying_turn_completion = replay_kind.is_some();
+        if replay_kind.is_none() && notification.turn.status != TurnStatus::InProgress {
+            let signal = match (&notification.turn.status, notification.turn.error.as_ref()) {
+                (TurnStatus::Failed, Some(error)) => error.codex_error_info.as_ref().map_or(
+                    crate::adaptive_policy::AdaptiveOutcomeSignal::Failed,
+                    crate::adaptive_classification::signal_from_codex_error,
+                ),
+                (status, _) => crate::adaptive_classification::signal_from_turn_status(status),
+            };
+            let trusted_signal_consumed = matches!(notification.turn.status, TurnStatus::Completed)
+                && self.consume_adaptive_signal_at_terminal(&notification.turn.id);
+            if !trusted_signal_consumed {
+                self.apply_adaptive_terminal_signal(&notification.turn.id, signal);
+            }
+        }
         match notification.turn.status {
             TurnStatus::Completed => {
                 let last_agent_message =
@@ -335,6 +358,9 @@ impl ChatWidget {
                     notification.turn.duration_ms,
                     replay_kind.is_some(),
                 );
+                if replay_kind.is_none() {
+                    self.maybe_submit_adaptive_successor();
+                }
             }
             TurnStatus::Interrupted => {
                 self.last_non_retry_error = None;

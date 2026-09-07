@@ -14,6 +14,8 @@ use crate::thread_state::resolve_server_request_on_thread_listener;
 use crate::thread_status::ThreadWatchActiveGuard;
 use crate::thread_status::ThreadWatchManager;
 use codex_app_server_protocol::AccountRateLimitsUpdatedNotification;
+use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
+use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
 use codex_app_server_protocol::AdditionalPermissionProfile as V2AdditionalPermissionProfile;
 use codex_app_server_protocol::AuthRecoveryNotification;
 use codex_app_server_protocol::CodexErrorInfo as V2CodexErrorInfo;
@@ -162,6 +164,21 @@ pub(crate) async fn apply_bespoke_event_handling(
         msg,
     } = event;
     match msg {
+        EventMsg::AdaptiveRuntimeSignal(signal) => {
+            outgoing
+                .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(
+                    AdaptiveRuntimeSignalNotification {
+                        thread_id: conversation_id.to_string(),
+                        signal: AdaptiveRuntimeSignalEnvelope {
+                            source_turn_id: event_turn_id,
+                            signal_kind: signal.signal_kind,
+                            evidence_refs: signal.evidence_refs,
+                            diagnostic_note: signal.diagnostic_note,
+                        },
+                    },
+                ))
+                .await;
+        }
         EventMsg::TurnStarted(payload) => {
             // While not technically necessary as it was already done on TurnComplete, be extra cautios and abort any pending server requests.
             outgoing.abort_pending_server_requests().await;
@@ -3672,6 +3689,78 @@ mod tests {
             other => bail!("unexpected message: {other:?}"),
         }
         assert!(rx.try_recv().is_err(), "no extra messages expected");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn adaptive_runtime_signal_binds_event_turn_and_conversation_identity() -> Result<()> {
+        let codex_home = TempDir::new()?;
+        let config = load_default_config_for_test(&codex_home).await;
+        let thread_manager = Arc::new(
+            codex_core::test_support::thread_manager_with_models_provider_and_home(
+                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
+                config.model_provider.clone(),
+                config.codex_home.to_path_buf(),
+                Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+            ),
+        );
+        let codex_core::NewThread {
+            thread_id: conversation_id,
+            thread: conversation,
+            ..
+        } = thread_manager
+            .start_thread(codex_core::StartThreadOptions::new(config))
+            .await?;
+        let source_turn_id = "native-source-turn".to_string();
+        let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
+        let outgoing = Arc::new(OutgoingMessageSender::new(
+            tx,
+            codex_analytics::AnalyticsEventsClient::disabled(),
+        ));
+        let outgoing = ThreadScopedOutgoingMessageSender::new(
+            outgoing,
+            vec![ConnectionId(1)],
+            ThreadId::new(),
+        );
+        apply_bespoke_event_handling(
+            Event {
+                id: source_turn_id.clone(),
+                msg: EventMsg::AdaptiveRuntimeSignal(
+                    codex_protocol::protocol::AdaptiveRuntimeSignalEvent {
+                        signal_kind:
+                            codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,
+                        evidence_refs: Vec::new(),
+                        diagnostic_note: None,
+                    },
+                ),
+            },
+            conversation_id,
+            conversation,
+            thread_manager,
+            outgoing,
+            new_thread_state(),
+            ThreadWatchManager::new(),
+            Arc::new(tokio::sync::Semaphore::new(/*permits*/ 1)),
+            "test-provider".to_string(),
+        )
+        .await;
+
+        let notification = recv_broadcast_notification(&mut rx).await?;
+        let ServerNotification::AdaptiveRuntimeSignal(notification) = notification else {
+            bail!("unexpected notification: {notification:?}");
+        };
+        assert_eq!(
+            notification,
+            AdaptiveRuntimeSignalNotification {
+                thread_id: conversation_id.to_string(),
+                signal: AdaptiveRuntimeSignalEnvelope {
+                    source_turn_id,
+                    signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,
+                    evidence_refs: Vec::new(),
+                    diagnostic_note: None,
+                },
+            }
+        );
         Ok(())
     }
 

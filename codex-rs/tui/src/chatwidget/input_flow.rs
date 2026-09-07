@@ -110,6 +110,7 @@ impl ChatWidget {
         action: QueuedInputAction,
         pending_pastes: Vec<(String, String)>,
     ) {
+        self.invalidate_adaptive_successor_for_manual_input();
         if self.has_misalignment_policy_violation() {
             return;
         }

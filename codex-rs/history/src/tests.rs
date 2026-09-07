@@ -7,6 +7,90 @@ use serde_json::json;
 use super::*;
 
 #[test]
+fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result<()> {
+    let records = [
+        WorkflowStateItem::set_ready_for_owner_qa(Some("turn-42".to_string())),
+        WorkflowStateItem::clear(),
+    ];
+
+    for record in records {
+        let value = serde_json::to_value(RolloutItem::WorkflowState(record.clone()))?;
+        assert_eq!(
+            value.get("type").and_then(serde_json::Value::as_str),
+            Some("codex_dd_workflow_state")
+        );
+        assert!(value.get("thread_id").is_none());
+        assert!(value["payload"].get("thread_id").is_none());
+        let RolloutItem::WorkflowState(round_trip) = serde_json::from_value::<RolloutItem>(value)?
+        else {
+            panic!("expected workflow state record");
+        };
+        assert_eq!(round_trip, record);
+    }
+    Ok(())
+}
+
+#[test]
+fn workflow_state_latest_valid_canonical_record_wins() {
+    let set = || {
+        RolloutItem::WorkflowState(WorkflowStateItem::set_ready_for_owner_qa(Some(
+            "turn".to_string(),
+        )))
+    };
+    let clear = || RolloutItem::WorkflowState(WorkflowStateItem::clear());
+
+    assert_eq!(
+        restored_workflow_state([set()].iter()),
+        RestoredWorkflowState::ReadyForOwnerQa
+    );
+    assert_eq!(
+        restored_workflow_state([set(), set()].iter()),
+        RestoredWorkflowState::ReadyForOwnerQa
+    );
+    assert_eq!(
+        restored_workflow_state([set(), clear()].iter()),
+        RestoredWorkflowState::None
+    );
+    assert_eq!(
+        restored_workflow_state([set(), clear(), set()].iter()),
+        RestoredWorkflowState::ReadyForOwnerQa
+    );
+    assert_eq!(
+        restored_workflow_state([clear(), clear()].iter()),
+        RestoredWorkflowState::None
+    );
+}
+
+#[test]
+fn unsupported_workflow_state_fails_closed_until_a_later_supported_record() -> Result<()> {
+    let unsupported_version = RolloutItem::WorkflowState(WorkflowStateItem {
+        schema_version: WORKFLOW_STATE_SCHEMA_VERSION + 1,
+        operation: WorkflowStateOperation::Clear,
+        source_turn_id: None,
+    });
+    let unsupported_operation: RolloutItem = serde_json::from_value(serde_json::json!({
+        "type": "codex_dd_workflow_state",
+        "payload": {"schema_version": 1, "operation": "future_operation"}
+    }))?;
+
+    assert_eq!(
+        restored_workflow_state([unsupported_version].iter()),
+        RestoredWorkflowState::Unsupported
+    );
+    assert_eq!(
+        restored_workflow_state(
+            [
+                unsupported_operation,
+                RolloutItem::WorkflowState(WorkflowStateItem::clear())
+            ]
+            .iter()
+        ),
+        RestoredWorkflowState::None
+    );
+    Ok(())
+}
+
+#[test]
 fn response_item_envelope_accessors_preserve_item() {
     let expected_item = ResponseItem::Message {
         id: None,

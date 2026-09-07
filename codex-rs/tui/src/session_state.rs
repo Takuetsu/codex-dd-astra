@@ -5,6 +5,8 @@
 
 use std::path::PathBuf;
 
+use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
 use codex_app_server_protocol::AskForApproval;
 use codex_protocol::ThreadId;
 use codex_protocol::config_types::CollaborationMode;
@@ -55,9 +57,24 @@ pub(crate) struct ThreadSessionState {
     pub(crate) message_history: Option<MessageHistoryMetadata>,
     pub(crate) network_proxy: Option<SessionNetworkProxyRuntime>,
     pub(crate) rollout_path: Option<PathBuf>,
+    /// Process-local adaptive controller state owned by this thread.
+    pub(crate) adaptive_effort: AdaptiveEffortState,
 }
 
 impl ThreadSessionState {
+    /// Copies adaptive state exactly once from the immediate typed fork parent.
+    pub(crate) fn inherit_adaptive_effort_from(&mut self, parent: &Self) {
+        if self.forked_from_id == Some(parent.thread_id)
+            && self.adaptive_effort == AdaptiveEffortState::default()
+        {
+            self.adaptive_effort = parent.adaptive_effort.clone();
+            self.adaptive_effort.pending_signal = None;
+            self.adaptive_effort.pending_attempt = None;
+            self.adaptive_effort.successor_admission = None;
+            self.adaptive_effort.evidence_registry = Default::default();
+        }
+    }
+
     pub(crate) fn set_cwd_retargeting_implicit_runtime_workspace_root(
         &mut self,
         cwd: AbsolutePathBuf,
@@ -75,4 +92,40 @@ impl ThreadSessionState {
             }
         }
     }
+}
+
+pub(crate) async fn restore_persisted_workflow_state(
+    rollout_path: Option<&std::path::Path>,
+    thread_id: ThreadId,
+    adaptive_effort: &mut AdaptiveEffortState,
+) -> Result<(), String> {
+    let Some(rollout_path) = rollout_path else {
+        return Ok(());
+    };
+    let (items, rollout_thread_id, _) =
+        codex_rollout::RolloutRecorder::load_rollout_items(rollout_path)
+            .await
+            .map_err(|err| format!("failed to restore workflow state: {err}"))?;
+    if rollout_thread_id != Some(thread_id) {
+        return Err(format!(
+            "workflow state rollout belongs to {rollout_thread_id:?}, not {thread_id}"
+        ));
+    }
+    match codex_history::restored_workflow_state(items.iter()) {
+        codex_history::RestoredWorkflowState::None => {}
+        codex_history::RestoredWorkflowState::ReadyForOwnerQa => {
+            adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
+            adaptive_effort.pending_attempt = None;
+            adaptive_effort.pending_signal = None;
+            adaptive_effort.successor_admission = None;
+        }
+        codex_history::RestoredWorkflowState::Unsupported => {
+            adaptive_effort.enabled = false;
+            adaptive_effort.paused_by_user = true;
+            adaptive_effort.pending_attempt = None;
+            adaptive_effort.pending_signal = None;
+            adaptive_effort.successor_admission = None;
+        }
+    }
+    Ok(())
 }

@@ -511,6 +511,24 @@ pub struct TurnCompletedNotification {
     pub turn: Turn,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct AdaptiveRuntimeSignalEnvelope {
+    pub source_turn_id: String,
+    pub signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind,
+    pub evidence_refs: Vec<String>,
+    pub diagnostic_note: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct AdaptiveRuntimeSignalNotification {
+    pub thread_id: String,
+    pub signal: AdaptiveRuntimeSignalEnvelope,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]

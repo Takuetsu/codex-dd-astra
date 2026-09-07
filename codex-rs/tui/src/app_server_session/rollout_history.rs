@@ -57,6 +57,7 @@ impl AppServerSession {
             thread.reasoning_effort,
             config.personality,
             local_settings,
+            super::WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .map_err(color_eyre::eyre::Report::msg)?;
@@ -97,6 +98,41 @@ impl AppServerSession {
         config: Config,
         thread_id: ThreadId,
         model_settings: ResumeModelSettings,
+    ) -> Result<AppServerStartedThread> {
+        self.resume_thread_with_worker_binding(
+            local_settings,
+            config,
+            thread_id,
+            model_settings,
+            ResumeWorkerBinding::Unbound,
+        )
+        .await
+    }
+
+    pub(crate) async fn resume_initial_thread(
+        &mut self,
+        local_settings: &crate::local_settings::LocalSettings,
+        config: Config,
+        thread_id: ThreadId,
+        model_settings: ResumeModelSettings,
+    ) -> Result<AppServerStartedThread> {
+        self.resume_thread_with_worker_binding(
+            local_settings,
+            config,
+            thread_id,
+            model_settings,
+            ResumeWorkerBinding::Startup,
+        )
+        .await
+    }
+
+    async fn resume_thread_with_worker_binding(
+        &mut self,
+        local_settings: &crate::local_settings::LocalSettings,
+        config: Config,
+        thread_id: ThreadId,
+        model_settings: ResumeModelSettings,
+        worker_binding: ResumeWorkerBinding,
     ) -> Result<AppServerStartedThread> {
         let session_config = if matches!(
             model_settings,
@@ -193,6 +229,11 @@ impl AppServerSession {
             self.thread_params_mode(),
         )
         .await?;
+        if worker_binding == ResumeWorkerBinding::Startup
+            && let Some(binding) = config.adaptive_worker.clone()
+        {
+            started.session.adaptive_effort.worker_context = binding.into();
+        }
         started.session.fork_parent_title = fork_parent_title;
         if self.task_tools_available(thread_id) {
             self.remember_task_tool_thread(thread_id);
@@ -200,6 +241,12 @@ impl AppServerSession {
         }
         Ok(started)
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ResumeWorkerBinding {
+    Unbound,
+    Startup,
 }
 
 #[cfg(test)]

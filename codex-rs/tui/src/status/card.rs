@@ -132,6 +132,7 @@ struct StatusHistoryCell {
     directory: PathBuf,
     permissions: String,
     agents_summary: Arc<RwLock<String>>,
+    adaptive_effort: Option<String>,
     collaboration_mode: Option<String>,
     model_provider: Option<String>,
     remote_connection: Option<RemoteConnectionStatus>,
@@ -217,6 +218,7 @@ pub(crate) fn new_status_output_with_rate_limits(
         collaboration_mode,
         reasoning_effort_override,
         "<none>".to_string(),
+        None,
         refreshing_rate_limits,
     )
     .0
@@ -241,6 +243,7 @@ pub(crate) fn new_status_output_with_rate_limits_handle(
     collaboration_mode: Option<&str>,
     reasoning_effort_override: Option<Option<ReasoningEffort>>,
     agents_summary: String,
+    adaptive_effort: Option<String>,
     refreshing_rate_limits: bool,
 ) -> (CompositeHistoryCell, StatusHistoryHandle) {
     let command = PlainHistoryCell::new(vec!["/status".magenta().into()]);
@@ -262,6 +265,7 @@ pub(crate) fn new_status_output_with_rate_limits_handle(
         collaboration_mode,
         reasoning_effort_override,
         agents_summary,
+        adaptive_effort,
         refreshing_rate_limits,
     ));
     let handle = StatusHistoryHandle {
@@ -294,6 +298,7 @@ impl StatusHistoryCell {
         collaboration_mode: Option<&str>,
         reasoning_effort_override: Option<Option<ReasoningEffort>>,
         agents_summary: String,
+        adaptive_effort: Option<String>,
         refreshing_rate_limits: bool,
     ) -> Self {
         let approval_policy = AskForApproval::from(config.permissions.approval_policy.value());
@@ -402,6 +407,7 @@ impl StatusHistoryCell {
             forked_from,
             token_usage,
             agents_summary,
+            adaptive_effort,
             rate_limit_state,
             thread_usage,
         }
@@ -863,6 +869,15 @@ impl StatusHistoryCell {
         lines.push(formatter.line("Directory", vec![Span::from(directory_value)]));
         lines.push(formatter.line("Permissions", vec![Span::from(self.permissions.clone())]));
         lines.push(formatter.line("Agents.md", vec![Span::from(agents_summary)]));
+
+        if let Some(adaptive_effort) = self.adaptive_effort.as_ref() {
+            lines.push(Line::from(Vec::<Span<'static>>::new()));
+            lines.extend(
+                adaptive_effort
+                    .lines()
+                    .map(|line| Line::from(line.to_string())),
+            );
+        }
 
         if let Some(account_value) = account_value {
             lines.push(formatter.line("Account", vec![Span::from(account_value)]));

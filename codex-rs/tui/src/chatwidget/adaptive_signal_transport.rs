@@ -1,0 +1,87 @@
+//! Inert receipt and per-thread lifecycle for private adaptive runtime signals.
+
+use super::*;
+use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
+use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
+
+impl ChatWidget {
+    pub(super) fn handle_adaptive_runtime_signal(
+        &mut self,
+        mut notification: AdaptiveRuntimeSignalNotification,
+    ) {
+        let Ok(thread_id) = ThreadId::from_string(&notification.thread_id) else {
+            return;
+        };
+        let source_turn_id = notification.signal.source_turn_id.as_str();
+        notification.signal.evidence_refs.sort();
+        notification.signal.evidence_refs.dedup();
+        if self.thread_id != Some(thread_id)
+            || !self.turn_lifecycle.agent_turn_running
+            || self.turn_lifecycle.last_turn_id.as_deref() != Some(source_turn_id)
+            || !self.adaptive_effort.enabled
+            || self.adaptive_effort.paused_by_user
+            || self.adaptive_effort.workflow_terminal.is_some()
+        {
+            return;
+        }
+
+        match self.adaptive_effort.pending_signal.as_ref() {
+            None => {
+                self.adaptive_effort.pending_signal =
+                    Some(AdaptivePendingSignal::Pending(notification.signal));
+                self.save_adaptive_effort_for_current_thread();
+            }
+            Some(AdaptivePendingSignal::Pending(existing))
+                if existing.source_turn_id == notification.signal.source_turn_id
+                    && existing.signal_kind == notification.signal.signal_kind
+                    && existing.evidence_refs == notification.signal.evidence_refs => {}
+            Some(AdaptivePendingSignal::Pending(existing))
+                if existing.source_turn_id == source_turn_id =>
+            {
+                self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Conflicted {
+                    source_turn_id: source_turn_id.to_string(),
+                });
+                self.save_adaptive_effort_for_current_thread();
+            }
+            Some(
+                AdaptivePendingSignal::Conflicted {
+                    source_turn_id: existing_turn_id,
+                }
+                | AdaptivePendingSignal::Cancelled {
+                    source_turn_id: existing_turn_id,
+                }
+                | AdaptivePendingSignal::Consumed {
+                    source_turn_id: existing_turn_id,
+                },
+            ) if existing_turn_id == source_turn_id => {}
+            Some(_) => {}
+        }
+    }
+
+    pub(super) fn clear_stale_pending_adaptive_signal(&mut self, active_turn_id: &str) {
+        if self
+            .adaptive_effort
+            .pending_signal
+            .as_ref()
+            .is_some_and(|signal| signal.source_turn_id() != active_turn_id)
+        {
+            self.adaptive_effort.pending_signal = None;
+            self.save_adaptive_effort_for_current_thread();
+        }
+    }
+
+    pub(super) fn cancel_pending_adaptive_signal_for_active_turn(&mut self) {
+        let Some(source_turn_id) = self.turn_lifecycle.last_turn_id.as_deref() else {
+            return;
+        };
+        if matches!(
+            self.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Pending(ref signal))
+                if signal.source_turn_id == source_turn_id
+        ) {
+            self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Cancelled {
+                source_turn_id: source_turn_id.to_string(),
+            });
+        }
+    }
+}

@@ -18,6 +18,17 @@ expression: sanitized
 │  Permissions:      Custom (workspace with network access, Ask for approval) │
 │  Agents.md:        <none>                                                   │
 │                                                                             │
+│ Adaptive Effort                                                             │
+│   Enabled: yes                                                              │
+│   Start: Terra                                                              │
+│   Current: Terra Low                                                        │
+│   Attempt: 1                                                                │
+│   Paused: no                                                                │
+│   Last outcome: None                                                        │
+│   Last failure: None                                                        │
+│   Worker role: Repair                                                       │
+│   Workflow terminal: REPAIR_REQUIRED                                        │
+│                                                                             │
 │  Token usage:      750 total  (500 input + 250 output)                      │
 │  Context window:   100% left (750 used / 272K)                              │
 │  Limits:           data not available yet                                   │

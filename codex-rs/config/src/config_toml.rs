@@ -149,12 +149,33 @@ pub struct OrchestratorFeatureToml {
     pub enabled: Option<bool>,
 }
 
+/// Externally assigned role for the initial adaptive Worker created by a TUI startup.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AdaptiveWorkerRoleToml {
+    Unspecified,
+    Implementation,
+    Validation,
+    Repair,
+}
+
+/// Immutable governance context bound to the initial Worker by its launcher.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+pub struct AdaptiveWorkerConfigToml {
+    pub role: AdaptiveWorkerRoleToml,
+    pub authorized_scope: Option<String>,
+}
+
 /// Base config deserialized from ~/.codex/config.toml.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct ConfigToml {
     /// Optional override of model selection.
     pub model: Option<String>,
+
+    /// Startup-only external authority for the initial adaptive Worker.
+    pub adaptive_worker: Option<AdaptiveWorkerConfigToml>,
     /// Review model override used by the `/review` feature.
     pub review_model: Option<String>,
 

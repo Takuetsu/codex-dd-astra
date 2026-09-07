@@ -1,4 +1,5 @@
 use super::App;
+use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
 use crate::session_state::ThreadSessionState;
 use codex_app_server_protocol::AskForApproval;
 use codex_app_server_protocol::Thread;
@@ -7,6 +8,26 @@ use codex_protocol::models::ActivePermissionProfile;
 use codex_protocol::models::PermissionProfile;
 
 impl App {
+    pub(super) async fn sync_active_thread_adaptive_effort_to_cached_session(
+        &mut self,
+        adaptive_effort: AdaptiveEffortState,
+    ) {
+        let Some(active_thread_id) = self.active_thread_id else {
+            return;
+        };
+        if self.primary_thread_id == Some(active_thread_id)
+            && let Some(session) = self.primary_session_configured.as_mut()
+        {
+            session.adaptive_effort = adaptive_effort.clone();
+        }
+        if let Some(channel) = self.thread_event_channels.get(&active_thread_id) {
+            let mut store = channel.store.lock().await;
+            if let Some(session) = store.session.as_mut() {
+                session.adaptive_effort = adaptive_effort;
+            }
+        }
+    }
+
     pub(super) async fn sync_active_thread_service_tier_to_cached_session(&mut self) {
         let Some(active_thread_id) = self.active_thread_id else {
             return;
@@ -83,6 +104,7 @@ impl App {
                 // thread-scoped state from the currently active session.
                 session.collaboration_mode = None;
                 session.personality = None;
+                session.adaptive_effort = AdaptiveEffortState::default();
             }
             session
         } else {
@@ -109,6 +131,7 @@ impl App {
                 message_history: None,
                 network_proxy: None,
                 rollout_path: thread.path.clone(),
+                adaptive_effort: AdaptiveEffortState::default(),
             }
         };
         session.thread_id = thread_id;
@@ -119,6 +142,20 @@ impl App {
         session.active_permission_profile = active_permission_profile;
         session.instruction_source_paths = Vec::new();
         session.rollout_path = thread.path.clone();
+        if let Err(err) = crate::session_state::restore_persisted_workflow_state(
+            session.rollout_path.as_deref(),
+            thread_id,
+            &mut session.adaptive_effort,
+        )
+        .await
+        {
+            tracing::warn!(%err, %thread_id, "failed to restore persisted workflow state");
+            session.adaptive_effort.enabled = false;
+            session.adaptive_effort.paused_by_user = true;
+            session.adaptive_effort.pending_attempt = None;
+            session.adaptive_effort.pending_signal = None;
+            session.adaptive_effort.successor_admission = None;
+        }
         if let Some(model) = &thread.model {
             session.model = model.clone();
         } else if thread.path.is_some() {
@@ -189,6 +226,7 @@ mod tests {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
+            adaptive_effort: Default::default(),
         }
     }
 
@@ -404,6 +442,14 @@ mod tests {
             ThreadId::from_string("00000000-0000-0000-0000-000000000405").expect("valid thread");
         let primary_session = ThreadSessionState {
             permission_profile: PermissionProfile::workspace_write(),
+            adaptive_effort: AdaptiveEffortState {
+                enabled: true,
+                worker_context: crate::adaptive_worker::AdaptiveWorkerContext {
+                    role: crate::adaptive_worker::AdaptiveWorkerRole::Validation,
+                    authorized_scope: Some("primary-only".to_string()),
+                },
+                ..Default::default()
+            },
             ..test_thread_session(primary_thread_id, test_path_buf("/tmp/primary"))
         };
         let read_thread = Thread {
@@ -454,6 +500,7 @@ mod tests {
             .permissions
             .permission_profile()
             .clone();
+        assert_eq!(session.adaptive_effort, AdaptiveEffortState::default());
         assert_eq!(session.permission_profile, expected_permission_profile);
         assert_ne!(
             session.permission_profile,

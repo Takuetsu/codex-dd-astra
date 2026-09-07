@@ -844,6 +844,12 @@ client_request_definitions! {
         serialization: thread_id(params.thread_id),
         response: v2::ThreadInjectItemsResponse,
     },
+    /// Persist a codex-dd workflow-terminal mutation without creating model-visible history.
+    ThreadWorkflowStateUpdate => "thread/workflowState/update" {
+        params: v2::ThreadWorkflowStateUpdateParams,
+        serialization: thread_id(params.thread_id),
+        response: v2::ThreadWorkflowStateUpdateResponse,
+    },
     SkillsList => "skills/list" {
         params: v2::SkillsListParams,
         serialization: global_shared_read("config"),
@@ -1904,6 +1910,8 @@ server_notification_definitions! {
     ThreadSettingsUpdated => "thread/settings/updated" (v2::ThreadSettingsUpdatedNotification),
     ThreadTokenUsageUpdated => "thread/tokenUsage/updated" (v2::ThreadTokenUsageUpdatedNotification),
     TurnStarted => "turn/started" (v2::TurnStartedNotification),
+    #[experimental("turn/adaptiveRuntimeSignal")]
+    AdaptiveRuntimeSignal => "turn/adaptiveRuntimeSignal" (v2::AdaptiveRuntimeSignalNotification),
     HookStarted => "hook/started" (v2::HookStartedNotification),
     TurnCompleted => "turn/completed" (v2::TurnCompletedNotification),
     HookCompleted => "hook/completed" (v2::HookCompletedNotification),

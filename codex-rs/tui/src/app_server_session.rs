@@ -119,6 +119,9 @@ use codex_app_server_protocol::ThreadUnarchiveParams;
 use codex_app_server_protocol::ThreadUnarchiveResponse;
 use codex_app_server_protocol::ThreadUnsubscribeParams;
 use codex_app_server_protocol::ThreadUnsubscribeResponse;
+use codex_app_server_protocol::ThreadWorkflowStateOperation;
+use codex_app_server_protocol::ThreadWorkflowStateUpdateParams;
+use codex_app_server_protocol::ThreadWorkflowStateUpdateResponse;
 use codex_app_server_protocol::Turn;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
@@ -542,7 +545,7 @@ impl AppServerSession {
     }
 
     pub(crate) fn codex_home_path(
-        &self,
+        &mut self,
         local_codex_home: &AbsolutePathBuf,
     ) -> Option<AppServerPath> {
         self.client.codex_home(local_codex_home)
@@ -832,6 +835,7 @@ impl AppServerSession {
             local_settings,
             config,
             self.thread_params_mode(),
+            /*bind_startup_worker*/ false,
         )
         .await?;
         started.task_tools_available = task_tools_available;
@@ -1302,6 +1306,26 @@ impl AppServerSession {
             .wrap_err("thread/inject_items failed during TUI side conversation setup")
     }
 
+    pub(crate) async fn thread_workflow_state_update(
+        &mut self,
+        thread_id: ThreadId,
+        operation: ThreadWorkflowStateOperation,
+        source_turn_id: Option<String>,
+    ) -> Result<ThreadWorkflowStateUpdateResponse> {
+        let request_id = self.next_request_id();
+        self.client
+            .request_typed(ClientRequest::ThreadWorkflowStateUpdate {
+                request_id,
+                params: ThreadWorkflowStateUpdateParams {
+                    thread_id: thread_id.to_string(),
+                    operation,
+                    source_turn_id,
+                },
+            })
+            .await
+            .wrap_err("thread/workflowState/update failed")
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn turn_start(
         &mut self,
@@ -1718,9 +1742,14 @@ pub(crate) async fn start_thread_with_request_handle(
             .map_err(|err| {
                 bootstrap_request_error("thread/start failed during TUI bootstrap", err)
             })?;
-    let mut started =
-        started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
-            .await?;
+    let mut started = started_thread_from_start_response(
+        response,
+        local_settings,
+        &config,
+        thread_params_mode,
+        /*bind_startup_worker*/ true,
+    )
+    .await?;
     started.task_tools_available = task_tools_available;
     Ok(started)
 }
@@ -2176,9 +2205,10 @@ async fn started_thread_from_start_response(
     local_settings: &LocalSettings,
     config: &Config,
     thread_params_mode: ThreadParamsMode,
+    bind_startup_worker: bool,
 ) -> Result<AppServerStartedThread> {
     let blocks_direct_input = thread_blocks_direct_input(&response.thread);
-    let session = thread_session_state_from_thread_start_response(
+    let mut session = thread_session_state_from_thread_start_response(
         &response,
         local_settings,
         config,
@@ -2186,6 +2216,9 @@ async fn started_thread_from_start_response(
     )
     .await
     .map_err(color_eyre::eyre::Report::msg)?;
+    if bind_startup_worker && let Some(binding) = config.adaptive_worker.clone() {
+        session.adaptive_effort.worker_context = binding.into();
+    }
     Ok(AppServerStartedThread {
         session,
         turns: response.thread.turns,
@@ -2270,6 +2303,7 @@ async fn thread_session_state_from_thread_start_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
+        WorkflowStateRestoreMode::FreshThread,
     )
     .await
 }
@@ -2313,6 +2347,7 @@ async fn thread_session_state_from_thread_resume_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
+        WorkflowStateRestoreMode::ExistingThread,
     )
     .await
 }
@@ -2347,6 +2382,7 @@ async fn thread_session_state_from_thread_fork_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
+        WorkflowStateRestoreMode::FreshThread,
     )
     .await
 }
@@ -2376,6 +2412,12 @@ fn display_permission_profile_from_thread_response(
     }
 }
 
+#[derive(Clone, Copy)]
+enum WorkflowStateRestoreMode {
+    FreshThread,
+    ExistingThread,
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "session mapping keeps explicit fields"
@@ -2398,6 +2440,7 @@ async fn thread_session_state_from_thread_response(
     reasoning_effort: Option<codex_protocol::openai_models::ReasoningEffort>,
     personality: Option<codex_protocol::config_types::Personality>,
     local_settings: &LocalSettings,
+    workflow_state_restore_mode: WorkflowStateRestoreMode,
 ) -> Result<ThreadSessionState, String> {
     let thread_id = ThreadId::from_string(thread_id)
         .map_err(|err| format!("thread id `{thread_id}` is invalid: {err}"))?;
@@ -2411,6 +2454,18 @@ async fn thread_session_state_from_thread_response(
         &local_settings.history,
     );
     let (log_id, entry_count) = codex_message_history::history_metadata(&history_config).await;
+    let mut adaptive_effort = Default::default();
+    if matches!(
+        workflow_state_restore_mode,
+        WorkflowStateRestoreMode::ExistingThread
+    ) {
+        crate::session_state::restore_persisted_workflow_state(
+            rollout_path.as_deref(),
+            thread_id,
+            &mut adaptive_effort,
+        )
+        .await?;
+    }
     Ok(ThreadSessionState {
         thread_id,
         forked_from_id,
@@ -2435,6 +2490,7 @@ async fn thread_session_state_from_thread_response(
         }),
         network_proxy: None,
         rollout_path,
+        adaptive_effort,
     })
 }
 
@@ -4011,6 +4067,72 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn fresh_thread_mapping_does_not_read_not_yet_created_rollout() {
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let config = build_config(&temp_dir).await;
+        let thread_id = ThreadId::new();
+        let missing_rollout_path = temp_dir.path().join("not-created-yet.jsonl");
+
+        let session = thread_session_state_from_thread_response(
+            &thread_id.to_string(),
+            /*forked_from_id*/ None,
+            /*thread_name*/ None,
+            Some(missing_rollout_path.clone()),
+            "gpt-5.4".to_string(),
+            "openai".to_string(),
+            /*service_tier*/ None,
+            AskForApproval::Never,
+            codex_protocol::config_types::ApprovalsReviewer::User,
+            PermissionProfile::read_only(),
+            /*active_permission_profile*/ None,
+            test_path_buf("/tmp/project").abs(),
+            Vec::new(),
+            Vec::new(),
+            /*reasoning_effort*/ None,
+            config.personality,
+            &LocalSettings::from(&config),
+            WorkflowStateRestoreMode::FreshThread,
+        )
+        .await
+        .expect("fresh session mapping must not require its rollout to exist yet");
+
+        assert_eq!(session.rollout_path, Some(missing_rollout_path));
+        assert_eq!(session.adaptive_effort, Default::default());
+    }
+
+    #[tokio::test]
+    async fn existing_thread_mapping_surfaces_missing_rollout() {
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let config = build_config(&temp_dir).await;
+        let thread_id = ThreadId::new();
+
+        let error = thread_session_state_from_thread_response(
+            &thread_id.to_string(),
+            /*forked_from_id*/ None,
+            /*thread_name*/ None,
+            Some(temp_dir.path().join("missing-existing.jsonl")),
+            "gpt-5.4".to_string(),
+            "openai".to_string(),
+            /*service_tier*/ None,
+            AskForApproval::Never,
+            codex_protocol::config_types::ApprovalsReviewer::User,
+            PermissionProfile::read_only(),
+            /*active_permission_profile*/ None,
+            test_path_buf("/tmp/project").abs(),
+            Vec::new(),
+            Vec::new(),
+            /*reasoning_effort*/ None,
+            config.personality,
+            &LocalSettings::from(&config),
+            WorkflowStateRestoreMode::ExistingThread,
+        )
+        .await
+        .expect_err("resume must surface a missing rollout");
+
+        assert!(error.contains("failed to restore workflow state"));
+    }
+
+    #[tokio::test]
     async fn session_configured_populates_history_metadata() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let config = build_config(&temp_dir).await;
@@ -4044,6 +4166,7 @@ mod tests {
             /*reasoning_effort*/ None,
             config.personality,
             &LocalSettings::from(&config),
+            WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .expect("session should map");
@@ -4080,6 +4203,7 @@ mod tests {
             /*reasoning_effort*/ None,
             config.personality,
             &LocalSettings::from(&config),
+            WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .expect("session should map");

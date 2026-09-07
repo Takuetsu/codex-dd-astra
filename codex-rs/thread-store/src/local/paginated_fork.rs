@@ -44,6 +44,24 @@ pub(super) async fn prepare(
         .ok_or_else(|| ThreadStoreError::Internal {
             message: "fork lineage has no source segment".to_string(),
         })?;
+    let (source_items, source_rollout_id, _) =
+        codex_rollout::RolloutRecorder::load_rollout_items(source_segment.rollout_path.as_path())
+            .await
+            .map_err(|err| ThreadStoreError::Internal {
+                message: format!(
+                    "failed to load workflow state from {}: {err}",
+                    source_segment.rollout_path.display()
+                ),
+            })?;
+    if source_rollout_id != Some(thread_id) {
+        return Err(ThreadStoreError::InvalidRequest {
+            message: format!(
+                "rollout at {} does not belong to thread {thread_id}",
+                source_segment.rollout_path.display()
+            ),
+        });
+    }
+    let workflow_state = codex_rollout::restored_workflow_state(source_items.iter());
     if store.state_db.is_none() {
         return Err(ThreadStoreError::Unsupported {
             operation: "prepare_fork",
@@ -80,6 +98,7 @@ pub(super) async fn prepare(
         thread_id,
         history_base,
         model_context,
+        workflow_state,
         source_reservation,
     ))
 }

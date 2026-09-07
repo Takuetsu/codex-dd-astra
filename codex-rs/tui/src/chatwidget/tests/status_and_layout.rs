@@ -4316,6 +4316,7 @@ async fn session_configured_clears_goal_status_footer() {
         message_history: None,
         network_proxy: None,
         rollout_path: Some(rollout_file.path().to_path_buf()),
+        adaptive_effort: Default::default(),
     });
 
     assert_eq!(chat.current_goal_status_indicator, None);

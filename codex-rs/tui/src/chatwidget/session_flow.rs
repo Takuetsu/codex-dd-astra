@@ -21,6 +21,7 @@ impl ChatWidget {
         self.set_skills(/*skills*/ None);
         self.session_network_proxy = session.network_proxy.clone();
         let previous_thread_id = self.thread_id;
+        self.adaptive_effort = session.adaptive_effort.clone();
         let connector_scope_changed = previous_thread_id != Some(session.thread_id)
             || self.config.cwd.as_path() != session.cwd.as_path();
         self.thread_id = Some(session.thread_id);
@@ -117,6 +118,29 @@ impl ChatWidget {
         self.bottom_pane
             .set_active_reasoning_effort_baseline(effort.as_ref());
         self.refresh_model_display();
+        if self.adaptive_effort.enabled
+            && let Some(family) = self
+                .adaptive_effort
+                .enabled
+                .then_some(self.adaptive_effort.current_family)
+                .flatten()
+            && let Some(effort) = self.adaptive_effort.current_effort
+        {
+            let model = family.model();
+            if session.model != model {
+                self.app_event_tx
+                    .send(AppEvent::UpdateModel(model.to_string()));
+            }
+            let effort = match effort {
+                crate::adaptive_policy::AdaptiveEffort::Low => ReasoningEffortConfig::Low,
+                crate::adaptive_policy::AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,
+                crate::adaptive_policy::AdaptiveEffort::High => ReasoningEffortConfig::High,
+            };
+            if session.reasoning_effort != Some(effort.clone()) {
+                self.app_event_tx
+                    .send(AppEvent::UpdateReasoningEffort(Some(effort)));
+            }
+        }
         self.refresh_status_surfaces();
         if previous_thread_id != self.thread_id
             && self.should_prefetch_rate_limits()

@@ -13,6 +13,7 @@ use super::SecurityRiskScore;
 use super::SessionMetaLine;
 use super::TokenUsageRecord;
 use super::TurnContextItem;
+use super::WorkflowStateItem;
 use super::WorldStateItem;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -53,6 +54,9 @@ pub(super) enum RolloutItemWire<'a> {
     },
     SecurityRiskScore {
         payload: Cow<'a, SecurityRiskScore>,
+    },
+    CodexDdWorkflowState {
+        payload: Cow<'a, WorkflowStateItem>,
     },
     EventMsg {
         payload: Cow<'a, EventMsg>,
@@ -100,6 +104,9 @@ impl<'a> From<&'a RolloutItem> for RolloutItemWire<'a> {
             RolloutItem::SecurityRiskScore(payload) => Self::SecurityRiskScore {
                 payload: Cow::Borrowed(payload),
             },
+            RolloutItem::WorkflowState(payload) => Self::CodexDdWorkflowState {
+                payload: Cow::Borrowed(payload),
+            },
             RolloutItem::EventMsg(payload) => Self::EventMsg {
                 payload: Cow::Borrowed(payload),
             },
@@ -139,6 +146,9 @@ impl From<RolloutItemWire<'_>> for RolloutItem {
             }
             RolloutItemWire::SecurityRiskScore { payload } => {
                 Self::SecurityRiskScore(payload.into_owned())
+            }
+            RolloutItemWire::CodexDdWorkflowState { payload } => {
+                Self::WorkflowState(payload.into_owned())
             }
             RolloutItemWire::EventMsg { payload } => Self::EventMsg(payload.into_owned()),
             RolloutItemWire::RealtimeItem { payload } => Self::RealtimeItem(payload.into_owned()),
