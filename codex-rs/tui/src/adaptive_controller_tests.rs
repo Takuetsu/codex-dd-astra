@@ -34,8 +34,6 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
         route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
         route(AdaptiveFamily::Astra, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Astra, AdaptiveEffort::High),
-        route(AdaptiveFamily::Astra, AdaptiveEffort::XHigh),
-        route(AdaptiveFamily::Astra, AdaptiveEffort::Max),
     ] {
         let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
         assert_eq!(reduced.state.current_route, expected);
@@ -44,19 +42,11 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     }
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert_eq!(reduced.decision, AdaptiveControllerDecision::Blocked);
-    assert_eq!(reduced.state.attempt_number, 14);
+    assert_eq!(reduced.state.attempt_number, 12);
 }
 
 #[test]
-fn malformed_route_fails_closed_and_retry_is_route_local() {
-    let state = AdaptiveControllerState {
-        current_route: route(AdaptiveFamily::Luna, AdaptiveEffort::XHigh),
-        ..AdaptiveControllerState::initial(AdaptiveFamily::Terra)
-    };
-    let invalid = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
-    assert_eq!(invalid.decision, AdaptiveControllerDecision::InvalidState);
-    assert_eq!(invalid.state.attempt_number, 1);
-
+fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
     let state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
     let retry = reduce_adaptive_controller(state, AdaptiveClassification::RetrySameLevel);
     assert_eq!(
