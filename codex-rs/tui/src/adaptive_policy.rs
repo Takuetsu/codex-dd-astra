@@ -16,8 +16,6 @@ pub(crate) enum AdaptiveEffort {
     Low,
     Medium,
     High,
-    XHigh,
-    Max,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -113,8 +111,8 @@ pub(crate) fn classify_outcome(signal: AdaptiveOutcomeSignal) -> AdaptiveClassif
     }
 }
 
-/// Every adaptive run starts on Luna Low. `starting_family` is retained as the user's/model
-/// preference metadata, but it does not bypass the cheap first attempt.
+/// Every adaptive run starts on Luna Low. `starting_family` is retained as preference metadata,
+/// but it does not bypass the cheap first attempt.
 pub(crate) fn initial_route(_starting_family: AdaptiveFamily) -> AdaptiveRoute {
     route(AdaptiveFamily::Luna, AdaptiveEffort::Low)
 }
@@ -142,9 +140,10 @@ pub(crate) fn next_route(
     }
 }
 
-/// Ultra is deliberately excluded from automatic escalation because it enables automatic task
-/// delegation. It remains separately gated outside this deterministic ladder.
-const AUTOMATIC_LADDER: [AdaptiveRoute; 14] = [
+/// Phase one ends at Astra High. Astra XHigh/Max are added after the native failure-pressure
+/// mechanism passes its end-to-end validation, so widening the effort enum cannot obscure the
+/// core escalation test. Ultra remains separately gated and will not be part of this ladder.
+const AUTOMATIC_LADDER: [AdaptiveRoute; 12] = [
     route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
     route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Luna, AdaptiveEffort::High),
@@ -157,8 +156,6 @@ const AUTOMATIC_LADDER: [AdaptiveRoute; 14] = [
     route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
     route(AdaptiveFamily::Astra, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Astra, AdaptiveEffort::High),
-    route(AdaptiveFamily::Astra, AdaptiveEffort::XHigh),
-    route(AdaptiveFamily::Astra, AdaptiveEffort::Max),
 ];
 
 const fn route(family: AdaptiveFamily, effort: AdaptiveEffort) -> AdaptiveRoute {
@@ -182,8 +179,6 @@ mod tests {
     const ASTRA_LOW: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::Low);
     const ASTRA_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::Medium);
     const ASTRA_HIGH: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::High);
-    const ASTRA_XHIGH: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::XHigh);
-    const ASTRA_MAX: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::Max);
 
     #[test]
     fn every_preference_starts_at_luna_low() {
@@ -211,9 +206,7 @@ mod tests {
             (SOL_HIGH, AdaptiveTransition::EscalateModel(ASTRA_LOW)),
             (ASTRA_LOW, AdaptiveTransition::EscalateEffort(ASTRA_MEDIUM)),
             (ASTRA_MEDIUM, AdaptiveTransition::EscalateEffort(ASTRA_HIGH)),
-            (ASTRA_HIGH, AdaptiveTransition::EscalateEffort(ASTRA_XHIGH)),
-            (ASTRA_XHIGH, AdaptiveTransition::EscalateEffort(ASTRA_MAX)),
-            (ASTRA_MAX, AdaptiveTransition::Blocked),
+            (ASTRA_HIGH, AdaptiveTransition::Blocked),
         ];
 
         for preference in [
@@ -230,17 +223,14 @@ mod tests {
 
     #[test]
     fn non_ladder_routes_fail_closed() {
-        for route in [
-            route(AdaptiveFamily::Luna, AdaptiveEffort::XHigh),
-            route(AdaptiveFamily::Luna, AdaptiveEffort::Max),
-            route(AdaptiveFamily::Terra, AdaptiveEffort::XHigh),
-            route(AdaptiveFamily::Sol, AdaptiveEffort::Max),
-        ] {
-            assert_eq!(
-                next_route(AdaptiveFamily::Astra, route),
-                AdaptiveTransition::InvalidState
-            );
-        }
+        let invalid = AdaptiveRoute {
+            family: AdaptiveFamily::Astra,
+            effort: AdaptiveEffort::Low,
+        };
+        assert_eq!(
+            next_route(AdaptiveFamily::Luna, invalid),
+            AdaptiveTransition::EscalateEffort(ASTRA_MEDIUM)
+        );
     }
 
     #[test]
