@@ -247,8 +247,6 @@ fn adaptive_continuation_text(permit: &AdaptiveSuccessorPermit) -> String {
         AdaptiveEffort::Low => "Low",
         AdaptiveEffort::Medium => "Medium",
         AdaptiveEffort::High => "High",
-        AdaptiveEffort::XHigh => "XHigh",
-        AdaptiveEffort::Max => "Max",
     };
     let model = permit.route.family.model();
     let attempt = permit.attempt_number;
@@ -262,7 +260,5 @@ fn reasoning_effort(effort: AdaptiveEffort) -> ReasoningEffortConfig {
         AdaptiveEffort::Low => ReasoningEffortConfig::Low,
         AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,
         AdaptiveEffort::High => ReasoningEffortConfig::High,
-        AdaptiveEffort::XHigh => ReasoningEffortConfig::XHigh,
-        AdaptiveEffort::Max => ReasoningEffortConfig::Max,
     }
 }
