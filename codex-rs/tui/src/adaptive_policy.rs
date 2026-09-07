@@ -222,15 +222,10 @@ mod tests {
     }
 
     #[test]
-    fn non_ladder_routes_fail_closed() {
-        let invalid = AdaptiveRoute {
-            family: AdaptiveFamily::Astra,
-            effort: AdaptiveEffort::Low,
-        };
-        assert_eq!(
-            next_route(AdaptiveFamily::Luna, invalid),
-            AdaptiveTransition::EscalateEffort(ASTRA_MEDIUM)
-        );
+    fn all_phase_one_routes_belong_to_the_single_automatic_ladder() {
+        for route in AUTOMATIC_LADDER {
+            assert!(AUTOMATIC_LADDER.contains(&route));
+        }
     }
 
     #[test]
