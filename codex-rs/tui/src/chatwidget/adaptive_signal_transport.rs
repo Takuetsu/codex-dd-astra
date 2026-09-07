@@ -1,8 +1,10 @@
 //! Inert receipt and per-thread lifecycle for private adaptive runtime signals.
 
 use super::*;
+use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
 use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
+use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 
 impl ChatWidget {
     pub(super) fn handle_adaptive_runtime_signal(
@@ -27,6 +29,20 @@ impl ChatWidget {
 
         match self.adaptive_effort.pending_signal.as_ref() {
             None => {
+                self.adaptive_effort.pending_signal =
+                    Some(AdaptivePendingSignal::Pending(notification.signal));
+                self.save_adaptive_effort_for_current_thread();
+            }
+            // A validated workflow terminal reported later in the same turn outranks the synthetic
+            // two-failure capability signal. This lets a worker recover after two failed tools and
+            // still finish cleanly without forcing an unnecessary escalation.
+            Some(AdaptivePendingSignal::Pending(existing))
+                if existing.source_turn_id == source_turn_id
+                    && existing.diagnostic_note.as_deref()
+                        == Some(AUTO_FAILURE_PRESSURE_DIAGNOSTIC)
+                    && existing.signal_kind == AdaptiveRuntimeSignalKind::Capability
+                    && notification.signal.signal_kind != AdaptiveRuntimeSignalKind::Capability =>
+            {
                 self.adaptive_effort.pending_signal =
                     Some(AdaptivePendingSignal::Pending(notification.signal));
                 self.save_adaptive_effort_for_current_thread();
