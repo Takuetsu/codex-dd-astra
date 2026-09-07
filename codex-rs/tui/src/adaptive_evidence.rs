@@ -9,6 +9,8 @@ use codex_app_server_protocol::McpToolCallStatus;
 use codex_app_server_protocol::ThreadItem;
 use codex_protocol::ThreadId;
 
+pub(crate) const ADAPTIVE_FAILURE_PRESSURE_THRESHOLD: usize = 2;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptiveEvidenceOutcome {
     Success,
@@ -134,6 +136,34 @@ impl AdaptiveEvidenceRegistry {
             return Err(AdaptiveEvidenceResolveError::OutcomeMismatch);
         }
         Ok(record)
+    }
+
+    pub(crate) fn failure_count_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> usize {
+        self.entries
+            .values()
+            .filter(|entry| {
+                matches!(
+                    entry,
+                    AdaptiveEvidenceEntry::Valid(record)
+                        if record.thread_id == thread_id
+                            && record.source_turn_id == source_turn_id
+                            && record.outcome == AdaptiveEvidenceOutcome::Failure
+                )
+            })
+            .count()
+    }
+
+    pub(crate) fn failure_pressure_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> usize {
+        self.failure_count_for_turn(thread_id, source_turn_id)
+            .min(ADAPTIVE_FAILURE_PRESSURE_THRESHOLD)
     }
 
     pub(crate) fn len(&self) -> usize {
