@@ -71,6 +71,8 @@ fn synchronize_admission_route(
         AdaptiveEffort::Low => ReasoningEffort::Low,
         AdaptiveEffort::Medium => ReasoningEffort::Medium,
         AdaptiveEffort::High => ReasoningEffort::High,
+        AdaptiveEffort::XHigh => ReasoningEffort::XHigh,
+        AdaptiveEffort::Max => ReasoningEffort::Max,
     }));
 }
 
@@ -116,6 +118,8 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
             AdaptiveEffort::Low => Some(ReasoningEffort::Low),
             AdaptiveEffort::Medium => Some(ReasoningEffort::Medium),
             AdaptiveEffort::High => Some(ReasoningEffort::High),
+            AdaptiveEffort::XHigh => Some(ReasoningEffort::XHigh),
+            AdaptiveEffort::Max => Some(ReasoningEffort::Max),
         };
         assert_eq!(model, route.family.model());
         assert_eq!(effort, expected_effort);

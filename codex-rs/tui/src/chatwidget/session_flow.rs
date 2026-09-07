@@ -135,6 +135,8 @@ impl ChatWidget {
                 crate::adaptive_policy::AdaptiveEffort::Low => ReasoningEffortConfig::Low,
                 crate::adaptive_policy::AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,
                 crate::adaptive_policy::AdaptiveEffort::High => ReasoningEffortConfig::High,
+                crate::adaptive_policy::AdaptiveEffort::XHigh => ReasoningEffortConfig::XHigh,
+                crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,
             };
             if session.reasoning_effort != Some(effort.clone()) {
                 self.app_event_tx

@@ -34,6 +34,8 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
         route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
         route(AdaptiveFamily::Astra, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Astra, AdaptiveEffort::High),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::XHigh),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::Max),
     ] {
         let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
         assert_eq!(reduced.state.current_route, expected);
@@ -42,7 +44,7 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     }
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert_eq!(reduced.decision, AdaptiveControllerDecision::Blocked);
-    assert_eq!(reduced.state.attempt_number, 12);
+    assert_eq!(reduced.state.attempt_number, 14);
 }
 
 #[test]
