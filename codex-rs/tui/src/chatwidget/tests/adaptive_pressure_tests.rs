@@ -178,3 +178,105 @@ async fn invalid_workflow_signal_after_pressure_does_not_suppress_escalation() {
         Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
     );
 }
+
+#[tokio::test]
+async fn conflicting_workflow_signals_before_pressure_do_not_suppress_escalation() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "conflict-before-pressure";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    for signal_kind in [
+        AdaptiveRuntimeSignalKind::ReadyForValidation,
+        AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+    ] {
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+        });
+    }
+    assert!(matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Conflicted { ref source_turn_id })
+            if source_turn_id == turn_id
+    ));
+
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
+    chat.turn_lifecycle.agent_turn_running = false;
+
+    assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert!(chat.adaptive_effort.workflow_terminal.is_none());
+}
+
+#[tokio::test]
+async fn conflicting_workflow_signals_after_pressure_do_not_suppress_escalation() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "conflict-after-pressure";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
+    for signal_kind in [
+        AdaptiveRuntimeSignalKind::ReadyForValidation,
+        AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+    ] {
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+        });
+    }
+    assert!(matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Conflicted { .. })
+    ));
+
+    chat.turn_lifecycle.agent_turn_running = false;
+    assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert!(chat.adaptive_effort.workflow_terminal.is_none());
+}
+
+#[tokio::test]
+async fn explicit_cancellation_suppresses_available_failure_pressure() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "cancelled-pressure";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
+    chat.cancel_pending_adaptive_signal_for_active_turn();
+    assert!(matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Cancelled { ref source_turn_id })
+            if source_turn_id == turn_id
+    ));
+
+    chat.turn_lifecycle.agent_turn_running = false;
+    assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+}
