@@ -71,6 +71,8 @@ fn synchronize_admission_route(
         AdaptiveEffort::Low => ReasoningEffort::Low,
         AdaptiveEffort::Medium => ReasoningEffort::Medium,
         AdaptiveEffort::High => ReasoningEffort::High,
+        AdaptiveEffort::XHigh => ReasoningEffort::XHigh,
+        AdaptiveEffort::Max => ReasoningEffort::Max,
     }));
 }
 
@@ -116,6 +118,8 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
             AdaptiveEffort::Low => Some(ReasoningEffort::Low),
             AdaptiveEffort::Medium => Some(ReasoningEffort::Medium),
             AdaptiveEffort::High => Some(ReasoningEffort::High),
+            AdaptiveEffort::XHigh => Some(ReasoningEffort::XHigh),
+            AdaptiveEffort::Max => Some(ReasoningEffort::Max),
         };
         assert_eq!(model, route.family.model());
         assert_eq!(effort, expected_effort);
@@ -794,7 +798,7 @@ async fn typed_failures_outrank_pending_capability_without_extra_escalation() {
         );
         assert_eq!(
             chat.adaptive_effort.current_family,
-            Some(AdaptiveFamily::Terra)
+            Some(AdaptiveFamily::Luna)
         );
         assert_eq!(
             chat.adaptive_effort.current_effort,
@@ -855,7 +859,7 @@ async fn capability_is_consumed_only_at_terminal_and_advances_one_existing_ladde
 
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Terra)
+        Some(AdaptiveFamily::Luna)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
@@ -1268,7 +1272,7 @@ async fn live_bridge_is_idempotent_and_prepares_same_route_retry_without_churn()
     assert!(chat.adaptive_effort.transient_retry_consumed);
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Terra)
+        Some(AdaptiveFamily::Luna)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
@@ -1299,7 +1303,7 @@ async fn injected_capability_applies_native_effort_then_model_routes_once() {
     chat.handle_thread_session(adaptive_test_session(
         ThreadId::new(),
         /*forked_from_id*/ None,
-        "gpt-5.6-terra",
+        "gpt-5.6-luna",
         Some(ReasoningEffort::Low),
     ));
     chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
@@ -1343,7 +1347,7 @@ async fn injected_capability_applies_native_effort_then_model_routes_once() {
     assert_eq!(chat.adaptive_effort.attempt_number, 3);
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Sol)
+        Some(AdaptiveFamily::Terra)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
@@ -1353,7 +1357,7 @@ async fn injected_capability_applies_native_effort_then_model_routes_once() {
     assert!(
         events
             .iter()
-            .any(|event| matches!(event, AppEvent::UpdateModel(model) if model == "gpt-5.6-sol"))
+            .any(|event| matches!(event, AppEvent::UpdateModel(model) if model == "gpt-5.6-terra"))
     );
     assert!(events.iter().any(|event| matches!(
         event,
@@ -1440,33 +1444,42 @@ async fn enable_family(
 
 #[tokio::test]
 async fn adaptive_families_initialize_state_and_sync_model_and_effort() {
-    for (family, model) in [
-        ("luna", "gpt-5.6-luna"),
-        ("terra", "gpt-5.6-terra"),
-        ("sol", "gpt-5.6-sol"),
+    for (family, preference) in [
+        ("luna", AdaptiveFamily::Luna),
+        ("terra", AdaptiveFamily::Terra),
+        ("sol", AdaptiveFamily::Sol),
+        ("astra", AdaptiveFamily::Astra),
     ] {
         let (mut chat, mut rx) = enable_family(family).await;
         assert!(chat.adaptive_effort.enabled);
         assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert_eq!(chat.adaptive_effort.starting_family, Some(preference));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
         assert_eq!(
             chat.adaptive_effort.current_effort,
             Some(crate::adaptive_policy::AdaptiveEffort::Low)
         );
+
         let model_event = next_non_adaptive_state_event(&mut rx);
         match model_event {
             Ok(AppEvent::UpdateModel(value)) => {
-                assert_eq!(value, model);
+                assert_eq!(value, "gpt-5.6-luna");
                 chat.set_model(&value);
             }
             other => panic!("expected model update, got {other:?}"),
         }
+
         match rx.try_recv() {
             Ok(AppEvent::UpdateReasoningEffort(Some(ReasoningEffort::Low))) => {
                 chat.set_reasoning_effort(Some(ReasoningEffort::Low));
             }
             other => panic!("expected low reasoning update, got {other:?}"),
         }
-        assert_eq!(chat.current_model(), model);
+
+        assert_eq!(chat.current_model(), "gpt-5.6-luna");
         assert_eq!(chat.current_reasoning_effort(), Some(ReasoningEffort::Low));
     }
 }
@@ -1507,7 +1520,8 @@ async fn adaptive_controls_render_without_submitting_a_turn() {
         Ok(AppEvent::InsertHistoryCell(cell)) => lines_to_single_string(&cell.display_lines(100)),
         other => panic!("expected adaptive status output, got {other:?}"),
     };
-    assert!(status.contains("Terra Low"));
+    assert!(status.contains("Preference: Terra"));
+    assert!(status.contains("Current: Luna Low"));
     assert_eq!(chat.thread_id, Some(thread_id));
 
     chat.dispatch_command_with_args(SlashCommand::Adaptive, "pause".to_string(), Vec::new());
@@ -1654,7 +1668,8 @@ async fn descended_thread_inherits_paused_adaptive_effort_and_restores_settings(
         Ok(AppEvent::InsertHistoryCell(cell)) => lines_to_single_string(&cell.display_lines(100)),
         other => panic!("expected inherited status output, got {other:?}"),
     };
-    assert!(status.contains("Terra Low"));
+    assert!(status.contains("Preference: Terra"));
+    assert!(status.contains("Current: Terra Low"));
     assert!(status.contains("Attempt: 1"));
     assert!(status.contains("Paused: yes"));
     assert!(status.contains("Last outcome: USER_INTERRUPTED"));

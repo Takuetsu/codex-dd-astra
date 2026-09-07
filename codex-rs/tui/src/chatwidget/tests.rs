@@ -232,6 +232,8 @@ fn next_goal_draft(
 
 #[path = "tests/adaptive_effort_tests.rs"]
 mod adaptive_effort_tests;
+#[path = "tests/adaptive_pressure_tests.rs"]
+mod adaptive_pressure_tests;
 mod app_server;
 mod approval_requests;
 #[path = "tests/backend_banners_tests.rs"]

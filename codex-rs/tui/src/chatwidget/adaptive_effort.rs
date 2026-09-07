@@ -1,4 +1,5 @@
 use super::*;
+use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
 pub(crate) use crate::adaptive_policy::AdaptiveEffort;
 pub(crate) use crate::adaptive_policy::AdaptiveFailureKind;
@@ -87,14 +88,17 @@ impl AdaptiveFamily {
             "luna" => Some(Self::Luna),
             "terra" => Some(Self::Terra),
             "sol" => Some(Self::Sol),
+            "astra" => Some(Self::Astra),
             _ => None,
         }
     }
+
     pub(super) fn model(self) -> &'static str {
         match self {
             Self::Luna => "gpt-5.6-luna",
             Self::Terra => "gpt-5.6-terra",
             Self::Sol => "gpt-5.6-sol",
+            Self::Astra => "gpt-6-astra",
         }
     }
 }
@@ -157,14 +161,14 @@ impl ChatWidget {
                 });
             }
             family => match AdaptiveFamily::parse(family) {
-                Some(family) => {
+                Some(preferred_family) => {
                     let worker_context = self.adaptive_effort.worker_context.clone();
                     let workflow_terminal = self.adaptive_effort.workflow_terminal;
                     let evidence_registry = self.adaptive_effort.evidence_registry.clone();
                     self.adaptive_effort = AdaptiveEffortState {
                         enabled: true,
-                        starting_family: Some(family),
-                        current_family: Some(family),
+                        starting_family: Some(preferred_family),
+                        current_family: Some(AdaptiveFamily::Luna),
                         current_effort: Some(AdaptiveEffort::Low),
                         attempt_number: 1,
                         paused_by_user: false,
@@ -180,15 +184,17 @@ impl ChatWidget {
                         evidence_registry,
                     };
                     self.save_adaptive_effort_for_current_thread();
-                    self.app_event_tx
-                        .send(AppEvent::UpdateModel(family.model().to_string()));
+                    self.app_event_tx.send(AppEvent::UpdateModel(
+                        AdaptiveFamily::Luna.model().to_string(),
+                    ));
                     self.app_event_tx.send(AppEvent::UpdateReasoningEffort(Some(
                         codex_protocol::openai_models::ReasoningEffort::Low,
                     )));
                     self.add_adaptive_status_output();
                 }
                 None => self.add_error_message(
-                    "Usage: /adaptive [luna|terra|sol|status|pause|resume|off|reset]".to_string(),
+                    "Usage: /adaptive [luna|terra|sol|astra|status|pause|resume|off|reset]"
+                        .to_string(),
                 ),
             },
         }
@@ -245,12 +251,15 @@ impl ChatWidget {
             Some(AdaptiveFamily::Luna) => "Luna",
             Some(AdaptiveFamily::Terra) => "Terra",
             Some(AdaptiveFamily::Sol) => "Sol",
+            Some(AdaptiveFamily::Astra) => "Astra",
             None => "-",
         };
         let effort = match state.current_effort {
             Some(AdaptiveEffort::Low) => "Low",
             Some(AdaptiveEffort::Medium) => "Medium",
             Some(AdaptiveEffort::High) => "High",
+            Some(AdaptiveEffort::XHigh) => "XHigh",
+            Some(AdaptiveEffort::Max) => "Max",
             None => "-",
         };
         let outcome = match state.last_outcome {
@@ -288,13 +297,24 @@ impl ChatWidget {
             Some(AdaptiveWorkflowTerminal::Blocked) => "BLOCKED",
             None => "None",
         };
+        let failure_pressure = match (
+            self.thread_id,
+            self.turn_lifecycle.last_turn_id.as_deref(),
+        ) {
+            (Some(thread_id), Some(source_turn_id)) => state
+                .evidence_registry
+                .failure_pressure_for_turn(thread_id, source_turn_id),
+            _ => 0,
+        };
         format!(
-            "Adaptive Effort\n  Enabled: {}\n  Start: {}\n  Current: {} {}\n  Attempt: {}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
             family(state.current_family),
             effort,
             state.attempt_number,
+            failure_pressure,
+            ADAPTIVE_FAILURE_PRESSURE_THRESHOLD,
             if state.paused_by_user { "yes" } else { "no" },
             outcome,
             failure,

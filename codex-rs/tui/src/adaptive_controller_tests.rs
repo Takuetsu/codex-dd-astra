@@ -8,18 +8,20 @@ fn route(family: AdaptiveFamily, effort: AdaptiveEffort) -> AdaptiveRoute {
 }
 
 #[test]
-fn initial_and_capability_ladders_are_exact() {
+fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     for family in [
         AdaptiveFamily::Luna,
         AdaptiveFamily::Terra,
         AdaptiveFamily::Sol,
+        AdaptiveFamily::Astra,
     ] {
         assert_eq!(
             AdaptiveControllerState::initial(family).current_route,
-            route(family, AdaptiveEffort::Low)
+            route(AdaptiveFamily::Luna, AdaptiveEffort::Low)
         );
     }
-    let mut state = AdaptiveControllerState::initial(AdaptiveFamily::Luna);
+
+    let mut state = AdaptiveControllerState::initial(AdaptiveFamily::Astra);
     for expected in [
         route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Luna, AdaptiveEffort::High),
@@ -29,6 +31,11 @@ fn initial_and_capability_ladders_are_exact() {
         route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
         route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Sol, AdaptiveEffort::High),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::Medium),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::High),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::XHigh),
+        route(AdaptiveFamily::Astra, AdaptiveEffort::Max),
     ] {
         let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
         assert_eq!(reduced.state.current_route, expected);
@@ -37,24 +44,29 @@ fn initial_and_capability_ladders_are_exact() {
     }
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert_eq!(reduced.decision, AdaptiveControllerDecision::Blocked);
-    assert_eq!(reduced.state.attempt_number, 9);
+    assert_eq!(reduced.state.attempt_number, 14);
 }
 
 #[test]
-fn malformed_route_fails_closed_and_retry_is_route_local() {
-    let state = AdaptiveControllerState {
-        current_route: route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
-        ..AdaptiveControllerState::initial(AdaptiveFamily::Terra)
-    };
-    let invalid = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
-    assert_eq!(invalid.decision, AdaptiveControllerDecision::InvalidState);
-    assert_eq!(invalid.state.attempt_number, 1);
+fn malformed_effort_route_fails_closed_without_authorizing_a_route() {
+    let mut state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
+    state.current_route = route(AdaptiveFamily::Terra, AdaptiveEffort::XHigh);
+    state.attempt_number = 6;
+    let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
+
+    assert_eq!(reduced.decision, AdaptiveControllerDecision::InvalidState);
+    assert_eq!(reduced.state.terminal, Some(AdaptiveWorkflowTerminal::Blocked));
+    assert_eq!(reduced.state.attempt_number, state.attempt_number);
+}
+
+#[test]
+fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
     let state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
     let retry = reduce_adaptive_controller(state, AdaptiveClassification::RetrySameLevel);
     assert_eq!(
         retry.decision,
         AdaptiveControllerDecision::RetrySameLevel {
-            route: state.current_route,
+            route: route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
             next_attempt: 2
         }
     );
@@ -66,7 +78,7 @@ fn malformed_route_fails_closed_and_retry_is_route_local() {
     assert_eq!(
         reduce_adaptive_controller(moved.state, AdaptiveClassification::RetrySameLevel).decision,
         AdaptiveControllerDecision::RetrySameLevel {
-            route: route(AdaptiveFamily::Terra, AdaptiveEffort::Medium),
+            route: route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
             next_attempt: 3
         }
     );
@@ -149,7 +161,7 @@ fn repair_required_never_becomes_capability_or_repair_authorization() {
 
 #[test]
 fn reduction_is_deterministic() {
-    let state = AdaptiveControllerState::initial(AdaptiveFamily::Sol);
+    let state = AdaptiveControllerState::initial(AdaptiveFamily::Astra);
     assert_eq!(
         reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible),
         reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible)
