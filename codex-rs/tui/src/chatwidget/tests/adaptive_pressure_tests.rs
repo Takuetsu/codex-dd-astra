@@ -114,3 +114,67 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
     assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
     assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
 }
+
+#[tokio::test]
+async fn invalid_workflow_signal_before_pressure_does_not_suppress_escalation() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "invalid-before-pressure";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: turn_id.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+            evidence_refs: Vec::new(),
+            diagnostic_note: None,
+        },
+    });
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
+
+    chat.turn_lifecycle.agent_turn_running = false;
+    assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_ne!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    );
+}
+
+#[tokio::test]
+async fn invalid_workflow_signal_after_pressure_does_not_suppress_escalation() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "invalid-after-pressure";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
+    chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: turn_id.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+            evidence_refs: Vec::new(),
+            diagnostic_note: None,
+        },
+    });
+
+    chat.turn_lifecycle.agent_turn_running = false;
+    assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_ne!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    );
+}

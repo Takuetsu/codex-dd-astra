@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
+use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
@@ -56,6 +57,28 @@ impl ChatWidget {
             }
         });
         if !accepted {
+            let pressure_available = self.thread_id.is_some_and(|thread_id| {
+                self.adaptive_effort.enabled
+                    && !self.adaptive_effort.paused_by_user
+                    && self.adaptive_effort.workflow_terminal.is_none()
+                    && self
+                        .adaptive_effort
+                        .evidence_registry
+                        .failure_pressure_for_turn(thread_id, source_turn_id)
+                        >= ADAPTIVE_FAILURE_PRESSURE_THRESHOLD
+            });
+            if pressure_available {
+                self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+                    source_turn_id: source_turn_id.to_string(),
+                });
+                self.apply_adaptive_terminal_signal(
+                    source_turn_id,
+                    crate::adaptive_policy::AdaptiveOutcomeSignal::Failure(
+                        crate::adaptive_policy::AdaptiveFailureKind::Capability,
+                    ),
+                );
+                return true;
+            }
             self.save_adaptive_effort_for_current_thread();
             return false;
         }

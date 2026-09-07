@@ -33,7 +33,7 @@ impl ChatWidget {
                     Some(AdaptivePendingSignal::Pending(notification.signal));
                 self.save_adaptive_effort_for_current_thread();
             }
-            // A validated workflow terminal reported later in the same turn outranks the synthetic
+            // A workflow terminal reported later in the same turn outranks the synthetic
             // two-failure capability signal. This lets a worker recover after two failed tools and
             // still finish cleanly without forcing an unnecessary escalation.
             Some(AdaptivePendingSignal::Pending(existing))

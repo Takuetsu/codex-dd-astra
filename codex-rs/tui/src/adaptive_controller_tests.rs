@@ -48,6 +48,18 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
 }
 
 #[test]
+fn malformed_effort_route_fails_closed_without_authorizing_a_route() {
+    let mut state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
+    state.current_route = route(AdaptiveFamily::Terra, AdaptiveEffort::XHigh);
+    state.attempt_number = 6;
+    let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
+
+    assert_eq!(reduced.decision, AdaptiveControllerDecision::InvalidState);
+    assert_eq!(reduced.state.terminal, Some(AdaptiveWorkflowTerminal::Blocked));
+    assert_eq!(reduced.state.attempt_number, state.attempt_number);
+}
+
+#[test]
 fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
     let state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
     let retry = reduce_adaptive_controller(state, AdaptiveClassification::RetrySameLevel);
