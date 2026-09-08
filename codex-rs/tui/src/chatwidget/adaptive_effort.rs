@@ -12,6 +12,7 @@ use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
+    BeginValidation,
     RetrySameLevel,
     EscalateEffort,
     EscalateModel,
@@ -162,7 +163,10 @@ impl ChatWidget {
             }
             family => match AdaptiveFamily::parse(family) {
                 Some(preferred_family) => {
-                    let worker_context = self.adaptive_effort.worker_context.clone();
+                    let mut worker_context = self.adaptive_effort.worker_context.clone();
+                    if worker_context.role == AdaptiveWorkerRole::Unspecified {
+                        worker_context.role = AdaptiveWorkerRole::Implementation;
+                    }
                     let workflow_terminal = self.adaptive_effort.workflow_terminal;
                     let evidence_registry = self.adaptive_effort.evidence_registry.clone();
                     self.adaptive_effort = AdaptiveEffortState {
@@ -297,10 +301,7 @@ impl ChatWidget {
             Some(AdaptiveWorkflowTerminal::Blocked) => "BLOCKED",
             None => "None",
         };
-        let failure_pressure = match (
-            self.thread_id,
-            self.turn_lifecycle.last_turn_id.as_deref(),
-        ) {
+        let failure_pressure = match (self.thread_id, self.turn_lifecycle.last_turn_id.as_deref()) {
             (Some(thread_id), Some(source_turn_id)) => state
                 .evidence_registry
                 .failure_pressure_for_turn(thread_id, source_turn_id),
