@@ -129,6 +129,7 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
                 if text.starts_with("[Adaptive continuation]")
                     && text.contains("Attempt 2")
                     && text.contains(match decision {
+                        AdaptivePendingDecision::BeginValidation => "BeginValidation",
                         AdaptivePendingDecision::RetrySameLevel => "RetrySameLevel",
                         AdaptivePendingDecision::EscalateEffort => "EscalateEffort",
                         AdaptivePendingDecision::EscalateModel => "EscalateModel",
@@ -525,6 +526,7 @@ async fn ready_for_validation_enforces_complete_role_matrix_without_handoff() {
             role,
             authorized_scope: Some("fixed-scope".to_string()),
         };
+        let transitions_to_validation = role == AdaptiveWorkerRole::Implementation;
         let before = chat.adaptive_effort.clone();
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "role-turn",
@@ -536,15 +538,39 @@ async fn ready_for_validation_enforces_complete_role_matrix_without_handoff() {
             chat.consume_adaptive_signal_at_terminal("role-turn"),
             accepted
         );
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
         assert_eq!(
-            chat.adaptive_effort.workflow_terminal,
-            accepted.then_some(AdaptiveWorkflowTerminal::ReadyForValidation)
+            chat.adaptive_effort.worker_context.role,
+            transitions_to_validation
+                .then_some(AdaptiveWorkerRole::Validation)
+                .unwrap_or(before.worker_context.role)
         );
-        assert_eq!(chat.adaptive_effort.worker_context, before.worker_context);
-        assert_eq!(chat.adaptive_effort.current_family, before.current_family);
-        assert_eq!(chat.adaptive_effort.current_effort, before.current_effort);
-        assert_eq!(chat.adaptive_effort.attempt_number, before.attempt_number);
-        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(
+            chat.adaptive_effort.worker_context.authorized_scope,
+            before.worker_context.authorized_scope
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            transitions_to_validation
+                .then_some(AdaptiveFamily::Luna)
+                .or(before.current_family)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            transitions_to_validation
+                .then_some(AdaptiveEffort::Low)
+                .or(before.current_effort)
+        );
+        assert_eq!(
+            chat.adaptive_effort.attempt_number,
+            transitions_to_validation
+                .then_some(1)
+                .unwrap_or(before.attempt_number)
+        );
+        assert_eq!(
+            chat.adaptive_effort.pending_attempt.is_some(),
+            transitions_to_validation
+        );
         assert_no_submit_op(&mut op_rx);
     }
 }

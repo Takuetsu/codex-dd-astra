@@ -4,6 +4,7 @@ use crate::adaptive_policy::AdaptiveEffort;
 use crate::adaptive_policy::AdaptiveFamily;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+use crate::chatwidget::adaptive_effort::AdaptivePendingDecision;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
@@ -14,11 +15,7 @@ use codex_app_server_protocol::ThreadItem;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 use codex_utils_absolute_path::AbsolutePathBuf;
 
-fn failed_command(
-    thread_id: ThreadId,
-    turn_id: &str,
-    item_id: &str,
-) -> ItemCompletedNotification {
+fn failed_command(thread_id: ThreadId, turn_id: &str, item_id: &str) -> ItemCompletedNotification {
     ItemCompletedNotification {
         item: ThreadItem::CommandExecution {
             id: item_id.to_string(),
@@ -49,17 +46,29 @@ async fn two_native_failures_arm_capability_and_advance_luna_low_to_medium() {
     let turn_id = "pressure-turn";
     chat.thread_id = Some(thread_id);
     chat.dispatch_adaptive_command("astra");
-    assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
     chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
     assert!(chat.adaptive_effort.pending_signal.is_none());
-    assert!(chat.adaptive_effort_status_text().contains("Failure pressure: 1/2"));
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 1/2")
+    );
 
     chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
-    assert!(chat.adaptive_effort_status_text().contains("Failure pressure: 2/2"));
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 2/2")
+    );
     assert!(matches!(
         chat.adaptive_effort.pending_signal,
         Some(AdaptivePendingSignal::Pending(ref signal))
@@ -70,7 +79,10 @@ async fn two_native_failures_arm_capability_and_advance_luna_low_to_medium() {
 
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
     assert_eq!(
         chat.adaptive_effort.current_effort,
         Some(AdaptiveEffort::Medium)
@@ -107,12 +119,86 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
     ));
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Validation
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert!(matches!(chat.adaptive_effort.pending_attempt,
+        Some(ref pending) if pending.decision == AdaptivePendingDecision::BeginValidation));
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+}
+
+#[tokio::test]
+async fn validation_failure_then_success_latches_owner_qa_terminal() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let implementation_turn = "implementation-turn";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(implementation_turn.to_string());
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: implementation_turn.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+            evidence_refs: Vec::new(),
+            diagnostic_note: None,
+        },
+    });
+    chat.turn_lifecycle.agent_turn_running = false;
+    assert!(chat.consume_adaptive_signal_at_terminal(implementation_turn));
+
+    let validation_turn = "validation-turn";
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(validation_turn.to_string());
+    chat.register_adaptive_evidence(&failed_command(
+        thread_id,
+        validation_turn,
+        "validation-failure",
+    ));
+    let mut success = failed_command(thread_id, validation_turn, "validation-success");
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut success.item
+    {
+        *status = CommandExecutionStatus::Completed;
+        *exit_code = Some(0);
+    }
+    chat.register_adaptive_evidence(&success);
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: validation_turn.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+            evidence_refs: vec!["validation-success".to_string()],
+            diagnostic_note: None,
+        },
+    });
+    chat.turn_lifecycle.agent_turn_running = false;
+
+    assert!(chat.consume_adaptive_signal_at_terminal(validation_turn));
     assert_eq!(
         chat.adaptive_effort.workflow_terminal,
-        Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
     );
-    assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 1/2")
+    );
+    assert!(!chat.maybe_submit_adaptive_successor());
 }
 
 #[tokio::test]
@@ -140,7 +226,10 @@ async fn invalid_workflow_signal_before_pressure_does_not_suppress_escalation() 
 
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
     assert_ne!(
         chat.adaptive_effort.workflow_terminal,
         Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
@@ -172,7 +261,10 @@ async fn invalid_workflow_signal_after_pressure_does_not_suppress_escalation() {
 
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
     assert_ne!(
         chat.adaptive_effort.workflow_terminal,
         Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
@@ -215,7 +307,10 @@ async fn conflicting_workflow_signals_before_pressure_do_not_suppress_escalation
     chat.turn_lifecycle.agent_turn_running = false;
 
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
     assert!(chat.adaptive_effort.workflow_terminal.is_none());
 }
 
@@ -253,7 +348,10 @@ async fn conflicting_workflow_signals_after_pressure_do_not_suppress_escalation(
 
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
     assert!(chat.adaptive_effort.workflow_terminal.is_none());
 }
 
@@ -278,5 +376,8 @@ async fn explicit_cancellation_suppresses_available_failure_pressure() {
 
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
 }

@@ -11,10 +11,57 @@ use crate::adaptive_policy::AdaptiveOutcome;
 use crate::adaptive_policy::AdaptiveOutcomeSignal;
 use crate::adaptive_policy::AdaptiveRoute;
 use crate::adaptive_policy::classify_outcome;
+use crate::chatwidget::adaptive_effort::AdaptiveFamily;
 use crate::chatwidget::adaptive_effort::AdaptivePendingAttempt;
 use crate::chatwidget::adaptive_effort::AdaptivePendingDecision;
 
 impl ChatWidget {
+    pub(super) fn begin_adaptive_validation(&mut self, source_turn_id: &str) {
+        let Some(thread_id) = self.thread_id() else {
+            return;
+        };
+        let state = &mut self.adaptive_effort;
+        if !state.enabled
+            || state.paused_by_user
+            || state.workflow_terminal.is_some()
+            || state.worker_context.role
+                != crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+            || state.last_processed_terminal_turn_id.as_deref() == Some(source_turn_id)
+        {
+            return;
+        }
+        let route = AdaptiveRoute {
+            family: AdaptiveFamily::Luna,
+            effort: AdaptiveEffort::Low,
+        };
+        state.worker_context.role = crate::adaptive_worker::AdaptiveWorkerRole::Validation;
+        state.current_family = Some(route.family);
+        state.current_effort = Some(route.effort);
+        state.attempt_number = 1;
+        state.transient_retry_consumed = false;
+        state.last_failure_kind = None;
+        state.last_outcome = None;
+        state.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
+        state.pending_signal = None;
+        state.successor_admission = None;
+        state.pending_attempt = Some(AdaptivePendingAttempt {
+            thread_id,
+            source_turn_id: source_turn_id.to_string(),
+            decision: AdaptivePendingDecision::BeginValidation,
+            route,
+            attempt_number: 1,
+            worker_context: state.worker_context.clone(),
+        });
+        self.save_adaptive_effort_for_current_thread();
+        self.apply_adaptive_route(
+            AdaptiveControllerDecision::EscalateModel {
+                from: route,
+                to: route,
+                next_attempt: 1,
+            },
+            route,
+        );
+    }
     pub(super) fn apply_adaptive_terminal_signal(
         &mut self,
         source_turn_id: &str,

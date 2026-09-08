@@ -1,8 +1,8 @@
 //! Terminal-bound validation and consumption of trusted adaptive signals.
 
 use super::*;
-use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
+use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
@@ -17,7 +17,9 @@ impl ChatWidget {
             return false;
         };
         let envelope = match pending_signal {
-            AdaptivePendingSignal::Pending(envelope) if envelope.source_turn_id == source_turn_id => {
+            AdaptivePendingSignal::Pending(envelope)
+                if envelope.source_turn_id == source_turn_id =>
+            {
                 envelope
             }
             AdaptivePendingSignal::Conflicted {
@@ -98,10 +100,9 @@ impl ChatWidget {
                     crate::adaptive_policy::AdaptiveFailureKind::Capability,
                 ),
             ),
-            AdaptiveRuntimeSignalKind::ReadyForValidation => self.latch_workflow_terminal(
-                source_turn_id,
-                AdaptiveWorkflowTerminal::ReadyForValidation,
-            ),
+            AdaptiveRuntimeSignalKind::ReadyForValidation => {
+                self.begin_adaptive_validation(source_turn_id)
+            }
             AdaptiveRuntimeSignalKind::RepairRequired => self
                 .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::RepairRequired),
             AdaptiveRuntimeSignalKind::ReadyForOwnerQa => self
