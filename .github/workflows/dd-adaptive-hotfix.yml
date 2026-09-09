@@ -1,9 +1,9 @@
 name: dd-adaptive-hotfix
 
 on:
-  push:
+  pull_request:
     branches:
-      - "dd/hotfix-premature-worker-turn"
+      - "dd/astra-policy-v2"
 
 permissions:
   contents: write
@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
+          ref: "dd/hotfix-premature-worker-turn"
           fetch-depth: 0
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
