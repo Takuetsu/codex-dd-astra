@@ -2945,6 +2945,7 @@ fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli)
     let TuiCli {
         shared,
         strict_config,
+        adaptive,
         approval_policy,
         web_search,
         no_alt_screen,
@@ -2970,6 +2971,9 @@ fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli)
     interactive.no_alt_screen |= no_alt_screen;
     if strict_config {
         interactive.strict_config = true;
+    }
+    if adaptive.is_some() {
+        interactive.adaptive = adaptive;
     }
     if let Some(prompt) = prompt {
         // Normalize CRLF/CR to LF so CLI-provided text can't leak `\r` into TUI state.

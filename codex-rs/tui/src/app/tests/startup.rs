@@ -1051,6 +1051,83 @@ async fn startup_thread_started_submits_queued_startup_input() {
 }
 
 #[tokio::test]
+async fn async_fresh_startup_applies_adaptive_preset_before_attachment() {
+    let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
+    app.pending_startup_thread_start = true;
+    app.adaptive_startup_preset = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
+    let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
+        app.chat_widget.config_ref(),
+    ))
+    .await
+    .expect("embedded app server");
+
+    app.handle_startup_thread_started(
+        &mut app_server,
+        Ok(AppServerStartedThread {
+            session: test_thread_session(ThreadId::new(), test_path_buf("/tmp/project")),
+            turns: Vec::new(),
+            blocks_direct_input: false,
+            task_tools_available: false,
+        }),
+    )
+    .await
+    .expect("startup thread should attach");
+
+    let state = &app
+        .primary_session_configured
+        .as_ref()
+        .expect("attached session")
+        .adaptive_effort;
+    assert!(state.enabled);
+    assert_eq!(
+        state.starting_family,
+        Some(crate::adaptive_policy::AdaptiveFamily::Astra)
+    );
+    assert_eq!(
+        state.current_family,
+        Some(crate::adaptive_policy::AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        state.current_effort,
+        Some(crate::adaptive_policy::AdaptiveEffort::Low)
+    );
+    assert_eq!(state.attempt_number, 1);
+    assert_eq!(
+        state.worker_context.role,
+        crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+    );
+}
+
+#[tokio::test]
+async fn async_fresh_startup_without_adaptive_preset_stays_off() {
+    let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
+    app.pending_startup_thread_start = true;
+    let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
+        app.chat_widget.config_ref(),
+    ))
+    .await
+    .expect("embedded app server");
+    app.handle_startup_thread_started(
+        &mut app_server,
+        Ok(AppServerStartedThread {
+            session: test_thread_session(ThreadId::new(), test_path_buf("/tmp/project")),
+            turns: Vec::new(),
+            blocks_direct_input: false,
+            task_tools_available: false,
+        }),
+    )
+    .await
+    .expect("startup thread should attach");
+    assert!(
+        !app.primary_session_configured
+            .as_ref()
+            .expect("attached session")
+            .adaptive_effort
+            .enabled
+    );
+}
+
+#[tokio::test]
 async fn startup_thread_started_discards_another_threads_buffered_events() {
     let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
     app.pending_startup_thread_start = true;

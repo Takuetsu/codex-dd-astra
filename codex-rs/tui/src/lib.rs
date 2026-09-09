@@ -147,10 +147,10 @@ mod daybreak;
 mod experimental_features;
 mod permission_discovery;
 mod pets;
-mod worktree_browser;
 #[cfg(test)]
 #[path = "slice5_classification_tests.rs"]
 mod slice5_classification_tests;
+mod worktree_browser;
 pub use custom_terminal::Terminal;
 mod assistant_directives;
 mod auto_review_denials;
@@ -1854,6 +1854,9 @@ async fn run_ratatui_app(
         startup_elapsed_before_app,
         startup_bootstrap,
         startup_hooks_browser,
+        cli.adaptive
+            .as_deref()
+            .and_then(crate::chatwidget::adaptive_effort::AdaptiveFamily::parse),
         startup_draft,
         managed_worktree,
     )

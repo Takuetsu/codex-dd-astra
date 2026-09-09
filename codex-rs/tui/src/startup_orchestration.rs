@@ -124,7 +124,15 @@ pub(super) async fn run_main_inner(
         load_config_or_exit(
             cli_kv_overrides.clone(),
             ConfigOverrides {
-                model: cli.model.clone(),
+                model: cli
+                    .adaptive
+                    .as_ref()
+                    .map(|_| {
+                        crate::adaptive_policy::AdaptiveFamily::Luna
+                            .model()
+                            .to_string()
+                    })
+                    .or_else(|| cli.model.clone()),
                 approval_policy,
                 sandbox_mode,
                 cwd: validation_cwd.map(AbsolutePathBuf::into_path_buf),
@@ -347,7 +355,15 @@ pub(super) async fn run_main_inner(
     let additional_dirs = cli.add_dir.clone();
 
     let mut overrides = ConfigOverrides {
-        model,
+        model: cli
+            .adaptive
+            .as_ref()
+            .map(|_| {
+                crate::adaptive_policy::AdaptiveFamily::Luna
+                    .model()
+                    .to_string()
+            })
+            .or(model),
         approval_policy,
         sandbox_mode,
         cwd: cwd_override,

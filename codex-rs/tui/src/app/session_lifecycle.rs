@@ -789,6 +789,13 @@ impl App {
             .set_queue_submissions_until_session_configured(/*queue*/ false);
         match result {
             Ok(started) => {
+                let mut started = started;
+                if let Some(family) = self.adaptive_startup_preset {
+                    started
+                        .session
+                        .adaptive_effort
+                        .activate_adaptive_startup(family);
+                }
                 let thread_id = started.session.thread_id;
                 if started.task_tools_available {
                     app_server.remember_task_tool_thread(thread_id);

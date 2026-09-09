@@ -8,6 +8,9 @@ use codex_utils_cli::SharedCliOptions;
 #[derive(Parser, Clone, Debug)]
 #[command(version)]
 pub struct Cli {
+    /// Start the session with Adaptive Effort enabled for the requested family.
+    #[arg(long = "adaptive", value_name = "FAMILY")]
+    pub adaptive: Option<String>,
     /// Optional user prompt to start the session.
     #[arg(value_name = "PROMPT", value_hint = clap::ValueHint::Other)]
     pub prompt: Option<String>,

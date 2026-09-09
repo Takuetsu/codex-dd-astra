@@ -149,6 +149,7 @@ impl App {
         startup_elapsed_before_app: Duration,
         startup_bootstrap: Option<AppServerBootstrap>,
         startup_hooks_browser: Option<HooksListEntry>,
+        adaptive_family: Option<crate::chatwidget::adaptive_effort::AdaptiveFamily>,
         mut startup_draft: StartupDraftPump,
         managed_worktree: Option<crate::ManagedTuiWorktree>,
     ) -> Result<AppExitInfo> {
@@ -444,10 +445,14 @@ impl App {
                 if let Some(history_mode) = target_session.history_mode {
                     app_server.remember_thread_history_mode(target_session.thread_id, history_mode);
                 }
-                let model_settings = config_persistence::resume_model_settings_for_overrides(
-                    &config,
-                    &harness_overrides,
-                );
+                let model_settings = if adaptive_family.is_some() {
+                    crate::app_server_session::ResumeModelSettings::OverrideFromCurrentConfig
+                } else {
+                    config_persistence::resume_model_settings_for_overrides(
+                        &config,
+                        &harness_overrides,
+                    )
+                };
                 let resumed = match startup_draft
                     .run_until(
                         tui,
@@ -724,6 +729,7 @@ See the Codex keymap documentation for supported actions and examples."
             dynamic_tool_status_updates,
             dynamic_tool_tasks: HashMap::new(),
             pending_startup_thread_start,
+            adaptive_startup_preset: adaptive_family,
             pending_open_resume_picker: false,
             pending_working_directory_change: None,
             pending_start_managed_worktree: None,
@@ -753,6 +759,13 @@ See the Codex keymap documentation for supported actions and examples."
         app.update_visible_history_rows(tui.terminal.last_known_screen_size);
         let initial_session_started_at = Instant::now();
         if let Some(started) = initial_started_thread {
+            let mut started = started;
+            if let Some(family) = adaptive_family {
+                started
+                    .session
+                    .adaptive_effort
+                    .activate_adaptive_startup(family);
+            }
             let thread_id = started.session.thread_id;
             app.chat_widget
                 .set_task_mentions_enabled(started.task_tools_available);
