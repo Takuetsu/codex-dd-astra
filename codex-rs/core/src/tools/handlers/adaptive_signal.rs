@@ -25,6 +25,7 @@ enum SignalKind {
     ReadyForValidation,
     RepairRequired,
     ReadyForOwnerQa,
+    ReadyForRepositoryHandoff,
 }
 
 #[derive(Deserialize)]
@@ -53,8 +54,12 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                     json!("ready_for_validation"),
                     json!("repair_required"),
                     json!("ready_for_owner_qa"),
+                    json!("ready_for_repository_handoff"),
                 ],
-                Some("The trusted signal fact to report.".to_string()),
+                Some(
+                    "The trusted adaptive fact to report. A green Validation/Reviewer result such as PASS - READY FOR REPOSITORY HANDOFF must use ready_for_repository_handoff (or ready_for_owner_qa); both map to the READY_FOR_OWNER_QA hard terminal."
+                        .to_string(),
+                ),
             ),
         );
         properties.insert(
@@ -62,7 +67,8 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
             JsonSchema::array(
                 JsonSchema::string(None),
                 Some(
-                    "Native completed tool/result IDs supporting a workflow terminal.".to_string(),
+                    "Native completed tool/result IDs supporting a workflow terminal. Green Validation/Reviewer completion requires successful native evidence refs; repair_required requires failing native evidence refs."
+                        .to_string(),
                 ),
             ),
         );
@@ -74,7 +80,8 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
         );
         ToolSpec::Function(ResponsesApiTool {
             name: TOOL_NAME.to_string(),
-            description: "Report a structured adaptive capability or workflow-terminal signal. Runtime validation occurs only at the current turn's terminal boundary.".to_string(),
+            description: "Report the structured adaptive outcome before ending a bound Worker turn. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
+                .to_string(),
             strict: false,
             defer_loading: None,
             parameters: JsonSchema::object(
@@ -112,7 +119,9 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                 SignalKind::Capability => AdaptiveRuntimeSignalKind::Capability,
                 SignalKind::ReadyForValidation => AdaptiveRuntimeSignalKind::ReadyForValidation,
                 SignalKind::RepairRequired => AdaptiveRuntimeSignalKind::RepairRequired,
-                SignalKind::ReadyForOwnerQa => AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+                SignalKind::ReadyForOwnerQa | SignalKind::ReadyForRepositoryHandoff => {
+                    AdaptiveRuntimeSignalKind::ReadyForOwnerQa
+                }
             };
             invocation
                 .session
