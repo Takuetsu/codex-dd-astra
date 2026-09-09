@@ -6,6 +6,8 @@ use semver::Version;
 use tempfile::tempdir;
 
 use crate::BuildInfo;
+use crate::codexdd_compact_identity_for_commit;
+use crate::codexdd_version;
 
 const BUILD_COMMIT: &str = "0123456789abcdef0123456789abcdef01234567";
 
@@ -129,5 +131,26 @@ fn build_info_serialization_preserves_build_provenance() {
         ))
         .expect("deserialize build information"),
         build_info,
+    );
+}
+
+#[test]
+fn codexdd_product_version_is_independent_of_workspace_version() {
+    assert_eq!(codexdd_version(), "0.1.0");
+}
+
+#[test]
+fn codexdd_compact_identity_preserves_dirty_marker() {
+    assert_eq!(
+        codexdd_compact_identity_for_commit(BUILD_COMMIT),
+        "0.1.0 (0123456789ab)"
+    );
+    assert_eq!(
+        codexdd_compact_identity_for_commit(&format!("{BUILD_COMMIT}-dirty")),
+        "0.1.0 (0123456789ab-dirty)"
+    );
+    assert_eq!(
+        codexdd_compact_identity_for_commit("dev"),
+        "0.1.0 (dev)"
     );
 }
