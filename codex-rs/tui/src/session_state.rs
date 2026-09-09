@@ -71,6 +71,7 @@ impl ThreadSessionState {
             self.adaptive_effort.pending_signal = None;
             self.adaptive_effort.pending_attempt = None;
             self.adaptive_effort.successor_admission = None;
+            self.adaptive_effort.unfinished_turn_pressure = 0;
             self.adaptive_effort.evidence_registry = Default::default();
         }
     }
@@ -115,6 +116,7 @@ pub(crate) async fn restore_persisted_workflow_state(
         codex_history::RestoredWorkflowState::None => {}
         codex_history::RestoredWorkflowState::ReadyForOwnerQa => {
             adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
+            adaptive_effort.unfinished_turn_pressure = 0;
             adaptive_effort.pending_attempt = None;
             adaptive_effort.pending_signal = None;
             adaptive_effort.successor_admission = None;
@@ -122,6 +124,7 @@ pub(crate) async fn restore_persisted_workflow_state(
         codex_history::RestoredWorkflowState::Unsupported => {
             adaptive_effort.enabled = false;
             adaptive_effort.paused_by_user = true;
+            adaptive_effort.unfinished_turn_pressure = 0;
             adaptive_effort.pending_attempt = None;
             adaptive_effort.pending_signal = None;
             adaptive_effort.successor_admission = None;

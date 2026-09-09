@@ -55,7 +55,10 @@ fn malformed_effort_route_fails_closed_without_authorizing_a_route() {
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
 
     assert_eq!(reduced.decision, AdaptiveControllerDecision::InvalidState);
-    assert_eq!(reduced.state.terminal, Some(AdaptiveWorkflowTerminal::Blocked));
+    assert_eq!(
+        reduced.state.terminal,
+        Some(AdaptiveWorkflowTerminal::Blocked)
+    );
     assert_eq!(reduced.state.attempt_number, state.attempt_number);
 }
 
@@ -166,4 +169,66 @@ fn reduction_is_deterministic() {
         reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible),
         reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible)
     );
+}
+
+#[test]
+fn unfinished_authorized_turn_continues_once_then_escalates_one_rung() {
+    let state = AdaptiveControllerState::initial(AdaptiveFamily::Astra);
+    let (first, pressure) = reduce_unfinished_authorized_turn(state, 0);
+    assert_eq!(pressure, 1);
+    assert_eq!(
+        first.decision,
+        AdaptiveControllerDecision::ContinueSameRoute {
+            route: route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
+            next_attempt: 2,
+        }
+    );
+    assert_eq!(first.state.current_route, state.current_route);
+    assert_eq!(first.state.attempt_number, 2);
+    assert!(!first.state.transient_retry_consumed);
+
+    let (second, pressure) = reduce_unfinished_authorized_turn(first.state, pressure);
+    assert_eq!(pressure, 0);
+    assert_eq!(
+        second.decision,
+        AdaptiveControllerDecision::EscalateEffort {
+            from: route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
+            to: route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
+            next_attempt: 3,
+        }
+    );
+    assert_eq!(
+        second.state.current_route,
+        route(AdaptiveFamily::Luna, AdaptiveEffort::Medium)
+    );
+    assert_eq!(second.state.attempt_number, 3);
+
+    let (third, pressure) = reduce_unfinished_authorized_turn(second.state, pressure);
+    assert_eq!(pressure, 1);
+    assert_eq!(
+        third.decision,
+        AdaptiveControllerDecision::ContinueSameRoute {
+            route: route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
+            next_attempt: 4,
+        }
+    );
+}
+
+#[test]
+fn unfinished_pressure_is_suppressed_by_existing_hard_stops() {
+    let paused = AdaptiveControllerState {
+        paused_by_user: true,
+        ..AdaptiveControllerState::initial(AdaptiveFamily::Astra)
+    };
+    let (reduced, pressure) = reduce_unfinished_authorized_turn(paused, 1);
+    assert_eq!(reduced.decision, AdaptiveControllerDecision::NoAction);
+    assert_eq!(pressure, 0);
+
+    let terminal = AdaptiveControllerState {
+        terminal: Some(AdaptiveWorkflowTerminal::RepairRequired),
+        ..AdaptiveControllerState::initial(AdaptiveFamily::Astra)
+    };
+    let (reduced, pressure) = reduce_unfinished_authorized_turn(terminal, 1);
+    assert_eq!(reduced.decision, AdaptiveControllerDecision::NoAction);
+    assert_eq!(pressure, 0);
 }

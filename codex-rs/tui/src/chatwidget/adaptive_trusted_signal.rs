@@ -147,6 +147,7 @@ impl ChatWidget {
         terminal: AdaptiveWorkflowTerminal,
     ) {
         self.adaptive_effort.workflow_terminal = Some(terminal);
+        self.adaptive_effort.unfinished_turn_pressure = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.pending_attempt = None;
         self.adaptive_effort.successor_admission = None;

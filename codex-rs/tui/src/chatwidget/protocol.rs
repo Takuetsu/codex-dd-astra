@@ -313,9 +313,13 @@ impl ChatWidget {
                 ),
                 (status, _) => crate::adaptive_classification::signal_from_turn_status(status),
             };
-            let trusted_signal_consumed = matches!(notification.turn.status, TurnStatus::Completed)
-                && self.consume_adaptive_signal_at_terminal(&notification.turn.id);
-            if !trusted_signal_consumed {
+            let completed = matches!(notification.turn.status, TurnStatus::Completed);
+            let trusted_signal_consumed =
+                completed && self.consume_adaptive_signal_at_terminal(&notification.turn.id);
+            let unfinished_worker_consumed = completed
+                && !trusted_signal_consumed
+                && self.apply_adaptive_unfinished_authorized_turn(&notification.turn.id);
+            if !trusted_signal_consumed && !unfinished_worker_consumed {
                 self.apply_adaptive_terminal_signal(&notification.turn.id, signal);
             }
         }
