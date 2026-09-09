@@ -11,6 +11,8 @@ use crate::adaptive_policy::initial_route;
 use crate::adaptive_policy::next_route;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 
+pub(crate) const ADAPTIVE_UNFINISHED_TURN_THRESHOLD: u8 = 2;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct AdaptiveControllerState {
     pub(crate) starting_family: AdaptiveFamily,
@@ -46,6 +48,10 @@ pub(crate) enum AdaptiveControllerDecision {
         route: AdaptiveRoute,
         next_attempt: u32,
     },
+    ContinueSameRoute {
+        route: AdaptiveRoute,
+        next_attempt: u32,
+    },
     EscalateEffort {
         from: AdaptiveRoute,
         to: AdaptiveRoute,
@@ -66,6 +72,45 @@ pub(crate) enum AdaptiveControllerDecision {
 pub(crate) struct AdaptiveControllerReduction {
     pub(crate) state: AdaptiveControllerState,
     pub(crate) decision: AdaptiveControllerDecision,
+}
+
+/// Reduces an ordinary completed turn from an externally bound Worker that did not reach a
+/// trusted workflow terminal. The first unfinished return authorizes one same-route continuation;
+/// the next consecutive unfinished return converts that bounded pressure into one normal ladder
+/// escalation.
+pub(crate) fn reduce_unfinished_authorized_turn(
+    state: AdaptiveControllerState,
+    unfinished_turn_pressure: u8,
+) -> (AdaptiveControllerReduction, u8) {
+    if state.terminal.is_some() || state.paused_by_user {
+        return (no_action(state), 0);
+    }
+
+    let pressure = unfinished_turn_pressure
+        .saturating_add(1)
+        .min(ADAPTIVE_UNFINISHED_TURN_THRESHOLD);
+    if pressure < ADAPTIVE_UNFINISHED_TURN_THRESHOLD {
+        let next_attempt = state.attempt_number + 1;
+        return (
+            AdaptiveControllerReduction {
+                state: AdaptiveControllerState {
+                    attempt_number: next_attempt,
+                    transient_retry_consumed: false,
+                    ..state
+                },
+                decision: AdaptiveControllerDecision::ContinueSameRoute {
+                    route: state.current_route,
+                    next_attempt,
+                },
+            },
+            pressure,
+        );
+    }
+
+    (
+        reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible),
+        0,
+    )
 }
 
 /// Deterministically reduces one normalized classification. It has no side effects.

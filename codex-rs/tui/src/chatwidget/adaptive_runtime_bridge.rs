@@ -4,6 +4,7 @@ use super::*;
 use crate::adaptive_controller::AdaptiveControllerDecision;
 use crate::adaptive_controller::AdaptiveControllerState;
 use crate::adaptive_controller::reduce_adaptive_controller;
+use crate::adaptive_controller::reduce_unfinished_authorized_turn;
 use crate::adaptive_policy::AdaptiveClassification;
 use crate::adaptive_policy::AdaptiveEffort;
 use crate::adaptive_policy::AdaptiveFailureKind;
@@ -39,6 +40,7 @@ impl ChatWidget {
         state.current_effort = Some(route.effort);
         state.attempt_number = 1;
         state.transient_retry_consumed = false;
+        state.unfinished_turn_pressure = 0;
         state.last_failure_kind = None;
         state.last_outcome = None;
         state.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
@@ -74,6 +76,91 @@ impl ChatWidget {
         );
     }
 
+    pub(super) fn apply_adaptive_unfinished_authorized_turn(
+        &mut self,
+        source_turn_id: &str,
+    ) -> bool {
+        let state = &self.adaptive_effort;
+        let bound_worker = matches!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+                | crate::adaptive_worker::AdaptiveWorkerRole::Validation
+                | crate::adaptive_worker::AdaptiveWorkerRole::Repair
+        ) && state
+            .worker_context
+            .authorized_scope
+            .as_deref()
+            .is_some_and(|scope| !scope.trim().is_empty());
+        if !state.enabled
+            || state.paused_by_user
+            || state.workflow_terminal.is_some()
+            || state.last_processed_terminal_turn_id.as_deref() == Some(source_turn_id)
+            || !bound_worker
+        {
+            return false;
+        }
+        let (Some(starting_family), Some(current_family), Some(current_effort)) = (
+            state.starting_family,
+            state.current_family,
+            state.current_effort,
+        ) else {
+            return false;
+        };
+        let controller = AdaptiveControllerState {
+            starting_family,
+            current_route: AdaptiveRoute {
+                family: current_family,
+                effort: current_effort,
+            },
+            attempt_number: state.attempt_number,
+            transient_retry_consumed: state.transient_retry_consumed,
+            paused_by_user: state.paused_by_user,
+            terminal: state.workflow_terminal,
+        };
+        let (reduction, unfinished_turn_pressure) =
+            reduce_unfinished_authorized_turn(controller, state.unfinished_turn_pressure);
+
+        self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
+        self.adaptive_effort.current_family = Some(reduction.state.current_route.family);
+        self.adaptive_effort.current_effort = Some(reduction.state.current_route.effort);
+        self.adaptive_effort.attempt_number = reduction.state.attempt_number;
+        self.adaptive_effort.transient_retry_consumed = reduction.state.transient_retry_consumed;
+        self.adaptive_effort.unfinished_turn_pressure = unfinished_turn_pressure;
+        self.adaptive_effort.paused_by_user = reduction.state.paused_by_user;
+        self.adaptive_effort.workflow_terminal = reduction.state.terminal;
+        self.adaptive_effort.successor_admission = None;
+        self.adaptive_effort.pending_attempt = pending_attempt(
+            self.thread_id(),
+            &self.adaptive_effort.worker_context,
+            source_turn_id,
+            reduction.decision,
+            reduction.state.current_route,
+        );
+        match reduction.decision {
+            AdaptiveControllerDecision::ContinueSameRoute { .. } => {
+                self.adaptive_effort.last_outcome = None;
+                self.adaptive_effort.last_failure_kind = None;
+            }
+            AdaptiveControllerDecision::EscalateEffort { .. }
+            | AdaptiveControllerDecision::EscalateModel { .. }
+            | AdaptiveControllerDecision::Blocked => {
+                self.adaptive_effort.last_outcome = Some(AdaptiveOutcome::Unknown);
+                self.adaptive_effort.last_failure_kind = Some(AdaptiveFailureKind::Capability);
+            }
+            AdaptiveControllerDecision::InvalidState => {
+                self.adaptive_effort.last_outcome = Some(AdaptiveOutcome::Unknown);
+                self.adaptive_effort.last_failure_kind = Some(AdaptiveFailureKind::Unknown);
+            }
+            AdaptiveControllerDecision::NoAction
+            | AdaptiveControllerDecision::RetrySameLevel { .. }
+            | AdaptiveControllerDecision::ReadyForOwnerQa
+            | AdaptiveControllerDecision::PausedByUser => {}
+        }
+        self.save_adaptive_effort_for_current_thread();
+        self.apply_adaptive_route(reduction.decision, reduction.state.current_route);
+        true
+    }
+
     pub(super) fn apply_adaptive_terminal_classification(
         &mut self,
         source_turn_id: &str,
@@ -107,6 +194,7 @@ impl ChatWidget {
             terminal: state.workflow_terminal,
         };
         let reduction = reduce_adaptive_controller(controller, classification);
+        self.adaptive_effort.unfinished_turn_pressure = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.current_family = Some(reduction.state.current_route.family);
         self.adaptive_effort.current_effort = Some(reduction.state.current_route.effort);
@@ -158,6 +246,9 @@ fn pending_attempt(
 ) -> Option<AdaptivePendingAttempt> {
     let thread_id = thread_id?;
     let (decision, attempt_number) = match decision {
+        AdaptiveControllerDecision::ContinueSameRoute { next_attempt, .. } => {
+            (AdaptivePendingDecision::ContinueSameRoute, next_attempt)
+        }
         AdaptiveControllerDecision::RetrySameLevel { next_attempt, .. } => {
             (AdaptivePendingDecision::RetrySameLevel, next_attempt)
         }

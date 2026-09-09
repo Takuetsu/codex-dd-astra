@@ -1,4 +1,5 @@
 use super::*;
+use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
 pub(crate) use crate::adaptive_policy::AdaptiveEffort;
@@ -13,6 +14,7 @@ use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
     BeginValidation,
+    ContinueSameRoute,
     RetrySameLevel,
     EscalateEffort,
     EscalateModel,
@@ -76,6 +78,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) worker_context: AdaptiveWorkerContext,
     pub(crate) workflow_terminal: Option<AdaptiveWorkflowTerminal>,
     pub(crate) transient_retry_consumed: bool,
+    pub(crate) unfinished_turn_pressure: u8,
     pub(crate) last_processed_terminal_turn_id: Option<String>,
     pub(crate) pending_attempt: Option<AdaptivePendingAttempt>,
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
@@ -135,6 +138,7 @@ impl AdaptiveEffortState {
             worker_context,
             workflow_terminal,
             transient_retry_consumed: false,
+            unfinished_turn_pressure: 0,
             last_processed_terminal_turn_id: None,
             pending_attempt: None,
             successor_admission: None,
@@ -160,6 +164,7 @@ impl ChatWidget {
         self.adaptive_effort.paused_by_user = true;
         self.adaptive_effort.last_outcome = Some(AdaptiveOutcome::UserInterrupted);
         self.adaptive_effort.last_failure_kind = None;
+        self.adaptive_effort.unfinished_turn_pressure = 0;
         self.cancel_pending_adaptive_signal_for_active_turn();
         self.adaptive_effort.successor_admission = None;
         self.save_adaptive_effort_for_current_thread();
@@ -171,6 +176,7 @@ impl ChatWidget {
             "pause" => {
                 self.cancel_pending_adaptive_signal_for_active_turn();
                 self.adaptive_effort.paused_by_user = true;
+                self.adaptive_effort.unfinished_turn_pressure = 0;
                 self.adaptive_effort.successor_admission = None;
                 self.save_adaptive_effort_for_current_thread();
                 self.add_adaptive_status_output();
@@ -184,6 +190,7 @@ impl ChatWidget {
                 self.cancel_pending_adaptive_signal_for_active_turn();
                 self.adaptive_effort.enabled = false;
                 self.adaptive_effort.paused_by_user = false;
+                self.adaptive_effort.unfinished_turn_pressure = 0;
                 self.adaptive_effort.successor_admission = None;
                 self.save_adaptive_effort_for_current_thread();
                 self.add_adaptive_status_output();
@@ -236,6 +243,7 @@ impl ChatWidget {
         }
         if operation == codex_app_server_protocol::ThreadWorkflowStateOperation::Clear {
             self.adaptive_effort.workflow_terminal = None;
+            self.adaptive_effort.unfinished_turn_pressure = 0;
             self.adaptive_effort.pending_attempt = None;
             self.adaptive_effort.pending_signal = None;
             self.adaptive_effort.successor_admission = None;
@@ -257,6 +265,7 @@ impl ChatWidget {
         {
             self.adaptive_effort.workflow_terminal =
                 Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
+            self.adaptive_effort.unfinished_turn_pressure = 0;
             self.adaptive_effort.pending_attempt = None;
             self.adaptive_effort.pending_signal = None;
             self.adaptive_effort.successor_admission = None;
@@ -330,7 +339,7 @@ impl ChatWidget {
             _ => 0,
         };
         format!(
-            "Adaptive Effort\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
             family(state.current_family),
@@ -338,6 +347,8 @@ impl ChatWidget {
             state.attempt_number,
             failure_pressure,
             ADAPTIVE_FAILURE_PRESSURE_THRESHOLD,
+            state.unfinished_turn_pressure,
+            ADAPTIVE_UNFINISHED_TURN_THRESHOLD,
             if state.paused_by_user { "yes" } else { "no" },
             outcome,
             failure,

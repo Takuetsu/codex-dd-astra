@@ -87,6 +87,10 @@ fn admission_route(
 async fn adaptive_successor_submits_each_authorized_decision_once() {
     for (decision, route) in [
         (
+            AdaptivePendingDecision::ContinueSameRoute,
+            admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
+        ),
+        (
             AdaptivePendingDecision::RetrySameLevel,
             admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
         ),
@@ -130,6 +134,7 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
                     && text.contains("Attempt 2")
                     && text.contains(match decision {
                         AdaptivePendingDecision::BeginValidation => "BeginValidation",
+                        AdaptivePendingDecision::ContinueSameRoute => "ContinueSameRoute",
                         AdaptivePendingDecision::RetrySameLevel => "RetrySameLevel",
                         AdaptivePendingDecision::EscalateEffort => "EscalateEffort",
                         AdaptivePendingDecision::EscalateModel => "EscalateModel",
@@ -219,6 +224,10 @@ async fn adaptive_successor_submission_failure_is_consumed_and_new_permit_can_fo
 #[tokio::test]
 async fn admission_reserves_each_controller_authorized_decision_once() {
     for (decision, route) in [
+        (
+            AdaptivePendingDecision::ContinueSameRoute,
+            admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
+        ),
         (
             AdaptivePendingDecision::RetrySameLevel,
             admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Low),

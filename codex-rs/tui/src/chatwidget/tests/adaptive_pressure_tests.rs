@@ -381,3 +381,121 @@ async fn explicit_cancellation_suppresses_available_failure_pressure() {
         Some(AdaptiveEffort::Low)
     );
 }
+
+#[tokio::test]
+async fn successful_work_without_handoff_continues_once_then_escalates() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("cycle-vengeance/A-B1".to_string());
+    let worker_context = chat.adaptive_effort.worker_context.clone();
+
+    let mut success = failed_command(thread_id, "unfinished-1", "successful-check");
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut success.item
+    {
+        *status = CommandExecutionStatus::Completed;
+        *exit_code = Some(0);
+    }
+    chat.register_adaptive_evidence(&success);
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 0/2")
+    );
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn("unfinished-1"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert_eq!(chat.adaptive_effort.worker_context, worker_context);
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        Some(ref pending)
+            if pending.decision == AdaptivePendingDecision::ContinueSameRoute
+                && pending.attempt_number == 2
+                && pending.worker_context == worker_context
+    );
+    assert!(!chat.apply_adaptive_unfinished_authorized_turn("unfinished-1"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn("unfinished-2"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+    assert_eq!(chat.adaptive_effort.attempt_number, 3);
+    assert_eq!(chat.adaptive_effort.worker_context, worker_context);
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        Some(ref pending)
+            if pending.decision == AdaptivePendingDecision::EscalateEffort
+                && pending.attempt_number == 3
+                && pending.worker_context == worker_context
+    );
+    assert_eq!(
+        chat.adaptive_effort.last_failure_kind,
+        Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
+    );
+}
+
+#[tokio::test]
+async fn unfinished_auto_continuation_requires_bound_authorized_scope() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    chat.thread_id = Some(ThreadId::new());
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope = None;
+
+    assert!(!chat.apply_adaptive_unfinished_authorized_turn("unbound-turn"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+
+    chat.adaptive_effort.worker_context.authorized_scope = Some("   ".to_string());
+    assert!(!chat.apply_adaptive_unfinished_authorized_turn("blank-scope-turn"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+}
+
+#[tokio::test]
+async fn trusted_handoff_resets_unfinished_pressure() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("slice-reset".to_string());
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn("unfinished-before-handoff"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+
+    chat.adaptive_effort.last_processed_terminal_turn_id = None;
+    chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Pending(
+        AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: "handoff-turn".to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+            evidence_refs: Vec::new(),
+            diagnostic_note: None,
+        },
+    ));
+    assert!(chat.consume_adaptive_signal_at_terminal("handoff-turn"));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Validation
+    );
+}

@@ -236,6 +236,9 @@ fn adaptive_continuation_text(permit: &AdaptiveSuccessorPermit) -> String {
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::BeginValidation => {
             "BeginValidation"
         }
+        crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute => {
+            "ContinueSameRoute"
+        }
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::RetrySameLevel => {
             "RetrySameLevel"
         }

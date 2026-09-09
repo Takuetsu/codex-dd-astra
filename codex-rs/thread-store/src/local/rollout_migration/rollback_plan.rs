@@ -276,7 +276,9 @@ impl RollbackPlanner {
                     acceptance_order: *acceptance_order,
                 });
             }
-            RolloutItem::SecurityRiskScore(_) | RolloutItem::WorkflowState(_) => self.record_boundaries[index] = None,
+            RolloutItem::SecurityRiskScore(_) | RolloutItem::WorkflowState(_) => {
+                self.record_boundaries[index] = None
+            }
         }
 
         Ok(())
