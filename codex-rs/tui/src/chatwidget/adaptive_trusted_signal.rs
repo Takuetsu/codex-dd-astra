@@ -170,7 +170,7 @@ mod tests {
     use super::*;
     use crate::adaptive_policy::AdaptiveEffort;
     use crate::adaptive_policy::AdaptiveFamily;
-    use crate::chatwidget::tests::make_chatwidget_manual;
+    use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
     use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
     use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
     use codex_app_server_protocol::CommandExecutionSource;
@@ -213,7 +213,7 @@ mod tests {
 
     #[tokio::test]
     async fn green_reviewer_terminal_overrides_armed_failure_pressure_and_admits_no_successor() {
-        let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
         let turn_id = "green-review-after-pressure";
         chat.thread_id = Some(thread_id);
