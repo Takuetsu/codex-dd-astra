@@ -149,8 +149,5 @@ fn codexdd_compact_identity_preserves_dirty_marker() {
         codexdd_compact_identity_for_commit(&format!("{BUILD_COMMIT}-dirty")),
         "0.1.0 (0123456789ab-dirty)"
     );
-    assert_eq!(
-        codexdd_compact_identity_for_commit("dev"),
-        "0.1.0 (dev)"
-    );
+    assert_eq!(codexdd_compact_identity_for_commit("dev"), "0.1.0 (dev)");
 }
