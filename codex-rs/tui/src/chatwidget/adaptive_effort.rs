@@ -84,7 +84,7 @@ pub(crate) struct AdaptiveEffortState {
 }
 
 impl AdaptiveFamily {
-    fn parse(value: &str) -> Option<Self> {
+    pub(crate) fn parse(value: &str) -> Option<Self> {
         match value {
             "luna" => Some(Self::Luna),
             "terra" => Some(Self::Terra),
@@ -94,13 +94,53 @@ impl AdaptiveFamily {
         }
     }
 
-    pub(super) fn model(self) -> &'static str {
+    pub(crate) fn model(self) -> &'static str {
         match self {
             Self::Luna => "gpt-5.6-luna",
             Self::Terra => "gpt-5.6-terra",
             Self::Sol => "gpt-5.6-sol",
             Self::Astra => "gpt-6-astra",
         }
+    }
+}
+
+impl AdaptiveEffortState {
+    pub(crate) fn activate_adaptive_startup(&mut self, preferred_family: AdaptiveFamily) {
+        if self.paused_by_user || self.workflow_terminal.is_some() {
+            return;
+        }
+        self.activate_adaptive_family(preferred_family, false);
+    }
+
+    fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
+        let mut worker_context = self.worker_context.clone();
+        if worker_context.role == AdaptiveWorkerRole::Unspecified {
+            worker_context.role = AdaptiveWorkerRole::Implementation;
+        }
+        let workflow_terminal = self.workflow_terminal;
+        let evidence_registry = self.evidence_registry.clone();
+        *self = Self {
+            enabled: true,
+            starting_family: Some(preferred_family),
+            current_family: Some(AdaptiveFamily::Luna),
+            current_effort: Some(AdaptiveEffort::Low),
+            attempt_number: 1,
+            paused_by_user: if clear_pause {
+                false
+            } else {
+                self.paused_by_user
+            },
+            last_outcome: None,
+            last_failure_kind: None,
+            worker_context,
+            workflow_terminal,
+            transient_retry_consumed: false,
+            last_processed_terminal_turn_id: None,
+            pending_attempt: None,
+            successor_admission: None,
+            pending_signal: None,
+            evidence_registry,
+        };
     }
 }
 
@@ -163,38 +203,7 @@ impl ChatWidget {
             }
             family => match AdaptiveFamily::parse(family) {
                 Some(preferred_family) => {
-                    let mut worker_context = self.adaptive_effort.worker_context.clone();
-                    if worker_context.role == AdaptiveWorkerRole::Unspecified {
-                        worker_context.role = AdaptiveWorkerRole::Implementation;
-                    }
-                    let workflow_terminal = self.adaptive_effort.workflow_terminal;
-                    let evidence_registry = self.adaptive_effort.evidence_registry.clone();
-                    self.adaptive_effort = AdaptiveEffortState {
-                        enabled: true,
-                        starting_family: Some(preferred_family),
-                        current_family: Some(AdaptiveFamily::Luna),
-                        current_effort: Some(AdaptiveEffort::Low),
-                        attempt_number: 1,
-                        paused_by_user: false,
-                        last_outcome: None,
-                        last_failure_kind: None,
-                        worker_context,
-                        workflow_terminal,
-                        transient_retry_consumed: false,
-                        last_processed_terminal_turn_id: None,
-                        pending_attempt: None,
-                        successor_admission: None,
-                        pending_signal: None,
-                        evidence_registry,
-                    };
-                    self.save_adaptive_effort_for_current_thread();
-                    self.app_event_tx.send(AppEvent::UpdateModel(
-                        AdaptiveFamily::Luna.model().to_string(),
-                    ));
-                    self.app_event_tx.send(AppEvent::UpdateReasoningEffort(Some(
-                        codex_protocol::openai_models::ReasoningEffort::Low,
-                    )));
-                    self.add_adaptive_status_output();
+                    self.activate_adaptive_family(preferred_family, true);
                 }
                 None => self.add_error_message(
                     "Usage: /adaptive [luna|terra|sol|astra|status|pause|resume|off|reset]"
@@ -202,6 +211,19 @@ impl ChatWidget {
                 ),
             },
         }
+    }
+
+    fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
+        self.adaptive_effort
+            .activate_adaptive_family(preferred_family, clear_pause);
+        self.save_adaptive_effort_for_current_thread();
+        self.app_event_tx.send(AppEvent::UpdateModel(
+            AdaptiveFamily::Luna.model().to_string(),
+        ));
+        self.app_event_tx.send(AppEvent::UpdateReasoningEffort(Some(
+            codex_protocol::openai_models::ReasoningEffort::Low,
+        )));
+        self.add_adaptive_status_output();
     }
 
     pub(crate) fn on_workflow_state_persisted(

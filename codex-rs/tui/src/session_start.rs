@@ -36,7 +36,12 @@ impl SessionStartAction {
         match self {
             Self::Resume(settings) => {
                 app_server
-                    .resume_initial_thread(&local_settings, config.clone(), target.thread_id, settings)
+                    .resume_initial_thread(
+                        &local_settings,
+                        config.clone(),
+                        target.thread_id,
+                        settings,
+                    )
                     .await
             }
             Self::Fork(permission_mode) => {

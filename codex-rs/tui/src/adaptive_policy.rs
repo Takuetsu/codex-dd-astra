@@ -237,9 +237,8 @@ mod tests {
 
     #[test]
     fn no_transition_decreases_family_or_same_family_effort() {
-        for (current_route, expected_route) in AUTOMATIC_LADDER
-            .iter()
-            .zip(AUTOMATIC_LADDER.iter().skip(1))
+        for (current_route, expected_route) in
+            AUTOMATIC_LADDER.iter().zip(AUTOMATIC_LADDER.iter().skip(1))
         {
             match next_route(AdaptiveFamily::Luna, *current_route) {
                 AdaptiveTransition::EscalateEffort(next_route)
