@@ -424,7 +424,10 @@ mod tests {
         let mut state = AdaptiveEffortState::default();
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
 
-        assert_eq!(state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT), Ok(true));
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(true)
+        );
         assert!(state.worker_assignment_locked);
         assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
         assert_eq!(
@@ -456,7 +459,10 @@ mod tests {
         );
         assert!(state.worker_assignment_locked);
         assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
-        assert_eq!(state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT), Ok(false));
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(false)
+        );
         assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
     }
 
@@ -474,7 +480,10 @@ mod tests {
         );
         assert!(state.worker_assignment_locked);
         assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
-        assert_eq!(state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT), Ok(false));
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(false)
+        );
     }
 
     #[test]
@@ -489,8 +498,14 @@ mod tests {
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
 
         assert!(state.worker_assignment_locked);
-        assert_eq!(state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT), Ok(false));
-        assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Implementation);
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(false)
+        );
+        assert_eq!(
+            state.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+        );
         assert_eq!(
             state.worker_context.authorized_scope.as_deref(),
             Some("preconfigured implementation gate")
