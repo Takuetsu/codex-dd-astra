@@ -948,14 +948,23 @@ See the Codex keymap documentation for supported actions and examples."
                     continue;
                 }
                 if let Some(pending) = app.pending_new_session.take() {
-                    app.start_fresh_session_with_worker_binding(
+                    if app.primary_thread_id != Some(pending.source_thread_id)
+                        || app.config.cwd != pending.source_cwd
+                    {
+                        app.chat_widget.add_error_message(
+                            "The source session changed before the new session could start."
+                                .to_string(),
+                        );
+                        continue;
+                    }
+                    Box::pin(app.start_fresh_session_with_worker_binding(
                         tui,
                         &mut app_server,
                         /*session_start_source*/ None,
                         /*initial_user_message*/ None,
                         pending.name,
                         pending.worker_binding,
-                    )
+                    ))
                     .await;
                     if app.chat_widget.has_misalignment_policy_violation() {
                         app.chat_widget.show_misalignment_policy_precaution();

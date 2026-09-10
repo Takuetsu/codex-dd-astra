@@ -18,6 +18,8 @@ use std::collections::HashSet;
 
 /// A fresh-session request deferred until the event loop has returned to its top-level future.
 pub(super) struct PendingNewSession {
+    pub(super) source_thread_id: ThreadId,
+    pub(super) source_cwd: AbsolutePathBuf,
     pub(super) name: Option<String>,
     pub(super) worker_binding: Option<crate::adaptive_worker::NewWorkerBinding>,
 }

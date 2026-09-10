@@ -82,12 +82,23 @@ impl App {
             AppEvent::PluginMentionsLoaded { ref cwd, .. }
                 if cwds_differ(cwd, self.config.cwd.as_path()) => {}
             AppEvent::NewSession { name, worker_binding } => {
-                self.pending_new_session = Some(Box::new(
-                    crate::app::session_lifecycle::PendingNewSession {
-                        name,
-                        worker_binding,
-                    },
-                ));
+                if self.pending_new_session.is_some() {
+                    self.chat_widget
+                        .add_error_message("A new session is already being started.".to_string());
+                } else if let Some(source_thread_id) = self.primary_thread_id {
+                    self.pending_new_session = Some(Box::new(
+                        crate::app::session_lifecycle::PendingNewSession {
+                            source_thread_id,
+                            source_cwd: self.config.cwd.clone(),
+                            name,
+                            worker_binding,
+                        },
+                    ));
+                } else {
+                    self.chat_widget.add_error_message(
+                        "Cannot start a new session without an active source session.".to_string(),
+                    );
+                }
             }
             AppEvent::StartManagedWorktree { mode, name, worker_binding } => {
                 if self.pending_start_managed_worktree.is_some() {
