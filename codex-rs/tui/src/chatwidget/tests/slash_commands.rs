@@ -1,4 +1,5 @@
 use super::*;
+use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::bottom_pane::slash_commands::ServiceTierCommand;
 use pretty_assertions::assert_eq;
 use serial_test::serial;
@@ -2816,19 +2817,41 @@ async fn slash_clear_requests_ui_clear_when_idle() {
 }
 
 #[tokio::test]
-async fn slash_new_with_name_requests_named_session() {
+async fn slash_new_unknown_argument_is_rejected_without_starting_a_session() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.bottom_pane
         .set_composer_text("/new   Add User  ".to_string(), Vec::new(), Vec::new());
 
     chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 
-    assert_matches!(
-        rx.try_recv(),
-        Ok(AppEvent::NewSession {
-            name: Some(name)
-        }) if name == "Add User"
-    );
+    assert!(matches!(rx.try_recv(), Ok(AppEvent::InsertHistoryCell(_))));
+    assert!(matches!(rx.try_recv(), Err(TryRecvError::Empty)));
+}
+
+#[tokio::test]
+async fn slash_new_role_arguments_emit_typed_bindings() {
+    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("scope-1".to_string());
+
+    for (role, command) in [
+        (AdaptiveWorkerRole::Implementation, "/new implementation"),
+        (AdaptiveWorkerRole::Validation, "/new validation"),
+        (AdaptiveWorkerRole::Repair, "/new repair"),
+    ] {
+        chat.bottom_pane
+            .set_composer_text(command.to_string(), Vec::new(), Vec::new());
+        chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert_matches!(
+            rx.try_recv(),
+            Ok(AppEvent::NewSession {
+                name: None,
+                worker_binding: Some(crate::adaptive_worker::NewWorkerBinding {
+                    role: actual_role,
+                    authorized_scope,
+                }),
+            }) if actual_role == role && authorized_scope == "scope-1"
+        );
+    }
 }
 
 #[tokio::test]

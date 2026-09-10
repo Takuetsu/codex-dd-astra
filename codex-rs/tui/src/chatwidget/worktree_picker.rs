@@ -1,6 +1,7 @@
 //! Worktree choices for local, feature-enabled session commands.
 
 use super::*;
+use crate::adaptive_worker::NewWorkerBinding;
 use crate::app_event::ManagedWorktreeMode;
 use crate::worktree_browser::Action;
 use crate::worktree_browser::Entry;
@@ -19,11 +20,15 @@ impl ChatWidget {
         &mut self,
         mode: ManagedWorktreeMode,
         name: Option<String>,
+        worker_binding: Option<NewWorkerBinding>,
     ) {
         if !self.managed_worktree_available() {
             match mode {
                 ManagedWorktreeMode::New => {
-                    self.app_event_tx.send(AppEvent::NewSession { name });
+                    self.app_event_tx.send(AppEvent::NewSession {
+                        name,
+                        worker_binding,
+                    });
                 }
                 ManagedWorktreeMode::Fork => {
                     self.app_event_tx
@@ -38,6 +43,7 @@ impl ChatWidget {
             ManagedWorktreeMode::Fork => "Where should the forked conversation run?",
         };
         let current_name = name.clone();
+        let current_binding = worker_binding.clone();
         self.bottom_pane.show_selection_view(SelectionViewParams {
             title: Some(title.to_string()),
             footer_hint: Some(standard_popup_hint_line()),
@@ -49,6 +55,7 @@ impl ChatWidget {
                         ManagedWorktreeMode::New => {
                             tx.send(AppEvent::NewSession {
                                 name: current_name.clone(),
+                                worker_binding: current_binding.clone(),
                             });
                         }
                         ManagedWorktreeMode::Fork => {
@@ -67,6 +74,7 @@ impl ChatWidget {
                         tx.send(AppEvent::StartManagedWorktree {
                             mode,
                             name: name.clone(),
+                            worker_binding: worker_binding.clone(),
                         });
                     })],
                     dismiss_on_select: true,
@@ -101,6 +109,7 @@ impl ChatWidget {
                         tx.send(AppEvent::StartManagedWorktree {
                             mode: ManagedWorktreeMode::Fork,
                             name: None,
+                            worker_binding: None,
                         });
                     })],
                     dismiss_on_select: true,
@@ -113,6 +122,7 @@ impl ChatWidget {
                         tx.send(AppEvent::StartManagedWorktree {
                             mode: ManagedWorktreeMode::New,
                             name: None,
+                            worker_binding: None,
                         });
                     })],
                     dismiss_on_select: true,

@@ -951,8 +951,16 @@ See the Codex keymap documentation for supported actions and examples."
                         .await;
                     continue;
                 }
-                if let Some((mode, name)) = app.pending_start_managed_worktree.take() {
-                    Box::pin(app.start_managed_worktree(&mut app_server, mode, name)).await;
+                if let Some((mode, name, worker_binding)) =
+                    app.pending_start_managed_worktree.take()
+                {
+                    Box::pin(app.start_managed_worktree(
+                        &mut app_server,
+                        mode,
+                        name,
+                        worker_binding,
+                    ))
+                    .await;
                     continue;
                 }
                 // Complete the fork and widget attachment on separate fresh loop iterations.

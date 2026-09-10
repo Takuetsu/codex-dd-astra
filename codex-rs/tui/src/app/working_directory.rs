@@ -103,6 +103,7 @@ impl App {
             config,
             mode,
             name,
+            worker_binding,
             ..
         } = transition;
         let checkout_root = checkout.root.clone();
@@ -112,7 +113,7 @@ impl App {
             tui,
             app_server,
             cwd,
-            Some((manager, checkout, mode, name)),
+            Some((manager, checkout, mode, name, worker_binding)),
             DestinationConfig::Prepared(config),
         )
         .await;
@@ -151,6 +152,7 @@ impl App {
             codex_worktree::ManagedWorktree,
             crate::app_event::ManagedWorktreeMode,
             Option<String>,
+            Option<crate::adaptive_worker::NewWorkerBinding>,
         )>,
         destination_config: DestinationConfig,
     ) {
@@ -214,7 +216,7 @@ impl App {
         if config.active_project.trust_level.is_none() {
             return self.working_directory_error("This directory is not trusted; run Codex there.");
         }
-        if let Some((_, checkout, crate::app_event::ManagedWorktreeMode::Fork, _)) =
+        if let Some((_, checkout, crate::app_event::ManagedWorktreeMode::Fork, _, _)) =
             managed_worktree.as_ref()
             && with_terminal_visualization_instructions(
                 &self.config,
@@ -272,8 +274,42 @@ impl App {
             Err(error) => return self.chat_widget.add_error_message(error),
         };
         config.service_tier = self.chat_widget.configured_service_tier();
+        let fresh_adaptive_effort =
+            managed_worktree
+                .as_ref()
+                .and_then(|(_, _, mode, _, binding)| {
+                    (*mode == crate::app_event::ManagedWorktreeMode::New).then(|| {
+                        self.chat_widget
+                            .fresh_adaptive_effort_for_new_worker(binding.as_ref())
+                    })
+                });
+        if let Some(binding) = managed_worktree
+            .as_ref()
+            .and_then(|(_, _, mode, _, binding)| {
+                (*mode == crate::app_event::ManagedWorktreeMode::New).then_some(binding.clone())
+            })
+            .flatten()
+        {
+            config.adaptive_worker = Some(codex_config::config_toml::AdaptiveWorkerConfigToml {
+                role: match binding.role {
+                    crate::adaptive_worker::AdaptiveWorkerRole::Implementation => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+                    }
+                    crate::adaptive_worker::AdaptiveWorkerRole::Validation => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+                    }
+                    crate::adaptive_worker::AdaptiveWorkerRole::Repair => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Repair
+                    }
+                    crate::adaptive_worker::AdaptiveWorkerRole::Unspecified => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Unspecified
+                    }
+                },
+                authorized_scope: Some(binding.authorized_scope),
+            });
+        }
         let is_new_worktree = matches!(
-            managed_worktree.as_ref().map(|(_, _, mode, _)| mode),
+            managed_worktree.as_ref().map(|(_, _, mode, _, _)| mode),
             Some(crate::app_event::ManagedWorktreeMode::New)
         );
         let rollout = self.chat_widget.rollout_path();
@@ -357,6 +393,9 @@ impl App {
             Ok(value) => value,
             Err(e) => return self.working_directory_error(format!("Failed to change: {e}")),
         };
+        if let Some(adaptive_effort) = fresh_adaptive_effort {
+            transitioned.session.adaptive_effort = adaptive_effort;
+        }
         let session = &transitioned.session;
         if session.thread_id == thread_id
             || crate::session_resume::cwds_differ(session.cwd.as_path(), cwd.as_path())
@@ -373,7 +412,7 @@ impl App {
             }
             return self.working_directory_error("Requested directory or permissions not applied.");
         }
-        if let Some((manager, checkout, _, _)) = managed_worktree.as_ref()
+        if let Some((manager, checkout, _, _, _)) = managed_worktree.as_ref()
             && let Err(error) =
                 manager.bind_thread(&checkout.root, &transitioned.session.thread_id.to_string())
         {
@@ -388,7 +427,7 @@ impl App {
         }
         let name_error = if let Some(name) = managed_worktree
             .as_ref()
-            .and_then(|(_, _, _, name)| name.as_ref())
+            .and_then(|(_, _, _, name, _)| name.as_ref())
         {
             match app_server
                 .thread_set_name(transitioned.session.thread_id, name.clone())

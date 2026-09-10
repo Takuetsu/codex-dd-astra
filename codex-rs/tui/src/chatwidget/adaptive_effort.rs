@@ -9,6 +9,7 @@ pub(crate) use crate::adaptive_policy::AdaptiveOutcome;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+use crate::adaptive_worker::NewWorkerBinding;
 use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
@@ -166,6 +167,29 @@ impl AdaptiveEffortState {
 }
 
 impl ChatWidget {
+    pub(crate) fn fresh_adaptive_effort_for_new_worker(
+        &self,
+        binding: Option<&NewWorkerBinding>,
+    ) -> AdaptiveEffortState {
+        let enabled = self.adaptive_effort.enabled || binding.is_some();
+        let worker_context = binding.map_or_else(AdaptiveWorkerContext::default, |binding| {
+            AdaptiveWorkerContext {
+                role: binding.role,
+                authorized_scope: Some(binding.authorized_scope.clone()),
+            }
+        });
+        AdaptiveEffortState {
+            enabled,
+            starting_family: self.adaptive_effort.starting_family,
+            current_family: enabled.then_some(AdaptiveFamily::Luna),
+            current_effort: enabled.then_some(AdaptiveEffort::Low),
+            attempt_number: enabled.then_some(1).unwrap_or_default(),
+            worker_context,
+            worker_assignment_locked: binding.is_some(),
+            ..Default::default()
+        }
+    }
+
     pub(super) fn save_adaptive_effort_for_current_thread(&self) {
         self.app_event_tx.send(AppEvent::UpdateAdaptiveEffortState(
             self.adaptive_effort.clone(),

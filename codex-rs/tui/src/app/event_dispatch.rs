@@ -81,22 +81,22 @@ impl App {
             }
             AppEvent::PluginMentionsLoaded { ref cwd, .. }
                 if cwds_differ(cwd, self.config.cwd.as_path()) => {}
-            AppEvent::NewSession { name } => {
-                self.start_fresh_session_with_summary_hint(
+            AppEvent::NewSession { name, worker_binding } => {
+                self.start_fresh_session_with_worker_binding(
                     tui, app_server, /*session_start_source*/ None,
-                    /*initial_user_message*/ None, name,
+                    /*initial_user_message*/ None, name, worker_binding,
                 )
                 .await;
                 if self.chat_widget.has_misalignment_policy_violation() {
                     self.chat_widget.show_misalignment_policy_precaution();
                 }
             }
-            AppEvent::StartManagedWorktree { mode, name } => {
+            AppEvent::StartManagedWorktree { mode, name, worker_binding } => {
                 if self.pending_start_managed_worktree.is_some() {
                     self.chat_widget
                         .add_error_message("A worktree is already being created.".to_string());
                 } else {
-                    self.pending_start_managed_worktree = Some((mode, name));
+                    self.pending_start_managed_worktree = Some((mode, name, worker_binding));
                 }
             }
             AppEvent::ManagedWorktreeCreated(created) => {

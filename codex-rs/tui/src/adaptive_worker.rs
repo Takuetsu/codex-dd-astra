@@ -13,6 +13,12 @@ pub(crate) enum AdaptiveWorkerRole {
     Repair,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct NewWorkerBinding {
+    pub(crate) role: AdaptiveWorkerRole,
+    pub(crate) authorized_scope: String,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct AdaptiveWorkerContext {
     pub(crate) role: AdaptiveWorkerRole,
@@ -31,6 +37,15 @@ impl From<AdaptiveWorkerConfigToml> for AdaptiveWorkerContext {
             role,
             authorized_scope: binding.authorized_scope,
         }
+    }
+}
+
+pub(crate) fn parse_new_worker_role(value: &str) -> Option<AdaptiveWorkerRole> {
+    match value {
+        "implementation" => Some(AdaptiveWorkerRole::Implementation),
+        "validation" => Some(AdaptiveWorkerRole::Validation),
+        "repair" => Some(AdaptiveWorkerRole::Repair),
+        _ => None,
     }
 }
 
@@ -122,6 +137,23 @@ pub(crate) enum AdaptiveWorkflowTerminal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn new_worker_role_parser_accepts_only_role_values() {
+        assert_eq!(
+            parse_new_worker_role("implementation"),
+            Some(AdaptiveWorkerRole::Implementation)
+        );
+        assert_eq!(
+            parse_new_worker_role("validation"),
+            Some(AdaptiveWorkerRole::Validation)
+        );
+        assert_eq!(
+            parse_new_worker_role("repair"),
+            Some(AdaptiveWorkerRole::Repair)
+        );
+        assert_eq!(parse_new_worker_role("nonsense"), None);
+    }
 
     #[test]
     fn first_assignment_header_binds_each_authorized_worker_role() {
