@@ -14,7 +14,6 @@ use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
-    BeginValidation,
     ContinueSameRoute,
     RetrySameLevel,
     EscalateEffort,

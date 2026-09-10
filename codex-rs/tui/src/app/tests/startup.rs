@@ -1094,7 +1094,7 @@ async fn async_fresh_startup_applies_adaptive_preset_before_attachment() {
     assert_eq!(state.attempt_number, 1);
     assert_eq!(
         state.worker_context.role,
-        crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+        crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
     );
 }
 

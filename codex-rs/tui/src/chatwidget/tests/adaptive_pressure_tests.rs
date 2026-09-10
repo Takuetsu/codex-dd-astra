@@ -119,14 +119,17 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
     ));
     chat.turn_lifecycle.agent_turn_running = false;
     assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert_eq!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+    );
     assert_eq!(
         chat.adaptive_effort.worker_context.role,
-        AdaptiveWorkerRole::Validation
+        AdaptiveWorkerRole::Implementation
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
-    assert!(matches!(chat.adaptive_effort.pending_attempt,
-        Some(ref pending) if pending.decision == AdaptivePendingDecision::BeginValidation));
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
     assert_eq!(
         chat.adaptive_effort.current_family,
         Some(AdaptiveFamily::Luna)
@@ -141,25 +144,11 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
 async fn validation_failure_then_success_latches_owner_qa_terminal() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
-    let implementation_turn = "implementation-turn";
+    let validation_turn = "validation-turn";
     chat.thread_id = Some(thread_id);
     chat.dispatch_adaptive_command("astra");
-    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
-    chat.turn_lifecycle.agent_turn_running = true;
-    chat.turn_lifecycle.last_turn_id = Some(implementation_turn.to_string());
-    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
-        thread_id: thread_id.to_string(),
-        signal: AdaptiveRuntimeSignalEnvelope {
-            source_turn_id: implementation_turn.to_string(),
-            signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-            evidence_refs: Vec::new(),
-            diagnostic_note: None,
-        },
-    });
-    chat.turn_lifecycle.agent_turn_running = false;
-    assert!(chat.consume_adaptive_signal_at_terminal(implementation_turn));
-
-    let validation_turn = "validation-turn";
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("validation-scope".to_string());
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(validation_turn.to_string());
     chat.register_adaptive_evidence(&failed_command(
@@ -496,6 +485,12 @@ async fn trusted_handoff_resets_unfinished_pressure() {
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
     assert_eq!(
         chat.adaptive_effort.worker_context.role,
-        AdaptiveWorkerRole::Validation
+        AdaptiveWorkerRole::Implementation
     );
+    assert_eq!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+    );
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
 }
