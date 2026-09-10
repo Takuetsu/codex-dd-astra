@@ -736,6 +736,7 @@ See the Codex keymap documentation for supported actions and examples."
             pending_managed_worktree_creation: false,
             pending_managed_worktree_created: None,
             pending_managed_worktree_transition: None,
+            pending_new_session: None,
             pending_managed_worktree_attach: None,
             startup_protected_input_boundary: true,
             startup_pending_protected_request: false,
@@ -943,6 +944,21 @@ See the Codex keymap documentation for supported actions and examples."
                         Ok(AppRunControl::Exit(reason)) => break Ok(reason),
                         Err(err) if app.recover_transport_error(&err) => {}
                         Err(err) => break Err(err),
+                    }
+                    continue;
+                }
+                if let Some(pending) = app.pending_new_session.take() {
+                    app.start_fresh_session_with_worker_binding(
+                        tui,
+                        &mut app_server,
+                        /*session_start_source*/ None,
+                        /*initial_user_message*/ None,
+                        pending.name,
+                        pending.worker_binding,
+                    )
+                    .await;
+                    if app.chat_widget.has_misalignment_policy_violation() {
+                        app.chat_widget.show_misalignment_policy_precaution();
                     }
                     continue;
                 }

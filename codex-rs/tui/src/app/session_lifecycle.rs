@@ -16,6 +16,12 @@ use crate::app_server_session::thread_blocks_direct_input;
 use crate::chatwidget::ThreadInputStateRestoreMode;
 use std::collections::HashSet;
 
+/// A fresh-session request deferred until the event loop has returned to its top-level future.
+pub(super) struct PendingNewSession {
+    pub(super) name: Option<String>,
+    pub(super) worker_binding: Option<crate::adaptive_worker::NewWorkerBinding>,
+}
+
 #[derive(Clone, Copy)]
 pub(super) enum ThreadAttachPresentation {
     SessionLineage,

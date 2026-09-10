@@ -653,6 +653,8 @@ pub(crate) struct App {
     pending_managed_worktree_created: Option<Box<crate::app_event::ManagedWorktreeCreated>>,
     /// Defers the saved-history fork until the event handler has returned.
     pending_managed_worktree_transition: Option<Box<crate::app_event::ManagedWorktreeTransition>>,
+    /// Defers fresh-session startup until the event handler has returned.
+    pending_new_session: Option<Box<session_lifecycle::PendingNewSession>>,
     /// Holds notifications until the new widget is attached on a fresh loop iteration.
     pending_managed_worktree_attach: Option<Box<working_directory::ManagedWorktreeAttach>>,
     /// Keeps protected screens quarantined until initialized chat receives genuine user input.
