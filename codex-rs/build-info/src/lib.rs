@@ -9,6 +9,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 static BUILD_INFO: OnceLock<BuildInfo> = OnceLock::new();
+const CODEXDD_VERSION_FILE: &str = include_str!("../../codexdd-version.txt");
 
 /// Initialize build information from the commit stamped into the calling executable.
 ///
@@ -116,6 +117,36 @@ impl fmt::Display for BuildInfo {
             self.version.fmt(formatter)
         }
     }
+}
+
+/// Return the codexdd product version without changing the upstream Codex workspace version.
+pub fn codexdd_version() -> &'static str {
+    CODEXDD_VERSION_FILE.trim()
+}
+
+/// Return a compact codexdd identity suitable for TUI/status surfaces.
+pub fn codexdd_compact_identity() -> String {
+    codexdd_compact_identity_for_commit(BuildInfo::get().build_commit())
+}
+
+fn codexdd_compact_identity_for_commit(build_commit: &str) -> String {
+    format!(
+        "{} ({})",
+        codexdd_version(),
+        compact_build_commit(build_commit)
+    )
+}
+
+fn compact_build_commit(build_commit: &str) -> String {
+    if build_commit == "dev" || build_commit == "unknown" {
+        return build_commit.to_string();
+    }
+
+    let (commit, dirty_suffix) = build_commit
+        .strip_suffix("-dirty")
+        .map_or((build_commit, ""), |commit| (commit, "-dirty"));
+    let short: String = commit.chars().take(12).collect();
+    format!("{short}{dirty_suffix}")
 }
 
 #[cfg(test)]

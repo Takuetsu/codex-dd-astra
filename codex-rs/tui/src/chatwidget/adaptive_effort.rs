@@ -338,8 +338,10 @@ impl ChatWidget {
                 .failure_pressure_for_turn(thread_id, source_turn_id),
             _ => 0,
         };
+        let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
+            codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
             family(state.current_family),
