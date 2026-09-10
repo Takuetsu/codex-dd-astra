@@ -100,9 +100,12 @@ impl ChatWidget {
                     crate::adaptive_policy::AdaptiveFailureKind::Capability,
                 ),
             ),
-            AdaptiveRuntimeSignalKind::ReadyForValidation => {
-                self.begin_adaptive_validation(source_turn_id)
-            }
+            // READY_FOR_VALIDATION is a hard handoff boundary for the current
+            // Implementation/Repair Worker. Validation must run in a fresh,
+            // independently bound Worker thread; never mutate this Worker's
+            // authority or admit another same-thread adaptive successor.
+            AdaptiveRuntimeSignalKind::ReadyForValidation => self
+                .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::ReadyForValidation),
             AdaptiveRuntimeSignalKind::RepairRequired => self
                 .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::RepairRequired),
             AdaptiveRuntimeSignalKind::ReadyForOwnerQa => self
@@ -209,6 +212,59 @@ mod tests {
             turn_id: turn_id.to_string(),
             completed_at_ms: 1,
         }
+    }
+
+    #[tokio::test]
+    async fn implementation_ready_for_validation_is_hard_handoff_and_admits_no_successor() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "implementation-ready-for-independent-validation";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("breakwater/Z-A0.46A-buildstamp-repair".to_string());
+        // Mirror the observed runaway at the top of the ladder. A valid handoff
+        // must preserve the completed Worker's route/attempt rather than reset
+        // the same thread to a Validation Worker at Luna Low.
+        chat.adaptive_effort.current_family = Some(AdaptiveFamily::Astra);
+        chat.adaptive_effort.current_effort = Some(AdaptiveEffort::Max);
+        chat.adaptive_effort.attempt_number = 28;
+        chat.adaptive_effort.unfinished_turn_pressure = 1;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some("READY_FOR_VALIDATION - fresh independent validator required".to_string()),
+            },
+        });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        );
+        assert_eq!(
+            chat.adaptive_effort.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+        );
+        assert_eq!(
+            chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+            Some("breakwater/Z-A0.46A-buildstamp-repair")
+        );
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Astra));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Max));
+        assert_eq!(chat.adaptive_effort.attempt_number, 28);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
     }
 
     #[tokio::test]
