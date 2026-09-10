@@ -83,7 +83,10 @@ async fn repository_handoff_alias_emits_owner_qa_terminal_signal() {
     let EventMsg::AdaptiveRuntimeSignal(signal) = event.msg else {
         panic!("expected adaptive runtime signal");
     };
-    assert_eq!(signal.signal_kind, AdaptiveRuntimeSignalKind::ReadyForOwnerQa);
+    assert_eq!(
+        signal.signal_kind,
+        AdaptiveRuntimeSignalKind::ReadyForOwnerQa
+    );
     assert_eq!(
         signal.evidence_refs,
         vec!["success-a".to_string(), "success-b".to_string()]
@@ -103,7 +106,10 @@ fn tool_spec_documents_repository_handoff_terminal_mapping() {
     };
     assert!(spec.description.contains("READY FOR REPOSITORY HANDOFF"));
     assert!(spec.description.contains("ready_for_repository_handoff"));
-    assert!(spec.description.contains("Final-answer prose is non-authoritative"));
+    assert!(
+        spec.description
+            .contains("Final-answer prose is non-authoritative")
+    );
 }
 
 #[tokio::test]

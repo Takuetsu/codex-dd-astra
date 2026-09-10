@@ -233,9 +233,6 @@ impl ChatWidget {
 
 fn adaptive_continuation_text(permit: &AdaptiveSuccessorPermit) -> String {
     let decision = match permit.decision {
-        crate::chatwidget::adaptive_effort::AdaptivePendingDecision::BeginValidation => {
-            "BeginValidation"
-        }
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute => {
             "ContinueSameRoute"
         }

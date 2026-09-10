@@ -9,11 +9,11 @@ pub(crate) use crate::adaptive_policy::AdaptiveOutcome;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
-    BeginValidation,
     ContinueSameRoute,
     RetrySameLevel,
     EscalateEffort,
@@ -76,6 +76,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) last_outcome: Option<AdaptiveOutcome>,
     pub(crate) last_failure_kind: Option<AdaptiveFailureKind>,
     pub(crate) worker_context: AdaptiveWorkerContext,
+    pub(crate) worker_assignment_locked: bool,
     pub(crate) workflow_terminal: Option<AdaptiveWorkflowTerminal>,
     pub(crate) transient_retry_consumed: bool,
     pub(crate) unfinished_turn_pressure: u8,
@@ -115,11 +116,26 @@ impl AdaptiveEffortState {
         self.activate_adaptive_family(preferred_family, false);
     }
 
-    fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
-        let mut worker_context = self.worker_context.clone();
-        if worker_context.role == AdaptiveWorkerRole::Unspecified {
-            worker_context.role = AdaptiveWorkerRole::Implementation;
+    pub(crate) fn observe_worker_assignment_text(&mut self, text: &str) -> Result<bool, String> {
+        if self.worker_assignment_locked {
+            return Ok(false);
         }
+        self.worker_assignment_locked = true;
+        match parse_adaptive_worker_assignment(text) {
+            Ok(Some(worker_context)) => {
+                self.worker_context = worker_context;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(err) => Err(err),
+        }
+    }
+
+    fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
+        let worker_context = self.worker_context.clone();
+        let worker_assignment_locked = self.worker_assignment_locked
+            || worker_context.role != AdaptiveWorkerRole::Unspecified
+            || worker_context.authorized_scope.is_some();
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
         *self = Self {
@@ -136,6 +152,7 @@ impl AdaptiveEffortState {
             last_outcome: None,
             last_failure_kind: None,
             worker_context,
+            worker_assignment_locked,
             workflow_terminal,
             transient_retry_consumed: false,
             unfinished_turn_pressure: 0,
@@ -325,6 +342,29 @@ impl ChatWidget {
             AdaptiveWorkerRole::Validation => "Validation",
             AdaptiveWorkerRole::Repair => "Repair",
         };
+        let worker_scope = state
+            .worker_context
+            .authorized_scope
+            .as_deref()
+            .filter(|scope| !scope.trim().is_empty())
+            .unwrap_or("None");
+        let worker_is_bound = matches!(
+            state.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+                | AdaptiveWorkerRole::Validation
+                | AdaptiveWorkerRole::Repair
+        ) && state
+            .worker_context
+            .authorized_scope
+            .as_deref()
+            .is_some_and(|scope| !scope.trim().is_empty());
+        let worker_binding = if worker_is_bound {
+            "Bound"
+        } else if state.worker_assignment_locked {
+            "Locked unbound"
+        } else {
+            "Awaiting first assignment"
+        };
         let workflow_terminal = match state.workflow_terminal {
             Some(AdaptiveWorkflowTerminal::ReadyForValidation) => "READY_FOR_VALIDATION",
             Some(AdaptiveWorkflowTerminal::RepairRequired) => "REPAIR_REQUIRED",
@@ -340,7 +380,7 @@ impl ChatWidget {
         };
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
@@ -355,7 +395,119 @@ impl ChatWidget {
             outcome,
             failure,
             worker_role,
+            worker_scope,
+            worker_binding,
             workflow_terminal
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const VALIDATION_ASSIGNMENT: &str = "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"Z-A0.45B-R2 independent verification\"\n\nReview the exact pushed R2 candidate.";
+
+    #[test]
+    fn plain_adaptive_startup_waits_for_external_worker_binding() {
+        let mut state = AdaptiveEffortState::default();
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+
+        assert!(state.enabled);
+        assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
+        assert!(!state.worker_assignment_locked);
+    }
+
+    #[test]
+    fn first_assignment_binds_once_and_later_messages_cannot_mutate_authority() {
+        let mut state = AdaptiveEffortState::default();
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(true)
+        );
+        assert!(state.worker_assignment_locked);
+        assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("Z-A0.45B-R2 independent verification")
+        );
+
+        assert_eq!(
+            state.observe_worker_assignment_text(
+                "[adaptive_worker]\nrole = \"repair\"\nauthorized_scope = \"different scope\"\n\nRepair it."
+            ),
+            Ok(false)
+        );
+        assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("Z-A0.45B-R2 independent verification")
+        );
+    }
+
+    #[test]
+    fn first_message_without_valid_header_locks_thread_unbound() {
+        let mut state = AdaptiveEffortState::default();
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+
+        assert_eq!(
+            state.observe_worker_assignment_text("Review the candidate without a typed header."),
+            Ok(false)
+        );
+        assert!(state.worker_assignment_locked);
+        assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(false)
+        );
+        assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
+    }
+
+    #[test]
+    fn malformed_first_header_locks_thread_unbound() {
+        let mut state = AdaptiveEffortState::default();
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+
+        assert!(
+            state
+                .observe_worker_assignment_text(
+                    "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"R2\"\n\nReview it."
+                )
+                .is_err()
+        );
+        assert!(state.worker_assignment_locked);
+        assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(false)
+        );
+    }
+
+    #[test]
+    fn preconfigured_worker_authority_cannot_be_overridden_by_prompt() {
+        let mut state = AdaptiveEffortState {
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("preconfigured implementation gate".to_string()),
+            },
+            ..Default::default()
+        };
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+
+        assert!(state.worker_assignment_locked);
+        assert_eq!(
+            state.observe_worker_assignment_text(VALIDATION_ASSIGNMENT),
+            Ok(false)
+        );
+        assert_eq!(
+            state.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+        );
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("preconfigured implementation gate")
+        );
     }
 }

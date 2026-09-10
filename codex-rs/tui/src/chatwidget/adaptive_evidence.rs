@@ -7,6 +7,8 @@ use crate::adaptive_evidence::record_from_item_completion;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::ItemCompletedNotification;
+use codex_app_server_protocol::ThreadItem;
+use codex_app_server_protocol::UserInput;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 
 impl ChatWidget {
@@ -14,6 +16,12 @@ impl ChatWidget {
         let Some(thread_id) = self.thread_id else {
             return;
         };
+        if notification.thread_id != thread_id.to_string() {
+            return;
+        }
+
+        self.observe_adaptive_worker_assignment(notification);
+
         let Some(record) = record_from_item_completion(notification) else {
             return;
         };
@@ -47,5 +55,74 @@ impl ChatWidget {
         }
 
         self.save_adaptive_effort_for_current_thread();
+    }
+
+    fn observe_adaptive_worker_assignment(&mut self, notification: &ItemCompletedNotification) {
+        if !self.adaptive_effort.enabled || self.adaptive_effort.worker_assignment_locked {
+            return;
+        }
+        let ThreadItem::UserMessage { content, .. } = &notification.item else {
+            return;
+        };
+
+        let assignment_text = content
+            .iter()
+            .filter_map(|input| match input {
+                UserInput::Text { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let result = self
+            .adaptive_effort
+            .observe_worker_assignment_text(&assignment_text);
+        self.save_adaptive_effort_for_current_thread();
+
+        if let Err(err) = result {
+            self.add_error_message(format!(
+                "Adaptive Worker assignment rejected: {err}. This thread is locked unbound; start a fresh Worker thread with a valid [adaptive_worker] header."
+            ));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn user_message_notification(text: &str) -> ItemCompletedNotification {
+        ItemCompletedNotification {
+            item: ThreadItem::UserMessage {
+                id: "user-message".to_string(),
+                client_id: None,
+                content: vec![UserInput::Text {
+                    text: text.to_string(),
+                    text_elements: Vec::new(),
+                }],
+            },
+            thread_id: "thread".to_string(),
+            turn_id: "turn".to_string(),
+            completed_at_ms: 1,
+        }
+    }
+
+    #[test]
+    fn user_assignment_item_preserves_typed_header_text_for_binding() {
+        let notification = user_message_notification(
+            "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"R2 review\"\n\nReview the candidate.",
+        );
+        let ThreadItem::UserMessage { content, .. } = notification.item else {
+            panic!("expected user message");
+        };
+        let text = content
+            .iter()
+            .filter_map(|input| match input {
+                UserInput::Text { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(text.starts_with("[adaptive_worker]"));
+        assert!(text.contains("authorized_scope = \"R2 review\""));
     }
 }
