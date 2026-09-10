@@ -197,11 +197,9 @@ mod tests {
                 plugin_id: None,
                 script_path: None,
                 command: "review command".to_string(),
-                cwd: AbsolutePathBuf::from_absolute_path(
-                    std::env::current_dir().expect("cwd"),
-                )
-                .expect("absolute cwd")
-                .into(),
+                cwd: AbsolutePathBuf::from_absolute_path(std::env::current_dir().expect("cwd"))
+                    .expect("absolute cwd")
+                    .into(),
                 process_id: None,
                 source: CommandExecutionSource::Agent,
                 status,
@@ -257,11 +255,20 @@ mod tests {
             AdaptiveWorkerRole::Implementation
         );
         assert_eq!(
-            chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+            chat.adaptive_effort
+                .worker_context
+                .authorized_scope
+                .as_deref(),
             Some("breakwater/Z-A0.46A-buildstamp-repair")
         );
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Astra));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Max));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Astra)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Max)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 28);
         assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
         assert_eq!(chat.adaptive_effort.pending_attempt, None);
@@ -325,8 +332,14 @@ mod tests {
             chat.adaptive_effort.workflow_terminal,
             Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
         );
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Low)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 1);
         assert_eq!(chat.adaptive_effort.pending_attempt, None);
         assert_eq!(chat.adaptive_effort.successor_admission, None);
@@ -385,8 +398,14 @@ mod tests {
             chat.adaptive_effort.workflow_terminal,
             Some(AdaptiveWorkflowTerminal::RepairRequired)
         );
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Low)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 1);
         assert_eq!(chat.adaptive_effort.pending_attempt, None);
         assert_eq!(chat.adaptive_effort.successor_admission, None);
