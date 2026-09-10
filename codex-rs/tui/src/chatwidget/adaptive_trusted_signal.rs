@@ -274,4 +274,64 @@ mod tests {
         assert_eq!(chat.adaptive_effort.successor_admission, None);
         assert!(!chat.maybe_submit_adaptive_successor());
     }
+
+    #[tokio::test]
+    async fn repair_required_terminal_overrides_armed_failure_pressure_and_admits_no_successor() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "failed-validation-repair-required";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("breakwater/Z-A0.46A-independent-validation".to_string());
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "validation-failure-1",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "validation-failure-2",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Pending(ref signal))
+                if signal.signal_kind == AdaptiveRuntimeSignalKind::Capability
+        ));
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::RepairRequired,
+                evidence_refs: vec![
+                    "validation-failure-1".to_string(),
+                    "validation-failure-2".to_string(),
+                ],
+                diagnostic_note: Some("FAIL Z-A0.46A REPAIR_REQUIRED".to_string()),
+            },
+        });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::RepairRequired)
+        );
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
+    }
 }
