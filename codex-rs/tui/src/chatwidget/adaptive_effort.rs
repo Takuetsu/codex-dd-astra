@@ -110,6 +110,26 @@ impl AdaptiveFamily {
 }
 
 impl AdaptiveEffortState {
+    fn fresh_for_new_worker(&self, binding: Option<&NewWorkerBinding>) -> Self {
+        let enabled = self.enabled || binding.is_some();
+        let worker_context = binding.map_or_else(AdaptiveWorkerContext::default, |binding| {
+            AdaptiveWorkerContext {
+                role: binding.role,
+                authorized_scope: Some(binding.authorized_scope.clone()),
+            }
+        });
+        Self {
+            enabled,
+            starting_family: self.starting_family,
+            current_family: enabled.then_some(AdaptiveFamily::Luna),
+            current_effort: enabled.then_some(AdaptiveEffort::Low),
+            attempt_number: enabled.then_some(1).unwrap_or_default(),
+            worker_context,
+            worker_assignment_locked: binding.is_some(),
+            ..Default::default()
+        }
+    }
+
     pub(crate) fn activate_adaptive_startup(&mut self, preferred_family: AdaptiveFamily) {
         if self.paused_by_user || self.workflow_terminal.is_some() {
             return;
@@ -171,23 +191,7 @@ impl ChatWidget {
         &self,
         binding: Option<&NewWorkerBinding>,
     ) -> AdaptiveEffortState {
-        let enabled = self.adaptive_effort.enabled || binding.is_some();
-        let worker_context = binding.map_or_else(AdaptiveWorkerContext::default, |binding| {
-            AdaptiveWorkerContext {
-                role: binding.role,
-                authorized_scope: Some(binding.authorized_scope.clone()),
-            }
-        });
-        AdaptiveEffortState {
-            enabled,
-            starting_family: self.adaptive_effort.starting_family,
-            current_family: enabled.then_some(AdaptiveFamily::Luna),
-            current_effort: enabled.then_some(AdaptiveEffort::Low),
-            attempt_number: enabled.then_some(1).unwrap_or_default(),
-            worker_context,
-            worker_assignment_locked: binding.is_some(),
-            ..Default::default()
-        }
+        self.adaptive_effort.fresh_for_new_worker(binding)
     }
 
     pub(super) fn save_adaptive_effort_for_current_thread(&self) {
@@ -440,6 +444,74 @@ mod tests {
         assert!(state.enabled);
         assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
         assert!(!state.worker_assignment_locked);
+    }
+
+    #[test]
+    fn fresh_roleful_worker_preserves_preference_but_resets_lifecycle_state() {
+        let mut previous = AdaptiveEffortState::default();
+        previous.activate_adaptive_startup(AdaptiveFamily::Astra);
+        previous.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("old scope".to_string()),
+        };
+        previous.worker_assignment_locked = true;
+        previous.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+        previous.last_outcome = Some(AdaptiveOutcome::ReadyForOwnerQa);
+        previous.last_failure_kind = Some(AdaptiveFailureKind::Capability);
+        previous.unfinished_turn_pressure = 1;
+        previous
+            .evidence_registry
+            .register(crate::adaptive_evidence::AdaptiveEvidenceRecord {
+                evidence_id: "old-evidence".to_string(),
+                thread_id: codex_protocol::ThreadId::new(),
+                source_turn_id: "old-turn".to_string(),
+                outcome: crate::adaptive_evidence::AdaptiveEvidenceOutcome::Failure,
+                kind: crate::adaptive_evidence::AdaptiveEvidenceKind::CommandExecution,
+            });
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: " exact new scope ".to_string(),
+        };
+
+        assert_eq!(
+            previous.fresh_for_new_worker(Some(&binding)),
+            AdaptiveEffortState {
+                enabled: true,
+                starting_family: Some(AdaptiveFamily::Astra),
+                current_family: Some(AdaptiveFamily::Luna),
+                current_effort: Some(AdaptiveEffort::Low),
+                attempt_number: 1,
+                worker_context: AdaptiveWorkerContext {
+                    role: AdaptiveWorkerRole::Validation,
+                    authorized_scope: Some(" exact new scope ".to_string()),
+                },
+                worker_assignment_locked: true,
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn fresh_bare_worker_is_unbound_and_unlocked() {
+        let mut previous = AdaptiveEffortState::default();
+        previous.activate_adaptive_startup(AdaptiveFamily::Astra);
+        previous.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Repair,
+            authorized_scope: Some("old scope".to_string()),
+        };
+        previous.worker_assignment_locked = true;
+
+        assert_eq!(
+            previous.fresh_for_new_worker(None),
+            AdaptiveEffortState {
+                enabled: true,
+                starting_family: Some(AdaptiveFamily::Astra),
+                current_family: Some(AdaptiveFamily::Luna),
+                current_effort: Some(AdaptiveEffort::Low),
+                attempt_number: 1,
+                ..Default::default()
+            }
+        );
     }
 
     #[test]

@@ -2832,6 +2832,7 @@ async fn slash_new_unknown_argument_is_rejected_without_starting_a_session() {
 async fn slash_new_role_arguments_emit_typed_bindings() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.adaptive_effort.worker_context.authorized_scope = Some("scope-1".to_string());
+    let original_worker_context = chat.adaptive_effort.worker_context.clone();
 
     for (role, command) in [
         (AdaptiveWorkerRole::Implementation, "/new implementation"),
@@ -2852,6 +2853,21 @@ async fn slash_new_role_arguments_emit_typed_bindings() {
             }) if actual_role == role && authorized_scope == "scope-1"
         );
     }
+
+    assert_eq!(chat.adaptive_effort.worker_context, original_worker_context);
+}
+
+#[tokio::test]
+async fn slash_new_role_requires_a_nonempty_current_scope() {
+    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("   ".to_string());
+    chat.bottom_pane
+        .set_composer_text("/new repair".to_string(), Vec::new(), Vec::new());
+
+    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+
+    assert!(matches!(rx.try_recv(), Ok(AppEvent::InsertHistoryCell(_))));
+    assert!(matches!(rx.try_recv(), Err(TryRecvError::Empty)));
 }
 
 #[tokio::test]
