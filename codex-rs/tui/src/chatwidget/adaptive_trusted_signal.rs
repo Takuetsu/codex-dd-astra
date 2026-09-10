@@ -104,8 +104,10 @@ impl ChatWidget {
             // Implementation/Repair Worker. Validation must run in a fresh,
             // independently bound Worker thread; never mutate this Worker's
             // authority or admit another same-thread adaptive successor.
-            AdaptiveRuntimeSignalKind::ReadyForValidation => self
-                .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::ReadyForValidation),
+            AdaptiveRuntimeSignalKind::ReadyForValidation => self.latch_workflow_terminal(
+                source_turn_id,
+                AdaptiveWorkflowTerminal::ReadyForValidation,
+            ),
             AdaptiveRuntimeSignalKind::RepairRequired => self
                 .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::RepairRequired),
             AdaptiveRuntimeSignalKind::ReadyForOwnerQa => self
@@ -240,7 +242,7 @@ mod tests {
                 source_turn_id: turn_id.to_string(),
                 signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
                 evidence_refs: Vec::new(),
-                diagnostic_note: Some("READY_FOR_VALIDATION - fresh independent validator required".to_string()),
+                diagnostic_note: Some("READY_FOR_VALIDATION".to_string()),
             },
         });
 
