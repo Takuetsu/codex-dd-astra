@@ -53,6 +53,72 @@ async fn production_handler_emits_signal_with_active_turn_identity() {
 }
 
 #[tokio::test]
+async fn capability_requires_nonblank_diagnostic_before_emitting_event() {
+    for arguments in [
+        json!({ "kind": "capability" }),
+        json!({ "kind": "capability", "diagnostic_note": "   " }),
+    ] {
+        let (session, turn, events) = make_session_and_context_with_rx().await;
+        let result = AdaptiveSignalHandler
+            .handle(ToolInvocation {
+                session,
+                step_context: StepContext::for_test(Arc::clone(&turn)),
+                turn,
+                cancellation_token: tokio_util::sync::CancellationToken::new(),
+                tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
+                call_id: "reasonless-capability".to_string(),
+                tool_name: ToolName::plain(TOOL_NAME),
+                source: ToolCallSource::Direct,
+                payload: ToolPayload::Function {
+                    arguments: arguments.to_string(),
+                },
+            })
+            .await;
+
+        let error = result.expect_err("reasonless capability must be rejected");
+        assert!(error.to_string().contains("requires a nonblank diagnostic_note"));
+        assert!(events.try_recv().is_err());
+    }
+}
+
+#[tokio::test]
+async fn capability_emits_trimmed_escalation_report() {
+    let (session, turn, events) = make_session_and_context_with_rx().await;
+    let source_turn_id = turn.sub_id.clone();
+    AdaptiveSignalHandler
+        .handle(ToolInvocation {
+            session,
+            step_context: StepContext::for_test(Arc::clone(&turn)),
+            turn,
+            cancellation_token: tokio_util::sync::CancellationToken::new(),
+            tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
+            call_id: "reported-capability".to_string(),
+            tool_name: ToolName::plain(TOOL_NAME),
+            source: ToolCallSource::Direct,
+            payload: ToolPayload::Function {
+                arguments: json!({
+                    "kind": "capability",
+                    "diagnostic_note": "  Luna High cannot resolve the bounded constraint; stronger model capability is required.  "
+                })
+                .to_string(),
+            },
+        })
+        .await
+        .expect("reported capability output");
+
+    let event = events.recv().await.expect("adaptive signal event");
+    assert_eq!(event.id, source_turn_id);
+    let EventMsg::AdaptiveRuntimeSignal(signal) = event.msg else {
+        panic!("expected adaptive runtime signal");
+    };
+    assert_eq!(signal.signal_kind, AdaptiveRuntimeSignalKind::Capability);
+    assert_eq!(
+        signal.diagnostic_note.as_deref(),
+        Some("Luna High cannot resolve the bounded constraint; stronger model capability is required.")
+    );
+}
+
+#[tokio::test]
 async fn repository_handoff_alias_emits_owner_qa_terminal_signal() {
     let (session, turn, events) = make_session_and_context_with_rx().await;
     let source_turn_id = turn.sub_id.clone();
@@ -106,6 +172,7 @@ fn tool_spec_documents_repository_handoff_terminal_mapping() {
     };
     assert!(spec.description.contains("READY FOR REPOSITORY HANDOFF"));
     assert!(spec.description.contains("ready_for_repository_handoff"));
+    assert!(spec.description.contains("capability request must include a nonblank diagnostic report"));
     assert!(
         spec.description
             .contains("Final-answer prose is non-authoritative")
@@ -126,7 +193,10 @@ async fn production_handler_rejects_authority_fields() {
         "attempt",
         "requested_next_route",
     ] {
-        let mut arguments = json!({ "kind": "capability" });
+        let mut arguments = json!({
+            "kind": "capability",
+            "diagnostic_note": "Current route lacks required capability."
+        });
         arguments[field] = json!("caller authority");
         let result = AdaptiveSignalHandler
             .handle(ToolInvocation {
