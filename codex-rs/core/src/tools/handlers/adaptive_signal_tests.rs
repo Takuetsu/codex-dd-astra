@@ -75,8 +75,15 @@ async fn capability_requires_nonblank_diagnostic_before_emitting_event() {
             })
             .await;
 
-        let error = result.expect_err("reasonless capability must be rejected");
-        assert!(error.to_string().contains("requires a nonblank diagnostic_note"));
+        let error = match result {
+            Ok(_) => panic!("reasonless capability must be rejected"),
+            Err(error) => error,
+        };
+        assert!(
+            error
+                .to_string()
+                .contains("requires a nonblank diagnostic_note")
+        );
         assert!(events.try_recv().is_err());
     }
 }
@@ -172,7 +179,10 @@ fn tool_spec_documents_repository_handoff_terminal_mapping() {
     };
     assert!(spec.description.contains("READY FOR REPOSITORY HANDOFF"));
     assert!(spec.description.contains("ready_for_repository_handoff"));
-    assert!(spec.description.contains("capability request must include a nonblank diagnostic report"));
+    assert!(
+        spec.description
+            .contains("capability request must include a nonblank diagnostic report")
+    );
     assert!(
         spec.description
             .contains("Final-answer prose is non-authoritative")
