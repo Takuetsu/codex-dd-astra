@@ -4011,6 +4011,144 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
         .expect("session lifecycle request test thread")
 }
 
+#[tokio::test]
+async fn new_session_event_is_deferred_and_duplicate_is_rejected() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, _requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    let binding = crate::adaptive_worker::NewWorkerBinding {
+        role: AdaptiveWorkerRole::Validation,
+        authorized_scope: "exact regression scope".to_string(),
+    };
+
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: Some("deferred".to_string()),
+            worker_binding: Some(binding.clone()),
+        },
+    )
+    .await?;
+    assert!(app.pending_new_session.is_some());
+    assert_eq!(
+        app.pending_new_session.as_ref().unwrap().worker_binding,
+        Some(binding)
+    );
+
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: Some("rejected".to_string()),
+            worker_binding: None,
+        },
+    )
+    .await?;
+    assert_eq!(
+        app.pending_new_session.as_ref().unwrap().name.as_deref(),
+        Some("deferred")
+    );
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_new_session_starts_distinct_attached_bound_worker() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    let binding = crate::adaptive_worker::NewWorkerBinding {
+        role: AdaptiveWorkerRole::Validation,
+        authorized_scope: "exact regression scope".to_string(),
+    };
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: Some(binding),
+        },
+    )
+    .await?;
+    assert!(recorded_params(&requests, "thread/start").is_empty());
+
+    let pending = app.pending_new_session.take().expect("pending /new");
+    assert_eq!(app.primary_thread_id, Some(pending.source_thread_id));
+    app.start_fresh_session_with_worker_binding(
+        &mut tui,
+        &mut server,
+        /*session_start_source*/ None,
+        /*initial_user_message*/ None,
+        pending.name,
+        pending.worker_binding,
+    )
+    .await;
+
+    let destination = app.chat_widget.thread_id().expect("attached destination");
+    assert_ne!(destination, source);
+    assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_new_session_rejects_changed_source() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, _requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: None,
+        },
+    )
+    .await?;
+    app.primary_thread_id = Some(ThreadId::new());
+    let pending = app.pending_new_session.take().expect("pending /new");
+    assert_ne!(app.primary_thread_id, Some(pending.source_thread_id));
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
 #[path = "new_session_tests.rs"]
 mod new_session_tests;
 #[path = "startup_defaults_tests.rs"]
