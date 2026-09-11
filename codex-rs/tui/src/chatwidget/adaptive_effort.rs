@@ -187,6 +187,16 @@ impl AdaptiveEffortState {
 }
 
 impl ChatWidget {
+    #[cfg(test)]
+    pub(crate) fn adaptive_effort_for_test(&self) -> &AdaptiveEffortState {
+        &self.adaptive_effort
+    }
+
+    #[cfg(test)]
+    pub(crate) fn adaptive_effort_for_test_mut(&mut self) -> &mut AdaptiveEffortState {
+        &mut self.adaptive_effort
+    }
+
     pub(crate) fn fresh_adaptive_effort_for_new_worker(
         &self,
         binding: Option<&NewWorkerBinding>,

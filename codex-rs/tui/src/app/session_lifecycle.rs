@@ -39,6 +39,38 @@ pub(super) struct LoadedSubagentBackfill {
 }
 
 impl App {
+    /// Processes one deferred `/new` request using the same path as the top-level event loop.
+    pub(super) async fn process_pending_new_session(
+        &mut self,
+        tui: &mut tui::Tui,
+        app_server: &mut AppServerSession,
+    ) -> bool {
+        let Some(pending) = self.pending_new_session.take() else {
+            return false;
+        };
+        if self.primary_thread_id != Some(pending.source_thread_id)
+            || self.config.cwd != pending.source_cwd
+        {
+            self.chat_widget.add_error_message(
+                "The source session changed before the new session could start.".to_string(),
+            );
+            return true;
+        }
+        Box::pin(self.start_fresh_session_with_worker_binding(
+            tui,
+            app_server,
+            /*session_start_source*/ None,
+            /*initial_user_message*/ None,
+            pending.name,
+            pending.worker_binding,
+        ))
+        .await;
+        if self.chat_widget.has_misalignment_policy_violation() {
+            self.chat_widget.show_misalignment_policy_precaution();
+        }
+        true
+    }
+
     pub(super) async fn open_agent_picker(&mut self, app_server: &mut AppServerSession) {
         let backfill = if self.primary_thread_id.is_none() {
             self.backfill_loaded_subagent_threads(app_server).await
