@@ -125,6 +125,31 @@ impl ChatWidget {
     }
 
     fn apply_capability_signal_with_report(&mut self, source_turn_id: &str, diagnostic: &str) {
+        if diagnostic == AUTO_FAILURE_PRESSURE_DIAGNOSTIC
+            && let Some((from, to)) = self.model_escalation_boundary()
+        {
+            self.adaptive_effort.unfinished_turn_pressure = 0;
+            self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
+            self.adaptive_effort.pending_attempt = None;
+            self.adaptive_effort.successor_admission = None;
+            self.adaptive_effort.last_outcome = None;
+            self.adaptive_effort.last_failure_kind = None;
+            self.add_info_message(
+                format!(
+                    "Adaptive model escalation withheld\n  From: {} {:?}\n  Proposed: {} {:?}\n  Native failure pressure: {}/{}\n  Required: a fresh trusted Capability report explaining why stronger model capability is required. Two failed tools alone can raise effort inside one model family, but cannot authorize a model-family jump.",
+                    from.family.model(),
+                    from.effort,
+                    to.family.model(),
+                    to.effort,
+                    ADAPTIVE_FAILURE_PRESSURE_THRESHOLD,
+                    ADAPTIVE_FAILURE_PRESSURE_THRESHOLD,
+                ),
+                None,
+            );
+            self.save_adaptive_effort_for_current_thread();
+            return;
+        }
+
         if let Some(report) = self.model_escalation_report(diagnostic) {
             self.add_info_message(report, None);
         }
@@ -136,7 +161,7 @@ impl ChatWidget {
         );
     }
 
-    fn model_escalation_report(&self, diagnostic: &str) -> Option<String> {
+    fn model_escalation_boundary(&self) -> Option<(AdaptiveRoute, AdaptiveRoute)> {
         let state = &self.adaptive_effort;
         let (Some(starting_family), Some(current_family), Some(current_effort)) = (
             state.starting_family,
@@ -152,21 +177,18 @@ impl ChatWidget {
         let AdaptiveTransition::EscalateModel(to) = next_route(starting_family, from) else {
             return None;
         };
-        let reason = if diagnostic == AUTO_FAILURE_PRESSURE_DIAGNOSTIC {
-            format!(
-                "two native tool failures were recorded for this turn (failure pressure {}/{}).",
-                ADAPTIVE_FAILURE_PRESSURE_THRESHOLD, ADAPTIVE_FAILURE_PRESSURE_THRESHOLD
-            )
-        } else {
-            diagnostic.trim().to_string()
-        };
+        Some((from, to))
+    }
+
+    fn model_escalation_report(&self, diagnostic: &str) -> Option<String> {
+        let (from, to) = self.model_escalation_boundary()?;
         Some(format!(
             "Adaptive model escalation report\n  From: {} {:?}\n  To: {} {:?}\n  Why: {}",
             from.family.model(),
             from.effort,
             to.family.model(),
             to.effort,
-            reason,
+            diagnostic.trim(),
         ))
     }
 
@@ -327,6 +349,151 @@ mod tests {
                 ),
             },
         });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Terra));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(chat.adaptive_effort.attempt_number, 6);
+        assert_eq!(
+            chat.adaptive_effort.last_failure_kind,
+            Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
+        );
+    }
+
+    #[tokio::test]
+    async fn native_failure_pressure_still_escalates_effort_inside_one_family() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "luna-low-native-pressure";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded repair".to_string());
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "same-family-failure-1",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "same-family-failure-2",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+        assert_eq!(chat.adaptive_effort.attempt_number, 2);
+        assert_eq!(
+            chat.adaptive_effort.last_failure_kind,
+            Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
+        );
+    }
+
+    #[tokio::test]
+    async fn native_failure_pressure_cannot_cross_model_family_boundary_without_report() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "luna-high-native-pressure";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded repair".to_string());
+        chat.adaptive_effort.current_family = Some(AdaptiveFamily::Luna);
+        chat.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
+        chat.adaptive_effort.attempt_number = 5;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "boundary-failure-1",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "boundary-failure-2",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::High));
+        assert_eq!(chat.adaptive_effort.attempt_number, 5);
+        assert_eq!(
+            chat.adaptive_effort.last_processed_terminal_turn_id.as_deref(),
+            Some(turn_id)
+        );
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert_eq!(chat.adaptive_effort.last_failure_kind, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
+    }
+
+    #[tokio::test]
+    async fn explicit_capability_report_supersedes_synthetic_pressure_and_crosses_boundary() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "luna-high-pressure-then-explicit-report";
+        let report = "Luna High cannot resolve the bounded implementation constraint; stronger model capability is required.";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded repair".to_string());
+        chat.adaptive_effort.current_family = Some(AdaptiveFamily::Luna);
+        chat.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
+        chat.adaptive_effort.attempt_number = 5;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "upgrade-failure-1",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "upgrade-failure-2",
+            CommandExecutionStatus::Failed,
+            1,
+        ));
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Pending(ref signal))
+                if signal.diagnostic_note.as_deref() == Some(AUTO_FAILURE_PRESSURE_DIAGNOSTIC)
+        ));
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::Capability,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some(report.to_string()),
+            },
+        });
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Pending(ref signal))
+                if signal.diagnostic_note.as_deref() == Some(report)
+        ));
 
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
