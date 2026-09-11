@@ -2,7 +2,11 @@
 
 use super::*;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
+use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
+use crate::adaptive_policy::AdaptiveRoute;
+use crate::adaptive_policy::AdaptiveTransition;
+use crate::adaptive_policy::next_route;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
@@ -31,19 +35,25 @@ impl ChatWidget {
                 self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
                     source_turn_id: source_turn_id.to_string(),
                 });
-                self.apply_adaptive_terminal_signal(
+                self.apply_capability_signal_with_report(
                     source_turn_id,
-                    crate::adaptive_policy::AdaptiveOutcomeSignal::Failure(
-                        crate::adaptive_policy::AdaptiveFailureKind::Capability,
-                    ),
+                    AUTO_FAILURE_PRESSURE_DIAGNOSTIC,
                 );
                 return true;
             }
             _ => return false,
         };
 
+        let capability_diagnostic = envelope
+            .diagnostic_note
+            .as_deref()
+            .map(str::trim)
+            .filter(|note| !note.is_empty())
+            .map(str::to_string);
         let accepted = match envelope.signal_kind {
-            AdaptiveRuntimeSignalKind::Capability => envelope.evidence_refs.is_empty(),
+            AdaptiveRuntimeSignalKind::Capability => {
+                envelope.evidence_refs.is_empty() && capability_diagnostic.is_some()
+            }
             AdaptiveRuntimeSignalKind::ReadyForValidation => {
                 envelope.evidence_refs.is_empty()
                     && matches!(
@@ -81,11 +91,9 @@ impl ChatWidget {
                 self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
                     source_turn_id: source_turn_id.to_string(),
                 });
-                self.apply_adaptive_terminal_signal(
+                self.apply_capability_signal_with_report(
                     source_turn_id,
-                    crate::adaptive_policy::AdaptiveOutcomeSignal::Failure(
-                        crate::adaptive_policy::AdaptiveFailureKind::Capability,
-                    ),
+                    AUTO_FAILURE_PRESSURE_DIAGNOSTIC,
                 );
                 return true;
             }
@@ -94,11 +102,11 @@ impl ChatWidget {
         }
 
         match signal_kind {
-            AdaptiveRuntimeSignalKind::Capability => self.apply_adaptive_terminal_signal(
+            AdaptiveRuntimeSignalKind::Capability => self.apply_capability_signal_with_report(
                 source_turn_id,
-                crate::adaptive_policy::AdaptiveOutcomeSignal::Failure(
-                    crate::adaptive_policy::AdaptiveFailureKind::Capability,
-                ),
+                capability_diagnostic
+                    .as_deref()
+                    .expect("accepted capability signal has a diagnostic report"),
             ),
             // READY_FOR_VALIDATION is a hard handoff boundary for the current
             // Implementation/Repair Worker. Validation must run in a fresh,
@@ -114,6 +122,52 @@ impl ChatWidget {
                 .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::ReadyForOwnerQa),
         }
         true
+    }
+
+    fn apply_capability_signal_with_report(&mut self, source_turn_id: &str, diagnostic: &str) {
+        if let Some(report) = self.model_escalation_report(diagnostic) {
+            self.add_info_message(report, None);
+        }
+        self.apply_adaptive_terminal_signal(
+            source_turn_id,
+            crate::adaptive_policy::AdaptiveOutcomeSignal::Failure(
+                crate::adaptive_policy::AdaptiveFailureKind::Capability,
+            ),
+        );
+    }
+
+    fn model_escalation_report(&self, diagnostic: &str) -> Option<String> {
+        let state = &self.adaptive_effort;
+        let (Some(starting_family), Some(current_family), Some(current_effort)) = (
+            state.starting_family,
+            state.current_family,
+            state.current_effort,
+        ) else {
+            return None;
+        };
+        let from = AdaptiveRoute {
+            family: current_family,
+            effort: current_effort,
+        };
+        let AdaptiveTransition::EscalateModel(to) = next_route(starting_family, from) else {
+            return None;
+        };
+        let reason = if diagnostic == AUTO_FAILURE_PRESSURE_DIAGNOSTIC {
+            format!(
+                "two native tool failures were recorded for this turn (failure pressure {}/{}).",
+                ADAPTIVE_FAILURE_PRESSURE_THRESHOLD, ADAPTIVE_FAILURE_PRESSURE_THRESHOLD
+            )
+        } else {
+            diagnostic.trim().to_string()
+        };
+        Some(format!(
+            "Adaptive model escalation report\n  From: {} {:?}\n  To: {} {:?}\n  Why: {}",
+            from.family.model(),
+            from.effort,
+            to.family.model(),
+            to.effort,
+            reason,
+        ))
     }
 
     fn native_failure_pressure_available(&self, source_turn_id: &str) -> bool {
@@ -212,6 +266,77 @@ mod tests {
             turn_id: turn_id.to_string(),
             completed_at_ms: 1,
         }
+    }
+
+    #[tokio::test]
+    async fn capability_signal_requires_nonblank_diagnostic_report() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "capability-without-report";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded repair".to_string());
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::Capability,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some("   ".to_string()),
+            },
+        });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Cancelled { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn diagnostic_capability_signal_can_cross_model_family_boundary() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "luna-high-capability-report";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded repair".to_string());
+        chat.adaptive_effort.current_family = Some(AdaptiveFamily::Luna);
+        chat.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
+        chat.adaptive_effort.attempt_number = 5;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::Capability,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some(
+                    "Current model repeatedly failed the bounded implementation step.".to_string(),
+                ),
+            },
+        });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Terra));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(chat.adaptive_effort.attempt_number, 6);
+        assert_eq!(
+            chat.adaptive_effort.last_failure_kind,
+            Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
+        );
     }
 
     #[tokio::test]
