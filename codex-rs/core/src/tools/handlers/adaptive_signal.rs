@@ -116,7 +116,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
             })?;
             args.evidence_refs.sort();
             args.evidence_refs.dedup();
-            if matches!(args.kind, SignalKind::Capability) {
+            if matches!(&args.kind, SignalKind::Capability) {
                 let Some(diagnostic_note) = args
                     .diagnostic_note
                     .as_deref()
