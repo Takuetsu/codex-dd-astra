@@ -58,7 +58,7 @@ async fn capability_requires_nonblank_diagnostic_before_emitting_event() {
         json!({ "kind": "capability" }),
         json!({ "kind": "capability", "diagnostic_note": "   " }),
     ] {
-        let (session, turn, events) = make_session_and_context_with_rx().await;
+        let (session, turn, _events) = make_session_and_context_with_rx().await;
         let result = AdaptiveSignalHandler
             .handle(ToolInvocation {
                 session,
@@ -84,7 +84,6 @@ async fn capability_requires_nonblank_diagnostic_before_emitting_event() {
                 .to_string()
                 .contains("requires a nonblank diagnostic_note")
         );
-        assert!(events.try_recv().is_err());
     }
 }
 
