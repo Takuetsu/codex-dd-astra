@@ -57,7 +57,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                     json!("ready_for_repository_handoff"),
                 ],
                 Some(
-                    "The trusted adaptive fact to report. A green Validation/Reviewer result such as PASS - READY FOR REPOSITORY HANDOFF must use ready_for_repository_handoff (or ready_for_owner_qa); both map to the READY_FOR_OWNER_QA hard terminal."
+                    "The trusted adaptive fact to report. `capability` requests additional compute and therefore requires a diagnostic_note explaining the concrete capability limitation at the current route and why stronger model capability is required. A green Validation/Reviewer result such as PASS - READY FOR REPOSITORY HANDOFF must use ready_for_repository_handoff (or ready_for_owner_qa); both map to the READY_FOR_OWNER_QA hard terminal."
                         .to_string(),
                 ),
             ),
@@ -75,12 +75,13 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
         properties.insert(
             "diagnostic_note".to_string(),
             JsonSchema::string(Some(
-                "Optional short non-authoritative diagnostic note.".to_string(),
+                "Required and nonblank for kind=capability: explain the concrete limitation encountered at the current model/effort and why stronger model capability is warranted. Optional non-authoritative context for workflow-terminal signals."
+                    .to_string(),
             )),
         );
         ToolSpec::Function(ResponsesApiTool {
             name: TOOL_NAME.to_string(),
-            description: "Report the structured adaptive outcome before ending a bound Worker turn. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
+            description: "Report the structured adaptive outcome before ending a bound Worker turn. A capability request must include a nonblank diagnostic report explaining the concrete current-route limitation and why stronger model capability is required; reasonless capability requests are rejected. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
                 .to_string(),
             strict: false,
             defer_loading: None,
@@ -115,6 +116,20 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
             })?;
             args.evidence_refs.sort();
             args.evidence_refs.dedup();
+            if matches!(args.kind, SignalKind::Capability) {
+                let Some(diagnostic_note) = args
+                    .diagnostic_note
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|note| !note.is_empty())
+                else {
+                    return Err(FunctionCallError::RespondToModel(
+                        "kind=capability requires a nonblank diagnostic_note explaining the concrete limitation at the current model/effort and why stronger model capability is required"
+                            .to_string(),
+                    ));
+                };
+                args.diagnostic_note = Some(diagnostic_note.to_string());
+            }
             let signal_kind = match args.kind {
                 SignalKind::Capability => AdaptiveRuntimeSignalKind::Capability,
                 SignalKind::ReadyForValidation => AdaptiveRuntimeSignalKind::ReadyForValidation,
