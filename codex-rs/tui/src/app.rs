@@ -643,12 +643,18 @@ pub(crate) struct App {
     /// Runs a requested /cd after event dispatch returns, with a fresh stack.
     pending_working_directory_change: Option<working_directory::PendingWorkingDirectoryChange>,
     /// Starts worktree setup after the event handler returns, with a fresh stack.
-    pending_start_managed_worktree: Option<(crate::app_event::ManagedWorktreeMode, Option<String>)>,
+    pending_start_managed_worktree: Option<(
+        crate::app_event::ManagedWorktreeMode,
+        Option<String>,
+        Option<crate::adaptive_worker::NewWorkerBinding>,
+    )>,
     pending_managed_worktree_creation: bool,
     /// Defers checkout completion and config loading until the event handler returns.
     pending_managed_worktree_created: Option<Box<crate::app_event::ManagedWorktreeCreated>>,
     /// Defers the saved-history fork until the event handler has returned.
     pending_managed_worktree_transition: Option<Box<crate::app_event::ManagedWorktreeTransition>>,
+    /// Defers fresh-session startup until the event handler has returned.
+    pending_new_session: Option<Box<session_lifecycle::PendingNewSession>>,
     /// Holds notifications until the new widget is attached on a fresh loop iteration.
     pending_managed_worktree_attach: Option<Box<working_directory::ManagedWorktreeAttach>>,
     /// Keeps protected screens quarantined until initialized chat receives genuine user input.

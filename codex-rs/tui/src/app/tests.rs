@@ -65,8 +65,9 @@ use crate::app_backtrack::user_count;
 use crate::app_event::HistoryBatchEntryResponse;
 
 async fn drain_managed_worktree_start(app: &mut App, server: &mut AppServerSession) {
-    if let Some((mode, name)) = app.pending_start_managed_worktree.take() {
-        app.start_managed_worktree(server, mode, name).await;
+    if let Some((mode, name, worker_binding)) = app.pending_start_managed_worktree.take() {
+        app.start_managed_worktree(server, mode, name, worker_binding)
+            .await;
     }
 }
 use codex_utils_absolute_path::test_support::PathExt;
@@ -5867,6 +5868,7 @@ async fn make_test_app() -> App {
         pending_start_managed_worktree: None,
         pending_managed_worktree_created: None,
         pending_managed_worktree_transition: None,
+        pending_new_session: None,
         pending_managed_worktree_attach: None,
         startup_protected_input_boundary: false,
         startup_pending_protected_request: false,
@@ -5962,6 +5964,7 @@ pub(super) async fn make_test_app_with_channels() -> (
             pending_start_managed_worktree: None,
             pending_managed_worktree_created: None,
             pending_managed_worktree_transition: None,
+            pending_new_session: None,
             pending_managed_worktree_attach: None,
             startup_protected_input_boundary: false,
             startup_pending_protected_request: false,

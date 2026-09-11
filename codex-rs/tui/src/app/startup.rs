@@ -736,6 +736,7 @@ See the Codex keymap documentation for supported actions and examples."
             pending_managed_worktree_creation: false,
             pending_managed_worktree_created: None,
             pending_managed_worktree_transition: None,
+            pending_new_session: None,
             pending_managed_worktree_attach: None,
             startup_protected_input_boundary: true,
             startup_pending_protected_request: false,
@@ -946,13 +947,24 @@ See the Codex keymap documentation for supported actions and examples."
                     }
                     continue;
                 }
+                if app.process_pending_new_session(tui, &mut app_server).await {
+                    continue;
+                }
                 if let Some(pending) = app.pending_working_directory_change.take() {
                     Box::pin(app.finish_working_directory_change(tui, &mut app_server, pending))
                         .await;
                     continue;
                 }
-                if let Some((mode, name)) = app.pending_start_managed_worktree.take() {
-                    Box::pin(app.start_managed_worktree(&mut app_server, mode, name)).await;
+                if let Some((mode, name, worker_binding)) =
+                    app.pending_start_managed_worktree.take()
+                {
+                    Box::pin(app.start_managed_worktree(
+                        &mut app_server,
+                        mode,
+                        name,
+                        worker_binding,
+                    ))
+                    .await;
                     continue;
                 }
                 // Complete the fork and widget attachment on separate fresh loop iterations.

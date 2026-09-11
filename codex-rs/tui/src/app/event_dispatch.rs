@@ -81,22 +81,31 @@ impl App {
             }
             AppEvent::PluginMentionsLoaded { ref cwd, .. }
                 if cwds_differ(cwd, self.config.cwd.as_path()) => {}
-            AppEvent::NewSession { name } => {
-                self.start_fresh_session_with_summary_hint(
-                    tui, app_server, /*session_start_source*/ None,
-                    /*initial_user_message*/ None, name,
-                )
-                .await;
-                if self.chat_widget.has_misalignment_policy_violation() {
-                    self.chat_widget.show_misalignment_policy_precaution();
+            AppEvent::NewSession { name, worker_binding } => {
+                if self.pending_new_session.is_some() {
+                    self.chat_widget
+                        .add_error_message("A new session is already being started.".to_string());
+                } else if let Some(source_thread_id) = self.primary_thread_id {
+                    self.pending_new_session = Some(Box::new(
+                        crate::app::session_lifecycle::PendingNewSession {
+                            source_thread_id,
+                            source_cwd: self.config.cwd.clone(),
+                            name,
+                            worker_binding,
+                        },
+                    ));
+                } else {
+                    self.chat_widget.add_error_message(
+                        "Cannot start a new session without an active source session.".to_string(),
+                    );
                 }
             }
-            AppEvent::StartManagedWorktree { mode, name } => {
+            AppEvent::StartManagedWorktree { mode, name, worker_binding } => {
                 if self.pending_start_managed_worktree.is_some() {
                     self.chat_widget
                         .add_error_message("A worktree is already being created.".to_string());
                 } else {
-                    self.pending_start_managed_worktree = Some((mode, name));
+                    self.pending_start_managed_worktree = Some((mode, name, worker_binding));
                 }
             }
             AppEvent::ManagedWorktreeCreated(created) => {

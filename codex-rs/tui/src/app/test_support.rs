@@ -88,6 +88,7 @@ pub(super) async fn make_test_app() -> App {
         pending_managed_worktree_creation: false,
         pending_managed_worktree_created: None,
         pending_managed_worktree_transition: None,
+        pending_new_session: None,
         pending_managed_worktree_attach: None,
         startup_protected_input_boundary: false,
         startup_pending_protected_request: false,

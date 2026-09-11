@@ -16,6 +16,7 @@ impl App {
         app_server: &mut AppServerSession,
         mode: crate::app_event::ManagedWorktreeMode,
         name: Option<String>,
+        worker_binding: Option<crate::adaptive_worker::NewWorkerBinding>,
     ) {
         if !self.config.features.enabled(Feature::Worktrees) {
             self.chat_widget.add_error_message(
@@ -177,6 +178,7 @@ impl App {
                                 source_cwd,
                                 mode,
                                 name,
+                                worker_binding: worker_binding.clone(),
                                 result,
                             },
                         )));
@@ -188,6 +190,7 @@ impl App {
     }
 
     pub(super) async fn finish_managed_worktree(&mut self, created: ManagedWorktreeCreated) {
+        let worker_binding = created.worker_binding.clone();
         self.pending_managed_worktree_creation = false;
         let (manager, checkout) = match created.result {
             Ok(created) => created,
@@ -249,6 +252,7 @@ impl App {
             config: Box::new(config),
             mode: created.mode,
             name: created.name,
+            worker_binding,
         }));
     }
 

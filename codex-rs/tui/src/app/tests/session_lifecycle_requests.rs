@@ -2,6 +2,10 @@ use super::*;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::app_event::TranscriptExportDestination;
+use crate::chatwidget::adaptive_effort::AdaptiveEffort;
+use crate::chatwidget::adaptive_effort::AdaptiveFailureKind;
+use crate::chatwidget::adaptive_effort::AdaptiveFamily;
+use crate::chatwidget::adaptive_effort::AdaptiveOutcome;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_fake_rollout;
@@ -3000,6 +3004,7 @@ model_reasoning_effort = "low"
         &mut tui,
         &mut server,
         AppEvent::StartManagedWorktree {
+            worker_binding: None,
             mode: ManagedWorktreeMode::Fork,
             name: None,
         },
@@ -3072,6 +3077,7 @@ terminal_visualization_instructions = true
         &mut tui,
         &mut server,
         AppEvent::StartManagedWorktree {
+            worker_binding: None,
             mode: ManagedWorktreeMode::Fork,
             name: None,
         },
@@ -3095,6 +3101,7 @@ terminal_visualization_instructions = true
         &mut tui,
         &mut server,
         AppEvent::StartManagedWorktree {
+            worker_binding: None,
             mode: ManagedWorktreeMode::New,
             name: None,
         },
@@ -3169,6 +3176,12 @@ terminal_visualization_instructions = true
             &mut tui,
             &mut server,
             AppEvent::StartManagedWorktree {
+                worker_binding: (mode == ManagedWorktreeMode::New).then(|| {
+                    crate::adaptive_worker::NewWorkerBinding {
+                        role: AdaptiveWorkerRole::Validation,
+                        authorized_scope: "managed worktree regression scope".to_string(),
+                    }
+                }),
                 mode,
                 name: Some(format!("{mode:?} worktree")),
             },
@@ -3205,6 +3218,15 @@ terminal_visualization_instructions = true
             app.config.developer_instructions.as_deref(),
             Some("committed policy")
         );
+        if mode == ManagedWorktreeMode::New {
+            let state = app.chat_widget.adaptive_effort_for_test();
+            assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+            assert_eq!(
+                state.worker_context.authorized_scope.as_deref(),
+                Some("managed worktree regression scope")
+            );
+            assert!(state.worker_assignment_locked);
+        }
         assert_eq!(
             fs::read_to_string(checkout.cwd.join("AGENTS.md"))?,
             "committed worktree instructions"
@@ -3304,7 +3326,11 @@ terminal_visualization_instructions = true
         app.handle_event(
             &mut tui,
             &mut server,
-            AppEvent::StartManagedWorktree { mode, name: None },
+            AppEvent::StartManagedWorktree {
+                mode,
+                name: None,
+                worker_binding: None,
+            },
         )
         .await?;
         drain_managed_worktree_start(&mut app, &mut server).await;
@@ -4001,6 +4027,284 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
         })?
         .join()
         .expect("session lifecycle request test thread")
+}
+
+#[tokio::test]
+async fn new_session_event_is_deferred_and_duplicate_is_rejected() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, _requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    let binding = crate::adaptive_worker::NewWorkerBinding {
+        role: AdaptiveWorkerRole::Validation,
+        authorized_scope: "exact regression scope".to_string(),
+    };
+
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: Some("deferred".to_string()),
+            worker_binding: Some(binding.clone()),
+        },
+    )
+    .await?;
+    assert!(app.pending_new_session.is_some());
+    assert_eq!(
+        app.pending_new_session.as_ref().unwrap().worker_binding,
+        Some(binding)
+    );
+
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: Some("rejected".to_string()),
+            worker_binding: None,
+        },
+    )
+    .await?;
+    assert_eq!(
+        app.pending_new_session.as_ref().unwrap().name.as_deref(),
+        Some("deferred")
+    );
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_new_session_starts_distinct_attached_bound_worker() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    let binding = crate::adaptive_worker::NewWorkerBinding {
+        role: AdaptiveWorkerRole::Validation,
+        authorized_scope: "exact regression scope".to_string(),
+    };
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: Some(binding),
+        },
+    )
+    .await?;
+    assert!(recorded_params(&requests, "thread/start").is_empty());
+
+    assert!(app.process_pending_new_session(&mut tui, &mut server).await);
+
+    let destination = app.chat_widget.thread_id().expect("attached destination");
+    assert_ne!(destination, source);
+    assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_new_session_rejects_changed_source() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, _requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: None,
+        },
+    )
+    .await?;
+    let source_widget = app.chat_widget.thread_id();
+    app.primary_thread_id = Some(ThreadId::new());
+    let starts_before = recorded_params(&_requests, "thread/start").len();
+    assert!(app.process_pending_new_session(&mut tui, &mut server).await);
+    assert_eq!(
+        recorded_params(&_requests, "thread/start").len(),
+        starts_before
+    );
+    assert_eq!(app.chat_widget.thread_id(), source_widget);
+    assert!(app.pending_new_session.is_none());
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_new_session_rejects_changed_source_cwd() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: None,
+        },
+    )
+    .await?;
+    let source_widget = app.chat_widget.thread_id();
+    app.config.cwd = tempdir()?.path().to_path_buf().abs();
+    let starts_before = recorded_params(&requests, "thread/start").len();
+    assert!(app.process_pending_new_session(&mut tui, &mut server).await);
+    assert_eq!(
+        recorded_params(&requests, "thread/start").len(),
+        starts_before
+    );
+    assert_eq!(app.chat_widget.thread_id(), source_widget);
+    assert!(app.pending_new_session.is_none());
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_bare_new_session_attaches_fresh_unassigned_worker() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: None,
+        },
+    )
+    .await?;
+    assert!(app.process_pending_new_session(&mut tui, &mut server).await);
+    let destination = app.chat_widget.thread_id().expect("attached destination");
+    assert_ne!(destination, source);
+    assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn deferred_new_session_resets_dirty_adaptive_state_for_validation() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, _requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    {
+        let state = app.chat_widget.adaptive_effort_for_test_mut();
+        state.enabled = true;
+        state.starting_family = Some(AdaptiveFamily::Astra);
+        state.current_family = Some(AdaptiveFamily::Astra);
+        state.current_effort = Some(AdaptiveEffort::High);
+        state.attempt_number = 4;
+        state.last_outcome = Some(AdaptiveOutcome::Unknown);
+        state.last_failure_kind = Some(AdaptiveFailureKind::Capability);
+        state.unfinished_turn_pressure = 2;
+    }
+    let source_before = app.chat_widget.adaptive_effort_for_test().clone();
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: Some(crate::adaptive_worker::NewWorkerBinding {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: "exact regression scope".to_string(),
+            }),
+        },
+    )
+    .await?;
+    assert_eq!(app.chat_widget.adaptive_effort_for_test(), &source_before);
+    assert!(app.process_pending_new_session(&mut tui, &mut server).await);
+    let state = app.chat_widget.adaptive_effort_for_test();
+    assert_eq!(state.starting_family, Some(AdaptiveFamily::Astra));
+    assert_eq!(state.current_family, Some(AdaptiveFamily::Luna));
+    assert_eq!(state.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(state.attempt_number, 1);
+    assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+    assert_eq!(
+        state.worker_context.authorized_scope.as_deref(),
+        Some("exact regression scope")
+    );
+    assert!(state.worker_assignment_locked);
+    assert_eq!(state.unfinished_turn_pressure, 0);
+    assert!(state.last_outcome.is_none());
+    assert!(state.last_failure_kind.is_none());
+    assert!(state.workflow_terminal.is_none());
+    assert!(state.pending_attempt.is_none());
+    assert!(state.successor_admission.is_none());
+    assert!(state.pending_signal.is_none());
+    assert_eq!(
+        state.evidence_registry,
+        crate::adaptive_evidence::AdaptiveEvidenceRegistry::default()
+    );
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
 }
 
 #[path = "new_session_tests.rs"]
