@@ -314,8 +314,14 @@ mod tests {
 
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Low)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 1);
         assert!(matches!(
             chat.adaptive_effort.pending_signal,
@@ -352,8 +358,14 @@ mod tests {
 
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Terra));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Terra)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Low)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 6);
         assert_eq!(
             chat.adaptive_effort.last_failure_kind,
@@ -390,8 +402,14 @@ mod tests {
 
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Medium)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 2);
         assert_eq!(
             chat.adaptive_effort.last_failure_kind,
@@ -431,11 +449,19 @@ mod tests {
 
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::High));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::High)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 5);
         assert_eq!(
-            chat.adaptive_effort.last_processed_terminal_turn_id.as_deref(),
+            chat.adaptive_effort
+                .last_processed_terminal_turn_id
+                .as_deref(),
             Some(turn_id)
         );
         assert_eq!(chat.adaptive_effort.pending_attempt, None);
@@ -497,8 +523,14 @@ mod tests {
 
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-        assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Terra));
-        assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Terra)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_effort,
+            Some(AdaptiveEffort::Low)
+        );
         assert_eq!(chat.adaptive_effort.attempt_number, 6);
         assert_eq!(
             chat.adaptive_effort.last_failure_kind,

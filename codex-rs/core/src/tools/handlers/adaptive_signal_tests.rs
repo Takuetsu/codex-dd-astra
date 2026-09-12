@@ -120,7 +120,9 @@ async fn capability_emits_trimmed_escalation_report() {
     assert_eq!(signal.signal_kind, AdaptiveRuntimeSignalKind::Capability);
     assert_eq!(
         signal.diagnostic_note.as_deref(),
-        Some("Luna High cannot resolve the bounded constraint; stronger model capability is required.")
+        Some(
+            "Luna High cannot resolve the bounded constraint; stronger model capability is required."
+        )
     );
 }
 
