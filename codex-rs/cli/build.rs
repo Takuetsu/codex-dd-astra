@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
@@ -12,12 +11,12 @@ fn main() {
 }
 
 fn stamp_codexdd_build_identity() {
-    let version_file = manifest_dir().join("../codexdd-version.txt");
+    const VERSION_FILE: &str = "../codexdd-version.txt";
 
-    println!("cargo:rerun-if-changed={}", version_file.display());
+    println!("cargo:rerun-if-changed={VERSION_FILE}");
     track_git_head();
 
-    let version = fs::read_to_string(&version_file)
+    let version = fs::read_to_string(VERSION_FILE)
         .expect("codexdd version file must be readable")
         .trim()
         .to_string();
@@ -47,12 +46,6 @@ fn stamp_codexdd_build_identity() {
     println!("cargo:rustc-env=CARGO_PKG_VERSION={command_version}");
     // Existing codex-build-info initialization consumes this at the final executable call site.
     println!("cargo:rustc-env=STABLE_GIT_COMMIT={build_commit}");
-}
-
-fn manifest_dir() -> PathBuf {
-    env::var_os("CARGO_MANIFEST_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
 }
 
 fn command_version(version: &str, build_commit: &str) -> String {
