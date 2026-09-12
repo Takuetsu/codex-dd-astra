@@ -12,8 +12,11 @@ fn main() {
 }
 
 fn stamp_codexdd_build_identity() {
-    let version_file = manifest_dir().join("../codexdd-version.txt");
+    let version_file = env::var_os("CODEXDD_VERSION_FILE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("../codexdd-version.txt"));
 
+    println!("cargo:rerun-if-env-changed=CODEXDD_VERSION_FILE");
     println!("cargo:rerun-if-changed={}", version_file.display());
     track_git_head();
 
@@ -47,12 +50,6 @@ fn stamp_codexdd_build_identity() {
     println!("cargo:rustc-env=CARGO_PKG_VERSION={command_version}");
     // Existing codex-build-info initialization consumes this at the final executable call site.
     println!("cargo:rustc-env=STABLE_GIT_COMMIT={build_commit}");
-}
-
-fn manifest_dir() -> PathBuf {
-    env::var_os("CARGO_MANIFEST_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
 }
 
 fn command_version(version: &str, build_commit: &str) -> String {
