@@ -6,6 +6,9 @@ codex_rust_crate(
     name = "cli",
     binaries_with_build_commit = ["codex"],
     build_script_data = ["//codex-rs:codexdd-version.txt"],
+    build_script_env = {
+        "CODEXDD_VERSION_FILE": "$(execpath //codex-rs:codexdd-version.txt)",
+    },
     crate_name = "codex_cli",
     extra_binaries = [
         "//codex-rs/bwrap:bwrap",

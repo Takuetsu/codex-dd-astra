@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
@@ -11,12 +12,15 @@ fn main() {
 }
 
 fn stamp_codexdd_build_identity() {
-    const VERSION_FILE: &str = "../codexdd-version.txt";
+    let version_file = env::var_os("CODEXDD_VERSION_FILE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("../codexdd-version.txt"));
 
-    println!("cargo:rerun-if-changed={VERSION_FILE}");
+    println!("cargo:rerun-if-env-changed=CODEXDD_VERSION_FILE");
+    println!("cargo:rerun-if-changed={}", version_file.display());
     track_git_head();
 
-    let version = fs::read_to_string(VERSION_FILE)
+    let version = fs::read_to_string(&version_file)
         .expect("codexdd version file must be readable")
         .trim()
         .to_string();
