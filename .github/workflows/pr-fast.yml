@@ -29,12 +29,20 @@ jobs:
       - name: Build codex-cli
         run: cargo build -p codex-cli
 
-      - name: Run adaptive regression tests
-        run: |
-          cargo test -p codex-core adaptive_signal --lib --no-fail-fast
-          cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
-          cargo test -p codex-tui adaptive_trusted_signal --lib --no-fail-fast
-          RUST_MIN_STACK=16777216 RUST_BACKTRACE=1 cargo test -p codex-tui adaptive_ --lib --no-fail-fast -- --test-threads=1 --nocapture
+      - name: Core adaptive signal tests
+        run: cargo test -p codex-core adaptive_signal --lib --no-fail-fast
+
+      - name: TUI adaptive controller tests
+        run: cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
+
+      - name: TUI trusted adaptive signal tests
+        run: cargo test -p codex-tui adaptive_trusted_signal --lib --no-fail-fast
+
+      - name: TUI broad adaptive tests
+        env:
+          RUST_MIN_STACK: 16777216
+          RUST_BACKTRACE: 1
+        run: cargo test -p codex-tui adaptive_ --lib --no-fail-fast -- --test-threads=1 --nocapture
 
       - name: Check for a clean worktree
         if: always() && !cancelled()
