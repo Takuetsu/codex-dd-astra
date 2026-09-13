@@ -34,7 +34,7 @@ jobs:
           cargo test -p codex-core adaptive_signal --lib --no-fail-fast
           cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
           cargo test -p codex-tui adaptive_trusted_signal --lib --no-fail-fast
-          cargo test -p codex-tui adaptive_ --lib --no-fail-fast
+          RUST_BACKTRACE=1 cargo test -p codex-tui adaptive_ --lib --no-fail-fast -- --test-threads=1 --nocapture
 
       - name: Check for a clean worktree
         if: always() && !cancelled()
