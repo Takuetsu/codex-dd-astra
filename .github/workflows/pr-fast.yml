@@ -1,0 +1,43 @@
+name: pr-fast
+
+# Focused pre-merge validation for this fork. Windows is the supported runtime
+# target, so PR-fast validates the adaptive feature and codex-cli on Windows.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  windows-adaptive:
+    name: Windows adaptive validation
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: codex-rs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+
+      - name: cargo fmt
+        run: cargo fmt -- --config imports_granularity=Item --check
+
+      - name: Build codex-cli
+        run: cargo build -p codex-cli
+
+      - name: Core adaptive signal tests
+        run: cargo test -p codex-core adaptive_signal --lib --no-fail-fast
+
+      - name: TUI adaptive controller tests
+        run: cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
+
+      - name: TUI trusted adaptive signal tests
+        run: cargo test -p codex-tui adaptive_trusted_signal --lib --no-fail-fast
+
+      - name: Check for a clean worktree
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree

@@ -215,6 +215,70 @@ fn unfinished_authorized_turn_continues_once_then_escalates_one_rung() {
 }
 
 #[test]
+fn unfinished_pressure_cannot_cross_any_model_family_boundary() {
+    for (from, to, attempt_number) in [
+        (
+            route(AdaptiveFamily::Luna, AdaptiveEffort::High),
+            route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
+            5,
+        ),
+        (
+            route(AdaptiveFamily::Terra, AdaptiveEffort::High),
+            route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
+            8,
+        ),
+        (
+            route(AdaptiveFamily::Sol, AdaptiveEffort::High),
+            route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
+            11,
+        ),
+    ] {
+        let state = AdaptiveControllerState {
+            current_route: from,
+            attempt_number,
+            ..AdaptiveControllerState::initial(AdaptiveFamily::Astra)
+        };
+        let (first, pressure) = reduce_unfinished_authorized_turn(state, 0);
+        assert_eq!(pressure, 1);
+        assert_eq!(
+            first.decision,
+            AdaptiveControllerDecision::ContinueSameRoute {
+                route: from,
+                next_attempt: attempt_number + 1,
+            }
+        );
+
+        let (second, pressure) = reduce_unfinished_authorized_turn(first.state, pressure);
+        assert_eq!(pressure, 0);
+        assert_eq!(
+            second.decision,
+            AdaptiveControllerDecision::RequireModelEscalationReport { from, to }
+        );
+        assert_eq!(second.state.current_route, from);
+        assert_eq!(second.state.attempt_number, attempt_number + 1);
+        assert_eq!(second.state.terminal, None);
+    }
+}
+
+#[test]
+fn trusted_capability_classification_still_crosses_model_family_boundary() {
+    let state = AdaptiveControllerState {
+        current_route: route(AdaptiveFamily::Luna, AdaptiveEffort::High),
+        attempt_number: 6,
+        ..AdaptiveControllerState::initial(AdaptiveFamily::Astra)
+    };
+    let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
+    assert_eq!(
+        reduced.decision,
+        AdaptiveControllerDecision::EscalateModel {
+            from: route(AdaptiveFamily::Luna, AdaptiveEffort::High),
+            to: route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
+            next_attempt: 7,
+        }
+    );
+}
+
+#[test]
 fn unfinished_pressure_is_suppressed_by_existing_hard_stops() {
     let paused = AdaptiveControllerState {
         paused_by_user: true,

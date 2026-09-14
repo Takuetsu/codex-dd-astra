@@ -57,6 +57,13 @@ pub(crate) enum AdaptiveControllerDecision {
         to: AdaptiveRoute,
         next_attempt: u32,
     },
+    /// Unfinished-turn pressure may increase effort inside one model family, but it is never
+    /// sufficient by itself to spend into a stronger model family. A trusted capability signal
+    /// with a diagnostic report must authorize that boundary separately.
+    RequireModelEscalationReport {
+        from: AdaptiveRoute,
+        to: AdaptiveRoute,
+    },
     EscalateModel {
         from: AdaptiveRoute,
         to: AdaptiveRoute,
@@ -77,7 +84,8 @@ pub(crate) struct AdaptiveControllerReduction {
 /// Reduces an ordinary completed turn from an externally bound Worker that did not reach a
 /// trusted workflow terminal. The first unfinished return authorizes one same-route continuation;
 /// the next consecutive unfinished return converts that bounded pressure into one normal ladder
-/// escalation.
+/// escalation. Unfinished-turn pressure can raise effort inside the current family, but cannot
+/// cross a model-family boundary without a separately trusted capability justification.
 pub(crate) fn reduce_unfinished_authorized_turn(
     state: AdaptiveControllerState,
     unfinished_turn_pressure: u8,
@@ -104,6 +112,21 @@ pub(crate) fn reduce_unfinished_authorized_turn(
                 },
             },
             pressure,
+        );
+    }
+
+    if let AdaptiveTransition::EscalateModel(to) =
+        next_route(state.starting_family, state.current_route)
+    {
+        return (
+            AdaptiveControllerReduction {
+                state,
+                decision: AdaptiveControllerDecision::RequireModelEscalationReport {
+                    from: state.current_route,
+                    to,
+                },
+            },
+            0,
         );
     }
 

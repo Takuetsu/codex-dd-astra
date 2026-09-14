@@ -33,6 +33,28 @@ impl ChatWidget {
                     Some(AdaptivePendingSignal::Pending(notification.signal));
                 self.save_adaptive_effort_for_current_thread();
             }
+            // A real capability report received later in the same turn upgrades the synthetic
+            // two-native-failure signal. Diagnostic text is part of the authorization boundary:
+            // the synthetic sentinel alone cannot justify spending into a stronger model family.
+            Some(AdaptivePendingSignal::Pending(existing))
+                if existing.source_turn_id == source_turn_id
+                    && existing.diagnostic_note.as_deref()
+                        == Some(AUTO_FAILURE_PRESSURE_DIAGNOSTIC)
+                    && existing.signal_kind == AdaptiveRuntimeSignalKind::Capability
+                    && notification.signal.signal_kind == AdaptiveRuntimeSignalKind::Capability
+                    && notification
+                        .signal
+                        .diagnostic_note
+                        .as_deref()
+                        .map(str::trim)
+                        .is_some_and(|note| {
+                            !note.is_empty() && note != AUTO_FAILURE_PRESSURE_DIAGNOSTIC
+                        }) =>
+            {
+                self.adaptive_effort.pending_signal =
+                    Some(AdaptivePendingSignal::Pending(notification.signal));
+                self.save_adaptive_effort_for_current_thread();
+            }
             // A workflow terminal reported later in the same turn outranks the synthetic
             // two-failure capability signal. This lets a worker recover after two failed tools and
             // still finish cleanly without forcing an unnecessary escalation.
@@ -50,7 +72,8 @@ impl ChatWidget {
             Some(AdaptivePendingSignal::Pending(existing))
                 if existing.source_turn_id == notification.signal.source_turn_id
                     && existing.signal_kind == notification.signal.signal_kind
-                    && existing.evidence_refs == notification.signal.evidence_refs => {}
+                    && existing.evidence_refs == notification.signal.evidence_refs
+                    && existing.diagnostic_note == notification.signal.diagnostic_note => {}
             Some(AdaptivePendingSignal::Pending(existing))
                 if existing.source_turn_id == source_turn_id =>
             {

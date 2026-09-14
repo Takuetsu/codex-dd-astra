@@ -89,15 +89,23 @@ impl ChatWidget {
             reduction.state.current_route,
         );
         match reduction.decision {
-            AdaptiveControllerDecision::ContinueSameRoute { .. } => {
+            AdaptiveControllerDecision::ContinueSameRoute { .. }
+            | AdaptiveControllerDecision::EscalateEffort { .. }
+            | AdaptiveControllerDecision::RequireModelEscalationReport { .. } => {
+                // An ordinary unfinished turn is not capability evidence. Keep status projection
+                // neutral even when bounded unfinished pressure raises effort inside one family.
                 self.adaptive_effort.last_outcome = None;
                 self.adaptive_effort.last_failure_kind = None;
             }
-            AdaptiveControllerDecision::EscalateEffort { .. }
-            | AdaptiveControllerDecision::EscalateModel { .. }
-            | AdaptiveControllerDecision::Blocked => {
+            AdaptiveControllerDecision::EscalateModel { .. } => {
+                // This function never authorizes model-family escalation from unfinished pressure.
+                // Keep this arm defensive in case the controller contract changes later.
                 self.adaptive_effort.last_outcome = Some(AdaptiveOutcome::Unknown);
                 self.adaptive_effort.last_failure_kind = Some(AdaptiveFailureKind::Capability);
+            }
+            AdaptiveControllerDecision::Blocked => {
+                self.adaptive_effort.last_outcome = Some(AdaptiveOutcome::Unknown);
+                self.adaptive_effort.last_failure_kind = Some(AdaptiveFailureKind::Unknown);
             }
             AdaptiveControllerDecision::InvalidState => {
                 self.adaptive_effort.last_outcome = Some(AdaptiveOutcome::Unknown);
@@ -107,6 +115,20 @@ impl ChatWidget {
             | AdaptiveControllerDecision::RetrySameLevel { .. }
             | AdaptiveControllerDecision::ReadyForOwnerQa
             | AdaptiveControllerDecision::PausedByUser => {}
+        }
+        if let AdaptiveControllerDecision::RequireModelEscalationReport { from, to } =
+            reduction.decision
+        {
+            self.add_info_message(
+                format!(
+                    "Adaptive model escalation withheld\n  From: {} {:?}\n  Proposed: {} {:?}\n  Required: fresh trusted Capability signal with a nonblank diagnostic report explaining why the stronger model family is warranted.",
+                    from.family.model(),
+                    from.effort,
+                    to.family.model(),
+                    to.effort,
+                ),
+                None,
+            );
         }
         self.save_adaptive_effort_for_current_thread();
         self.apply_adaptive_route(reduction.decision, reduction.state.current_route);
@@ -211,6 +233,7 @@ fn pending_attempt(
             (AdaptivePendingDecision::EscalateModel, next_attempt)
         }
         AdaptiveControllerDecision::NoAction
+        | AdaptiveControllerDecision::RequireModelEscalationReport { .. }
         | AdaptiveControllerDecision::ReadyForOwnerQa
         | AdaptiveControllerDecision::Blocked
         | AdaptiveControllerDecision::PausedByUser
