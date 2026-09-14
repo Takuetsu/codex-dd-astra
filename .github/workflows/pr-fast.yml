@@ -1,15 +1,15 @@
 name: pr-fast
 
-# Focused pre-merge validation for this fork. Heavy cross-platform matrices live
-# in postmerge-ci so unavailable specialty runners cannot block pull requests.
+# Focused pre-merge validation for this fork. Windows is the supported runtime
+# target, so PR-fast validates the adaptive feature and codex-cli on Windows.
 on:
   workflow_call:
   workflow_dispatch:
 
 jobs:
-  rust-adaptive:
-    name: Rust adaptive regression checks
-    runs-on: ubuntu-24.04
+  windows-adaptive:
+    name: Windows adaptive validation
+    runs-on: windows-latest
     timeout-minutes: 30
     defaults:
       run:
@@ -41,96 +41,3 @@ jobs:
       - name: Check for a clean worktree
         if: always() && !cancelled()
         uses: ./.github/actions/check-clean-worktree
-
-  bazel-linux:
-    name: Bazel Linux compile check
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    environment:
-      name: bazel
-      deployment: false
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-
-      - name: Prepare Bazel CI
-        uses: ./.github/actions/prepare-bazel-ci
-        with:
-          target: x86_64-unknown-linux-gnu
-          cache-scope: bazel-pr-fast
-
-      - name: Check rusty_v8 MODULE.bazel checksums
-        shell: bash
-        run: |
-          python3 .github/scripts/rusty_v8_bazel.py check-module-bazel
-          just test-github-scripts
-
-      - name: Check MODULE.bazel.lock is up to date
-        shell: bash
-        run: ./scripts/check-module-bazel-lock.sh
-
-      - name: Build touched Bazel targets
-        env:
-          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
-        shell: bash
-        run: |
-          ./.github/scripts/run-bazel-ci.sh \
-            --print-failed-action-summary \
-            -- \
-            build \
-            --build_metadata=COMMIT_SHA=${GITHUB_SHA} \
-            --build_metadata=TAG_job=pr-fast \
-            -- \
-            //codex-rs/cli:codex \
-            //codex-rs/core:core \
-            //codex-rs/tui:tui
-
-      - name: Upload Bazel execution logs
-        if: always() && !cancelled()
-        continue-on-error: true
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: bazel-execution-logs-pr-fast-linux
-          path: ${{ runner.temp }}/bazel-execution-logs
-          if-no-files-found: ignore
-
-      - name: Check for a clean worktree
-        if: always() && !cancelled()
-        uses: ./.github/actions/check-clean-worktree
-
-  windows-cli:
-    name: Windows codex-cli build
-    runs-on: windows-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: codex-rs
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-ci
-      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
-      - name: Build codex-cli
-        run: cargo build -p codex-cli
-
-      - name: Check for a clean worktree
-        if: always() && !cancelled()
-        uses: ./.github/actions/check-clean-worktree
-
-  results:
-    name: PR fast CI results
-    needs:
-      - rust-adaptive
-      - bazel-linux
-      - windows-cli
-    if: ${{ always() }}
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Require focused checks
-        shell: bash
-        run: |
-          [[ '${{ needs.rust-adaptive.result }}' == 'success' ]] || { echo 'Rust adaptive regression checks failed'; exit 1; }
-          [[ '${{ needs.bazel-linux.result }}' == 'success' ]] || { echo 'Bazel Linux compile check failed'; exit 1; }
-          [[ '${{ needs.windows-cli.result }}' == 'success' ]] || { echo 'Windows codex-cli build failed'; exit 1; }
