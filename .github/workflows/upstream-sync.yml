@@ -1,0 +1,118 @@
+name: upstream-codex-sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+concurrency:
+  group: upstream-codex-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Sync official Codex release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/astra-policy-v2
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Discover official release tag
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream --tags --force --prune
+          latest_tag="$(git tag --list 'rust-v*' | python3 .github/scripts/upstream_sync.py --latest-from-stdin)"
+          current_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
+          python3 - "$current_tag" "$latest_tag" <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import release_version
+
+          current, latest = sys.argv[1:]
+          if release_version(current) is None:
+              raise SystemExit(f"invalid tracked upstream release: {current}")
+          if release_version(latest) is None:
+              raise SystemExit(f"invalid discovered upstream release: {latest}")
+          if release_version(latest) <= release_version(current):
+              print(f"No release newer than {current} (latest: {latest}).")
+              raise SystemExit(0)
+          print(f"New official release: {latest} (current: {current})")
+          Path(".upstream-sync-needed").write_text(latest + "\n")
+          PY
+          if [[ ! -f .upstream-sync-needed ]]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          latest_tag="$(cat .upstream-sync-needed)"
+          branch="automation/upstream-sync-${latest_tag}"
+          marker="codexdd-upstream-sync: ${latest_tag}"
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+          echo "tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          echo "marker=${marker}" >> "$GITHUB_OUTPUT"
+
+      - name: Check for an existing update
+        if: steps.release.outputs.needed == 'true'
+        id: duplicate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE_BRANCH: ${{ steps.release.outputs.branch }}
+          UPDATE_MARKER: ${{ steps.release.outputs.marker }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "${UPDATE_BRANCH}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Integration branch already exists: ${UPDATE_BRANCH}"
+            exit 0
+          fi
+          duplicate="$(gh pr list --repo "$GITHUB_REPOSITORY" --base dd/astra-policy-v2 --state all --limit 100 --json headRefName,body --jq 'any(.[]; .headRefName == env.UPDATE_BRANCH or ((.body // "") | contains(env.UPDATE_MARKER)))')"
+          echo "skip=${duplicate}" >> "$GITHUB_OUTPUT"
+
+      - name: Integrate exact upstream release tag
+        if: steps.release.outputs.needed == 'true' && steps.duplicate.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          UPDATE_BRANCH: ${{ steps.release.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$UPDATE_BRANCH" origin/dd/astra-policy-v2
+          if ! git merge --no-ff --no-edit "$RELEASE_TAG"; then
+            git merge --abort || true
+            echo "Official release ${RELEASE_TAG} conflicts with dd/astra-policy-v2; no branch or PR was published." >&2
+            exit 1
+          fi
+          printf '%s\n' "$RELEASE_TAG" > codex-rs/upstream-codex-release.txt
+          git add codex-rs/upstream-codex-release.txt
+          git commit -m "codexdd: integrate upstream ${RELEASE_TAG}"
+          git push --set-upstream origin "$UPDATE_BRANCH"
+
+      - name: Open integration PR
+        if: steps.release.outputs.needed == 'true' && steps.duplicate.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          UPDATE_BRANCH: ${{ steps.release.outputs.branch }}
+          UPDATE_MARKER: ${{ steps.release.outputs.marker }}
+        run: |
+          set -euo pipefail
+          gh pr create --repo "$GITHUB_REPOSITORY" \
+            --base dd/astra-policy-v2 \
+            --head "$UPDATE_BRANCH" \
+            --title "codexdd: integrate upstream ${RELEASE_TAG}" \
+            --body "${UPDATE_MARKER}\n\nIntegrate the exact official OpenAI Codex release tag \`${RELEASE_TAG}\` onto the codexdd production baseline.\n\nThis PR relies on normal blocking CI, including Windows adaptive validation. Owner merge approval remains required."
