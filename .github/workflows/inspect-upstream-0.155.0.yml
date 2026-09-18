@@ -1,0 +1,58 @@
+name: inspect-upstream-merge-0.155.0
+
+on:
+  push:
+    branches:
+      - automation/upstream-sync-rust-v0.155.0
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Attempt merge and capture conflict stages
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream tag rust-v0.155.0 --no-tags
+          mkdir -p merge-conflicts
+          set +e
+          git merge --no-ff --no-commit rust-v0.155.0
+          merge_rc=$?
+          set -e
+          if [[ "$merge_rc" -eq 0 ]]; then
+            echo "Merge unexpectedly completed without conflicts." > merge-conflicts/STATUS.txt
+            git diff --cached --name-status > merge-conflicts/merged-index.txt
+            exit 0
+          fi
+
+          git diff --name-only --diff-filter=U | tee merge-conflicts/conflicts.txt
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            safe="${path//\//__}"
+            mkdir -p "merge-conflicts/$safe"
+            printf '%s\n' "$path" > "merge-conflicts/$safe/PATH.txt"
+            git show ":1:$path" > "merge-conflicts/$safe/base" 2>/dev/null || true
+            git show ":2:$path" > "merge-conflicts/$safe/ours" 2>/dev/null || true
+            git show ":3:$path" > "merge-conflicts/$safe/theirs" 2>/dev/null || true
+            if [[ -f "$path" ]]; then
+              cp "$path" "merge-conflicts/$safe/worktree" || true
+            fi
+          done < merge-conflicts/conflicts.txt
+          git status --short > merge-conflicts/status.txt
+          exit 1
+
+      - name: Upload conflict stages
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: upstream-0.155.0-conflicts
+          path: merge-conflicts/
+          if-no-files-found: error
