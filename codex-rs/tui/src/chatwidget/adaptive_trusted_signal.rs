@@ -553,9 +553,7 @@ mod tests {
             signal: AdaptiveRuntimeSignalEnvelope {
                 source_turn_id: turn_id.to_string(),
                 signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-                evidence_refs: vec![
-                    "682e7ec25e08d63d8868013b9ffa91d5b74e2c69".to_string(),
-                ],
+                evidence_refs: vec!["682e7ec25e08d63d8868013b9ffa91d5b74e2c69".to_string()],
                 diagnostic_note: Some(
                     "Bounded repair complete; no authorized repair work remains.".to_string(),
                 ),
