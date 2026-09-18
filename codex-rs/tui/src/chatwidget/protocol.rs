@@ -398,12 +398,15 @@ impl ChatWidget {
         if !bound_worker {
             return false;
         }
-        let reported_adaptive_signal = turn.items.iter().any(|item| {
-            matches!(
-                item,
-                ThreadItem::FunctionCallOutput { name, .. }
-                    if name == "report_adaptive_signal"
-            )
+        let reported_adaptive_signal = turn.items.iter().any(|item| match item {
+            ThreadItem::FunctionCallOutput { name, output, .. }
+                if name == "report_adaptive_signal" =>
+            {
+                output
+                    .to_text()
+                    .is_some_and(|text| text.contains("\"status\":\"request_emitted\""))
+            }
+            _ => false,
         });
         if !reported_adaptive_signal {
             return false;
