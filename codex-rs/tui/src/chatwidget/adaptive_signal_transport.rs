@@ -147,12 +147,14 @@ impl ChatWidget {
         let Some(source_turn_id) = self.turn_lifecycle.last_turn_id.as_deref() else {
             return;
         };
-        if self
-            .adaptive_effort
-            .pending_signal
-            .as_ref()
-            .is_some_and(|signal| signal.source_turn_id() == source_turn_id)
-        {
+        let cancellable = match self.adaptive_effort.pending_signal.as_ref() {
+            Some(AdaptivePendingSignal::Awaiting {
+                source_turn_id: pending_turn_id,
+            }) => pending_turn_id == source_turn_id,
+            Some(AdaptivePendingSignal::Pending(signal)) => signal.source_turn_id == source_turn_id,
+            _ => false,
+        };
+        if cancellable {
             self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Cancelled {
                 source_turn_id: source_turn_id.to_string(),
             });
