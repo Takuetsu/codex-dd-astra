@@ -495,7 +495,6 @@ async fn trusted_handoff_resets_unfinished_pressure() {
     assert_eq!(chat.adaptive_effort.successor_admission, None);
 }
 
-
 fn completed_turn_with_adaptive_report(turn_id: &str) -> TurnCompletedNotification {
     TurnCompletedNotification {
         thread_id: String::new(),
@@ -570,9 +569,15 @@ async fn completed_repair_waits_for_late_ready_for_validation_and_admits_no_succ
         chat.adaptive_effort.workflow_terminal,
         Some(AdaptiveWorkflowTerminal::ReadyForValidation)
     );
-    assert_eq!(chat.adaptive_effort.worker_context.role, AdaptiveWorkerRole::Repair);
     assert_eq!(
-        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Repair
+    );
+    assert_eq!(
+        chat.adaptive_effort
+            .worker_context
+            .authorized_scope
+            .as_deref(),
         Some("breakwater/post-terminal-race-repair")
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
@@ -651,7 +656,10 @@ async fn completed_validation_waits_for_late_owner_qa_and_admits_no_successor() 
         AdaptiveWorkerRole::Validation
     );
     assert_eq!(
-        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        chat.adaptive_effort
+            .worker_context
+            .authorized_scope
+            .as_deref(),
         Some("breakwater/post-terminal-race-validation")
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
@@ -699,10 +707,7 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
     assert_eq!(chat.adaptive_effort.attempt_number, 2);
     assert!(chat.adaptive_effort.pending_signal.is_none());
-    assert_matches!(
-        chat.adaptive_effort.pending_attempt,
-        None
-    );
+    assert_matches!(chat.adaptive_effort.pending_attempt, None);
     let submitted = next_submit_op(&mut op_rx);
     assert!(matches!(submitted, Op::UserTurn { .. }));
 }
