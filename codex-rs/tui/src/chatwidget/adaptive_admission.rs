@@ -16,6 +16,7 @@ pub(crate) enum AdaptiveAdmissionSuppressedReason {
     AdaptiveDisabled,
     PausedByUser,
     WorkflowTerminal,
+    AwaitingTrustedSignal,
     ThreadLifecycle,
     AlreadyReserved,
     AlreadyConsumed,
@@ -41,6 +42,12 @@ pub(crate) enum AdaptiveAdmissionResult {
 
 impl ChatWidget {
     pub(crate) fn maybe_submit_adaptive_successor(&mut self) -> bool {
+        if matches!(
+            self.adaptive_effort.pending_signal,
+            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting { .. })
+        ) {
+            return false;
+        }
         let Some(source_turn_id) = self.adaptive_effort.last_processed_terminal_turn_id.clone()
         else {
             return false;
@@ -135,6 +142,14 @@ impl ChatWidget {
         if state.workflow_terminal.is_some() {
             return AdaptiveAdmissionResult::Suppressed(
                 AdaptiveAdmissionSuppressedReason::WorkflowTerminal,
+            );
+        }
+        if matches!(
+            state.pending_signal,
+            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting { .. })
+        ) {
+            return AdaptiveAdmissionResult::Suppressed(
+                AdaptiveAdmissionSuppressedReason::AwaitingTrustedSignal,
             );
         }
         if self.turn_lifecycle.agent_turn_running || self.bottom_pane.is_task_running() {
