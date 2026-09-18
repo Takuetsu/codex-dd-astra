@@ -196,7 +196,6 @@ use tokio::select;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::TryRecvError;
-use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::task::JoinHandle;
 use toml::Value as TomlValue;
@@ -642,7 +641,7 @@ pub(crate) struct App {
     side_threads: HashMap<ThreadId, SideThreadState>,
     abandoned_side_threads: HashSet<ThreadId>,
     active_thread_id: Option<ThreadId>,
-    active_thread_rx: Option<mpsc::Receiver<ThreadBufferedEvent>>,
+    active_thread_rx: Option<mpsc::UnboundedReceiver<ThreadBufferedEvent>>,
     primary_thread_id: Option<ThreadId>,
     last_subagent_backfill_attempt: Option<ThreadId>,
     primary_session_configured: Option<ThreadSessionState>,

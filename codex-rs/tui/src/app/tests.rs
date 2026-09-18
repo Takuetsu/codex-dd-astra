@@ -980,7 +980,7 @@ async fn active_thread_drain_yields_after_frame_deadline_without_dropping_events
     assert!(
         app.active_thread_rx
             .as_ref()
-            .is_some_and(tokio::sync::mpsc::Receiver::is_empty),
+            .is_some_and(|receiver| receiver.is_empty()),
         "the next foreground frame should deliver the preserved notification"
     );
     assert_eq!(
@@ -1014,10 +1014,10 @@ async fn selected_side_thread_close_is_handled_by_foreground_event_owner() -> Re
     );
     side_channel
         .sender
-        .try_send(ThreadBufferedEvent::Notification(Box::new(
+        .send(ThreadBufferedEvent::Notification(Box::new(
             thread_closed_notification(side_thread_id),
         )))
-        .expect("closed side-thread notification should fit in its saved receiver");
+        .expect("closed side-thread notification should queue in its saved receiver");
     app.thread_event_channels
         .insert(side_thread_id, side_channel);
     app.side_threads

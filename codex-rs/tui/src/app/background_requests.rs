@@ -673,20 +673,9 @@ impl App {
             guard.active
         };
 
-        if should_send {
-            match sender.try_send(ThreadBufferedEvent::FeedbackSubmission(event)) {
-                Ok(()) => {}
-                Err(TrySendError::Full(event)) => {
-                    tokio::spawn(async move {
-                        if let Err(err) = sender.send(event).await {
-                            tracing::warn!("thread {thread_id} event channel closed: {err}");
-                        }
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    tracing::warn!("thread {thread_id} event channel closed");
-                }
-            }
+        if should_send && let Err(err) = sender.send(ThreadBufferedEvent::FeedbackSubmission(event))
+        {
+            tracing::warn!("thread {thread_id} event channel closed: {err}");
         }
     }
 

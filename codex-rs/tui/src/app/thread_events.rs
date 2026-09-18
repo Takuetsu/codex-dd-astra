@@ -578,15 +578,20 @@ fn file_change_item_changes(
 
 #[derive(Debug)]
 pub(super) struct ThreadEventChannel {
-    pub(super) sender: mpsc::Sender<ThreadBufferedEvent>,
-    pub(super) receiver: Option<mpsc::Receiver<ThreadBufferedEvent>>,
+    /// Live delivery must preserve app-server FIFO order even when the TUI falls behind.
+    ///
+    /// Replay retention stays bounded independently in `store`; making this queue unbounded
+    /// avoids spawning competing overflow tasks that can reorder a trusted terminal behind
+    /// the matching `TurnCompleted` notification.
+    pub(super) sender: mpsc::UnboundedSender<ThreadBufferedEvent>,
+    pub(super) receiver: Option<mpsc::UnboundedReceiver<ThreadBufferedEvent>>,
     pub(super) store: Arc<Mutex<ThreadEventStore>>,
     attachment: ThreadEventAttachment,
 }
 
 impl ThreadEventChannel {
     pub(super) fn new(capacity: usize) -> Self {
-        let (sender, receiver) = mpsc::channel(capacity);
+        let (sender, receiver) = mpsc::unbounded_channel();
         Self {
             sender,
             receiver: Some(receiver),
@@ -613,7 +618,7 @@ impl ThreadEventChannel {
         session: ThreadSessionState,
         turns: Vec<Turn>,
     ) -> Self {
-        let (sender, receiver) = mpsc::channel(capacity);
+        let (sender, receiver) = mpsc::unbounded_channel();
         Self {
             sender,
             receiver: Some(receiver),
@@ -721,6 +726,57 @@ mod tests {
                 ..test_turn(turn_id, status, Vec::new())
             },
         })
+    }
+
+    #[tokio::test]
+    async fn live_thread_event_queue_keeps_adaptive_terminal_before_turn_completed_past_replay_capacity()
+     {
+        let thread_id = ThreadId::new();
+        let turn_id = "repair-ready-for-validation";
+        // A replay capacity of one intentionally models a live consumer that is already behind.
+        // Live delivery must still accept both events in source order without detached send tasks.
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+        let mut receiver = channel
+            .receiver
+            .take()
+            .expect("new thread event channel should own a receiver");
+
+        let terminal = ServerNotification::AdaptiveRuntimeSignal(
+            codex_app_server_protocol::AdaptiveRuntimeSignalNotification {
+                thread_id: thread_id.to_string(),
+                signal: codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope {
+                    source_turn_id: turn_id.to_string(),
+                    signal_kind:
+                        codex_protocol::protocol::AdaptiveRuntimeSignalKind::ReadyForValidation,
+                    evidence_refs: Vec::new(),
+                    diagnostic_note: Some("READY_FOR_VALIDATION".to_string()),
+                },
+            },
+        );
+        let completed = turn_completed_notification(thread_id, turn_id, TurnStatus::Completed);
+
+        channel
+            .sender
+            .send(ThreadBufferedEvent::Notification(Box::new(terminal)))
+            .expect("terminal notification should enqueue");
+        channel
+            .sender
+            .send(ThreadBufferedEvent::Notification(Box::new(completed)))
+            .expect("completion notification should enqueue without waiting for a drain");
+
+        assert!(matches!(
+            receiver.recv().await,
+            Some(ThreadBufferedEvent::Notification(notification))
+                if matches!(
+                    notification.as_ref(),
+                    ServerNotification::AdaptiveRuntimeSignal(_)
+                )
+        ));
+        assert!(matches!(
+            receiver.recv().await,
+            Some(ThreadBufferedEvent::Notification(notification))
+                if matches!(notification.as_ref(), ServerNotification::TurnCompleted(_))
+        ));
     }
 
     fn hook_started_notification(thread_id: ThreadId, turn_id: &str) -> ServerNotification {

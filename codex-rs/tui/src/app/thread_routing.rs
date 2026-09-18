@@ -121,7 +121,10 @@ impl App {
     pub(super) async fn activate_thread_for_replay(
         &mut self,
         thread_id: ThreadId,
-    ) -> Option<(mpsc::Receiver<ThreadBufferedEvent>, ThreadEventSnapshot)> {
+    ) -> Option<(
+        mpsc::UnboundedReceiver<ThreadBufferedEvent>,
+        ThreadEventSnapshot,
+    )> {
         let channel = self.thread_event_channels.get_mut(&thread_id)?;
         let receiver = channel.receiver.take()?;
         let mut store = channel.store.lock().await;
@@ -718,11 +721,9 @@ impl App {
                                     store.active
                                 };
                                 if should_send
-                                    && let Err(error) = thread_event_tx
-                                        .send(ThreadBufferedEvent::Notification(Box::new(
-                                            notification,
-                                        )))
-                                        .await
+                                    && let Err(error) = thread_event_tx.send(
+                                        ThreadBufferedEvent::Notification(Box::new(notification)),
+                                    )
                                 {
                                     tracing::warn!(error = %error, "thread event channel closed");
                                 }
@@ -1283,20 +1284,10 @@ impl App {
             self.app_event_tx.send(AppEvent::SettingsSelectionSettled);
         }
 
-        if let Some(notification) = notification {
-            match sender.try_send(ThreadBufferedEvent::Notification(Box::new(notification))) {
-                Ok(()) => {}
-                Err(TrySendError::Full(event)) => {
-                    tokio::spawn(async move {
-                        if let Err(err) = sender.send(event).await {
-                            tracing::warn!("thread {thread_id} event channel closed: {err}");
-                        }
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    tracing::warn!("thread {thread_id} event channel closed");
-                }
-            }
+        if let Some(notification) = notification
+            && let Err(err) = sender.send(ThreadBufferedEvent::Notification(Box::new(notification)))
+        {
+            tracing::warn!("thread {thread_id} event channel closed: {err}");
         }
         if let Some(status) = pending_status {
             self.set_side_parent_status(thread_id, Some(status));
@@ -1401,18 +1392,8 @@ impl App {
         let request_status = SideParentStatus::for_request(&request);
 
         if should_send {
-            match sender.try_send(ThreadBufferedEvent::Request(Box::new(request))) {
-                Ok(()) => {}
-                Err(TrySendError::Full(event)) => {
-                    tokio::spawn(async move {
-                        if let Err(err) = sender.send(event).await {
-                            tracing::warn!("thread {thread_id} event channel closed: {err}");
-                        }
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    tracing::warn!("thread {thread_id} event channel closed");
-                }
+            if let Err(err) = sender.send(ThreadBufferedEvent::Request(Box::new(request))) {
+                tracing::warn!("thread {thread_id} event channel closed: {err}");
             }
         } else if self.active_side_parent_thread_id().is_none()
             && let Some(request) = inactive_interactive_request
@@ -1448,20 +1429,10 @@ impl App {
             should_send
         };
 
-        if should_send {
-            match sender.try_send(ThreadBufferedEvent::HistoryEntryResponse(event)) {
-                Ok(()) => {}
-                Err(TrySendError::Full(event)) => {
-                    tokio::spawn(async move {
-                        if let Err(err) = sender.send(event).await {
-                            tracing::warn!("thread {thread_id} event channel closed: {err}");
-                        }
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    tracing::warn!("thread {thread_id} event channel closed");
-                }
-            }
+        if should_send
+            && let Err(err) = sender.send(ThreadBufferedEvent::HistoryEntryResponse(event))
+        {
+            tracing::warn!("thread {thread_id} event channel closed: {err}");
         }
         Ok(())
     }
