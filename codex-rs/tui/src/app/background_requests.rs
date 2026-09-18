@@ -673,8 +673,7 @@ impl App {
             guard.active
         };
 
-        if should_send
-            && let Err(err) = sender.send(ThreadBufferedEvent::FeedbackSubmission(event))
+        if should_send && let Err(err) = sender.send(ThreadBufferedEvent::FeedbackSubmission(event))
         {
             tracing::warn!("thread {thread_id} event channel closed: {err}");
         }
