@@ -150,6 +150,10 @@ def resolve_file(path: str) -> None:
 
     if path == "codex-rs/build-info/src/build_info_tests.rs":
         resolved = resolved.replace(
+            "use crate::BuildInfo;\nuse crate::codexdd_compact_identity_for_commit;\nuse crate::codexdd_version;\nuse crate::build_id;\n",
+            "use crate::BuildInfo;\nuse crate::build_id;\nuse crate::codexdd_compact_identity_for_commit;\nuse crate::codexdd_version;\n",
+        )
+        resolved = resolved.replace(
             'assert_eq!(codexdd_version(), "0.1.0");',
             'assert_eq!(codexdd_version(), "0.2.0");',
         )
