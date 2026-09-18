@@ -121,7 +121,10 @@ impl App {
     pub(super) async fn activate_thread_for_replay(
         &mut self,
         thread_id: ThreadId,
-    ) -> Option<(mpsc::UnboundedReceiver<ThreadBufferedEvent>, ThreadEventSnapshot)> {
+    ) -> Option<(
+        mpsc::UnboundedReceiver<ThreadBufferedEvent>,
+        ThreadEventSnapshot,
+    )> {
         let channel = self.thread_event_channels.get_mut(&thread_id)?;
         let receiver = channel.receiver.take()?;
         let mut store = channel.store.lock().await;
@@ -1284,8 +1287,7 @@ impl App {
         }
 
         if let Some(notification) = notification
-            && let Err(err) =
-                sender.send(ThreadBufferedEvent::Notification(Box::new(notification)))
+            && let Err(err) = sender.send(ThreadBufferedEvent::Notification(Box::new(notification)))
         {
             tracing::warn!("thread {thread_id} event channel closed: {err}");
         }
