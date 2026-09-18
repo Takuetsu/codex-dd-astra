@@ -1,0 +1,73 @@
+name: try-resolve-upstream-0.155.0
+
+on:
+  push:
+    branches:
+      - automation/upstream-sync-rust-v0.155.0
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Reproduce merge and reapply codexdd conflict patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          production=c76ac2952b920dfb8973c2abfa11e2d482cf6f2b
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream tag rust-v0.155.0 --no-tags
+          git reset --hard "$production"
+          merge_base="$(git merge-base "$production" rust-v0.155.0)"
+          conflicts=(
+            codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst
+            codex-rs/build-info/src/build_info_tests.rs
+            codex-rs/core/src/thread_manager.rs
+            codex-rs/core/src/tools/context.rs
+            codex-rs/tui/src/app.rs
+            codex-rs/tui/src/app/startup.rs
+            codex-rs/tui/src/app/test_support.rs
+            codex-rs/tui/src/app/tests.rs
+            codex-rs/tui/src/app/tests/startup.rs
+            codex-rs/tui/src/chatwidget/input_flow.rs
+            codex-rs/tui/src/slash_command.rs
+          )
+          text_conflicts=("${conflicts[@]:1}")
+          git diff --binary "$merge_base" "$production" -- "${text_conflicts[@]}" > /tmp/codexdd-conflict.patch
+
+          set +e
+          git merge --no-ff --no-commit rust-v0.155.0
+          merge_rc=$?
+          set -e
+          if [[ "$merge_rc" -eq 0 ]]; then
+            echo "ERROR: expected conflicts but merge completed cleanly"
+            exit 2
+          fi
+
+          echo 'Initial conflicts:'
+          git diff --name-only --diff-filter=U
+          for path in "${conflicts[@]}"; do
+            git checkout --theirs -- "$path"
+            git add "$path"
+          done
+
+          set +e
+          git apply --3way --index /tmp/codexdd-conflict.patch
+          apply_rc=$?
+          set -e
+          echo "git apply rc=$apply_rc"
+          echo 'Remaining conflicts after reapplying codexdd patch:'
+          git diff --name-only --diff-filter=U
+          echo 'Status:'
+          git status --short
+          if [[ "$apply_rc" -ne 0 ]] || [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+            exit 1
+          fi
+          git diff --check
+          echo 'THREE_WAY_REAPPLY_CLEAN'
