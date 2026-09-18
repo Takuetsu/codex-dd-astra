@@ -43,7 +43,7 @@ pub(crate) enum AdaptiveAdmissionResult {
 impl ChatWidget {
     pub(crate) fn maybe_submit_adaptive_successor(&mut self) -> bool {
         if matches!(
-            self.adaptive_effort.pending_signal,
+            self.adaptive_effort.pending_signal.as_ref(),
             Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting { .. })
         ) {
             return false;
@@ -145,7 +145,7 @@ impl ChatWidget {
             );
         }
         if matches!(
-            state.pending_signal,
+            state.pending_signal.as_ref(),
             Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting { .. })
         ) {
             return AdaptiveAdmissionResult::Suppressed(
