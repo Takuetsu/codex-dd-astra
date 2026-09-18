@@ -406,6 +406,7 @@ mod tests {
                     parent_thread_id: None,
                     timestamp: "2026-02-26T00:00:00.000Z".to_string(),
                     cwd: PathBuf::from("/child/worktree"),
+                    runtime_workspace_roots: None,
                     originator: "codex_cli_rs".to_string(),
                     cli_version: "0.0.0".to_string(),
                     source: SessionSource::Cli,
@@ -433,6 +434,7 @@ mod tests {
             &RolloutItem::TurnContext(TurnContextItem {
                 turn_id: Some("turn-1".to_string()),
                 root_turn_id: None,
+                disabled_plugin_ids: None,
                 cwd: serde_json::from_value(serde_json::json!(
                     std::env::current_dir()
                         .expect("current directory")
@@ -482,6 +484,7 @@ mod tests {
             &RolloutItem::TurnContext(TurnContextItem {
                 turn_id: Some("turn-1".to_string()),
                 root_turn_id: None,
+                disabled_plugin_ids: None,
                 cwd: serde_json::from_value(serde_json::json!(
                     std::env::current_dir()
                         .expect("current directory")
@@ -531,6 +534,7 @@ mod tests {
             &RolloutItem::TurnContext(TurnContextItem {
                 turn_id: Some("turn-1".to_string()),
                 root_turn_id: None,
+                disabled_plugin_ids: None,
                 cwd: serde_json::from_value(serde_json::json!(&fallback_cwd))
                     .expect("absolute fallback cwd"),
                 workspace_roots: None,
@@ -569,6 +573,7 @@ mod tests {
             &RolloutItem::TurnContext(TurnContextItem {
                 turn_id: Some("turn-1".to_string()),
                 root_turn_id: None,
+                disabled_plugin_ids: None,
                 cwd: serde_json::from_value(serde_json::json!(
                     std::env::current_dir()
                         .expect("current directory")
@@ -614,6 +619,7 @@ mod tests {
             ThreadSettingsAppliedEvent {
                 thread_id: None,
                 thread_settings: ThreadSettingsSnapshot {
+                    disabled_plugin_ids: Vec::new(),
                     model: "gpt-5.2-codex".to_string(),
                     model_provider_id: "updated-provider".to_string(),
                     service_tier: None,
@@ -622,6 +628,7 @@ mod tests {
                     permission_profile: permission_profile.clone(),
                     active_permission_profile: None,
                     cwd: cwd.clone().try_into().expect("absolute settings cwd"),
+                    runtime_workspace_roots: None,
                     reasoning_effort: Some(ReasoningEffort::Ultra),
                     reasoning_summary: Some(ReasoningSummary::Auto),
                     personality: None,
@@ -669,6 +676,7 @@ mod tests {
                     parent_thread_id: None,
                     timestamp: "2026-02-26T00:00:00.000Z".to_string(),
                     cwd: PathBuf::from("/workspace"),
+                    runtime_workspace_roots: None,
                     originator: "codex_cli_rs".to_string(),
                     cli_version: "0.0.0".to_string(),
                     source: SessionSource::Cli,
