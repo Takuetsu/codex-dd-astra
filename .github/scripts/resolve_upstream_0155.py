@@ -181,6 +181,17 @@ def apply_post_merge_compatibility() -> None:
         raise RuntimeError(f"expected rollout memory match arm not found in {path}")
     path.write_text(text.replace(needle, replacement, 1), encoding="utf-8")
 
+    interaction = Path("codex-rs/tui/src/chatwidget/interaction.rs")
+    interaction_text = interaction.read_text(encoding="utf-8")
+    old = "flush_completed_command_activity"
+    count = interaction_text.count(old)
+    if count != 2:
+        raise RuntimeError(f"expected exactly 2 {old} call sites in {interaction}, found {count}")
+    interaction.write_text(
+        interaction_text.replace(old, "flush_completed_tool_activity"),
+        encoding="utf-8",
+    )
+
 
 def main() -> None:
     paths = [
