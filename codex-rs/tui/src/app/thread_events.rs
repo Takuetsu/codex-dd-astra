@@ -730,7 +730,7 @@ mod tests {
 
     #[tokio::test]
     async fn live_thread_event_queue_keeps_adaptive_terminal_before_turn_completed_past_replay_capacity()
-    {
+     {
         let thread_id = ThreadId::new();
         let turn_id = "repair-ready-for-validation";
         // A replay capacity of one intentionally models a live consumer that is already behind.
