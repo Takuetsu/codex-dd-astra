@@ -721,11 +721,9 @@ impl App {
                                     store.active
                                 };
                                 if should_send
-                                    && let Err(error) = thread_event_tx
-                                        .send(ThreadBufferedEvent::Notification(Box::new(
-                                            notification,
-                                        )))
-                                        .await
+                                    && let Err(error) = thread_event_tx.send(
+                                        ThreadBufferedEvent::Notification(Box::new(notification)),
+                                    )
                                 {
                                     tracing::warn!(error = %error, "thread event channel closed");
                                 }
