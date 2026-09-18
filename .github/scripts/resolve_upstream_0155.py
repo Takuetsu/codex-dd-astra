@@ -167,6 +167,21 @@ def resolve_file(path: str) -> None:
     file_path.write_text(resolved, encoding="utf-8")
 
 
+def apply_post_merge_compatibility() -> None:
+    path = Path("codex-rs/memories/write/src/rollout_input.rs")
+    text = path.read_text(encoding="utf-8")
+    if "RolloutItem::WorkflowState(_)" in text:
+        return
+    needle = "            | RolloutItem::EventMsg(_) => None,\n"
+    replacement = (
+        "            | RolloutItem::EventMsg(_)\n"
+        "            | RolloutItem::WorkflowState(_) => None,\n"
+    )
+    if needle not in text:
+        raise RuntimeError(f"expected rollout memory match arm not found in {path}")
+    path.write_text(text.replace(needle, replacement, 1), encoding="utf-8")
+
+
 def main() -> None:
     paths = [
         "codex-rs/build-info/src/build_info_tests.rs",
@@ -182,6 +197,7 @@ def main() -> None:
     ]
     for path in paths:
         resolve_file(path)
+    apply_post_merge_compatibility()
 
 
 if __name__ == "__main__":
