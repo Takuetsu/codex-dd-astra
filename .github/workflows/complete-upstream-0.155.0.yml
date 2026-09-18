@@ -75,6 +75,7 @@ jobs:
             codex-rs/core/src/thread_manager.rs \
             codex-rs/core/src/tools/context.rs \
             codex-rs/memories/write/src/rollout_input.rs \
+            codex-rs/tui/src/chatwidget/interaction.rs \
             codex-rs/tui/src/app.rs \
             codex-rs/tui/src/app/startup.rs \
             codex-rs/tui/src/app/test_support.rs \
@@ -91,6 +92,12 @@ jobs:
 
           printf '%s\n' 'rust-v0.155.0' > codex-rs/upstream-codex-release.txt
           git add codex-rs/upstream-codex-release.txt
+
+          # Re-resolve the merged workspace lockfile before export so Windows CI
+          # validates the exact dependency graph that will be committed.
+          (cd codex-rs && cargo metadata --format-version 1 > /dev/null)
+          git add codex-rs/Cargo.lock
+
           rm -f actual-conflicts.txt expected-conflicts.txt
           git diff --check
           git commit -m "codexdd: integrate upstream rust-v0.155.0"
