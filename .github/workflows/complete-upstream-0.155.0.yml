@@ -1,0 +1,139 @@
+name: complete-upstream-merge-0.155.0
+
+on:
+  push:
+    branches:
+      - automation/upstream-sync-rust-v0.155.0
+    paths:
+      - .github/upstream-0155-run
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    name: Resolve upstream 0.155.0 merge
+    runs-on: ubuntu-24.04
+    outputs:
+      merge_sha: ${{ steps.finish.outputs.merge_sha }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: automation/upstream-sync-rust-v0.155.0
+          fetch-depth: 0
+
+      - name: Merge upstream and apply reviewed resolutions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream tag rust-v0.155.0 --no-tags
+
+          set +e
+          git merge --no-ff --no-commit rust-v0.155.0
+          merge_rc=$?
+          set -e
+          if [[ "$merge_rc" -eq 0 ]]; then
+            echo "Expected reviewed conflict set, but merge completed without conflicts." >&2
+            exit 1
+          fi
+
+          git diff --name-only --diff-filter=U | sort > actual-conflicts.txt
+          cat > expected-conflicts.txt <<'EOF'
+          codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst
+          codex-rs/build-info/src/build_info_tests.rs
+          codex-rs/core/src/thread_manager.rs
+          codex-rs/core/src/tools/context.rs
+          codex-rs/tui/src/app.rs
+          codex-rs/tui/src/app/startup.rs
+          codex-rs/tui/src/app/test_support.rs
+          codex-rs/tui/src/app/tests.rs
+          codex-rs/tui/src/app/tests/startup.rs
+          codex-rs/tui/src/chatwidget/input_flow.rs
+          codex-rs/tui/src/slash_command.rs
+          EOF
+          sort -o expected-conflicts.txt expected-conflicts.txt
+          if ! diff -u expected-conflicts.txt actual-conflicts.txt; then
+            echo "Conflict set changed; refusing scripted resolution." >&2
+            exit 1
+          fi
+
+          while IFS= read -r path; do
+            [[ "$path" == *.zst ]] && continue
+            git checkout --conflict=diff3 -- "$path"
+          done < actual-conflicts.txt
+
+          git checkout --theirs -- codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst
+          python3 .github/scripts/resolve_upstream_0155.py
+
+          git add \
+            codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst \
+            codex-rs/build-info/src/build_info_tests.rs \
+            codex-rs/core/src/thread_manager.rs \
+            codex-rs/core/src/tools/context.rs \
+            codex-rs/tui/src/app.rs \
+            codex-rs/tui/src/app/startup.rs \
+            codex-rs/tui/src/app/test_support.rs \
+            codex-rs/tui/src/app/tests.rs \
+            codex-rs/tui/src/app/tests/startup.rs \
+            codex-rs/tui/src/chatwidget/input_flow.rs \
+            codex-rs/tui/src/slash_command.rs
+
+          if [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+            echo "Unresolved merge entries remain." >&2
+            git diff --name-only --diff-filter=U >&2
+            exit 1
+          fi
+
+          printf '%s\n' 'rust-v0.155.0' > codex-rs/upstream-codex-release.txt
+          git add codex-rs/upstream-codex-release.txt
+          git diff --check
+          git status --short
+          git commit -m "codexdd: integrate upstream rust-v0.155.0"
+          git push origin HEAD:automation/upstream-sync-rust-v0.155.0
+
+      - name: Record merge commit
+        id: finish
+        shell: bash
+        run: echo "merge_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  validate:
+    name: Windows debug build and Adaptive tests
+    needs: merge
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: codex-rs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: automation/upstream-sync-rust-v0.155.0
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+
+      - name: cargo fmt
+        run: cargo fmt -- --config imports_granularity=Item --check
+
+      - name: Build codex-cli
+        run: cargo build -p codex-cli
+
+      - name: Core adaptive signal tests
+        run: cargo test -p codex-core adaptive_signal --lib --no-fail-fast
+
+      - name: TUI adaptive controller tests
+        run: cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
+
+      - name: TUI trusted adaptive signal tests
+        run: cargo test -p codex-tui adaptive_trusted_signal --lib --no-fail-fast
+
+      - name: Check for a clean worktree
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree
