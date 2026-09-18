@@ -36,7 +36,7 @@ impl ChatWidget {
             let is_manual_esc_interrupt = should_pause_active_goal
                 && key_event.code == KeyCode::Esc
                 && key_event.kind == KeyEventKind::Press;
-            self.flush_completed_command_activity();
+            self.flush_completed_tool_activity();
             self.bottom_pane.handle_key_event(key_event);
             if should_pause_active_goal {
                 self.pause_active_goal_for_interrupt();
@@ -64,6 +64,10 @@ impl ChatWidget {
             self.quit_shortcut_expires_at = None;
             self.quit_shortcut_key = None;
             self.copy_last_agent_markdown();
+            return;
+        }
+
+        if self.handle_realtime_microphone_shortcut(key_event) {
             return;
         }
 
@@ -197,7 +201,7 @@ impl ChatWidget {
                     && key_event.code == KeyCode::Esc
                     && key_event.kind == KeyEventKind::Press;
                 if key_event.code == KeyCode::Enter {
-                    self.flush_completed_command_activity();
+                    self.flush_completed_tool_activity();
                 }
                 let input_result = self.bottom_pane.handle_key_event(key_event);
                 self.sync_backend_banner_view();
