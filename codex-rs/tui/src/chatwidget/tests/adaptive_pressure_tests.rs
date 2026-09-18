@@ -494,3 +494,215 @@ async fn trusted_handoff_resets_unfinished_pressure() {
     assert_eq!(chat.adaptive_effort.pending_attempt, None);
     assert_eq!(chat.adaptive_effort.successor_admission, None);
 }
+
+
+fn completed_turn_with_adaptive_report(turn_id: &str) -> TurnCompletedNotification {
+    TurnCompletedNotification {
+        thread_id: String::new(),
+        turn: AppServerTurn {
+            id: turn_id.to_string(),
+            items: vec![ThreadItem::FunctionCallOutput {
+                id: "adaptive-signal-output".to_string(),
+                name: "report_adaptive_signal".to_string(),
+                namespace: None,
+                output: codex_protocol::models::FunctionCallOutputBody::Text(
+                    "{\"status\":\"request_emitted\"}".to_string(),
+                ),
+            }],
+            items_view: codex_app_server_protocol::TurnItemsView::Full,
+            status: AppServerTurnStatus::Completed,
+            error: None,
+            started_at: None,
+            completed_at: None,
+            duration_ms: Some(1),
+        },
+    }
+}
+
+#[tokio::test]
+async fn completed_repair_waits_for_late_ready_for_validation_and_admits_no_successor() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "late-ready-for-validation";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Repair;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("breakwater/post-terminal-race-repair".to_string());
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    // Reproduce the live notification order: turn/completed is observed before the separate
+    // turn/adaptiveRuntimeSignal notification emitted by report_adaptive_signal.
+    let mut completed = completed_turn_with_adaptive_report(turn_id);
+    completed.thread_id = thread_id.to_string();
+    chat.handle_turn_completed_notification(completed.clone(), None);
+
+    assert!(matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { ref source_turn_id })
+            if source_turn_id == turn_id
+    ));
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
+    assert_no_submit_op(&mut op_rx);
+
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: turn_id.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+            evidence_refs: Vec::new(),
+            diagnostic_note: Some("READY_FOR_VALIDATION".to_string()),
+        },
+    });
+
+    assert_eq!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+    );
+    assert_eq!(chat.adaptive_effort.worker_context.role, AdaptiveWorkerRole::Repair);
+    assert_eq!(
+        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        Some("breakwater/post-terminal-race-repair")
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
+    assert!(!chat.maybe_submit_adaptive_successor());
+    assert_no_submit_op(&mut op_rx);
+
+    // A duplicate completion after the terminal is latched must remain inert.
+    chat.handle_turn_completed_notification(completed, None);
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+    assert_no_submit_op(&mut op_rx);
+}
+
+#[tokio::test]
+async fn completed_validation_waits_for_late_owner_qa_and_admits_no_successor() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "late-ready-for-owner-qa";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("breakwater/post-terminal-race-validation".to_string());
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    let mut success = failed_command(thread_id, turn_id, "late-validation-success");
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut success.item
+    {
+        *status = CommandExecutionStatus::Completed;
+        *exit_code = Some(0);
+    }
+    chat.register_adaptive_evidence(&success);
+
+    let mut completed = completed_turn_with_adaptive_report(turn_id);
+    completed.thread_id = thread_id.to_string();
+    chat.handle_turn_completed_notification(completed, None);
+
+    assert!(matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { ref source_turn_id })
+            if source_turn_id == turn_id
+    ));
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_no_submit_op(&mut op_rx);
+
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: turn_id.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+            evidence_refs: vec!["late-validation-success".to_string()],
+            diagnostic_note: Some("PASS - READY FOR REPOSITORY HANDOFF".to_string()),
+        },
+    });
+
+    assert_eq!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    );
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Validation
+    );
+    assert_eq!(
+        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        Some("breakwater/post-terminal-race-validation")
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
+    assert_no_submit_op(&mut op_rx);
+}
+
+#[tokio::test]
+async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_continuation() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "ordinary-unfinished-completion";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("breakwater/ordinary-continuation".to_string());
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    chat.handle_turn_completed_notification(
+        TurnCompletedNotification {
+            thread_id: thread_id.to_string(),
+            turn: AppServerTurn {
+                id: turn_id.to_string(),
+                items: Vec::new(),
+                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                status: AppServerTurnStatus::Completed,
+                error: None,
+                started_at: None,
+                completed_at: None,
+                duration_ms: Some(1),
+            },
+        },
+        None,
+    );
+
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert!(chat.adaptive_effort.pending_signal.is_none());
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        None
+    );
+    let submitted = next_submit_op(&mut op_rx);
+    assert!(matches!(submitted, Op::UserTurn { .. }));
+}
