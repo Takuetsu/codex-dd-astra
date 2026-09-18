@@ -22,6 +22,8 @@ jobs:
           set -euo pipefail
           git remote add upstream https://github.com/openai/codex.git
           git fetch upstream tag rust-v0.155.0 --no-tags
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p merge-conflicts
           set +e
           git merge --no-ff --no-commit rust-v0.155.0
