@@ -74,6 +74,7 @@ jobs:
             codex-rs/build-info/src/build_info_tests.rs \
             codex-rs/core/src/thread_manager.rs \
             codex-rs/core/src/tools/context.rs \
+            codex-rs/memories/write/src/rollout_input.rs \
             codex-rs/tui/src/app.rs \
             codex-rs/tui/src/app/startup.rs \
             codex-rs/tui/src/app/test_support.rs \
