@@ -27,23 +27,30 @@ def release_version(tag: str) -> tuple[int, ...] | None:
     return (*base, KIND_ORDER[kind], *parts)
 
 
+def stable_release_version(tag: str) -> tuple[int, int, int] | None:
+    match = RELEASE_TAG.fullmatch(tag)
+    if match is None or match.group("kind") is not None:
+        return None
+    return tuple(int(match.group(name)) for name in ("major", "minor", "patch"))
+
+
 def select_latest_release(tags: Iterable[str]) -> str:
-    candidates = [(release_version(tag), tag) for tag in tags]
+    candidates = [(stable_release_version(tag), tag) for tag in tags]
     valid = [(version, tag) for version, tag in candidates if version is not None]
     if not valid:
-        raise ValueError("no official rust-vX.Y.Z release tags found")
+        raise ValueError("no stable official rust-vX.Y.Z release tags found")
     return max(valid)[1]
 
 
 def integration_branch(tag: str) -> str:
-    if release_version(tag) is None:
-        raise ValueError(f"invalid official release tag: {tag}")
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
     return f"automation/upstream-sync-{tag}"
 
 
 def pr_marker(tag: str) -> str:
-    if release_version(tag) is None:
-        raise ValueError(f"invalid official release tag: {tag}")
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
     return f"codexdd-upstream-sync: {tag}"
 
 
