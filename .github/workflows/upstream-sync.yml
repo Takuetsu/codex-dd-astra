@@ -37,7 +37,7 @@ jobs:
           import sys
           from pathlib import Path
           sys.path.insert(0, ".github/scripts")
-          from upstream_sync import release_version
+          from upstream_sync import release_version, stable_release_version
 
           current, latest = sys.argv[1:]
           if release_version(current) is None:
