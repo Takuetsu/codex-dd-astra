@@ -90,7 +90,7 @@ jobs:
 
           # Keep the fork's own CI/release workflows. They validate codexdd's
           # supported Windows runtime and avoid importing upstream release jobs.
-          git rm -r --ignore-unmatch .github/workflows >/dev/null
+          git rm -r -f --ignore-unmatch .github/workflows >/dev/null
           git checkout c76ac2952b920dfb8973c2abfa11e2d482cf6f2b -- .github/workflows
           git add -A .github/workflows
 
