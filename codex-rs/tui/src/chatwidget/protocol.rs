@@ -412,10 +412,11 @@ impl ChatWidget {
             return false;
         }
 
-        self.adaptive_effort.pending_signal =
-            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {
+        self.adaptive_effort.pending_signal = Some(
+            crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {
                 source_turn_id: turn.id.clone(),
-            });
+            },
+        );
         // A trusted terminal is in flight. Any stale authorization from a prior reduction must
         // lose immediately, before on_task_complete can reach successor submission.
         self.adaptive_effort.pending_attempt = None;
