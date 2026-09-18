@@ -1122,7 +1122,7 @@ See the Codex keymap documentation for supported actions and examples."
                                 && app
                                     .active_thread_rx
                                     .as_ref()
-                                    .is_none_or(tokio::sync::mpsc::Receiver::is_empty)
+                                    .is_none_or(|receiver| receiver.is_empty())
                                 && !app.pending_primary_events.iter().any(|event| {
                                     matches!(event, ThreadBufferedEvent::Request(_))
                                 })
