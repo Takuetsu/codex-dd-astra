@@ -49,6 +49,49 @@ jobs:
             fi
           done < merge-conflicts/conflicts.txt
           git status --short > merge-conflicts/status.txt
+
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            git checkout --conflict=diff3 -- "$path" 2>/dev/null || true
+          done < merge-conflicts/conflicts.txt
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          conflicts = [
+              line.strip()
+              for line in Path("merge-conflicts/conflicts.txt").read_text().splitlines()
+              if line.strip()
+          ]
+          for raw in conflicts:
+              path = Path(raw)
+              print(f"===== CONFLICT HUNKS: {raw} =====")
+              try:
+                  data = path.read_bytes()
+              except OSError as exc:
+                  print(f"[unable to read: {exc}]")
+                  continue
+              if b"\x00" in data:
+                  print("[binary conflict]")
+                  continue
+              lines = data.decode("utf-8", errors="replace").splitlines()
+              starts = [i for i, line in enumerate(lines) if line.startswith("<<<<<<< ")]
+              if not starts:
+                  print("[no textual conflict markers]")
+                  continue
+              emitted_until = -1
+              for start in starts:
+                  end = next(
+                      (i for i in range(start, len(lines)) if lines[i].startswith(">>>>>>> ")),
+                      min(len(lines) - 1, start + 120),
+                  )
+                  lo = max(emitted_until + 1, start - 18)
+                  hi = min(len(lines), end + 19)
+                  for idx in range(lo, hi):
+                      print(f"{idx + 1:6}: {lines[idx]}")
+                  emitted_until = hi - 1
+                  print()
+          PY
           exit 1
 
       - name: Upload conflict stages
