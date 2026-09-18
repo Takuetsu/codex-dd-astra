@@ -4,9 +4,10 @@ name: v8-canary
 # postmerge-ci, and GitHub cannot share a path filter between pull_request and
 # workflow_call. v8_canary_changes.py is the single source of truth instead;
 # unrelated events run only the cheap metadata job below.
+# codexdd currently supports Windows only. Keep this reusable/manual for
+# explicit V8 diagnostics, but do not launch the Linux/macOS matrix on PRs.
 on:
   workflow_call:
-  pull_request: {}
   workflow_dispatch:
 
 concurrency:
