@@ -1700,7 +1700,29 @@ pub struct ThreadInjectItemsResponse {}
 #[ts(rename_all = "camelCase", export_to = "v2/")]
 pub enum ThreadWorkflowStateOperation {
     SetReadyForOwnerQa,
+    SetAdaptiveState,
     Clear,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct ThreadAdaptiveWorkflowState {
+    pub enabled: bool,
+    #[ts(optional = nullable)]
+    pub starting_family: Option<String>,
+    #[ts(optional = nullable)]
+    pub current_family: Option<String>,
+    #[ts(optional = nullable)]
+    pub current_effort: Option<String>,
+    pub attempt_number: u32,
+    pub paused_by_user: bool,
+    pub worker_role: String,
+    #[ts(optional = nullable)]
+    pub authorized_scope: Option<String>,
+    pub worker_assignment_locked: bool,
+    #[ts(optional = nullable)]
+    pub workflow_terminal: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
@@ -1711,6 +1733,8 @@ pub struct ThreadWorkflowStateUpdateParams {
     pub operation: ThreadWorkflowStateOperation,
     #[ts(optional = nullable)]
     pub source_turn_id: Option<String>,
+    #[ts(optional = nullable)]
+    pub adaptive_state: Option<ThreadAdaptiveWorkflowState>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
