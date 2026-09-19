@@ -78,13 +78,38 @@ pub struct CodexHarnessMetadata {
 
 pub const WORKFLOW_STATE_SCHEMA_VERSION: u32 = 1;
 
-/// A codex-dd workflow-terminal mutation persisted in canonical rollout order.
+/// Durable codex-dd adaptive workflow facts that may safely survive process restart.
+///
+/// Ephemeral authorization state such as pending signals, pending attempts, successor permits,
+/// unfinished pressure, and evidence registries is intentionally excluded.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+pub struct AdaptiveWorkflowStateSnapshot {
+    pub enabled: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub starting_family: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_family: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_effort: Option<String>,
+    pub attempt_number: u32,
+    pub paused_by_user: bool,
+    pub worker_role: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorized_scope: Option<String>,
+    pub worker_assignment_locked: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workflow_terminal: Option<String>,
+}
+
+/// A codex-dd workflow-state mutation persisted in canonical rollout order.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub struct WorkflowStateItem {
     pub schema_version: u32,
     pub operation: WorkflowStateOperation,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_turn_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adaptive_state: Option<AdaptiveWorkflowStateSnapshot>,
 }
 
 impl WorkflowStateItem {
@@ -93,6 +118,19 @@ impl WorkflowStateItem {
             schema_version: WORKFLOW_STATE_SCHEMA_VERSION,
             operation: WorkflowStateOperation::Set,
             source_turn_id,
+            adaptive_state: None,
+        }
+    }
+
+    pub fn set_adaptive_state(
+        adaptive_state: AdaptiveWorkflowStateSnapshot,
+        source_turn_id: Option<String>,
+    ) -> Self {
+        Self {
+            schema_version: WORKFLOW_STATE_SCHEMA_VERSION,
+            operation: WorkflowStateOperation::AdaptiveState,
+            source_turn_id,
+            adaptive_state: Some(adaptive_state),
         }
     }
 
@@ -101,6 +139,7 @@ impl WorkflowStateItem {
             schema_version: WORKFLOW_STATE_SCHEMA_VERSION,
             operation: WorkflowStateOperation::Clear,
             source_turn_id: None,
+            adaptive_state: None,
         }
     }
 }
@@ -108,16 +147,22 @@ impl WorkflowStateItem {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum WorkflowStateOperation {
+    /// Legacy codex-dd v0.2.0 READY_FOR_OWNER_QA terminal record.
     Set,
+    AdaptiveState,
     Clear,
     #[serde(other)]
     Unsupported,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RestoredWorkflowState {
     None,
     ReadyForOwnerQa,
+    Adaptive {
+        state: AdaptiveWorkflowStateSnapshot,
+        source_turn_id: Option<String>,
+    },
     Unsupported,
 }
 
@@ -134,7 +179,28 @@ pub fn restored_workflow_state<'a>(
             continue;
         }
         restored = match item.operation {
-            WorkflowStateOperation::Set => RestoredWorkflowState::ReadyForOwnerQa,
+            WorkflowStateOperation::Set => match restored {
+                RestoredWorkflowState::Adaptive {
+                    mut state,
+                    source_turn_id,
+                } => {
+                    state.workflow_terminal = Some("ready_for_owner_qa".to_string());
+                    RestoredWorkflowState::Adaptive {
+                        state,
+                        source_turn_id: item.source_turn_id.clone().or(source_turn_id),
+                    }
+                }
+                _ => RestoredWorkflowState::ReadyForOwnerQa,
+            },
+            WorkflowStateOperation::AdaptiveState => {
+                let Some(state) = item.adaptive_state.clone() else {
+                    RestoredWorkflowState::Unsupported
+                };
+                RestoredWorkflowState::Adaptive {
+                    state,
+                    source_turn_id: item.source_turn_id.clone(),
+                }
+            }
             WorkflowStateOperation::Clear => RestoredWorkflowState::None,
             WorkflowStateOperation::Unsupported => RestoredWorkflowState::Unsupported,
         };
