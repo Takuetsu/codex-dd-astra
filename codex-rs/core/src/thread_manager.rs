@@ -1381,7 +1381,7 @@ impl ThreadManager {
         options: StartThreadOptions,
         prepared: PreparedFork,
     ) -> CodexResult<NewThread> {
-        let workflow_state = prepared.workflow_state;
+        let workflow_state = prepared.workflow_state.clone();
         let history = InitialHistory::Resumed(ResumedHistory {
             conversation_id: prepared.source_thread_id,
             history: Arc::clone(&prepared.model_context),
@@ -2428,10 +2428,15 @@ fn append_child_workflow_state_snapshot(
         codex_history::RestoredWorkflowState::ReadyForOwnerQa => {
             codex_history::WorkflowStateItem::set_ready_for_owner_qa(None)
         }
+        codex_history::RestoredWorkflowState::Adaptive {
+            state,
+            source_turn_id,
+        } => codex_history::WorkflowStateItem::set_adaptive_state(state, source_turn_id),
         codex_history::RestoredWorkflowState::Unsupported => codex_history::WorkflowStateItem {
             schema_version: codex_history::WORKFLOW_STATE_SCHEMA_VERSION,
             operation: codex_history::WorkflowStateOperation::Unsupported,
             source_turn_id: None,
+            adaptive_state: None,
         },
     };
     let item = RolloutItem::WorkflowState(snapshot);

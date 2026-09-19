@@ -284,6 +284,7 @@ pub(crate) enum AppEvent {
         thread_id: ThreadId,
         operation: ThreadWorkflowStateOperation,
         source_turn_id: Option<String>,
+        adaptive_state: Option<codex_app_server_protocol::ThreadAdaptiveWorkflowState>,
     },
     /// Open the daemon-wide overview of recent and locally retained root sessions.
     OpenAgentsOverview,

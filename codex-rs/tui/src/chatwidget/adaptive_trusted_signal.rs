@@ -238,6 +238,7 @@ impl ChatWidget {
                 operation:
                     codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
                 source_turn_id: Some(source_turn_id.to_string()),
+                adaptive_state: None,
             });
         }
     }

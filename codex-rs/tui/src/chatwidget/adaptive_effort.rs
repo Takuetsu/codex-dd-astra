@@ -184,6 +184,49 @@ impl AdaptiveEffortState {
             evidence_registry,
         };
     }
+
+    pub(crate) fn durable_workflow_snapshot(
+        &self,
+    ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
+        let family_name = |family: AdaptiveFamily| match family {
+            AdaptiveFamily::Luna => "luna",
+            AdaptiveFamily::Terra => "terra",
+            AdaptiveFamily::Sol => "sol",
+            AdaptiveFamily::Astra => "astra",
+        };
+        let effort_name = |effort: AdaptiveEffort| match effort {
+            AdaptiveEffort::Low => "low",
+            AdaptiveEffort::Medium => "medium",
+            AdaptiveEffort::High => "high",
+            AdaptiveEffort::XHigh => "xhigh",
+            AdaptiveEffort::Max => "max",
+        };
+        let worker_role = match self.worker_context.role {
+            AdaptiveWorkerRole::Unspecified => "unspecified",
+            AdaptiveWorkerRole::Implementation => "implementation",
+            AdaptiveWorkerRole::Validation => "validation",
+            AdaptiveWorkerRole::Repair => "repair",
+        };
+        let workflow_terminal = self.workflow_terminal.map(|terminal| match terminal {
+            AdaptiveWorkflowTerminal::ReadyForValidation => "ready_for_validation",
+            AdaptiveWorkflowTerminal::RepairRequired => "repair_required",
+            AdaptiveWorkflowTerminal::ReadyForOwnerQa => "ready_for_owner_qa",
+            AdaptiveWorkflowTerminal::Blocked => "blocked",
+        });
+
+        codex_app_server_protocol::ThreadAdaptiveWorkflowState {
+            enabled: self.enabled,
+            starting_family: self.starting_family.map(family_name).map(str::to_string),
+            current_family: self.current_family.map(family_name).map(str::to_string),
+            current_effort: self.current_effort.map(effort_name).map(str::to_string),
+            attempt_number: self.attempt_number,
+            paused_by_user: self.paused_by_user,
+            worker_role: worker_role.to_string(),
+            authorized_scope: self.worker_context.authorized_scope.clone(),
+            worker_assignment_locked: self.worker_assignment_locked,
+            workflow_terminal: workflow_terminal.map(str::to_string),
+        }
+    }
 }
 
 impl ChatWidget {
@@ -208,6 +251,18 @@ impl ChatWidget {
         self.app_event_tx.send(AppEvent::UpdateAdaptiveEffortState(
             self.adaptive_effort.clone(),
         ));
+        if let Some(thread_id) = self.thread_id {
+            self.app_event_tx.send(AppEvent::PersistWorkflowState {
+                thread_id,
+                operation:
+                    codex_app_server_protocol::ThreadWorkflowStateOperation::SetAdaptiveState,
+                source_turn_id: self
+                    .adaptive_effort
+                    .workflow_terminal
+                    .and_then(|_| self.adaptive_effort.last_processed_terminal_turn_id.clone()),
+                adaptive_state: Some(self.adaptive_effort.durable_workflow_snapshot()),
+            });
+        }
     }
 
     /// Record the confirmed, locally initiated Esc interruption of the active turn.
@@ -261,6 +316,7 @@ impl ChatWidget {
                     thread_id,
                     operation: codex_app_server_protocol::ThreadWorkflowStateOperation::Clear,
                     source_turn_id: None,
+                    adaptive_state: None,
                 });
             }
             family => match AdaptiveFamily::parse(family) {
@@ -326,9 +382,23 @@ impl ChatWidget {
             self.adaptive_effort.successor_admission = None;
             self.save_adaptive_effort_for_current_thread();
         }
-        self.add_error_message(format!(
-            "Failed to persist workflow state; adaptive automation remains stopped: {error}"
-        ));
+        let message = match operation {
+            codex_app_server_protocol::ThreadWorkflowStateOperation::SetAdaptiveState => {
+                if self.adaptive_effort.workflow_terminal.is_some() {
+                    format!(
+                        "Failed to persist adaptive workflow state; the in-memory workflow terminal remains authoritative for this session, but resume may not restore it: {error}"
+                    )
+                } else {
+                    format!(
+                        "Failed to persist adaptive workflow state; resume may not restore the latest Worker state: {error}"
+                    )
+                }
+            }
+            _ => format!(
+                "Failed to persist workflow state; adaptive automation remains stopped: {error}"
+            ),
+        };
+        self.add_error_message(message);
     }
 
     pub(super) fn add_adaptive_status_output(&mut self) {
