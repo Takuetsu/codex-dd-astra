@@ -1,4 +1,8 @@
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+
 
 from upstream_sync import (
     conflict_issue_title,
@@ -11,6 +15,23 @@ from upstream_sync import (
     select_latest_release,
     stable_release_version,
 )
+
+
+def git(repo: Path, *args: str, input_text: str | None = None, check: bool = True):
+    return subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        input=input_text,
+        text=True,
+        capture_output=True,
+        check=check,
+    )
+
+
+def commit_all(repo: Path, message: str) -> str:
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", message)
+    return git(repo, "rev-parse", "HEAD").stdout.strip()
 
 
 class UpstreamSyncTests(unittest.TestCase):
@@ -100,6 +121,102 @@ class UpstreamSyncTests(unittest.TestCase):
             rewrite_version_test(source, "0.2.0", "0.2.1")
         with self.assertRaises(ValueError):
             rewrite_version_test(source + source, "0.2.1", "0.2.2")
+
+    def test_synthetic_delta_survives_squashed_upstream_history(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            git(repo, "init", "-q")
+            git(repo, "config", "user.name", "sync-test")
+            git(repo, "config", "user.email", "sync-test@example.invalid")
+
+            (repo / "shared.txt").write_text("old upstream\n")
+            root = commit_all(repo, "old base")
+
+            git(repo, "switch", "-q", "-c", "upstream-v1", root)
+            (repo / "shared.txt").write_text("upstream v1\n")
+            upstream_v1 = commit_all(repo, "upstream v1")
+
+            git(repo, "switch", "-q", "-c", "production", root)
+            (repo / "shared.txt").write_text("upstream v1\n")
+            (repo / "codexdd.txt").write_text("adaptive customization\n")
+            production = commit_all(repo, "squashed upstream v1 plus codexdd")
+
+            ancestry = git(
+                repo,
+                "merge-base",
+                "--is-ancestor",
+                upstream_v1,
+                production,
+                check=False,
+            )
+            self.assertEqual(ancestry.returncode, 1)
+
+            git(repo, "switch", "-q", "-c", "upstream-v2", upstream_v1)
+            (repo / "shared.txt").write_text("upstream v2\n")
+            (repo / "new-upstream.txt").write_text("new stable behavior\n")
+            upstream_v2 = commit_all(repo, "upstream v2")
+
+            product_tree = git(repo, "rev-parse", f"{production}^{{tree}}").stdout.strip()
+            synthetic = git(
+                repo,
+                "commit-tree",
+                product_tree,
+                "-p",
+                upstream_v1,
+                input_text="codexdd synthetic delta\n",
+            ).stdout.strip()
+
+            git(repo, "switch", "-q", "--detach", upstream_v2)
+            git(repo, "cherry-pick", "-q", synthetic)
+
+            self.assertEqual((repo / "shared.txt").read_text(), "upstream v2\n")
+            self.assertEqual(
+                (repo / "codexdd.txt").read_text(), "adaptive customization\n"
+            )
+            self.assertEqual(
+                (repo / "new-upstream.txt").read_text(), "new stable behavior\n"
+            )
+
+    def test_synthetic_delta_exposes_real_overlap_as_conflict(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            git(repo, "init", "-q")
+            git(repo, "config", "user.name", "sync-test")
+            git(repo, "config", "user.email", "sync-test@example.invalid")
+
+            (repo / "shared.txt").write_text("base\n")
+            root = commit_all(repo, "base")
+
+            git(repo, "switch", "-q", "-c", "upstream-v1", root)
+            (repo / "shared.txt").write_text("stable v1\n")
+            upstream_v1 = commit_all(repo, "upstream v1")
+
+            git(repo, "switch", "-q", "-c", "production", root)
+            (repo / "shared.txt").write_text("codexdd override\n")
+            production = commit_all(repo, "squashed product")
+
+            git(repo, "switch", "-q", "-c", "upstream-v2", upstream_v1)
+            (repo / "shared.txt").write_text("stable v2 changed same line\n")
+            upstream_v2 = commit_all(repo, "upstream v2")
+
+            product_tree = git(repo, "rev-parse", f"{production}^{{tree}}").stdout.strip()
+            synthetic = git(
+                repo,
+                "commit-tree",
+                product_tree,
+                "-p",
+                upstream_v1,
+                input_text="codexdd synthetic delta\n",
+            ).stdout.strip()
+
+            git(repo, "switch", "-q", "--detach", upstream_v2)
+            cherry_pick = git(repo, "cherry-pick", synthetic, check=False)
+            self.assertNotEqual(cherry_pick.returncode, 0)
+            conflicts = git(
+                repo, "diff", "--name-only", "--diff-filter=U"
+            ).stdout.splitlines()
+            self.assertEqual(conflicts, ["shared.txt"])
+            git(repo, "cherry-pick", "--abort")
 
 
 if __name__ == "__main__":
