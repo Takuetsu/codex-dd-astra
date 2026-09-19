@@ -54,13 +54,10 @@ impl ChatWidget {
             AdaptiveRuntimeSignalKind::Capability => {
                 envelope.evidence_refs.is_empty() && capability_diagnostic.is_some()
             }
-            AdaptiveRuntimeSignalKind::ReadyForValidation => {
-                envelope.evidence_refs.is_empty()
-                    && matches!(
-                        self.adaptive_effort.worker_context.role,
-                        AdaptiveWorkerRole::Implementation | AdaptiveWorkerRole::Repair
-                    )
-            }
+            AdaptiveRuntimeSignalKind::ReadyForValidation => matches!(
+                self.adaptive_effort.worker_context.role,
+                AdaptiveWorkerRole::Implementation | AdaptiveWorkerRole::Repair
+            ),
             AdaptiveRuntimeSignalKind::RepairRequired => {
                 self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Validation
                     && self.valid_evidence_refs(
@@ -536,6 +533,44 @@ mod tests {
             chat.adaptive_effort.last_failure_kind,
             Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
         );
+    }
+
+    #[tokio::test]
+    async fn repair_ready_for_validation_with_extra_evidence_refs_is_hard_handoff() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "repair-ready-for-validation-with-sha-evidence";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Repair;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("breakwater/Z-A0.47B behavior repair".to_string());
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+                evidence_refs: vec!["682e7ec25e08d63d8868013b9ffa91d5b74e2c69".to_string()],
+                diagnostic_note: Some(
+                    "Bounded repair complete; no authorized repair work remains.".to_string(),
+                ),
+            },
+        });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        );
+        assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
     }
 
     #[tokio::test]
