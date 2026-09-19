@@ -228,9 +228,9 @@ fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
         }
     );
 
-    let legacy_owner_qa = RolloutItem::WorkflowState(
-        WorkflowStateItem::set_ready_for_owner_qa(Some("validation-turn".to_string())),
-    );
+    let legacy_owner_qa = RolloutItem::WorkflowState(WorkflowStateItem::set_ready_for_owner_qa(
+        Some("validation-turn".to_string()),
+    ));
     let mut owner_qa_snapshot = snapshot;
     owner_qa_snapshot.workflow_terminal = Some("ready_for_owner_qa".to_string());
     assert_eq!(
