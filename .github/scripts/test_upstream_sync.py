@@ -167,7 +167,7 @@ class UpstreamSyncTests(unittest.TestCase):
             ).stdout.strip()
 
             git(repo, "switch", "-q", "--detach", upstream_v2)
-            git(repo, "cherry-pick", "-q", synthetic)
+            git(repo, "cherry-pick", synthetic)
 
             self.assertEqual((repo / "shared.txt").read_text(), "upstream v2\n")
             self.assertEqual(
