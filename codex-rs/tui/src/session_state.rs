@@ -5,8 +5,12 @@
 
 use std::path::PathBuf;
 
+use crate::adaptive_worker::AdaptiveWorkerContext;
+use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
+use crate::chatwidget::adaptive_effort::AdaptiveFamily;
 use codex_app_server_protocol::AskForApproval;
 use codex_protocol::ThreadId;
 use codex_protocol::config_types::CollaborationMode;
@@ -95,6 +99,103 @@ impl ThreadSessionState {
     }
 }
 
+fn restore_family(value: Option<String>) -> Result<Option<AdaptiveFamily>, String> {
+    value
+        .map(|value| {
+            AdaptiveFamily::parse(&value)
+                .ok_or_else(|| format!("unsupported persisted adaptive family `{value}`"))
+        })
+        .transpose()
+}
+
+fn restore_effort(value: Option<String>) -> Result<Option<AdaptiveEffort>, String> {
+    value
+        .map(|value| {
+            match value.as_str() {
+                "low" => Some(AdaptiveEffort::Low),
+                "medium" => Some(AdaptiveEffort::Medium),
+                "high" => Some(AdaptiveEffort::High),
+                "xhigh" => Some(AdaptiveEffort::XHigh),
+                "max" => Some(AdaptiveEffort::Max),
+                _ => None,
+            }
+            .ok_or_else(|| format!("unsupported persisted adaptive effort `{value}`"))
+        })
+        .transpose()
+}
+
+fn restore_worker_role(value: &str) -> Result<AdaptiveWorkerRole, String> {
+    match value {
+        "unspecified" => Ok(AdaptiveWorkerRole::Unspecified),
+        "implementation" => Ok(AdaptiveWorkerRole::Implementation),
+        "validation" => Ok(AdaptiveWorkerRole::Validation),
+        "repair" => Ok(AdaptiveWorkerRole::Repair),
+        _ => Err(format!("unsupported persisted adaptive Worker role `{value}`")),
+    }
+}
+
+fn restore_workflow_terminal(
+    value: Option<String>,
+) -> Result<Option<AdaptiveWorkflowTerminal>, String> {
+    value
+        .map(|value| {
+            match value.as_str() {
+                "ready_for_validation" => Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+                "repair_required" => Some(AdaptiveWorkflowTerminal::RepairRequired),
+                "ready_for_owner_qa" => Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+                "blocked" => Some(AdaptiveWorkflowTerminal::Blocked),
+                _ => None,
+            }
+            .ok_or_else(|| format!("unsupported persisted workflow terminal `{value}`"))
+        })
+        .transpose()
+}
+
+fn apply_persisted_adaptive_workflow_state(
+    adaptive_effort: &mut AdaptiveEffortState,
+    state: codex_history::AdaptiveWorkflowStateSnapshot,
+    source_turn_id: Option<String>,
+) -> Result<(), String> {
+    let starting_family = restore_family(state.starting_family)?;
+    let current_family = restore_family(state.current_family)?;
+    let current_effort = restore_effort(state.current_effort)?;
+    let worker_role = restore_worker_role(&state.worker_role)?;
+    let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
+
+    if state.enabled && (current_family.is_none() || current_effort.is_none() || state.attempt_number == 0)
+    {
+        return Err("persisted enabled adaptive state is missing its active route or attempt".to_string());
+    }
+    if current_family.is_some() != current_effort.is_some() {
+        return Err("persisted adaptive family/effort route is incomplete".to_string());
+    }
+
+    *adaptive_effort = AdaptiveEffortState {
+        enabled: state.enabled,
+        starting_family,
+        current_family,
+        current_effort,
+        attempt_number: state.attempt_number,
+        paused_by_user: state.paused_by_user,
+        last_outcome: None,
+        last_failure_kind: None,
+        worker_context: AdaptiveWorkerContext {
+            role: worker_role,
+            authorized_scope: state.authorized_scope,
+        },
+        worker_assignment_locked: state.worker_assignment_locked,
+        workflow_terminal,
+        transient_retry_consumed: false,
+        unfinished_turn_pressure: 0,
+        last_processed_terminal_turn_id: workflow_terminal.and(source_turn_id),
+        pending_attempt: None,
+        successor_admission: None,
+        pending_signal: None,
+        evidence_registry: Default::default(),
+    };
+    Ok(())
+}
+
 pub(crate) async fn restore_persisted_workflow_state(
     rollout_path: Option<&std::path::Path>,
     thread_id: ThreadId,
@@ -120,6 +221,12 @@ pub(crate) async fn restore_persisted_workflow_state(
             adaptive_effort.pending_attempt = None;
             adaptive_effort.pending_signal = None;
             adaptive_effort.successor_admission = None;
+        }
+        codex_history::RestoredWorkflowState::Adaptive {
+            state,
+            source_turn_id,
+        } => {
+            apply_persisted_adaptive_workflow_state(adaptive_effort, state, source_turn_id)?;
         }
         codex_history::RestoredWorkflowState::Unsupported => {
             adaptive_effort.enabled = false;
