@@ -130,7 +130,9 @@ fn restore_worker_role(value: &str) -> Result<AdaptiveWorkerRole, String> {
         "implementation" => Ok(AdaptiveWorkerRole::Implementation),
         "validation" => Ok(AdaptiveWorkerRole::Validation),
         "repair" => Ok(AdaptiveWorkerRole::Repair),
-        _ => Err(format!("unsupported persisted adaptive Worker role `{value}`")),
+        _ => Err(format!(
+            "unsupported persisted adaptive Worker role `{value}`"
+        )),
     }
 }
 
@@ -162,9 +164,12 @@ fn apply_persisted_adaptive_workflow_state(
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
 
-    if state.enabled && (current_family.is_none() || current_effort.is_none() || state.attempt_number == 0)
+    if state.enabled
+        && (current_family.is_none() || current_effort.is_none() || state.attempt_number == 0)
     {
-        return Err("persisted enabled adaptive state is missing its active route or attempt".to_string());
+        return Err(
+            "persisted enabled adaptive state is missing its active route or attempt".to_string(),
+        );
     }
     if current_family.is_some() != current_effort.is_some() {
         return Err("persisted adaptive family/effort route is incomplete".to_string());
@@ -239,7 +244,6 @@ pub(crate) async fn restore_persisted_workflow_state(
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
