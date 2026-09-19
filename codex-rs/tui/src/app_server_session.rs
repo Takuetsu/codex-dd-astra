@@ -116,6 +116,7 @@ use codex_app_server_protocol::ThreadStartParams;
 use codex_app_server_protocol::ThreadStartResponse;
 use codex_app_server_protocol::ThreadStartSource;
 use codex_app_server_protocol::ThreadStatusChangedNotification;
+use codex_app_server_protocol::ThreadAdaptiveWorkflowState;
 use codex_app_server_protocol::ThreadUnarchiveParams;
 use codex_app_server_protocol::ThreadUnarchiveResponse;
 use codex_app_server_protocol::ThreadUnsubscribeParams;
@@ -1319,6 +1320,7 @@ impl AppServerSession {
         thread_id: ThreadId,
         operation: ThreadWorkflowStateOperation,
         source_turn_id: Option<String>,
+        adaptive_state: Option<ThreadAdaptiveWorkflowState>,
     ) -> Result<ThreadWorkflowStateUpdateResponse> {
         let request_id = self.next_request_id();
         self.client
@@ -1328,6 +1330,7 @@ impl AppServerSession {
                     thread_id: thread_id.to_string(),
                     operation,
                     source_turn_id,
+                    adaptive_state,
                 },
             })
             .await
