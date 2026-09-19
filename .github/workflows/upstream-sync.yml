@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   sync:
@@ -24,43 +25,61 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Discover official release tag
+      - name: Discover stable official release
         id: release
         shell: bash
         run: |
           set -euo pipefail
           git remote add upstream https://github.com/openai/codex.git
           git fetch upstream --tags --force --prune
+
           latest_tag="$(git tag --list 'rust-v*' | python3 .github/scripts/upstream_sync.py --latest-from-stdin)"
           current_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
-          python3 - "$current_tag" "$latest_tag" <<'PY'
+          needed_file="$RUNNER_TEMP/upstream-sync-needed"
+
+          python3 - "$current_tag" "$latest_tag" "$needed_file" <<'PY'
           import sys
           from pathlib import Path
-          sys.path.insert(0, ".github/scripts")
-          from upstream_sync import release_version, stable_release_version
 
-          current, latest = sys.argv[1:]
-          if release_version(current) is None:
-              raise SystemExit(f"invalid tracked upstream release: {current}")
-          if release_version(latest) is None:
-              raise SystemExit(f"invalid discovered upstream release: {latest}")
-          if release_version(latest) <= release_version(current):
-              print(f"No release newer than {current} (latest: {latest}).")
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import stable_release_version
+
+          current, latest, needed_file = sys.argv[1:]
+          current_version = stable_release_version(current)
+          latest_version = stable_release_version(latest)
+          if current_version is None:
+              raise SystemExit(f"invalid tracked stable upstream release: {current}")
+          if latest_version is None:
+              raise SystemExit(f"invalid discovered stable upstream release: {latest}")
+          if latest_version <= current_version:
+              print(f"No stable release newer than {current} (latest: {latest}).")
               raise SystemExit(0)
-          print(f"New official release: {latest} (current: {current})")
-          Path(".upstream-sync-needed").write_text(latest + "\n")
+          print(f"New stable official release: {latest} (current: {current})")
+          Path(needed_file).write_text(latest + "\n")
           PY
-          if [[ ! -f .upstream-sync-needed ]]; then
+
+          if [[ ! -f "$needed_file" ]]; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          latest_tag="$(cat .upstream-sync-needed)"
+
+          latest_tag="$(cat "$needed_file")"
+          production_sha="$(git rev-parse HEAD)"
+          current_sha="$(git rev-parse "$current_tag^{commit}")"
+          latest_sha="$(git rev-parse "$latest_tag^{commit}")"
           branch="automation/upstream-sync-${latest_tag}"
           marker="codexdd-upstream-sync: ${latest_tag}"
+          conflict_title="codexdd: resolve upstream ${latest_tag} conflicts"
+
           echo "needed=true" >> "$GITHUB_OUTPUT"
           echo "tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+          echo "current_tag=${current_tag}" >> "$GITHUB_OUTPUT"
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
           echo "marker=${marker}" >> "$GITHUB_OUTPUT"
+          echo "conflict_title=${conflict_title}" >> "$GITHUB_OUTPUT"
+          echo "production_sha=${production_sha}" >> "$GITHUB_OUTPUT"
+          echo "current_sha=${current_sha}" >> "$GITHUB_OUTPUT"
+          echo "latest_sha=${latest_sha}" >> "$GITHUB_OUTPUT"
 
       - name: Check for an existing update
         if: steps.release.outputs.needed == 'true'
@@ -79,40 +98,166 @@ jobs:
           duplicate="$(gh pr list --repo "$GITHUB_REPOSITORY" --base dd/astra-policy-v2 --state all --limit 100 --json headRefName,body --jq 'any(.[]; .headRefName == env.UPDATE_BRANCH or ((.body // "") | contains(env.UPDATE_MARKER)))')"
           echo "skip=${duplicate}" >> "$GITHUB_OUTPUT"
 
-      - name: Integrate exact upstream release tag
+      - name: Transplant codexdd delta onto exact upstream release
         if: steps.release.outputs.needed == 'true' && steps.duplicate.outputs.skip != 'true'
+        id: integrate
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          CURRENT_TAG: ${{ steps.release.outputs.current_tag }}
+          CURRENT_SHA: ${{ steps.release.outputs.current_sha }}
+          RELEASE_SHA: ${{ steps.release.outputs.latest_sha }}
+          PRODUCTION_SHA: ${{ steps.release.outputs.production_sha }}
           UPDATE_BRANCH: ${{ steps.release.outputs.branch }}
+          CONFLICT_TITLE: ${{ steps.release.outputs.conflict_title }}
         shell: bash
         run: |
           set -euo pipefail
           gh auth setup-git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch --create "$UPDATE_BRANCH" origin/dd/astra-policy-v2
-          if ! git merge --no-ff --no-edit "$RELEASE_TAG"; then
-            git merge --abort || true
-            echo "Official release ${RELEASE_TAG} conflicts with dd/astra-policy-v2; no branch or PR was published." >&2
+
+          product_tree="$(git rev-parse "${PRODUCTION_SHA}^{tree}")"
+          custom_path_count="$(git diff --name-only "$CURRENT_SHA" "$PRODUCTION_SHA" | sed '/^$/d' | wc -l | tr -d ' ')"
+          synthetic_delta="$(printf '%s\n' "codexdd customization delta from ${CURRENT_TAG}" | git commit-tree "$product_tree" -p "$CURRENT_SHA")"
+
+          echo "Tracked upstream: ${CURRENT_TAG} (${CURRENT_SHA})"
+          echo "Target upstream:  ${RELEASE_TAG} (${RELEASE_SHA})"
+          echo "Production:       ${PRODUCTION_SHA}"
+          echo "Custom delta:     ${custom_path_count} paths"
+
+          git switch --detach "$RELEASE_SHA"
+          cherry_pick_log="$RUNNER_TEMP/upstream-sync-cherry-pick.log"
+          set +e
+          git cherry-pick "$synthetic_delta" >"$cherry_pick_log" 2>&1
+          cherry_pick_status=$?
+          set -e
+
+          if [[ "$cherry_pick_status" -ne 0 ]]; then
+            conflict_file="$RUNNER_TEMP/upstream-sync-conflicts.txt"
+            git diff --name-only --diff-filter=U | sed '/^$/d' > "$conflict_file"
+            conflict_count="$(wc -l < "$conflict_file" | tr -d ' ')"
+            conflict_marker="codexdd-upstream-conflict: ${RELEASE_TAG}"
+            issue_body="$RUNNER_TEMP/upstream-sync-conflict-body.md"
+
+            {
+              echo "${conflict_marker}"
+              echo
+              echo "Automatic stable Codex synchronization stopped safely while transplanting the codexdd customization delta."
+              echo
+              echo "- Production base: ${PRODUCTION_SHA}"
+              echo "- Tracked upstream: ${CURRENT_TAG} (${CURRENT_SHA})"
+              echo "- Target upstream: ${RELEASE_TAG} (${RELEASE_SHA})"
+              echo "- codexdd delta paths: ${custom_path_count}"
+              echo "- Unmerged paths: ${conflict_count}"
+              echo "- Workflow: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+              echo
+              echo "No integration branch or pull request was published. These are real overlaps between the codexdd product delta and the new stable upstream tree; no automatic ours/theirs resolution was attempted."
+              echo
+              echo "### Unmerged paths"
+              echo
+              echo '~~~text'
+              if [[ -s "$conflict_file" ]]; then
+                cat "$conflict_file"
+              else
+                echo "(git reported no staged unmerged paths; inspect the cherry-pick diagnostics below)"
+              fi
+              echo '~~~'
+              echo
+              echo "### Cherry-pick diagnostics"
+              echo
+              echo '~~~text'
+              sed -n '1,160p' "$cherry_pick_log"
+              echo '~~~'
+            } > "$issue_body"
+
+            git cherry-pick --abort || true
+
+            existing_issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == env.CONFLICT_TITLE) | .number' | head -n 1)"
+            if [[ -n "$existing_issue" ]]; then
+              gh issue edit "$existing_issue" --repo "$GITHUB_REPOSITORY" --body-file "$issue_body"
+              echo "Updated conflict issue #${existing_issue}."
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$CONFLICT_TITLE" --body-file "$issue_body"
+            fi
+
+            cat "$issue_body" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+
+          current_product_version="$(tr -d '[:space:]' < codex-rs/codexdd-version.txt)"
+          next_product_version="$(python3 .github/scripts/upstream_sync.py --next-patch "$current_product_version")"
+
+          python3 - "$current_product_version" "$next_product_version" <<'PY'
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import rewrite_version_test
+
+          current, next_version = sys.argv[1:]
+          test_path = Path("codex-rs/cli/tests/version_reporting.rs")
+          test_path.write_text(
+              rewrite_version_test(test_path.read_text(), current, next_version)
+          )
+          PY
+
+          printf '%s\n' "$next_product_version" > codex-rs/codexdd-version.txt
           printf '%s\n' "$RELEASE_TAG" > codex-rs/upstream-codex-release.txt
-          git add codex-rs/upstream-codex-release.txt
-          git commit -m "codexdd: integrate upstream ${RELEASE_TAG}"
+          git add codex-rs/codexdd-version.txt codex-rs/upstream-codex-release.txt codex-rs/cli/tests/version_reporting.rs
+          git commit -m "codexdd: prepare ${next_product_version} for upstream ${RELEASE_TAG}"
+
+          integration_tree="$(git rev-parse 'HEAD^{tree}')"
+
+          git switch --create "$UPDATE_BRANCH" "$PRODUCTION_SHA"
+          git read-tree --reset -u "$integration_tree"
+          git commit -m "codexdd ${next_product_version}: integrate upstream ${RELEASE_TAG}"
           git push --set-upstream origin "$UPDATE_BRANCH"
 
+          echo "product_version=${next_product_version}" >> "$GITHUB_OUTPUT"
+          echo "custom_path_count=${custom_path_count}" >> "$GITHUB_OUTPUT"
+
       - name: Open integration PR
-        if: steps.release.outputs.needed == 'true' && steps.duplicate.outputs.skip != 'true'
+        if: steps.release.outputs.needed == 'true' && steps.duplicate.outputs.skip != 'true' && steps.integrate.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          CURRENT_TAG: ${{ steps.release.outputs.current_tag }}
+          RELEASE_SHA: ${{ steps.release.outputs.latest_sha }}
+          PRODUCTION_SHA: ${{ steps.release.outputs.production_sha }}
           UPDATE_BRANCH: ${{ steps.release.outputs.branch }}
           UPDATE_MARKER: ${{ steps.release.outputs.marker }}
+          CONFLICT_TITLE: ${{ steps.release.outputs.conflict_title }}
+          PRODUCT_VERSION: ${{ steps.integrate.outputs.product_version }}
+          CUSTOM_PATH_COUNT: ${{ steps.integrate.outputs.custom_path_count }}
         run: |
           set -euo pipefail
-          gh pr create --repo "$GITHUB_REPOSITORY" \
+          body_file="$RUNNER_TEMP/upstream-sync-pr-body.md"
+          {
+            echo "${UPDATE_MARKER}"
+            echo
+            echo "Integrate the exact official OpenAI Codex stable release ${RELEASE_TAG} onto the codexdd production baseline."
+            echo
+            echo "### Provenance"
+            echo "- Production base: ${PRODUCTION_SHA}"
+            echo "- Previous tracked upstream: ${CURRENT_TAG}"
+            echo "- Target upstream: ${RELEASE_TAG} (${RELEASE_SHA})"
+            echo "- codexdd customization delta: ${CUSTOM_PATH_COUNT} paths"
+            echo "- codexdd product version: ${PRODUCT_VERSION}"
+            echo
+            echo "The integration was reconstructed from the tracked upstream tree plus the complete codexdd production delta, so it does not depend on upstream Git ancestry surviving squash merges."
+            echo
+            echo "Normal blocking CI, including Windows adaptive validation, must pass. Owner merge approval remains required."
+          } > "$body_file"
+
+          pr_url="$(gh pr create --repo "$GITHUB_REPOSITORY" \
             --base dd/astra-policy-v2 \
             --head "$UPDATE_BRANCH" \
-            --title "codexdd: integrate upstream ${RELEASE_TAG}" \
-            --body "${UPDATE_MARKER}\n\nIntegrate the exact official OpenAI Codex release tag \`${RELEASE_TAG}\` onto the codexdd production baseline.\n\nThis PR relies on normal blocking CI, including Windows adaptive validation. Owner merge approval remains required."
+            --title "codexdd ${PRODUCT_VERSION}: integrate upstream ${RELEASE_TAG}" \
+            --body-file "$body_file")"
+          echo "Opened ${pr_url}"
+
+          existing_issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == env.CONFLICT_TITLE) | .number' | head -n 1)"
+          if [[ -n "$existing_issue" ]]; then
+            gh issue close "$existing_issue" --repo "$GITHUB_REPOSITORY" --comment "Automatic integration is now clean and has opened ${pr_url}."
+          fi
