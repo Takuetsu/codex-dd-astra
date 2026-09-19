@@ -293,6 +293,46 @@ mod tests {
     }
 
     #[test]
+    fn restored_snapshot_accepts_every_hard_workflow_terminal() {
+        for (persisted, expected) in [
+            (
+                "ready_for_validation",
+                AdaptiveWorkflowTerminal::ReadyForValidation,
+            ),
+            ("repair_required", AdaptiveWorkflowTerminal::RepairRequired),
+            (
+                "ready_for_owner_qa",
+                AdaptiveWorkflowTerminal::ReadyForOwnerQa,
+            ),
+            ("blocked", AdaptiveWorkflowTerminal::Blocked),
+        ] {
+            let mut adaptive = AdaptiveEffortState::default();
+            apply_persisted_adaptive_workflow_state(
+                &mut adaptive,
+                codex_history::AdaptiveWorkflowStateSnapshot {
+                    enabled: true,
+                    starting_family: Some("astra".to_string()),
+                    current_family: Some("luna".to_string()),
+                    current_effort: Some("low".to_string()),
+                    attempt_number: 1,
+                    paused_by_user: false,
+                    worker_role: "repair".to_string(),
+                    authorized_scope: Some("bounded scope".to_string()),
+                    worker_assignment_locked: true,
+                    workflow_terminal: Some(persisted.to_string()),
+                },
+                Some("terminal-turn".to_string()),
+            )
+            .expect("terminal snapshot should restore");
+
+            assert_eq!(adaptive.workflow_terminal, Some(expected));
+            assert_eq!(adaptive.pending_attempt, None);
+            assert_eq!(adaptive.pending_signal, None);
+            assert_eq!(adaptive.successor_admission, None);
+        }
+    }
+
+    #[test]
     fn restored_active_snapshot_keeps_attempt_but_never_restores_successor_authority() {
         let mut adaptive = AdaptiveEffortState::default();
         apply_persisted_adaptive_workflow_state(
