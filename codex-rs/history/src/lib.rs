@@ -192,15 +192,13 @@ pub fn restored_workflow_state<'a>(
                 }
                 _ => RestoredWorkflowState::ReadyForOwnerQa,
             },
-            WorkflowStateOperation::AdaptiveState => {
-                let Some(state) = item.adaptive_state.clone() else {
-                    RestoredWorkflowState::Unsupported
-                };
-                RestoredWorkflowState::Adaptive {
+            WorkflowStateOperation::AdaptiveState => match item.adaptive_state.clone() {
+                Some(state) => RestoredWorkflowState::Adaptive {
                     state,
                     source_turn_id: item.source_turn_id.clone(),
-                }
-            }
+                },
+                None => RestoredWorkflowState::Unsupported,
+            },
             WorkflowStateOperation::Clear => RestoredWorkflowState::None,
             WorkflowStateOperation::Unsupported => RestoredWorkflowState::Unsupported,
         };
