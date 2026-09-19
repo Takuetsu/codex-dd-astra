@@ -53,6 +53,42 @@ use wiremock::MockServer;
 
 const TEST_INSTALLATION_ID: &str = "11111111-1111-4111-8111-111111111111";
 
+#[test]
+fn child_workflow_snapshot_preserves_adaptive_state() {
+    let state = codex_history::AdaptiveWorkflowStateSnapshot {
+        enabled: true,
+        starting_family: Some("astra".to_string()),
+        current_family: Some("luna".to_string()),
+        current_effort: Some("high".to_string()),
+        attempt_number: 6,
+        paused_by_user: false,
+        worker_role: "repair".to_string(),
+        authorized_scope: Some("bounded repair".to_string()),
+        worker_assignment_locked: true,
+        workflow_terminal: Some("ready_for_validation".to_string()),
+    };
+    let history = append_child_workflow_state_snapshot(
+        InitialHistory::Forked(Vec::new()),
+        codex_history::RestoredWorkflowState::Adaptive {
+            state: state.clone(),
+            source_turn_id: Some("repair-turn".to_string()),
+        },
+    );
+
+    let InitialHistory::Forked(items) = history else {
+        panic!("expected forked child history");
+    };
+    let Some(RolloutItem::WorkflowState(item)) = items.last() else {
+        panic!("expected adaptive workflow state item");
+    };
+    assert_eq!(item.adaptive_state.as_ref(), Some(&state));
+    assert_eq!(item.source_turn_id.as_deref(), Some("repair-turn"));
+    assert_eq!(
+        item.operation,
+        codex_history::WorkflowStateOperation::AdaptiveState
+    );
+}
+
 /// Controls without a custom allocation policy still produce distinct thread identifiers.
 #[test]
 fn thread_id_generator_defaults_to_standard_ids() {
