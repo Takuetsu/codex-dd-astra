@@ -289,7 +289,7 @@ mod tests {
         assert_eq!(adaptive.pending_attempt, None);
         assert_eq!(adaptive.pending_signal, None);
         assert_eq!(adaptive.successor_admission, None);
-        assert!(adaptive.evidence_registry.is_empty());
+        assert_eq!(adaptive.evidence_registry, Default::default());
     }
 
     #[test]
