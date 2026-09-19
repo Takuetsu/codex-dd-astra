@@ -239,3 +239,88 @@ pub(crate) async fn restore_persisted_workflow_state(
     }
     Ok(())
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn restored_terminal_snapshot_preserves_worker_route_and_clears_ephemeral_authority() {
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(
+            &mut adaptive,
+            codex_history::AdaptiveWorkflowStateSnapshot {
+                enabled: true,
+                starting_family: Some("astra".to_string()),
+                current_family: Some("luna".to_string()),
+                current_effort: Some("high".to_string()),
+                attempt_number: 6,
+                paused_by_user: false,
+                worker_role: "repair".to_string(),
+                authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
+                worker_assignment_locked: true,
+                workflow_terminal: Some("ready_for_validation".to_string()),
+            },
+            Some("turn-6".to_string()),
+        )
+        .expect("snapshot should restore");
+
+        assert!(adaptive.enabled);
+        assert_eq!(adaptive.starting_family, Some(AdaptiveFamily::Astra));
+        assert_eq!(adaptive.current_family, Some(AdaptiveFamily::Luna));
+        assert_eq!(adaptive.current_effort, Some(AdaptiveEffort::High));
+        assert_eq!(adaptive.attempt_number, 6);
+        assert_eq!(adaptive.worker_context.role, AdaptiveWorkerRole::Repair);
+        assert_eq!(
+            adaptive.worker_context.authorized_scope.as_deref(),
+            Some("Z-A0.47B bounded repair")
+        );
+        assert!(adaptive.worker_assignment_locked);
+        assert_eq!(
+            adaptive.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        );
+        assert_eq!(
+            adaptive.last_processed_terminal_turn_id.as_deref(),
+            Some("turn-6")
+        );
+        assert_eq!(adaptive.unfinished_turn_pressure, 0);
+        assert_eq!(adaptive.pending_attempt, None);
+        assert_eq!(adaptive.pending_signal, None);
+        assert_eq!(adaptive.successor_admission, None);
+        assert!(adaptive.evidence_registry.is_empty());
+    }
+
+    #[test]
+    fn restored_active_snapshot_keeps_attempt_but_never_restores_successor_authority() {
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(
+            &mut adaptive,
+            codex_history::AdaptiveWorkflowStateSnapshot {
+                enabled: true,
+                starting_family: Some("sol".to_string()),
+                current_family: Some("luna".to_string()),
+                current_effort: Some("medium".to_string()),
+                attempt_number: 4,
+                paused_by_user: true,
+                worker_role: "validation".to_string(),
+                authorized_scope: Some("independent validation".to_string()),
+                worker_assignment_locked: true,
+                workflow_terminal: None,
+            },
+            None,
+        )
+        .expect("snapshot should restore");
+
+        assert_eq!(adaptive.attempt_number, 4);
+        assert!(adaptive.paused_by_user);
+        assert_eq!(adaptive.worker_context.role, AdaptiveWorkerRole::Validation);
+        assert_eq!(adaptive.workflow_terminal, None);
+        assert_eq!(adaptive.last_processed_terminal_turn_id, None);
+        assert_eq!(adaptive.unfinished_turn_pressure, 0);
+        assert_eq!(adaptive.pending_attempt, None);
+        assert_eq!(adaptive.pending_signal, None);
+        assert_eq!(adaptive.successor_admission, None);
+    }
+}
