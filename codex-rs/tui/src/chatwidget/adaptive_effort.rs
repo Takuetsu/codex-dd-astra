@@ -216,10 +216,7 @@ impl AdaptiveEffortState {
 
         codex_app_server_protocol::ThreadAdaptiveWorkflowState {
             enabled: self.enabled,
-            starting_family: self
-                .starting_family
-                .map(family_name)
-                .map(str::to_string),
+            starting_family: self.starting_family.map(family_name).map(str::to_string),
             current_family: self.current_family.map(family_name).map(str::to_string),
             current_effort: self.current_effort.map(effort_name).map(str::to_string),
             attempt_number: self.attempt_number,
@@ -262,11 +259,7 @@ impl ChatWidget {
                 source_turn_id: self
                     .adaptive_effort
                     .workflow_terminal
-                    .and_then(|_| {
-                        self.adaptive_effort
-                            .last_processed_terminal_turn_id
-                            .clone()
-                    }),
+                    .and_then(|_| self.adaptive_effort.last_processed_terminal_turn_id.clone()),
                 adaptive_state: Some(self.adaptive_effort.durable_workflow_snapshot()),
             });
         }
