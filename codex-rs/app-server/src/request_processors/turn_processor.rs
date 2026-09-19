@@ -208,6 +208,28 @@ impl TurnRequestProcessor {
             ThreadWorkflowStateOperation::SetReadyForOwnerQa => {
                 codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(params.source_turn_id)
             }
+            ThreadWorkflowStateOperation::SetAdaptiveState => {
+                let Some(state) = params.adaptive_state else {
+                    return Err(invalid_request(
+                        "setAdaptiveState requires adaptiveState".to_string(),
+                    ));
+                };
+                codex_rollout::WorkflowStateItem::set_adaptive_state(
+                    codex_rollout::AdaptiveWorkflowStateSnapshot {
+                        enabled: state.enabled,
+                        starting_family: state.starting_family,
+                        current_family: state.current_family,
+                        current_effort: state.current_effort,
+                        attempt_number: state.attempt_number,
+                        paused_by_user: state.paused_by_user,
+                        worker_role: state.worker_role,
+                        authorized_scope: state.authorized_scope,
+                        worker_assignment_locked: state.worker_assignment_locked,
+                        workflow_terminal: state.workflow_terminal,
+                    },
+                    params.source_turn_id,
+                )
+            }
             ThreadWorkflowStateOperation::Clear => codex_rollout::WorkflowStateItem::clear(),
         };
         thread

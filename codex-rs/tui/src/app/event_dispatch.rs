@@ -1728,9 +1728,15 @@ impl App {
                 thread_id,
                 operation,
                 source_turn_id,
+                adaptive_state,
             } => {
                 match app_server
-                    .thread_workflow_state_update(thread_id, operation, source_turn_id)
+                    .thread_workflow_state_update(
+                        thread_id,
+                        operation,
+                        source_turn_id,
+                        adaptive_state,
+                    )
                     .await
                 {
                     Ok(_) => self

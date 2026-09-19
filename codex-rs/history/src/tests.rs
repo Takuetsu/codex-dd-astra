@@ -135,6 +135,21 @@ fn older_thread_settings_snapshot_defaults_disabled_plugins_to_empty() -> Result
 fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result<()> {
     let records = [
         WorkflowStateItem::set_ready_for_owner_qa(Some("turn-42".to_string())),
+        WorkflowStateItem::set_adaptive_state(
+            AdaptiveWorkflowStateSnapshot {
+                enabled: true,
+                starting_family: Some("astra".to_string()),
+                current_family: Some("luna".to_string()),
+                current_effort: Some("high".to_string()),
+                attempt_number: 5,
+                paused_by_user: false,
+                worker_role: "repair".to_string(),
+                authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
+                worker_assignment_locked: true,
+                workflow_terminal: Some("ready_for_validation".to_string()),
+            },
+            Some("turn-43".to_string()),
+        ),
         WorkflowStateItem::clear(),
     ];
 
@@ -187,11 +202,53 @@ fn workflow_state_latest_valid_canonical_record_wins() {
 }
 
 #[test]
+fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
+    let snapshot = AdaptiveWorkflowStateSnapshot {
+        enabled: true,
+        starting_family: Some("astra".to_string()),
+        current_family: Some("luna".to_string()),
+        current_effort: Some("high".to_string()),
+        attempt_number: 6,
+        paused_by_user: false,
+        worker_role: "repair".to_string(),
+        authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
+        worker_assignment_locked: true,
+        workflow_terminal: Some("ready_for_validation".to_string()),
+    };
+    let adaptive = RolloutItem::WorkflowState(WorkflowStateItem::set_adaptive_state(
+        snapshot.clone(),
+        Some("repair-turn".to_string()),
+    ));
+
+    assert_eq!(
+        restored_workflow_state([adaptive.clone()].iter()),
+        RestoredWorkflowState::Adaptive {
+            state: snapshot.clone(),
+            source_turn_id: Some("repair-turn".to_string()),
+        }
+    );
+
+    let legacy_owner_qa = RolloutItem::WorkflowState(WorkflowStateItem::set_ready_for_owner_qa(
+        Some("validation-turn".to_string()),
+    ));
+    let mut owner_qa_snapshot = snapshot;
+    owner_qa_snapshot.workflow_terminal = Some("ready_for_owner_qa".to_string());
+    assert_eq!(
+        restored_workflow_state([adaptive, legacy_owner_qa].iter()),
+        RestoredWorkflowState::Adaptive {
+            state: owner_qa_snapshot,
+            source_turn_id: Some("validation-turn".to_string()),
+        }
+    );
+}
+
+#[test]
 fn unsupported_workflow_state_fails_closed_until_a_later_supported_record() -> Result<()> {
     let unsupported_version = RolloutItem::WorkflowState(WorkflowStateItem {
         schema_version: WORKFLOW_STATE_SCHEMA_VERSION + 1,
         operation: WorkflowStateOperation::Clear,
         source_turn_id: None,
+        adaptive_state: None,
     });
     let unsupported_operation: RolloutItem = serde_json::from_value(serde_json::json!({
         "type": "codex_dd_workflow_state",

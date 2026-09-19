@@ -69,6 +69,7 @@ use codex_app_server_protocol::SessionSource;
 use codex_app_server_protocol::SkillsListParams;
 use codex_app_server_protocol::SkillsListResponse;
 use codex_app_server_protocol::Thread;
+use codex_app_server_protocol::ThreadAdaptiveWorkflowState;
 use codex_app_server_protocol::ThreadApproveGuardianDeniedActionParams;
 use codex_app_server_protocol::ThreadApproveGuardianDeniedActionResponse;
 use codex_app_server_protocol::ThreadArchiveParams;
@@ -1319,6 +1320,7 @@ impl AppServerSession {
         thread_id: ThreadId,
         operation: ThreadWorkflowStateOperation,
         source_turn_id: Option<String>,
+        adaptive_state: Option<ThreadAdaptiveWorkflowState>,
     ) -> Result<ThreadWorkflowStateUpdateResponse> {
         let request_id = self.next_request_id();
         self.client
@@ -1328,6 +1330,7 @@ impl AppServerSession {
                     thread_id: thread_id.to_string(),
                     operation,
                     source_turn_id,
+                    adaptive_state,
                 },
             })
             .await
