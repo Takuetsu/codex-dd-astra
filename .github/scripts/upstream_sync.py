@@ -104,7 +104,9 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.latest_from_stdin:
-            print(select_latest_release(line.strip() for line in sys.stdin if line.strip()))
+            print(
+                select_latest_release(line.strip() for line in sys.stdin if line.strip())
+            )
         else:
             print(next_patch_version(args.next_patch))
     except ValueError as error:
