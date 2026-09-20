@@ -12,9 +12,7 @@ RELEASE_TAG = re.compile(
     r"^rust-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)"
     r"(?:-(?P<kind>alpha|beta|rc)(?:\.(?P<parts>\d+(?:\.\d+)*))?)?$"
 )
-PRODUCT_VERSION = re.compile(
-    r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$"
-)
+PRODUCT_VERSION = re.compile(r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$")
 KIND_ORDER = {"alpha": 0, "beta": 1, "rc": 2}
 
 
@@ -106,11 +104,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.latest_from_stdin:
-            print(
-                select_latest_release(
-                    line.strip() for line in sys.stdin if line.strip()
-                )
-            )
+            print(select_latest_release(line.strip() for line in sys.stdin if line.strip()))
         else:
             print(next_patch_version(args.next_patch))
     except ValueError as error:
