@@ -3,7 +3,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 from upstream_sync import (
     conflict_issue_title,
     conflict_marker,
@@ -87,7 +86,8 @@ class UpstreamSyncTests(unittest.TestCase):
         )
         self.assertEqual(pr_marker(tag), "codexdd-upstream-sync: rust-v0.155.0")
         self.assertEqual(
-            conflict_issue_title(tag), "codexdd: resolve upstream rust-v0.155.0 conflicts"
+            conflict_issue_title(tag),
+            "codexdd: resolve upstream rust-v0.155.0 conflicts",
         )
         self.assertEqual(
             conflict_marker(tag), "codexdd-upstream-conflict: rust-v0.155.0"
@@ -156,7 +156,9 @@ class UpstreamSyncTests(unittest.TestCase):
             (repo / "new-upstream.txt").write_text("new stable behavior\n")
             upstream_v2 = commit_all(repo, "upstream v2")
 
-            product_tree = git(repo, "rev-parse", f"{production}^{{tree}}").stdout.strip()
+            product_tree = git(
+                repo, "rev-parse", f"{production}^{{tree}}"
+            ).stdout.strip()
             synthetic = git(
                 repo,
                 "commit-tree",
@@ -199,7 +201,9 @@ class UpstreamSyncTests(unittest.TestCase):
             (repo / "shared.txt").write_text("stable v2 changed same line\n")
             upstream_v2 = commit_all(repo, "upstream v2")
 
-            product_tree = git(repo, "rev-parse", f"{production}^{{tree}}").stdout.strip()
+            product_tree = git(
+                repo, "rev-parse", f"{production}^{{tree}}"
+            ).stdout.strip()
             synthetic = git(
                 repo,
                 "commit-tree",
