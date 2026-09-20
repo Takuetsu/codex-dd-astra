@@ -105,7 +105,9 @@ def main() -> int:
     try:
         if args.latest_from_stdin:
             print(
-                select_latest_release(line.strip() for line in sys.stdin if line.strip())
+                select_latest_release(
+                    line.strip() for line in sys.stdin if line.strip()
+                )
             )
         else:
             print(next_patch_version(args.next_patch))
