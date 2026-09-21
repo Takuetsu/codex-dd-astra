@@ -1,6 +1,8 @@
 //! Rate-limit warning, prompt, and notice surfaces, plus quota-aware account refresh cadence.
 
 use super::*;
+use crate::adaptive_budget::AdaptiveBudgetMode;
+use crate::adaptive_budget::assess_budget;
 pub(super) const WORKSPACE_NUDGE_VIEW_ID: &str = "workspace-usage-nudge";
 use crate::bottom_pane::ActionableBanner;
 use crate::model_catalog::LUNA_RESERVE_MODEL;
@@ -273,6 +275,14 @@ impl ChatWidget {
             self.plan_type = snapshot.plan_type.or(self.plan_type);
 
             let is_codex_limit = limit_id.eq_ignore_ascii_case("codex");
+            if is_codex_limit && matches!(source, RateLimitSnapshotSource::AccountUsage) {
+                self.adaptive_effort.budget_mode = assess_budget(
+                    snapshot.primary.as_ref(),
+                    snapshot.secondary.as_ref(),
+                    chrono::Utc::now().timestamp(),
+                )
+                .mode;
+            }
             if is_codex_limit
                 && (matches!(source, RateLimitSnapshotSource::AccountUsage)
                     || snapshot.spend_control_reached.is_some())
@@ -383,6 +393,7 @@ impl ChatWidget {
             self.rate_limit_snapshots_by_limit_id.clear();
             self.codex_rate_limit_reached_type = None;
             self.codex_spend_control_reached = None;
+            self.adaptive_effort.budget_mode = AdaptiveBudgetMode::Balanced;
         }
         self.refresh_status_line();
     }
