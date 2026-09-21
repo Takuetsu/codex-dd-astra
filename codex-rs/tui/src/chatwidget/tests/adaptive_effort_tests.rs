@@ -2041,7 +2041,6 @@ fn adaptive_is_discoverable_and_accepts_inline_args() {
     assert!(SlashCommand::Adaptive.supports_inline_args());
 }
 
-
 #[tokio::test]
 async fn adaptive_status_surfaces_budget_mode() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
