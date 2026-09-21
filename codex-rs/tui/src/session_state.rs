@@ -250,10 +250,14 @@ pub(crate) async fn restore_persisted_workflow_state(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adaptive_budget::AdaptiveBudgetMode;
 
     #[test]
     fn restored_terminal_snapshot_preserves_worker_route_and_clears_ephemeral_authority() {
-        let mut adaptive = AdaptiveEffortState::default();
+        let mut adaptive = AdaptiveEffortState {
+            budget_mode: AdaptiveBudgetMode::Surplus,
+            ..AdaptiveEffortState::default()
+        };
         apply_persisted_adaptive_workflow_state(
             &mut adaptive,
             codex_history::AdaptiveWorkflowStateSnapshot {
@@ -277,6 +281,7 @@ mod tests {
         assert_eq!(adaptive.current_family, Some(AdaptiveFamily::Luna));
         assert_eq!(adaptive.current_effort, Some(AdaptiveEffort::High));
         assert_eq!(adaptive.attempt_number, 6);
+        assert_eq!(adaptive.budget_mode, AdaptiveBudgetMode::Surplus);
         assert_eq!(adaptive.worker_context.role, AdaptiveWorkerRole::Repair);
         assert_eq!(
             adaptive.worker_context.authorized_scope.as_deref(),
