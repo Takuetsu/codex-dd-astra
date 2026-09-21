@@ -63,7 +63,12 @@ impl ChatWidget {
                     && existing.diagnostic_note.as_deref()
                         == Some(AUTO_FAILURE_PRESSURE_DIAGNOSTIC)
                     && existing.signal_kind == AdaptiveRuntimeSignalKind::Capability
-                    && notification.signal.signal_kind != AdaptiveRuntimeSignalKind::Capability =>
+                    && matches!(
+                        notification.signal.signal_kind,
+                        AdaptiveRuntimeSignalKind::ReadyForValidation
+                            | AdaptiveRuntimeSignalKind::RepairRequired
+                            | AdaptiveRuntimeSignalKind::ReadyForOwnerQa
+                    ) =>
             {
                 self.adaptive_effort.pending_signal =
                     Some(AdaptivePendingSignal::Pending(notification.signal));
@@ -73,8 +78,11 @@ impl ChatWidget {
                 if existing.source_turn_id == notification.signal.source_turn_id
                     && existing.signal_kind == notification.signal.signal_kind
                     && existing.evidence_refs == notification.signal.evidence_refs
-                    && (existing.signal_kind != AdaptiveRuntimeSignalKind::Capability
-                        || existing.diagnostic_note == notification.signal.diagnostic_note) => {}
+                    && (!matches!(
+                        existing.signal_kind,
+                        AdaptiveRuntimeSignalKind::Capability
+                            | AdaptiveRuntimeSignalKind::Complexity
+                    ) || existing.diagnostic_note == notification.signal.diagnostic_note) => {}
             Some(AdaptivePendingSignal::Pending(existing))
                 if existing.source_turn_id == source_turn_id =>
             {

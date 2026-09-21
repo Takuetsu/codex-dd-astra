@@ -1,6 +1,7 @@
 //! Terminal-bound validation and consumption of trusted adaptive signals.
 
 use super::*;
+use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
@@ -50,7 +51,32 @@ impl ChatWidget {
             .map(str::trim)
             .filter(|note| !note.is_empty())
             .map(str::to_string);
+        let complexity_class = if envelope.signal_kind == AdaptiveRuntimeSignalKind::Complexity {
+            envelope
+                .diagnostic_note
+                .as_deref()
+                .and_then(|value| match value {
+                    "routine" => Some(AdaptiveComplexityClass::Routine),
+                    "standard" => Some(AdaptiveComplexityClass::Standard),
+                    "complex" => Some(AdaptiveComplexityClass::Complex),
+                    "architectural" => Some(AdaptiveComplexityClass::Architectural),
+                    _ => None,
+                })
+        } else {
+            None
+        };
+
         let accepted = match envelope.signal_kind {
+            AdaptiveRuntimeSignalKind::Complexity => {
+                self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Implementation
+                    && self.adaptive_effort.complexity_class.is_none()
+                    && self.adaptive_effort.current_family
+                        == Some(crate::adaptive_policy::AdaptiveFamily::Luna)
+                    && self.adaptive_effort.current_effort
+                        == Some(crate::adaptive_policy::AdaptiveEffort::Low)
+                    && envelope.evidence_refs.is_empty()
+                    && complexity_class.is_some()
+            }
             AdaptiveRuntimeSignalKind::Capability => {
                 envelope.evidence_refs.is_empty() && capability_diagnostic.is_some()
             }
@@ -99,6 +125,10 @@ impl ChatWidget {
         }
 
         match signal_kind {
+            AdaptiveRuntimeSignalKind::Complexity => self.apply_adaptive_complexity_floor(
+                source_turn_id,
+                complexity_class.expect("accepted complexity signal has a canonical class"),
+            ),
             AdaptiveRuntimeSignalKind::Capability => self.apply_capability_signal_with_report(
                 source_turn_id,
                 capability_diagnostic

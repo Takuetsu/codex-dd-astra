@@ -2065,3 +2065,68 @@ async fn adaptive_status_surfaces_budget_mode() {
     assert!(status.contains("Complexity: Architectural"));
     assert!(status.contains("Implementation floor: Terra Medium"));
 }
+
+#[tokio::test]
+async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
+    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
+    drain_events(&mut rx);
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("complexity reconnaissance".to_string()),
+    };
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some("recon-turn".to_string());
+
+    chat.handle_server_notification(
+        ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: "recon-turn".to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::Complexity,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some("architectural".to_string()),
+            },
+        }),
+        None,
+    );
+    drain_events(&mut rx);
+    chat.turn_lifecycle.agent_turn_running = false;
+
+    assert!(chat.consume_adaptive_signal_at_terminal("recon-turn"));
+    assert_eq!(
+        chat.adaptive_effort.complexity_class,
+        Some(AdaptiveComplexityClass::Architectural)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Terra)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        Some(AdaptivePendingAttempt {
+            decision: AdaptivePendingDecision::EscalateModel,
+            route,
+            attempt_number: 2,
+            ..
+        }) if route == admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Medium)
+    );
+
+    synchronize_admission_route(
+        &mut chat,
+        admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Medium),
+    );
+    assert!(chat.maybe_submit_adaptive_successor());
+    let Op::UserTurn { model, effort, .. } = next_submit_op(&mut op_rx) else {
+        panic!("expected complexity-authorized successor");
+    };
+    assert_eq!(model, AdaptiveFamily::Terra.model());
+    assert_eq!(effort, Some(ReasoningEffort::Medium));
+}

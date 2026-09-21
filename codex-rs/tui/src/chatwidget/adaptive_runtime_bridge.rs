@@ -1,6 +1,8 @@
 //! Live terminal-event bridge for the deterministic adaptive controller.
 
 use super::*;
+use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::implementation_floor;
 use crate::adaptive_controller::AdaptiveControllerDecision;
 use crate::adaptive_controller::AdaptiveControllerState;
 use crate::adaptive_controller::reduce_adaptive_controller;
@@ -16,6 +18,66 @@ use crate::chatwidget::adaptive_effort::AdaptivePendingAttempt;
 use crate::chatwidget::adaptive_effort::AdaptivePendingDecision;
 
 impl ChatWidget {
+    pub(super) fn apply_adaptive_complexity_floor(
+        &mut self,
+        source_turn_id: &str,
+        complexity_class: AdaptiveComplexityClass,
+    ) {
+        let Some(thread_id) = self.thread_id() else {
+            return;
+        };
+        let (Some(current_family), Some(current_effort)) = (
+            self.adaptive_effort.current_family,
+            self.adaptive_effort.current_effort,
+        ) else {
+            return;
+        };
+
+        let current_route = AdaptiveRoute {
+            family: current_family,
+            effort: current_effort,
+        };
+        let route = implementation_floor(complexity_class);
+        let decision = if route == current_route {
+            AdaptivePendingDecision::ContinueSameRoute
+        } else if route.family == current_route.family {
+            AdaptivePendingDecision::EscalateEffort
+        } else {
+            AdaptivePendingDecision::EscalateModel
+        };
+        let next_attempt = self.adaptive_effort.attempt_number.saturating_add(1);
+
+        self.adaptive_effort.complexity_class = Some(complexity_class);
+        self.adaptive_effort.current_family = Some(route.family);
+        self.adaptive_effort.current_effort = Some(route.effort);
+        self.adaptive_effort.attempt_number = next_attempt;
+        self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
+        self.adaptive_effort.last_outcome = None;
+        self.adaptive_effort.last_failure_kind = None;
+        self.adaptive_effort.successor_admission = None;
+        self.adaptive_effort.pending_attempt = Some(AdaptivePendingAttempt {
+            thread_id,
+            source_turn_id: source_turn_id.to_string(),
+            decision,
+            route,
+            attempt_number: next_attempt,
+            worker_context: self.adaptive_effort.worker_context.clone(),
+        });
+        self.save_adaptive_effort_for_current_thread();
+
+        let model = route.family.model();
+        if self.current_model() != model {
+            self.app_event_tx
+                .send(AppEvent::UpdateModel(model.to_string()));
+        }
+        let effort = reasoning_effort(route.effort);
+        if self.effective_reasoning_effort() != Some(effort.clone()) {
+            self.app_event_tx
+                .send(AppEvent::UpdateReasoningEffort(Some(effort)));
+        }
+    }
+
     pub(super) fn apply_adaptive_terminal_signal(
         &mut self,
         source_turn_id: &str,

@@ -21,6 +21,7 @@ const TOOL_NAME: &str = "report_adaptive_signal";
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum SignalKind {
+    Complexity,
     Capability,
     ReadyForValidation,
     RepairRequired,
@@ -30,14 +31,52 @@ enum SignalKind {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct ComplexityReport {
+    estimated_files: u16,
+    cross_module: bool,
+    public_api_or_data_model: bool,
+    persistent_state_or_serialization: bool,
+    concurrency_or_async: bool,
+    build_release_or_toolchain: bool,
+    uncertain_root_cause: bool,
+    broad_test_surface: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct AdaptiveSignalArgs {
     kind: SignalKind,
+    complexity: Option<ComplexityReport>,
     #[serde(default)]
     evidence_refs: Vec<String>,
     diagnostic_note: Option<String>,
 }
 
 pub struct AdaptiveSignalHandler;
+
+fn classify_complexity(report: &ComplexityReport) -> &'static str {
+    let mut score = 0u8;
+    score = score.saturating_add(match report.estimated_files {
+        0..=2 => 0,
+        3..=5 => 1,
+        6..=10 => 2,
+        _ => 3,
+    });
+    score = score.saturating_add(u8::from(report.cross_module));
+    score = score.saturating_add(u8::from(report.public_api_or_data_model) * 2);
+    score = score.saturating_add(u8::from(report.persistent_state_or_serialization) * 2);
+    score = score.saturating_add(u8::from(report.concurrency_or_async) * 2);
+    score = score.saturating_add(u8::from(report.build_release_or_toolchain) * 2);
+    score = score.saturating_add(u8::from(report.uncertain_root_cause));
+    score = score.saturating_add(u8::from(report.broad_test_surface));
+
+    match score {
+        0..=1 => "routine",
+        2..=4 => "standard",
+        5..=7 => "complex",
+        _ => "architectural",
+    }
+}
 
 impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
     fn tool_name(&self) -> ToolName {
@@ -50,6 +89,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
             "kind".to_string(),
             JsonSchema::string_enum(
                 vec![
+                    json!("complexity"),
                     json!("capability"),
                     json!("ready_for_validation"),
                     json!("repair_required"),
@@ -60,6 +100,65 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                     "The trusted adaptive fact to report. `capability` requests additional compute and therefore requires a diagnostic_note explaining the concrete capability limitation at the current route and why stronger model capability is required. A green Validation/Reviewer result such as PASS - READY FOR REPOSITORY HANDOFF must use ready_for_repository_handoff (or ready_for_owner_qa); both map to the READY_FOR_OWNER_QA hard terminal."
                         .to_string(),
                 ),
+            ),
+        );
+        let mut complexity_properties = BTreeMap::new();
+        complexity_properties.insert(
+            "estimated_files".to_string(),
+            JsonSchema::integer(Some(
+                "Estimated number of files the implementation is expected to touch.".to_string(),
+            )),
+        );
+        for (name, description) in [
+            (
+                "cross_module",
+                "Work crosses module or subsystem boundaries.",
+            ),
+            (
+                "public_api_or_data_model",
+                "Work changes a public API, shared contract, schema, or data model.",
+            ),
+            (
+                "persistent_state_or_serialization",
+                "Work changes persisted state, storage, serialization, or migrations.",
+            ),
+            (
+                "concurrency_or_async",
+                "Work changes concurrency, synchronization, async behavior, or ordering.",
+            ),
+            (
+                "build_release_or_toolchain",
+                "Work changes build, release, packaging, CI, or toolchain behavior.",
+            ),
+            (
+                "uncertain_root_cause",
+                "The root cause remains uncertain after reconnaissance.",
+            ),
+            (
+                "broad_test_surface",
+                "The expected validation surface spans multiple behaviors or subsystems.",
+            ),
+        ] {
+            complexity_properties.insert(
+                name.to_string(),
+                JsonSchema::boolean(Some(description.to_string())),
+            );
+        }
+        properties.insert(
+            "complexity".to_string(),
+            JsonSchema::object(
+                complexity_properties,
+                Some(vec![
+                    "estimated_files".to_string(),
+                    "cross_module".to_string(),
+                    "public_api_or_data_model".to_string(),
+                    "persistent_state_or_serialization".to_string(),
+                    "concurrency_or_async".to_string(),
+                    "build_release_or_toolchain".to_string(),
+                    "uncertain_root_cause".to_string(),
+                    "broad_test_surface".to_string(),
+                ]),
+                Some(false.into()),
             ),
         );
         properties.insert(
@@ -81,7 +180,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
         );
         ToolSpec::Function(ResponsesApiTool {
             name: TOOL_NAME.to_string(),
-            description: "Report the structured adaptive outcome before ending a bound Worker turn. A capability request must include a nonblank diagnostic report explaining the concrete current-route limitation and why stronger model capability is required; reasonless capability requests are rejected. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
+            description: "Report the structured adaptive outcome before ending a bound Worker turn. On the first Luna Low turn of a bound Implementation Worker, perform reconnaissance only, then report kind=complexity with the complete structured complexity object and end the turn without editing; the runtime will continue automatically at the bounded implementation floor. A capability request must include a nonblank diagnostic report explaining the concrete current-route limitation and why stronger model capability is required; reasonless capability requests are rejected. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
                 .to_string(),
             strict: false,
             defer_loading: None,
@@ -116,6 +215,31 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
             })?;
             args.evidence_refs.sort();
             args.evidence_refs.dedup();
+
+            let complexity_class = match (&args.kind, args.complexity.as_ref()) {
+                (SignalKind::Complexity, Some(report)) => {
+                    if !args.evidence_refs.is_empty() || args.diagnostic_note.is_some() {
+                        return Err(FunctionCallError::RespondToModel(
+                            "kind=complexity accepts only the structured complexity object; evidence_refs and diagnostic_note are not authoritative for reconnaissance"
+                                .to_string(),
+                        ));
+                    }
+                    Some(classify_complexity(report))
+                }
+                (SignalKind::Complexity, None) => {
+                    return Err(FunctionCallError::RespondToModel(
+                        "kind=complexity requires the complete structured complexity object"
+                            .to_string(),
+                    ));
+                }
+                (_, Some(_)) => {
+                    return Err(FunctionCallError::RespondToModel(
+                        "the complexity object is only valid for kind=complexity".to_string(),
+                    ));
+                }
+                (_, None) => None,
+            };
+
             if matches!(&args.kind, SignalKind::Capability) {
                 let Some(diagnostic_note) = args
                     .diagnostic_note
@@ -130,7 +254,11 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                 };
                 args.diagnostic_note = Some(diagnostic_note.to_string());
             }
+            if let Some(complexity_class) = complexity_class {
+                args.diagnostic_note = Some(complexity_class.to_string());
+            }
             let signal_kind = match args.kind {
+                SignalKind::Complexity => AdaptiveRuntimeSignalKind::Complexity,
                 SignalKind::Capability => AdaptiveRuntimeSignalKind::Capability,
                 SignalKind::ReadyForValidation => AdaptiveRuntimeSignalKind::ReadyForValidation,
                 SignalKind::RepairRequired => AdaptiveRuntimeSignalKind::RepairRequired,
