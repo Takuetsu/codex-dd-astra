@@ -572,7 +572,7 @@ mod tests {
             AdaptiveEffortState {
                 enabled: true,
                 starting_family: Some(AdaptiveFamily::Astra),
-                current_family: Some(AdaptiveFamily::Luna),
+                current_family: Some(AdaptiveFamily::Terra),
                 current_effort: Some(AdaptiveEffort::Low),
                 attempt_number: 1,
                 worker_context: AdaptiveWorkerContext {
@@ -583,6 +583,59 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+
+    #[test]
+    fn validation_worker_floor_tracks_budget_without_affecting_implementation() {
+        let binding = |role| NewWorkerBinding {
+            role,
+            authorized_scope: "quality gate".to_string(),
+        };
+
+        for (budget_mode, family, effort) in [
+            (
+                AdaptiveBudgetMode::Conserve,
+                AdaptiveFamily::Luna,
+                AdaptiveEffort::High,
+            ),
+            (
+                AdaptiveBudgetMode::Balanced,
+                AdaptiveFamily::Terra,
+                AdaptiveEffort::Low,
+            ),
+            (
+                AdaptiveBudgetMode::Surplus,
+                AdaptiveFamily::Sol,
+                AdaptiveEffort::Low,
+            ),
+        ] {
+            let previous = AdaptiveEffortState {
+                enabled: true,
+                starting_family: Some(AdaptiveFamily::Astra),
+                current_family: Some(AdaptiveFamily::Luna),
+                current_effort: Some(AdaptiveEffort::Low),
+                attempt_number: 1,
+                budget_mode,
+                ..Default::default()
+            };
+            let validation = previous.fresh_for_new_worker(Some(&binding(
+                AdaptiveWorkerRole::Validation,
+            )));
+            assert_eq!(validation.current_family, Some(family));
+            assert_eq!(validation.current_effort, Some(effort));
+            assert_eq!(validation.budget_mode, budget_mode);
+
+            let implementation = previous.fresh_for_new_worker(Some(&binding(
+                AdaptiveWorkerRole::Implementation,
+            )));
+            assert_eq!(
+                implementation.current_family,
+                Some(AdaptiveFamily::Luna),
+                "budget mode must not silently raise implementation before complexity authorization"
+            );
+            assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Low));
+        }
     }
 
     #[test]
