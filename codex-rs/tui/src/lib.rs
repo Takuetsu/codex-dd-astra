@@ -101,8 +101,12 @@ pub(crate) use codex_app_server_client::legacy_core;
 
 pub(crate) use worktree_startup::ManagedTuiWorktree;
 
+#[allow(dead_code)] // codexdd 0.3.0 budget policy is pure until runtime wiring lands.
+mod adaptive_budget;
 #[allow(dead_code)] // Slice 5 adapters are intentionally not wired into runtime behavior yet.
 mod adaptive_classification;
+#[allow(dead_code)] // codexdd 0.3.0 complexity policy is pure until runtime wiring lands.
+mod adaptive_complexity;
 #[allow(dead_code)] // Slice 6 controller is intentionally not wired into runtime behavior yet.
 mod adaptive_controller;
 #[cfg(test)]

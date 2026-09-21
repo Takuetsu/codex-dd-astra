@@ -163,6 +163,8 @@ fn apply_persisted_adaptive_workflow_state(
     let current_effort = restore_effort(state.current_effort)?;
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
+    let complexity_class = adaptive_effort.complexity_class;
+    let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
         && (current_family.is_none() || current_effort.is_none() || state.attempt_number == 0)
@@ -197,6 +199,8 @@ fn apply_persisted_adaptive_workflow_state(
         successor_admission: None,
         pending_signal: None,
         evidence_registry: Default::default(),
+        complexity_class,
+        budget_mode,
     };
     Ok(())
 }
@@ -248,10 +252,14 @@ pub(crate) async fn restore_persisted_workflow_state(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adaptive_budget::AdaptiveBudgetMode;
 
     #[test]
     fn restored_terminal_snapshot_preserves_worker_route_and_clears_ephemeral_authority() {
-        let mut adaptive = AdaptiveEffortState::default();
+        let mut adaptive = AdaptiveEffortState {
+            budget_mode: AdaptiveBudgetMode::Surplus,
+            ..AdaptiveEffortState::default()
+        };
         apply_persisted_adaptive_workflow_state(
             &mut adaptive,
             codex_history::AdaptiveWorkflowStateSnapshot {
@@ -275,6 +283,7 @@ mod tests {
         assert_eq!(adaptive.current_family, Some(AdaptiveFamily::Luna));
         assert_eq!(adaptive.current_effort, Some(AdaptiveEffort::High));
         assert_eq!(adaptive.attempt_number, 6);
+        assert_eq!(adaptive.budget_mode, AdaptiveBudgetMode::Surplus);
         assert_eq!(adaptive.worker_context.role, AdaptiveWorkerRole::Repair);
         assert_eq!(
             adaptive.worker_context.authorized_scope.as_deref(),

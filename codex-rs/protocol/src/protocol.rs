@@ -1358,6 +1358,7 @@ pub struct Event {
 #[serde(rename_all = "snake_case")]
 #[ts(rename_all = "snake_case")]
 pub enum AdaptiveRuntimeSignalKind {
+    Complexity,
     Capability,
     ReadyForValidation,
     RepairRequired,

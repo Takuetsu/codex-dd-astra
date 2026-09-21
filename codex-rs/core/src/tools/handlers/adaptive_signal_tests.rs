@@ -227,3 +227,87 @@ async fn production_handler_rejects_authority_fields() {
         assert!(result.is_err(), "field {field} must be rejected");
     }
 }
+
+#[tokio::test]
+async fn complexity_report_is_classified_before_emitting_event() {
+    let (session, turn, events) = make_session_and_context_with_rx().await;
+    let source_turn_id = turn.sub_id.clone();
+
+    AdaptiveSignalHandler
+        .handle(ToolInvocation {
+            session,
+            step_context: StepContext::for_test(Arc::clone(&turn)),
+            turn,
+            cancellation_token: tokio_util::sync::CancellationToken::new(),
+            tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
+            call_id: "complexity-recon".to_string(),
+            tool_name: ToolName::plain(TOOL_NAME),
+            source: ToolCallSource::Direct,
+            payload: ToolPayload::Function {
+                arguments: json!({
+                    "kind": "complexity",
+                    "complexity": {
+                        "estimated_files": 12,
+                        "cross_module": true,
+                        "public_api_or_data_model": true,
+                        "persistent_state_or_serialization": true,
+                        "concurrency_or_async": false,
+                        "build_release_or_toolchain": false,
+                        "uncertain_root_cause": true,
+                        "broad_test_surface": true
+                    }
+                })
+                .to_string(),
+            },
+        })
+        .await
+        .expect("complexity report");
+
+    let event = events.recv().await.expect("adaptive complexity event");
+    assert_eq!(event.id, source_turn_id);
+    let EventMsg::AdaptiveRuntimeSignal(signal) = event.msg else {
+        panic!("expected adaptive runtime signal");
+    };
+    assert_eq!(signal.signal_kind, AdaptiveRuntimeSignalKind::Complexity);
+    assert!(signal.evidence_refs.is_empty());
+    assert_eq!(signal.diagnostic_note.as_deref(), Some("architectural"));
+}
+
+#[tokio::test]
+async fn complexity_requires_structured_report_and_rejects_smuggled_authority() {
+    for arguments in [
+        json!({ "kind": "complexity" }),
+        json!({
+            "kind": "complexity",
+            "diagnostic_note": "architectural",
+            "complexity": {
+                "estimated_files": 1,
+                "cross_module": false,
+                "public_api_or_data_model": false,
+                "persistent_state_or_serialization": false,
+                "concurrency_or_async": false,
+                "build_release_or_toolchain": false,
+                "uncertain_root_cause": false,
+                "broad_test_surface": false
+            }
+        }),
+    ] {
+        let (session, turn, _events) = make_session_and_context_with_rx().await;
+        let result = AdaptiveSignalHandler
+            .handle(ToolInvocation {
+                session,
+                step_context: StepContext::for_test(Arc::clone(&turn)),
+                turn,
+                cancellation_token: tokio_util::sync::CancellationToken::new(),
+                tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
+                call_id: "invalid-complexity".to_string(),
+                tool_name: ToolName::plain(TOOL_NAME),
+                source: ToolCallSource::Direct,
+                payload: ToolPayload::Function {
+                    arguments: arguments.to_string(),
+                },
+            })
+            .await;
+        assert!(result.is_err());
+    }
+}

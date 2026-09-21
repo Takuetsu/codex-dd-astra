@@ -1,4 +1,6 @@
 use super::*;
+use crate::adaptive_budget::AdaptiveBudgetMode;
+use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_evidence::AdaptiveEvidenceKind;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_evidence::AdaptiveEvidenceRecord;
@@ -458,7 +460,8 @@ fn next_non_adaptive_state_event(
 ) -> Result<AppEvent, tokio::sync::mpsc::error::TryRecvError> {
     loop {
         match rx.try_recv() {
-            Ok(AppEvent::UpdateAdaptiveEffortState(_)) => {}
+            Ok(AppEvent::UpdateAdaptiveEffortState(_))
+            | Ok(AppEvent::PersistWorkflowState { .. }) => {}
             event => return event,
         }
     }
@@ -497,7 +500,8 @@ fn pending_signal(
         source_turn_id: source_turn_id.to_string(),
         signal_kind,
         evidence_refs,
-        diagnostic_note: None,
+        diagnostic_note: (signal_kind == AdaptiveRuntimeSignalKind::Capability)
+            .then(|| "Test capability report: stronger model capability is required.".to_string()),
     })
 }
 
@@ -1848,6 +1852,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         rx.try_recv(),
         Ok(AppEvent::UpdateAdaptiveEffortState(state)) if state == expected
     );
+    assert_matches!(rx.try_recv(), Ok(AppEvent::PersistWorkflowState { .. }));
     assert!(rx.try_recv().is_err());
     assert_no_submit_op(&mut op_rx);
 
@@ -2038,4 +2043,277 @@ fn adaptive_is_discoverable_and_accepts_inline_args() {
             .any(|(name, command)| name == "adaptive" && command == SlashCommand::Adaptive)
     );
     assert!(SlashCommand::Adaptive.supports_inline_args());
+}
+
+#[tokio::test]
+async fn adaptive_status_surfaces_budget_mode() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    chat.adaptive_effort.budget_mode = AdaptiveBudgetMode::Surplus;
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Budget mode: Surplus")
+    );
+
+    chat.adaptive_effort.budget_mode = AdaptiveBudgetMode::Conserve;
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Budget mode: Conserve")
+    );
+
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+    let status = chat.adaptive_effort_status_text();
+    assert!(status.contains("Complexity: Architectural"));
+    assert!(status.contains("Implementation floor: Terra Medium"));
+}
+
+#[tokio::test]
+async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
+    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
+    drain_events(&mut rx);
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("complexity reconnaissance".to_string()),
+    };
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some("recon-turn".to_string());
+
+    chat.handle_server_notification(
+        ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: "recon-turn".to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::Complexity,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some("architectural".to_string()),
+            },
+        }),
+        None,
+    );
+    drain_events(&mut rx);
+    chat.turn_lifecycle.agent_turn_running = false;
+
+    assert!(chat.consume_adaptive_signal_at_terminal("recon-turn"));
+    assert_eq!(
+        chat.adaptive_effort.complexity_class,
+        Some(AdaptiveComplexityClass::Architectural)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Terra)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        Some(AdaptivePendingAttempt {
+            decision: AdaptivePendingDecision::EscalateModel,
+            route,
+            attempt_number: 2,
+            ..
+        }) if route == admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Medium)
+    );
+
+    synchronize_admission_route(
+        &mut chat,
+        admission_route(AdaptiveFamily::Terra, AdaptiveEffort::Medium),
+    );
+    assert!(chat.maybe_submit_adaptive_successor());
+    let Op::UserTurn { model, effort, .. } = next_submit_op(&mut op_rx) else {
+        panic!("expected complexity-authorized successor");
+    };
+    assert_eq!(model, AdaptiveFamily::Terra.model());
+    assert_eq!(effort, Some(ReasoningEffort::Medium));
+}
+
+#[tokio::test]
+async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
+    for (complexity_class, expect_validation) in [
+        (AdaptiveComplexityClass::Routine, false),
+        (AdaptiveComplexityClass::Standard, true),
+    ] {
+        let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
+        chat.thread_id = Some(ThreadId::new());
+        chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
+        drain_events(&mut rx);
+        chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("automatic quality gate".to_string()),
+        };
+        chat.adaptive_effort.complexity_class = Some(complexity_class);
+        chat.adaptive_effort.pending_signal = Some(pending_signal(
+            "quality-handoff-turn",
+            AdaptiveRuntimeSignalKind::ReadyForValidation,
+            Vec::new(),
+        ));
+
+        assert!(chat.consume_adaptive_signal_at_terminal("quality-handoff-turn"));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        );
+        let events = drain_events(&mut rx);
+        let binding = events.into_iter().find_map(|event| match event {
+            AppEvent::NewSession {
+                name: None,
+                worker_binding: Some(binding),
+            } => Some(binding),
+            _ => None,
+        });
+
+        assert_eq!(binding.is_some(), expect_validation);
+        if let Some(binding) = binding {
+            assert_eq!(binding.role, AdaptiveWorkerRole::Validation);
+            assert_eq!(binding.authorized_scope, "automatic quality gate");
+            let prompt = chat
+                .automatic_validation_prompt_for_new_worker(&binding)
+                .expect("nontrivial handoff should produce a validation prompt");
+            assert!(prompt.text.contains("Independently validate"));
+            assert!(prompt.text.contains("automatic quality gate"));
+            assert!(prompt.text.contains("do not modify the implementation"));
+        }
+        assert_no_submit_op(&mut op_rx);
+    }
+}
+
+#[tokio::test]
+async fn budget_and_complexity_route_implementation_and_review_independently() {
+    for (budget_mode, review_family, review_effort) in [
+        (
+            AdaptiveBudgetMode::Conserve,
+            AdaptiveFamily::Luna,
+            AdaptiveEffort::High,
+        ),
+        (
+            AdaptiveBudgetMode::Balanced,
+            AdaptiveFamily::Terra,
+            AdaptiveEffort::Low,
+        ),
+        (
+            AdaptiveBudgetMode::Surplus,
+            AdaptiveFamily::Sol,
+            AdaptiveEffort::Low,
+        ),
+    ] {
+        let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+        chat.thread_id = Some(ThreadId::new());
+        chat.dispatch_command_with_args(SlashCommand::Adaptive, "astra".to_string(), Vec::new());
+
+        chat.adaptive_effort.budget_mode = budget_mode;
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+        chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("four-pressure integration".to_string()),
+        };
+
+        let implementation_binding = crate::adaptive_worker::NewWorkerBinding {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: "four-pressure integration".to_string(),
+        };
+        let implementation =
+            chat.fresh_adaptive_effort_for_new_worker(Some(&implementation_binding));
+
+        // Complexity determines the implementation floor. Budget surplus
+        // must not spend premium capacity here.
+        assert_eq!(implementation.current_family, Some(AdaptiveFamily::Terra));
+        assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Medium));
+
+        chat.adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+
+        let validation_binding = chat
+            .automatic_validation_binding()
+            .expect("nontrivial implementation should enter quality review");
+
+        let validation = chat.fresh_adaptive_effort_for_new_worker(Some(&validation_binding));
+
+        // Budget pressure is spent on the independent quality reviewer.
+        assert_eq!(validation.current_family, Some(review_family));
+        assert_eq!(validation.current_effort, Some(review_effort));
+        assert_eq!(
+            validation.complexity_class,
+            Some(AdaptiveComplexityClass::Architectural)
+        );
+        assert_eq!(
+            validation.worker_context.role,
+            AdaptiveWorkerRole::Validation
+        );
+
+        assert_no_submit_op(&mut op_rx);
+    }
+}
+
+#[tokio::test]
+async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
+    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let source_turn_id = "surplus-family-boundary";
+
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_command_with_args(SlashCommand::Adaptive, "astra".to_string(), Vec::new());
+    drain_events(&mut rx);
+
+    chat.adaptive_effort.budget_mode = AdaptiveBudgetMode::Surplus;
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("four-pressure boundary".to_string()),
+    };
+
+    // Put the implementation at the top of Terra. Native failure pressure
+    // may justify more effort, but may not authorize Terra -> Sol.
+    chat.adaptive_effort.current_family = Some(AdaptiveFamily::Terra);
+    chat.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
+    chat.adaptive_effort.attempt_number = 7;
+
+    for evidence_id in ["native-failure-a", "native-failure-b"] {
+        chat.adaptive_effort
+            .evidence_registry
+            .register(AdaptiveEvidenceRecord {
+                evidence_id: evidence_id.to_string(),
+                thread_id,
+                source_turn_id: source_turn_id.to_string(),
+                outcome: AdaptiveEvidenceOutcome::Failure,
+                kind: AdaptiveEvidenceKind::CommandExecution,
+            });
+    }
+
+    assert_eq!(
+        chat.adaptive_effort
+            .evidence_registry
+            .failure_pressure_for_turn(thread_id, source_turn_id),
+        2
+    );
+
+    chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Pending(
+        AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: source_turn_id.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::Capability,
+            evidence_refs: Vec::new(),
+            diagnostic_note: Some(
+                crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC.to_string(),
+            ),
+        },
+    ));
+
+    assert!(chat.consume_adaptive_signal_at_terminal(source_turn_id));
+
+    // Even with Surplus budget, synthetic native-failure pressure cannot
+    // cross a model-family boundary without a fresh trusted capability report.
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Terra)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::High)
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 7);
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
+    assert_no_submit_op(&mut op_rx);
 }
