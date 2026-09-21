@@ -10,6 +10,7 @@ from upstream_sync import (
     next_patch_version,
     pr_marker,
     release_version,
+    reconcile_workspace_lockfile,
     rewrite_version_test,
     select_latest_release,
     stable_release_version,
@@ -121,6 +122,27 @@ class UpstreamSyncTests(unittest.TestCase):
             rewrite_version_test(source, "0.2.0", "0.2.1")
         with self.assertRaises(ValueError):
             rewrite_version_test(source + source, "0.2.1", "0.2.2")
+
+    def test_reconcile_workspace_lockfile_updates_only_local_packages(self):
+        source = """# header
+[[package]]
+name = "codex-cli"
+version = "0.155.0"
+dependencies = []
+
+[[package]]
+name = "external"
+version = "0.155.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abc"
+"""
+        updated, changed = reconcile_workspace_lockfile(source, "0.155.1")
+        self.assertEqual(changed, 1)
+        self.assertIn('name = "codex-cli"\nversion = "0.155.1"', updated)
+        self.assertIn(
+            'name = "external"\nversion = "0.155.0"\nsource = "registry+',
+            updated,
+        )
 
     def test_synthetic_delta_survives_squashed_upstream_history(self):
         with tempfile.TemporaryDirectory() as temp_dir:

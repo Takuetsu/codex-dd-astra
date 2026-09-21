@@ -64,6 +64,31 @@ def rewrite_version_test(source: str, current: str, next_version: str) -> str:
     return source.replace(current_prefix, next_prefix, 1)
 
 
+def reconcile_workspace_lockfile(
+    source: str, workspace_version: str
+) -> tuple[str, int]:
+    if product_version(workspace_version) is None:
+        raise ValueError(f"invalid workspace version: {workspace_version}")
+
+    blocks = source.split("\n[[package]]\n")
+    updated = [blocks[0]]
+    changed = 0
+    for block in blocks[1:]:
+        if 'source = "' not in block:
+            block, count = re.subn(
+                r'(?m)^version = "[^"]+"$',
+                f'version = "{workspace_version}"',
+                block,
+                count=1,
+            )
+            changed += count
+        updated.append(block)
+
+    if changed == 0:
+        raise ValueError("no local workspace packages found in Cargo.lock")
+    return "\n[[package]]\n".join(updated), changed
+
+
 def select_latest_release(tags: Iterable[str]) -> str:
     candidates = [(stable_release_version(tag), tag) for tag in tags]
     valid = [(version, tag) for version, tag in candidates if version is not None]

@@ -204,7 +204,23 @@ jobs:
 
           printf '%s\n' "$next_product_version" > codex-rs/codexdd-version.txt
           printf '%s\n' "$RELEASE_TAG" > codex-rs/upstream-codex-release.txt
-          git add codex-rs/codexdd-version.txt codex-rs/upstream-codex-release.txt codex-rs/cli/tests/version_reporting.rs
+
+          workspace_version="$(python3 -c 'import tomllib; print(tomllib.load(open("codex-rs/Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          python3 - "$workspace_version" <<'PY'
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import reconcile_workspace_lockfile
+
+          version = sys.argv[1]
+          lockfile = Path("codex-rs/Cargo.lock")
+          updated, changed = reconcile_workspace_lockfile(lockfile.read_text(), version)
+          lockfile.write_text(updated)
+          print(f"Reconciled {changed} local workspace packages to {version}")
+          PY
+
+          git add codex-rs/Cargo.lock codex-rs/codexdd-version.txt codex-rs/upstream-codex-release.txt codex-rs/cli/tests/version_reporting.rs
           git commit -m "codexdd: prepare ${next_product_version} for upstream ${RELEASE_TAG}"
 
           integration_tree="$(git rev-parse 'HEAD^{tree}')"
