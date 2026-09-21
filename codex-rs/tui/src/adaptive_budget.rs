@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn classifies_surplus_when_allowance_would_expire_underused() {
         let now = 1_000_000;
-        let weekly = window(45, 7 * 24 * 60, 14 * 7 * 24 * 60);
+        let weekly = window(45, 7 * 24 * 60, (14 * 7 * 24 * 60 * 60) / 100);
         let assessment = assess_budget(None, Some(&weekly), now);
         assert_eq!(assessment.mode, AdaptiveBudgetMode::Surplus);
         assert!(assessment.secondary_surplus_points.is_some_and(|points| points > 20.0));
