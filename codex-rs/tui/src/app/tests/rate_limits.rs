@@ -555,7 +555,6 @@ async fn backend_banner_reads_ignore_older_completions() -> Result<()> {
     Ok(())
 }
 
-
 #[tokio::test]
 async fn account_usage_drives_adaptive_budget_mode_without_sparse_update_override() {
     let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
@@ -592,7 +591,8 @@ async fn account_usage_drives_adaptive_budget_mode_without_sparse_update_overrid
         window_duration_mins: Some(300),
         resets_at: Some(now + 4 * 60 * 60),
     });
-    app.chat_widget.on_rolling_rate_limit_snapshot(sparse_rolling);
+    app.chat_widget
+        .on_rolling_rate_limit_snapshot(sparse_rolling);
     assert_eq!(
         app.chat_widget.adaptive_effort_for_test().budget_mode,
         AdaptiveBudgetMode::Surplus,
