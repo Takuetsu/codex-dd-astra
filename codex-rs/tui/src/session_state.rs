@@ -163,6 +163,7 @@ fn apply_persisted_adaptive_workflow_state(
     let current_effort = restore_effort(state.current_effort)?;
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
+    let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
         && (current_family.is_none() || current_effort.is_none() || state.attempt_number == 0)
@@ -197,6 +198,7 @@ fn apply_persisted_adaptive_workflow_state(
         successor_admission: None,
         pending_signal: None,
         evidence_registry: Default::default(),
+        budget_mode,
     };
     Ok(())
 }
