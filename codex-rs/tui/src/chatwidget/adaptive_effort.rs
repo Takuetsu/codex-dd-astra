@@ -585,7 +585,6 @@ mod tests {
         );
     }
 
-
     #[test]
     fn validation_worker_floor_tracks_budget_without_affecting_implementation() {
         let binding = |role| NewWorkerBinding {
@@ -619,16 +618,14 @@ mod tests {
                 budget_mode,
                 ..Default::default()
             };
-            let validation = previous.fresh_for_new_worker(Some(&binding(
-                AdaptiveWorkerRole::Validation,
-            )));
+            let validation =
+                previous.fresh_for_new_worker(Some(&binding(AdaptiveWorkerRole::Validation)));
             assert_eq!(validation.current_family, Some(family));
             assert_eq!(validation.current_effort, Some(effort));
             assert_eq!(validation.budget_mode, budget_mode);
 
-            let implementation = previous.fresh_for_new_worker(Some(&binding(
-                AdaptiveWorkerRole::Implementation,
-            )));
+            let implementation =
+                previous.fresh_for_new_worker(Some(&binding(AdaptiveWorkerRole::Implementation)));
             assert_eq!(
                 implementation.current_family,
                 Some(AdaptiveFamily::Luna),
