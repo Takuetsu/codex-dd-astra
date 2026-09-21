@@ -1,5 +1,6 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
+use crate::adaptive_budget::quality_review_route;
 use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
@@ -120,11 +121,18 @@ impl AdaptiveEffortState {
                 authorized_scope: Some(binding.authorized_scope.clone()),
             }
         });
+        let initial_route = if worker_context.role == AdaptiveWorkerRole::Validation {
+            quality_review_route(self.budget_mode)
+        } else {
+            crate::adaptive_policy::initial_route(
+                self.starting_family.unwrap_or(AdaptiveFamily::Luna),
+            )
+        };
         Self {
             enabled,
             starting_family: self.starting_family,
-            current_family: enabled.then_some(AdaptiveFamily::Luna),
-            current_effort: enabled.then_some(AdaptiveEffort::Low),
+            current_family: enabled.then_some(initial_route.family),
+            current_effort: enabled.then_some(initial_route.effort),
             attempt_number: enabled.then_some(1).unwrap_or_default(),
             worker_context,
             worker_assignment_locked: binding.is_some(),
