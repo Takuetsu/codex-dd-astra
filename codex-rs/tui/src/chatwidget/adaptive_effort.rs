@@ -1,4 +1,5 @@
 use super::*;
+use crate::adaptive_budget::AdaptiveBudgetMode;
 use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
@@ -86,6 +87,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
     pub(crate) pending_signal: Option<AdaptivePendingSignal>,
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
+    pub(crate) budget_mode: AdaptiveBudgetMode,
 }
 
 impl AdaptiveFamily {
@@ -126,6 +128,7 @@ impl AdaptiveEffortState {
             attempt_number: enabled.then_some(1).unwrap_or_default(),
             worker_context,
             worker_assignment_locked: binding.is_some(),
+            budget_mode: self.budget_mode,
             ..Default::default()
         }
     }
@@ -159,6 +162,7 @@ impl AdaptiveEffortState {
             || worker_context.authorized_scope.is_some();
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
+        let budget_mode = self.budget_mode;
         *self = Self {
             enabled: true,
             starting_family: Some(preferred_family),
@@ -182,6 +186,7 @@ impl AdaptiveEffortState {
             successor_admission: None,
             pending_signal: None,
             evidence_registry,
+            budget_mode,
         };
     }
 
@@ -488,12 +493,13 @@ impl ChatWidget {
         };
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
             family(state.current_family),
             effort,
+            state.budget_mode.label(),
             state.attempt_number,
             failure_pressure,
             ADAPTIVE_FAILURE_PRESSURE_THRESHOLD,
