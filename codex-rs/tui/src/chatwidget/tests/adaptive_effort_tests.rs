@@ -1,4 +1,5 @@
 use super::*;
+use crate::adaptive_budget::AdaptiveBudgetMode;
 use crate::adaptive_evidence::AdaptiveEvidenceKind;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_evidence::AdaptiveEvidenceRecord;
@@ -2038,4 +2039,21 @@ fn adaptive_is_discoverable_and_accepts_inline_args() {
             .any(|(name, command)| name == "adaptive" && command == SlashCommand::Adaptive)
     );
     assert!(SlashCommand::Adaptive.supports_inline_args());
+}
+
+
+#[tokio::test]
+async fn adaptive_status_surfaces_budget_mode() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    chat.adaptive_effort.budget_mode = AdaptiveBudgetMode::Surplus;
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Budget mode: Surplus")
+    );
+
+    chat.adaptive_effort.budget_mode = AdaptiveBudgetMode::Conserve;
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Budget mode: Conserve")
+    );
 }
