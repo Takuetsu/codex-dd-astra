@@ -153,7 +153,11 @@ mod tests {
         let primary = window(70, 300, 180 * 60);
         let assessment = assess_budget(Some(&primary), None, now);
         assert_eq!(assessment.mode, AdaptiveBudgetMode::Conserve);
-        assert!(assessment.primary_surplus_points.is_some_and(|points| points < -10.0));
+        assert!(
+            assessment
+                .primary_surplus_points
+                .is_some_and(|points| points < -10.0)
+        );
     }
 
     #[test]
@@ -171,7 +175,11 @@ mod tests {
         let weekly = window(45, 7 * 24 * 60, (14 * 7 * 24 * 60 * 60) / 100);
         let assessment = assess_budget(None, Some(&weekly), now);
         assert_eq!(assessment.mode, AdaptiveBudgetMode::Surplus);
-        assert!(assessment.secondary_surplus_points.is_some_and(|points| points > 20.0));
+        assert!(
+            assessment
+                .secondary_surplus_points
+                .is_some_and(|points| points > 20.0)
+        );
     }
 
     #[test]
