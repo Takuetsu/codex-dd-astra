@@ -39,9 +39,7 @@ impl AdaptiveComplexityClass {
     }
 }
 
-pub(crate) fn classify_complexity(
-    signals: AdaptiveComplexitySignals,
-) -> AdaptiveComplexityClass {
+pub(crate) fn classify_complexity(signals: AdaptiveComplexitySignals) -> AdaptiveComplexityClass {
     let mut score = 0u8;
 
     score = score.saturating_add(match signals.estimated_files {
