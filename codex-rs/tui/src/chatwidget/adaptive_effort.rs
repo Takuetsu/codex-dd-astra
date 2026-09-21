@@ -1,6 +1,8 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
 use crate::adaptive_budget::quality_review_route;
+use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::implementation_floor;
 use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
@@ -88,6 +90,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
     pub(crate) pending_signal: Option<AdaptivePendingSignal>,
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
+    pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) budget_mode: AdaptiveBudgetMode,
 }
 
@@ -121,12 +124,18 @@ impl AdaptiveEffortState {
                 authorized_scope: Some(binding.authorized_scope.clone()),
             }
         });
-        let initial_route = if worker_context.role == AdaptiveWorkerRole::Validation {
-            quality_review_route(self.budget_mode)
-        } else {
+        let default_initial_route = || {
             crate::adaptive_policy::initial_route(
                 self.starting_family.unwrap_or(AdaptiveFamily::Luna),
             )
+        };
+        let initial_route = match worker_context.role {
+            AdaptiveWorkerRole::Validation => quality_review_route(self.budget_mode),
+            AdaptiveWorkerRole::Implementation => self
+                .complexity_class
+                .map(implementation_floor)
+                .unwrap_or_else(default_initial_route),
+            AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Repair => default_initial_route(),
         };
         Self {
             enabled,
@@ -136,6 +145,7 @@ impl AdaptiveEffortState {
             attempt_number: enabled.then_some(1).unwrap_or_default(),
             worker_context,
             worker_assignment_locked: binding.is_some(),
+            complexity_class: self.complexity_class,
             budget_mode: self.budget_mode,
             ..Default::default()
         }
@@ -170,6 +180,7 @@ impl AdaptiveEffortState {
             || worker_context.authorized_scope.is_some();
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
+        let complexity_class = self.complexity_class;
         let budget_mode = self.budget_mode;
         *self = Self {
             enabled: true,
@@ -194,6 +205,7 @@ impl AdaptiveEffortState {
             successor_admission: None,
             pending_signal: None,
             evidence_registry,
+            complexity_class,
             budget_mode,
         };
     }
@@ -499,15 +511,35 @@ impl ChatWidget {
                 .failure_pressure_for_turn(thread_id, source_turn_id),
             _ => 0,
         };
+        let complexity = state
+            .complexity_class
+            .map(AdaptiveComplexityClass::label)
+            .unwrap_or("None");
+        let complexity_floor = state.complexity_class.map_or_else(
+            || "None".to_string(),
+            |class| {
+                let route = implementation_floor(class);
+                let effort = match route.effort {
+                    AdaptiveEffort::Low => "Low",
+                    AdaptiveEffort::Medium => "Medium",
+                    AdaptiveEffort::High => "High",
+                    AdaptiveEffort::XHigh => "XHigh",
+                    AdaptiveEffort::Max => "Max",
+                };
+                format!("{} {effort}", family(Some(route.family)))
+            },
+        );
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
             family(state.current_family),
             effort,
             state.budget_mode.label(),
+            complexity,
+            complexity_floor,
             state.attempt_number,
             failure_pressure,
             ADAPTIVE_FAILURE_PRESSURE_THRESHOLD,
@@ -632,6 +664,60 @@ mod tests {
                 "budget mode must not silently raise implementation before complexity authorization"
             );
             assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Low));
+        }
+    }
+
+    #[test]
+    fn implementation_worker_uses_bounded_complexity_floor() {
+        let binding = |role| NewWorkerBinding {
+            role,
+            authorized_scope: "implementation gate".to_string(),
+        };
+
+        for (complexity_class, family, effort) in [
+            (
+                AdaptiveComplexityClass::Routine,
+                AdaptiveFamily::Luna,
+                AdaptiveEffort::Low,
+            ),
+            (
+                AdaptiveComplexityClass::Standard,
+                AdaptiveFamily::Luna,
+                AdaptiveEffort::High,
+            ),
+            (
+                AdaptiveComplexityClass::Complex,
+                AdaptiveFamily::Terra,
+                AdaptiveEffort::Low,
+            ),
+            (
+                AdaptiveComplexityClass::Architectural,
+                AdaptiveFamily::Terra,
+                AdaptiveEffort::Medium,
+            ),
+        ] {
+            let previous = AdaptiveEffortState {
+                enabled: true,
+                starting_family: Some(AdaptiveFamily::Astra),
+                current_family: Some(AdaptiveFamily::Luna),
+                current_effort: Some(AdaptiveEffort::Low),
+                attempt_number: 1,
+                complexity_class: Some(complexity_class),
+                ..Default::default()
+            };
+            let implementation =
+                previous.fresh_for_new_worker(Some(&binding(AdaptiveWorkerRole::Implementation)));
+            assert_eq!(implementation.current_family, Some(family));
+            assert_eq!(implementation.current_effort, Some(effort));
+            assert_eq!(
+                implementation.complexity_class,
+                Some(complexity_class),
+                "complexity authorization should survive the Worker handoff"
+            );
+
+            let repair = previous.fresh_for_new_worker(Some(&binding(AdaptiveWorkerRole::Repair)));
+            assert_eq!(repair.current_family, Some(AdaptiveFamily::Luna));
+            assert_eq!(repair.current_effort, Some(AdaptiveEffort::Low));
         }
     }
 

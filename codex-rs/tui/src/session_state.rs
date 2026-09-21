@@ -163,6 +163,7 @@ fn apply_persisted_adaptive_workflow_state(
     let current_effort = restore_effort(state.current_effort)?;
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
+    let complexity_class = adaptive_effort.complexity_class;
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -198,6 +199,7 @@ fn apply_persisted_adaptive_workflow_state(
         successor_admission: None,
         pending_signal: None,
         evidence_registry: Default::default(),
+        complexity_class,
         budget_mode,
     };
     Ok(())

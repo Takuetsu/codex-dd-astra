@@ -1,5 +1,6 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
+use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_evidence::AdaptiveEvidenceKind;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_evidence::AdaptiveEvidenceRecord;
@@ -459,7 +460,8 @@ fn next_non_adaptive_state_event(
 ) -> Result<AppEvent, tokio::sync::mpsc::error::TryRecvError> {
     loop {
         match rx.try_recv() {
-            Ok(AppEvent::UpdateAdaptiveEffortState(_)) => {}
+            Ok(AppEvent::UpdateAdaptiveEffortState(_))
+            | Ok(AppEvent::PersistWorkflowState { .. }) => {}
             event => return event,
         }
     }
@@ -498,7 +500,8 @@ fn pending_signal(
         source_turn_id: source_turn_id.to_string(),
         signal_kind,
         evidence_refs,
-        diagnostic_note: None,
+        diagnostic_note: (signal_kind == AdaptiveRuntimeSignalKind::Capability)
+            .then(|| "Test capability report: stronger model capability is required.".to_string()),
     })
 }
 
@@ -1849,6 +1852,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         rx.try_recv(),
         Ok(AppEvent::UpdateAdaptiveEffortState(state)) if state == expected
     );
+    assert_matches!(rx.try_recv(), Ok(AppEvent::PersistWorkflowState { .. }));
     assert!(rx.try_recv().is_err());
     assert_no_submit_op(&mut op_rx);
 
@@ -2055,4 +2059,9 @@ async fn adaptive_status_surfaces_budget_mode() {
         chat.adaptive_effort_status_text()
             .contains("Budget mode: Conserve")
     );
+
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+    let status = chat.adaptive_effort_status_text();
+    assert!(status.contains("Complexity: Architectural"));
+    assert!(status.contains("Implementation floor: Terra Medium"));
 }

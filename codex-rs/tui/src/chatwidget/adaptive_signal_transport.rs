@@ -73,7 +73,8 @@ impl ChatWidget {
                 if existing.source_turn_id == notification.signal.source_turn_id
                     && existing.signal_kind == notification.signal.signal_kind
                     && existing.evidence_refs == notification.signal.evidence_refs
-                    && existing.diagnostic_note == notification.signal.diagnostic_note => {}
+                    && (existing.signal_kind != AdaptiveRuntimeSignalKind::Capability
+                        || existing.diagnostic_note == notification.signal.diagnostic_note) => {}
             Some(AdaptivePendingSignal::Pending(existing))
                 if existing.source_turn_id == source_turn_id =>
             {
