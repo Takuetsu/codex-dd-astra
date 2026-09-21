@@ -64,7 +64,9 @@ def rewrite_version_test(source: str, current: str, next_version: str) -> str:
     return source.replace(current_prefix, next_prefix, 1)
 
 
-def reconcile_workspace_lockfile(\n    source: str, workspace_version: str\n) -> tuple[str, int]:
+def reconcile_workspace_lockfile(
+    source: str, workspace_version: str
+) -> tuple[str, int]:
     if product_version(workspace_version) is None:
         raise ValueError(f"invalid workspace version: {workspace_version}")
 
