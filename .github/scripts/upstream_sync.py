@@ -64,6 +64,84 @@ def rewrite_version_test(source: str, current: str, next_version: str) -> str:
     return source.replace(current_prefix, next_prefix, 1)
 
 
+def reconcile_workspace_lockfile(source: str, workspace_version: str) -> tuple[str, int]:
+    if product_version(workspace_version) is None:
+        raise ValueError(f"invalid workspace version: {workspace_version}")
+
+    blocks = source.split("\n[[package]]\n")
+    updated = [blocks[0]]
+    changed = 0
+    for block in blocks[1:]:
+        if 'source = "' not in block:
+            block, count = re.subn(
+                r'(?m)^version = "[^"]+"def select_latest_release(tags: Iterable[str]) -> str:
+    candidates = [(stable_release_version(tag), tag) for tag in tags]
+    valid = [(version, tag) for version, tag in candidates if version is not None]
+    if not valid:
+        raise ValueError("no stable official rust-vX.Y.Z release tags found")
+    return max(valid)[1]
+
+
+def integration_branch(tag: str) -> str:
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
+    return f"automation/upstream-sync-{tag}"
+
+
+def pr_marker(tag: str) -> str:
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
+    return f"codexdd-upstream-sync: {tag}"
+
+
+def conflict_issue_title(tag: str) -> str:
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
+    return f"codexdd: resolve upstream {tag} conflicts"
+
+
+def conflict_marker(tag: str) -> str:
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
+    return f"codexdd-upstream-conflict: {tag}"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--latest-from-stdin", action="store_true")
+    group.add_argument("--next-patch")
+    args = parser.parse_args()
+    try:
+        if args.latest_from_stdin:
+            print(
+                select_latest_release(
+                    line.strip() for line in sys.stdin if line.strip()
+                )
+            )
+        else:
+            print(next_patch_version(args.next_patch))
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+,
+                f'version = "{workspace_version}"',
+                block,
+                count=1,
+            )
+            changed += count
+        updated.append(block)
+
+    if changed == 0:
+        raise ValueError("no local workspace packages found in Cargo.lock")
+    return "\n[[package]]\n".join(updated), changed
+
+
 def select_latest_release(tags: Iterable[str]) -> str:
     candidates = [(stable_release_version(tag), tag) for tag in tags]
     valid = [(version, tag) for version, tag in candidates if version is not None]
