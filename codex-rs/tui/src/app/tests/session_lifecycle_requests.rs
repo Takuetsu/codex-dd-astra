@@ -4506,75 +4506,93 @@ async fn deferred_bare_new_session_attaches_fresh_unassigned_worker() -> Result<
     Ok(())
 }
 
-#[tokio::test]
-async fn deferred_new_session_resets_dirty_adaptive_state_for_validation() -> Result<()> {
-    let (mut app, _home) = make_history_test_app().await?;
-    let (mut server, _requests, proxy) = start_recording_app_server(
-        &app.config,
-        /*blocked_thread_list*/ None,
-        /*failed_thread_name*/ None,
-    )
-    .await?;
-    let source = ThreadId::new();
-    app.enqueue_primary_thread_session(
-        test_thread_session(source, app.config.cwd.to_path_buf()),
-        Vec::new(),
-    )
-    .await?;
-    {
-        let state = app.chat_widget.adaptive_effort_for_test_mut();
-        state.enabled = true;
-        state.starting_family = Some(AdaptiveFamily::Astra);
-        state.current_family = Some(AdaptiveFamily::Astra);
-        state.current_effort = Some(AdaptiveEffort::High);
-        state.attempt_number = 4;
-        state.last_outcome = Some(AdaptiveOutcome::Unknown);
-        state.last_failure_kind = Some(AdaptiveFailureKind::Capability);
-        state.unfinished_turn_pressure = 2;
-    }
-    let source_before = app.chat_widget.adaptive_effort_for_test().clone();
-    let mut tui = crate::tui::test_support::make_test_tui()?;
-    app.handle_event(
-        &mut tui,
-        &mut server,
-        AppEvent::NewSession {
-            name: None,
-            worker_binding: Some(crate::adaptive_worker::NewWorkerBinding {
-                role: AdaptiveWorkerRole::Validation,
-                authorized_scope: "exact regression scope".to_string(),
-            }),
-        },
-    )
-    .await?;
-    assert_eq!(app.chat_widget.adaptive_effort_for_test(), &source_before);
-    assert!(app.process_pending_new_session(&mut tui, &mut server).await);
-    let state = app.chat_widget.adaptive_effort_for_test();
-    assert_eq!(state.starting_family, Some(AdaptiveFamily::Astra));
-    assert_eq!(state.current_family, Some(AdaptiveFamily::Luna));
-    assert_eq!(state.current_effort, Some(AdaptiveEffort::Low));
-    assert_eq!(state.attempt_number, 1);
-    assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
-    assert_eq!(
-        state.worker_context.authorized_scope.as_deref(),
-        Some("exact regression scope")
-    );
-    assert!(state.worker_assignment_locked);
-    assert_eq!(state.unfinished_turn_pressure, 0);
-    assert!(state.last_outcome.is_none());
-    assert!(state.last_failure_kind.is_none());
-    assert!(state.workflow_terminal.is_none());
-    assert!(state.pending_attempt.is_none());
-    assert!(state.successor_admission.is_none());
-    assert!(state.pending_signal.is_none());
-    assert_eq!(
-        state.evidence_registry,
-        crate::adaptive_evidence::AdaptiveEvidenceRegistry::default()
-    );
-    server.shutdown().await?;
-    proxy.await??;
-    Ok(())
-}
+#[test]
+fn deferred_new_session_resets_dirty_adaptive_state_for_validation() -> Result<()> {
+    const TEST_STACK_SIZE_BYTES: usize = 16 * 1024 * 1024;
 
+    std::thread::Builder::new()
+        .name("tui-adaptive-validation-new-session".to_string())
+        .stack_size(TEST_STACK_SIZE_BYTES)
+        .spawn(|| {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async {
+                let (mut app, _home) = make_history_test_app().await?;
+                let (mut server, _requests, proxy) = start_recording_app_server(
+                    &app.config,
+                    /*blocked_thread_list*/ None,
+                    /*failed_thread_name*/ None,
+                )
+                .await?;
+                let source = ThreadId::new();
+                app.enqueue_primary_thread_session(
+                    test_thread_session(source, app.config.cwd.to_path_buf()),
+                    Vec::new(),
+                )
+                .await?;
+                {
+                    let state = app.chat_widget.adaptive_effort_for_test_mut();
+                    state.enabled = true;
+                    state.starting_family = Some(AdaptiveFamily::Astra);
+                    state.current_family = Some(AdaptiveFamily::Astra);
+                    state.current_effort = Some(AdaptiveEffort::High);
+                    state.attempt_number = 4;
+                    state.last_outcome = Some(AdaptiveOutcome::Unknown);
+                    state.last_failure_kind = Some(AdaptiveFailureKind::Capability);
+                    state.unfinished_turn_pressure = 2;
+                }
+                let source_before = app.chat_widget.adaptive_effort_for_test().clone();
+                let mut tui = crate::tui::test_support::make_test_tui()?;
+                app.handle_event(
+                    &mut tui,
+                    &mut server,
+                    AppEvent::NewSession {
+                        name: None,
+                        worker_binding: Some(crate::adaptive_worker::NewWorkerBinding {
+                            role: AdaptiveWorkerRole::Validation,
+                            authorized_scope: "exact regression scope".to_string(),
+                        }),
+                    },
+                )
+                .await?;
+                assert_eq!(app.chat_widget.adaptive_effort_for_test(), &source_before);
+                assert!(app.process_pending_new_session(&mut tui, &mut server).await);
+                let state = app.chat_widget.adaptive_effort_for_test();
+                assert_eq!(state.starting_family, Some(AdaptiveFamily::Astra));
+                assert_eq!(state.current_family, Some(AdaptiveFamily::Terra));
+                assert_eq!(state.current_effort, Some(AdaptiveEffort::Low));
+                assert_eq!(app.chat_widget.current_model(), "gpt-5.6-terra");
+                assert_eq!(
+                    app.chat_widget.current_reasoning_effort(),
+                    Some(ReasoningEffortConfig::Low)
+                );
+                assert_eq!(state.attempt_number, 1);
+                assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+                assert_eq!(
+                    state.worker_context.authorized_scope.as_deref(),
+                    Some("exact regression scope")
+                );
+                assert!(state.worker_assignment_locked);
+                assert_eq!(state.unfinished_turn_pressure, 0);
+                assert!(state.last_outcome.is_none());
+                assert!(state.last_failure_kind.is_none());
+                assert!(state.workflow_terminal.is_none());
+                assert!(state.pending_attempt.is_none());
+                assert!(state.successor_admission.is_none());
+                assert!(state.pending_signal.is_none());
+                assert_eq!(
+                    state.evidence_registry,
+                    crate::adaptive_evidence::AdaptiveEvidenceRegistry::default()
+                );
+                server.shutdown().await?;
+                proxy.await??;
+                Ok(())
+            })
+        })?
+        .join()
+        .expect("adaptive validation new-session test thread")
+}
 #[path = "new_session_tests.rs"]
 mod new_session_tests;
 #[path = "startup_defaults_tests.rs"]

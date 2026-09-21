@@ -139,10 +139,18 @@ impl ChatWidget {
             // Implementation/Repair Worker. Validation must run in a fresh,
             // independently bound Worker thread; never mutate this Worker's
             // authority or admit another same-thread adaptive successor.
-            AdaptiveRuntimeSignalKind::ReadyForValidation => self.latch_workflow_terminal(
-                source_turn_id,
-                AdaptiveWorkflowTerminal::ReadyForValidation,
-            ),
+            AdaptiveRuntimeSignalKind::ReadyForValidation => {
+                self.latch_workflow_terminal(
+                    source_turn_id,
+                    AdaptiveWorkflowTerminal::ReadyForValidation,
+                );
+                if let Some(worker_binding) = self.automatic_validation_binding() {
+                    self.app_event_tx.send(AppEvent::NewSession {
+                        name: None,
+                        worker_binding: Some(worker_binding),
+                    });
+                }
+            }
             AdaptiveRuntimeSignalKind::RepairRequired => self
                 .latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::RepairRequired),
             AdaptiveRuntimeSignalKind::ReadyForOwnerQa => self

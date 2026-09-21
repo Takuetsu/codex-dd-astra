@@ -265,6 +265,60 @@ impl ChatWidget {
         &mut self.adaptive_effort
     }
 
+    pub(crate) fn automatic_validation_binding(&self) -> Option<NewWorkerBinding> {
+        let state = &self.adaptive_effort;
+        if state.workflow_terminal != Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+            || !matches!(
+                state.worker_context.role,
+                AdaptiveWorkerRole::Implementation | AdaptiveWorkerRole::Repair
+            )
+            || !matches!(
+                state.complexity_class,
+                Some(
+                    AdaptiveComplexityClass::Standard
+                        | AdaptiveComplexityClass::Complex
+                        | AdaptiveComplexityClass::Architectural
+                )
+            )
+        {
+            return None;
+        }
+        let authorized_scope = state
+            .worker_context
+            .authorized_scope
+            .as_deref()
+            .map(str::trim)
+            .filter(|scope| !scope.is_empty())?
+            .to_string();
+        Some(NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope,
+        })
+    }
+
+    pub(crate) fn automatic_validation_prompt_for_new_worker(
+        &self,
+        binding: &NewWorkerBinding,
+    ) -> Option<UserMessage> {
+        let expected = self.automatic_validation_binding()?;
+        if &expected != binding {
+            return None;
+        }
+        let complexity = self
+            .adaptive_effort
+            .complexity_class
+            .expect("automatic validation requires a complexity class")
+            .label();
+        Some(
+            format!(
+                "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. If the change is green, report ready_for_owner_qa with successful native evidence refs. If a blocker is found, report repair_required with failing native evidence refs.",
+                binding.authorized_scope,
+                complexity,
+            )
+            .into(),
+        )
+    }
+
     pub(crate) fn fresh_adaptive_effort_for_new_worker(
         &self,
         binding: Option<&NewWorkerBinding>,

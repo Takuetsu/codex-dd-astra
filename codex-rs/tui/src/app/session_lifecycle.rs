@@ -970,6 +970,13 @@ impl App {
         new_thread_name: Option<String>,
         worker_binding: Option<crate::adaptive_worker::NewWorkerBinding>,
     ) {
+        let initial_user_message = initial_user_message.or_else(|| {
+            worker_binding.as_ref().and_then(|binding| {
+                self.chat_widget
+                    .automatic_validation_prompt_for_new_worker(binding)
+            })
+        });
+        let bound_worker = worker_binding.is_some();
         let fresh_adaptive_effort = self
             .chat_widget
             .fresh_adaptive_effort_for_new_worker(worker_binding.as_ref());
@@ -994,6 +1001,21 @@ impl App {
             &self.cli_kv_overrides,
             &self.harness_overrides,
         );
+        if bound_worker
+            && let (Some(family), Some(effort)) = (
+                fresh_adaptive_effort.current_family,
+                fresh_adaptive_effort.current_effort,
+            )
+        {
+            config.model = Some(family.model().to_string());
+            config.model_reasoning_effort = Some(match effort {
+                crate::adaptive_policy::AdaptiveEffort::Low => ReasoningEffortConfig::Low,
+                crate::adaptive_policy::AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,
+                crate::adaptive_policy::AdaptiveEffort::High => ReasoningEffortConfig::High,
+                crate::adaptive_policy::AdaptiveEffort::XHigh => ReasoningEffortConfig::XHigh,
+                crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,
+            });
+        }
         if let Some(binding) = worker_binding {
             config.adaptive_worker = Some(codex_config::config_toml::AdaptiveWorkerConfigToml {
                 role: match binding.role {

@@ -2130,3 +2130,53 @@ async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
     assert_eq!(model, AdaptiveFamily::Terra.model());
     assert_eq!(effort, Some(ReasoningEffort::Medium));
 }
+
+#[tokio::test]
+async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
+    for (complexity_class, expect_validation) in [
+        (AdaptiveComplexityClass::Routine, false),
+        (AdaptiveComplexityClass::Standard, true),
+    ] {
+        let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
+        chat.thread_id = Some(ThreadId::new());
+        chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
+        drain_events(&mut rx);
+        chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("automatic quality gate".to_string()),
+        };
+        chat.adaptive_effort.complexity_class = Some(complexity_class);
+        chat.adaptive_effort.pending_signal = Some(pending_signal(
+            "quality-handoff-turn",
+            AdaptiveRuntimeSignalKind::ReadyForValidation,
+            Vec::new(),
+        ));
+
+        assert!(chat.consume_adaptive_signal_at_terminal("quality-handoff-turn"));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        );
+        let events = drain_events(&mut rx);
+        let binding = events.into_iter().find_map(|event| match event {
+            AppEvent::NewSession {
+                name: None,
+                worker_binding: Some(binding),
+            } => Some(binding),
+            _ => None,
+        });
+
+        assert_eq!(binding.is_some(), expect_validation);
+        if let Some(binding) = binding {
+            assert_eq!(binding.role, AdaptiveWorkerRole::Validation);
+            assert_eq!(binding.authorized_scope, "automatic quality gate");
+            let prompt = chat
+                .automatic_validation_prompt_for_new_worker(&binding)
+                .expect("nontrivial handoff should produce a validation prompt");
+            assert!(prompt.text.contains("Independently validate"));
+            assert!(prompt.text.contains("automatic quality gate"));
+            assert!(prompt.text.contains("do not modify the implementation"));
+        }
+        assert_no_submit_op(&mut op_rx);
+    }
+}
