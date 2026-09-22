@@ -1,4 +1,4 @@
-//! Deterministic task-complexity floors for codexdd 0.3.0.
+//! Deterministic task-complexity floors for codexdd 0.3.2.
 //!
 //! Complexity can authorize a stronger *starting floor* before implementation begins. It does not
 //! authorize arbitrary ladder jumps during an active Worker attempt and therefore remains separate
@@ -75,11 +75,11 @@ pub(crate) fn implementation_floor(class: AdaptiveComplexityClass) -> AdaptiveRo
             effort: AdaptiveEffort::High,
         },
         AdaptiveComplexityClass::Complex => AdaptiveRoute {
-            family: AdaptiveFamily::Terra,
+            family: AdaptiveFamily::Sol,
             effort: AdaptiveEffort::Low,
         },
         AdaptiveComplexityClass::Architectural => AdaptiveRoute {
-            family: AdaptiveFamily::Terra,
+            family: AdaptiveFamily::Sol,
             effort: AdaptiveEffort::Medium,
         },
     }
@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn stateful_cross_module_work_can_start_on_terra() {
+    fn stateful_cross_module_work_can_start_on_sol() {
         let signals = AdaptiveComplexitySignals {
             estimated_files: 7,
             cross_module: true,
@@ -144,14 +144,14 @@ mod tests {
         assert_eq!(
             implementation_floor(classify_complexity(signals)),
             AdaptiveRoute {
-                family: AdaptiveFamily::Terra,
+                family: AdaptiveFamily::Sol,
                 effort: AdaptiveEffort::Low,
             }
         );
     }
 
     #[test]
-    fn architectural_risk_caps_initial_floor_at_terra_medium() {
+    fn architectural_risk_caps_initial_floor_at_sol_medium() {
         let signals = AdaptiveComplexitySignals {
             estimated_files: 12,
             cross_module: true,
@@ -169,14 +169,14 @@ mod tests {
         assert_eq!(
             implementation_floor(classify_complexity(signals)),
             AdaptiveRoute {
-                family: AdaptiveFamily::Terra,
+                family: AdaptiveFamily::Sol,
                 effort: AdaptiveEffort::Medium,
             }
         );
     }
 
     #[test]
-    fn complexity_floor_never_starts_directly_on_sol_or_astra() {
+    fn complexity_floor_never_starts_directly_on_astra() {
         for class in [
             AdaptiveComplexityClass::Routine,
             AdaptiveComplexityClass::Standard,
@@ -185,7 +185,7 @@ mod tests {
         ] {
             assert!(matches!(
                 implementation_floor(class).family,
-                AdaptiveFamily::Luna | AdaptiveFamily::Terra
+                AdaptiveFamily::Luna | AdaptiveFamily::Sol
             ));
         }
     }
