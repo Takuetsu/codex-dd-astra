@@ -228,7 +228,6 @@ impl AdaptiveEffortState {
     ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
         let family_name = |family: AdaptiveFamily| match family {
             AdaptiveFamily::Luna => "luna",
-            AdaptiveFamily::Sol => "terra",
             AdaptiveFamily::Sol => "sol",
             AdaptiveFamily::Astra => "astra",
         };
@@ -501,7 +500,6 @@ impl ChatWidget {
         let state = &self.adaptive_effort;
         let family = |value| match value {
             Some(AdaptiveFamily::Luna) => "Luna",
-            Some(AdaptiveFamily::Sol) => "Terra",
             Some(AdaptiveFamily::Sol) => "Sol",
             Some(AdaptiveFamily::Astra) => "Astra",
             None => "-",
