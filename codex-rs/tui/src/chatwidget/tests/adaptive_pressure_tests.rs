@@ -674,7 +674,7 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
     );
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Terra)
+        Some(AdaptiveFamily::Sol)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
@@ -685,7 +685,7 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
         chat.adaptive_effort.pending_attempt,
         Some(ref pending)
             if pending.decision == AdaptivePendingDecision::EscalateModel
-                && pending.route.family == AdaptiveFamily::Terra
+                && pending.route.family == AdaptiveFamily::Sol
                 && pending.route.effort == AdaptiveEffort::Medium
                 && pending.attempt_number == 2
     );
