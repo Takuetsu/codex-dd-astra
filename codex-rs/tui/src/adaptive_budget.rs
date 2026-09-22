@@ -1,4 +1,4 @@
-//! Budget-aware routing helpers for codexdd 0.3.0.
+//! Budget-aware routing helpers for codexdd 0.3.2.
 //!
 //! This module is deliberately deterministic. It consumes backend-provided rate-limit windows and
 //! computes whether codexdd should conserve, stay balanced, or spend surplus allowance on quality.
@@ -124,12 +124,12 @@ pub(crate) fn quality_review_route(mode: AdaptiveBudgetMode) -> AdaptiveRoute {
             effort: AdaptiveEffort::High,
         },
         AdaptiveBudgetMode::Balanced => AdaptiveRoute {
-            family: AdaptiveFamily::Terra,
+            family: AdaptiveFamily::Sol,
             effort: AdaptiveEffort::Low,
         },
         AdaptiveBudgetMode::Surplus => AdaptiveRoute {
             family: AdaptiveFamily::Sol,
-            effort: AdaptiveEffort::Low,
+            effort: AdaptiveEffort::High,
         },
     }
 }
@@ -222,7 +222,7 @@ mod tests {
         assert_eq!(
             quality_review_route(AdaptiveBudgetMode::Balanced),
             AdaptiveRoute {
-                family: AdaptiveFamily::Terra,
+                family: AdaptiveFamily::Sol,
                 effort: AdaptiveEffort::Low,
             }
         );
@@ -230,7 +230,7 @@ mod tests {
             quality_review_route(AdaptiveBudgetMode::Surplus),
             AdaptiveRoute {
                 family: AdaptiveFamily::Sol,
-                effort: AdaptiveEffort::Low,
+                effort: AdaptiveEffort::High,
             }
         );
     }

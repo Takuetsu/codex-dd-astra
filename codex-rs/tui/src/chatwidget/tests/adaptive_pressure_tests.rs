@@ -634,7 +634,7 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
     chat.dispatch_adaptive_command("astra");
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
     chat.adaptive_effort.worker_context.authorized_scope =
-        Some("codexdd/0.3.1-late-complexity".to_string());
+        Some("codexdd/0.3.2-late-complexity".to_string());
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
@@ -674,7 +674,7 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
     );
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Terra)
+        Some(AdaptiveFamily::Sol)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
@@ -685,7 +685,7 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
         chat.adaptive_effort.pending_attempt,
         Some(ref pending)
             if pending.decision == AdaptivePendingDecision::EscalateModel
-                && pending.route.family == AdaptiveFamily::Terra
+                && pending.route.family == AdaptiveFamily::Sol
                 && pending.route.effort == AdaptiveEffort::Medium
                 && pending.attempt_number == 2
     );

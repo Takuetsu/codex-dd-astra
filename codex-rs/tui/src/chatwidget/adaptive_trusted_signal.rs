@@ -396,7 +396,7 @@ mod tests {
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
         assert_eq!(
             chat.adaptive_effort.current_family,
-            Some(AdaptiveFamily::Terra)
+            Some(AdaptiveFamily::Sol)
         );
         assert_eq!(
             chat.adaptive_effort.current_effort,
@@ -561,7 +561,7 @@ mod tests {
         assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
         assert_eq!(
             chat.adaptive_effort.current_family,
-            Some(AdaptiveFamily::Terra)
+            Some(AdaptiveFamily::Sol)
         );
         assert_eq!(
             chat.adaptive_effort.current_effort,
