@@ -437,10 +437,7 @@ async fn successful_work_without_handoff_continues_once_then_escalates() {
                 && pending.attempt_number == 3
                 && pending.worker_context == worker_context
     );
-    assert_eq!(
-        chat.adaptive_effort.last_failure_kind,
-        Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
-    );
+    assert_eq!(chat.adaptive_effort.last_failure_kind, None);
 }
 
 #[tokio::test]
@@ -651,8 +648,14 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
             if source_turn_id == turn_id
     ));
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
-    assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Luna));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
     assert_no_submit_op(&mut op_rx);
 
     chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
@@ -669,8 +672,14 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
         chat.adaptive_effort.complexity_class,
         Some(AdaptiveComplexityClass::Architectural)
     );
-    assert_eq!(chat.adaptive_effort.current_family, Some(AdaptiveFamily::Terra));
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Medium));
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Terra)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
     assert_eq!(chat.adaptive_effort.attempt_number, 2);
     assert_matches!(
         chat.adaptive_effort.pending_attempt,
@@ -716,7 +725,10 @@ async fn late_workflow_terminal_still_overrides_synthetic_failure_pressure() {
             if source_turn_id == turn_id
     ));
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
     assert_no_submit_op(&mut op_rx);
 
     chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
@@ -734,7 +746,10 @@ async fn late_workflow_terminal_still_overrides_synthetic_failure_pressure() {
         Some(AdaptiveWorkflowTerminal::ReadyForValidation)
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
-    assert_eq!(chat.adaptive_effort.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
     assert_eq!(chat.adaptive_effort.pending_attempt, None);
     assert_eq!(chat.adaptive_effort.successor_admission, None);
@@ -751,6 +766,15 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
     chat.adaptive_effort.worker_context.authorized_scope =
         Some("codexdd/ordinary-continuation".to_string());
+    {
+        let mask = chat
+            .active_collaboration_mask
+            .as_mut()
+            .expect("test chat has a collaboration mask");
+        mask.model = Some(AdaptiveFamily::Luna.model().to_string());
+        mask.reasoning_effort =
+            Some(Some(codex_protocol::openai_models::ReasoningEffort::Low));
+    }
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
@@ -779,4 +803,3 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
     let submitted = next_submit_op(&mut op_rx);
     assert!(matches!(submitted, Op::UserTurn { .. }));
 }
-

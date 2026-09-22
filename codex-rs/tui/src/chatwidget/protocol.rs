@@ -420,11 +420,9 @@ impl ChatWidget {
                     && signal.diagnostic_note.as_deref()
                         == Some(crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC)
             }
-            Some(
-                crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {
-                    source_turn_id,
-                },
-            ) => source_turn_id == &turn.id,
+            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {
+                source_turn_id,
+            }) => source_turn_id == &turn.id,
             Some(_) => false,
         };
         if !can_wait {
