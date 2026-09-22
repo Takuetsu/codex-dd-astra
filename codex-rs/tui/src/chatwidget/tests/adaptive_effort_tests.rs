@@ -1463,6 +1463,14 @@ async fn enable_family(
     (chat, rx)
 }
 
+#[test]
+fn adaptive_family_model_ids_use_gpt6_and_terra_is_legacy_sol_alias() {
+    assert_eq!(AdaptiveFamily::Luna.model(), "gpt-6-luna");
+    assert_eq!(AdaptiveFamily::Sol.model(), "gpt-6-sol");
+    assert_eq!(AdaptiveFamily::Astra.model(), "gpt-6-astra");
+    assert_eq!(AdaptiveFamily::parse("terra"), Some(AdaptiveFamily::Sol));
+}
+
 #[tokio::test]
 async fn adaptive_families_initialize_state_and_sync_model_and_effort() {
     for (family, preference) in [
