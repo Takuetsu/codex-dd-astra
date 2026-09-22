@@ -415,7 +415,7 @@ impl ChatWidget {
                     self.activate_adaptive_family(preferred_family, true);
                 }
                 None => self.add_error_message(
-                    "Usage: /adaptive [luna|terra|sol|astra|status|pause|resume|off|reset]"
+                    "Usage: /adaptive [luna|sol|astra|status|pause|resume|off|reset]"
                         .to_string(),
                 ),
             },
