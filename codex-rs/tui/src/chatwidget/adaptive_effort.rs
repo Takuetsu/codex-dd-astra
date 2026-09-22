@@ -111,8 +111,9 @@ impl AdaptiveFamily {
     pub(crate) fn parse(value: &str) -> Option<Self> {
         match value {
             "luna" => Some(Self::Luna),
-            "terra" => Some(Self::Terra),
-            "sol" => Some(Self::Sol),
+            // 0.3.2 removes Terra from the active GPT-6 family ladder. Accept the old spelling
+            // as a compatibility alias so persisted/operator input upgrades cleanly to Sol.
+            "terra" | "sol" => Some(Self::Sol),
             "astra" => Some(Self::Astra),
             _ => None,
         }
@@ -120,9 +121,8 @@ impl AdaptiveFamily {
 
     pub(crate) fn model(self) -> &'static str {
         match self {
-            Self::Luna => "gpt-5.6-luna",
-            Self::Terra => "gpt-5.6-terra",
-            Self::Sol => "gpt-5.6-sol",
+            Self::Luna => "gpt-6-luna",
+            Self::Sol => "gpt-6-sol",
             Self::Astra => "gpt-6-astra",
         }
     }
@@ -228,7 +228,7 @@ impl AdaptiveEffortState {
     ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
         let family_name = |family: AdaptiveFamily| match family {
             AdaptiveFamily::Luna => "luna",
-            AdaptiveFamily::Terra => "terra",
+            AdaptiveFamily::Sol => "terra",
             AdaptiveFamily::Sol => "sol",
             AdaptiveFamily::Astra => "astra",
         };
@@ -501,7 +501,7 @@ impl ChatWidget {
         let state = &self.adaptive_effort;
         let family = |value| match value {
             Some(AdaptiveFamily::Luna) => "Luna",
-            Some(AdaptiveFamily::Terra) => "Terra",
+            Some(AdaptiveFamily::Sol) => "Terra",
             Some(AdaptiveFamily::Sol) => "Sol",
             Some(AdaptiveFamily::Astra) => "Astra",
             None => "-",
@@ -671,7 +671,7 @@ mod tests {
             AdaptiveEffortState {
                 enabled: true,
                 starting_family: Some(AdaptiveFamily::Astra),
-                current_family: Some(AdaptiveFamily::Terra),
+                current_family: Some(AdaptiveFamily::Sol),
                 current_effort: Some(AdaptiveEffort::Low),
                 attempt_number: 1,
                 worker_context: AdaptiveWorkerContext {
@@ -699,13 +699,13 @@ mod tests {
             ),
             (
                 AdaptiveBudgetMode::Balanced,
-                AdaptiveFamily::Terra,
+                AdaptiveFamily::Sol,
                 AdaptiveEffort::Low,
             ),
             (
                 AdaptiveBudgetMode::Surplus,
                 AdaptiveFamily::Sol,
-                AdaptiveEffort::Low,
+                AdaptiveEffort::High,
             ),
         ] {
             let previous = AdaptiveEffortState {
@@ -754,12 +754,12 @@ mod tests {
             ),
             (
                 AdaptiveComplexityClass::Complex,
-                AdaptiveFamily::Terra,
+                AdaptiveFamily::Sol,
                 AdaptiveEffort::Low,
             ),
             (
                 AdaptiveComplexityClass::Architectural,
-                AdaptiveFamily::Terra,
+                AdaptiveFamily::Sol,
                 AdaptiveEffort::Medium,
             ),
         ] {
