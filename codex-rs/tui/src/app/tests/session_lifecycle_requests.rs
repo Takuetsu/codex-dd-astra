@@ -4560,9 +4560,9 @@ fn deferred_new_session_resets_dirty_adaptive_state_for_validation() -> Result<(
                 assert!(app.process_pending_new_session(&mut tui, &mut server).await);
                 let state = app.chat_widget.adaptive_effort_for_test();
                 assert_eq!(state.starting_family, Some(AdaptiveFamily::Astra));
-                assert_eq!(state.current_family, Some(AdaptiveFamily::Terra));
+                assert_eq!(state.current_family, Some(AdaptiveFamily::Sol));
                 assert_eq!(state.current_effort, Some(AdaptiveEffort::Low));
-                assert_eq!(app.chat_widget.current_model(), "gpt-5.6-terra");
+                assert_eq!(app.chat_widget.current_model(), "gpt-6-sol");
                 assert_eq!(
                     app.chat_widget.current_reasoning_effort(),
                     Some(ReasoningEffortConfig::Low)
