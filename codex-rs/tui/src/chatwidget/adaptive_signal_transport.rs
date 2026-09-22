@@ -14,12 +14,25 @@ impl ChatWidget {
         let Ok(thread_id) = ThreadId::from_string(&notification.thread_id) else {
             return;
         };
-        let source_turn_id = notification.signal.source_turn_id.as_str();
+        let source_turn_id = notification.signal.source_turn_id.clone();
         notification.signal.evidence_refs.sort();
         notification.signal.evidence_refs.dedup();
+
+        // report_adaptive_signal is transported as its own app-server notification. In live
+        // traffic that notification can be observed immediately after turn/completed even though
+        // the tool output proving that the trusted report was emitted is already present in the
+        // completed turn snapshot. Admit that one narrowly identified late delivery, but never a
+        // generic post-turn signal.
+        let awaiting_completed_signal = !self.turn_lifecycle.agent_turn_running
+            && matches!(
+                self.adaptive_effort.pending_signal.as_ref(),
+                Some(AdaptivePendingSignal::Awaiting {
+                    source_turn_id: awaiting_turn_id,
+                }) if awaiting_turn_id == &source_turn_id
+            );
         if self.thread_id != Some(thread_id)
-            || !self.turn_lifecycle.agent_turn_running
-            || self.turn_lifecycle.last_turn_id.as_deref() != Some(source_turn_id)
+            || (!self.turn_lifecycle.agent_turn_running && !awaiting_completed_signal)
+            || self.turn_lifecycle.last_turn_id.as_deref() != Some(source_turn_id.as_str())
             || !self.adaptive_effort.enabled
             || self.adaptive_effort.paused_by_user
             || self.adaptive_effort.workflow_terminal.is_some()
@@ -28,6 +41,13 @@ impl ChatWidget {
         }
 
         match self.adaptive_effort.pending_signal.as_ref() {
+            Some(AdaptivePendingSignal::Awaiting {
+                source_turn_id: awaiting_turn_id,
+            }) if awaiting_turn_id == &source_turn_id => {
+                self.adaptive_effort.pending_signal =
+                    Some(AdaptivePendingSignal::Pending(notification.signal));
+                self.save_adaptive_effort_for_current_thread();
+            }
             None => {
                 self.adaptive_effort.pending_signal =
                     Some(AdaptivePendingSignal::Pending(notification.signal));
@@ -87,12 +107,15 @@ impl ChatWidget {
                 if existing.source_turn_id == source_turn_id =>
             {
                 self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Conflicted {
-                    source_turn_id: source_turn_id.to_string(),
+                    source_turn_id: source_turn_id.clone(),
                 });
                 self.save_adaptive_effort_for_current_thread();
             }
             Some(
-                AdaptivePendingSignal::Conflicted {
+                AdaptivePendingSignal::Awaiting {
+                    source_turn_id: existing_turn_id,
+                }
+                | AdaptivePendingSignal::Conflicted {
                     source_turn_id: existing_turn_id,
                 }
                 | AdaptivePendingSignal::Cancelled {
@@ -101,8 +124,19 @@ impl ChatWidget {
                 | AdaptivePendingSignal::Consumed {
                     source_turn_id: existing_turn_id,
                 },
-            ) if existing_turn_id == source_turn_id => {}
+            ) if existing_turn_id == &source_turn_id => {}
             Some(_) => {}
+        }
+
+        if awaiting_completed_signal {
+            let trusted_signal_consumed =
+                self.consume_adaptive_signal_at_terminal(source_turn_id.as_str());
+            if !trusted_signal_consumed {
+                self.apply_adaptive_unfinished_authorized_turn(source_turn_id.as_str());
+            }
+            // Same-route continuations can be admitted immediately. Route-changing continuations
+            // will wait here and be retried by set_model/set_reasoning_effort once synchronized.
+            self.maybe_submit_adaptive_successor();
         }
     }
 
@@ -122,11 +156,14 @@ impl ChatWidget {
         let Some(source_turn_id) = self.turn_lifecycle.last_turn_id.as_deref() else {
             return;
         };
-        if matches!(
-            self.adaptive_effort.pending_signal,
-            Some(AdaptivePendingSignal::Pending(ref signal))
-                if signal.source_turn_id == source_turn_id
-        ) {
+        let cancellable = match self.adaptive_effort.pending_signal.as_ref() {
+            Some(AdaptivePendingSignal::Awaiting {
+                source_turn_id: pending_turn_id,
+            }) => pending_turn_id == source_turn_id,
+            Some(AdaptivePendingSignal::Pending(signal)) => signal.source_turn_id == source_turn_id,
+            _ => false,
+        };
+        if cancellable {
             self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Cancelled {
                 source_turn_id: source_turn_id.to_string(),
             });
