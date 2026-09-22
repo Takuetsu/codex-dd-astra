@@ -89,7 +89,6 @@ The preference is metadata. Every adaptive run still begins at **Luna Low**; sel
 
 Use `/adaptive status` to inspect live state.
 
-
 ## GPT-6 family mapping
 
 CodexDD 0.3.2 routes adaptive work only through the current GPT-6 families:
@@ -120,7 +119,6 @@ Luna Low
 ```
 
 GPT-6 Luna and Sol expose stronger reasoning levels in the Codex model catalog, but CodexDD deliberately keeps Luna and Sol automatic escalation capped at High. Astra remains the quality ceiling for automatic escalation. Ultra remains outside the automatic ladder and separately gated.
-
 
 ## Phase 1: Luna Low reconnaissance
 
@@ -153,8 +151,8 @@ CodexDD deterministically maps reconnaissance to these bounded implementation fl
 | ------------- | -------------------- |
 | Routine       | Luna Low             |
 | Standard      | Luna High            |
-| Complex       | Sol Low            |
-| Architectural | Sol Medium         |
+| Complex       | Sol Low              |
+| Architectural | Sol Medium           |
 
 Complexity pressure can raise the initial implementation floor only. It cannot start work directly on Astra.
 
@@ -202,7 +200,7 @@ Independent review routes are:
 | Budget mode | Validation/review floor |
 | ----------- | ----------------------- |
 | Conserve    | Luna High               |
-| Balanced    | Sol Low               |
+| Balanced    | Sol Low                 |
 | Surplus     | Sol High                |
 
 Surplus capacity is intentionally spent on **independent review quality first**, rather than simply inflating implementation cost.
