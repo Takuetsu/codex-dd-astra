@@ -6,7 +6,6 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptiveFamily {
     Luna,
-    Terra,
     Sol,
     Astra,
 }
@@ -144,13 +143,10 @@ pub(crate) fn next_route(
 
 /// The automatic ladder ends at Astra Max. Ultra remains separately gated and is not part of this
 /// ladder.
-const AUTOMATIC_LADDER: [AdaptiveRoute; 14] = [
+const AUTOMATIC_LADDER: [AdaptiveRoute; 11] = [
     route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
     route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Luna, AdaptiveEffort::High),
-    route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
-    route(AdaptiveFamily::Terra, AdaptiveEffort::Medium),
-    route(AdaptiveFamily::Terra, AdaptiveEffort::High),
     route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
     route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Sol, AdaptiveEffort::High),
@@ -173,9 +169,6 @@ mod tests {
     const LUNA_LOW: AdaptiveRoute = route(AdaptiveFamily::Luna, AdaptiveEffort::Low);
     const LUNA_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Luna, AdaptiveEffort::Medium);
     const LUNA_HIGH: AdaptiveRoute = route(AdaptiveFamily::Luna, AdaptiveEffort::High);
-    const TERRA_LOW: AdaptiveRoute = route(AdaptiveFamily::Terra, AdaptiveEffort::Low);
-    const TERRA_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Terra, AdaptiveEffort::Medium);
-    const TERRA_HIGH: AdaptiveRoute = route(AdaptiveFamily::Terra, AdaptiveEffort::High);
     const SOL_LOW: AdaptiveRoute = route(AdaptiveFamily::Sol, AdaptiveEffort::Low);
     const SOL_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Sol, AdaptiveEffort::Medium);
     const SOL_HIGH: AdaptiveRoute = route(AdaptiveFamily::Sol, AdaptiveEffort::High);
@@ -189,7 +182,6 @@ mod tests {
     fn every_preference_starts_at_luna_low() {
         for family in [
             AdaptiveFamily::Luna,
-            AdaptiveFamily::Terra,
             AdaptiveFamily::Sol,
             AdaptiveFamily::Astra,
         ] {
@@ -202,10 +194,7 @@ mod tests {
         let transitions = [
             (LUNA_LOW, AdaptiveTransition::EscalateEffort(LUNA_MEDIUM)),
             (LUNA_MEDIUM, AdaptiveTransition::EscalateEffort(LUNA_HIGH)),
-            (LUNA_HIGH, AdaptiveTransition::EscalateModel(TERRA_LOW)),
-            (TERRA_LOW, AdaptiveTransition::EscalateEffort(TERRA_MEDIUM)),
-            (TERRA_MEDIUM, AdaptiveTransition::EscalateEffort(TERRA_HIGH)),
-            (TERRA_HIGH, AdaptiveTransition::EscalateModel(SOL_LOW)),
+            (LUNA_HIGH, AdaptiveTransition::EscalateModel(SOL_LOW)),
             (SOL_LOW, AdaptiveTransition::EscalateEffort(SOL_MEDIUM)),
             (SOL_MEDIUM, AdaptiveTransition::EscalateEffort(SOL_HIGH)),
             (SOL_HIGH, AdaptiveTransition::EscalateModel(ASTRA_LOW)),
@@ -218,7 +207,6 @@ mod tests {
 
         for preference in [
             AdaptiveFamily::Luna,
-            AdaptiveFamily::Terra,
             AdaptiveFamily::Sol,
             AdaptiveFamily::Astra,
         ] {
