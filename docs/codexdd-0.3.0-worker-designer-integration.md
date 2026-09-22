@@ -108,7 +108,7 @@ The structured complexity report contains:
 - `uncertain_root_cause`
 - `broad_test_surface`
 
-Designers should describe the real work accurately and let the Worker classify it. Do not pre-select a complexity class or write prompts intended to game the classifier.
+Designers should describe the real work accurately and let the Worker classify it. Do not preselect a complexity class or write prompts intended to game the classifier.
 
 ## Complexity classes and implementation floors
 

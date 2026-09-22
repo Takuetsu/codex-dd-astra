@@ -772,8 +772,7 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
             .as_mut()
             .expect("test chat has a collaboration mask");
         mask.model = Some(AdaptiveFamily::Luna.model().to_string());
-        mask.reasoning_effort =
-            Some(Some(codex_protocol::openai_models::ReasoningEffort::Low));
+        mask.reasoning_effort = Some(Some(codex_protocol::openai_models::ReasoningEffort::Low));
     }
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
