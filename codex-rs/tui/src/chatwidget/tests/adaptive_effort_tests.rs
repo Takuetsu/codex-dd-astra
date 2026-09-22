@@ -2325,3 +2325,24 @@ async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
     assert_eq!(chat.adaptive_effort.successor_admission, None);
     assert_no_submit_op(&mut op_rx);
 }
+
+#[test]
+fn durable_workflow_snapshot_persists_complexity_class() {
+    let state = AdaptiveEffortState {
+        enabled: true,
+        starting_family: Some(AdaptiveFamily::Astra),
+        current_family: Some(AdaptiveFamily::Sol),
+        current_effort: Some(AdaptiveEffort::Medium),
+        attempt_number: 2,
+        complexity_class: Some(AdaptiveComplexityClass::Architectural),
+        ..AdaptiveEffortState::default()
+    };
+
+    let snapshot = state.durable_workflow_snapshot();
+    let value = serde_json::to_value(snapshot).expect("snapshot should serialize");
+
+    assert_eq!(
+        value.get("complexityClass").and_then(serde_json::Value::as_str),
+        Some("architectural")
+    );
+}

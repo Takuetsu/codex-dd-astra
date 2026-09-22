@@ -5,6 +5,7 @@
 
 use std::path::PathBuf;
 
+use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
@@ -124,6 +125,23 @@ fn restore_effort(value: Option<String>) -> Result<Option<AdaptiveEffort>, Strin
         .transpose()
 }
 
+fn restore_complexity_class(
+    value: Option<String>,
+) -> Result<Option<AdaptiveComplexityClass>, String> {
+    value
+        .map(|value| {
+            match value.as_str() {
+                "routine" => Some(AdaptiveComplexityClass::Routine),
+                "standard" => Some(AdaptiveComplexityClass::Standard),
+                "complex" => Some(AdaptiveComplexityClass::Complex),
+                "architectural" => Some(AdaptiveComplexityClass::Architectural),
+                _ => None,
+            }
+            .ok_or_else(|| format!("unsupported persisted adaptive complexity class `{value}`"))
+        })
+        .transpose()
+}
+
 fn restore_worker_role(value: &str) -> Result<AdaptiveWorkerRole, String> {
     match value {
         "unspecified" => Ok(AdaptiveWorkerRole::Unspecified),
@@ -163,7 +181,7 @@ fn apply_persisted_adaptive_workflow_state(
     let current_effort = restore_effort(state.current_effort)?;
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
-    let complexity_class = adaptive_effort.complexity_class;
+    let complexity_class = restore_complexity_class(state.complexity_class)?;
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -375,5 +393,46 @@ mod tests {
         assert_eq!(adaptive.pending_attempt, None);
         assert_eq!(adaptive.pending_signal, None);
         assert_eq!(adaptive.successor_admission, None);
+    }
+}
+
+#[cfg(test)]
+mod codexdd_complexity_persistence_regression {
+    use super::*;
+    use crate::adaptive_complexity::AdaptiveComplexityClass;
+
+    #[test]
+    fn restored_snapshot_recovers_complexity_class() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_str(
+                r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "sol",
+                    "current_effort": "medium",
+                    "attempt_number": 2,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/complexity-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "architectural"
+                }"#,
+            )
+            .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+
+        apply_persisted_adaptive_workflow_state(
+            &mut adaptive,
+            snapshot,
+            None,
+        )
+        .expect("snapshot should restore");
+
+        assert_eq!(
+            adaptive.complexity_class,
+            Some(AdaptiveComplexityClass::Architectural)
+        );
     }
 }

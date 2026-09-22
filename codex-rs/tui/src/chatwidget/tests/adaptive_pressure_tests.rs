@@ -766,6 +766,7 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
     chat.adaptive_effort.worker_context.authorized_scope =
         Some("codexdd/ordinary-continuation".to_string());
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
     {
         let mask = chat
             .active_collaboration_mask
@@ -801,4 +802,83 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
     assert_matches!(chat.adaptive_effort.pending_attempt, None);
     let submitted = next_submit_op(&mut op_rx);
     assert!(matches!(submitted, Op::UserTurn { .. }));
+}
+
+#[tokio::test]
+async fn completed_recon_without_report_output_waits_for_late_complexity_signal() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "late-complexity-without-report-output";
+
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("codexdd/0.3.3-live-complexity".to_string());
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    // Reproduce the live 0.3.2 soak: the Worker called report_adaptive_signal,
+    // but turn/completed did not expose its FunctionCallOutput in turn.items.
+    chat.handle_turn_completed_notification(
+        TurnCompletedNotification {
+            thread_id: thread_id.to_string(),
+            turn: AppServerTurn {
+                id: turn_id.to_string(),
+                items: Vec::new(),
+                items_view: codex_app_server_protocol::TurnItemsView::Full,
+                status: AppServerTurnStatus::Completed,
+                error: None,
+                started_at: None,
+                completed_at: None,
+                duration_ms: Some(1),
+            },
+        },
+        None,
+    );
+
+    // First bound Implementation completion is reconnaissance. It must fail
+    // closed while waiting for the trusted complexity notification rather than
+    // being mistaken for ordinary unfinished implementation work.
+    assert!(matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { ref source_turn_id })
+            if source_turn_id == turn_id
+    ));
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+    assert_no_submit_op(&mut op_rx);
+
+    // The separately transported trusted signal arrives after turn/completed.
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: turn_id.to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::Complexity,
+            evidence_refs: Vec::new(),
+            diagnostic_note: Some("architectural".to_string()),
+        },
+    });
+
+    assert_eq!(
+        chat.adaptive_effort.complexity_class,
+        Some(AdaptiveComplexityClass::Architectural)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Sol)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
 }

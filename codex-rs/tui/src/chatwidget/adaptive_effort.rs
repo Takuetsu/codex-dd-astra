@@ -256,6 +256,15 @@ impl AdaptiveEffortState {
             starting_family: self.starting_family.map(family_name).map(str::to_string),
             current_family: self.current_family.map(family_name).map(str::to_string),
             current_effort: self.current_effort.map(effort_name).map(str::to_string),
+            complexity_class: self.complexity_class.map(|class| {
+                match class {
+                    AdaptiveComplexityClass::Routine => "routine",
+                    AdaptiveComplexityClass::Standard => "standard",
+                    AdaptiveComplexityClass::Complex => "complex",
+                    AdaptiveComplexityClass::Architectural => "architectural",
+                }
+                .to_string()
+            }),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
             worker_role: worker_role.to_string(),
