@@ -11,7 +11,6 @@ fn route(family: AdaptiveFamily, effort: AdaptiveEffort) -> AdaptiveRoute {
 fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     for family in [
         AdaptiveFamily::Luna,
-        AdaptiveFamily::Terra,
         AdaptiveFamily::Sol,
         AdaptiveFamily::Astra,
     ] {
@@ -25,9 +24,6 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     for expected in [
         route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Luna, AdaptiveEffort::High),
-        route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
-        route(AdaptiveFamily::Terra, AdaptiveEffort::Medium),
-        route(AdaptiveFamily::Terra, AdaptiveEffort::High),
         route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
         route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Sol, AdaptiveEffort::High),
@@ -44,13 +40,13 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     }
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert_eq!(reduced.decision, AdaptiveControllerDecision::Blocked);
-    assert_eq!(reduced.state.attempt_number, 14);
+    assert_eq!(reduced.state.attempt_number, 11);
 }
 
 #[test]
 fn malformed_effort_route_fails_closed_without_authorizing_a_route() {
-    let mut state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
-    state.current_route = route(AdaptiveFamily::Terra, AdaptiveEffort::XHigh);
+    let mut state = AdaptiveControllerState::initial(AdaptiveFamily::Sol);
+    state.current_route = route(AdaptiveFamily::Sol, AdaptiveEffort::XHigh);
     state.attempt_number = 6;
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
 
@@ -64,7 +60,7 @@ fn malformed_effort_route_fails_closed_without_authorizing_a_route() {
 
 #[test]
 fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
-    let state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
+    let state = AdaptiveControllerState::initial(AdaptiveFamily::Sol);
     let retry = reduce_adaptive_controller(state, AdaptiveClassification::RetrySameLevel);
     assert_eq!(
         retry.decision,
@@ -89,7 +85,7 @@ fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
 
 #[test]
 fn terminals_pause_resume_and_no_decision_authorize_nothing() {
-    let state = AdaptiveControllerState::initial(AdaptiveFamily::Terra);
+    let state = AdaptiveControllerState::initial(AdaptiveFamily::Sol);
     let qa = reduce_adaptive_controller(state, AdaptiveClassification::PassToOwnerQa);
     assert_eq!(qa.decision, AdaptiveControllerDecision::ReadyForOwnerQa);
     for signal in [
@@ -128,7 +124,7 @@ fn every_workflow_terminal_is_an_idempotent_hard_stop() {
     ] {
         let state = AdaptiveControllerState {
             terminal: Some(terminal),
-            ..AdaptiveControllerState::initial(AdaptiveFamily::Terra)
+            ..AdaptiveControllerState::initial(AdaptiveFamily::Sol)
         };
         for classification in [
             AdaptiveClassification::RetrySameLevel,
@@ -219,18 +215,13 @@ fn unfinished_pressure_cannot_cross_any_model_family_boundary() {
     for (from, to, attempt_number) in [
         (
             route(AdaptiveFamily::Luna, AdaptiveEffort::High),
-            route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
-            5,
-        ),
-        (
-            route(AdaptiveFamily::Terra, AdaptiveEffort::High),
             route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
-            8,
+            5,
         ),
         (
             route(AdaptiveFamily::Sol, AdaptiveEffort::High),
             route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
-            11,
+            8,
         ),
     ] {
         let state = AdaptiveControllerState {
@@ -272,7 +263,7 @@ fn trusted_capability_classification_still_crosses_model_family_boundary() {
         reduced.decision,
         AdaptiveControllerDecision::EscalateModel {
             from: route(AdaptiveFamily::Luna, AdaptiveEffort::High),
-            to: route(AdaptiveFamily::Terra, AdaptiveEffort::Low),
+            to: route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
             next_attempt: 7,
         }
     );
