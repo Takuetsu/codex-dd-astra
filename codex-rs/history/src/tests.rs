@@ -203,6 +203,25 @@ fn workflow_state_latest_valid_canonical_record_wins() {
 }
 
 #[test]
+fn adaptive_workflow_snapshot_without_complexity_remains_backward_compatible() -> Result<()> {
+    let snapshot: AdaptiveWorkflowStateSnapshot = serde_json::from_value(json!({
+        "enabled": true,
+        "starting_family": "astra",
+        "current_family": "luna",
+        "current_effort": "high",
+        "attempt_number": 6,
+        "paused_by_user": false,
+        "worker_role": "repair",
+        "authorized_scope": "Z-A0.47B bounded repair",
+        "worker_assignment_locked": true,
+        "workflow_terminal": "ready_for_validation",
+    }))?;
+
+    assert_eq!(snapshot.complexity_class, None);
+    Ok(())
+}
+
+#[test]
 fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
     let snapshot = AdaptiveWorkflowStateSnapshot {
         enabled: true,
