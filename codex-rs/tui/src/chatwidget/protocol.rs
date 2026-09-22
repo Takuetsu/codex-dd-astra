@@ -371,6 +371,79 @@ impl ChatWidget {
         self.thread_usage.replaying_turn_completion = was_replaying_turn_completion;
     }
 
+    /// Hold a completed bound Worker turn when its own trusted tool output proves
+    /// report_adaptive_signal ran but the separate app-server signal notification has not arrived
+    /// yet. This closes the notification-ordering window without trusting final-answer prose or
+    /// introducing a timing-based grace period.
+    fn hold_completed_turn_for_adaptive_signal(&mut self, turn: &Turn) -> bool {
+        let state = &self.adaptive_effort;
+        if !state.enabled
+            || state.paused_by_user
+            || state.workflow_terminal.is_some()
+            || state.last_processed_terminal_turn_id.as_deref() == Some(turn.id.as_str())
+        {
+            return false;
+        }
+        let bound_worker = matches!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+                | crate::adaptive_worker::AdaptiveWorkerRole::Validation
+                | crate::adaptive_worker::AdaptiveWorkerRole::Repair
+        ) && state
+            .worker_context
+            .authorized_scope
+            .as_deref()
+            .is_some_and(|scope| !scope.trim().is_empty());
+        if !bound_worker {
+            return false;
+        }
+        let reported_adaptive_signal = turn.items.iter().any(|item| match item {
+            ThreadItem::FunctionCallOutput { name, output, .. }
+                if name == "report_adaptive_signal" =>
+            {
+                output
+                    .to_text()
+                    .is_some_and(|text| text.contains("\"status\":\"request_emitted\""))
+            }
+            _ => false,
+        });
+        if !reported_adaptive_signal {
+            return false;
+        }
+
+        let can_wait = match state.pending_signal.as_ref() {
+            None => true,
+            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Pending(signal)) => {
+                signal.source_turn_id == turn.id
+                    && signal.signal_kind
+                        == codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability
+                    && signal.diagnostic_note.as_deref()
+                        == Some(crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC)
+            }
+            Some(
+                crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {
+                    source_turn_id,
+                },
+            ) => source_turn_id == &turn.id,
+            Some(_) => false,
+        };
+        if !can_wait {
+            return false;
+        }
+
+        self.adaptive_effort.pending_signal = Some(
+            crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {
+                source_turn_id: turn.id.clone(),
+            },
+        );
+        // A trusted terminal is in flight. Any stale authorization from a prior reduction must
+        // lose immediately, before on_task_complete can reach successor submission.
+        self.adaptive_effort.pending_attempt = None;
+        self.adaptive_effort.successor_admission = None;
+        self.save_adaptive_effort_for_current_thread();
+        true
+    }
+
     pub(super) fn handle_turn_completed_notification(
         &mut self,
         notification: TurnCompletedNotification,
@@ -391,12 +464,19 @@ impl ChatWidget {
                 (status, _) => crate::adaptive_classification::signal_from_turn_status(status),
             };
             let completed = matches!(notification.turn.status, TurnStatus::Completed);
-            let trusted_signal_consumed =
-                completed && self.consume_adaptive_signal_at_terminal(&notification.turn.id);
+            let trusted_signal_delivery_pending =
+                completed && self.hold_completed_turn_for_adaptive_signal(&notification.turn);
+            let trusted_signal_consumed = completed
+                && !trusted_signal_delivery_pending
+                && self.consume_adaptive_signal_at_terminal(&notification.turn.id);
             let unfinished_worker_consumed = completed
+                && !trusted_signal_delivery_pending
                 && !trusted_signal_consumed
                 && self.apply_adaptive_unfinished_authorized_turn(&notification.turn.id);
-            if !trusted_signal_consumed && !unfinished_worker_consumed {
+            if !trusted_signal_delivery_pending
+                && !trusted_signal_consumed
+                && !unfinished_worker_consumed
+            {
                 self.apply_adaptive_terminal_signal(&notification.turn.id, signal);
             }
         }

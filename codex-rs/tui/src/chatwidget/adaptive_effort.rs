@@ -53,6 +53,10 @@ pub(crate) enum AdaptiveSuccessorAdmission {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingSignal {
+    /// Turn completion arrived before the separate trusted adaptive signal notification.
+    /// The completed turn itself proves report_adaptive_signal ran, so successor admission
+    /// must fail closed until that notification is delivered and validated.
+    Awaiting { source_turn_id: String },
     Pending(AdaptiveRuntimeSignalEnvelope),
     Conflicted { source_turn_id: String },
     Cancelled { source_turn_id: String },
@@ -63,7 +67,8 @@ impl AdaptivePendingSignal {
     pub(super) fn source_turn_id(&self) -> &str {
         match self {
             Self::Pending(signal) => &signal.source_turn_id,
-            Self::Conflicted { source_turn_id }
+            Self::Awaiting { source_turn_id }
+            | Self::Conflicted { source_turn_id }
             | Self::Cancelled { source_turn_id }
             | Self::Consumed { source_turn_id } => source_turn_id,
         }
