@@ -114,12 +114,12 @@ Designers should describe the real work accurately and let the Worker classify i
 
 CodexDD deterministically maps reconnaissance to these bounded implementation floors:
 
-| Complexity | Implementation floor |
-| --- | --- |
-| Routine | Luna Low |
-| Standard | Luna High |
-| Complex | Terra Low |
-| Architectural | Terra Medium |
+| Complexity    | Implementation floor |
+| ------------- | -------------------- |
+| Routine       | Luna Low             |
+| Standard      | Luna High            |
+| Complex       | Terra Low            |
+| Architectural | Terra Medium         |
 
 Complexity pressure can raise the initial implementation floor only. It cannot start work directly on Sol or Astra.
 
@@ -165,10 +165,10 @@ The most restrictive known window wins. Stale or incomplete window data does not
 Independent review routes are:
 
 | Budget mode | Validation/review floor |
-| --- | --- |
-| Conserve | Luna High |
-| Balanced | Terra Low |
-| Surplus | Sol Low |
+| ----------- | ----------------------- |
+| Conserve    | Luna High               |
+| Balanced    | Terra Low               |
+| Surplus     | Sol Low                 |
 
 Surplus capacity is intentionally spent on **independent review quality first**, rather than simply inflating implementation cost.
 
