@@ -171,6 +171,19 @@ impl AdaptiveEffortState {
         self.activate_adaptive_family(preferred_family, false);
     }
 
+    pub(crate) fn implementation_reconnaissance_required(&self) -> bool {
+        self.enabled
+            && !self.paused_by_user
+            && self.workflow_terminal.is_none()
+            && self.worker_context.role == AdaptiveWorkerRole::Implementation
+            && self
+                .worker_context
+                .authorized_scope
+                .as_deref()
+                .is_some_and(|scope| !scope.trim().is_empty())
+            && self.complexity_class.is_none()
+    }
+
     pub(crate) fn observe_worker_assignment_text(&mut self, text: &str) -> Result<bool, String> {
         if self.worker_assignment_locked {
             return Ok(false);
@@ -284,6 +297,11 @@ impl ChatWidget {
     #[cfg(test)]
     pub(crate) fn adaptive_effort_for_test_mut(&mut self) -> &mut AdaptiveEffortState {
         &mut self.adaptive_effort
+    }
+
+    pub(crate) fn adaptive_implementation_reconnaissance_required(&self) -> bool {
+        self.adaptive_effort
+            .implementation_reconnaissance_required()
     }
 
     pub(crate) fn automatic_validation_binding(&self) -> Option<NewWorkerBinding> {
@@ -815,6 +833,30 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn implementation_reconnaissance_gate_requires_bound_scope_and_missing_complexity() {
+        let mut state = AdaptiveEffortState::default();
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+        state.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("bounded implementation".to_string()),
+        };
+        state.worker_assignment_locked = true;
+
+        assert!(state.implementation_reconnaissance_required());
+
+        state.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        assert!(!state.implementation_reconnaissance_required());
+
+        state.complexity_class = None;
+        state.paused_by_user = true;
+        assert!(!state.implementation_reconnaissance_required());
+
+        state.paused_by_user = false;
+        state.worker_context.authorized_scope = Some("   ".to_string());
+        assert!(!state.implementation_reconnaissance_required());
     }
 
     #[test]
