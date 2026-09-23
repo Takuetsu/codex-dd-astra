@@ -11,7 +11,7 @@ use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use crate::chatwidget::ThreadInputStateRestoreMode;
 use codex_app_server_protocol::UserInput;
-use codex_protocol::permissions::FileSystemSandboxPolicy;
+use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
 use codex_app_server_protocol::ThreadStartedNotification;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
@@ -34,16 +34,8 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
     )
 }
 
-fn adaptive_reconnaissance_permissions_override(config: &Config) -> TurnPermissionsOverride {
-    let network = config
-        .permissions
-        .effective_permission_profile()
-        .network_sandbox_policy();
-    let profile = PermissionProfile::from_runtime_permissions(
-        &FileSystemSandboxPolicy::read_only(),
-        network,
-    );
-    TurnPermissionsOverride::LegacySandbox(profile)
+fn adaptive_reconnaissance_turn_trigger(required: bool) -> Option<String> {
+    required.then(|| CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())
 }
 
 impl App {
@@ -885,25 +877,24 @@ impl App {
                         .chat_widget
                         .adaptive_implementation_reconnaissance_required()
                         || user_turn_starts_bound_implementation(items);
-                    let permissions_override = if adaptive_reconnaissance_required {
-                        adaptive_reconnaissance_permissions_override(config)
-                    } else {
-                        Self::turn_permissions_override_from_config(
-                            config,
-                            selected_active
-                                .as_ref()
-                                .or(confirmed_active.as_ref())
-                                .or(active_permission_profile.as_ref()),
-                            self.runtime_permission_profile_override
-                                .as_ref()
-                                .and_then(RuntimePermissionProfileOverride::turn_permission_profile),
-                        )
-                    };
+                    let turn_trigger =
+                        adaptive_reconnaissance_turn_trigger(adaptive_reconnaissance_required);
+                    let permissions_override = Self::turn_permissions_override_from_config(
+                        config,
+                        selected_active
+                            .as_ref()
+                            .or(confirmed_active.as_ref())
+                            .or(active_permission_profile.as_ref()),
+                        self.runtime_permission_profile_override
+                            .as_ref()
+                            .and_then(RuntimePermissionProfileOverride::turn_permission_profile),
+                    );
                     let response = app_server
                         .turn_start(
                             thread_id,
                             client_user_message_id.clone(),
                             items.to_vec(),
+                            turn_trigger,
                             cwd.clone(),
                             turn_approval_policy,
                             turn_approvals_reviewer,
@@ -2201,25 +2192,16 @@ mod tests {
         assert!(!user_turn_starts_bound_implementation(&[ordinary]));
     }
 
-    #[tokio::test]
-    async fn adaptive_reconnaissance_turn_forces_read_only_filesystem() {
-        let config = config_with_workspace_profile().await;
-        let normal_network = config
-            .permissions
-            .effective_permission_profile()
-            .network_sandbox_policy();
-
-        let TurnPermissionsOverride::LegacySandbox(profile) =
-            adaptive_reconnaissance_permissions_override(&config)
-        else {
-            panic!("adaptive reconnaissance must use a turn-scoped legacy sandbox override");
-        };
-
+    #[test]
+    fn adaptive_reconnaissance_turn_uses_runtime_write_gate_marker() {
         assert_eq!(
-            profile.file_system_sandbox_policy(),
-            FileSystemSandboxPolicy::read_only()
+            adaptive_reconnaissance_turn_trigger(/*required*/ true).as_deref(),
+            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
-        assert_eq!(profile.network_sandbox_policy(), normal_network);
+        assert_eq!(
+            adaptive_reconnaissance_turn_trigger(/*required*/ false),
+            None
+        );
     }
 
     #[tokio::test]
