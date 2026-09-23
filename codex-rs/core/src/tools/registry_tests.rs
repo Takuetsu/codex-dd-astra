@@ -867,7 +867,7 @@ async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Resu
     let session = Arc::new(session);
     let turn = Arc::new(turn);
 
-    let err = registry
+    let err = match registry
         .dispatch_any_with_terminal_outcome(
             test_invocation(
                 session,
@@ -878,7 +878,10 @@ async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Resu
             /*terminal_outcome_reached*/ None,
         )
         .await
-        .expect_err("pre-complexity reconnaissance must block write-capable tools");
+    {
+        Ok(_) => panic!("pre-complexity reconnaissance must block write-capable tools"),
+        Err(err) => err,
+    };
 
     assert!(err.to_string().contains("complexity reconnaissance is read-only"));
     Ok(())
