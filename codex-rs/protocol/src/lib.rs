@@ -18,6 +18,13 @@ pub use thread_id::RolloutId;
 pub use thread_id::ThreadId;
 pub use tool_name::DEFAULT_FUNCTION_NAMESPACE;
 pub use tool_name::ToolName;
+
+/// Marks the CodexDD pre-complexity Implementation reconnaissance turn.
+///
+/// The TUI sets this on turn/start while complexity is still missing, and core uses it to
+/// enforce the turn-scoped no-write tool gate without switching Windows into a read-only OS
+/// sandbox profile.
+pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str = "codexdd_adaptive_reconnaissance";
 pub mod approvals;
 pub mod capabilities;
 pub mod config_types;

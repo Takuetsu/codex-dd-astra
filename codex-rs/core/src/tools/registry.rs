@@ -30,12 +30,15 @@ use codex_analytics::ControlToolCallStatus;
 use codex_extension_api::ToolCallOutcome;
 use codex_history::CodexHarnessMetadata;
 use codex_history::ResponseItemEnvelope;
+use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
 use codex_protocol::models::FunctionCallOutputPayload;
 use codex_protocol::models::ResponseInputItem;
 use codex_protocol::parse_command::ParsedCommand;
 use codex_protocol::protocol::EventMsg;
 use codex_rollout::state_db;
+use codex_shell_command::parse_command::parse_command;
 use codex_shell_command::parse_command::parse_shell_script;
+use codex_shell_command::powershell::parse_powershell_script_into_plain_commands;
 use codex_tools::ToolName;
 use codex_tools::ToolSpec;
 use futures::future::BoxFuture;
@@ -44,6 +47,216 @@ use indexmap::map::Entry;
 use serde_json::Value;
 
 pub(crate) type ToolTelemetryTags = Vec<(&'static str, String)>;
+
+const ADAPTIVE_RECONNAISSANCE_REJECTION: &str = "CodexDD complexity reconnaissance is read-only. This tool or command was blocked before execution. Use read/search commands such as rg, Get-Content, git status, or git diff, then report the complexity classification before editing.";
+
+fn adaptive_reconnaissance_rejection(invocation: &ToolInvocation) -> Option<String> {
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        invocation.turn.turn_metadata_state.as_ref(),
+    );
+    if turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER) {
+        return None;
+    }
+
+    let allowed = invocation.tool_name.is_default_namespace()
+        && match invocation.tool_name.name.as_str() {
+            "report_adaptive_signal" | "update_plan" | "get_context_remaining" | "view_image" => {
+                true
+            }
+            "exec_command" => shell_script_for_invocation(invocation)
+                .as_deref()
+                .is_some_and(adaptive_reconnaissance_shell_command_allowed),
+            _ => false,
+        };
+
+    (!allowed).then(|| ADAPTIVE_RECONNAISSANCE_REJECTION.to_string())
+}
+
+fn adaptive_reconnaissance_shell_command_allowed(command: &str) -> bool {
+    let command = command.trim();
+    if command.is_empty()
+        || command.contains('>')
+        || command.contains('<')
+        || command.contains('&')
+        || command.contains("$(")
+        || command.contains('`')
+    {
+        return false;
+    }
+
+    // Windows workers commonly batch reconnaissance reads with semicolons/newlines or pipe a
+    // listing through Select-Object. Parse that literal PowerShell subset in-process, then require
+    // every lowered command to be independently read-only. The parser fails closed for dynamic
+    // expressions, script blocks, assignments, redirections, and other syntax outside that subset.
+    if let Some(commands) = parse_powershell_script_into_plain_commands(command) {
+        return !commands.is_empty()
+            && commands
+                .iter()
+                .all(|command| adaptive_reconnaissance_plain_command_allowed(command));
+    }
+
+    // If PowerShell lowering could not understand a multi-command script, do not let the
+    // Bash-oriented fallback reinterpret only part of it.
+    if command.contains(';') || command.contains('\n') || command.contains('\r') {
+        return false;
+    }
+
+    if adaptive_reconnaissance_has_unsafe_pipeline_stage(command) {
+        return false;
+    }
+
+    adaptive_reconnaissance_parsed_commands_allowed(&parse_shell_script(command))
+}
+
+fn adaptive_reconnaissance_plain_command_allowed(command: &[String]) -> bool {
+    let parsed = parse_command(command);
+    if !parsed.is_empty() && adaptive_reconnaissance_parsed_commands_allowed(&parsed) {
+        return true;
+    }
+
+    adaptive_reconnaissance_safe_git_words(command)
+        || adaptive_reconnaissance_safe_powershell_words(command)
+}
+
+fn adaptive_reconnaissance_parsed_commands_allowed(commands: &[ParsedCommand]) -> bool {
+    !commands.is_empty()
+        && commands.iter().all(|parsed_command| match parsed_command {
+            ParsedCommand::Read { .. }
+            | ParsedCommand::ListFiles { .. }
+            | ParsedCommand::Search { .. } => true,
+            ParsedCommand::Unknown { cmd } => {
+                adaptive_reconnaissance_safe_git_command(cmd)
+                    || adaptive_reconnaissance_safe_powershell_inspection(cmd)
+            }
+        })
+}
+
+fn adaptive_reconnaissance_has_unsafe_pipeline_stage(command: &str) -> bool {
+    command.split('|').skip(1).any(|stage| {
+        let mut words = stage.split_whitespace();
+        let executable = words
+            .next()
+            .map(adaptive_reconnaissance_executable_name)
+            .unwrap_or_default();
+
+        match executable.as_str() {
+            "tee" | "tee.exe" | "tee-object" | "xargs" | "xargs.exe" | "awk" | "gawk" => true,
+            "sort" | "sort.exe" => words.any(|argument| {
+                let argument = argument
+                    .trim_matches(|character| character == '\'' || character == '"')
+                    .to_ascii_lowercase();
+                argument == "-o" || argument.starts_with("--output")
+            }),
+            _ => false,
+        }
+    })
+}
+
+fn adaptive_reconnaissance_executable_name(token: &str) -> String {
+    token
+        .trim_matches(|character| character == '\'' || character == '"')
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(token)
+        .to_ascii_lowercase()
+}
+
+fn adaptive_reconnaissance_safe_powershell_inspection(command: &str) -> bool {
+    let words = command
+        .split_whitespace()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    adaptive_reconnaissance_safe_powershell_words(&words)
+}
+
+fn adaptive_reconnaissance_safe_powershell_words(command: &[String]) -> bool {
+    let executable = command
+        .first()
+        .map(|word| adaptive_reconnaissance_executable_name(word))
+        .unwrap_or_default();
+
+    matches!(
+        executable.as_str(),
+        "get-content"
+            | "gc"
+            | "type"
+            | "get-childitem"
+            | "gci"
+            | "dir"
+            | "get-item"
+            | "gi"
+            | "test-path"
+            | "resolve-path"
+            | "get-location"
+            | "pwd"
+            | "select-string"
+            | "sls"
+            | "select-object"
+            | "measure-object"
+            | "format-table"
+            | "format-list"
+    )
+}
+
+fn adaptive_reconnaissance_safe_git_command(command: &str) -> bool {
+    let words = command
+        .split_whitespace()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    adaptive_reconnaissance_safe_git_words(&words)
+}
+
+fn adaptive_reconnaissance_safe_git_words(command: &[String]) -> bool {
+    let Some(first) = command.first() else {
+        return false;
+    };
+    if !matches!(
+        adaptive_reconnaissance_executable_name(first).as_str(),
+        "git" | "git.exe"
+    ) {
+        return false;
+    }
+
+    let mut index = 1;
+    while let Some(argument) = command.get(index) {
+        let argument = argument.trim_matches(|character| character == '\'' || character == '"');
+        match argument {
+            "-C" => {
+                if command.get(index + 1).is_none() {
+                    return false;
+                }
+                index += 2;
+            }
+            "--no-pager" | "--no-optional-locks" | "--literal-pathspecs" => {
+                index += 1;
+            }
+            _ => break,
+        }
+    }
+
+    let Some(subcommand) = command.get(index).map(|subcommand| {
+        subcommand
+            .trim_matches(|character| character == '\'' || character == '"')
+            .to_ascii_lowercase()
+    }) else {
+        return false;
+    };
+    let args = &command[index + 1..];
+
+    match subcommand.as_str() {
+        "status" | "rev-parse" => true,
+        "diff" => !args.iter().any(|argument| {
+            let argument = argument
+                .trim_matches(|character| character == '\'' || character == '"')
+                .to_ascii_lowercase();
+            argument == "--output"
+                || argument.starts_with("--output=")
+                || argument == "--ext-diff"
+                || argument == "--textconv"
+        }),
+        _ => false,
+    }
+}
 
 pub use codex_tools::ToolExecutor;
 pub use codex_tools::ToolExposure;
@@ -560,6 +773,23 @@ impl ToolRegistry {
                 &extra_trace_fields,
             );
             let err = FunctionCallError::Fatal(message);
+            dispatch_trace.record_failed(&err);
+            return Err(err);
+        }
+
+        if let Some(message) = adaptive_reconnaissance_rejection(&invocation) {
+            let log_payload = tool_log_payload(&invocation.payload, &invocation.source);
+            otel.tool_result_with_tags(
+                &tool_name,
+                &call_id_owned,
+                log_payload.as_ref(),
+                Duration::ZERO,
+                /*success*/ false,
+                &message,
+                &tool_result_tags,
+                &extra_trace_fields,
+            );
+            let err = FunctionCallError::RespondToModel(message);
             dispatch_trace.record_failed(&err);
             return Err(err);
         }

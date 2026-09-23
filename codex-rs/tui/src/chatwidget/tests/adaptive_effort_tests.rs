@@ -538,6 +538,9 @@ async fn ready_for_validation_enforces_complete_role_matrix_as_hard_handoff() {
             role,
             authorized_scope: Some("fixed-scope".to_string()),
         };
+        if role == AdaptiveWorkerRole::Implementation {
+            chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        }
         let before = chat.adaptive_effort.clone();
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "role-turn",

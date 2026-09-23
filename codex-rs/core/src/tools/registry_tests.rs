@@ -817,6 +817,115 @@ async fn dispatch_uses_canonical_tool_names_for_lifecycle_contributors() -> anyh
     Ok(())
 }
 
+#[test]
+fn adaptive_reconnaissance_shell_gate_allows_inspection_commands() {
+    for command in [
+        "rg -n adaptive codex-rs/tui/src",
+        "Get-Content docs/codexdd-0.3.2-worker-designer-integration.md",
+        "Get-ChildItem codex-rs/tui/src",
+        "git status --short",
+        "git diff -- docs/codexdd-0.3.2-worker-designer-integration.md",
+        "git rev-parse --show-toplevel",
+        "git ls-files codex-rs/tui/src",
+        "git grep adaptive codex-rs/tui/src",
+        "Get-ChildItem -Force; Get-Content -Raw probe.txt",
+        "Get-ChildItem -Force\nGet-Content -Raw probe.txt",
+        "Get-ChildItem -Force | Select-Object -First 20; Get-Content -Raw probe.txt",
+        "git status --short; Get-Content -Raw probe.txt",
+    ] {
+        assert!(
+            adaptive_reconnaissance_shell_command_allowed(command),
+            "expected read-only reconnaissance command to be allowed: {command}"
+        );
+    }
+}
+
+#[test]
+fn adaptive_reconnaissance_shell_gate_rejects_write_capable_commands() {
+    for command in [
+        "Set-Content docs/example.md changed",
+        "Get-Content docs/example.md > copy.md",
+        "rg TODO docs | tee out.txt",
+        "rg TODO docs | xargs rm",
+        "git add docs/example.md",
+        "git diff --output=out.patch",
+        "python -c \"open('docs/example.md','w').write('x')\"",
+        "Get-Content docs/example.md; Remove-Item docs/example.md",
+        "Get-ChildItem -Force; Set-Content probe.txt after",
+        "Get-Content probe.txt\nRemove-Item probe.txt",
+        "Get-ChildItem -Force | Tee-Object listing.txt",
+    ] {
+        assert!(
+            !adaptive_reconnaissance_shell_command_allowed(command),
+            "expected write-capable reconnaissance command to be blocked: {command}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> anyhow::Result<()> {
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string());
+    let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
+        tool_name: codex_tools::ToolName::plain("exec_command"),
+    }) as Arc<dyn CoreToolRuntime>]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+    let mut invocation = test_invocation(
+        session,
+        turn,
+        "recon-read-call",
+        codex_tools::ToolName::plain("exec_command"),
+    );
+    invocation.payload = ToolPayload::Function {
+        arguments: serde_json::json!({
+            "cmd": "Get-ChildItem -Force; Get-Content -Raw probe.txt"
+        })
+        .to_string(),
+    };
+
+    registry
+        .dispatch_any_with_terminal_outcome(invocation, /*terminal_outcome_reached*/ None)
+        .await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Result<()> {
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string());
+    let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
+        tool_name: codex_tools::ToolName::plain("apply_patch"),
+    }) as Arc<dyn CoreToolRuntime>]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+
+    let err = match registry
+        .dispatch_any_with_terminal_outcome(
+            test_invocation(
+                session,
+                turn,
+                "recon-write-call",
+                codex_tools::ToolName::plain("apply_patch"),
+            ),
+            /*terminal_outcome_reached*/ None,
+        )
+        .await
+    {
+        Ok(_) => panic!("pre-complexity reconnaissance must block write-capable tools"),
+        Err(err) => err,
+    };
+
+    assert!(
+        err.to_string()
+            .contains("complexity reconnaissance is read-only")
+    );
+    Ok(())
+}
+
 fn test_invocation(
     session: Arc<crate::session::session::Session>,
     turn: Arc<crate::session::turn_context::TurnContext>,

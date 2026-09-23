@@ -80,10 +80,15 @@ impl ChatWidget {
             AdaptiveRuntimeSignalKind::Capability => {
                 envelope.evidence_refs.is_empty() && capability_diagnostic.is_some()
             }
-            AdaptiveRuntimeSignalKind::ReadyForValidation => matches!(
-                self.adaptive_effort.worker_context.role,
-                AdaptiveWorkerRole::Implementation | AdaptiveWorkerRole::Repair
-            ),
+            AdaptiveRuntimeSignalKind::ReadyForValidation => {
+                match self.adaptive_effort.worker_context.role {
+                    AdaptiveWorkerRole::Repair => true,
+                    AdaptiveWorkerRole::Implementation => {
+                        self.adaptive_effort.complexity_class.is_some()
+                    }
+                    AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Validation => false,
+                }
+            }
             AdaptiveRuntimeSignalKind::RepairRequired => {
                 self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Validation
                     && self.valid_evidence_refs(
@@ -653,6 +658,40 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn implementation_ready_for_validation_requires_complexity_first() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "implementation-ready-before-complexity";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("codexdd/0.3.4-initial-complexity-gate".to_string());
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+                evidence_refs: Vec::new(),
+                diagnostic_note: Some("READY_FOR_VALIDATION".to_string()),
+            },
+        });
+
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.complexity_class, None);
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Cancelled { ref source_turn_id })
+                if source_turn_id == turn_id
+        ));
+    }
+
+    #[tokio::test]
     async fn implementation_ready_for_validation_is_hard_handoff_and_admits_no_successor() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
@@ -667,6 +706,7 @@ mod tests {
         // the same thread to a Validation Worker at Luna Low.
         chat.adaptive_effort.current_family = Some(AdaptiveFamily::Astra);
         chat.adaptive_effort.current_effort = Some(AdaptiveEffort::Max);
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
         chat.adaptive_effort.attempt_number = 28;
         chat.adaptive_effort.unfinished_turn_pressure = 1;
         chat.turn_lifecycle.agent_turn_running = true;

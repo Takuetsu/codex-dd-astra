@@ -3,6 +3,7 @@
 use super::*;
 use crate::adaptive_policy::AdaptiveEffort;
 use crate::adaptive_policy::AdaptiveRoute;
+use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::chatwidget::adaptive_effort::AdaptiveSuccessorAdmission;
 use crate::chatwidget::adaptive_effort::AdaptiveSuccessorPermit;
 
@@ -71,13 +72,20 @@ impl ChatWidget {
             return false;
         }
 
+        let requires_complexity_recovery = permit.worker_context.role
+            == AdaptiveWorkerRole::Implementation
+            && self.adaptive_effort.complexity_class.is_none();
+
         if !self.consume_adaptive_successor_admission(&permit) {
             return false;
         }
         self.adaptive_effort.pending_attempt = None;
         self.save_adaptive_effort_for_current_thread();
 
-        let message = UserMessage::from(adaptive_continuation_text(&permit));
+        let message = UserMessage::from(adaptive_continuation_text(
+            &permit,
+            requires_complexity_recovery,
+        ));
         let accepted = self.submit_user_message_with_history_record(
             message,
             UserMessageHistoryRecord::UserMessageText,
@@ -246,7 +254,10 @@ impl ChatWidget {
     }
 }
 
-fn adaptive_continuation_text(permit: &AdaptiveSuccessorPermit) -> String {
+fn adaptive_continuation_text(
+    permit: &AdaptiveSuccessorPermit,
+    requires_complexity_recovery: bool,
+) -> String {
     let decision = match permit.decision {
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute => {
             "ContinueSameRoute"
@@ -270,6 +281,11 @@ fn adaptive_continuation_text(permit: &AdaptiveSuccessorPermit) -> String {
     };
     let model = permit.route.family.model();
     let attempt = permit.attempt_number;
+    if requires_complexity_recovery {
+        return format!(
+            "[Adaptive continuation] The required initial Implementation complexity reconnaissance was not accepted. Attempt {attempt} remains authorized at {model} {effort} using {decision}. Before any further implementation edits, inspect the bounded task state, report kind=complexity with the complete structured complexity object, and end the turn. Preserve the existing task, scope, worktree, evidence, and acceptance criteria. Do not report ready_for_validation until a complexity class has been accepted."
+        );
+    }
     format!(
         "[Adaptive continuation] Continue the current assigned Worker task from the existing thread state. Attempt {attempt} is authorized at {model} {effort} using {decision}. Preserve the existing task, scope, worktree, evidence, and acceptance criteria. Continue from current progress; do not restart or broaden the task."
     )

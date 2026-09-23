@@ -98,6 +98,7 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
     chat.thread_id = Some(thread_id);
     chat.dispatch_adaptive_command("astra");
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
@@ -466,6 +467,7 @@ async fn trusted_handoff_resets_unfinished_pressure() {
     chat.dispatch_adaptive_command("astra");
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
     chat.adaptive_effort.worker_context.authorized_scope = Some("slice-reset".to_string());
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
 
     assert!(chat.apply_adaptive_unfinished_authorized_turn("unfinished-before-handoff"));
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
@@ -702,6 +704,7 @@ async fn late_workflow_terminal_still_overrides_synthetic_failure_pressure() {
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
     chat.adaptive_effort.worker_context.authorized_scope =
         Some("codexdd/late-terminal-overrides-pressure".to_string());
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
