@@ -7,7 +7,11 @@
 use super::session_lifecycle::ThreadAttachPresentation;
 use super::*;
 use crate::app_event::ThreadTitleDestination;
+use crate::adaptive_worker::AdaptiveWorkerRole;
+use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use crate::chatwidget::ThreadInputStateRestoreMode;
+use codex_app_server_protocol::UserInput;
+use codex_protocol::permissions::FileSystemSandboxPolicy;
 use codex_app_server_protocol::ThreadStartedNotification;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
@@ -15,6 +19,32 @@ use codex_app_server_protocol::WarningNotification;
 
 // Leave time for side-thread cleanup and unsubscribe inside the two-second exit budget.
 const REALTIME_STOP_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 1);
+
+fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
+    let Some(text) = items.iter().find_map(|item| match item {
+        UserInput::Text { text, .. } => Some(text.as_str()),
+        _ => None,
+    }) else {
+        return false;
+    };
+
+    matches!(
+        parse_adaptive_worker_assignment(text),
+        Ok(Some(worker_context)) if worker_context.role == AdaptiveWorkerRole::Implementation
+    )
+}
+
+fn adaptive_reconnaissance_permissions_override(config: &Config) -> TurnPermissionsOverride {
+    let network = config
+        .permissions
+        .effective_permission_profile()
+        .network_sandbox_policy();
+    let profile = PermissionProfile::from_runtime_permissions(
+        &FileSystemSandboxPolicy::read_only(),
+        network,
+    );
+    TurnPermissionsOverride::LegacySandbox(profile)
+}
 
 impl App {
     pub(super) async fn stop_realtime_conversation(&mut self, app_server: &mut AppServerSession) {
@@ -851,16 +881,24 @@ impl App {
                                 ),
                             )
                         };
-                    let permissions_override = Self::turn_permissions_override_from_config(
-                        config,
-                        selected_active
-                            .as_ref()
-                            .or(confirmed_active.as_ref())
-                            .or(active_permission_profile.as_ref()),
-                        self.runtime_permission_profile_override
-                            .as_ref()
-                            .and_then(RuntimePermissionProfileOverride::turn_permission_profile),
-                    );
+                    let adaptive_reconnaissance_required = self
+                        .chat_widget
+                        .adaptive_implementation_reconnaissance_required()
+                        || user_turn_starts_bound_implementation(items);
+                    let permissions_override = if adaptive_reconnaissance_required {
+                        adaptive_reconnaissance_permissions_override(config)
+                    } else {
+                        Self::turn_permissions_override_from_config(
+                            config,
+                            selected_active
+                                .as_ref()
+                                .or(confirmed_active.as_ref())
+                                .or(active_permission_profile.as_ref()),
+                            self.runtime_permission_profile_override
+                                .as_ref()
+                                .and_then(RuntimePermissionProfileOverride::turn_permission_profile),
+                        )
+                    };
                     let response = app_server
                         .turn_start(
                             thread_id,
@@ -2139,6 +2177,49 @@ mod tests {
             .build()
             .await
             .expect("config should build")
+    }
+
+    #[test]
+    fn adaptive_reconnaissance_detects_initial_implementation_assignment() {
+        let implementation = UserInput::Text {
+            text: "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"bounded docs change\"\n\nMake the change."
+                .to_string(),
+            text_elements: Vec::new(),
+        };
+        let validation = UserInput::Text {
+            text: "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"bounded docs change\"\n\nValidate the change."
+                .to_string(),
+            text_elements: Vec::new(),
+        };
+        let ordinary = UserInput::Text {
+            text: "Make the change.".to_string(),
+            text_elements: Vec::new(),
+        };
+
+        assert!(user_turn_starts_bound_implementation(&[implementation]));
+        assert!(!user_turn_starts_bound_implementation(&[validation]));
+        assert!(!user_turn_starts_bound_implementation(&[ordinary]));
+    }
+
+    #[tokio::test]
+    async fn adaptive_reconnaissance_turn_forces_read_only_filesystem() {
+        let config = config_with_workspace_profile().await;
+        let normal_network = config
+            .permissions
+            .effective_permission_profile()
+            .network_sandbox_policy();
+
+        let TurnPermissionsOverride::LegacySandbox(profile) =
+            adaptive_reconnaissance_permissions_override(&config)
+        else {
+            panic!("adaptive reconnaissance must use a turn-scoped legacy sandbox override");
+        };
+
+        assert_eq!(
+            profile.file_system_sandbox_policy(),
+            FileSystemSandboxPolicy::read_only()
+        );
+        assert_eq!(profile.network_sandbox_policy(), normal_network);
     }
 
     #[tokio::test]
