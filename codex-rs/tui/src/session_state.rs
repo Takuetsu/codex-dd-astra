@@ -406,9 +406,8 @@ mod codexdd_complexity_persistence_regression {
 
     #[test]
     fn restored_snapshot_recovers_complexity_class() {
-        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
-            serde_json::from_str(
-                r#"{
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
                     "enabled": true,
                     "starting_family": "astra",
                     "current_family": "sol",
@@ -421,17 +420,13 @@ mod codexdd_complexity_persistence_regression {
                     "workflow_terminal": null,
                     "complexity_class": "architectural"
                 }"#,
-            )
-            .expect("snapshot should deserialize");
+        )
+        .expect("snapshot should deserialize");
 
         let mut adaptive = AdaptiveEffortState::default();
 
-        apply_persisted_adaptive_workflow_state(
-            &mut adaptive,
-            snapshot,
-            None,
-        )
-        .expect("snapshot should restore");
+        apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect("snapshot should restore");
 
         assert_eq!(
             adaptive.complexity_class,
