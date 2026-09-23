@@ -80,17 +80,15 @@ impl ChatWidget {
             AdaptiveRuntimeSignalKind::Capability => {
                 envelope.evidence_refs.is_empty() && capability_diagnostic.is_some()
             }
-            AdaptiveRuntimeSignalKind::ReadyForValidation => match self
-                .adaptive_effort
-                .worker_context
-                .role
-            {
-                AdaptiveWorkerRole::Repair => true,
-                AdaptiveWorkerRole::Implementation => {
-                    self.adaptive_effort.complexity_class.is_some()
+            AdaptiveRuntimeSignalKind::ReadyForValidation => {
+                match self.adaptive_effort.worker_context.role {
+                    AdaptiveWorkerRole::Repair => true,
+                    AdaptiveWorkerRole::Implementation => {
+                        self.adaptive_effort.complexity_class.is_some()
+                    }
+                    AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Validation => false,
                 }
-                AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Validation => false,
-            },
+            }
             AdaptiveRuntimeSignalKind::RepairRequired => {
                 self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Validation
                     && self.valid_evidence_refs(

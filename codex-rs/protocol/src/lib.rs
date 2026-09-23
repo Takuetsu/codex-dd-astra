@@ -24,8 +24,7 @@ pub use tool_name::ToolName;
 /// The TUI sets this on turn/start while complexity is still missing, and core uses it to
 /// enforce the turn-scoped no-write tool gate without switching Windows into a read-only OS
 /// sandbox profile.
-pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str =
-    "codexdd_adaptive_reconnaissance";
+pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str = "codexdd_adaptive_reconnaissance";
 pub mod approvals;
 pub mod capabilities;
 pub mod config_types;

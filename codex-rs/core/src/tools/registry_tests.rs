@@ -865,9 +865,8 @@ fn adaptive_reconnaissance_shell_gate_rejects_write_capable_commands() {
 #[tokio::test]
 async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;
-    turn.turn_metadata_state.set_turn_trigger(
-        CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string(),
-    );
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string());
     let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
         tool_name: codex_tools::ToolName::plain("exec_command"),
     }) as Arc<dyn CoreToolRuntime>]);
@@ -887,10 +886,7 @@ async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> any
     };
 
     registry
-        .dispatch_any_with_terminal_outcome(
-            invocation,
-            /*terminal_outcome_reached*/ None,
-        )
+        .dispatch_any_with_terminal_outcome(invocation, /*terminal_outcome_reached*/ None)
         .await?;
 
     Ok(())
@@ -899,9 +895,8 @@ async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> any
 #[tokio::test]
 async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;
-    turn.turn_metadata_state.set_turn_trigger(
-        CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string(),
-    );
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string());
     let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
         tool_name: codex_tools::ToolName::plain("apply_patch"),
     }) as Arc<dyn CoreToolRuntime>]);
@@ -924,7 +919,10 @@ async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Resu
         Err(err) => err,
     };
 
-    assert!(err.to_string().contains("complexity reconnaissance is read-only"));
+    assert!(
+        err.to_string()
+            .contains("complexity reconnaissance is read-only")
+    );
     Ok(())
 }
 
