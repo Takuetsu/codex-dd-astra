@@ -409,8 +409,7 @@ impl ChatWidget {
         });
         let awaiting_initial_complexity = state.worker_context.role
             == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
-            && state.complexity_class.is_none()
-            && state.attempt_number == 1;
+            && state.complexity_class.is_none();
 
         if !reported_adaptive_signal && !awaiting_initial_complexity {
             return false;
