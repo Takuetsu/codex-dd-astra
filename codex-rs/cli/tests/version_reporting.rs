@@ -7,7 +7,7 @@ fn version_reports_codexdd_product_and_git_build() -> anyhow::Result<()> {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::starts_with("codexdd 0.3.2+g"))
+        .stdout(predicate::str::starts_with("codexdd 0.3.3+g"))
         .stdout(predicate::str::contains("codex-cli 0.0.0").not());
     Ok(())
 }

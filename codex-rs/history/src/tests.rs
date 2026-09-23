@@ -141,6 +141,7 @@ fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result
                 starting_family: Some("astra".to_string()),
                 current_family: Some("luna".to_string()),
                 current_effort: Some("high".to_string()),
+                complexity_class: None,
                 attempt_number: 5,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -202,12 +203,32 @@ fn workflow_state_latest_valid_canonical_record_wins() {
 }
 
 #[test]
+fn adaptive_workflow_snapshot_without_complexity_remains_backward_compatible() -> Result<()> {
+    let snapshot: AdaptiveWorkflowStateSnapshot = serde_json::from_value(json!({
+        "enabled": true,
+        "starting_family": "astra",
+        "current_family": "luna",
+        "current_effort": "high",
+        "attempt_number": 6,
+        "paused_by_user": false,
+        "worker_role": "repair",
+        "authorized_scope": "Z-A0.47B bounded repair",
+        "worker_assignment_locked": true,
+        "workflow_terminal": "ready_for_validation",
+    }))?;
+
+    assert_eq!(snapshot.complexity_class, None);
+    Ok(())
+}
+
+#[test]
 fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
     let snapshot = AdaptiveWorkflowStateSnapshot {
         enabled: true,
         starting_family: Some("astra".to_string()),
         current_family: Some("luna".to_string()),
         current_effort: Some("high".to_string()),
+        complexity_class: None,
         attempt_number: 6,
         paused_by_user: false,
         worker_role: "repair".to_string(),
@@ -788,7 +809,7 @@ fn rollout_item_variants_preserve_existing_payload_shapes() -> Result<()> {
 fn rollout_item_schema_matches_tagged_payload_and_sibling_metadata() -> Result<()> {
     let schema = serde_json::to_value(schemars::schema_for!(RolloutItem))?;
     let variants = schema["oneOf"].as_array().expect("rollout variants");
-    assert_eq!(variants.len(), 12);
+    assert_eq!(variants.len(), 13);
 
     for variant in variants {
         let required = variant["required"].as_array().expect("required fields");

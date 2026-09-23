@@ -91,6 +91,8 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub current_family: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub current_effort: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub complexity_class: Option<String>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
     pub worker_role: String,

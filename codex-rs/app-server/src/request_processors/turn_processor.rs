@@ -220,6 +220,7 @@ impl TurnRequestProcessor {
                         starting_family: state.starting_family,
                         current_family: state.current_family,
                         current_effort: state.current_effort,
+                        complexity_class: state.complexity_class,
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
                         worker_role: state.worker_role,
