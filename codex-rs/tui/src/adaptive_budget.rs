@@ -1,4 +1,4 @@
-//! Budget-aware routing helpers for codexdd 0.3.2.
+//! Budget-aware routing helpers for CodexDD adaptive implementation and review.
 //!
 //! This module is deliberately deterministic. It consumes backend-provided rate-limit windows and
 //! computes whether codexdd should conserve, stay balanced, or spend surplus allowance on quality.
