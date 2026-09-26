@@ -427,6 +427,7 @@ mod tests {
 mod codexdd_complexity_persistence_regression {
     use super::*;
     use crate::adaptive_complexity::AdaptiveComplexityClass;
+    use crate::adaptive_complexity::AdaptiveImplementationPhase;
 
     #[test]
     fn restored_snapshot_recovers_complexity_class() {
@@ -456,5 +457,37 @@ mod codexdd_complexity_persistence_regression {
             adaptive.complexity_class,
             Some(AdaptiveComplexityClass::Architectural)
         );
+        assert_eq!(adaptive.implementation_phase, None);
+    }
+
+    #[test]
+    fn restored_snapshot_recovers_mechanical_validation_phase() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "luna",
+                    "current_effort": "low",
+                    "attempt_number": 3,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/lifecycle-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "architectural",
+                    "implementation_phase": "mechanical_validation"
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect("snapshot should restore");
+
+        assert_eq!(
+            adaptive.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert!(adaptive.implementation_mechanical_validation_active());
     }
 }
