@@ -140,6 +140,10 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
                         AdaptivePendingDecision::RetrySameLevel => "RetrySameLevel",
                         AdaptivePendingDecision::EscalateEffort => "EscalateEffort",
                         AdaptivePendingDecision::EscalateModel => "EscalateModel",
+                        AdaptivePendingDecision::EnterMechanicalValidation => {
+                            "EnterMechanicalValidation"
+                        }
+                        AdaptivePendingDecision::ResumeImplementation => "ResumeImplementation",
                     })
                     && !text.contains("original root prompt")
                     && text_elements.is_empty()
