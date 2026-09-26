@@ -936,7 +936,7 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
         .dispatch_any_with_state(build_invocation, /*terminal_outcome_reached*/ None)
         .await?;
 
-    let err = registry
+    let err = match registry
         .dispatch_any_with_state(
             test_invocation(
                 session,
@@ -947,7 +947,10 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
             /*terminal_outcome_reached*/ None,
         )
         .await
-        .expect_err("mechanical validation must block source patches");
+    {
+        Ok(_) => panic!("mechanical validation must block source patches"),
+        Err(err) => err,
+    };
     assert!(
         err.to_string()
             .contains("mechanical validation does not authorize source edits")
