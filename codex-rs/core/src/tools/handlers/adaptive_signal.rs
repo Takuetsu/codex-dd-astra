@@ -23,6 +23,8 @@ const TOOL_NAME: &str = "report_adaptive_signal";
 enum SignalKind {
     Complexity,
     Capability,
+    MechanicalValidation,
+    ImplementationWork,
     ReadyForValidation,
     RepairRequired,
     ReadyForOwnerQa,
@@ -91,13 +93,15 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                 vec![
                     json!("complexity"),
                     json!("capability"),
+                    json!("mechanical_validation"),
+                    json!("implementation_work"),
                     json!("ready_for_validation"),
                     json!("repair_required"),
                     json!("ready_for_owner_qa"),
                     json!("ready_for_repository_handoff"),
                 ],
                 Some(
-                    "The trusted adaptive fact to report. `capability` requests additional compute and therefore requires a diagnostic_note explaining the concrete capability limitation at the current route and why stronger model capability is required. A green Validation/Reviewer result such as PASS - READY FOR REPOSITORY HANDOFF must use ready_for_repository_handoff (or ready_for_owner_qa); both map to the READY_FOR_OWNER_QA hard terminal."
+                    "The trusted adaptive fact to report. `capability` requests additional compute and therefore requires a diagnostic_note explaining the concrete capability limitation at the current route and why stronger model capability is required. An Implementation Worker reports `mechanical_validation` only after source-changing implementation is complete and the remaining work is tests/checks/builds/evidence; if that phase discovers that source edits are required, report `implementation_work` before editing so the runtime restores the complexity floor. A green Validation/Reviewer result such as PASS - READY FOR REPOSITORY HANDOFF must use ready_for_repository_handoff (or ready_for_owner_qa); both map to the READY_FOR_OWNER_QA hard terminal."
                         .to_string(),
                 ),
             ),
@@ -180,7 +184,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
         );
         ToolSpec::Function(ResponsesApiTool {
             name: TOOL_NAME.to_string(),
-            description: "Report the structured adaptive outcome before ending a bound Worker turn. On the first Luna Low turn of a bound Implementation Worker, perform reconnaissance only, then report kind=complexity with the complete structured complexity object and end the turn without editing; the runtime will continue automatically at the bounded implementation floor. A capability request must include a nonblank diagnostic report explaining the concrete current-route limitation and why stronger model capability is required; reasonless capability requests are rejected. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
+            description: "Report the structured adaptive outcome before ending a bound Worker turn. On the first Luna Low turn of a bound Implementation Worker, perform reconnaissance only, then report kind=complexity with the complete structured complexity object and end the turn without editing; the runtime will continue automatically at the bounded implementation floor. When source-changing implementation is complete and only mechanical tests, formatting checks, builds, diff inspection, or evidence collection remain, report kind=mechanical_validation and end the turn; the runtime may lower the route according to budget while enforcing a no-source-edit gate. If mechanical validation reveals that source edits or renewed implementation reasoning are required, report kind=implementation_work and end the turn before editing; the runtime restores at least the previously authorized complexity floor. A capability request must include a nonblank diagnostic report explaining the concrete current-route limitation and why stronger model capability is required; reasonless capability requests are rejected. When the assigned role is complete, report its workflow terminal before the final answer: Implementation/Repair completion uses ready_for_validation; a Validation/Reviewer with green objective validation, including a project verdict such as PASS - READY FOR REPOSITORY HANDOFF, uses ready_for_repository_handoff or ready_for_owner_qa with successful native evidence refs; an evidence-backed validation blocker uses repair_required. Do not report a workflow terminal while authorized work remains. Final-answer prose is non-authoritative and is not parsed by the runtime. Runtime validation occurs at the current turn's terminal boundary."
                 .to_string(),
             strict: false,
             defer_loading: None,
@@ -254,12 +258,26 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                 };
                 args.diagnostic_note = Some(diagnostic_note.to_string());
             }
+            if matches!(
+                &args.kind,
+                SignalKind::MechanicalValidation | SignalKind::ImplementationWork
+            ) && (!args.evidence_refs.is_empty() || args.diagnostic_note.is_some())
+            {
+                return Err(FunctionCallError::RespondToModel(
+                    "implementation lifecycle signals do not accept evidence_refs or diagnostic_note"
+                        .to_string(),
+                ));
+            }
             if let Some(complexity_class) = complexity_class {
                 args.diagnostic_note = Some(complexity_class.to_string());
             }
             let signal_kind = match args.kind {
                 SignalKind::Complexity => AdaptiveRuntimeSignalKind::Complexity,
                 SignalKind::Capability => AdaptiveRuntimeSignalKind::Capability,
+                SignalKind::MechanicalValidation => {
+                    AdaptiveRuntimeSignalKind::MechanicalValidation
+                }
+                SignalKind::ImplementationWork => AdaptiveRuntimeSignalKind::ImplementationWork,
                 SignalKind::ReadyForValidation => AdaptiveRuntimeSignalKind::ReadyForValidation,
                 SignalKind::RepairRequired => AdaptiveRuntimeSignalKind::RepairRequired,
                 SignalKind::ReadyForOwnerQa | SignalKind::ReadyForRepositoryHandoff => {
