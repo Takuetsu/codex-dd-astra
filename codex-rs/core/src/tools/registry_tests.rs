@@ -756,25 +756,25 @@ async fn dispatch_uses_canonical_tool_names_for_lifecycle_contributors() -> anyh
     let turn = Arc::new(turn);
 
     registry
-        .dispatch_any_with_terminal_outcome(
+        .dispatch_any_with_state(
             test_invocation(
                 Arc::clone(&session),
                 Arc::clone(&turn),
                 "ok-call",
                 codex_tools::ToolName::namespaced(DEFAULT_FUNCTION_NAMESPACE, "ok_tool"),
             ),
-            /*terminal_outcome_reached*/ None,
+            /*call_state*/ None,
         )
         .await?;
     let err = match registry
-        .dispatch_any_with_terminal_outcome(
+        .dispatch_any_with_state(
             test_invocation(
                 Arc::clone(&session),
                 Arc::clone(&turn),
                 "failing-call",
                 failing_tool.clone(),
             ),
-            /*terminal_outcome_reached*/ None,
+            /*call_state*/ None,
         )
         .await
     {
@@ -886,7 +886,7 @@ async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> any
     };
 
     registry
-        .dispatch_any_with_terminal_outcome(invocation, /*terminal_outcome_reached*/ None)
+        .dispatch_any_with_state(invocation, /*terminal_outcome_reached*/ None)
         .await?;
 
     Ok(())
@@ -904,7 +904,7 @@ async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Resu
     let turn = Arc::new(turn);
 
     let err = match registry
-        .dispatch_any_with_terminal_outcome(
+        .dispatch_any_with_state(
             test_invocation(
                 session,
                 turn,

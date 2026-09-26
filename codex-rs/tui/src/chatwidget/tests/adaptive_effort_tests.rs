@@ -1430,6 +1430,7 @@ fn adaptive_test_session(
     reasoning_effort: Option<ReasoningEffort>,
 ) -> crate::session_state::ThreadSessionState {
     crate::session_state::ThreadSessionState {
+        windows_sandbox_host: crate::app::WindowsSandboxHost::Local,
         thread_id,
         forked_from_id,
         fork_parent_title: None,
@@ -1832,6 +1833,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
 
     chat.register_adaptive_evidence(&ItemCompletedNotification {
         item: ThreadItem::CommandExecution {
+            model_context: None,
             id: "native-call-1".to_string(),
             plugin_id: None,
             script_path: None,
@@ -1870,6 +1872,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
     chat.handle_server_notification(
         ServerNotification::ItemCompleted(ItemCompletedNotification {
             item: ThreadItem::CommandExecution {
+                model_context: None,
                 id: "replayed-call".to_string(),
                 plugin_id: None,
                 script_path: None,

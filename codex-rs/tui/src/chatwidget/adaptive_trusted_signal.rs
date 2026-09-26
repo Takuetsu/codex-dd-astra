@@ -310,6 +310,7 @@ mod tests {
     ) -> ItemCompletedNotification {
         ItemCompletedNotification {
             item: ThreadItem::CommandExecution {
+                model_context: None,
                 id: item_id.to_string(),
                 plugin_id: None,
                 script_path: None,

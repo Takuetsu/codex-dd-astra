@@ -35,6 +35,7 @@ fn native_command_completion_becomes_small_typed_evidence() {
     let thread_id = ThreadId::new();
     let notification = ItemCompletedNotification {
         item: ThreadItem::CommandExecution {
+            model_context: None,
             id: "native-call-1".to_string(),
             plugin_id: None,
             script_path: None,
@@ -79,6 +80,7 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             arguments: serde_json::json!({}),
             app_context: None,
             mcp_app_resource_uri: None,
+            mcp_app_ui: None,
             plugin_id: None,
             read_only_hint: None,
             result: None,
@@ -146,6 +148,7 @@ fn native_command_outcomes_are_not_upgraded_from_output() {
     ] {
         let notification = ItemCompletedNotification {
             item: ThreadItem::CommandExecution {
+                model_context: None,
                 id: format!("native-{status:?}"),
                 plugin_id: None,
                 script_path: None,
