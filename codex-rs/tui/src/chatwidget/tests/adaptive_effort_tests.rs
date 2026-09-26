@@ -105,6 +105,14 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
             AdaptivePendingDecision::EscalateModel,
             admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
         ),
+        (
+            AdaptivePendingDecision::EnterMechanicalValidation,
+            admission_route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
+        ),
+        (
+            AdaptivePendingDecision::ResumeImplementation,
+            admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
+        ),
     ] {
         let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
         chat.thread_id = Some(ThreadId::new());
