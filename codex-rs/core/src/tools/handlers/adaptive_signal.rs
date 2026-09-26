@@ -194,7 +194,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
                 "properties": { "status": { "type": "string", "enum": ["request_emitted"] } },
                 "required": ["status"],
                 "additionalProperties": false
-            })),
+            }).into()),
         })
     }
 

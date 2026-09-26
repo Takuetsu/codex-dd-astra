@@ -2,6 +2,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from upstream_sync import (
     conflict_issue_title,
@@ -11,6 +12,7 @@ from upstream_sync import (
     pr_marker,
     release_version,
     reconcile_workspace_lockfile,
+    report_conflict_issue,
     rewrite_version_test,
     select_latest_release,
     stable_release_version,
@@ -35,6 +37,52 @@ def commit_all(repo: Path, message: str) -> str:
 
 
 class UpstreamSyncTests(unittest.TestCase):
+    def test_conflict_summary_survives_disabled_github_issues(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            body = Path(temp_dir) / "conflict.md"
+            summary = Path(temp_dir) / "summary.md"
+            body.write_text(
+                "rust-v0.156.1 conflict\nProduction: abc\nUnmerged paths:\n"
+                "codex-rs/tui/src/app.rs\n"
+            )
+
+            def issues_disabled(*args, **kwargs):
+                self.assertEqual(summary.read_text(), body.read_text() + "\n")
+                raise subprocess.CalledProcessError(
+                    4, args[0], stderr="GraphQL: Issues are disabled for this repository"
+                )
+
+            with patch("upstream_sync.subprocess.run", side_effect=issues_disabled):
+                self.assertFalse(
+                    report_conflict_issue(body, summary, "owner/repo", "conflict title")
+                )
+
+            reported = summary.read_text()
+            self.assertIn("codex-rs/tui/src/app.rs", reported)
+            self.assertIn("Issues are disabled", reported)
+            self.assertLess(reported.index("Unmerged paths"), reported.index("Secondary diagnostic"))
+
+    def test_clean_issue_reporting_keeps_primary_summary(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            body = Path(temp_dir) / "conflict.md"
+            summary = Path(temp_dir) / "summary.md"
+            body.write_text("conflict diagnostics\n")
+            calls = []
+
+            def available(command, **kwargs):
+                self.assertEqual(summary.read_text(), body.read_text() + "\n")
+                calls.append(command)
+                output = "[]" if command[2] == "list" else ""
+                return subprocess.CompletedProcess(command, 0, stdout=output)
+
+            with patch("upstream_sync.subprocess.run", side_effect=available):
+                self.assertTrue(
+                    report_conflict_issue(body, summary, "owner/repo", "conflict title")
+                )
+
+            self.assertEqual([command[2] for command in calls], ["list", "create"])
+            self.assertEqual(summary.read_text(), "conflict diagnostics\n\n")
+
     def test_selects_highest_stable_release_and_ignores_prereleases(self):
         self.assertEqual(
             select_latest_release(

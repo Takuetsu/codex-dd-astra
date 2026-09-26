@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
+import subprocess
 import sys
+from pathlib import Path
 from typing import Iterable
 
 
@@ -121,11 +125,53 @@ def conflict_marker(tag: str) -> str:
     return f"codexdd-upstream-conflict: {tag}"
 
 
+def report_conflict_issue(
+    body_path: Path, summary_path: Path, repository: str, title: str
+) -> bool:
+    """Publish primary conflict details before best-effort GitHub Issue reporting."""
+    with summary_path.open("a", encoding="utf-8") as summary:
+        summary.write(body_path.read_text(encoding="utf-8"))
+        summary.write("\n")
+
+    try:
+        listed = subprocess.run(
+            [
+                "gh", "issue", "list", "--repo", repository, "--state", "open",
+                "--limit", "100", "--json", "number,title",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        issues = json.loads(listed.stdout)
+        existing = next((item["number"] for item in issues if item["title"] == title), None)
+        if existing is None:
+            command = [
+                "gh", "issue", "create", "--repo", repository,
+                "--title", title, "--body-file", str(body_path),
+            ]
+        else:
+            command = [
+                "gh", "issue", "edit", str(existing), "--repo", repository,
+                "--body-file", str(body_path),
+            ]
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except (OSError, subprocess.CalledProcessError, ValueError, KeyError, TypeError) as error:
+        detail = getattr(error, "stderr", None) or str(error)
+        secondary = f"Secondary diagnostic: GitHub Issue reporting failed: {detail.strip()}"
+        print(secondary, file=sys.stderr)
+        with summary_path.open("a", encoding="utf-8") as summary:
+            summary.write(f"\n{secondary}\n")
+        return False
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--latest-from-stdin", action="store_true")
     group.add_argument("--next-patch")
+    group.add_argument("--report-conflict", type=Path)
     args = parser.parse_args()
     try:
         if args.latest_from_stdin:
@@ -134,6 +180,13 @@ def main() -> int:
                     line.strip() for line in sys.stdin if line.strip()
                 )
             )
+        elif args.report_conflict is not None:
+            return 0 if report_conflict_issue(
+                args.report_conflict,
+                Path(os.environ["GITHUB_STEP_SUMMARY"]),
+                os.environ["GITHUB_REPOSITORY"],
+                os.environ["CONFLICT_TITLE"],
+            ) else 1
         else:
             print(next_patch_version(args.next_patch))
     except ValueError as error:

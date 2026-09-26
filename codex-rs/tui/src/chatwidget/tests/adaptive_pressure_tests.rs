@@ -19,6 +19,7 @@ use codex_utils_absolute_path::AbsolutePathBuf;
 fn failed_command(thread_id: ThreadId, turn_id: &str, item_id: &str) -> ItemCompletedNotification {
     ItemCompletedNotification {
         item: ThreadItem::CommandExecution {
+            model_context: None,
             id: item_id.to_string(),
             plugin_id: None,
             script_path: None,

@@ -150,9 +150,22 @@ jobs:
               echo "- Target upstream: ${RELEASE_TAG} (${RELEASE_SHA})"
               echo "- codexdd delta paths: ${custom_path_count}"
               echo "- Unmerged paths: ${conflict_count}"
+              echo "- Integration branch key: ${UPDATE_BRANCH}"
               echo "- Workflow: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
               echo
               echo "No integration branch or pull request was published. These are real overlaps between the codexdd product delta and the new stable upstream tree; no automatic ours/theirs resolution was attempted."
+              echo
+              echo "### Manual recovery"
+              echo
+              echo '~~~text'
+              echo "git fetch origin dd/astra-policy-v2"
+              echo "git fetch upstream tag ${CURRENT_TAG} tag ${RELEASE_TAG}"
+              echo "product_tree=\$(git rev-parse '${PRODUCTION_SHA}^{tree}')"
+              echo "synthetic_delta=\$(printf '%s\\n' 'codexdd customization delta from ${CURRENT_TAG}' | git commit-tree \"\$product_tree\" -p ${CURRENT_SHA})"
+              echo "git switch --detach ${RELEASE_SHA}"
+              echo 'git cherry-pick "$synthetic_delta"'
+              echo "# Resolve the unmerged paths, preserving both upstream and codexdd behavior."
+              echo '~~~'
               echo
               echo "### Unmerged paths"
               echo
@@ -171,18 +184,11 @@ jobs:
               echo '~~~'
             } > "$issue_body"
 
-            git cherry-pick --abort || true
-
-            existing_issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == env.CONFLICT_TITLE) | .number' | head -n 1)"
-            if [[ -n "$existing_issue" ]]; then
-              gh issue edit "$existing_issue" --repo "$GITHUB_REPOSITORY" --body-file "$issue_body"
-              echo "Updated conflict issue #${existing_issue}."
-            else
-              gh issue create --repo "$GITHUB_REPOSITORY" --title "$CONFLICT_TITLE" --body-file "$issue_body"
+            if ! python3 .github/scripts/upstream_sync.py --report-conflict "$issue_body"; then
+              echo "GitHub Issue reporting was unavailable; the conflict details remain in the job summary." >&2
             fi
-
-            cat "$issue_body" >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            git cherry-pick --abort || true
+            exit "$cherry_pick_status"
           fi
 
           current_product_version="$(tr -d '[:space:]' < codex-rs/codexdd-version.txt)"
@@ -273,7 +279,10 @@ jobs:
             --body-file "$body_file")"
           echo "Opened ${pr_url}"
 
-          existing_issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == env.CONFLICT_TITLE) | .number' | head -n 1)"
-          if [[ -n "$existing_issue" ]]; then
-            gh issue close "$existing_issue" --repo "$GITHUB_REPOSITORY" --comment "Automatic integration is now clean and has opened ${pr_url}."
+          if existing_issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == env.CONFLICT_TITLE) | .number' | head -n 1)"; then
+            if [[ -n "$existing_issue" ]] && ! gh issue close "$existing_issue" --repo "$GITHUB_REPOSITORY" --comment "Automatic integration is now clean and has opened ${pr_url}."; then
+              echo "Could not close old conflict issue #${existing_issue}; integration PR remains open." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "Could not query old conflict issues; integration PR remains open." >> "$GITHUB_STEP_SUMMARY"
           fi
