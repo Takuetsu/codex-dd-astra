@@ -221,6 +221,7 @@ impl TurnRequestProcessor {
                         current_family: state.current_family,
                         current_effort: state.current_effort,
                         complexity_class: state.complexity_class,
+                        implementation_phase: state.implementation_phase,
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
                         worker_role: state.worker_role,
