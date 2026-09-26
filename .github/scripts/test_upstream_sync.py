@@ -49,7 +49,9 @@ class UpstreamSyncTests(unittest.TestCase):
             def issues_disabled(*args, **kwargs):
                 self.assertEqual(summary.read_text(), body.read_text() + "\n")
                 raise subprocess.CalledProcessError(
-                    4, args[0], stderr="GraphQL: Issues are disabled for this repository"
+                    4,
+                    args[0],
+                    stderr="GraphQL: Issues are disabled for this repository",
                 )
 
             with patch("upstream_sync.subprocess.run", side_effect=issues_disabled):
@@ -60,7 +62,9 @@ class UpstreamSyncTests(unittest.TestCase):
             reported = summary.read_text()
             self.assertIn("codex-rs/tui/src/app.rs", reported)
             self.assertIn("Issues are disabled", reported)
-            self.assertLess(reported.index("Unmerged paths"), reported.index("Secondary diagnostic"))
+            self.assertLess(
+                reported.index("Unmerged paths"), reported.index("Secondary diagnostic")
+            )
 
     def test_clean_issue_reporting_keeps_primary_summary(self):
         with tempfile.TemporaryDirectory() as temp_dir:

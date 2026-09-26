@@ -136,29 +136,61 @@ def report_conflict_issue(
     try:
         listed = subprocess.run(
             [
-                "gh", "issue", "list", "--repo", repository, "--state", "open",
-                "--limit", "100", "--json", "number,title",
+                "gh",
+                "issue",
+                "list",
+                "--repo",
+                repository,
+                "--state",
+                "open",
+                "--limit",
+                "100",
+                "--json",
+                "number,title",
             ],
             check=True,
             capture_output=True,
             text=True,
         )
         issues = json.loads(listed.stdout)
-        existing = next((item["number"] for item in issues if item["title"] == title), None)
+        existing = next(
+            (item["number"] for item in issues if item["title"] == title), None
+        )
         if existing is None:
             command = [
-                "gh", "issue", "create", "--repo", repository,
-                "--title", title, "--body-file", str(body_path),
+                "gh",
+                "issue",
+                "create",
+                "--repo",
+                repository,
+                "--title",
+                title,
+                "--body-file",
+                str(body_path),
             ]
         else:
             command = [
-                "gh", "issue", "edit", str(existing), "--repo", repository,
-                "--body-file", str(body_path),
+                "gh",
+                "issue",
+                "edit",
+                str(existing),
+                "--repo",
+                repository,
+                "--body-file",
+                str(body_path),
             ]
         subprocess.run(command, check=True, capture_output=True, text=True)
-    except (OSError, subprocess.CalledProcessError, ValueError, KeyError, TypeError) as error:
+    except (
+        OSError,
+        subprocess.CalledProcessError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ) as error:
         detail = getattr(error, "stderr", None) or str(error)
-        secondary = f"Secondary diagnostic: GitHub Issue reporting failed: {detail.strip()}"
+        secondary = (
+            f"Secondary diagnostic: GitHub Issue reporting failed: {detail.strip()}"
+        )
         print(secondary, file=sys.stderr)
         with summary_path.open("a", encoding="utf-8") as summary:
             summary.write(f"\n{secondary}\n")
@@ -181,12 +213,16 @@ def main() -> int:
                 )
             )
         elif args.report_conflict is not None:
-            return 0 if report_conflict_issue(
-                args.report_conflict,
-                Path(os.environ["GITHUB_STEP_SUMMARY"]),
-                os.environ["GITHUB_REPOSITORY"],
-                os.environ["CONFLICT_TITLE"],
-            ) else 1
+            return (
+                0
+                if report_conflict_issue(
+                    args.report_conflict,
+                    Path(os.environ["GITHUB_STEP_SUMMARY"]),
+                    os.environ["GITHUB_REPOSITORY"],
+                    os.environ["CONFLICT_TITLE"],
+                )
+                else 1
+            )
         else:
             print(next_patch_version(args.next_patch))
     except ValueError as error:
