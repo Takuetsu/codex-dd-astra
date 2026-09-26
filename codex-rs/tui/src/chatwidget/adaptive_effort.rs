@@ -1,7 +1,9 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
+use crate::adaptive_budget::mechanical_validation_route;
 use crate::adaptive_budget::quality_review_route;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_complexity::implementation_floor;
 use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
@@ -23,6 +25,7 @@ pub(crate) enum AdaptivePendingDecision {
     RetrySameLevel,
     EscalateEffort,
     EscalateModel,
+    LifecycleTransition,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -104,6 +107,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) pending_signal: Option<AdaptivePendingSignal>,
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
+    pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
     pub(crate) budget_mode: AdaptiveBudgetMode,
 }
 
@@ -150,6 +154,9 @@ impl AdaptiveEffortState {
                 .unwrap_or_else(default_initial_route),
             AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Repair => default_initial_route(),
         };
+        let implementation_phase = (worker_context.role == AdaptiveWorkerRole::Implementation
+            && self.complexity_class.is_some())
+        .then_some(AdaptiveImplementationPhase::Implementation);
         Self {
             enabled,
             starting_family: self.starting_family,
@@ -159,6 +166,7 @@ impl AdaptiveEffortState {
             worker_context,
             worker_assignment_locked: binding.is_some(),
             complexity_class: self.complexity_class,
+            implementation_phase,
             budget_mode: self.budget_mode,
             ..Default::default()
         }
@@ -184,6 +192,20 @@ impl AdaptiveEffortState {
             && self.complexity_class.is_none()
     }
 
+    pub(crate) fn implementation_mechanical_validation_active(&self) -> bool {
+        self.enabled
+            && !self.paused_by_user
+            && self.workflow_terminal.is_none()
+            && self.worker_context.role == AdaptiveWorkerRole::Implementation
+            && self
+                .worker_context
+                .authorized_scope
+                .as_deref()
+                .is_some_and(|scope| !scope.trim().is_empty())
+            && self.complexity_class.is_some()
+            && self.implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
+    }
+
     pub(crate) fn observe_worker_assignment_text(&mut self, text: &str) -> Result<bool, String> {
         if self.worker_assignment_locked {
             return Ok(false);
@@ -207,6 +229,7 @@ impl AdaptiveEffortState {
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
         let complexity_class = self.complexity_class;
+        let implementation_phase = self.implementation_phase;
         let budget_mode = self.budget_mode;
         *self = Self {
             enabled: true,
@@ -232,6 +255,7 @@ impl AdaptiveEffortState {
             pending_signal: None,
             evidence_registry,
             complexity_class,
+            implementation_phase,
             budget_mode,
         };
     }
@@ -278,6 +302,10 @@ impl AdaptiveEffortState {
                 }
                 .to_string()
             }),
+            implementation_phase: self
+                .implementation_phase
+                .map(AdaptiveImplementationPhase::persisted_label)
+                .map(str::to_string),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
             worker_role: worker_role.to_string(),
@@ -302,6 +330,11 @@ impl ChatWidget {
     pub(crate) fn adaptive_implementation_reconnaissance_required(&self) -> bool {
         self.adaptive_effort
             .implementation_reconnaissance_required()
+    }
+
+    pub(crate) fn adaptive_implementation_mechanical_validation_active(&self) -> bool {
+        self.adaptive_effort
+            .implementation_mechanical_validation_active()
     }
 
     pub(crate) fn automatic_validation_binding(&self) -> Option<NewWorkerBinding> {
@@ -606,10 +639,28 @@ impl ChatWidget {
             .complexity_class
             .map(AdaptiveComplexityClass::label)
             .unwrap_or("None");
+        let implementation_phase = state
+            .implementation_phase
+            .map(AdaptiveImplementationPhase::label)
+            .unwrap_or_else(|| {
+                if state.worker_context.role == AdaptiveWorkerRole::Implementation
+                    && state.complexity_class.is_none()
+                {
+                    "Reconnaissance"
+                } else {
+                    "None"
+                }
+            });
         let complexity_floor = state.complexity_class.map_or_else(
             || "None".to_string(),
             |class| {
-                let route = implementation_floor(class);
+                let route = if state.implementation_phase
+                    == Some(AdaptiveImplementationPhase::MechanicalValidation)
+                {
+                    mechanical_validation_route(state.budget_mode)
+                } else {
+                    implementation_floor(class)
+                };
                 let effort = match route.effort {
                     AdaptiveEffort::Low => "Low",
                     AdaptiveEffort::Medium => "Medium",
@@ -622,7 +673,7 @@ impl ChatWidget {
         );
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
@@ -630,6 +681,7 @@ impl ChatWidget {
             effort,
             state.budget_mode.label(),
             complexity,
+            implementation_phase,
             complexity_floor,
             state.attempt_number,
             failure_pressure,
