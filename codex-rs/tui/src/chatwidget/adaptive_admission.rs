@@ -271,6 +271,12 @@ fn adaptive_continuation_text(
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EscalateModel => {
             "EscalateModel"
         }
+        crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation => {
+            "EnterMechanicalValidation"
+        }
+        crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ResumeImplementation => {
+            "ResumeImplementation"
+        }
     };
     let effort = match permit.route.effort {
         AdaptiveEffort::Low => "Low",
@@ -286,9 +292,21 @@ fn adaptive_continuation_text(
             "[Adaptive continuation] The required initial Implementation complexity reconnaissance was not accepted. Attempt {attempt} remains authorized at {model} {effort} using {decision}. Before any further implementation edits, inspect the bounded task state, report kind=complexity with the complete structured complexity object, and end the turn. Preserve the existing task, scope, worktree, evidence, and acceptance criteria. Do not report ready_for_validation until a complexity class has been accepted."
         );
     }
-    format!(
-        "[Adaptive continuation] Continue the current assigned Worker task from the existing thread state. Attempt {attempt} is authorized at {model} {effort} using {decision}. Preserve the existing task, scope, worktree, evidence, and acceptance criteria. Continue from current progress; do not restart or broaden the task."
-    )
+    match permit.decision {
+        crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation => {
+            format!(
+                "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Run tests, formatting checks, builds, diff inspection, and evidence collection without editing source. If validation reveals that source changes or renewed implementation reasoning are required, report kind=implementation_work and end the turn before editing. Preserve the existing task, scope, worktree, and acceptance criteria."
+            )
+        }
+        crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ResumeImplementation => {
+            format!(
+                "[Adaptive continuation] Mechanical validation found source-changing implementation work. Attempt {attempt} is restored at {model} {effort} using {decision}; this route is at least the previously accepted complexity floor and preserves any stronger trusted route. Continue only the required bounded implementation edits. When source-changing work is complete again, report kind=mechanical_validation and end the turn before returning to tests/builds."
+            )
+        }
+        _ => format!(
+            "[Adaptive continuation] Continue the current assigned Worker task from the existing thread state. Attempt {attempt} is authorized at {model} {effort} using {decision}. Preserve the existing task, scope, worktree, evidence, and acceptance criteria. Continue from current progress; do not restart or broaden the task."
+        ),
+    }
 }
 
 fn reasoning_effort(effort: AdaptiveEffort) -> ReasoningEffortConfig {
