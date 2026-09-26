@@ -134,6 +134,26 @@ pub(crate) fn quality_review_route(mode: AdaptiveBudgetMode) -> AdaptiveRoute {
     }
 }
 
+/// Once source-changing Implementation work is explicitly complete, mechanical validation can run
+/// below the complexity floor. Budget pressure only selects among Luna effort levels; this phase
+/// never spends into Sol/Astra by itself and never authorizes source edits.
+pub(crate) fn mechanical_validation_route(mode: AdaptiveBudgetMode) -> AdaptiveRoute {
+    match mode {
+        AdaptiveBudgetMode::Conserve => AdaptiveRoute {
+            family: AdaptiveFamily::Luna,
+            effort: AdaptiveEffort::Low,
+        },
+        AdaptiveBudgetMode::Balanced => AdaptiveRoute {
+            family: AdaptiveFamily::Luna,
+            effort: AdaptiveEffort::Medium,
+        },
+        AdaptiveBudgetMode::Surplus => AdaptiveRoute {
+            family: AdaptiveFamily::Luna,
+            effort: AdaptiveEffort::High,
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -230,6 +250,31 @@ mod tests {
             quality_review_route(AdaptiveBudgetMode::Surplus),
             AdaptiveRoute {
                 family: AdaptiveFamily::Sol,
+                effort: AdaptiveEffort::High,
+            }
+        );
+    }
+
+    #[test]
+    fn mechanical_validation_stays_on_luna_and_tracks_budget() {
+        assert_eq!(
+            mechanical_validation_route(AdaptiveBudgetMode::Conserve),
+            AdaptiveRoute {
+                family: AdaptiveFamily::Luna,
+                effort: AdaptiveEffort::Low,
+            }
+        );
+        assert_eq!(
+            mechanical_validation_route(AdaptiveBudgetMode::Balanced),
+            AdaptiveRoute {
+                family: AdaptiveFamily::Luna,
+                effort: AdaptiveEffort::Medium,
+            }
+        );
+        assert_eq!(
+            mechanical_validation_route(AdaptiveBudgetMode::Surplus),
+            AdaptiveRoute {
+                family: AdaptiveFamily::Luna,
                 effort: AdaptiveEffort::High,
             }
         );
