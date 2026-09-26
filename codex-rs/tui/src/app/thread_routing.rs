@@ -15,6 +15,7 @@ use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
 use codex_app_server_protocol::UserInput;
 use codex_app_server_protocol::WarningNotification;
+use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
 
 // Leave time for side-thread cleanup and unsubscribe inside the two-second exit budget.
@@ -34,8 +35,17 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
     )
 }
 
-fn adaptive_reconnaissance_turn_trigger(required: bool) -> Option<String> {
-    required.then(|| CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())
+fn adaptive_turn_trigger(
+    reconnaissance_required: bool,
+    mechanical_validation_active: bool,
+) -> Option<String> {
+    if reconnaissance_required {
+        Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())
+    } else if mechanical_validation_active {
+        Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string())
+    } else {
+        None
+    }
 }
 
 impl App {
@@ -884,8 +894,11 @@ impl App {
                         .chat_widget
                         .adaptive_implementation_reconnaissance_required()
                         || user_turn_starts_bound_implementation(items);
-                    let turn_trigger =
-                        adaptive_reconnaissance_turn_trigger(adaptive_reconnaissance_required);
+                    let turn_trigger = adaptive_turn_trigger(
+                        adaptive_reconnaissance_required,
+                        self.chat_widget
+                            .adaptive_implementation_mechanical_validation_active(),
+                    );
                     let permissions_override = Self::turn_permissions_override_from_config(
                         config,
                         selected_active
@@ -2238,13 +2251,21 @@ mod tests {
     }
 
     #[test]
-    fn adaptive_reconnaissance_turn_uses_runtime_write_gate_marker() {
+    fn adaptive_turn_uses_lifecycle_write_gate_markers() {
         assert_eq!(
-            adaptive_reconnaissance_turn_trigger(/*required*/ true).as_deref(),
+            adaptive_turn_trigger(/*reconnaissance_required*/ true, /*mechanical*/ false).as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
         assert_eq!(
-            adaptive_reconnaissance_turn_trigger(/*required*/ false),
+            adaptive_turn_trigger(/*reconnaissance_required*/ false, /*mechanical*/ true).as_deref(),
+            Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+        );
+        assert_eq!(
+            adaptive_turn_trigger(/*reconnaissance_required*/ true, /*mechanical*/ true).as_deref(),
+            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+        );
+        assert_eq!(
+            adaptive_turn_trigger(/*reconnaissance_required*/ false, /*mechanical*/ false),
             None
         );
     }
