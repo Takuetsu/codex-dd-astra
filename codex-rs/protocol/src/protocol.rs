@@ -1354,6 +1354,8 @@ pub struct Event {
 pub enum AdaptiveRuntimeSignalKind {
     Complexity,
     Capability,
+    MechanicalValidation,
+    ImplementationWork,
     ReadyForValidation,
     RepairRequired,
     ReadyForOwnerQa,
