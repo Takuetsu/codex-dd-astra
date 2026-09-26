@@ -113,6 +113,49 @@ async fn recorded_questions_share_queued_input_order_across_resume() {
 }
 
 #[tokio::test]
+async fn resumed_history_recovers_orphan_custom_tool_call_without_panicking() {
+    let (mut session, turn) = make_session_and_context().await;
+    let call = ResponseItem::CustomToolCall {
+        id: None,
+        status: None,
+        call_id: "interrupted-custom-tool".to_string(),
+        name: "playwright".to_string(),
+        namespace: None,
+        input: "{}".to_string(),
+        internal_chat_message_metadata_passthrough: None,
+    };
+
+    session
+        .record_initial_history(InitialHistory::Resumed(ResumedHistory {
+            conversation_id: session.thread_id,
+            history: Arc::new(vec![RolloutItem::ResponseItem(call.clone().into())]),
+            rollout_path: None,
+        }))
+        .await;
+
+    let normalized = session
+        .clone_history()
+        .await
+        .for_prompt(&turn.model_info().input_modalities);
+
+    assert_eq!(
+        normalized,
+        vec![
+            call,
+            ResponseItem::CustomToolCallOutput {
+                id: None,
+                call_id: "interrupted-custom-tool".to_string(),
+                name: None,
+                output: codex_protocol::models::FunctionCallOutputPayload::from_text(
+                    "aborted".to_string()
+                ),
+                internal_chat_message_metadata_passthrough: None,
+            },
+        ]
+    );
+}
+
+#[tokio::test]
 async fn sender_context_follows_its_delivery_through_checkpoint_and_rollback() {
     let (mut session, turn_context) = make_session_and_context().await;
     session.guardian_context_mode = GuardianContextMode::ThreadOwned;
