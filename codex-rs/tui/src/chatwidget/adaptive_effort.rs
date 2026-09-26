@@ -25,7 +25,8 @@ pub(crate) enum AdaptivePendingDecision {
     RetrySameLevel,
     EscalateEffort,
     EscalateModel,
-    LifecycleTransition,
+    EnterMechanicalValidation,
+    ResumeImplementation,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
