@@ -114,7 +114,7 @@ async fn recorded_questions_share_queued_input_order_across_resume() {
 
 #[tokio::test]
 async fn resumed_history_recovers_orphan_custom_tool_call_without_panicking() {
-    let (mut session, turn) = make_session_and_context().await;
+    let (session, turn) = make_session_and_context().await;
     let call = ResponseItem::CustomToolCall {
         id: None,
         status: None,
