@@ -39,6 +39,28 @@ impl AdaptiveComplexityClass {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum AdaptiveImplementationPhase {
+    Implementation,
+    MechanicalValidation,
+}
+
+impl AdaptiveImplementationPhase {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::Implementation => "Implementation",
+            Self::MechanicalValidation => "Mechanical validation",
+        }
+    }
+
+    pub(crate) fn persisted_label(self) -> &'static str {
+        match self {
+            Self::Implementation => "implementation",
+            Self::MechanicalValidation => "mechanical_validation",
+        }
+    }
+}
+
 pub(crate) fn classify_complexity(signals: AdaptiveComplexitySignals) -> AdaptiveComplexityClass {
     let mut score = 0u8;
 
