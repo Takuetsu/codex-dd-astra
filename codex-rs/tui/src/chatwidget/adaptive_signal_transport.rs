@@ -84,7 +84,8 @@ impl ChatWidget {
                     && existing.signal_kind == AdaptiveRuntimeSignalKind::Capability
                     && matches!(
                         notification.signal.signal_kind,
-                        AdaptiveRuntimeSignalKind::ReadyForValidation
+                        AdaptiveRuntimeSignalKind::ImplementationWork
+                            | AdaptiveRuntimeSignalKind::ReadyForValidation
                             | AdaptiveRuntimeSignalKind::RepairRequired
                             | AdaptiveRuntimeSignalKind::ReadyForOwnerQa
                     ) =>
