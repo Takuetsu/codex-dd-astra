@@ -74,9 +74,11 @@ impl ChatWidget {
                     Some(AdaptivePendingSignal::Pending(notification.signal));
                 self.save_adaptive_effort_for_current_thread();
             }
-            // A workflow terminal reported later in the same turn outranks the synthetic
-            // two-failure capability signal. This lets a worker recover after two failed tools and
-            // still finish cleanly without forcing an unnecessary escalation.
+            // A source-edit re-entry or workflow terminal reported later in the same turn outranks
+            // the synthetic two-failure capability signal. Mechanical validation can therefore
+            // restore implementation authority after discovering a required repair, while a worker
+            // that recovered from two failed tools can still finish cleanly without unnecessary
+            // escalation.
             Some(AdaptivePendingSignal::Pending(existing))
                 if existing.source_turn_id == source_turn_id
                     && existing.diagnostic_note.as_deref()
