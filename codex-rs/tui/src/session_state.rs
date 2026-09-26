@@ -6,6 +6,7 @@
 use std::path::PathBuf;
 
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
@@ -143,6 +144,23 @@ fn restore_complexity_class(
         .transpose()
 }
 
+fn restore_implementation_phase(
+    value: Option<String>,
+) -> Result<Option<AdaptiveImplementationPhase>, String> {
+    value
+        .map(|value| {
+            match value.as_str() {
+                "implementation" => Some(AdaptiveImplementationPhase::Implementation),
+                "mechanical_validation" => {
+                    Some(AdaptiveImplementationPhase::MechanicalValidation)
+                }
+                _ => None,
+            }
+            .ok_or_else(|| format!("unsupported persisted implementation phase `{value}`"))
+        })
+        .transpose()
+}
+
 fn restore_worker_role(value: &str) -> Result<AdaptiveWorkerRole, String> {
     match value {
         "unspecified" => Ok(AdaptiveWorkerRole::Unspecified),
@@ -183,6 +201,7 @@ fn apply_persisted_adaptive_workflow_state(
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
     let complexity_class = restore_complexity_class(state.complexity_class)?;
+    let implementation_phase = restore_implementation_phase(state.implementation_phase)?;
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -219,6 +238,7 @@ fn apply_persisted_adaptive_workflow_state(
         pending_signal: None,
         evidence_registry: Default::default(),
         complexity_class,
+        implementation_phase,
         budget_mode,
     };
     Ok(())
@@ -287,6 +307,7 @@ mod tests {
                 current_family: Some("luna".to_string()),
                 current_effort: Some("high".to_string()),
                 complexity_class: None,
+                implementation_phase: None,
                 attempt_number: 6,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -348,6 +369,7 @@ mod tests {
                     current_family: Some("luna".to_string()),
                     current_effort: Some("low".to_string()),
                     complexity_class: None,
+                    implementation_phase: None,
                     attempt_number: 1,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
@@ -377,6 +399,7 @@ mod tests {
                 current_family: Some("luna".to_string()),
                 current_effort: Some("medium".to_string()),
                 complexity_class: None,
+                implementation_phase: None,
                 attempt_number: 4,
                 paused_by_user: true,
                 worker_role: "validation".to_string(),
