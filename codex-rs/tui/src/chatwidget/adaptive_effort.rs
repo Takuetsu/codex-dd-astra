@@ -858,6 +858,10 @@ mod tests {
                 Some(complexity_class),
                 "complexity authorization should survive the Worker handoff"
             );
+            assert_eq!(
+                implementation.implementation_phase,
+                Some(AdaptiveImplementationPhase::Implementation)
+            );
 
             let repair = previous.fresh_for_new_worker(Some(&binding(AdaptiveWorkerRole::Repair)));
             assert_eq!(repair.current_family, Some(AdaptiveFamily::Luna));
@@ -910,6 +914,33 @@ mod tests {
         state.paused_by_user = false;
         state.worker_context.authorized_scope = Some("   ".to_string());
         assert!(!state.implementation_reconnaissance_required());
+    }
+
+    #[test]
+    fn mechanical_validation_gate_requires_bound_implementation_phase() {
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Luna),
+            current_effort: Some(AdaptiveEffort::Low),
+            attempt_number: 3,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("bounded implementation".to_string()),
+            },
+            complexity_class: Some(AdaptiveComplexityClass::Architectural),
+            implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
+            ..Default::default()
+        };
+
+        assert!(state.implementation_mechanical_validation_active());
+
+        state.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+        assert!(!state.implementation_mechanical_validation_active());
+
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        state.paused_by_user = true;
+        assert!(!state.implementation_mechanical_validation_active());
     }
 
     #[test]
