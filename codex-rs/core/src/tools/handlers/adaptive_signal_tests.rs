@@ -127,6 +127,76 @@ async fn capability_emits_trimmed_escalation_report() {
 }
 
 #[tokio::test]
+async fn implementation_lifecycle_signals_emit_without_smuggled_authority() {
+    for (kind, expected) in [
+        (
+            "mechanical_validation",
+            AdaptiveRuntimeSignalKind::MechanicalValidation,
+        ),
+        (
+            "implementation_work",
+            AdaptiveRuntimeSignalKind::ImplementationWork,
+        ),
+    ] {
+        let (session, turn, events) = make_session_and_context_with_rx().await;
+        let source_turn_id = turn.sub_id.clone();
+        AdaptiveSignalHandler
+            .handle(ToolInvocation {
+                session,
+                step_context: StepContext::for_test(Arc::clone(&turn)),
+                turn,
+                cancellation_token: tokio_util::sync::CancellationToken::new(),
+                tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
+                call_id: format!("lifecycle-{kind}"),
+                tool_name: ToolName::plain(TOOL_NAME),
+                source: ToolCallSource::Direct,
+                payload: ToolPayload::Function {
+                    arguments: json!({ "kind": kind }).to_string(),
+                },
+            })
+            .await
+            .expect("lifecycle signal");
+
+        let event = events.recv().await.expect("adaptive lifecycle event");
+        assert_eq!(event.id, source_turn_id);
+        let EventMsg::AdaptiveRuntimeSignal(signal) = event.msg else {
+            panic!("expected adaptive runtime signal");
+        };
+        assert_eq!(signal.signal_kind, expected);
+        assert!(signal.evidence_refs.is_empty());
+        assert_eq!(signal.diagnostic_note, None);
+    }
+}
+
+#[tokio::test]
+async fn implementation_lifecycle_signals_reject_extra_fields() {
+    for kind in ["mechanical_validation", "implementation_work"] {
+        for arguments in [
+            json!({ "kind": kind, "evidence_refs": ["not-authority"] }),
+            json!({ "kind": kind, "diagnostic_note": "not-authority" }),
+        ] {
+            let (session, turn, _events) = make_session_and_context_with_rx().await;
+            let result = AdaptiveSignalHandler
+                .handle(ToolInvocation {
+                    session,
+                    step_context: StepContext::for_test(Arc::clone(&turn)),
+                    turn,
+                    cancellation_token: tokio_util::sync::CancellationToken::new(),
+                    tracker: Arc::new(Mutex::new(TurnDiffTracker::default())),
+                    call_id: format!("invalid-{kind}"),
+                    tool_name: ToolName::plain(TOOL_NAME),
+                    source: ToolCallSource::Direct,
+                    payload: ToolPayload::Function {
+                        arguments: arguments.to_string(),
+                    },
+                })
+                .await;
+            assert!(result.is_err(), "{kind} should reject extra fields");
+        }
+    }
+}
+
+#[tokio::test]
 async fn repository_handoff_alias_emits_owner_qa_terminal_signal() {
     let (session, turn, events) = make_session_and_context_with_rx().await;
     let source_turn_id = turn.sub_id.clone();
@@ -188,6 +258,8 @@ fn tool_spec_documents_repository_handoff_terminal_mapping() {
         spec.description
             .contains("Final-answer prose is non-authoritative")
     );
+    assert!(spec.description.contains("mechanical_validation"));
+    assert!(spec.description.contains("implementation_work"));
 }
 
 #[tokio::test]
