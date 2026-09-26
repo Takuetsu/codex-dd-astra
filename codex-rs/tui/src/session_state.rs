@@ -201,7 +201,23 @@ fn apply_persisted_adaptive_workflow_state(
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
     let complexity_class = restore_complexity_class(state.complexity_class)?;
-    let implementation_phase = restore_implementation_phase(state.implementation_phase)?;
+    let mut implementation_phase = restore_implementation_phase(state.implementation_phase)?;
+    if implementation_phase.is_none()
+        && worker_role == AdaptiveWorkerRole::Implementation
+        && complexity_class.is_some()
+    {
+        // Pre-0.3.7 snapshots had no lifecycle field. A bound Implementation Worker with an
+        // accepted complexity class was necessarily still under the implementation floor.
+        implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+    }
+    if implementation_phase.is_some()
+        && (worker_role != AdaptiveWorkerRole::Implementation || complexity_class.is_none())
+    {
+        return Err(
+            "persisted implementation phase requires a bound Implementation Worker with accepted complexity"
+                .to_string(),
+        );
+    }
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -457,7 +473,10 @@ mod codexdd_complexity_persistence_regression {
             adaptive.complexity_class,
             Some(AdaptiveComplexityClass::Architectural)
         );
-        assert_eq!(adaptive.implementation_phase, None);
+        assert_eq!(
+            adaptive.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
     }
 
     #[test]
