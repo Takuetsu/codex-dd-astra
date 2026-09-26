@@ -1,6 +1,7 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_evidence::AdaptiveEvidenceKind;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_evidence::AdaptiveEvidenceRecord;
@@ -2077,7 +2078,18 @@ async fn adaptive_status_surfaces_budget_mode() {
     chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
     let status = chat.adaptive_effort_status_text();
     assert!(status.contains("Complexity: Architectural"));
+    assert!(status.contains("Implementation phase: None"));
     assert!(status.contains("Implementation floor: Sol Medium"));
+
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("mechanical status".to_string()),
+    };
+    chat.adaptive_effort.implementation_phase =
+        Some(AdaptiveImplementationPhase::MechanicalValidation);
+    let status = chat.adaptive_effort_status_text();
+    assert!(status.contains("Implementation phase: Mechanical validation"));
+    assert!(status.contains("Implementation floor: Luna Low"));
 }
 
 #[tokio::test]
@@ -2113,6 +2125,10 @@ async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
     assert_eq!(
         chat.adaptive_effort.complexity_class,
         Some(AdaptiveComplexityClass::Architectural)
+    );
+    assert_eq!(
+        chat.adaptive_effort.implementation_phase,
+        Some(AdaptiveImplementationPhase::Implementation)
     );
     assert_eq!(
         chat.adaptive_effort.current_family,
