@@ -2405,6 +2405,10 @@ async fn budget_and_complexity_route_implementation_and_review_independently() {
         // must not spend premium capacity here.
         assert_eq!(implementation.current_family, Some(AdaptiveFamily::Sol));
         assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Medium));
+        assert_eq!(
+            implementation.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
 
         chat.adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
 
@@ -2510,6 +2514,7 @@ fn durable_workflow_snapshot_persists_complexity_class() {
         current_effort: Some(AdaptiveEffort::Medium),
         attempt_number: 2,
         complexity_class: Some(AdaptiveComplexityClass::Architectural),
+        implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
         ..AdaptiveEffortState::default()
     };
 
@@ -2521,5 +2526,11 @@ fn durable_workflow_snapshot_persists_complexity_class() {
             .get("complexityClass")
             .and_then(serde_json::Value::as_str),
         Some("architectural")
+    );
+    assert_eq!(
+        value
+            .get("implementationPhase")
+            .and_then(serde_json::Value::as_str),
+        Some("mechanical_validation")
     );
 }
