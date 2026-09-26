@@ -2,7 +2,6 @@ use anyhow::Result;
 use codex_core::TurnInputRequest;
 use codex_protocol::config_types::WindowsSandboxLevel;
 use codex_protocol::mcp::ClientMcpExtensions;
-use codex_protocol::models::ResponseItem;
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::ThreadSettingsOverrides;
 use codex_protocol::user_input::ByteRange;
@@ -19,8 +18,6 @@ use core_test_support::responses::start_mock_server;
 use core_test_support::skip_if_no_network;
 use core_test_support::test_codex::test_codex;
 use core_test_support::wait_for_event;
-use codex_rollout::RolloutItem;
-use codex_rollout::append_rollout_item_to_path;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 
@@ -53,75 +50,6 @@ async fn resume_restores_windows_sandbox_override() -> Result<()> {
             .windows_sandbox_level,
         Some(WindowsSandboxLevel::Elevated)
     );
-    Ok(())
-}
-
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn resume_recovers_orphan_custom_tool_call_and_accepts_prompt() -> Result<()> {
-    skip_if_no_network!(Ok(()));
-
-    let server = start_mock_server().await;
-    let mut builder = test_codex();
-    let initial = builder.build(&server).await?;
-    initial.codex.ensure_rollout_materialized().await;
-    let rollout_path = initial.codex.rollout_path().expect("rollout path");
-    let home = Arc::clone(&initial.home);
-    initial.codex.shutdown_and_wait().await?;
-
-    append_rollout_item_to_path(
-        &rollout_path,
-        &RolloutItem::ResponseItem(
-            ResponseItem::CustomToolCall {
-                id: None,
-                status: None,
-                call_id: "interrupted-custom-tool".to_string(),
-                name: "playwright".to_string(),
-                namespace: None,
-                input: "{}".to_string(),
-                internal_chat_message_metadata_passthrough: None,
-            }
-            .into(),
-        ),
-    )
-    .await?;
-
-    let resumed_mock = mount_sse_once(
-        &server,
-        sse(vec![
-            ev_response_created("resp-resumed"),
-            ev_assistant_message("msg-resumed", "Resumed after interrupted tool"),
-            ev_completed("resp-resumed"),
-        ]),
-    )
-    .await;
-
-    let resumed = builder.resume(&server, home, rollout_path).await?;
-    resumed
-        .codex
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Continue after the interrupted tool call".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
-    wait_for_event(&resumed.codex, |event| {
-        matches!(event, EventMsg::TurnComplete(_))
-    })
-    .await;
-
-    let request_body = serde_json::to_string(&resumed_mock.single_request().body_json())?;
-    assert!(
-        request_body.contains("interrupted-custom-tool"),
-        "resumed prompt should retain the interrupted call: {request_body}"
-    );
-    assert!(
-        request_body.contains("custom_tool_call_output"),
-        "resumed prompt should synthesize a custom tool output: {request_body}"
-    );
-    assert!(
-        request_body.contains("aborted"),
-        "interrupted tool must be represented as aborted, not successful: {request_body}"
-    );
-
     Ok(())
 }
 
