@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
@@ -80,6 +81,29 @@ impl ChatWidget {
             AdaptiveRuntimeSignalKind::Capability => {
                 envelope.evidence_refs.is_empty() && capability_diagnostic.is_some()
             }
+            AdaptiveRuntimeSignalKind::MechanicalValidation => {
+                self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Implementation
+                    && self.adaptive_effort.complexity_class.is_some()
+                    && self.adaptive_effort.implementation_phase
+                        == Some(AdaptiveImplementationPhase::Implementation)
+                    && self.adaptive_effort.unfinished_turn_pressure == 0
+                    && envelope.evidence_refs.is_empty()
+                    && envelope.diagnostic_note.is_none()
+                    && self.thread_id.is_some_and(|thread_id| {
+                        self.adaptive_effort
+                            .evidence_registry
+                            .failure_pressure_for_turn(thread_id, source_turn_id)
+                            == 0
+                    })
+            }
+            AdaptiveRuntimeSignalKind::ImplementationWork => {
+                self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Implementation
+                    && self.adaptive_effort.complexity_class.is_some()
+                    && self.adaptive_effort.implementation_phase
+                        == Some(AdaptiveImplementationPhase::MechanicalValidation)
+                    && envelope.evidence_refs.is_empty()
+                    && envelope.diagnostic_note.is_none()
+            }
             AdaptiveRuntimeSignalKind::ReadyForValidation => {
                 match self.adaptive_effort.worker_context.role {
                     AdaptiveWorkerRole::Repair => true,
@@ -140,6 +164,16 @@ impl ChatWidget {
                     .as_deref()
                     .expect("accepted capability signal has a diagnostic report"),
             ),
+            AdaptiveRuntimeSignalKind::MechanicalValidation => self
+                .apply_adaptive_implementation_phase(
+                    source_turn_id,
+                    AdaptiveImplementationPhase::MechanicalValidation,
+                ),
+            AdaptiveRuntimeSignalKind::ImplementationWork => self
+                .apply_adaptive_implementation_phase(
+                    source_turn_id,
+                    AdaptiveImplementationPhase::Implementation,
+                ),
             // READY_FOR_VALIDATION is a hard handoff boundary for the current
             // Implementation/Repair Worker. Validation must run in a fresh,
             // independently bound Worker thread; never mutate this Worker's
