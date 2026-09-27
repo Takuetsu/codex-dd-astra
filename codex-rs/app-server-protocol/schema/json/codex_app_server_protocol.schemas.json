@@ -950,6 +950,31 @@
           "type": "object"
         },
         {
+          "description": "Persist a codex-dd workflow-terminal mutation without creating model-visible history.",
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/v2/RequestId"
+            },
+            "method": {
+              "enum": [
+                "thread/workflowState/update"
+              ],
+              "title": "Thread/workflowState/updateRequestMethod",
+              "type": "string"
+            },
+            "params": {
+              "$ref": "#/definitions/v2/ThreadWorkflowStateUpdateParams"
+            }
+          },
+          "required": [
+            "id",
+            "method",
+            "params"
+          ],
+          "title": "Thread/workflowState/updateRequest",
+          "type": "object"
+        },
+        {
           "properties": {
             "id": {
               "$ref": "#/definitions/v2/RequestId"
@@ -4950,6 +4975,26 @@
           "properties": {
             "method": {
               "enum": [
+                "turn/adaptiveRuntimeSignal"
+              ],
+              "title": "Turn/adaptiveRuntimeSignalNotificationMethod",
+              "type": "string"
+            },
+            "params": {
+              "$ref": "#/definitions/v2/AdaptiveRuntimeSignalNotification"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "title": "Turn/adaptiveRuntimeSignalNotification",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": [
                 "hook/started"
               ],
               "title": "Hook/startedNotificationMethod",
@@ -6815,6 +6860,64 @@
         "required": [
           "id"
         ],
+        "type": "object"
+      },
+      "AdaptiveRuntimeSignalEnvelope": {
+        "properties": {
+          "diagnosticNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidenceRefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "signalKind": {
+            "$ref": "#/definitions/v2/AdaptiveRuntimeSignalKind"
+          },
+          "sourceTurnId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidenceRefs",
+          "signalKind",
+          "sourceTurnId"
+        ],
+        "type": "object"
+      },
+      "AdaptiveRuntimeSignalKind": {
+        "description": "Inert data carried by the private adaptive runtime signal transport.\n\nThese values have no policy meaning until a later trusted producer slice validates and consumes them at the matching turn boundary.",
+        "enum": [
+          "complexity",
+          "capability",
+          "mechanical_validation",
+          "implementation_work",
+          "ready_for_validation",
+          "repair_required",
+          "ready_for_owner_qa"
+        ],
+        "type": "string"
+      },
+      "AdaptiveRuntimeSignalNotification": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "properties": {
+          "signal": {
+            "$ref": "#/definitions/v2/AdaptiveRuntimeSignalEnvelope"
+          },
+          "threadId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "signal",
+          "threadId"
+        ],
+        "title": "AdaptiveRuntimeSignalNotification",
         "type": "object"
       },
       "AddCreditsNudgeCreditType": {
@@ -20718,6 +20821,77 @@
         ],
         "type": "string"
       },
+      "ThreadAdaptiveWorkflowState": {
+        "properties": {
+          "attemptNumber": {
+            "format": "uint32",
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "authorizedScope": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "complexityClass": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currentEffort": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currentFamily": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "implementationPhase": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pausedByUser": {
+            "type": "boolean"
+          },
+          "startingFamily": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workerAssignmentLocked": {
+            "type": "boolean"
+          },
+          "workerRole": {
+            "type": "string"
+          },
+          "workflowTerminal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "attemptNumber",
+          "enabled",
+          "pausedByUser",
+          "workerAssignmentLocked",
+          "workerRole"
+        ],
+        "type": "object"
+      },
       "ThreadApproveGuardianDeniedActionParams": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "properties": {
@@ -24814,6 +24988,52 @@
         "required": [
           "estimatedUsageCreditsMicros"
         ],
+        "type": "object"
+      },
+      "ThreadWorkflowStateOperation": {
+        "enum": [
+          "setReadyForOwnerQa",
+          "setAdaptiveState",
+          "clear"
+        ],
+        "type": "string"
+      },
+      "ThreadWorkflowStateUpdateParams": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "properties": {
+          "adaptiveState": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/v2/ThreadAdaptiveWorkflowState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operation": {
+            "$ref": "#/definitions/v2/ThreadWorkflowStateOperation"
+          },
+          "sourceTurnId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "threadId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "threadId"
+        ],
+        "title": "ThreadWorkflowStateUpdateParams",
+        "type": "object"
+      },
+      "ThreadWorkflowStateUpdateResponse": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "ThreadWorkflowStateUpdateResponse",
         "type": "object"
       },
       "TokenUsageBreakdown": {
