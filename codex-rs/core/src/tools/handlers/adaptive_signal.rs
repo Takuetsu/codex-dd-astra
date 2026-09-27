@@ -274,9 +274,7 @@ impl ToolExecutor<ToolInvocation> for AdaptiveSignalHandler {
             let signal_kind = match args.kind {
                 SignalKind::Complexity => AdaptiveRuntimeSignalKind::Complexity,
                 SignalKind::Capability => AdaptiveRuntimeSignalKind::Capability,
-                SignalKind::MechanicalValidation => {
-                    AdaptiveRuntimeSignalKind::MechanicalValidation
-                }
+                SignalKind::MechanicalValidation => AdaptiveRuntimeSignalKind::MechanicalValidation,
                 SignalKind::ImplementationWork => AdaptiveRuntimeSignalKind::ImplementationWork,
                 SignalKind::ReadyForValidation => AdaptiveRuntimeSignalKind::ReadyForValidation,
                 SignalKind::RepairRequired => AdaptiveRuntimeSignalKind::RepairRequired,
