@@ -14,12 +14,12 @@ A bound Implementation Worker now has three observable lifecycle states:
 
 The complexity classes and source-changing floors remain unchanged:
 
-| Complexity | Implementation floor |
-| --- | --- |
-| Routine | Luna Low |
-| Standard | Luna High |
-| Complex | Sol Low |
-| Architectural | Sol Medium |
+| Complexity    | Implementation floor |
+| ------------- | -------------------- |
+| Routine       | Luna Low             |
+| Standard      | Luna High            |
+| Complex       | Sol Low              |
+| Architectural | Sol Medium           |
 
 An Architectural task therefore still receives Sol Medium while it is doing architectural reasoning or source edits.
 
@@ -38,10 +38,10 @@ CodexDD accepts the transition only for a bound Implementation Worker with an ac
 After acceptance, CodexDD starts the successor attempt at the budget-aware mechanical route:
 
 | Budget mode | Mechanical validation route |
-| --- | --- |
-| Conserve | Luna Low |
-| Balanced | Luna Medium |
-| Surplus | Luna High |
+| ----------- | --------------------------- |
+| Conserve    | Luna Low                    |
+| Balanced    | Luna Medium                 |
+| Surplus     | Luna High                   |
 
 Mechanical validation never spends into Sol or Astra by itself.
 
