@@ -151,9 +151,7 @@ fn restore_implementation_phase(
         .map(|value| {
             match value.as_str() {
                 "implementation" => Some(AdaptiveImplementationPhase::Implementation),
-                "mechanical_validation" => {
-                    Some(AdaptiveImplementationPhase::MechanicalValidation)
-                }
+                "mechanical_validation" => Some(AdaptiveImplementationPhase::MechanicalValidation),
                 _ => None,
             }
             .ok_or_else(|| format!("unsupported persisted implementation phase `{value}`"))
