@@ -908,7 +908,8 @@ fn adaptive_mechanical_validation_shell_gate_blocks_source_edit_capable_commands
 }
 
 #[tokio::test]
-async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch() -> anyhow::Result<()> {
+async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
+-> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;
     turn.turn_metadata_state
         .set_turn_trigger(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string());
