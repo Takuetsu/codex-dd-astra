@@ -2253,19 +2253,30 @@ mod tests {
     #[test]
     fn adaptive_turn_uses_lifecycle_write_gate_markers() {
         assert_eq!(
-            adaptive_turn_trigger(/*reconnaissance_required*/ true, /*mechanical*/ false).as_deref(),
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ true, /*mechanical*/ false
+            )
+            .as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
         assert_eq!(
-            adaptive_turn_trigger(/*reconnaissance_required*/ false, /*mechanical*/ true).as_deref(),
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ false, /*mechanical*/ true
+            )
+            .as_deref(),
             Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
         );
         assert_eq!(
-            adaptive_turn_trigger(/*reconnaissance_required*/ true, /*mechanical*/ true).as_deref(),
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ true, /*mechanical*/ true
+            )
+            .as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
         assert_eq!(
-            adaptive_turn_trigger(/*reconnaissance_required*/ false, /*mechanical*/ false),
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ false, /*mechanical*/ false
+            ),
             None
         );
     }
