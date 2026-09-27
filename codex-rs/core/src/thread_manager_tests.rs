@@ -288,6 +288,7 @@ fn child_workflow_snapshot_preserves_adaptive_state() {
         current_family: Some("luna".to_string()),
         current_effort: Some("high".to_string()),
         complexity_class: None,
+        implementation_phase: None,
         attempt_number: 6,
         paused_by_user: false,
         worker_role: "repair".to_string(),

@@ -862,6 +862,103 @@ fn adaptive_reconnaissance_shell_gate_rejects_write_capable_commands() {
     }
 }
 
+#[test]
+fn adaptive_mechanical_validation_shell_gate_allows_bounded_validation_commands() {
+    for command in [
+        "cargo test -p codex-core adaptive_ --lib",
+        "cargo check -p codex-core -p codex-cli",
+        "cargo build -p codex-cli",
+        "cargo clippy -p codex-core",
+        "cargo fmt --check",
+        "cargo fmt --all -- --check",
+        "cargo metadata --no-deps",
+        "pytest -q",
+        "python -m pytest tests",
+        "dotnet test",
+        "go test ./...",
+        "ctest --output-on-failure",
+        "cmake --build build",
+        "git diff --check",
+        "Get-Content probe.txt",
+    ] {
+        assert!(
+            adaptive_mechanical_validation_shell_command_allowed(command),
+            "expected mechanical validation command to be allowed: {command}"
+        );
+    }
+}
+
+#[test]
+fn adaptive_mechanical_validation_shell_gate_blocks_source_edit_capable_commands() {
+    for command in [
+        "cargo fmt",
+        "cargo run --bin rewrite-fixtures",
+        "Set-Content probe.txt changed",
+        "Remove-Item probe.txt",
+        "python -c \"open('probe.txt','w').write('changed')\"",
+        "git add probe.txt",
+        "Get-Content probe.txt > copy.txt",
+        "cargo test | Tee-Object test.log",
+    ] {
+        assert!(
+            !adaptive_mechanical_validation_shell_command_allowed(command),
+            "expected source-edit-capable mechanical command to be blocked: {command}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
+-> anyhow::Result<()> {
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string());
+    let registry = ToolRegistry::from_tools([
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("exec_command"),
+        }) as Arc<dyn CoreToolRuntime>,
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("apply_patch"),
+        }) as Arc<dyn CoreToolRuntime>,
+    ]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+
+    let mut build_invocation = test_invocation(
+        Arc::clone(&session),
+        Arc::clone(&turn),
+        "mechanical-build-call",
+        codex_tools::ToolName::plain("exec_command"),
+    );
+    build_invocation.payload = ToolPayload::Function {
+        arguments: serde_json::json!({ "cmd": "cargo build -p codex-cli" }).to_string(),
+    };
+    registry
+        .dispatch_any_with_state(build_invocation, /*terminal_outcome_reached*/ None)
+        .await?;
+
+    let err = match registry
+        .dispatch_any_with_state(
+            test_invocation(
+                session,
+                turn,
+                "mechanical-patch-call",
+                codex_tools::ToolName::plain("apply_patch"),
+            ),
+            /*terminal_outcome_reached*/ None,
+        )
+        .await
+    {
+        Ok(_) => panic!("mechanical validation must block source patches"),
+        Err(err) => err,
+    };
+    assert!(
+        err.to_string()
+            .contains("mechanical validation does not authorize source edits")
+    );
+    Ok(())
+}
+
 #[tokio::test]
 async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;

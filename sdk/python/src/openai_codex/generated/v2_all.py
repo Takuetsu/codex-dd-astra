@@ -86,6 +86,16 @@ class ActivePermissionProfile(BaseModel):
     ]
 
 
+class AdaptiveRuntimeSignalKind(Enum):
+    complexity = "complexity"
+    capability = "capability"
+    mechanical_validation = "mechanical_validation"
+    implementation_work = "implementation_work"
+    ready_for_validation = "ready_for_validation"
+    repair_required = "repair_required"
+    ready_for_owner_qa = "ready_for_owner_qa"
+
+
 class AddCreditsNudgeCreditType(Enum):
     credits = "credits"
     usage_limit = "usage_limit"
@@ -5024,6 +5034,24 @@ class ThreadActiveFlag(Enum):
     waiting_on_user_input = "waitingOnUserInput"
 
 
+class ThreadAdaptiveWorkflowState(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    attempt_number: Annotated[int, Field(alias="attemptNumber", ge=0)]
+    authorized_scope: Annotated[str | None, Field(alias="authorizedScope")] = None
+    complexity_class: Annotated[str | None, Field(alias="complexityClass")] = None
+    current_effort: Annotated[str | None, Field(alias="currentEffort")] = None
+    current_family: Annotated[str | None, Field(alias="currentFamily")] = None
+    enabled: bool
+    implementation_phase: Annotated[str | None, Field(alias="implementationPhase")] = None
+    paused_by_user: Annotated[bool, Field(alias="pausedByUser")]
+    starting_family: Annotated[str | None, Field(alias="startingFamily")] = None
+    worker_assignment_locked: Annotated[bool, Field(alias="workerAssignmentLocked")]
+    worker_role: Annotated[str, Field(alias="workerRole")]
+    workflow_terminal: Annotated[str | None, Field(alias="workflowTerminal")] = None
+
+
 class ThreadApproveGuardianDeniedActionParams(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -6153,6 +6181,31 @@ class ThreadUsageBreakdownGroup(BaseModel):
     total_tokens: Annotated[int | None, Field(alias="totalTokens")] = None
 
 
+class ThreadWorkflowStateOperation(Enum):
+    set_ready_for_owner_qa = "setReadyForOwnerQa"
+    set_adaptive_state = "setAdaptiveState"
+    clear = "clear"
+
+
+class ThreadWorkflowStateUpdateParams(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    adaptive_state: Annotated[ThreadAdaptiveWorkflowState | None, Field(alias="adaptiveState")] = (
+        None
+    )
+    operation: ThreadWorkflowStateOperation
+    source_turn_id: Annotated[str | None, Field(alias="sourceTurnId")] = None
+    thread_id: Annotated[str, Field(alias="threadId")]
+
+
+class ThreadWorkflowStateUpdateResponse(BaseModel):
+    pass
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+
 class TokenUsageBreakdown(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -6573,6 +6626,24 @@ class AccountUpdatedNotification(BaseModel):
     plan_type: Annotated[PlanType | None, Field(alias="planType")] = None
 
 
+class AdaptiveRuntimeSignalEnvelope(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    diagnostic_note: Annotated[str | None, Field(alias="diagnosticNote")] = None
+    evidence_refs: Annotated[list[str], Field(alias="evidenceRefs")]
+    signal_kind: Annotated[AdaptiveRuntimeSignalKind, Field(alias="signalKind")]
+    source_turn_id: Annotated[str, Field(alias="sourceTurnId")]
+
+
+class AdaptiveRuntimeSignalNotification(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    signal: AdaptiveRuntimeSignalEnvelope
+    thread_id: Annotated[str, Field(alias="threadId")]
+
+
 class AdditionalContextEntry(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -6958,6 +7029,18 @@ class ThreadInjectItemsRequest(BaseModel):
         Literal["thread/inject_items"], Field(title="Thread/injectItemsRequestMethod")
     ]
     params: ThreadInjectItemsParams
+
+
+class ThreadWorkflowStateUpdateRequest(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    id: RequestId
+    method: Annotated[
+        Literal["thread/workflowState/update"],
+        Field(title="Thread/workflowState/updateRequestMethod"),
+    ]
+    params: ThreadWorkflowStateUpdateParams
 
 
 class SkillsListRequest(BaseModel):
@@ -9063,6 +9146,24 @@ class ThreadProjectUpdatedServerNotification(BaseModel):
         Literal["thread/project/updated"], Field(title="Thread/project/updatedNotificationMethod")
     ]
     params: ThreadProjectUpdatedNotification
+
+
+class TurnAdaptiveRuntimeSignalServerNotification(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    emitted_at_ms: Annotated[
+        int | None,
+        Field(
+            alias="emittedAtMs",
+            description="Unix timestamp (in milliseconds) when app-server emitted this notification.",
+        ),
+    ] = None
+    method: Annotated[
+        Literal["turn/adaptiveRuntimeSignal"],
+        Field(title="Turn/adaptiveRuntimeSignalNotificationMethod"),
+    ]
+    params: AdaptiveRuntimeSignalNotification
 
 
 class HookStartedServerNotification(BaseModel):
@@ -12280,6 +12381,7 @@ class ClientRequest(
         | ThreadTurnsListRequest
         | ThreadItemsListRequest
         | ThreadInjectItemsRequest
+        | ThreadWorkflowStateUpdateRequest
         | SkillsListRequest
         | SkillsExtraRootsSetRequest
         | HooksListRequest
@@ -12387,6 +12489,7 @@ class ClientRequest(
         | ThreadTurnsListRequest
         | ThreadItemsListRequest
         | ThreadInjectItemsRequest
+        | ThreadWorkflowStateUpdateRequest
         | SkillsListRequest
         | SkillsExtraRootsSetRequest
         | HooksListRequest
@@ -12655,6 +12758,7 @@ class ServerNotification(
         | ThreadSettingsUpdatedServerNotification
         | ThreadTokenUsageUpdatedServerNotification
         | TurnStartedServerNotification
+        | TurnAdaptiveRuntimeSignalServerNotification
         | HookStartedServerNotification
         | TurnCompletedServerNotification
         | HookCompletedServerNotification
@@ -12743,6 +12847,7 @@ class ServerNotification(
         | ThreadSettingsUpdatedServerNotification
         | ThreadTokenUsageUpdatedServerNotification
         | TurnStartedServerNotification
+        | TurnAdaptiveRuntimeSignalServerNotification
         | HookStartedServerNotification
         | TurnCompletedServerNotification
         | HookCompletedServerNotification

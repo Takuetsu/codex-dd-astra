@@ -142,6 +142,7 @@ fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result
                 current_family: Some("luna".to_string()),
                 current_effort: Some("high".to_string()),
                 complexity_class: None,
+                implementation_phase: None,
                 attempt_number: 5,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -218,6 +219,7 @@ fn adaptive_workflow_snapshot_without_complexity_remains_backward_compatible() -
     }))?;
 
     assert_eq!(snapshot.complexity_class, None);
+    assert_eq!(snapshot.implementation_phase, None);
     Ok(())
 }
 
@@ -229,6 +231,7 @@ fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
         current_family: Some("luna".to_string()),
         current_effort: Some("high".to_string()),
         complexity_class: None,
+        implementation_phase: None,
         attempt_number: 6,
         paused_by_user: false,
         worker_role: "repair".to_string(),

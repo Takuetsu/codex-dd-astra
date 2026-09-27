@@ -141,6 +141,18 @@ pub(crate) fn next_route(
     }
 }
 
+/// Returns the stronger of two legal automatic routes. Lifecycle re-entry uses this to restore the
+/// complexity floor without discarding a stronger route already justified by trusted pressure.
+pub(crate) fn stronger_route(first: AdaptiveRoute, second: AdaptiveRoute) -> Option<AdaptiveRoute> {
+    let first_index = AUTOMATIC_LADDER.iter().position(|route| *route == first)?;
+    let second_index = AUTOMATIC_LADDER.iter().position(|route| *route == second)?;
+    Some(if first_index >= second_index {
+        first
+    } else {
+        second
+    })
+}
+
 /// The automatic ladder ends at Astra Max. Ultra remains separately gated and is not part of this
 /// ladder.
 const AUTOMATIC_LADDER: [AdaptiveRoute; 11] = [
@@ -243,6 +255,22 @@ mod tests {
         assert_eq!(
             next_route(AdaptiveFamily::Astra, SOL_HIGH),
             next_route(AdaptiveFamily::Astra, SOL_HIGH)
+        );
+    }
+
+    #[test]
+    fn stronger_route_preserves_existing_justified_pressure() {
+        assert_eq!(stronger_route(LUNA_LOW, SOL_MEDIUM), Some(SOL_MEDIUM));
+        assert_eq!(stronger_route(ASTRA_LOW, SOL_MEDIUM), Some(ASTRA_LOW));
+        assert_eq!(
+            stronger_route(
+                AdaptiveRoute {
+                    family: AdaptiveFamily::Sol,
+                    effort: AdaptiveEffort::XHigh,
+                },
+                SOL_MEDIUM,
+            ),
+            None
         );
     }
 }

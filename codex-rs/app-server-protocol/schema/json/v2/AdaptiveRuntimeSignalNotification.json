@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "AdaptiveRuntimeSignalEnvelope": {
+      "properties": {
+        "diagnosticNote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidenceRefs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "signalKind": {
+          "$ref": "#/definitions/AdaptiveRuntimeSignalKind"
+        },
+        "sourceTurnId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidenceRefs",
+        "signalKind",
+        "sourceTurnId"
+      ],
+      "type": "object"
+    },
+    "AdaptiveRuntimeSignalKind": {
+      "description": "Inert data carried by the private adaptive runtime signal transport.\n\nThese values have no policy meaning until a later trusted producer slice validates and consumes them at the matching turn boundary.",
+      "enum": [
+        "complexity",
+        "capability",
+        "mechanical_validation",
+        "implementation_work",
+        "ready_for_validation",
+        "repair_required",
+        "ready_for_owner_qa"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "signal": {
+      "$ref": "#/definitions/AdaptiveRuntimeSignalEnvelope"
+    },
+    "threadId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "signal",
+    "threadId"
+  ],
+  "title": "AdaptiveRuntimeSignalNotification",
+  "type": "object"
+}

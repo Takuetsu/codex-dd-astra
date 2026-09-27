@@ -6,6 +6,7 @@
 use std::path::PathBuf;
 
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
@@ -143,6 +144,21 @@ fn restore_complexity_class(
         .transpose()
 }
 
+fn restore_implementation_phase(
+    value: Option<String>,
+) -> Result<Option<AdaptiveImplementationPhase>, String> {
+    value
+        .map(|value| {
+            match value.as_str() {
+                "implementation" => Some(AdaptiveImplementationPhase::Implementation),
+                "mechanical_validation" => Some(AdaptiveImplementationPhase::MechanicalValidation),
+                _ => None,
+            }
+            .ok_or_else(|| format!("unsupported persisted implementation phase `{value}`"))
+        })
+        .transpose()
+}
+
 fn restore_worker_role(value: &str) -> Result<AdaptiveWorkerRole, String> {
     match value {
         "unspecified" => Ok(AdaptiveWorkerRole::Unspecified),
@@ -183,6 +199,23 @@ fn apply_persisted_adaptive_workflow_state(
     let worker_role = restore_worker_role(&state.worker_role)?;
     let workflow_terminal = restore_workflow_terminal(state.workflow_terminal)?;
     let complexity_class = restore_complexity_class(state.complexity_class)?;
+    let mut implementation_phase = restore_implementation_phase(state.implementation_phase)?;
+    if implementation_phase.is_none()
+        && worker_role == AdaptiveWorkerRole::Implementation
+        && complexity_class.is_some()
+    {
+        // Pre-0.3.7 snapshots had no lifecycle field. A bound Implementation Worker with an
+        // accepted complexity class was necessarily still under the implementation floor.
+        implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+    }
+    if implementation_phase.is_some()
+        && (worker_role != AdaptiveWorkerRole::Implementation || complexity_class.is_none())
+    {
+        return Err(
+            "persisted implementation phase requires a bound Implementation Worker with accepted complexity"
+                .to_string(),
+        );
+    }
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -219,6 +252,7 @@ fn apply_persisted_adaptive_workflow_state(
         pending_signal: None,
         evidence_registry: Default::default(),
         complexity_class,
+        implementation_phase,
         budget_mode,
     };
     Ok(())
@@ -287,6 +321,7 @@ mod tests {
                 current_family: Some("luna".to_string()),
                 current_effort: Some("high".to_string()),
                 complexity_class: None,
+                implementation_phase: None,
                 attempt_number: 6,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -348,6 +383,7 @@ mod tests {
                     current_family: Some("luna".to_string()),
                     current_effort: Some("low".to_string()),
                     complexity_class: None,
+                    implementation_phase: None,
                     attempt_number: 1,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
@@ -377,6 +413,7 @@ mod tests {
                 current_family: Some("luna".to_string()),
                 current_effort: Some("medium".to_string()),
                 complexity_class: None,
+                implementation_phase: None,
                 attempt_number: 4,
                 paused_by_user: true,
                 worker_role: "validation".to_string(),
@@ -404,6 +441,7 @@ mod tests {
 mod codexdd_complexity_persistence_regression {
     use super::*;
     use crate::adaptive_complexity::AdaptiveComplexityClass;
+    use crate::adaptive_complexity::AdaptiveImplementationPhase;
 
     #[test]
     fn restored_snapshot_recovers_complexity_class() {
@@ -433,5 +471,40 @@ mod codexdd_complexity_persistence_regression {
             adaptive.complexity_class,
             Some(AdaptiveComplexityClass::Architectural)
         );
+        assert_eq!(
+            adaptive.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
+    }
+
+    #[test]
+    fn restored_snapshot_recovers_mechanical_validation_phase() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "luna",
+                    "current_effort": "low",
+                    "attempt_number": 3,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/lifecycle-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "architectural",
+                    "implementation_phase": "mechanical_validation"
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect("snapshot should restore");
+
+        assert_eq!(
+            adaptive.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert!(adaptive.implementation_mechanical_validation_active());
     }
 }

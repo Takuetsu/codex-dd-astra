@@ -4138,6 +4138,77 @@
       ],
       "type": "object"
     },
+    "ThreadAdaptiveWorkflowState": {
+      "properties": {
+        "attemptNumber": {
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "authorizedScope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "complexityClass": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "currentEffort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "currentFamily": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "implementationPhase": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pausedByUser": {
+          "type": "boolean"
+        },
+        "startingFamily": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "workerAssignmentLocked": {
+          "type": "boolean"
+        },
+        "workerRole": {
+          "type": "string"
+        },
+        "workflowTerminal": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "attemptNumber",
+        "enabled",
+        "pausedByUser",
+        "workerAssignmentLocked",
+        "workerRole"
+      ],
+      "type": "object"
+    },
     "ThreadApproveGuardianDeniedActionParams": {
       "properties": {
         "event": {
@@ -5396,6 +5467,45 @@
       ],
       "type": "object"
     },
+    "ThreadWorkflowStateOperation": {
+      "enum": [
+        "setReadyForOwnerQa",
+        "setAdaptiveState",
+        "clear"
+      ],
+      "type": "string"
+    },
+    "ThreadWorkflowStateUpdateParams": {
+      "properties": {
+        "adaptiveState": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ThreadAdaptiveWorkflowState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "$ref": "#/definitions/ThreadWorkflowStateOperation"
+        },
+        "sourceTurnId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "threadId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation",
+        "threadId"
+      ],
+      "type": "object"
+    },
     "TurnEnvironmentParams": {
       "properties": {
         "cwd": {
@@ -6638,6 +6748,31 @@
         "params"
       ],
       "title": "Thread/injectItemsRequest",
+      "type": "object"
+    },
+    {
+      "description": "Persist a codex-dd workflow-terminal mutation without creating model-visible history.",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/RequestId"
+        },
+        "method": {
+          "enum": [
+            "thread/workflowState/update"
+          ],
+          "title": "Thread/workflowState/updateRequestMethod",
+          "type": "string"
+        },
+        "params": {
+          "$ref": "#/definitions/ThreadWorkflowStateUpdateParams"
+        }
+      },
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "title": "Thread/workflowState/updateRequest",
       "type": "object"
     },
     {

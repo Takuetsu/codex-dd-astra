@@ -1,6 +1,7 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_evidence::AdaptiveEvidenceKind;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_evidence::AdaptiveEvidenceRecord;
@@ -104,6 +105,14 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
             AdaptivePendingDecision::EscalateModel,
             admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
         ),
+        (
+            AdaptivePendingDecision::EnterMechanicalValidation,
+            admission_route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
+        ),
+        (
+            AdaptivePendingDecision::ResumeImplementation,
+            admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
+        ),
     ] {
         let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
         chat.thread_id = Some(ThreadId::new());
@@ -139,6 +148,10 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
                         AdaptivePendingDecision::RetrySameLevel => "RetrySameLevel",
                         AdaptivePendingDecision::EscalateEffort => "EscalateEffort",
                         AdaptivePendingDecision::EscalateModel => "EscalateModel",
+                        AdaptivePendingDecision::EnterMechanicalValidation => {
+                            "EnterMechanicalValidation"
+                        }
+                        AdaptivePendingDecision::ResumeImplementation => "ResumeImplementation",
                     })
                     && !text.contains("original root prompt")
                     && text_elements.is_empty()
@@ -2077,7 +2090,18 @@ async fn adaptive_status_surfaces_budget_mode() {
     chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
     let status = chat.adaptive_effort_status_text();
     assert!(status.contains("Complexity: Architectural"));
+    assert!(status.contains("Implementation phase: None"));
     assert!(status.contains("Implementation floor: Sol Medium"));
+
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("mechanical status".to_string()),
+    };
+    chat.adaptive_effort.implementation_phase =
+        Some(AdaptiveImplementationPhase::MechanicalValidation);
+    let status = chat.adaptive_effort_status_text();
+    assert!(status.contains("Implementation phase: Mechanical validation"));
+    assert!(status.contains("Implementation floor: Luna Low"));
 }
 
 #[tokio::test]
@@ -2115,6 +2139,10 @@ async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
         Some(AdaptiveComplexityClass::Architectural)
     );
     assert_eq!(
+        chat.adaptive_effort.implementation_phase,
+        Some(AdaptiveImplementationPhase::Implementation)
+    );
+    assert_eq!(
         chat.adaptive_effort.current_family,
         Some(AdaptiveFamily::Sol)
     );
@@ -2143,6 +2171,159 @@ async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
     };
     assert_eq!(model, AdaptiveFamily::Sol.model());
     assert_eq!(effort, Some(ReasoningEffort::Medium));
+}
+
+#[tokio::test]
+async fn mechanical_validation_deescalates_architectural_work_by_budget() {
+    for (budget_mode, expected_effort) in [
+        (AdaptiveBudgetMode::Conserve, AdaptiveEffort::Low),
+        (AdaptiveBudgetMode::Balanced, AdaptiveEffort::Medium),
+        (AdaptiveBudgetMode::Surplus, AdaptiveEffort::High),
+    ] {
+        let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.adaptive_effort.enabled = true;
+        chat.adaptive_effort.starting_family = Some(AdaptiveFamily::Astra);
+        chat.adaptive_effort.current_family = Some(AdaptiveFamily::Sol);
+        chat.adaptive_effort.current_effort = Some(AdaptiveEffort::Medium);
+        chat.adaptive_effort.attempt_number = 2;
+        chat.adaptive_effort.budget_mode = budget_mode;
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("architectural integration".to_string()),
+        };
+        chat.adaptive_effort.pending_signal = Some(pending_signal(
+            "mechanical-transition",
+            AdaptiveRuntimeSignalKind::MechanicalValidation,
+            Vec::new(),
+        ));
+
+        assert!(chat.consume_adaptive_signal_at_terminal("mechanical-transition"));
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert_eq!(
+            chat.adaptive_effort.current_family,
+            Some(AdaptiveFamily::Luna)
+        );
+        assert_eq!(chat.adaptive_effort.current_effort, Some(expected_effort));
+        assert_matches!(
+            chat.adaptive_effort.pending_attempt,
+            Some(AdaptivePendingAttempt {
+                decision: AdaptivePendingDecision::EnterMechanicalValidation,
+                attempt_number: 3,
+                ..
+            })
+        );
+    }
+}
+
+#[tokio::test]
+async fn mechanical_validation_refuses_deescalation_while_failure_pressure_is_live() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let source_turn_id = "mechanical-with-failure";
+    chat.thread_id = Some(thread_id);
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.starting_family = Some(AdaptiveFamily::Astra);
+    chat.adaptive_effort.current_family = Some(AdaptiveFamily::Sol);
+    chat.adaptive_effort.current_effort = Some(AdaptiveEffort::Medium);
+    chat.adaptive_effort.attempt_number = 2;
+    chat.adaptive_effort.budget_mode = AdaptiveBudgetMode::Conserve;
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+    chat.adaptive_effort.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("architectural integration".to_string()),
+    };
+    chat.adaptive_effort
+        .evidence_registry
+        .register(AdaptiveEvidenceRecord {
+            evidence_id: "live-failure".to_string(),
+            thread_id,
+            source_turn_id: source_turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Failure,
+            kind: AdaptiveEvidenceKind::CommandExecution,
+        });
+    chat.adaptive_effort.pending_signal = Some(pending_signal(
+        source_turn_id,
+        AdaptiveRuntimeSignalKind::MechanicalValidation,
+        Vec::new(),
+    ));
+
+    assert!(!chat.consume_adaptive_signal_at_terminal(source_turn_id));
+    assert_eq!(
+        chat.adaptive_effort.implementation_phase,
+        Some(AdaptiveImplementationPhase::Implementation)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Sol)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Medium)
+    );
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+}
+
+#[tokio::test]
+async fn implementation_reentry_restores_complexity_floor_before_source_edits() {
+    for (current_family, current_effort, expected_family, expected_effort) in [
+        (
+            AdaptiveFamily::Luna,
+            AdaptiveEffort::Low,
+            AdaptiveFamily::Sol,
+            AdaptiveEffort::Medium,
+        ),
+        (
+            AdaptiveFamily::Astra,
+            AdaptiveEffort::Low,
+            AdaptiveFamily::Astra,
+            AdaptiveEffort::Low,
+        ),
+    ] {
+        let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+        chat.thread_id = Some(ThreadId::new());
+        chat.adaptive_effort.enabled = true;
+        chat.adaptive_effort.starting_family = Some(AdaptiveFamily::Astra);
+        chat.adaptive_effort.current_family = Some(current_family);
+        chat.adaptive_effort.current_effort = Some(current_effort);
+        chat.adaptive_effort.attempt_number = 4;
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Architectural);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("architectural integration".to_string()),
+        };
+        chat.adaptive_effort.pending_signal = Some(pending_signal(
+            "implementation-reentry",
+            AdaptiveRuntimeSignalKind::ImplementationWork,
+            Vec::new(),
+        ));
+
+        assert!(chat.consume_adaptive_signal_at_terminal("implementation-reentry"));
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
+        assert_eq!(chat.adaptive_effort.current_family, Some(expected_family));
+        assert_eq!(chat.adaptive_effort.current_effort, Some(expected_effort));
+        assert_matches!(
+            chat.adaptive_effort.pending_attempt,
+            Some(AdaptivePendingAttempt {
+                decision: AdaptivePendingDecision::ResumeImplementation,
+                attempt_number: 5,
+                ..
+            })
+        );
+    }
 }
 
 #[tokio::test]
@@ -2236,6 +2417,10 @@ async fn budget_and_complexity_route_implementation_and_review_independently() {
         // must not spend premium capacity here.
         assert_eq!(implementation.current_family, Some(AdaptiveFamily::Sol));
         assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Medium));
+        assert_eq!(
+            implementation.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
 
         chat.adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
 
@@ -2341,6 +2526,7 @@ fn durable_workflow_snapshot_persists_complexity_class() {
         current_effort: Some(AdaptiveEffort::Medium),
         attempt_number: 2,
         complexity_class: Some(AdaptiveComplexityClass::Architectural),
+        implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
         ..AdaptiveEffortState::default()
     };
 
@@ -2352,5 +2538,11 @@ fn durable_workflow_snapshot_persists_complexity_class() {
             .get("complexityClass")
             .and_then(serde_json::Value::as_str),
         Some("architectural")
+    );
+    assert_eq!(
+        value
+            .get("implementationPhase")
+            .and_then(serde_json::Value::as_str),
+        Some("mechanical_validation")
     );
 }

@@ -31,6 +31,7 @@ use codex_extension_api::ToolCallOutcome;
 use codex_extension_api::ToolPolicy;
 use codex_history::CodexHarnessMetadata;
 use codex_history::ResponseItemEnvelope;
+use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
 use codex_protocol::models::FunctionCallOutputPayload;
 use codex_protocol::models::ResponseInputItem;
@@ -50,6 +51,7 @@ use serde_json::Value;
 pub(crate) type ToolTelemetryTags = Vec<(&'static str, String)>;
 
 const ADAPTIVE_RECONNAISSANCE_REJECTION: &str = "CodexDD complexity reconnaissance is read-only. This tool or command was blocked before execution. Use read/search commands such as rg, Get-Content, git status, or git diff, then report the complexity classification before editing.";
+const ADAPTIVE_MECHANICAL_VALIDATION_REJECTION: &str = "CodexDD mechanical validation does not authorize source edits. This tool or command was blocked before execution. Run bounded tests/checks/builds or read-only inspection. If source changes are required, report kind=implementation_work and end the turn before editing.";
 
 fn adaptive_reconnaissance_rejection(invocation: &ToolInvocation) -> Option<String> {
     let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
@@ -71,6 +73,28 @@ fn adaptive_reconnaissance_rejection(invocation: &ToolInvocation) -> Option<Stri
         };
 
     (!allowed).then(|| ADAPTIVE_RECONNAISSANCE_REJECTION.to_string())
+}
+
+fn adaptive_mechanical_validation_rejection(invocation: &ToolInvocation) -> Option<String> {
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        invocation.turn.turn_metadata_state.as_ref(),
+    );
+    if turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {
+        return None;
+    }
+
+    let allowed = invocation.tool_name.is_default_namespace()
+        && match invocation.tool_name.name.as_str() {
+            "report_adaptive_signal" | "update_plan" | "get_context_remaining" | "view_image" => {
+                true
+            }
+            "exec_command" => shell_script_for_invocation(invocation)
+                .as_deref()
+                .is_some_and(adaptive_mechanical_validation_shell_command_allowed),
+            _ => false,
+        };
+
+    (!allowed).then(|| ADAPTIVE_MECHANICAL_VALIDATION_REJECTION.to_string())
 }
 
 fn adaptive_reconnaissance_shell_command_allowed(command: &str) -> bool {
@@ -107,6 +131,80 @@ fn adaptive_reconnaissance_shell_command_allowed(command: &str) -> bool {
     }
 
     adaptive_reconnaissance_parsed_commands_allowed(&parse_shell_script(command))
+}
+
+fn adaptive_mechanical_validation_shell_command_allowed(command: &str) -> bool {
+    if adaptive_reconnaissance_shell_command_allowed(command) {
+        return true;
+    }
+
+    let command = command.trim();
+    if command.is_empty()
+        || command.contains('>')
+        || command.contains('<')
+        || command.contains('&')
+        || command.contains("$(")
+        || command.contains('`')
+        || adaptive_reconnaissance_has_unsafe_pipeline_stage(command)
+    {
+        return false;
+    }
+
+    if let Some(commands) = parse_powershell_script_into_plain_commands(command) {
+        return !commands.is_empty()
+            && commands
+                .iter()
+                .all(|command| adaptive_mechanical_validation_plain_command_allowed(command));
+    }
+
+    if command.contains(';') || command.contains('\n') || command.contains('\r') {
+        return false;
+    }
+
+    let words = shlex::split(command).unwrap_or_default();
+    adaptive_mechanical_validation_plain_command_allowed(&words)
+}
+
+fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> bool {
+    if adaptive_reconnaissance_plain_command_allowed(command) {
+        return true;
+    }
+    let Some(program) = command.first().and_then(|word| {
+        std::path::Path::new(word)
+            .file_name()
+            .and_then(std::ffi::OsStr::to_str)
+    }) else {
+        return false;
+    };
+    let program = program.trim_end_matches(".exe").to_ascii_lowercase();
+    match program.as_str() {
+        "cargo" => adaptive_mechanical_cargo_command_allowed(&command[1..]),
+        "dotnet" => command
+            .get(1)
+            .is_some_and(|subcommand| matches!(subcommand.as_str(), "test" | "build")),
+        "go" => command
+            .get(1)
+            .is_some_and(|subcommand| matches!(subcommand.as_str(), "test" | "build" | "vet")),
+        "pytest" | "ctest" | "ninja" => true,
+        "python" | "python3" => {
+            command.get(1).is_some_and(|word| word == "-m")
+                && command.get(2).is_some_and(|module| module == "pytest")
+        }
+        "cmake" => command.get(1).is_some_and(|word| word == "--build"),
+        _ => false,
+    }
+}
+
+fn adaptive_mechanical_cargo_command_allowed(args: &[String]) -> bool {
+    let mut words = args.iter().filter(|word| !word.starts_with('+'));
+    let Some(subcommand) = words.find(|word| !word.starts_with('-')) else {
+        return false;
+    };
+    match subcommand.as_str() {
+        "test" | "check" | "build" | "clippy" | "metadata" => true,
+        "fmt" => args.iter().any(|word| word == "--check"),
+        _ => false,
+    }
 }
 
 fn adaptive_reconnaissance_plain_command_allowed(command: &[String]) -> bool {
@@ -798,7 +896,9 @@ impl ToolRegistry {
             return Err(err);
         }
 
-        if let Some(message) = adaptive_reconnaissance_rejection(&invocation) {
+        if let Some(message) = adaptive_reconnaissance_rejection(&invocation)
+            .or_else(|| adaptive_mechanical_validation_rejection(&invocation))
+        {
             let log_payload = tool_log_payload(&invocation.payload, &invocation.source);
             otel.tool_result_with_tags(
                 &tool_name,

@@ -25,6 +25,14 @@ pub use tool_name::ToolName;
 /// enforce the turn-scoped no-write tool gate without switching Windows into a read-only OS
 /// sandbox profile.
 pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str = "codexdd_adaptive_reconnaissance";
+
+/// Marks an Implementation turn that has entered the lower-cost mechanical validation phase.
+///
+/// Core permits bounded test/check/build commands and inspection, but blocks source-editing tools.
+/// A Worker that needs source edits must first report `implementation_work` so TUI restores the
+/// accepted complexity floor on a successor turn.
+pub const CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER: &str =
+    "codexdd_adaptive_mechanical_validation";
 pub mod approvals;
 pub mod capabilities;
 mod codex_error_info;

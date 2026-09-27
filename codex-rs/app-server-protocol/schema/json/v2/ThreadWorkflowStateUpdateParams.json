@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "ThreadAdaptiveWorkflowState": {
+      "properties": {
+        "attemptNumber": {
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "authorizedScope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "complexityClass": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "currentEffort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "currentFamily": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "implementationPhase": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pausedByUser": {
+          "type": "boolean"
+        },
+        "startingFamily": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "workerAssignmentLocked": {
+          "type": "boolean"
+        },
+        "workerRole": {
+          "type": "string"
+        },
+        "workflowTerminal": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "attemptNumber",
+        "enabled",
+        "pausedByUser",
+        "workerAssignmentLocked",
+        "workerRole"
+      ],
+      "type": "object"
+    },
+    "ThreadWorkflowStateOperation": {
+      "enum": [
+        "setReadyForOwnerQa",
+        "setAdaptiveState",
+        "clear"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "adaptiveState": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ThreadAdaptiveWorkflowState"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "operation": {
+      "$ref": "#/definitions/ThreadWorkflowStateOperation"
+    },
+    "sourceTurnId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "threadId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "operation",
+    "threadId"
+  ],
+  "title": "ThreadWorkflowStateUpdateParams",
+  "type": "object"
+}

@@ -1713,22 +1713,20 @@ pub enum ThreadWorkflowStateOperation {
 #[ts(export_to = "v2/")]
 pub struct ThreadAdaptiveWorkflowState {
     pub enabled: bool,
-    #[ts(optional = nullable)]
     pub starting_family: Option<String>,
-    #[ts(optional = nullable)]
     pub current_family: Option<String>,
-    #[ts(optional = nullable)]
     pub current_effort: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[ts(optional = nullable)]
+    #[ts(optional)]
     pub complexity_class: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub implementation_phase: Option<String>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
     pub worker_role: String,
-    #[ts(optional = nullable)]
     pub authorized_scope: Option<String>,
     pub worker_assignment_locked: bool,
-    #[ts(optional = nullable)]
     pub workflow_terminal: Option<String>,
 }
 
