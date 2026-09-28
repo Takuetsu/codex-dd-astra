@@ -66,7 +66,8 @@ impl TurnLifecycleState {
 
     pub(super) fn record_worker_duration(&mut self, turn_id: &str, duration_ms: u64) -> u64 {
         if self.worker_duration_turn_ids.insert(turn_id.to_string()) {
-            self.worker_total_duration_ms = self.worker_total_duration_ms.saturating_add(duration_ms);
+            self.worker_total_duration_ms =
+                self.worker_total_duration_ms.saturating_add(duration_ms);
         }
         self.worker_total_duration_ms
     }
