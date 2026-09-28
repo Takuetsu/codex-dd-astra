@@ -973,6 +973,21 @@ mod tests {
     }
 
     #[test]
+    fn bracketed_paste_first_assignment_binds_and_locks_authority() {
+        let mut state = AdaptiveEffortState::default();
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+
+        let pasted = format!("[200~{VALIDATION_ASSIGNMENT}[201~");
+        assert_eq!(state.observe_worker_assignment_text(&pasted), Ok(true));
+        assert!(state.worker_assignment_locked);
+        assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("Z-A0.45B-R2 independent verification")
+        );
+    }
+
+    #[test]
     fn first_message_without_valid_header_locks_thread_unbound() {
         let mut state = AdaptiveEffortState::default();
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
