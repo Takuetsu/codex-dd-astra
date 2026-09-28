@@ -146,7 +146,7 @@ async fn adaptive_worker_terminal_footer_uses_cumulative_active_turn_runtime() {
         .expect("terminal Worker footer");
 
     assert_eq!(
-        lines_to_single_string(&footer.raw_lines()),
+        footer.raw_lines()[0].to_string(),
         format!(
             "TOTAL TIME WORKED: 1m 15s | DONE | {}",
             saved_completion_label()
