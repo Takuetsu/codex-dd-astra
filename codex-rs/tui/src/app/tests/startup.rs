@@ -1168,8 +1168,7 @@ fn async_fresh_startup_applies_adaptive_preset_before_attachment() {
             runtime.block_on(async {
                 let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
                 app.pending_startup_thread_start = true;
-                app.adaptive_startup_preset =
-                    Some(crate::adaptive_policy::AdaptiveFamily::Astra);
+                app.adaptive_startup_preset = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
                 let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
                     app.chat_widget.config_ref(),
                 ))
