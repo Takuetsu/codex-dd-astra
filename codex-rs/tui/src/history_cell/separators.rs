@@ -11,7 +11,9 @@ use chrono::NaiveDate;
 ///
 /// The timestamp records when the turn actually finished, including when restored from history.
 /// Times use the host's clock preference; other local days include the date and other years the year.
-/// Durations are shown only above sixty seconds; shorter turns still show their timestamp.
+/// Ordinary per-turn durations are shown only above sixty seconds; shorter turns still show their
+/// timestamp. A terminal CodexDD Worker instead shows its cumulative active turn runtime at any
+/// length, followed by DONE and the authoritative stop timestamp.
 /// Absent metadata occupies no transcript rows.
 /// The display date is fixed at construction so crossing midnight cannot invalidate cached heights;
 /// restoring the conversation constructs new cells and refreshes whether the timestamp needs a date.
