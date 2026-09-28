@@ -41,6 +41,61 @@ fn failed_command(thread_id: ThreadId, turn_id: &str, item_id: &str) -> ItemComp
     }
 }
 
+fn declined_command(
+    thread_id: ThreadId,
+    turn_id: &str,
+    item_id: &str,
+) -> ItemCompletedNotification {
+    let mut notification = failed_command(thread_id, turn_id, item_id);
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut notification.item
+    {
+        *status = CommandExecutionStatus::Declined;
+        *exit_code = None;
+    }
+    notification
+}
+
+#[tokio::test]
+async fn policy_declines_do_not_create_failure_pressure_or_capability_escalation() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "mechanical-policy-declines";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("codexdd/mechanical-policy-declines".to_string());
+    chat.turn_lifecycle.agent_turn_running = true;
+    chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+    chat.register_adaptive_evidence(&declined_command(
+        thread_id,
+        turn_id,
+        "policy-decline-1",
+    ));
+    chat.register_adaptive_evidence(&declined_command(
+        thread_id,
+        turn_id,
+        "policy-decline-2",
+    ));
+
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 0/2")
+    );
+    assert!(chat.adaptive_effort.pending_signal.is_none());
+    assert_eq!(
+        chat.adaptive_effort.current_family,
+        Some(AdaptiveFamily::Luna)
+    );
+    assert_eq!(
+        chat.adaptive_effort.current_effort,
+        Some(AdaptiveEffort::Low)
+    );
+}
+
 #[tokio::test]
 async fn two_native_failures_arm_capability_and_advance_luna_low_to_medium() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
