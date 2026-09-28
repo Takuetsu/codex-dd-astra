@@ -1221,33 +1221,52 @@ fn async_fresh_startup_applies_adaptive_preset_before_attachment() {
         .expect("adaptive startup test thread");
 }
 
-#[tokio::test]
-async fn async_fresh_startup_without_adaptive_preset_stays_off() {
-    let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    app.pending_startup_thread_start = true;
-    let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
-        app.chat_widget.config_ref(),
-    ))
-    .await
-    .expect("embedded app server");
-    app.handle_startup_thread_started(
-        &mut app_server,
-        Ok(AppServerStartedThread {
-            session: test_thread_session(ThreadId::new(), test_path_buf("/tmp/project")),
-            turns: Vec::new(),
-            blocks_direct_input: false,
-            task_tools_available: false,
-        }),
-    )
-    .await
-    .expect("startup thread should attach");
-    assert!(
-        !app.primary_session_configured
-            .as_ref()
-            .expect("attached session")
-            .adaptive_effort
-            .enabled
-    );
+#[test]
+fn async_fresh_startup_without_adaptive_preset_stays_off() {
+    const TEST_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;
+
+    std::thread::Builder::new()
+        .name("tui-nonadaptive-fresh-startup".to_string())
+        .stack_size(TEST_STACK_SIZE_BYTES)
+        .spawn(|| {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("test runtime");
+            runtime.block_on(async {
+                let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
+                app.pending_startup_thread_start = true;
+                let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
+                    app.chat_widget.config_ref(),
+                ))
+                .await
+                .expect("embedded app server");
+                app.handle_startup_thread_started(
+                    &mut app_server,
+                    Ok(AppServerStartedThread {
+                        session: test_thread_session(
+                            ThreadId::new(),
+                            test_path_buf("/tmp/project"),
+                        ),
+                        turns: Vec::new(),
+                        blocks_direct_input: false,
+                        task_tools_available: false,
+                    }),
+                )
+                .await
+                .expect("startup thread should attach");
+                assert!(
+                    !app.primary_session_configured
+                        .as_ref()
+                        .expect("attached session")
+                        .adaptive_effort
+                        .enabled
+                );
+            });
+        })
+        .expect("spawn nonadaptive startup test thread")
+        .join()
+        .expect("nonadaptive startup test thread");
 }
 
 #[tokio::test]
