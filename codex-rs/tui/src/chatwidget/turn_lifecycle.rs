@@ -14,6 +14,11 @@ pub(super) struct TurnLifecycleState {
     pub(super) budget_limited_turn_ids: HashSet<String>,
     /// Completion labels already inserted into this thread's visible history.
     pub(super) rendered_completion_turn_ids: HashSet<String>,
+    /// Completed Worker turns already included in the cumulative active-work duration.
+    worker_duration_turn_ids: HashSet<String>,
+    /// Sum of completed agent-turn runtimes for the current Worker thread. Idle time between
+    /// turns is intentionally excluded because each turn contributes only its protocol duration.
+    worker_total_duration_ms: u64,
     pub(super) goal_status_active_turn_started_at: Option<Instant>,
 }
 
@@ -25,6 +30,8 @@ impl TurnLifecycleState {
             last_turn_id: None,
             budget_limited_turn_ids: HashSet::new(),
             rendered_completion_turn_ids: HashSet::new(),
+            worker_duration_turn_ids: HashSet::new(),
+            worker_total_duration_ms: 0,
             goal_status_active_turn_started_at: None,
         }
     }
@@ -53,6 +60,19 @@ impl TurnLifecycleState {
         self.last_turn_id = None;
         self.budget_limited_turn_ids.clear();
         self.rendered_completion_turn_ids.clear();
+        self.worker_duration_turn_ids.clear();
+        self.worker_total_duration_ms = 0;
+    }
+
+    pub(super) fn record_worker_duration(&mut self, turn_id: &str, duration_ms: u64) -> u64 {
+        if self.worker_duration_turn_ids.insert(turn_id.to_string()) {
+            self.worker_total_duration_ms = self.worker_total_duration_ms.saturating_add(duration_ms);
+        }
+        self.worker_total_duration_ms
+    }
+
+    pub(super) fn worker_total_duration_ms(&self) -> u64 {
+        self.worker_total_duration_ms
     }
 
     pub(super) fn set_prevent_idle_sleep(&mut self, enabled: bool) {
@@ -87,6 +107,20 @@ mod tests {
         assert!(!state.agent_turn_running);
         assert!(state.goal_status_active_turn_started_at.is_none());
         assert!(!state.sleep_inhibitor.is_turn_running());
+    }
+
+    #[test]
+    fn worker_duration_is_cumulative_idempotent_and_resets_with_thread() {
+        let mut state = TurnLifecycleState::new(/*prevent_idle_sleep*/ false);
+
+        assert_eq!(state.record_worker_duration("turn-1", 1_500), 1_500);
+        assert_eq!(state.record_worker_duration("turn-1", 9_999), 1_500);
+        assert_eq!(state.record_worker_duration("turn-2", 2_500), 4_000);
+        assert_eq!(state.worker_total_duration_ms(), 4_000);
+
+        state.reset_thread();
+        assert_eq!(state.worker_total_duration_ms(), 0);
+        assert_eq!(state.record_worker_duration("turn-1", 700), 700);
     }
 
     #[test]
