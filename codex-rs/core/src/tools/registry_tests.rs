@@ -878,7 +878,19 @@ fn adaptive_mechanical_validation_shell_gate_allows_bounded_validation_commands(
         "go test ./...",
         "ctest --output-on-failure",
         "cmake --build build",
+        "git status",
+        "git status --short",
         "git diff --check",
+        "git status --short && git diff --check",
+        "npm run test -- src/tests/capabilityExpression.test.ts",
+        "npm run typecheck",
+        "npm run format:check:changed",
+        "npm run lint",
+        "npm run build",
+        "npm.cmd run lint",
+        "pnpm run test -- src/tests/example.test.ts",
+        "yarn run typecheck",
+        "npm run typecheck && git status --short",
         "Get-Content probe.txt",
     ] {
         assert!(
@@ -899,12 +911,124 @@ fn adaptive_mechanical_validation_shell_gate_blocks_source_edit_capable_commands
         "git add probe.txt",
         "Get-Content probe.txt > copy.txt",
         "cargo test | Tee-Object test.log",
+        "npm run format",
+        "npm run lint:fix",
+        "npm run test:watch",
+        "npm run test -- --update",
+        "npm run test -- --update-snapshots",
+        "npm run arbitrary-script",
+        "pnpm run dev",
+        "yarn run build:write",
+        "npm exec prettier --write .",
+        "npm run test & Set-Content probe.txt changed",
+        "npm run test || Set-Content probe.txt changed",
+        "npm run test && Set-Content probe.txt changed",
     ] {
         assert!(
             !adaptive_mechanical_validation_shell_command_allowed(command),
             "expected source-edit-capable mechanical command to be blocked: {command}"
         );
     }
+}
+
+#[tokio::test]
+async fn adaptive_mechanical_validation_dispatch_allows_node_and_read_only_git()
+-> anyhow::Result<()> {
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string());
+    let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
+        tool_name: codex_tools::ToolName::plain("exec_command"),
+    }) as Arc<dyn CoreToolRuntime>]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+
+    for (call_id, command) in [
+        ("mechanical-node-call", "npm run typecheck"),
+        (
+            "mechanical-focused-test-call",
+            "npm run test -- src/tests/capabilityExpression.test.ts",
+        ),
+        (
+            "mechanical-git-chain-call",
+            "git status --short && git diff --check",
+        ),
+    ] {
+        let mut invocation = test_invocation(
+            Arc::clone(&session),
+            Arc::clone(&turn),
+            call_id,
+            codex_tools::ToolName::plain("exec_command"),
+        );
+        invocation.payload = ToolPayload::Function {
+            arguments: serde_json::json!({ "cmd": command }).to_string(),
+        };
+        registry
+            .dispatch_any_with_state(invocation, /*terminal_outcome_reached*/ None)
+            .await?;
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn adaptive_mechanical_validation_rejection_is_reported_as_policy_block()
+-> anyhow::Result<()> {
+    let (mut session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string());
+    let records = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    builder.tool_lifecycle_contributor(Arc::new(ToolLifecycleRecorder {
+        records: Arc::clone(&records),
+    }));
+    session.services.extensions = Arc::new(builder.build());
+
+    let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
+        tool_name: codex_tools::ToolName::plain("exec_command"),
+    }) as Arc<dyn CoreToolRuntime>]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+    let mut invocation = test_invocation(
+        session,
+        turn,
+        "mechanical-policy-block",
+        codex_tools::ToolName::plain("exec_command"),
+    );
+    invocation.payload = ToolPayload::Function {
+        arguments: serde_json::json!({
+            "cmd": "npm run format"
+        })
+        .to_string(),
+    };
+
+    let err = match registry
+        .dispatch_any_with_state(invocation, /*terminal_outcome_reached*/ None)
+        .await
+    {
+        Ok(_) => panic!("source-writing package script must be blocked"),
+        Err(err) => err,
+    };
+    assert!(
+        err.to_string()
+            .contains("mechanical validation does not authorize source edits")
+    );
+
+    let actual = records
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .drain(..)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actual,
+        vec![RecordedToolLifecycle::Finish {
+            call_id: "mechanical-policy-block".to_string(),
+            tool_name: codex_tools::ToolName::plain("exec_command").with_default_namespace(),
+            outcome: codex_extension_api::ToolCallOutcome::Blocked,
+        }]
+    );
+
+    Ok(())
 }
 
 #[tokio::test]
