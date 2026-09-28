@@ -75,11 +75,7 @@ impl FinalMessageSeparator {
                 "DONE".to_string(),
             ];
             if let Some(completed_at) = self.completed_at {
-                label_parts.push(format_completed_at(
-                    completed_at,
-                    today,
-                    self.clock_format,
-                ));
+                label_parts.push(format_completed_at(completed_at, today, self.clock_format));
             }
             return Some(label_parts.join(" | "));
         }
@@ -92,11 +88,7 @@ impl FinalMessageSeparator {
             ));
         }
         if let Some(completed_at) = self.completed_at {
-            label_parts.push(format_completed_at(
-                completed_at,
-                today,
-                self.clock_format,
-            ));
+            label_parts.push(format_completed_at(completed_at, today, self.clock_format));
         }
         if let Some(metrics_label) = self.runtime_metrics.and_then(runtime_metrics_label) {
             label_parts.push(metrics_label);
