@@ -186,6 +186,7 @@ fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> b
             .get(1)
             .is_some_and(|subcommand| matches!(subcommand.as_str(), "test" | "build" | "vet")),
         "pytest" | "ctest" | "ninja" => true,
+        "powershell" | "pwsh" => adaptive_mechanical_powershell_file_command_allowed(&command[1..]),
         "python" | "python3" => {
             command.get(1).is_some_and(|word| word == "-m")
                 && command.get(2).is_some_and(|module| module == "pytest")
@@ -205,6 +206,35 @@ fn adaptive_mechanical_cargo_command_allowed(args: &[String]) -> bool {
         "fmt" => args.iter().any(|word| word == "--check"),
         _ => false,
     }
+}
+
+fn adaptive_mechanical_powershell_file_command_allowed(args: &[String]) -> bool {
+    let mut index = 0usize;
+    while let Some(argument) = args.get(index) {
+        let argument = argument
+            .trim_matches(|character| character == '\'' || character == '"')
+            .to_ascii_lowercase();
+        match argument.as_str() {
+            "-noprofile" | "-noninteractive" | "-nologo" => {
+                index += 1;
+            }
+            "-executionpolicy" | "-ep" => {
+                if args.get(index + 1).is_none() {
+                    return false;
+                }
+                index += 2;
+            }
+            "-file" | "-f" => {
+                let Some(script) = args.get(index + 1) else {
+                    return false;
+                };
+                let script = script.trim_matches(|character| character == '\'' || character == '"');
+                return !script.starts_with('-') && script.to_ascii_lowercase().ends_with(".ps1");
+            }
+            _ => return false,
+        }
+    }
+    false
 }
 
 fn adaptive_reconnaissance_plain_command_allowed(command: &[String]) -> bool {
