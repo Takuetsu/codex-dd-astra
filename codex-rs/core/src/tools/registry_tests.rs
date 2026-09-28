@@ -874,6 +874,8 @@ fn adaptive_mechanical_validation_shell_gate_allows_bounded_validation_commands(
         "cargo metadata --no-deps",
         "pytest -q",
         "python -m pytest tests",
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\tests\\smoke-test.ps1",
+        "pwsh -NoProfile -File tests/smoke-test.ps1",
         "dotnet test",
         "go test ./...",
         "ctest --output-on-failure",
@@ -896,6 +898,8 @@ fn adaptive_mechanical_validation_shell_gate_blocks_source_edit_capable_commands
         "Set-Content probe.txt changed",
         "Remove-Item probe.txt",
         "python -c \"open('probe.txt','w').write('changed')\"",
+        "powershell.exe -NoProfile -Command Set-Content probe.txt changed",
+        "pwsh -EncodedCommand U2V0LUNvbnRlbnQgcHJvYmUudHh0IGNoYW5nZWQ=",
         "git add probe.txt",
         "Get-Content probe.txt > copy.txt",
         "cargo test | Tee-Object test.log",
@@ -935,6 +939,25 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
     };
     registry
         .dispatch_any_with_state(build_invocation, /*terminal_outcome_reached*/ None)
+        .await?;
+
+    let mut powershell_invocation = test_invocation(
+        Arc::clone(&session),
+        Arc::clone(&turn),
+        "mechanical-powershell-call",
+        codex_tools::ToolName::plain("exec_command"),
+    );
+    powershell_invocation.payload = ToolPayload::Function {
+        arguments: serde_json::json!({
+            "cmd": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\tests\\smoke-test.ps1"
+        })
+        .to_string(),
+    };
+    registry
+        .dispatch_any_with_state(
+            powershell_invocation,
+            /*terminal_outcome_reached*/ None,
+        )
         .await?;
 
     let err = match registry

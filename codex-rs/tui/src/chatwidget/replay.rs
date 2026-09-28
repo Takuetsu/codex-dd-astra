@@ -109,6 +109,20 @@ impl ChatWidget {
             self.warning_display_state.startup_complete = true;
         }
         let latest_turn_id = turns.last().map(|turn| turn.id.clone());
+        if self.adaptive_effort.worker_context.role
+            != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
+        {
+            for turn in &turns {
+                if turn.status == TurnStatus::Completed
+                    && let Some(duration_ms) = turn
+                        .duration_ms
+                        .and_then(|duration| u64::try_from(duration).ok())
+                {
+                    self.turn_lifecycle
+                        .record_worker_duration(&turn.id, duration_ms);
+                }
+            }
+        }
         let hidden_nested_review_turns = std::iter::once(/*value*/ false)
             .chain(turns.windows(/*size*/ 2).map(|turns| {
                 crate::app_backtrack::is_hidden_nested_review_turn(&turns[0], &turns[1])

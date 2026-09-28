@@ -295,7 +295,7 @@ fn adaptive_continuation_text(
     match permit.decision {
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation => {
             format!(
-                "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Run tests, formatting checks, builds, diff inspection, and evidence collection without editing source. If validation reveals that source changes or renewed implementation reasoning are required, report kind=implementation_work and end the turn before editing. Preserve the existing task, scope, worktree, and acceptance criteria."
+                "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Run tests, formatting checks, builds, diff inspection, and evidence collection without editing source. Submit each bounded validation command directly as its own exec_command; do not wrap validation in shell assignments, control-flow blocks, or command-chaining wrappers. If validation reveals that source changes or renewed implementation reasoning are required, report kind=implementation_work and end the turn before editing. Preserve the existing task, scope, worktree, and acceptance criteria."
             )
         }
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ResumeImplementation => {

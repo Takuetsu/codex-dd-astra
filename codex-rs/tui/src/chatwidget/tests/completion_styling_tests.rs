@@ -125,6 +125,65 @@ async fn completion_live_applies_duration_threshold_and_preserves_timestamp_fall
 }
 
 #[tokio::test]
+async fn adaptive_worker_terminal_footer_uses_cumulative_active_turn_runtime() {
+    let (mut chat, _rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
+    chat.adaptive_effort.worker_context.role =
+        crate::adaptive_worker::AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("footer smoke".to_string());
+
+    let mut first = completed_turn(Some(30_000), Some(COMPLETED_AT - 60));
+    first.id = "worker-turn-1".to_string();
+    chat.completion_cell(&first, /*replay_kind*/ None)
+        .expect("first completion metadata");
+
+    chat.adaptive_effort.workflow_terminal =
+        Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
+    chat.adaptive_effort.last_processed_terminal_turn_id = Some("worker-turn-2".to_string());
+    let mut second = completed_turn(Some(45_000), Some(COMPLETED_AT));
+    second.id = "worker-turn-2".to_string();
+    let footer = chat
+        .completion_cell(&second, /*replay_kind*/ None)
+        .expect("terminal Worker footer");
+
+    assert_eq!(
+        footer.raw_lines()[0].to_string(),
+        format!(
+            "TOTAL TIME WORKED: 1m 15s | DONE | {}",
+            saved_completion_label()
+        )
+    );
+}
+
+#[tokio::test]
+async fn adaptive_worker_replay_preseeds_unloaded_turn_duration_for_total() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
+    chat.adaptive_effort.worker_context.role =
+        crate::adaptive_worker::AdaptiveWorkerRole::Implementation;
+    chat.adaptive_effort.worker_context.authorized_scope = Some("footer replay".to_string());
+    chat.adaptive_effort.workflow_terminal =
+        Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
+    chat.adaptive_effort.last_processed_terminal_turn_id = Some("worker-turn-2".to_string());
+
+    let mut older = completed_turn(Some(30_000), Some(COMPLETED_AT - 60));
+    older.id = "worker-turn-1".to_string();
+    older.items_view = codex_app_server_protocol::TurnItemsView::NotLoaded;
+    older.items.clear();
+
+    let mut terminal = completed_turn(Some(45_000), Some(COMPLETED_AT));
+    terminal.id = "worker-turn-2".to_string();
+
+    chat.replay_thread_turns(vec![older, terminal], ReplayKind::ResumeInitialMessages);
+
+    assert_eq!(
+        completion_labels(&mut rx),
+        format!(
+            "TOTAL TIME WORKED: 1m 15s | DONE | {}",
+            saved_completion_label()
+        )
+    );
+}
+
+#[tokio::test]
 async fn completion_replay_preserves_metadata_and_input_without_live_side_effects() {
     let done = saved_completion_label();
     for (duration_ms, completed_at, expected) in [

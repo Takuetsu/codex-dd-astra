@@ -11,13 +11,16 @@ use chrono::NaiveDate;
 ///
 /// The timestamp records when the turn actually finished, including when restored from history.
 /// Times use the host's clock preference; other local days include the date and other years the year.
-/// Durations are shown only above sixty seconds; shorter turns still show their timestamp.
+/// Ordinary per-turn durations are shown only above sixty seconds; shorter turns still show their
+/// timestamp. A terminal CodexDD Worker instead shows its cumulative active turn runtime at any
+/// length, followed by DONE and the authoritative stop timestamp.
 /// Absent metadata occupies no transcript rows.
 /// The display date is fixed at construction so crossing midnight cannot invalidate cached heights;
 /// restoring the conversation constructs new cells and refreshes whether the timestamp needs a date.
 #[derive(Debug)]
 pub struct FinalMessageSeparator {
     elapsed_seconds: Option<u64>,
+    worker_total_seconds: Option<u64>,
     runtime_metrics: Option<RuntimeMetricsSummary>,
     completed_at: Option<DateTime<Local>>,
     display_date: NaiveDate,
@@ -31,6 +34,7 @@ impl FinalMessageSeparator {
     ) -> Self {
         Self {
             elapsed_seconds,
+            worker_total_seconds: None,
             runtime_metrics,
             completed_at: None,
             display_date: Local::now().date_naive(),
@@ -48,6 +52,11 @@ impl FinalMessageSeparator {
         self
     }
 
+    pub(crate) fn with_worker_completion(mut self, total_seconds: u64) -> Self {
+        self.worker_total_seconds = Some(total_seconds);
+        self
+    }
+
     pub(crate) fn with_runtime_metrics(
         mut self,
         runtime_metrics: Option<RuntimeMetricsSummary>,
@@ -57,33 +66,29 @@ impl FinalMessageSeparator {
     }
 
     fn label(&self, today: NaiveDate) -> Option<String> {
+        if let Some(total_seconds) = self.worker_total_seconds {
+            let mut label_parts = vec![
+                format!(
+                    "TOTAL TIME WORKED: {}",
+                    format_elapsed_seconds(total_seconds)
+                ),
+                "DONE".to_string(),
+            ];
+            if let Some(completed_at) = self.completed_at {
+                label_parts.push(format_completed_at(completed_at, today, self.clock_format));
+            }
+            return Some(label_parts.join(" | "));
+        }
+
         let mut label_parts = Vec::new();
         if let Some(elapsed_seconds) = self.elapsed_seconds.filter(|seconds| *seconds > 60) {
-            let hours = elapsed_seconds / 3_600;
-            let minutes = (elapsed_seconds % 3_600) / 60;
-            let seconds = elapsed_seconds % 60;
-            let elapsed = if hours > 0 {
-                format!("{hours}h {minutes}m {seconds}s")
-            } else if minutes > 0 {
-                format!("{minutes}m {seconds}s")
-            } else {
-                format!("{seconds}s")
-            };
-            label_parts.push(format!("Worked for {elapsed}"));
+            label_parts.push(format!(
+                "Worked for {}",
+                format_elapsed_seconds(elapsed_seconds)
+            ));
         }
         if let Some(completed_at) = self.completed_at {
-            let date_format = if completed_at.date_naive() == today {
-                ""
-            } else if completed_at.year() == today.year() {
-                "%b %-d at "
-            } else {
-                "%b %-d, %Y at "
-            };
-            label_parts.push(format!(
-                "{}{}",
-                completed_at.format(date_format),
-                completed_at.format(self.clock_format.time_format()),
-            ));
+            label_parts.push(format_completed_at(completed_at, today, self.clock_format));
         }
         if let Some(metrics_label) = self.runtime_metrics.and_then(runtime_metrics_label) {
             label_parts.push(metrics_label);
@@ -205,6 +210,38 @@ pub(crate) fn runtime_metrics_label(summary: RuntimeMetricsSummary) -> Option<St
     } else {
         Some(parts.join(" • "))
     }
+}
+
+fn format_elapsed_seconds(elapsed_seconds: u64) -> String {
+    let hours = elapsed_seconds / 3_600;
+    let minutes = (elapsed_seconds % 3_600) / 60;
+    let seconds = elapsed_seconds % 60;
+    if hours > 0 {
+        format!("{hours}h {minutes}m {seconds}s")
+    } else if minutes > 0 {
+        format!("{minutes}m {seconds}s")
+    } else {
+        format!("{seconds}s")
+    }
+}
+
+fn format_completed_at(
+    completed_at: DateTime<Local>,
+    today: NaiveDate,
+    clock_format: ClockFormat,
+) -> String {
+    let date_format = if completed_at.date_naive() == today {
+        ""
+    } else if completed_at.year() == today.year() {
+        "%b %-d at "
+    } else {
+        "%b %-d, %Y at "
+    };
+    format!(
+        "{}{}",
+        completed_at.format(date_format),
+        completed_at.format(clock_format.time_format()),
+    )
 }
 
 fn format_duration_ms(duration_ms: u64) -> String {
