@@ -155,16 +155,27 @@ pub(crate) async fn apply_bespoke_event_handling(
     } = event;
     match msg {
         EventMsg::AdaptiveRuntimeSignal(signal) => {
+            let signal = AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: event_turn_id,
+                signal_kind: signal.signal_kind,
+                evidence_refs: signal.evidence_refs,
+                diagnostic_note: signal.diagnostic_note,
+            };
+            // Keep a turn-scoped copy in addition to live delivery. turn/completed intentionally
+            // exposes only a summary view, so the TUI cannot recover report_adaptive_signal from
+            // completed turn items. Replaying the trusted envelope at the terminal boundary makes
+            // consumption deterministic even if the earlier live notification was delayed.
+            thread_state
+                .lock()
+                .await
+                .turn_summary
+                .adaptive_runtime_signals
+                .push(signal.clone());
             outgoing
                 .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(
                     AdaptiveRuntimeSignalNotification {
                         thread_id: conversation_id.to_string(),
-                        signal: AdaptiveRuntimeSignalEnvelope {
-                            source_turn_id: event_turn_id,
-                            signal_kind: signal.signal_kind,
-                            evidence_refs: signal.evidence_refs,
-                            diagnostic_note: signal.diagnostic_note,
-                        },
+                        signal,
                     },
                 ))
                 .await;
@@ -1523,11 +1534,36 @@ async fn handle_turn_complete(
     thread_state: &Arc<Mutex<ThreadState>>,
 ) {
     let turn_summary = find_and_remove_turn_summary(conversation_id, thread_state).await;
+    let TurnSummary {
+        started_at,
+        last_error,
+        last_agent_message,
+        adaptive_runtime_signals,
+        ..
+    } = turn_summary;
 
-    let (status, error, last_agent_message) = match turn_summary.last_error {
+    let (status, error, last_agent_message) = match last_error {
         Some(error) => (TurnStatus::Failed, Some(error), None),
-        None => (TurnStatus::Completed, None, turn_summary.last_agent_message),
+        None => (TurnStatus::Completed, None, last_agent_message),
     };
+
+    // Live adaptive notifications are useful for in-turn state, but workflow terminals are
+    // authoritative only at turn completion. Re-emit every trusted signal from this turn on the
+    // same outgoing FIFO immediately before TurnCompleted. Exact duplicates are idempotent in the
+    // TUI, while a delayed READY_FOR_VALIDATION is now guaranteed to arrive before terminal
+    // reduction instead of being discarded after the Worker was already treated as unfinished.
+    if matches!(status, TurnStatus::Completed) {
+        for signal in adaptive_runtime_signals {
+            outgoing
+                .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(
+                    AdaptiveRuntimeSignalNotification {
+                        thread_id: conversation_id.to_string(),
+                        signal,
+                    },
+                ))
+                .await;
+        }
+    }
 
     emit_turn_completed_with_status(
         conversation_id,
@@ -1536,7 +1572,7 @@ async fn handle_turn_complete(
             status,
             error,
             last_agent_message,
-            started_at: turn_summary.started_at,
+            started_at,
             completed_at: turn_complete_event.completed_at,
             duration_ms: turn_complete_event.duration_ms,
         },
@@ -3518,6 +3554,7 @@ mod tests {
             vec![ConnectionId(1)],
             ThreadId::new(),
         );
+        let thread_state = new_thread_state();
         apply_bespoke_event_handling(
             Event {
                 id: source_turn_id.clone(),
@@ -3533,8 +3570,8 @@ mod tests {
             conversation_id,
             conversation,
             thread_manager,
-            outgoing,
-            new_thread_state(),
+            outgoing.clone(),
+            thread_state.clone(),
             ThreadWatchManager::new(),
             Arc::new(tokio::sync::Semaphore::new(/*permits*/ 1)),
             "test-provider".to_string(),
@@ -3545,17 +3582,41 @@ mod tests {
         let ServerNotification::AdaptiveRuntimeSignal(notification) = notification else {
             bail!("unexpected notification: {notification:?}");
         };
+        let expected_signal = AdaptiveRuntimeSignalNotification {
+            thread_id: conversation_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: source_turn_id.clone(),
+                signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+        };
+        assert_eq!(notification, expected_signal);
+
+        handle_turn_complete(
+            conversation_id,
+            source_turn_id.clone(),
+            turn_complete_event(&source_turn_id),
+            &outgoing,
+            &thread_state,
+        )
+        .await;
+
+        let replay = recv_broadcast_notification(&mut rx).await?;
         assert_eq!(
-            notification,
-            AdaptiveRuntimeSignalNotification {
-                thread_id: conversation_id.to_string(),
-                signal: AdaptiveRuntimeSignalEnvelope {
-                    source_turn_id,
-                    signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,
-                    evidence_refs: Vec::new(),
-                    diagnostic_note: None,
-                },
-            }
+            replay,
+            ServerNotification::AdaptiveRuntimeSignal(expected_signal),
+            "trusted adaptive signal must be replayed immediately before turn completion"
+        );
+        let completed = recv_broadcast_notification(&mut rx).await?;
+        let ServerNotification::TurnCompleted(completed) = completed else {
+            bail!("unexpected notification after adaptive replay: {completed:?}");
+        };
+        assert_eq!(completed.turn.id, source_turn_id);
+        assert_eq!(completed.turn.status, TurnStatus::Completed);
+        assert!(
+            rx.try_recv().is_err(),
+            "terminal replay and TurnCompleted should be the only completion messages"
         );
         Ok(())
     }

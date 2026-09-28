@@ -1,5 +1,6 @@
 use crate::outgoing_message::ConnectionId;
 use crate::outgoing_message::ConnectionRequestId;
+use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::RequestId;
 use codex_app_server_protocol::ThreadGoal;
 use codex_app_server_protocol::ThreadHistoryBuilder;
@@ -95,6 +96,10 @@ pub(crate) struct TurnSummary {
     pub(crate) command_execution_started: HashSet<String>,
     pub(crate) last_error: Option<TurnError>,
     pub(crate) last_agent_message: Option<ThreadItem>,
+    /// Trusted adaptive signals emitted during the active turn. The app-server replays these
+    /// immediately before successful turn completion so terminal-bound consumers cannot lose a
+    /// signal merely because live notification delivery was delayed.
+    pub(crate) adaptive_runtime_signals: Vec<AdaptiveRuntimeSignalEnvelope>,
 }
 
 #[derive(Default)]
