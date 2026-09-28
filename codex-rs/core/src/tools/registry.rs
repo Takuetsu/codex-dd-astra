@@ -134,19 +134,30 @@ fn adaptive_reconnaissance_shell_command_allowed(command: &str) -> bool {
 }
 
 fn adaptive_mechanical_validation_shell_command_allowed(command: &str) -> bool {
-    if adaptive_reconnaissance_shell_command_allowed(command) {
-        return true;
-    }
-
     let command = command.trim();
     if command.is_empty()
         || command.contains('>')
         || command.contains('<')
-        || command.contains('&')
         || command.contains("$(")
         || command.contains('`')
-        || adaptive_reconnaissance_has_unsafe_pipeline_stage(command)
+        || command.contains("||")
     {
+        return false;
+    }
+
+    let Some(commands) = adaptive_mechanical_validation_split_and_chain(command) else {
+        return false;
+    };
+    commands
+        .iter()
+        .all(|command| adaptive_mechanical_validation_single_shell_command_allowed(command))
+}
+
+fn adaptive_mechanical_validation_single_shell_command_allowed(command: &str) -> bool {
+    if adaptive_reconnaissance_shell_command_allowed(command) {
+        return true;
+    }
+    if adaptive_reconnaissance_has_unsafe_pipeline_stage(command) {
         return false;
     }
 
@@ -165,6 +176,50 @@ fn adaptive_mechanical_validation_shell_command_allowed(command: &str) -> bool {
     adaptive_mechanical_validation_plain_command_allowed(&words)
 }
 
+/// Split a literal PowerShell/Bourne-style `&&` chain without accepting the write-capable
+/// single-`&` operator. Quotes are preserved in each segment so the normal command parser still
+/// owns argument interpretation. Backtick expansion is rejected before this helper is reached.
+fn adaptive_mechanical_validation_split_and_chain(command: &str) -> Option<Vec<&str>> {
+    let bytes = command.as_bytes();
+    let mut quote = None;
+    let mut start = 0;
+    let mut index = 0;
+    let mut commands = Vec::new();
+
+    while index < bytes.len() {
+        let byte = bytes[index];
+        match (quote, byte) {
+            (None, b'\'') => quote = Some(b'\''),
+            (None, b'"') => quote = Some(b'"'),
+            (Some(active), current) if active == current => quote = None,
+            (None, b'&') => {
+                if bytes.get(index + 1) != Some(&b'&') {
+                    return None;
+                }
+                let segment = command[start..index].trim();
+                if segment.is_empty() {
+                    return None;
+                }
+                commands.push(segment);
+                index += 1;
+                start = index + 1;
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+
+    if quote.is_some() {
+        return None;
+    }
+    let segment = command[start..].trim();
+    if segment.is_empty() {
+        return None;
+    }
+    commands.push(segment);
+    Some(commands)
+}
+
 fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> bool {
     if adaptive_reconnaissance_plain_command_allowed(command) {
         return true;
@@ -176,9 +231,15 @@ fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> b
     }) else {
         return false;
     };
-    let program = program.trim_end_matches(".exe").to_ascii_lowercase();
+    let program = program
+        .trim_end_matches(".exe")
+        .trim_end_matches(".cmd")
+        .to_ascii_lowercase();
     match program.as_str() {
         "cargo" => adaptive_mechanical_cargo_command_allowed(&command[1..]),
+        "npm" | "pnpm" | "yarn" => {
+            adaptive_mechanical_node_package_command_allowed(program.as_str(), &command[1..])
+        }
         "dotnet" => command
             .get(1)
             .is_some_and(|subcommand| matches!(subcommand.as_str(), "test" | "build")),
@@ -193,6 +254,119 @@ fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> b
         "cmake" => command.get(1).is_some_and(|word| word == "--build"),
         _ => false,
     }
+}
+
+fn adaptive_mechanical_node_package_command_allowed(package_manager: &str, args: &[String]) -> bool {
+    let mut index = 0;
+    while let Some(argument) = args.get(index) {
+        let argument = argument
+            .trim_matches(|character| character == '\'' || character == '"')
+            .to_ascii_lowercase();
+        if !argument.starts_with('-') {
+            break;
+        }
+        if !matches!(
+            argument.as_str(),
+            "-s" | "--silent" | "--color" | "--no-color" | "--if-present"
+        ) && !argument.starts_with("--loglevel=")
+        {
+            return false;
+        }
+        index += 1;
+    }
+
+    let Some(subcommand) = args.get(index).map(|argument| {
+        argument
+            .trim_matches(|character| character == '\'' || character == '"')
+            .to_ascii_lowercase()
+    }) else {
+        return false;
+    };
+    index += 1;
+
+    let (script_name, script_args) = match subcommand.as_str() {
+        "run" | "run-script" => {
+            let Some(script_name) = args.get(index) else {
+                return false;
+            };
+            (
+                script_name
+                    .trim_matches(|character| character == '\'' || character == '"')
+                    .to_ascii_lowercase(),
+                &args[index + 1..],
+            )
+        }
+        "test" if matches!(package_manager, "npm" | "pnpm" | "yarn") => {
+            ("test".to_string(), &args[index..])
+        }
+        _ => return false,
+    };
+
+    adaptive_mechanical_node_script_name_allowed(&script_name)
+        && adaptive_mechanical_node_script_args_allowed(script_args)
+}
+
+fn adaptive_mechanical_node_script_name_allowed(script_name: &str) -> bool {
+    let script_name = script_name.trim().to_ascii_lowercase();
+    if script_name.is_empty()
+        || script_name.split([':', '-', '_']).any(|part| {
+            matches!(
+                part,
+                "fix"
+                    | "write"
+                    | "watch"
+                    | "update"
+                    | "generate"
+                    | "publish"
+                    | "release"
+                    | "clean"
+                    | "dev"
+                    | "serve"
+                    | "preview"
+            )
+        })
+    {
+        return false;
+    }
+
+    matches!(
+        script_name.as_str(),
+        "test" | "typecheck" | "type-check" | "check" | "lint" | "build" | "verify"
+    ) || script_name.starts_with("test:")
+        || script_name.starts_with("typecheck:")
+        || script_name.starts_with("type-check:")
+        || script_name.starts_with("check:")
+        || script_name.starts_with("lint:")
+        || script_name.starts_with("build:")
+        || script_name.starts_with("verify:")
+        || script_name.starts_with("validation:")
+        || script_name.starts_with("format:check")
+        || script_name.starts_with("format-check")
+        || script_name.contains(":check:")
+        || script_name.ends_with(":check")
+}
+
+fn adaptive_mechanical_node_script_args_allowed(args: &[String]) -> bool {
+    args.iter().all(|argument| {
+        let argument = argument
+            .trim_matches(|character| character == '\'' || character == '"')
+            .to_ascii_lowercase();
+        !matches!(
+            argument.as_str(),
+            "-u"
+                | "--fix"
+                | "--write"
+                | "--update"
+                | "--update-snapshot"
+                | "--update-snapshots"
+                | "--watch"
+                | "--watchall"
+        ) && !argument.starts_with("--fix=")
+            && !argument.starts_with("--write=")
+            && !argument.starts_with("--update=")
+            && !argument.starts_with("--update-snapshot=")
+            && !argument.starts_with("--update-snapshots=")
+    })
 }
 
 fn adaptive_mechanical_cargo_command_allowed(args: &[String]) -> bool {
@@ -912,6 +1086,12 @@ impl ToolRegistry {
             );
             let err = FunctionCallError::RespondToModel(message);
             dispatch_trace.record_failed(&err);
+            notify_tool_finish_if_unclaimed(
+                &invocation,
+                call_state.as_deref(),
+                ToolCallOutcome::Blocked,
+            )
+            .await;
             return Err(err);
         }
 
