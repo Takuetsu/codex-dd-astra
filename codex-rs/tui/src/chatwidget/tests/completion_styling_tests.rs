@@ -172,10 +172,7 @@ async fn adaptive_worker_replay_preseeds_unloaded_turn_duration_for_total() {
     let mut terminal = completed_turn(Some(45_000), Some(COMPLETED_AT));
     terminal.id = "worker-turn-2".to_string();
 
-    chat.replay_thread_turns(
-        vec![older, terminal],
-        ReplayKind::ResumeInitialMessages,
-    );
+    chat.replay_thread_turns(vec![older, terminal], ReplayKind::ResumeInitialMessages);
 
     assert_eq!(
         completion_labels(&mut rx),
