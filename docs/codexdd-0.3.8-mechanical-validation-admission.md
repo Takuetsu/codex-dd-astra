@@ -96,12 +96,12 @@ Source-writing counterparts remain blocked.
 
 0.3.8 does not change the lifecycle routes:
 
-| State | Routing rule |
-| --- | --- |
-| Reconnaissance | Luna Low, read-only |
-| Implementation | Accepted complexity floor or stronger trusted route |
-| Mechanical validation / Conserve | Luna Low |
-| Mechanical validation / Balanced | Luna Medium |
-| Mechanical validation / Surplus | Luna High |
+| State                            | Routing rule                                       |
+| -------------------------------- | -------------------------------------------------- |
+| Reconnaissance                   | Luna Low, read-only                                |
+| Implementation                   | Accepted complexity floor or stronger trusted route |
+| Mechanical validation / Conserve | Luna Low                                           |
+| Mechanical validation / Balanced | Luna Medium                                        |
+| Mechanical validation / Surplus  | Luna High                                          |
 
 Complexity persistence, `implementation_work` re-entry, review floors, capability guards, successor protections, workflow terminals, and owner authority are unchanged.
