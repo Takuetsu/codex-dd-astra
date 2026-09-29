@@ -364,3 +364,46 @@ fn reasoning_effort(effort: AdaptiveEffort) -> ReasoningEffortConfig {
         AdaptiveEffort::Max => ReasoningEffortConfig::Max,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::adaptive_policy::AdaptiveFamily;
+    use crate::adaptive_worker::AdaptiveWorkerContext;
+    use codex_protocol::ThreadId;
+
+    #[test]
+    fn validation_terminalization_prompt_reuses_existing_evidence_and_forbids_rerun() {
+        let permit = AdaptiveSuccessorPermit {
+            thread_id: ThreadId::new(),
+            source_turn_id: "validation-evidence-turn".to_string(),
+            decision:
+                crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ValidationTerminalization,
+            route: AdaptiveRoute {
+                family: AdaptiveFamily::Sol,
+                effort: AdaptiveEffort::Low,
+            },
+            attempt_number: 2,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: Some("breakwater/Z-A0.52A-validation".to_string()),
+            },
+        };
+
+        let text = adaptive_continuation_text(
+            &permit,
+            /*requires_complexity_recovery*/ false,
+            &["green-proof".to_string()],
+            &["failed-proof".to_string()],
+        );
+
+        assert!(text.contains("terminalization only"));
+        assert!(text.contains("do not rerun validation"));
+        assert!(text.contains("green-proof"));
+        assert!(text.contains("failed-proof"));
+        assert!(text.contains("kind=ready_for_owner_qa"));
+        assert!(text.contains("kind=repair_required"));
+        assert!(text.contains("Final-answer prose is non-authoritative"));
+    }
+}
+
