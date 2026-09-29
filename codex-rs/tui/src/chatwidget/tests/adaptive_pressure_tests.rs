@@ -7,6 +7,8 @@ use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::chatwidget::adaptive_effort::AdaptivePendingDecision;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
+use crate::chatwidget::adaptive_effort::AdaptiveSuccessorAdmission;
+use crate::chatwidget::adaptive_effort::AdaptiveSuccessorPermit;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
 use codex_app_server_protocol::CommandExecutionSource;
@@ -795,6 +797,49 @@ async fn completed_validation_with_native_evidence_gets_terminalization_only_suc
 }
 
 #[tokio::test]
+async fn live_validation_evidence_from_earlier_turn_forces_terminalization_before_attempt_five() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let evidence_turn = "validation-evidence-earlier-turn";
+    let later_turn = "validation-reporting-later-turn";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("breakwater/Z-A0.51C-validation".to_string());
+
+    let mut success = failed_command(thread_id, evidence_turn, "earlier-green-proof");
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut success.item
+    {
+        *status = CommandExecutionStatus::Completed;
+        *exit_code = Some(0);
+    }
+    chat.register_adaptive_evidence(&success);
+
+    // Reproduce the live 0.3.11 shape: useful native evidence was produced on an earlier
+    // Validation turn, but ordinary continuations already advanced the attempt counter.
+    chat.adaptive_effort.attempt_number = 4;
+    chat.adaptive_effort.unfinished_turn_pressure = 1;
+    chat.adaptive_effort.last_processed_terminal_turn_id =
+        Some("ordinary-validation-continuation".to_string());
+    chat.adaptive_effort.pending_attempt = None;
+    chat.adaptive_effort.successor_admission = None;
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn(later_turn));
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert_eq!(chat.adaptive_effort.attempt_number, 5);
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        Some(ref pending)
+            if pending.decision == AdaptivePendingDecision::ValidationTerminalization
+                && pending.source_turn_id == later_turn
+                && pending.attempt_number == 5
+    );
+}
+
+#[tokio::test]
 async fn validation_terminalization_omission_blocks_instead_of_escalating_or_rerunning() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
@@ -818,8 +863,21 @@ async fn validation_terminalization_omission_blocks_instead_of_escalating_or_rer
 
     assert!(chat.apply_adaptive_unfinished_authorized_turn(evidence_turn));
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
-    chat.adaptive_effort.pending_attempt = None;
-    chat.adaptive_effort.successor_admission = None;
+    let pending = chat
+        .adaptive_effort
+        .pending_attempt
+        .take()
+        .expect("terminalization attempt");
+    chat.adaptive_effort.successor_admission = Some(AdaptiveSuccessorAdmission::Consumed(
+        AdaptiveSuccessorPermit {
+            thread_id: pending.thread_id,
+            source_turn_id: pending.source_turn_id,
+            decision: pending.decision,
+            route: pending.route,
+            attempt_number: pending.attempt_number,
+            worker_context: pending.worker_context,
+        },
+    ));
 
     assert!(chat.apply_adaptive_unfinished_authorized_turn(terminalization_turn));
     assert_eq!(

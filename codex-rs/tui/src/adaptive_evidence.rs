@@ -207,6 +207,38 @@ impl AdaptiveEvidenceRegistry {
         })
     }
 
+    pub(crate) fn conclusive_refs_for_thread(
+        &self,
+        thread_id: ThreadId,
+        expected: AdaptiveEvidenceOutcome,
+    ) -> Vec<String> {
+        self.entries
+            .values()
+            .filter_map(|entry| match entry {
+                AdaptiveEvidenceEntry::Valid(record)
+                    if record.thread_id == thread_id && record.outcome == expected =>
+                {
+                    Some(record.evidence_id.clone())
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub(crate) fn has_conclusive_evidence_for_thread(&self, thread_id: ThreadId) -> bool {
+        self.entries.values().any(|entry| {
+            matches!(
+                entry,
+                AdaptiveEvidenceEntry::Valid(record)
+                    if record.thread_id == thread_id
+                        && matches!(
+                            record.outcome,
+                            AdaptiveEvidenceOutcome::Success | AdaptiveEvidenceOutcome::Failure
+                        )
+            )
+        })
+    }
+
     pub(crate) fn len(&self) -> usize {
         self.entries.len()
     }

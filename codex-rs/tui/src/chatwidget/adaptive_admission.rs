@@ -90,16 +90,14 @@ impl ChatWidget {
                 (
                     self.adaptive_effort
                         .evidence_registry
-                        .conclusive_refs_for_turn(
+                        .conclusive_refs_for_thread(
                             permit.thread_id,
-                            &permit.source_turn_id,
                             AdaptiveEvidenceOutcome::Success,
                         ),
                     self.adaptive_effort
                         .evidence_registry
-                        .conclusive_refs_for_turn(
+                        .conclusive_refs_for_thread(
                             permit.thread_id,
-                            &permit.source_turn_id,
                             AdaptiveEvidenceOutcome::Failure,
                         ),
                 )
