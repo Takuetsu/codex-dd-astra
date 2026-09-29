@@ -90,16 +90,14 @@ impl ChatWidget {
                 (
                     self.adaptive_effort
                         .evidence_registry
-                        .conclusive_refs_for_turn(
+                        .conclusive_refs_for_thread(
                             permit.thread_id,
-                            &permit.source_turn_id,
                             AdaptiveEvidenceOutcome::Success,
                         ),
                     self.adaptive_effort
                         .evidence_registry
-                        .conclusive_refs_for_turn(
+                        .conclusive_refs_for_thread(
                             permit.thread_id,
-                            &permit.source_turn_id,
                             AdaptiveEvidenceOutcome::Failure,
                         ),
                 )
@@ -335,8 +333,14 @@ fn adaptive_continuation_text(
             } else {
                 validation_failure_refs.join(", ")
             };
+            let evidence_guidance =
+                if validation_success_refs.is_empty() && validation_failure_refs.is_empty() {
+                    "No trusted native evidence refs are currently available in this process. This can occur after a thread resume because ephemeral evidence authorization is not restored. Run only the minimum missing objective validation needed to create fresh native evidence before reporting the terminal."
+                } else {
+                    "Trusted native evidence from the current bound Validation thread is available. Do not rerun validation that is already complete merely to recreate evidence. If the available evidence is insufficient to support the verdict, run only the minimum missing objective validation needed to produce the required native evidence."
+                };
             format!(
-                "[Adaptive continuation] Objective Validation evidence is already present, but the prior turn ended without the required workflow terminal. Attempt {attempt} remains authorized at {model} {effort} using {decision} for terminalization only. Do not modify the implementation and do not rerun validation that is already complete merely to recreate evidence. Existing successful native evidence refs: {successful_refs}. Existing failing native evidence refs: {failing_refs}. Decide the bounded Validation verdict from the current thread state. If green, call report_adaptive_signal with kind=ready_for_owner_qa and one or more successful native evidence refs. If a blocker is established, call report_adaptive_signal with kind=repair_required and one or more failing native evidence refs. If the existing evidence is insufficient to support the verdict, run only the minimum missing objective validation needed to produce the required native evidence, then report the terminal. End the turn immediately after reporting. Final-answer prose is non-authoritative and cannot close this Worker."
+                "[Adaptive continuation] The prior bound Validation turn ended without an accepted workflow terminal. Attempt {attempt} remains authorized at {model} {effort} using {decision} for terminalization only. Do not modify the implementation. Existing successful native evidence refs: {successful_refs}. Existing failing native evidence refs: {failing_refs}. {evidence_guidance} Decide the bounded Validation verdict from the current thread state. If green, call report_adaptive_signal with kind=ready_for_owner_qa and one or more successful native evidence refs. If a blocker is established, call report_adaptive_signal with kind=repair_required and one or more failing native evidence refs. End the turn immediately after reporting. Final-answer prose is non-authoritative and cannot close this Worker."
             )
         }
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation => {
