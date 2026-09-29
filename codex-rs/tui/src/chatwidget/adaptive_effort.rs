@@ -27,6 +27,7 @@ pub(crate) enum AdaptivePendingDecision {
     EscalateModel,
     EnterMechanicalValidation,
     ResumeImplementation,
+    ValidationTerminalization,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
