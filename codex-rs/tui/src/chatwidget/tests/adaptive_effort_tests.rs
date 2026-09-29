@@ -152,6 +152,9 @@ async fn adaptive_successor_submits_each_authorized_decision_once() {
                             "EnterMechanicalValidation"
                         }
                         AdaptivePendingDecision::ResumeImplementation => "ResumeImplementation",
+                        AdaptivePendingDecision::ValidationTerminalization => {
+                            "ValidationTerminalization"
+                        }
                     })
                     && !text.contains("original root prompt")
                     && text_elements.is_empty()
