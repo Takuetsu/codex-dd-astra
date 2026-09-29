@@ -167,6 +167,46 @@ impl AdaptiveEvidenceRegistry {
             .min(ADAPTIVE_FAILURE_PRESSURE_THRESHOLD)
     }
 
+    pub(crate) fn conclusive_refs_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+        expected: AdaptiveEvidenceOutcome,
+    ) -> Vec<String> {
+        self.entries
+            .values()
+            .filter_map(|entry| match entry {
+                AdaptiveEvidenceEntry::Valid(record)
+                    if record.thread_id == thread_id
+                        && record.source_turn_id == source_turn_id
+                        && record.outcome == expected =>
+                {
+                    Some(record.evidence_id.clone())
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub(crate) fn has_conclusive_evidence_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> bool {
+        self.entries.values().any(|entry| {
+            matches!(
+                entry,
+                AdaptiveEvidenceEntry::Valid(record)
+                    if record.thread_id == thread_id
+                        && record.source_turn_id == source_turn_id
+                        && matches!(
+                            record.outcome,
+                            AdaptiveEvidenceOutcome::Success | AdaptiveEvidenceOutcome::Failure
+                        )
+            )
+        })
+    }
+
     pub(crate) fn len(&self) -> usize {
         self.entries.len()
     }
