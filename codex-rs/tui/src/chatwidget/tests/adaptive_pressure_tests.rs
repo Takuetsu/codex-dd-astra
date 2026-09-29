@@ -761,6 +761,82 @@ async fn late_workflow_terminal_still_overrides_synthetic_failure_pressure() {
 }
 
 #[tokio::test]
+async fn completed_validation_with_native_evidence_gets_terminalization_only_successor() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let turn_id = "validation-evidence-without-terminal";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("breakwater/Z-A0.52A-validation".to_string());
+
+    let mut success = failed_command(thread_id, turn_id, "validation-green-proof");
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut success.item
+    {
+        *status = CommandExecutionStatus::Completed;
+        *exit_code = Some(0);
+    }
+    chat.register_adaptive_evidence(&success);
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn(turn_id));
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert_matches!(
+        chat.adaptive_effort.pending_attempt,
+        Some(ref pending)
+            if pending.decision == AdaptivePendingDecision::ValidationTerminalization
+                && pending.source_turn_id == turn_id
+                && pending.attempt_number == 2
+    );
+}
+
+#[tokio::test]
+async fn validation_terminalization_omission_blocks_instead_of_escalating_or_rerunning() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    let thread_id = ThreadId::new();
+    let evidence_turn = "validation-green-without-terminal";
+    let terminalization_turn = "validation-terminalization-omitted";
+    chat.thread_id = Some(thread_id);
+    chat.dispatch_adaptive_command("astra");
+    chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+    chat.adaptive_effort.worker_context.authorized_scope =
+        Some("breakwater/Z-A0.52A-validation".to_string());
+
+    let mut success = failed_command(thread_id, evidence_turn, "validation-green-proof");
+    if let ThreadItem::CommandExecution {
+        status, exit_code, ..
+    } = &mut success.item
+    {
+        *status = CommandExecutionStatus::Completed;
+        *exit_code = Some(0);
+    }
+    chat.register_adaptive_evidence(&success);
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn(evidence_turn));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+    chat.adaptive_effort.pending_attempt = None;
+    chat.adaptive_effort.successor_admission = None;
+
+    assert!(chat.apply_adaptive_unfinished_authorized_turn(
+        terminalization_turn
+    ));
+    assert_eq!(
+        chat.adaptive_effort.workflow_terminal,
+        Some(AdaptiveWorkflowTerminal::Blocked)
+    );
+    assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    assert_eq!(chat.adaptive_effort.successor_admission, None);
+    assert_eq!(
+        chat.adaptive_effort.last_failure_kind,
+        Some(crate::adaptive_policy::AdaptiveFailureKind::OwnerDecision)
+    );
+}
+
+#[tokio::test]
 async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_continuation() {
     let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
