@@ -868,15 +868,16 @@ async fn validation_terminalization_omission_blocks_instead_of_escalating_or_rer
         .pending_attempt
         .take()
         .expect("terminalization attempt");
-    chat.adaptive_effort.successor_admission =
-        Some(AdaptiveSuccessorAdmission::Consumed(AdaptiveSuccessorPermit {
+    chat.adaptive_effort.successor_admission = Some(AdaptiveSuccessorAdmission::Consumed(
+        AdaptiveSuccessorPermit {
             thread_id: pending.thread_id,
             source_turn_id: pending.source_turn_id,
             decision: pending.decision,
             route: pending.route,
             attempt_number: pending.attempt_number,
             worker_context: pending.worker_context,
-        }));
+        },
+    ));
 
     assert!(chat.apply_adaptive_unfinished_authorized_turn(terminalization_turn));
     assert_eq!(
