@@ -199,65 +199,50 @@ impl ChatWidget {
         if state.worker_context.role == crate::adaptive_worker::AdaptiveWorkerRole::Validation
             && let Some(thread_id) = self.thread_id()
         {
-            let previous_turn_had_conclusive_evidence = state
-                .last_processed_terminal_turn_id
-                .as_deref()
-                .is_some_and(|turn_id| {
-                    state
-                        .evidence_registry
-                        .has_conclusive_evidence_for_turn(thread_id, turn_id)
-                });
-            let current_turn_has_conclusive_evidence = state
-                .evidence_registry
-                .has_conclusive_evidence_for_turn(thread_id, source_turn_id);
-
-            // A Validation Worker that already produced native evidence but omitted its required
-            // workflow terminal gets exactly one same-route terminalization turn. Do not spend
-            // additional budget rerunning already-complete validation just because the model
-            // forgot to close the adaptive contract.
-            if current_turn_has_conclusive_evidence
-                && !(state.unfinished_turn_pressure > 0 && previous_turn_had_conclusive_evidence)
-            {
-                let next_attempt = state.attempt_number.saturating_add(1);
-                self.adaptive_effort.last_processed_terminal_turn_id =
-                    Some(source_turn_id.to_string());
-                self.adaptive_effort.current_family = Some(current_route.family);
-                self.adaptive_effort.current_effort = Some(current_route.effort);
-                self.adaptive_effort.attempt_number = next_attempt;
-                self.adaptive_effort.transient_retry_consumed = false;
-                self.adaptive_effort.unfinished_turn_pressure = 1;
-                self.adaptive_effort.last_outcome = None;
-                self.adaptive_effort.last_failure_kind = None;
-                self.adaptive_effort.successor_admission = None;
-                self.adaptive_effort.pending_attempt = Some(AdaptivePendingAttempt {
-                    thread_id,
-                    source_turn_id: source_turn_id.to_string(),
-                    decision: AdaptivePendingDecision::ValidationTerminalization,
-                    route: current_route,
-                    attempt_number: next_attempt,
-                    worker_context: self.adaptive_effort.worker_context.clone(),
-                });
-                self.save_adaptive_effort_for_current_thread();
-                return true;
-            }
-
-            // If the dedicated terminalization turn itself ends without ready_for_owner_qa or
-            // repair_required, stop deterministically rather than entering the ordinary
-            // unfinished-pressure escalation ladder. The owner can inspect the preserved
-            // evidence without paying for repeated validation reruns.
-            if state.unfinished_turn_pressure > 0 && previous_turn_had_conclusive_evidence {
+            // A bound Validation Worker is already on the dedicated quality-review route. Ending
+            // any Validation turn without an accepted workflow terminal is a contract-recovery
+            // problem, not evidence of insufficient model capability. Never feed this condition
+            // into the generic unfinished-pressure escalation ladder.
+            //
+            // unfinished_turn_pressure is used here only as the exact-once in-process marker for
+            // the dedicated terminalization successor. Durable workflow restore intentionally
+            // clears ephemeral pressure, so a resumed active Validation Worker receives one fresh
+            // terminalization opportunity instead of inheriting stale successor authority.
+            if state.unfinished_turn_pressure > 0 {
                 self.apply_adaptive_terminal_classification(
                     source_turn_id,
                     AdaptiveOutcomeSignal::Failure(AdaptiveFailureKind::OwnerDecision),
                     AdaptiveClassification::Blocked,
                 );
                 self.add_info_message(
-                    "Validation completed with native evidence but the dedicated terminalization turn ended without ready_for_owner_qa or repair_required. CodexDD stopped the Worker at BLOCKED instead of rerunning validation or escalating compute."
+                    "The dedicated Validation terminalization turn ended without ready_for_owner_qa or repair_required. CodexDD stopped the Worker at BLOCKED instead of admitting another continuation or escalating compute."
                         .to_string(),
                     None,
                 );
                 return true;
             }
+
+            let next_attempt = state.attempt_number.saturating_add(1);
+            self.adaptive_effort.last_processed_terminal_turn_id =
+                Some(source_turn_id.to_string());
+            self.adaptive_effort.current_family = Some(current_route.family);
+            self.adaptive_effort.current_effort = Some(current_route.effort);
+            self.adaptive_effort.attempt_number = next_attempt;
+            self.adaptive_effort.transient_retry_consumed = false;
+            self.adaptive_effort.unfinished_turn_pressure = 1;
+            self.adaptive_effort.last_outcome = None;
+            self.adaptive_effort.last_failure_kind = None;
+            self.adaptive_effort.successor_admission = None;
+            self.adaptive_effort.pending_attempt = Some(AdaptivePendingAttempt {
+                thread_id,
+                source_turn_id: source_turn_id.to_string(),
+                decision: AdaptivePendingDecision::ValidationTerminalization,
+                route: current_route,
+                attempt_number: next_attempt,
+                worker_context: self.adaptive_effort.worker_context.clone(),
+            });
+            self.save_adaptive_effort_for_current_thread();
+            return true;
         }
 
         let controller = AdaptiveControllerState {
