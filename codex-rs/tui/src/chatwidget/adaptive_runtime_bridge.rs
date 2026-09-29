@@ -196,8 +196,7 @@ impl ChatWidget {
             family: current_family,
             effort: current_effort,
         };
-        if state.worker_context.role
-            == crate::adaptive_worker::AdaptiveWorkerRole::Validation
+        if state.worker_context.role == crate::adaptive_worker::AdaptiveWorkerRole::Validation
             && let Some(thread_id) = self.thread_id()
         {
             let previous_turn_had_conclusive_evidence = state
@@ -217,8 +216,7 @@ impl ChatWidget {
             // additional budget rerunning already-complete validation just because the model
             // forgot to close the adaptive contract.
             if current_turn_has_conclusive_evidence
-                && !(state.unfinished_turn_pressure > 0
-                    && previous_turn_had_conclusive_evidence)
+                && !(state.unfinished_turn_pressure > 0 && previous_turn_had_conclusive_evidence)
             {
                 let next_attempt = state.attempt_number.saturating_add(1);
                 self.adaptive_effort.last_processed_terminal_turn_id =
