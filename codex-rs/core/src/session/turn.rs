@@ -79,6 +79,7 @@ use codex_file_system::FindUpErrorPolicy;
 use codex_file_system::find_nearest_ancestor_with_markers;
 use codex_login::CodexAuth;
 use codex_model_provider::RemoteCompactionSupport;
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 use codex_protocol::ResponseItemId;
 use codex_protocol::config_types::AutoCompactTokenLimitScope;
 use codex_protocol::config_types::ModeKind;
@@ -118,6 +119,7 @@ use codex_skills_extension::InjectedHostSkillPrompts;
 use codex_thread_store::PersistContext;
 use codex_tools::DiscoverableTool;
 use codex_tools::ToolName;
+use codex_tools::ToolSpec;
 use codex_tools::filter_request_plugin_install_discoverable_tools_for_client;
 use codex_utils_path_uri::PathUri;
 use codex_utils_stream_parser::AssistantTextChunk;
@@ -138,6 +140,8 @@ use tracing::trace_span;
 use tracing::warn;
 
 const POST_SAMPLING_TOKEN_ESTIMATE_TARGET: &str = "codex_core::post_sampling_token_estimate";
+const ADAPTIVE_SIGNAL_TOOL_NAME: &str = "report_adaptive_signal";
+const ADAPTIVE_SIGNAL_REQUEST_EMITTED_STATUS: &str = "request_emitted";
 
 /// Explicit MCP startup requirements retained across restarts within one user turn.
 #[derive(Default)]
@@ -1554,6 +1558,86 @@ pub(super) fn collect_explicit_app_ids_from_skill_items(
     connector_ids
 }
 
+fn adaptive_validation_terminalization_turn(turn_context: &TurnContext) -> bool {
+    codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        turn_context.turn_metadata_state.as_ref(),
+    )
+    .as_deref()
+        == Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+}
+
+fn adaptive_signal_request_emitted_since_latest_user(input: &[ResponseItem]) -> bool {
+    let start = input
+        .iter()
+        .rposition(ResponseItem::is_user_message)
+        .map_or(0, |index| index.saturating_add(1));
+    let mut adaptive_signal_call_ids = HashSet::new();
+
+    for item in &input[start..] {
+        match item {
+            ResponseItem::FunctionCall {
+                name, call_id, ..
+            } if name == ADAPTIVE_SIGNAL_TOOL_NAME => {
+                adaptive_signal_call_ids.insert(call_id.as_str());
+            }
+            ResponseItem::FunctionCallOutput {
+                call_id,
+                name,
+                output,
+                ..
+            } => {
+                let from_adaptive_signal = name
+                    .as_deref()
+                    .is_some_and(|name| name == ADAPTIVE_SIGNAL_TOOL_NAME)
+                    || call_id
+                        .as_deref()
+                        .is_some_and(|call_id| adaptive_signal_call_ids.contains(call_id));
+                if !from_adaptive_signal {
+                    continue;
+                }
+
+                let request_emitted = output
+                    .body
+                    .to_text()
+                    .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+                    .and_then(|value| {
+                        value
+                            .get("status")
+                            .and_then(serde_json::Value::as_str)
+                            .map(str::to_owned)
+                    })
+                    .is_some_and(|status| status == ADAPTIVE_SIGNAL_REQUEST_EMITTED_STATUS);
+                if request_emitted {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    false
+}
+
+fn adaptive_terminalization_signal_tools(tools: Arc<[ToolSpec]>) -> Arc<[ToolSpec]> {
+    let signal_tools = tools
+        .iter()
+        .filter(|spec| {
+            matches!(
+                spec,
+                ToolSpec::Function(tool) if tool.name == ADAPTIVE_SIGNAL_TOOL_NAME
+            )
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    debug_assert_eq!(
+        signal_tools.len(),
+        1,
+        "Validation terminalization requires exactly one direct report_adaptive_signal tool",
+    );
+    signal_tools.into()
+}
+
 #[instrument(level = "trace", skip_all)]
 pub(crate) fn build_prompt(
     input: Vec<ResponseItem>,
@@ -1561,10 +1645,29 @@ pub(crate) fn build_prompt(
     base_instructions: BaseInstructions,
 ) -> Prompt {
     let turn_context = &step_context.turn;
+    let validation_terminalization = adaptive_validation_terminalization_turn(turn_context);
+    let adaptive_signal_emitted =
+        validation_terminalization && adaptive_signal_request_emitted_since_latest_user(&input);
+    let all_tools = step_context.tool_router.model_visible_specs();
+    let tools = if validation_terminalization {
+        if adaptive_signal_emitted {
+            Arc::default()
+        } else {
+            adaptive_terminalization_signal_tools(all_tools)
+        }
+    } else {
+        all_tools
+    };
+
     Prompt {
         input,
-        tools: step_context.tool_router.model_visible_specs(),
-        parallel_tool_calls: true,
+        tools,
+        tool_choice: if validation_terminalization && !adaptive_signal_emitted {
+            "required".to_string()
+        } else {
+            "auto".to_string()
+        },
+        parallel_tool_calls: !validation_terminalization,
         base_instructions,
         output_schema: turn_context.final_output_json_schema.clone(),
         output_schema_strict: !crate::guardian::is_basic_session_source(
