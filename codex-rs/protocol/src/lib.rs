@@ -33,6 +33,13 @@ pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str = "codexdd_adaptive
 /// accepted complexity floor on a successor turn.
 pub const CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER: &str =
     "codexdd_adaptive_mechanical_validation";
+
+/// Marks the dedicated Validation terminalization successor.
+///
+/// This turn must close the bound Validation Worker through the trusted adaptive signal tool rather
+/// than prose. Core requires a tool call and rejects all tools except `report_adaptive_signal`.
+pub const CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER: &str =
+    "codexdd_adaptive_validation_terminalization";
 pub mod approvals;
 pub mod capabilities;
 mod codex_error_info;
