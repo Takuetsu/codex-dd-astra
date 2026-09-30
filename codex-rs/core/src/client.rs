@@ -80,6 +80,7 @@ use codex_otel::current_span_w3c_trace_context;
 use codex_protocol::ResponseItemId;
 use codex_protocol::auth::AuthMode;
 
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 use codex_protocol::ThreadId;
 use codex_protocol::config_types::ReasoningSummary as ReasoningSummaryConfig;
 use codex_protocol::config_types::Verbosity as VerbosityConfig;
@@ -963,12 +964,19 @@ impl ModelClient {
         } else {
             model_info.service_tier_for_request(service_tier)
         };
+        let tool_choice = if responses_metadata.turn_trigger.as_deref()
+            == Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        {
+            "required"
+        } else {
+            "auto"
+        };
         let request = ResponsesApiRequest {
             model: model_info.slug.clone(),
             instructions,
             input,
             tools,
-            tool_choice: "auto".to_string(),
+            tool_choice: tool_choice.to_string(),
             parallel_tool_calls: prompt.parallel_tool_calls && !model_info.use_responses_lite,
             reasoning: Some(reasoning),
             store: false,
