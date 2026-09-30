@@ -983,6 +983,58 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
 }
 
 #[tokio::test]
+async fn adaptive_validation_terminalization_dispatch_allows_only_signal() -> anyhow::Result<()> {
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state.set_turn_trigger(
+        CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string(),
+    );
+    let registry = ToolRegistry::from_tools([
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("report_adaptive_signal"),
+        }) as Arc<dyn CoreToolRuntime>,
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("apply_patch"),
+        }) as Arc<dyn CoreToolRuntime>,
+    ]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+
+    registry
+        .dispatch_any_with_state(
+            test_invocation(
+                Arc::clone(&session),
+                Arc::clone(&turn),
+                "terminal-signal-call",
+                codex_tools::ToolName::plain("report_adaptive_signal"),
+            ),
+            /*call_state*/ None,
+        )
+        .await?;
+
+    let err = match registry
+        .dispatch_any_with_state(
+            test_invocation(
+                session,
+                turn,
+                "terminal-patch-call",
+                codex_tools::ToolName::plain("apply_patch"),
+            ),
+            /*call_state*/ None,
+        )
+        .await
+    {
+        Ok(_) => panic!("Validation terminalization must reject unrelated tools"),
+        Err(err) => err,
+    };
+    assert!(
+        err.to_string()
+            .contains("Validation terminalization authorizes only report_adaptive_signal")
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn adaptive_reconnaissance_dispatch_allows_batched_read_only_exec() -> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;
     turn.turn_metadata_state
