@@ -27,6 +27,9 @@ pub struct Prompt {
     /// external MCP servers.
     pub(crate) tools: Arc<[ToolSpec]>,
 
+    /// Tool-selection policy sent to the Responses API.
+    pub(crate) tool_choice: String,
+
     /// Whether parallel tool calls are permitted for this prompt.
     pub(crate) parallel_tool_calls: bool,
 
@@ -46,6 +49,7 @@ impl Default for Prompt {
         Self {
             input: Vec::new(),
             tools: Arc::default(),
+            tool_choice: "auto".to_string(),
             parallel_tool_calls: false,
             base_instructions: BaseInstructions::default(),
             output_schema: None,
