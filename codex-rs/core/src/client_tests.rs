@@ -488,6 +488,28 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
     )?;
     assert_eq!(terminalization.tool_choice, "required");
 
+    let prompt_after_signal = Prompt {
+        input: vec![ResponseItem::FunctionCall {
+            id: None,
+            name: "report_adaptive_signal".to_string(),
+            namespace: None,
+            arguments: "{}".to_string(),
+            encrypted_function_args: None,
+            call_id: "adaptive-signal-call".to_string(),
+            internal_chat_message_metadata_passthrough: None,
+        }],
+        ..Prompt::default()
+    };
+    let after_signal = client.build_responses_request(
+        &prompt_after_signal,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+    )?;
+    assert_eq!(after_signal.tool_choice, "auto");
+
     responses_metadata.turn_trigger = None;
     let ordinary = client.build_responses_request(
         &prompt,
