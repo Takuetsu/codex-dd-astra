@@ -474,9 +474,8 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
         /*parent_thread_id*/ None,
         TestCodexResponsesRequestKind::Turn,
     );
-    responses_metadata.turn_trigger = Some(
-        codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string(),
-    );
+    responses_metadata.turn_trigger =
+        Some(codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string());
 
     let terminalization = client.build_responses_request(
         &prompt,

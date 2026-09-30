@@ -1047,12 +1047,11 @@ async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Resu
 }
 
 #[tokio::test]
-async fn adaptive_validation_terminalization_allows_only_trusted_signal_tool()
--> anyhow::Result<()> {
+async fn adaptive_validation_terminalization_allows_only_trusted_signal_tool() -> anyhow::Result<()>
+{
     let (session, turn) = crate::session::tests::make_session_and_context().await;
-    turn.turn_metadata_state.set_turn_trigger(
-        CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string(),
-    );
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string());
     let registry = ToolRegistry::from_tools([
         Arc::new(TestHandler {
             tool_name: codex_tools::ToolName::plain("report_adaptive_signal"),

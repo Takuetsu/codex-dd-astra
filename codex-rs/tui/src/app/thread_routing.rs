@@ -2276,8 +2276,7 @@ mod tests {
         );
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ false,
-                /*mechanical*/ false,
+                /*reconnaissance_required*/ false, /*mechanical*/ false,
                 /*terminalization*/ true,
             )
             .as_deref(),

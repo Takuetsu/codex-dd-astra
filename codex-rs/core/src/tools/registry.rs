@@ -103,9 +103,7 @@ fn adaptive_validation_terminalization_rejection(invocation: &ToolInvocation) ->
     let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
         invocation.turn.turn_metadata_state.as_ref(),
     );
-    if turn_trigger.as_deref()
-        != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
-    {
+    if turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER) {
         return None;
     }
 
