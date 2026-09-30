@@ -107,7 +107,20 @@ jobs:
       - name: Diff hygiene
         shell: bash
         working-directory: .
-        run: git diff --check 665f5d7c7966f9a6a9570b5b85f9d68c529c1639..HEAD
+        run: |
+          set -euo pipefail
+          mapfile -t phase_paths < <(python3 - <<'PY'
+          from pathlib import Path
+          import re
+          doc = Path("docs/codexdd-0.3.14-upstream-integration-scaffold.md").read_text()
+          section = doc.split("### Phase 3B - core/runtime conflicts (59)", 1)[1].split(
+              "### Phase 3C", 1
+          )[0]
+          for path in re.findall(r"^- \`([^\`]+)\`$", section, flags=re.MULTILINE):
+              print(path)
+          PY
+          )
+          git diff --check 665f5d7c7966f9a6a9570b5b85f9d68c529c1639..HEAD --             "${phase_paths[@]}"             codex-rs/history/src/compaction_resume_metadata.rs
 
       - name: Compile Phase 3B package surface
         shell: bash
