@@ -885,6 +885,7 @@ async fn validation_terminalization_omission_blocks_instead_of_escalating_or_rer
         chat.adaptive_effort.workflow_terminal,
         Some(AdaptiveWorkflowTerminal::Blocked)
     );
+    assert!(!chat.adaptive_validation_terminalization_active());
     assert_eq!(chat.adaptive_effort.pending_attempt, None);
     assert_eq!(chat.adaptive_effort.successor_admission, None);
     assert_eq!(
