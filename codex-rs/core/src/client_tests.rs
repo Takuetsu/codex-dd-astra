@@ -462,6 +462,66 @@ fn test_model_info() -> ModelInfo {
     .expect("deserialize test model info")
 }
 
+#[test]
+fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<()> {
+    let client = test_model_client(SessionSource::Cli);
+    let prompt = Prompt::default();
+    let model = test_model_info();
+    let mut responses_metadata = test_responses_metadata_for_client(
+        &client,
+        /*turn_id*/ Some("terminalization-turn"),
+        format!("{}:0", client.state.thread_id),
+        /*parent_thread_id*/ None,
+        TestCodexResponsesRequestKind::Turn,
+    );
+    responses_metadata.turn_trigger =
+        Some(codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string());
+
+    let terminalization = client.build_responses_request(
+        &prompt,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+    )?;
+    assert_eq!(terminalization.tool_choice, "required");
+
+    let prompt_after_signal = Prompt {
+        input: vec![ResponseItem::FunctionCall {
+            id: None,
+            name: "report_adaptive_signal".to_string(),
+            namespace: None,
+            arguments: "{}".to_string(),
+            encrypted_function_args: None,
+            call_id: "adaptive-signal-call".to_string(),
+            internal_chat_message_metadata_passthrough: None,
+        }],
+        ..Prompt::default()
+    };
+    let after_signal = client.build_responses_request(
+        &prompt_after_signal,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+    )?;
+    assert_eq!(after_signal.tool_choice, "auto");
+
+    responses_metadata.turn_trigger = None;
+    let ordinary = client.build_responses_request(
+        &prompt,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+    )?;
+    assert_eq!(ordinary.tool_choice, "auto");
+    Ok(())
+}
+
 fn output_with_tool_result_metadata(metadata: ToolResultMetadata) -> ResponseItem {
     let mut call = ExecutedToolCall::new("test_tool".to_string(), json!({ "query": "keep" }));
     call.set_tool_result_sources(ToolResultSources::new(vec![ToolResultSource {

@@ -1046,6 +1046,57 @@ async fn adaptive_reconnaissance_dispatch_blocks_non_read_tool() -> anyhow::Resu
     Ok(())
 }
 
+#[tokio::test]
+async fn adaptive_validation_terminalization_allows_only_trusted_signal_tool() -> anyhow::Result<()>
+{
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string());
+    let registry = ToolRegistry::from_tools([
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("report_adaptive_signal"),
+        }) as Arc<dyn CoreToolRuntime>,
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("exec_command"),
+        }) as Arc<dyn CoreToolRuntime>,
+    ]);
+    let session = Arc::new(session);
+    let turn = Arc::new(turn);
+
+    registry
+        .dispatch_any_with_state(
+            test_invocation(
+                Arc::clone(&session),
+                Arc::clone(&turn),
+                "terminalization-signal-call",
+                codex_tools::ToolName::plain("report_adaptive_signal"),
+            ),
+            /*call_state*/ None,
+        )
+        .await?;
+
+    let err = match registry
+        .dispatch_any_with_state(
+            test_invocation(
+                session,
+                turn,
+                "terminalization-exec-call",
+                codex_tools::ToolName::plain("exec_command"),
+            ),
+            /*call_state*/ None,
+        )
+        .await
+    {
+        Ok(_) => panic!("terminalization must reject non-signal tools"),
+        Err(err) => err,
+    };
+    assert!(
+        err.to_string()
+            .contains("ValidationTerminalization authorizes only report_adaptive_signal")
+    );
+    Ok(())
+}
+
 fn test_invocation(
     session: Arc<crate::session::session::Session>,
     turn: Arc<crate::session::turn_context::TurnContext>,
