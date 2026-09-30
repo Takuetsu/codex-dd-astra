@@ -188,7 +188,6 @@ impl ChatWidget {
         }
 
         match cmd {
-            SlashCommand::Adaptive => self.dispatch_adaptive_command("status"),
             SlashCommand::Feedback => {
                 if !self.config.feedback_enabled {
                     let params = crate::bottom_pane::feedback_disabled_params();
@@ -203,11 +202,7 @@ impl ChatWidget {
                 self.request_redraw();
             }
             SlashCommand::New => {
-                self.show_session_checkout_picker(
-                    ManagedWorktreeMode::New,
-                    /*name*/ None,
-                    None,
-                );
+                self.show_session_checkout_picker(ManagedWorktreeMode::New, /*name*/ None);
             }
             SlashCommand::Archive => {
                 self.bottom_pane.show_selection_view(SelectionViewParams {
@@ -277,11 +272,7 @@ impl ChatWidget {
                 self.app_event_tx.send(AppEvent::OpenResumePicker);
             }
             SlashCommand::Fork => {
-                self.show_session_checkout_picker(
-                    ManagedWorktreeMode::Fork,
-                    /*name*/ None,
-                    None,
-                );
+                self.show_session_checkout_picker(ManagedWorktreeMode::Fork, /*name*/ None);
             }
             SlashCommand::Worktree => {
                 self.show_managed_worktree_picker();
@@ -368,7 +359,10 @@ impl ChatWidget {
                 }
             }
             SlashCommand::Voice => {
-                self.toggle_realtime_conversation();
+                self.app_event_tx.send(AppEvent::VoiceControl {
+                    thread_id: self.thread_id(),
+                    control: crate::app_event::VoiceControl::Toggle,
+                });
             }
             SlashCommand::Side | SlashCommand::Btw => {
                 self.request_empty_side_conversation(cmd);
@@ -641,15 +635,6 @@ impl ChatWidget {
         if cmd != SlashCommand::Copy {
             self.transcript.last_status_copy_targets = None;
         }
-        if cmd == SlashCommand::Adaptive {
-            let Some((prepared_args, _prepared_elements)) =
-                self.prepare_live_inline_args(args, text_elements)
-            else {
-                return;
-            };
-            self.dispatch_adaptive_command(&prepared_args);
-            return;
-        }
         if !self.ensure_slash_command_allowed_in_side_conversation(cmd) {
             return;
         }
@@ -805,8 +790,14 @@ impl ChatWidget {
             }
             SlashCommand::Voice => match trimmed.to_ascii_lowercase().as_str() {
                 "settings" => self.app_event_tx.send(AppEvent::OpenRealtimeSettings),
-                "mute" => self.toggle_realtime_microphone(),
-                "stop" => self.stop_realtime_conversation(),
+                "mute" => self.app_event_tx.send(AppEvent::VoiceControl {
+                    thread_id: self.thread_id(),
+                    control: crate::app_event::VoiceControl::Mute,
+                }),
+                "stop" => self.app_event_tx.send(AppEvent::VoiceControl {
+                    thread_id: self.thread_id(),
+                    control: crate::app_event::VoiceControl::Stop,
+                }),
                 _ => self.add_error_message("Usage: /voice [settings|mute|stop]".to_string()),
             },
             SlashCommand::Ide => {
@@ -855,35 +846,10 @@ impl ChatWidget {
                 self.app_event_tx.set_thread_name(name);
             }
             SlashCommand::New if !trimmed.is_empty() => {
-                if let Some(role) = crate::adaptive_worker::parse_new_worker_role(trimmed) {
-                    let Some(scope) = self
-                        .adaptive_effort
-                        .worker_context
-                        .authorized_scope
-                        .as_ref()
-                        .filter(|scope| !scope.trim().is_empty())
-                    else {
-                        self.add_error_message(
-                            "Cannot create a roleful Worker: current Worker has no authorized_scope."
-                                .to_string(),
-                        );
-                        return;
-                    };
-                    self.show_session_checkout_picker(
-                        ManagedWorktreeMode::New,
-                        None,
-                        Some(crate::adaptive_worker::NewWorkerBinding {
-                            role,
-                            authorized_scope: scope.clone(),
-                        }),
-                    );
-                } else {
-                    self.show_session_checkout_picker(
-                        ManagedWorktreeMode::New,
-                        Some(trimmed.to_string()),
-                        None,
-                    );
-                }
+                self.show_session_checkout_picker(
+                    ManagedWorktreeMode::New,
+                    Some(trimmed.to_string()),
+                );
             }
             SlashCommand::Clear if !trimmed.is_empty() => {
                 self.app_event_tx.send(AppEvent::ClearUi {
@@ -894,7 +860,6 @@ impl ChatWidget {
                 self.show_session_checkout_picker(
                     ManagedWorktreeMode::Fork,
                     Some(trimmed.to_string()),
-                    None,
                 );
             }
             SlashCommand::Plan if !trimmed.is_empty() => {
@@ -1246,7 +1211,6 @@ impl ChatWidget {
             SlashCommand::Ide
             | SlashCommand::Status
             | SlashCommand::Daemon
-            | SlashCommand::Adaptive
             | SlashCommand::Pwd
             | SlashCommand::Usage
             | SlashCommand::DebugConfig

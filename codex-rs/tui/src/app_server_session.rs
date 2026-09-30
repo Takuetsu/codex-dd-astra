@@ -3,7 +3,8 @@
 //! This module owns the typed JSON-RPC calls needed by the TUI and keeps
 //! request/response plumbing out of `App` and `ChatWidget`.
 
-mod fs;
+mod external_agent_config;
+pub(crate) mod fs;
 mod history;
 mod models;
 mod realtime;
@@ -45,11 +46,6 @@ use codex_app_server_protocol::ClientRequest;
 use codex_app_server_protocol::ConfigBatchWriteParams;
 use codex_app_server_protocol::ConfigRequirementsReadResponse;
 use codex_app_server_protocol::ConfigWriteResponse;
-use codex_app_server_protocol::ExternalAgentConfigDetectParams;
-use codex_app_server_protocol::ExternalAgentConfigDetectResponse;
-use codex_app_server_protocol::ExternalAgentConfigImportParams;
-use codex_app_server_protocol::ExternalAgentConfigImportResponse;
-use codex_app_server_protocol::ExternalAgentConfigMigrationItem;
 use codex_app_server_protocol::GetAccountParams;
 use codex_app_server_protocol::GetAccountRateLimitsResponse;
 use codex_app_server_protocol::GetAccountResponse;
@@ -70,7 +66,6 @@ use codex_app_server_protocol::SessionSource;
 use codex_app_server_protocol::SkillsListParams;
 use codex_app_server_protocol::SkillsListResponse;
 use codex_app_server_protocol::Thread;
-use codex_app_server_protocol::ThreadAdaptiveWorkflowState;
 use codex_app_server_protocol::ThreadApproveGuardianDeniedActionParams;
 use codex_app_server_protocol::ThreadApproveGuardianDeniedActionResponse;
 use codex_app_server_protocol::ThreadArchiveParams;
@@ -122,9 +117,6 @@ use codex_app_server_protocol::ThreadUnarchiveParams;
 use codex_app_server_protocol::ThreadUnarchiveResponse;
 use codex_app_server_protocol::ThreadUnsubscribeParams;
 use codex_app_server_protocol::ThreadUnsubscribeResponse;
-use codex_app_server_protocol::ThreadWorkflowStateOperation;
-use codex_app_server_protocol::ThreadWorkflowStateUpdateParams;
-use codex_app_server_protocol::ThreadWorkflowStateUpdateResponse;
 use codex_app_server_protocol::Turn;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
@@ -158,9 +150,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::Mutex;
 use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 use uuid::Uuid;
@@ -332,7 +323,7 @@ pub(crate) struct AppServerSession {
     default_model: Option<String>,
     available_models: Vec<ModelPreset>,
     managed_new_thread_defaults: Option<NewThreadModelDefaults>,
-    external_agent_config_import_completion_pending: AtomicBool,
+    external_agent_config_import_id: Mutex<Option<String>>,
     dynamic_tool_mcp: Option<Arc<DynamicToolMcpServer>>,
 }
 
@@ -442,7 +433,7 @@ impl AppServerSession {
             default_model: None,
             available_models: Vec::new(),
             managed_new_thread_defaults: None,
-            external_agent_config_import_completion_pending: AtomicBool::new(false),
+            external_agent_config_import_id: Mutex::default(),
             dynamic_tool_mcp: None,
         }
     }
@@ -564,7 +555,7 @@ impl AppServerSession {
     }
 
     pub(crate) fn codex_home_path(
-        &mut self,
+        &self,
         local_codex_home: &AbsolutePathBuf,
     ) -> Option<AppServerPath> {
         self.client.codex_home(local_codex_home)
@@ -744,64 +735,6 @@ impl AppServerSession {
             .map_err(|err| bootstrap_request_error("account/read failed during TUI bootstrap", err))
     }
 
-    pub(crate) async fn external_agent_config_detect(
-        &mut self,
-        params: ExternalAgentConfigDetectParams,
-    ) -> Result<ExternalAgentConfigDetectResponse> {
-        let request_id = self.next_request_id();
-        self.client
-            .request_typed(ClientRequest::ExternalAgentConfigDetect { request_id, params })
-            .await
-            .wrap_err("externalAgentConfig/detect failed during external agent import")
-    }
-
-    pub(crate) async fn external_agent_config_import(
-        &mut self,
-        migration_items: Vec<ExternalAgentConfigMigrationItem>,
-        migration_source: String,
-    ) -> Result<()> {
-        // Mark the import active before sending the request so a fast completion notification
-        // cannot arrive before the TUI records it.
-        if self
-            .external_agent_config_import_completion_pending
-            .swap(true, Ordering::Relaxed)
-        {
-            color_eyre::eyre::bail!(EXTERNAL_AGENT_CONFIG_IMPORT_IN_PROGRESS_MESSAGE);
-        }
-        let request_id = self.next_request_id();
-        let response: Result<ExternalAgentConfigImportResponse> = self
-            .client
-            .request_typed(ClientRequest::ExternalAgentConfigImport {
-                request_id,
-                params: ExternalAgentConfigImportParams {
-                    migration_items,
-                    source: Some("cli".to_string()),
-                    provider_id: Some(migration_source.clone()),
-                    migration_source: Some(migration_source),
-                },
-            })
-            .await
-            .wrap_err("externalAgentConfig/import failed during external agent import");
-        match response {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                self.external_agent_config_import_completion_pending
-                    .store(false, Ordering::Relaxed);
-                Err(err)
-            }
-        }
-    }
-
-    pub(crate) fn external_agent_config_import_in_progress(&self) -> bool {
-        self.external_agent_config_import_completion_pending
-            .load(Ordering::Relaxed)
-    }
-
-    pub(crate) fn consume_external_agent_config_import_completion(&self) -> bool {
-        self.external_agent_config_import_completion_pending
-            .swap(false, Ordering::Relaxed)
-    }
-
     pub(crate) async fn next_event(&mut self) -> Option<AppServerEvent> {
         self.client.next_event().await
     }
@@ -861,7 +794,6 @@ impl AppServerSession {
             local_settings,
             config,
             self.thread_params_mode(),
-            /*bind_startup_worker*/ false,
         )
         .await?;
         started.task_tools_available = task_tools_available;
@@ -1341,35 +1273,12 @@ impl AppServerSession {
             .wrap_err("thread/inject_items failed during TUI side conversation setup")
     }
 
-    pub(crate) async fn thread_workflow_state_update(
-        &mut self,
-        thread_id: ThreadId,
-        operation: ThreadWorkflowStateOperation,
-        source_turn_id: Option<String>,
-        adaptive_state: Option<ThreadAdaptiveWorkflowState>,
-    ) -> Result<ThreadWorkflowStateUpdateResponse> {
-        let request_id = self.next_request_id();
-        self.client
-            .request_typed(ClientRequest::ThreadWorkflowStateUpdate {
-                request_id,
-                params: ThreadWorkflowStateUpdateParams {
-                    thread_id: thread_id.to_string(),
-                    operation,
-                    source_turn_id,
-                    adaptive_state,
-                },
-            })
-            .await
-            .wrap_err("thread/workflowState/update failed")
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn turn_start(
         &mut self,
         thread_id: ThreadId,
         client_user_message_id: String,
         items: Vec<UserInput>,
-        turn_trigger: Option<String>,
         cwd: PathBuf,
         approval_policy: Option<AskForApproval>,
         approvals_reviewer: Option<codex_app_server_protocol::ApprovalsReviewer>,
@@ -1392,7 +1301,7 @@ impl AppServerSession {
                 params: TurnStartParams {
                     disabled_plugin_ids: None,
                     thread_id: thread_id.to_string(),
-                    turn_trigger,
+                    turn_trigger: Some("user".to_string()),
                     client_user_message_id: Some(client_user_message_id),
                     input: items,
                     tool_output: None,
@@ -1781,14 +1690,9 @@ pub(crate) async fn start_thread_with_request_handle(
             .map_err(|err| {
                 bootstrap_request_error("thread/start failed during TUI bootstrap", err)
             })?;
-    let mut started = started_thread_from_start_response(
-        response,
-        local_settings,
-        &config,
-        thread_params_mode,
-        /*bind_startup_worker*/ true,
-    )
-    .await?;
+    let mut started =
+        started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
+            .await?;
     started.task_tools_available = task_tools_available;
     Ok(started)
 }
@@ -2282,10 +2186,9 @@ async fn started_thread_from_start_response(
     local_settings: &LocalSettings,
     config: &Config,
     thread_params_mode: ThreadParamsMode,
-    bind_startup_worker: bool,
 ) -> Result<AppServerStartedThread> {
     let blocks_direct_input = thread_blocks_direct_input(&response.thread);
-    let mut session = thread_session_state_from_thread_start_response(
+    let session = thread_session_state_from_thread_start_response(
         &response,
         local_settings,
         config,
@@ -2293,9 +2196,6 @@ async fn started_thread_from_start_response(
     )
     .await
     .map_err(color_eyre::eyre::Report::msg)?;
-    if bind_startup_worker && let Some(binding) = config.adaptive_worker.clone() {
-        session.adaptive_effort.worker_context = binding.into();
-    }
     Ok(AppServerStartedThread {
         session,
         turns: response.thread.turns,
@@ -2381,7 +2281,6 @@ async fn thread_session_state_from_thread_start_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
-        WorkflowStateRestoreMode::FreshThread,
     )
     .await
 }
@@ -2426,7 +2325,6 @@ async fn thread_session_state_from_thread_resume_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
-        WorkflowStateRestoreMode::ExistingThread,
     )
     .await?;
     session.collaboration_mode = response.collaboration_mode.clone().map(Box::new);
@@ -2464,7 +2362,6 @@ async fn thread_session_state_from_thread_fork_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
-        WorkflowStateRestoreMode::FreshThread,
     )
     .await
 }
@@ -2494,12 +2391,6 @@ fn display_permission_profile_from_thread_response(
     }
 }
 
-#[derive(Clone, Copy)]
-enum WorkflowStateRestoreMode {
-    FreshThread,
-    ExistingThread,
-}
-
 #[expect(
     clippy::too_many_arguments,
     reason = "session mapping keeps explicit fields"
@@ -2523,7 +2414,6 @@ async fn thread_session_state_from_thread_response(
     reasoning_effort: Option<codex_protocol::openai_models::ReasoningEffort>,
     personality: Option<codex_protocol::config_types::Personality>,
     local_settings: &LocalSettings,
-    workflow_state_restore_mode: WorkflowStateRestoreMode,
 ) -> Result<ThreadSessionState, String> {
     let thread_id = ThreadId::from_string(thread_id)
         .map_err(|err| format!("thread id `{thread_id}` is invalid: {err}"))?;
@@ -2537,18 +2427,6 @@ async fn thread_session_state_from_thread_response(
         &local_settings.history,
     );
     let (log_id, entry_count) = codex_message_history::history_metadata(&history_config).await;
-    let mut adaptive_effort = Default::default();
-    if matches!(
-        workflow_state_restore_mode,
-        WorkflowStateRestoreMode::ExistingThread
-    ) {
-        crate::session_state::restore_persisted_workflow_state(
-            rollout_path.as_deref(),
-            thread_id,
-            &mut adaptive_effort,
-        )
-        .await?;
-    }
     Ok(ThreadSessionState {
         windows_sandbox_host,
         thread_id,
@@ -2574,7 +2452,6 @@ async fn thread_session_state_from_thread_response(
         }),
         network_proxy: None,
         rollout_path,
-        adaptive_effort,
     })
 }
 
@@ -4101,7 +3978,7 @@ mod tests {
                     duration_ms: None,
                 }],
             },
-            model: "gpt-5.4".to_string(),
+            model: "gpt-5.5".to_string(),
             model_provider: "openai".to_string(),
             service_tier: None,
             cwd: test_path_buf("/tmp/project").abs(),
@@ -4123,7 +4000,7 @@ mod tests {
             collaboration_mode: Some(codex_protocol::config_types::CollaborationMode {
                 mode: codex_protocol::config_types::ModeKind::Plan,
                 settings: codex_protocol::config_types::Settings {
-                    model: "gpt-5.4".to_string(),
+                    model: "gpt-5.5".to_string(),
                     reasoning_effort: None,
                     developer_instructions: Some("Keep planning".to_string()),
                 },
@@ -4259,74 +4136,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fresh_thread_mapping_does_not_read_not_yet_created_rollout() {
-        let temp_dir = tempfile::tempdir().expect("tempdir");
-        let config = build_config(&temp_dir).await;
-        let thread_id = ThreadId::new();
-        let missing_rollout_path = temp_dir.path().join("not-created-yet.jsonl");
-
-        let session = thread_session_state_from_thread_response(
-            &thread_id.to_string(),
-            crate::app::WindowsSandboxHost::Local,
-            /*forked_from_id*/ None,
-            /*thread_name*/ None,
-            Some(missing_rollout_path.clone()),
-            "gpt-5.4".to_string(),
-            "openai".to_string(),
-            /*service_tier*/ None,
-            AskForApproval::Never,
-            codex_protocol::config_types::ApprovalsReviewer::User,
-            PermissionProfile::read_only(),
-            /*active_permission_profile*/ None,
-            test_path_buf("/tmp/project").abs(),
-            Vec::new(),
-            Vec::new(),
-            /*reasoning_effort*/ None,
-            config.personality,
-            &LocalSettings::from(&config),
-            WorkflowStateRestoreMode::FreshThread,
-        )
-        .await
-        .expect("fresh session mapping must not require its rollout to exist yet");
-
-        assert_eq!(session.rollout_path, Some(missing_rollout_path));
-        assert_eq!(session.adaptive_effort, Default::default());
-    }
-
-    #[tokio::test]
-    async fn existing_thread_mapping_surfaces_missing_rollout() {
-        let temp_dir = tempfile::tempdir().expect("tempdir");
-        let config = build_config(&temp_dir).await;
-        let thread_id = ThreadId::new();
-
-        let error = thread_session_state_from_thread_response(
-            &thread_id.to_string(),
-            crate::app::WindowsSandboxHost::Local,
-            /*forked_from_id*/ None,
-            /*thread_name*/ None,
-            Some(temp_dir.path().join("missing-existing.jsonl")),
-            "gpt-5.4".to_string(),
-            "openai".to_string(),
-            /*service_tier*/ None,
-            AskForApproval::Never,
-            codex_protocol::config_types::ApprovalsReviewer::User,
-            PermissionProfile::read_only(),
-            /*active_permission_profile*/ None,
-            test_path_buf("/tmp/project").abs(),
-            Vec::new(),
-            Vec::new(),
-            /*reasoning_effort*/ None,
-            config.personality,
-            &LocalSettings::from(&config),
-            WorkflowStateRestoreMode::ExistingThread,
-        )
-        .await
-        .expect_err("resume must surface a missing rollout");
-
-        assert!(error.contains("failed to restore workflow state"));
-    }
-
-    #[tokio::test]
     async fn session_configured_populates_history_metadata() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let config = build_config(&temp_dir).await;
@@ -4361,7 +4170,6 @@ mod tests {
             /*reasoning_effort*/ None,
             config.personality,
             &LocalSettings::from(&config),
-            WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .expect("session should map");
@@ -4399,7 +4207,6 @@ mod tests {
             /*reasoning_effort*/ None,
             config.personality,
             &LocalSettings::from(&config),
-            WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .expect("session should map");

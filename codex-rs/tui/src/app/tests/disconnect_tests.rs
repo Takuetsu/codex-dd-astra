@@ -88,15 +88,8 @@ async fn lost_mutation_reply_preserves_work_without_resubmitting() -> Result<()>
     app.chat_widget
         .set_queue_autosend_suppressed(/*suppressed*/ false);
     assert!(!app.chat_widget.maybe_send_next_queued_input());
-    app.handle_event(
-        &mut tui,
-        &mut session,
-        AppEvent::NewSession {
-            name: None,
-            worker_binding: None,
-        },
-    )
-    .await?;
+    app.handle_event(&mut tui, &mut session, AppEvent::NewSession { name: None })
+        .await?;
     assert_eq!(app.current_displayed_thread_id(), Some(id));
     while let Ok(event) = events.try_recv() {
         app.handle_event(&mut tui, &mut session, event).await?;
@@ -271,7 +264,24 @@ async fn remote_disconnect_retires_voice_before_reconnecting() -> Result<()> {
         thread_id, /*attempt_id*/ 0, /*input_generation*/ 0
     ));
 
-    assert!(app.begin_reconnect());
+    let (replacement, _, _, _) = make_chatwidget_manual_with_sender().await;
+    app.replace_chat_widget(replacement);
+    app.active_thread_id = None;
+    let (mut session, _, proxy) =
+        super::session_lifecycle_requests::start_recording_remote_app_server(&app.config).await?;
+    proxy.abort();
+    assert!(proxy.await.unwrap_err().is_cancelled());
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut session,
+        AppEvent::CodexOp(Op::RealtimeConversationStop { thread_id }),
+    )
+    .await?;
+    assert_eq!(
+        (app.voice_owner_thread_id(), app.active_thread_id),
+        (None, None)
+    );
     assert_eq!(
         (
             app.reconnect.offline,
@@ -285,6 +295,7 @@ async fn remote_disconnect_retires_voice_before_reconnecting() -> Result<()> {
     assert!(!app.chat_widget.is_current_realtime_attempt(
         thread_id, /*attempt_id*/ 0, /*input_generation*/ 0
     ));
+    session.shutdown().await?;
     Ok(())
 }
 

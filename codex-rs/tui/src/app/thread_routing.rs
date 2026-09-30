@@ -6,55 +6,25 @@
 
 use super::session_lifecycle::ThreadAttachPresentation;
 use super::*;
-use crate::adaptive_worker::AdaptiveWorkerRole;
-use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use crate::app_event::ThreadTitleDestination;
 use crate::chatwidget::ThreadInputStateRestoreMode;
 use codex_app_server_protocol::ThreadStartedNotification;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
-use codex_app_server_protocol::UserInput;
 use codex_app_server_protocol::WarningNotification;
-use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
-use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
-use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 
 // Leave time for side-thread cleanup and unsubscribe inside the two-second exit budget.
 const REALTIME_STOP_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 1);
 
-fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
-    let Some(text) = items.iter().find_map(|item| match item {
-        UserInput::Text { text, .. } => Some(text.as_str()),
-        _ => None,
-    }) else {
-        return false;
-    };
-
-    matches!(
-        parse_adaptive_worker_assignment(text),
-        Ok(Some(worker_context)) if worker_context.role == AdaptiveWorkerRole::Implementation
-    )
-}
-
-fn adaptive_turn_trigger(
-    reconnaissance_required: bool,
-    mechanical_validation_active: bool,
-    validation_terminalization_active: bool,
-) -> Option<String> {
-    if reconnaissance_required {
-        Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())
-    } else if mechanical_validation_active {
-        Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string())
-    } else if validation_terminalization_active {
-        Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string())
-    } else {
-        None
-    }
-}
-
 impl App {
     pub(super) async fn stop_realtime_conversation(&mut self, app_server: &mut AppServerSession) {
-        let Some(thread_id) = self.chat_widget.reset_realtime_conversation() else {
+        let thread_id = self
+            .background_voice
+            .as_mut()
+            .and_then(|owner| owner.reset_realtime_conversation())
+            .or_else(|| self.chat_widget.reset_realtime_conversation());
+        self.retire_background_voice();
+        let Some(thread_id) = thread_id else {
             return;
         };
         match tokio::time::timeout(
@@ -75,14 +45,8 @@ impl App {
 
     pub(super) async fn shutdown_current_thread(&mut self, app_server: &mut AppServerSession) {
         self.stop_realtime_conversation(app_server).await;
-        self.shutdown_side_threads(app_server).await;
-        if let Some(thread_id) = self.chat_widget.thread_id() {
-            if let Err(err) = app_server.thread_unsubscribe(thread_id).await {
-                tracing::warn!("failed to unsubscribe thread {thread_id}: {err}");
-            }
-            self.abort_thread_event_listener(thread_id);
-            self.pending_server_profiles.remove(&thread_id);
-        }
+        self.detach_current_thread_for_navigation(app_server, /*destination*/ None)
+            .await;
     }
 
     pub(super) async fn shutdown_side_threads(&mut self, app_server: &mut AppServerSession) {
@@ -157,10 +121,7 @@ impl App {
     pub(super) async fn activate_thread_for_replay(
         &mut self,
         thread_id: ThreadId,
-    ) -> Option<(
-        mpsc::UnboundedReceiver<ThreadBufferedEvent>,
-        ThreadEventSnapshot,
-    )> {
+    ) -> Option<(mpsc::Receiver<ThreadBufferedEvent>, ThreadEventSnapshot)> {
         let channel = self.thread_event_channels.get_mut(&thread_id)?;
         let receiver = channel.receiver.take()?;
         let mut store = channel.store.lock().await;
@@ -757,9 +718,11 @@ impl App {
                                     store.active
                                 };
                                 if should_send
-                                    && let Err(error) = thread_event_tx.send(
-                                        ThreadBufferedEvent::Notification(Box::new(notification)),
-                                    )
+                                    && let Err(error) = thread_event_tx
+                                        .send(ThreadBufferedEvent::Notification(Box::new(
+                                            notification,
+                                        )))
+                                        .await
                                 {
                                     tracing::warn!(error = %error, "thread event channel closed");
                                 }
@@ -894,17 +857,6 @@ impl App {
                                 ),
                             )
                         };
-                    let adaptive_reconnaissance_required = self
-                        .chat_widget
-                        .adaptive_implementation_reconnaissance_required()
-                        || user_turn_starts_bound_implementation(items);
-                    let turn_trigger = adaptive_turn_trigger(
-                        adaptive_reconnaissance_required,
-                        self.chat_widget
-                            .adaptive_implementation_mechanical_validation_active(),
-                        self.chat_widget
-                            .adaptive_validation_terminalization_active(),
-                    );
                     let permissions_override = Self::turn_permissions_override_from_config(
                         config,
                         selected_active
@@ -920,7 +872,6 @@ impl App {
                             thread_id,
                             client_user_message_id.clone(),
                             items.to_vec(),
-                            turn_trigger,
                             cwd.clone(),
                             turn_approval_policy,
                             turn_approvals_reviewer,
@@ -1193,6 +1144,7 @@ impl App {
         thread_id: ThreadId,
         notification: ServerNotification,
     ) -> Result<()> {
+        self.deliver_background_voice_notification(thread_id, &notification);
         if self.abandoned_side_threads.contains(&thread_id) {
             return Ok(());
         }
@@ -1310,7 +1262,13 @@ impl App {
                 guard.push_notification_ref(&notification);
                 Some(notification)
             } else {
-                self.retain_inactive_realtime_transcript(thread_id, &notification);
+                if self
+                    .background_voice
+                    .as_ref()
+                    .is_none_or(|owner| owner.thread_id() != Some(thread_id))
+                {
+                    self.retain_inactive_realtime_transcript(thread_id, &notification);
+                }
                 guard.push_notification(notification);
                 None
             };
@@ -1370,10 +1328,20 @@ impl App {
             self.app_event_tx.send(AppEvent::SettingsSelectionSettled);
         }
 
-        if let Some(notification) = notification
-            && let Err(err) = sender.send(ThreadBufferedEvent::Notification(Box::new(notification)))
-        {
-            tracing::warn!("thread {thread_id} event channel closed: {err}");
+        if let Some(notification) = notification {
+            match sender.try_send(ThreadBufferedEvent::Notification(Box::new(notification))) {
+                Ok(()) => {}
+                Err(TrySendError::Full(event)) => {
+                    tokio::spawn(async move {
+                        if let Err(err) = sender.send(event).await {
+                            tracing::warn!("thread {thread_id} event channel closed: {err}");
+                        }
+                    });
+                }
+                Err(TrySendError::Closed(_)) => {
+                    tracing::warn!("thread {thread_id} event channel closed");
+                }
+            }
         }
         if let Some(status) = pending_status {
             self.set_side_parent_status(thread_id, Some(status));
@@ -1481,8 +1449,18 @@ impl App {
         let request_status = SideParentStatus::for_request(&request);
 
         if should_send {
-            if let Err(err) = sender.send(ThreadBufferedEvent::Request(Box::new(request))) {
-                tracing::warn!("thread {thread_id} event channel closed: {err}");
+            match sender.try_send(ThreadBufferedEvent::Request(Box::new(request))) {
+                Ok(()) => {}
+                Err(TrySendError::Full(event)) => {
+                    tokio::spawn(async move {
+                        if let Err(err) = sender.send(event).await {
+                            tracing::warn!("thread {thread_id} event channel closed: {err}");
+                        }
+                    });
+                }
+                Err(TrySendError::Closed(_)) => {
+                    tracing::warn!("thread {thread_id} event channel closed");
+                }
             }
         } else if self.active_side_parent_thread_id().is_none()
             && let Some(request) = inactive_interactive_request
@@ -1518,10 +1496,20 @@ impl App {
             should_send
         };
 
-        if should_send
-            && let Err(err) = sender.send(ThreadBufferedEvent::HistoryEntryResponse(event))
-        {
-            tracing::warn!("thread {thread_id} event channel closed: {err}");
+        if should_send {
+            match sender.try_send(ThreadBufferedEvent::HistoryEntryResponse(event)) {
+                Ok(()) => {}
+                Err(TrySendError::Full(event)) => {
+                    tokio::spawn(async move {
+                        if let Err(err) = sender.send(event).await {
+                            tracing::warn!("thread {thread_id} event channel closed: {err}");
+                        }
+                    });
+                }
+                Err(TrySendError::Closed(_)) => {
+                    tracing::warn!("thread {thread_id} event channel closed");
+                }
+            }
         }
         Ok(())
     }
@@ -1541,24 +1529,10 @@ impl App {
 
     pub(super) async fn enqueue_primary_thread_session_with_presentation(
         &mut self,
-        mut session: ThreadSessionState,
+        session: ThreadSessionState,
         turns: Vec<Turn>,
         presentation: ThreadAttachPresentation,
     ) -> Result<()> {
-        if session.adaptive_effort == Default::default()
-            && let Some(parent_id) = session.forked_from_id
-        {
-            let parent = if self.primary_thread_id == Some(parent_id) {
-                self.primary_session_configured.clone()
-            } else if let Some(channel) = self.thread_event_channels.get(&parent_id) {
-                channel.store.lock().await.session.clone()
-            } else {
-                None
-            };
-            if let Some(parent) = parent {
-                session.inherit_adaptive_effort_from(&parent);
-            }
-        }
         if let Err(err) = self
             .config
             .permissions
@@ -1606,7 +1580,9 @@ impl App {
             self.chat_widget.set_token_info(/*info*/ None);
         }
         match presentation {
-            ThreadAttachPresentation::Fresh | ThreadAttachPresentation::SessionLineage => {
+            ThreadAttachPresentation::Fresh
+            | ThreadAttachPresentation::FreshWithDraft
+            | ThreadAttachPresentation::SessionLineage => {
                 self.chat_widget.handle_thread_session(session);
             }
         }
@@ -1634,6 +1610,7 @@ impl App {
             &replayed_final_items,
             retained_assistant_captions,
         );
+        self.restore_voice_owner_after_replay();
         let pending = std::mem::take(&mut self.pending_primary_events);
         for pending_event in pending {
             match pending_event {
@@ -1943,6 +1920,7 @@ impl App {
             &replayed_final_items,
             retained_assistant_captions,
         );
+        self.restore_voice_owner_after_replay();
         self.chat_widget
             .set_queue_autosend_suppressed(/*suppressed*/ false);
         self.chat_widget
@@ -2045,8 +2023,13 @@ impl App {
         match event {
             ThreadBufferedEvent::Notification(notification) => {
                 self.cache_collab_receiver_threads_for_notification(notification.as_ref());
+                let tip_ready = self.turn_tips.observe(&notification, Instant::now());
                 self.chat_widget
                     .handle_server_notification(*notification, /*replay_kind*/ None);
+                // History cells queued by completion must be applied before anchoring its tip.
+                if let Some(event) = tip_ready {
+                    self.app_event_tx.send(event);
+                }
             }
             ThreadBufferedEvent::Request(request) => {
                 if self
@@ -2078,6 +2061,7 @@ impl App {
     }
 
     pub(super) fn handle_thread_event_replay(&mut self, event: ThreadBufferedEvent) {
+        self.turn_tips.dismiss();
         match event {
             ThreadBufferedEvent::Notification(notification) => self
                 .chat_widget
@@ -2232,71 +2216,6 @@ mod tests {
             .build()
             .await
             .expect("config should build")
-    }
-
-    #[test]
-    fn adaptive_reconnaissance_detects_initial_implementation_assignment() {
-        let implementation = UserInput::Text {
-            text: "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"bounded docs change\"\n\nMake the change."
-                .to_string(),
-            text_elements: Vec::new(),
-        };
-        let validation = UserInput::Text {
-            text: "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"bounded docs change\"\n\nValidate the change."
-                .to_string(),
-            text_elements: Vec::new(),
-        };
-        let ordinary = UserInput::Text {
-            text: "Make the change.".to_string(),
-            text_elements: Vec::new(),
-        };
-
-        assert!(user_turn_starts_bound_implementation(&[implementation]));
-        assert!(!user_turn_starts_bound_implementation(&[validation]));
-        assert!(!user_turn_starts_bound_implementation(&[ordinary]));
-    }
-
-    #[test]
-    fn adaptive_turn_uses_lifecycle_write_gate_markers() {
-        assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical*/ false,
-                /*terminalization*/ false,
-            )
-            .as_deref(),
-            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
-        );
-        assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ true,
-                /*terminalization*/ false,
-            )
-            .as_deref(),
-            Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
-        );
-        assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ false,
-                /*terminalization*/ true,
-            )
-            .as_deref(),
-            Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
-        );
-        assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical*/ true,
-                /*terminalization*/ true,
-            )
-            .as_deref(),
-            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
-        );
-        assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ false,
-                /*terminalization*/ false,
-            ),
-            None
-        );
     }
 
     #[tokio::test]

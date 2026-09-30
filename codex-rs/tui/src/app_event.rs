@@ -13,7 +13,6 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use tokio_util::sync::CancellationToken;
 
-use crate::adaptive_worker::NewWorkerBinding;
 use crate::inline_visualization::InlineVisualizationContext;
 use codex_app_server_protocol::AddCreditsNudgeCreditType;
 use codex_app_server_protocol::AddCreditsNudgeEmailStatus;
@@ -36,7 +35,6 @@ use codex_app_server_protocol::SkillsListResponse;
 use codex_app_server_protocol::Thread;
 use codex_app_server_protocol::ThreadGoalStatus;
 use codex_app_server_protocol::ThreadItemsListResponse;
-use codex_app_server_protocol::ThreadWorkflowStateOperation;
 use codex_connectors::AppInfo;
 use codex_file_search::FileMatch;
 use codex_message_history::HistoryBatchCursor;
@@ -57,7 +55,6 @@ use crate::chatwidget::AstraModelPickerAction;
 use crate::chatwidget::ConnectorScopeGeneration;
 use crate::chatwidget::ThreadUsageOutcome;
 use crate::chatwidget::UserMessage;
-use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
 use crate::experimental_features::FeatureWriteResult;
 use crate::goal_files::GoalDraft;
 use codex_app_server_protocol::AskForApproval;
@@ -69,6 +66,14 @@ use codex_protocol::models::ActivePermissionProfile;
 use codex_realtime_webrtc::StartedRealtimeWebrtcSession;
 
 use crate::history_cell::HistoryCell;
+
+/// Global voice controls always apply to the one call's owner.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum VoiceControl {
+    Toggle,
+    Stop,
+    Mute,
+}
 
 /// Confirmed server lifecycle operations available from the agents dashboard.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -95,7 +100,6 @@ pub(crate) struct ManagedWorktreeTransition {
     pub(crate) config: Box<crate::legacy_core::config::Config>,
     pub(crate) mode: ManagedWorktreeMode,
     pub(crate) name: Option<String>,
-    pub(crate) worker_binding: Option<NewWorkerBinding>,
 }
 
 #[derive(Debug)]
@@ -104,7 +108,6 @@ pub(crate) struct ManagedWorktreeCreated {
     pub(crate) source_cwd: AbsolutePathBuf,
     pub(crate) mode: ManagedWorktreeMode,
     pub(crate) name: Option<String>,
-    pub(crate) worker_binding: Option<NewWorkerBinding>,
     pub(crate) result: Result<
         (
             codex_worktree::WorktreeManager,
@@ -280,16 +283,6 @@ pub(crate) enum AppEvent {
     ReviewMisalignment(Arc<crate::chatwidget::MisalignmentReview>),
     ContinueMisalignment(Arc<crate::chatwidget::MisalignmentReview>),
     CloseMisalignmentReview,
-    /// Persist the active widget's adaptive state into its canonical thread session.
-    UpdateAdaptiveEffortState(AdaptiveEffortState),
-    /// Persist a human/trusted workflow-state mutation on the exact displayed thread.
-    PersistWorkflowState {
-        thread_id: ThreadId,
-        operation: ThreadWorkflowStateOperation,
-        source_turn_id: Option<String>,
-        adaptive_state: Option<codex_app_server_protocol::ThreadAdaptiveWorkflowState>,
-    },
-    /// Open the daemon-wide overview of recent and locally retained root sessions.
     /// Open the live command center for recent and locally retained root sessions.
     OpenAgentsOverview,
     /// Create an empty thread from the command center.
@@ -443,13 +436,19 @@ pub(crate) enum AppEvent {
     OpenWarnings,
     /// Copy a diagnostic and acknowledge in the footer, without appending history.
     CopyWarning(String),
+    /// Apply the user's decisions for the frozen warning details, in viewer-close order.
+    UpdateWarnings {
+        transcript: Arc<()>,
+        dismissed: Vec<crate::history_cell::WarningEntry>,
+        kept: Vec<crate::history_cell::WarningEntry>,
+    },
 
     /// Export all current-thread history to the selected destination.
     ExportTranscript {
         destination: TranscriptExportDestination,
     },
 
-    /// Copy a picker selection while retaining its clipboard lease in the chat widget.
+    /// Copy text through the session clipboard worker.
     CopySelection {
         text: Arc<str>,
         label: String,
@@ -486,14 +485,12 @@ pub(crate) enum AppEvent {
     /// Start a new session, optionally assigning it a name.
     NewSession {
         name: Option<String>,
-        worker_binding: Option<NewWorkerBinding>,
     },
 
     /// Create a managed checkout and start or fork a session into it.
     StartManagedWorktree {
         mode: ManagedWorktreeMode,
         name: Option<String>,
-        worker_binding: Option<NewWorkerBinding>,
     },
     /// Continue a checkout transition after synchronous Git work finishes off-loop.
     ManagedWorktreeCreated(Box<ManagedWorktreeCreated>),
@@ -561,6 +558,8 @@ pub(crate) enum AppEvent {
 
     /// Clear history queued by the previous thread before the new thread's replay events.
     ResetTranscriptForThreadSwitch,
+    /// Reset queued history while keeping the startup draft visible until the next frame.
+    ResetTranscriptForThreadSwitchPreservingScreen,
 
     /// Re-render the transcript using the selected scrollback rendering mode.
     RawOutputModeChanged {
@@ -1095,9 +1094,24 @@ pub(crate) enum AppEvent {
     FollowTranscript,
 
     InsertHistoryCell(Box<dyn HistoryCell>),
+    /// FIFO barrier after the completed turn's history insertions.
+    TurnTipReady {
+        thread_id: ThreadId,
+        turn_id: String,
+    },
 
     /// Move visible completed voice captions into history in one app event.
     CommitRealtimeTranscriptHistory,
+
+    VoiceControl {
+        thread_id: Option<ThreadId>,
+        control: VoiceControl,
+    },
+    RealtimeConversationStateChanged,
+    BackgroundVoiceError {
+        thread_id: ThreadId,
+        message: String,
+    },
 
     /// Finish buffering initial resume replay after all replay events have been queued.
     EndInitialHistoryReplayBuffer,

@@ -1,5 +1,4 @@
 use super::*;
-use crate::adaptive_budget::AdaptiveBudgetMode;
 use codex_app_server_protocol::AccountRateLimitsUpdatedNotification;
 use codex_app_server_protocol::CodexErrorInfo;
 use codex_app_server_protocol::CreditsSnapshot;
@@ -305,7 +304,7 @@ async fn stale_rate_limit_reads_preserve_newer_workspace_hard_stop_for_every_ori
         let popup = render_bottom_popup(&app.chat_widget, /*width*/ 100);
         match origin_name {
             "usage" => assert!(
-                popup.contains("Redeem reset    None available."),
+                popup.contains("Redeem reset    None available"),
                 "expected usage reset availability, got: {popup}"
             ),
             "reset-picker" => {
@@ -556,56 +555,4 @@ async fn backend_banner_reads_ignore_older_completions() -> Result<()> {
     }
     session.shutdown().await?;
     Ok(())
-}
-
-#[tokio::test]
-async fn account_usage_drives_adaptive_budget_mode_without_sparse_update_override() {
-    let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let now = chrono::Utc::now().timestamp();
-
-    let mut surplus = rate_limit_snapshot(
-        /*used_percent*/ 10,
-        /*rate_limit_reached_type*/ None,
-        Some(false),
-    );
-    surplus.primary = Some(RateLimitWindow {
-        used_percent: 10,
-        window_duration_mins: Some(300),
-        resets_at: Some(now + 30 * 60),
-    });
-    surplus.secondary = Some(RateLimitWindow {
-        used_percent: 25,
-        window_duration_mins: Some(7 * 24 * 60),
-        resets_at: Some(now + 24 * 60 * 60),
-    });
-    app.chat_widget.on_rate_limit_snapshot(Some(surplus));
-    assert_eq!(
-        app.chat_widget.adaptive_effort_for_test().budget_mode,
-        AdaptiveBudgetMode::Surplus
-    );
-
-    let mut sparse_rolling = rate_limit_snapshot(
-        /*used_percent*/ 95,
-        /*rate_limit_reached_type*/ None,
-        Some(false),
-    );
-    sparse_rolling.primary = Some(RateLimitWindow {
-        used_percent: 95,
-        window_duration_mins: Some(300),
-        resets_at: Some(now + 4 * 60 * 60),
-    });
-    app.chat_widget
-        .on_rolling_rate_limit_snapshot(sparse_rolling);
-    assert_eq!(
-        app.chat_widget.adaptive_effort_for_test().budget_mode,
-        AdaptiveBudgetMode::Surplus,
-        "rolling updates are sparse and must not change budget pacing"
-    );
-
-    app.chat_widget.on_rate_limit_snapshot(None);
-    assert_eq!(
-        app.chat_widget.adaptive_effort_for_test().budget_mode,
-        AdaptiveBudgetMode::Balanced,
-        "missing full usage data must fail safe to Balanced"
-    );
 }

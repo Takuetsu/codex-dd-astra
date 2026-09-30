@@ -177,7 +177,6 @@ impl App {
         startup_bootstrap: Option<AppServerBootstrap>,
         startup_hooks_browser: Option<HooksListEntry>,
         daemon_startup_warning: Option<String>,
-        adaptive_family: Option<crate::chatwidget::adaptive_effort::AdaptiveFamily>,
         mut startup_draft: StartupDraftPump,
         managed_worktree: Option<crate::ManagedTuiWorktree>,
         daemon_cli_executable: Option<AbsolutePathBuf>,
@@ -480,18 +479,14 @@ impl App {
                 if let Some(history_mode) = target_session.history_mode {
                     app_server.remember_thread_history_mode(target_session.thread_id, history_mode);
                 }
-                let model_settings = if adaptive_family.is_some() {
-                    crate::app_server_session::ResumeModelSettings::OverrideFromCurrentConfig
-                } else {
-                    config_persistence::resume_model_settings_for_overrides(
-                        &config,
-                        &harness_overrides,
-                    )
-                };
+                let model_settings = config_persistence::resume_model_settings_for_overrides(
+                    &config,
+                    &harness_overrides,
+                );
                 let resumed = match startup_draft
                     .run_until(
                         tui,
-                        app_server.resume_initial_thread(
+                        app_server.resume_thread(
                             &local_settings,
                             config.clone(),
                             target_session.thread_id,
@@ -703,7 +698,10 @@ impl App {
         }
         chat_widget.note_rendered_width(tui.terminal.last_known_screen_size.width);
         if pending_startup_thread_start && !start_in_agents_overview {
-            chat_widget.empty_state_animation.borrow_mut().start_fresh();
+            chat_widget
+                .empty_state_animation
+                .borrow_mut()
+                .continue_from(&mut startup_draft.blossom.borrow_mut());
         }
         chat_widget.remote_connection = remote_connection;
         chat_widget.snapshot_local_images = app_server_target.uses_remote_workspace();
@@ -769,8 +767,8 @@ See the Codex keymap documentation for supported actions and examples."
             keymap: runtime_keymap,
             key_chord_matcher: KeyChordMatcher::default(),
             transcript_cells: Vec::new(),
-            composer_tips: Default::default(),
             native_history: Default::default(),
+            turn_tips: Default::default(),
             transcript_view: Default::default(),
             last_rendered_history_tail: None,
             last_thread_usage_status_cell: None,
@@ -793,6 +791,8 @@ See the Codex keymap documentation for supported actions and examples."
             feedback_audience,
             environment_manager,
             app_server_target,
+            pending_right_click_paste: None,
+            right_click_paste_environment: super::right_click_paste::PasteEnvironment::detect(),
             reconnect: ReconnectState {
                 seen_version_notice: initial_server_version_notice
                     .as_ref()
@@ -810,6 +810,8 @@ See the Codex keymap documentation for supported actions and examples."
             pending_realtime_speech_replay: HashMap::new(),
             pending_realtime_transcript_replay: HashMap::new(),
             realtime_replay_order: VecDeque::new(),
+            background_voice: None,
+            background_voice_error: None,
             temporary_structured_requests: HashMap::new(),
             pending_thread_titles: HashMap::new(),
             thread_event_listener_tasks: HashMap::new(),
@@ -827,7 +829,6 @@ See the Codex keymap documentation for supported actions and examples."
             dynamic_tool_status_updates,
             dynamic_tool_tasks: HashMap::new(),
             pending_startup_thread_start,
-            adaptive_startup_preset: adaptive_family,
             pending_server_version_notice: if pending_startup_thread_start {
                 initial_server_version_notice
                     .as_ref()
@@ -841,7 +842,6 @@ See the Codex keymap documentation for supported actions and examples."
             pending_managed_worktree_creation: false,
             pending_managed_worktree_created: None,
             pending_managed_worktree_transition: None,
-            pending_new_session: None,
             pending_managed_worktree_attach: None,
             startup_protected_input_boundary: true,
             startup_pending_protected_request: false,
@@ -850,6 +850,8 @@ See the Codex keymap documentation for supported actions and examples."
             pending_plugin_enabled_writes: HashMap::new(),
             pending_hook_enabled_writes: HashMap::new(),
             recap: recap::RecapState::default(),
+            #[cfg(test)]
+            _test_codex_home: None,
         };
         if !tui.is_terminal_focused() {
             app.recap.note_focus_lost(Instant::now());
@@ -873,13 +875,6 @@ See the Codex keymap documentation for supported actions and examples."
         app.update_visible_history_rows(tui.terminal.last_known_screen_size);
         let initial_session_started_at = Instant::now();
         if let Some(started) = initial_started_thread {
-            let mut started = started;
-            if let Some(family) = adaptive_family {
-                started
-                    .session
-                    .adaptive_effort
-                    .activate_adaptive_startup(family);
-            }
             let thread_id = started.session.thread_id;
             app.chat_widget
                 .set_task_mentions_enabled(started.task_tools_available);
@@ -1054,24 +1049,13 @@ See the Codex keymap documentation for supported actions and examples."
                     }
                     continue;
                 }
-                if app.process_pending_new_session(tui, &mut app_server).await {
-                    continue;
-                }
                 if let Some(pending) = app.pending_working_directory_change.take() {
                     Box::pin(app.finish_working_directory_change(tui, &mut app_server, pending))
                         .await;
                     continue;
                 }
-                if let Some((mode, name, worker_binding)) =
-                    app.pending_start_managed_worktree.take()
-                {
-                    Box::pin(app.start_managed_worktree(
-                        &mut app_server,
-                        mode,
-                        name,
-                        worker_binding,
-                    ))
-                    .await;
+                if let Some((mode, name)) = app.pending_start_managed_worktree.take() {
+                    Box::pin(app.start_managed_worktree(&mut app_server, mode, name)).await;
                     continue;
                 }
                 // Complete the fork and widget attachment on separate fresh loop iterations.
@@ -1183,7 +1167,7 @@ See the Codex keymap documentation for supported actions and examples."
                                 && app
                                     .active_thread_rx
                                     .as_ref()
-                                    .is_none_or(|receiver| receiver.is_empty())
+                                    .is_none_or(tokio::sync::mpsc::Receiver::is_empty)
                                 && !app.pending_primary_events.iter().any(|event| {
                                     matches!(event, ThreadBufferedEvent::Request(_))
                                 })
