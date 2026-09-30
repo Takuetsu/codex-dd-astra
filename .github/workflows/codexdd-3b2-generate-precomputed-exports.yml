@@ -53,6 +53,10 @@ jobs:
           cp "${RUNNER_TEMP}/codexdd-3b2-schema/precomputed/app-server-exports-stable.json.zst" app-server-protocol/schema/precomputed/
           cp "${RUNNER_TEMP}/codexdd-3b2-schema/precomputed/app-server-exports-experimental.json.zst" app-server-protocol/schema/precomputed/
 
+      - name: Restore out-of-scope Cargo lockfile refresh
+        shell: bash
+        run: git checkout -- Cargo.lock
+
       - name: Verify 3B.2 changed-path boundary
         shell: bash
         run: |
