@@ -968,7 +968,7 @@ impl ModelClient {
             instructions,
             input,
             tools,
-            tool_choice: "auto".to_string(),
+            tool_choice: prompt.tool_choice.clone(),
             parallel_tool_calls: prompt.parallel_tool_calls && !model_info.use_responses_lite,
             reasoning: Some(reasoning),
             store: false,
