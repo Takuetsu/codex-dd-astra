@@ -33,6 +33,7 @@ use codex_history::CodexHarnessMetadata;
 use codex_history::ResponseItemEnvelope;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 use codex_protocol::models::FunctionCallOutputPayload;
 use codex_protocol::models::ResponseInputItem;
 use codex_protocol::parse_command::ParsedCommand;
@@ -52,6 +53,7 @@ pub(crate) type ToolTelemetryTags = Vec<(&'static str, String)>;
 
 const ADAPTIVE_RECONNAISSANCE_REJECTION: &str = "CodexDD complexity reconnaissance is read-only. This tool or command was blocked before execution. Use read/search commands such as rg, Get-Content, git status, or git diff, then report the complexity classification before editing.";
 const ADAPTIVE_MECHANICAL_VALIDATION_REJECTION: &str = "CodexDD mechanical validation does not authorize source edits. This tool or command was blocked before execution. Run bounded tests/checks/builds or read-only inspection. If source changes are required, report kind=implementation_work and end the turn before editing.";
+const ADAPTIVE_VALIDATION_TERMINALIZATION_REJECTION: &str = "CodexDD ValidationTerminalization authorizes only report_adaptive_signal. Reuse the existing native evidence refs and report exactly one trusted terminal: ready_for_owner_qa for green evidence or repair_required for failing evidence.";
 
 fn adaptive_reconnaissance_rejection(invocation: &ToolInvocation) -> Option<String> {
     let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
@@ -95,6 +97,21 @@ fn adaptive_mechanical_validation_rejection(invocation: &ToolInvocation) -> Opti
         };
 
     (!allowed).then(|| ADAPTIVE_MECHANICAL_VALIDATION_REJECTION.to_string())
+}
+
+fn adaptive_validation_terminalization_rejection(invocation: &ToolInvocation) -> Option<String> {
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        invocation.turn.turn_metadata_state.as_ref(),
+    );
+    if turn_trigger.as_deref()
+        != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+    {
+        return None;
+    }
+
+    let allowed = invocation.tool_name.is_default_namespace()
+        && invocation.tool_name.name == "report_adaptive_signal";
+    (!allowed).then(|| ADAPTIVE_VALIDATION_TERMINALIZATION_REJECTION.to_string())
 }
 
 fn adaptive_reconnaissance_shell_command_allowed(command: &str) -> bool {
@@ -928,6 +945,7 @@ impl ToolRegistry {
 
         if let Some(message) = adaptive_reconnaissance_rejection(&invocation)
             .or_else(|| adaptive_mechanical_validation_rejection(&invocation))
+            .or_else(|| adaptive_validation_terminalization_rejection(&invocation))
         {
             let log_payload = tool_log_payload(&invocation.payload, &invocation.source);
             otel.tool_result_with_tags(
