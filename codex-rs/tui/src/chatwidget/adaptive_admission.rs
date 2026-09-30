@@ -43,6 +43,15 @@ pub(crate) enum AdaptiveAdmissionResult {
 }
 
 impl ChatWidget {
+    pub(crate) fn adaptive_validation_terminalization_active(&self) -> bool {
+        matches!(
+            self.adaptive_effort.successor_admission.as_ref(),
+            Some(AdaptiveSuccessorAdmission::Consumed(permit))
+                if permit.decision
+                    == crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ValidationTerminalization
+        )
+    }
+
     pub(crate) fn maybe_submit_adaptive_successor(&mut self) -> bool {
         if matches!(
             self.adaptive_effort.pending_signal.as_ref(),
