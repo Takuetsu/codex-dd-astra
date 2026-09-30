@@ -116,6 +116,20 @@ For large releases, prefer distinct packets for:
 
 This is specifically intended to prevent the old pattern where one long run attempted implementation, generation, testing, repair, and release preparation before creating a checkpoint.
 
+## Local validation execution policy
+
+Implementation validation before PR/CI is operator-mediated and runs on the Windows target machine, normally Daniel-CL, through PowerShell/SSH.
+
+- The assistant defines small, explicit validation packets and gives the operator the exact PowerShell commands to run.
+- The operator runs those commands on Daniel-CL and returns the output before the next validation step proceeds.
+- Prefer cheap, targeted local checks first, then broaden only after earlier gates pass.
+- Phase-level validation and Phase 4 pre-install validation should be robust enough to expose integration defects before GitHub CI, but they still run locally through this operator-mediated loop.
+- Do not create temporary GitHub Actions workflows merely to perform implementation-phase validation.
+- GitHub CI is reserved for the later PR/CI stage after the local validation gates are green.
+- Windows-target validation on Daniel-CL is authoritative for pre-PR implementation testing unless a packet explicitly requires another environment.
+
+This policy keeps the human owner in the validation loop, catches Windows-specific defects before CI, and avoids spending GitHub runner time on iterative development failures.
+
 ## Relationship to the 3A -> 3F + Phase 4 workflow
 
 The existing major-phase structure remains valid:
