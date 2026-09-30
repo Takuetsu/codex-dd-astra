@@ -17,6 +17,7 @@ use codex_app_server_protocol::UserInput;
 use codex_app_server_protocol::WarningNotification;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 
 // Leave time for side-thread cleanup and unsubscribe inside the two-second exit budget.
 const REALTIME_STOP_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 1);
@@ -36,10 +37,13 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
 }
 
 fn adaptive_turn_trigger(
+    validation_terminalization_active: bool,
     reconnaissance_required: bool,
     mechanical_validation_active: bool,
 ) -> Option<String> {
-    if reconnaissance_required {
+    if validation_terminalization_active {
+        Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string())
+    } else if reconnaissance_required {
         Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())
     } else if mechanical_validation_active {
         Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string())
@@ -895,6 +899,8 @@ impl App {
                         .adaptive_implementation_reconnaissance_required()
                         || user_turn_starts_bound_implementation(items);
                     let turn_trigger = adaptive_turn_trigger(
+                        self.chat_widget
+                            .adaptive_validation_terminalization_active(),
                         adaptive_reconnaissance_required,
                         self.chat_widget
                             .adaptive_implementation_mechanical_validation_active(),
@@ -2251,31 +2257,48 @@ mod tests {
     }
 
     #[test]
-    fn adaptive_turn_uses_lifecycle_write_gate_markers() {
+    fn adaptive_turn_uses_lifecycle_markers() {
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical*/ false
+                /*terminalization*/ true,
+                /*reconnaissance_required*/ false,
+                /*mechanical*/ false,
+            )
+            .as_deref(),
+            Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        );
+        assert_eq!(
+            adaptive_turn_trigger(
+                /*terminalization*/ false,
+                /*reconnaissance_required*/ true,
+                /*mechanical*/ false,
             )
             .as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ true
+                /*terminalization*/ false,
+                /*reconnaissance_required*/ false,
+                /*mechanical*/ true,
             )
             .as_deref(),
             Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
         );
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical*/ true
+                /*terminalization*/ true,
+                /*reconnaissance_required*/ true,
+                /*mechanical*/ true,
             )
             .as_deref(),
-            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+            Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
         );
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ false
+                /*terminalization*/ false,
+                /*reconnaissance_required*/ false,
+                /*mechanical*/ false,
             ),
             None
         );
