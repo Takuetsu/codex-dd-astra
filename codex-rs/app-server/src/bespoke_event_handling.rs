@@ -3582,8 +3582,6 @@ mod tests {
             outgoing.clone(),
             thread_state.clone(),
             ThreadWatchManager::new(),
-            Arc::new(tokio::sync::Semaphore::new(/*permits*/ 1)),
-            "test-provider".to_string(),
         )
         .await;
 
@@ -3612,9 +3610,12 @@ mod tests {
         .await;
 
         let replay = recv_broadcast_notification(&mut rx).await?;
+        let ServerNotification::AdaptiveRuntimeSignal(replayed_signal) = replay else {
+            bail!("unexpected replay notification: {replay:?}");
+        };
         assert_eq!(
-            replay,
-            ServerNotification::AdaptiveRuntimeSignal(expected_signal),
+            replayed_signal,
+            expected_signal,
             "trusted adaptive signal must be replayed immediately before turn completion"
         );
         let completed = recv_broadcast_notification(&mut rx).await?;
