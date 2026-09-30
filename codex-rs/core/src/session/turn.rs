@@ -1618,6 +1618,10 @@ fn adaptive_signal_request_emitted_since_latest_user(input: &[ResponseItem]) -> 
     false
 }
 
+fn adaptive_terminalization_tool_choice(signal_emitted: bool) -> &'static str {
+    if signal_emitted { "auto" } else { "required" }
+}
+
 fn adaptive_terminalization_signal_tools(tools: Arc<[ToolSpec]>) -> Arc<[ToolSpec]> {
     let signal_tools = tools
         .iter()
@@ -1662,8 +1666,8 @@ pub(crate) fn build_prompt(
     Prompt {
         input,
         tools,
-        tool_choice: if validation_terminalization && !adaptive_signal_emitted {
-            "required".to_string()
+        tool_choice: if validation_terminalization {
+            adaptive_terminalization_tool_choice(adaptive_signal_emitted).to_string()
         } else {
             "auto".to_string()
         },
