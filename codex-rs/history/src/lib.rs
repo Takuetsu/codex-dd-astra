@@ -276,7 +276,6 @@ pub fn restored_workflow_state<'a>(
     restored
 }
 
-
 impl CodexHarnessMetadata {
     /// Shortened messages no longer prove delivery of complete original instructions.
     pub fn mark_retained_sources_incomplete(&mut self) {
