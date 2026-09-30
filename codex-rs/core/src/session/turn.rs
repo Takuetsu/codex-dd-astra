@@ -1625,13 +1625,42 @@ fn adaptive_terminalization_tool_choice(signal_emitted: bool) -> &'static str {
 fn adaptive_terminalization_signal_tools(tools: Arc<[ToolSpec]>) -> Arc<[ToolSpec]> {
     let signal_tools = tools
         .iter()
-        .filter(|spec| {
-            matches!(
-                spec,
-                ToolSpec::Function(tool) if tool.name == ADAPTIVE_SIGNAL_TOOL_NAME
-            )
+        .filter_map(|spec| {
+            let ToolSpec::Function(tool) = spec else {
+                return None;
+            };
+            if tool.name != ADAPTIVE_SIGNAL_TOOL_NAME {
+                return None;
+            }
+
+            let mut tool = tool.clone();
+            let properties = tool.parameters.properties.as_mut()?;
+            properties.retain(|name, _| matches!(name.as_str(), "kind" | "evidence_refs"));
+
+            if let Some(kind) = properties.get_mut("kind") {
+                kind.enum_values = Some(vec![
+                    serde_json::Value::String("repair_required".to_string()),
+                    serde_json::Value::String("ready_for_owner_qa".to_string()),
+                    serde_json::Value::String("ready_for_repository_handoff".to_string()),
+                ]);
+                kind.description = Some(
+                    "Report repair_required for conclusive failing evidence, otherwise report ready_for_owner_qa or ready_for_repository_handoff for conclusive successful evidence."
+                        .to_string(),
+                );
+            }
+            if let Some(evidence_refs) = properties.get_mut("evidence_refs") {
+                evidence_refs.min_items = Some(1);
+                evidence_refs.description = Some(
+                    "Reuse the existing conclusive native evidence refs supplied by CodexDD. Do not rerun validation to manufacture new refs."
+                        .to_string(),
+                );
+            }
+            tool.parameters.required =
+                Some(vec!["kind".to_string(), "evidence_refs".to_string()]);
+            tool.description = "Emit the one trusted terminal signal for this dedicated Validation terminalization turn. Use only the existing conclusive evidence supplied by CodexDD; do not rerun tests, edit files, or substitute final-answer prose for this call."
+                .to_string();
+            Some(ToolSpec::Function(tool))
         })
-        .cloned()
         .collect::<Vec<_>>();
 
     debug_assert_eq!(
