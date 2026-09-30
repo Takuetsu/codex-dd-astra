@@ -964,8 +964,15 @@ impl ModelClient {
         } else {
             model_info.service_tier_for_request(service_tier)
         };
+        let terminalization_signal_already_called = prompt.input.iter().any(|item| {
+            matches!(
+                item,
+                ResponseItem::FunctionCall { name, .. } if name == "report_adaptive_signal"
+            )
+        });
         let tool_choice = if responses_metadata.turn_trigger.as_deref()
             == Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+            && !terminalization_signal_already_called
         {
             "required"
         } else {
