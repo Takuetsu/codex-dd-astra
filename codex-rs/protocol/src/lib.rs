@@ -33,6 +33,13 @@ pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str = "codexdd_adaptive
 /// accepted complexity floor on a successor turn.
 pub const CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER: &str =
     "codexdd_adaptive_mechanical_validation";
+
+/// Marks the dedicated Validation terminalization successor.
+///
+/// The TUI sets this only for the controller-authorized terminalization turn. Core uses it to
+/// require the trusted adaptive signal tool before allowing final-answer prose.
+pub const CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER: &str =
+    "codexdd_adaptive_validation_terminalization";
 pub mod approvals;
 pub mod capabilities;
 mod codex_error_info;
