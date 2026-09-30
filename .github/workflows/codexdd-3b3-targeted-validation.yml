@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - dd/codexdd-v0.3.14-upstream-0.159.2
-    paths:
-      - .github/workflows/codexdd-3b3-targeted-validation.yml
   workflow_dispatch:
 
 permissions:
