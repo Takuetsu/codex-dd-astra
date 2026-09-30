@@ -339,6 +339,14 @@ impl ChatWidget {
             .implementation_mechanical_validation_active()
     }
 
+    pub(crate) fn adaptive_validation_terminalization_active(&self) -> bool {
+        matches!(
+            self.adaptive_effort.successor_admission.as_ref(),
+            Some(AdaptiveSuccessorAdmission::Consumed(permit))
+                if permit.decision == AdaptivePendingDecision::ValidationTerminalization
+        ) && self.adaptive_effort.workflow_terminal.is_none()
+    }
+
     pub(crate) fn automatic_validation_binding(&self) -> Option<NewWorkerBinding> {
         let state = &self.adaptive_effort;
         if state.workflow_terminal != Some(AdaptiveWorkflowTerminal::ReadyForValidation)
