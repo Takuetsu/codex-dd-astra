@@ -1,4 +1,5 @@
 name: codexdd-3b2-generate-precomputed-exports
+# retry after 3B compile prerequisite repair
 
 on:
   push:
