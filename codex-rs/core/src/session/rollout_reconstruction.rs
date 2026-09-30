@@ -210,6 +210,7 @@ impl Session {
                 | RolloutItem::WorldState(_)
                 | RolloutItem::RetainedContext(_)
                 | RolloutItem::SecurityRiskScore(_)
+                | RolloutItem::WorkflowState(_)
                 | RolloutItem::TokenUsageRecord(_)
                 | RolloutItem::RealtimeItem(_)
                 | RolloutItem::Compacted(_)
