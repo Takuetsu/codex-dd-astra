@@ -878,6 +878,7 @@ async fn validation_terminalization_omission_blocks_instead_of_escalating_or_rer
             worker_context: pending.worker_context,
         },
     ));
+    assert!(chat.adaptive_validation_terminalization_active());
 
     assert!(chat.apply_adaptive_unfinished_authorized_turn(terminalization_turn));
     assert_eq!(
