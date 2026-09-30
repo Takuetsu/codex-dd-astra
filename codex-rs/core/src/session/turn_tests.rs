@@ -123,7 +123,38 @@ fn validation_terminalization_exposes_only_adaptive_signal_tool() {
         adaptive_terminalization_signal_tools(Arc::from(vec![unrelated_spec, signal_spec.clone()]));
 
     assert_eq!(filtered.len(), 1);
-    assert_eq!(filtered[0], signal_spec);
+    let ToolSpec::Function(tool) = &filtered[0] else {
+        panic!("terminalization signal must remain a function tool");
+    };
+    assert_eq!(tool.name, ADAPTIVE_SIGNAL_TOOL_NAME);
+    assert_eq!(
+        tool.parameters.required.as_deref(),
+        Some(["kind".to_string(), "evidence_refs".to_string()].as_slice())
+    );
+    let properties = tool
+        .parameters
+        .properties
+        .as_ref()
+        .expect("terminalization signal parameters");
+    assert_eq!(properties.len(), 2);
+    let kind_values = properties
+        .get("kind")
+        .and_then(|kind| kind.enum_values.as_ref())
+        .expect("terminalization kind enum");
+    assert_eq!(
+        kind_values,
+        &vec![
+            serde_json::Value::String("repair_required".to_string()),
+            serde_json::Value::String("ready_for_owner_qa".to_string()),
+            serde_json::Value::String("ready_for_repository_handoff".to_string()),
+        ]
+    );
+    assert_eq!(
+        properties
+            .get("evidence_refs")
+            .and_then(|evidence_refs| evidence_refs.min_items),
+        Some(1)
+    );
 }
 
 #[test]
