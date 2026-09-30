@@ -6,6 +6,7 @@ use codex_protocol::items::AgentMessageContent;
 use codex_protocol::models::FunctionCallOutputBody;
 use codex_protocol::models::FunctionCallOutputPayload;
 use codex_tools::ToolExecutor;
+use codex_tools::ToolSpec;
 use pretty_assertions::assert_eq;
 use std::sync::Arc;
 use tracing_subscriber::prelude::*;
