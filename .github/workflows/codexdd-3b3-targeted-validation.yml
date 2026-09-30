@@ -1,0 +1,215 @@
+name: codexdd-3b3-targeted-validation
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.3.14-upstream-0.159.2
+    paths:
+      - .github/workflows/codexdd-3b3-targeted-validation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Audit and validate Phase 3B
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: codex-rs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-ci
+
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+
+      - name: Fetch target upstream 0.159.2
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          git fetch --no-tags https://github.com/openai/codex.git ff6aec96948b70d94983af2641a6b67c94faeff5
+          git cat-file -e ff6aec96948b70d94983af2641a6b67c94faeff5^{commit}
+
+      - name: Audit all 59 Phase 3B ownership paths
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+
+          base = "665f5d7c7966f9a6a9570b5b85f9d68c529c1639"
+          upstream = "ff6aec96948b70d94983af2641a6b67c94faeff5"
+          doc = Path("docs/codexdd-0.3.14-upstream-integration-scaffold.md").read_text()
+          section = doc.split("### Phase 3B - core/runtime conflicts (59)", 1)[1].split(
+              "### Phase 3C", 1
+          )[0]
+          paths = re.findall(r"^- \`([^\`]+)\`$", section, flags=re.MULTILINE)
+          if len(paths) != 59 or len(set(paths)) != 59:
+              raise SystemExit(f"expected 59 unique Phase 3B paths, got {len(paths)}")
+
+          def blob(ref, path):
+              proc = subprocess.run(
+                  ["git", "show", f"{ref}:{path}"],
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.DEVNULL,
+              )
+              return proc.stdout if proc.returncode == 0 else None
+
+          adopted = []
+          reconciled = []
+          failures = []
+          for path in paths:
+              head = blob("HEAD", path)
+              old = blob(base, path)
+              new = blob(upstream, path)
+              if head is None:
+                  failures.append(f"MISSING_HEAD {path}")
+                  continue
+              if path.endswith(".zst"):
+                  pass
+              else:
+                  text = head.decode("utf-8", errors="replace")
+                  if any(marker in text for marker in ("<<<<<<<", "=======", ">>>>>>>")):
+                      failures.append(f"CONFLICT_MARKER {path}")
+              if old is not None and new is not None and old != new and head == old:
+                  failures.append(f"UNRECONCILED_EXACT_0.3.13_COPY {path}")
+              if new is not None and head == new:
+                  adopted.append(path)
+              else:
+                  reconciled.append(path)
+
+          print(f"Phase 3B ownership paths: {len(paths)}")
+          print(f"Adopted target upstream exactly: {len(adopted)}")
+          print(f"Reconciled/CodexDD delta retained: {len(reconciled)}")
+          print("Reconciled/CodexDD delta paths:")
+          for path in reconciled:
+              print(f"  {path}")
+          if failures:
+              print("AUDIT FAILURES:")
+              for failure in failures:
+                  print(f"  {failure}")
+              raise SystemExit(1)
+          print("Phase 3B 59-path ownership audit: PASS")
+          PY
+
+      - name: Rust formatting
+        shell: bash
+        run: cargo fmt -- --config imports_granularity=Item --check
+
+      - name: Diff hygiene
+        shell: bash
+        working-directory: .
+        run: git diff --check 665f5d7c7966f9a6a9570b5b85f9d68c529c1639..HEAD
+
+      - name: Compile Phase 3B package surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --all-targets             -p codex-app-server-protocol             -p codex-app-server             -p codex-cli             -p codex-config             -p codex-core             -p codex-history             -p codex-protocol             -p codex-rollout             -p codex-state             -p codex-thread-store
+
+      - name: Validate precomputed app-server exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p codex-app-server-protocol --lib schema_fixtures_tests::stable_precomputed_exports_match_schema_fixtures -- --exact
+          cargo test -p codex-app-server-protocol --lib schema_fixtures_tests::experimental_precomputed_exports_match_generated -- --exact
+
+      - name: Validate core/runtime support crates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p codex-history --lib
+          cargo test -p codex-rollout --lib
+          cargo test -p codex-protocol --lib
+          cargo test -p codex-state --lib
+          cargo test -p codex-thread-store --lib
+
+      - name: Validate targeted core integration modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p codex-core --lib rollout_reconstruction
+          cargo test -p codex-core --lib thread_manager
+          cargo test -p codex-core --lib registry
+          cargo test -p codex-core --lib client
+          cargo test -p codex-core --lib control
+          cargo test -p codex-core --lib history
+
+      - name: Validate app-server unit surface
+        shell: bash
+        run: cargo test -p codex-app-server --lib
+
+      - name: Validate generated Python overlap files
+        shell: bash
+        working-directory: .
+        run: |
+          python3 -m py_compile             sdk/python/src/openai_codex/generated/notification_registry.py             sdk/python/src/openai_codex/generated/v2_all.py
+
+      - name: Restore Cargo.lock if Cargo refreshed it
+        shell: bash
+        run: git checkout -- Cargo.lock
+
+      - name: Verify validation left source tree clean
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          if [[ -n "$(git status --porcelain=v1)" ]]; then
+            git status --short
+            echo "3B.3 validation modified the source tree" >&2
+            exit 1
+          fi
+
+      - name: Write Phase 3B validation record
+        shell: bash
+        working-directory: .
+        run: |
+          cat > docs/codexdd-0.3.14-phase-3b-validation.md <<'EOF'
+          # CodexDD 0.3.14 Phase 3B validation
+
+          Phase 3B core/runtime integration is complete for the 0.3.14 upstream integration to OpenAI Codex rust-v0.159.2.
+
+          ## Anchors
+
+          - CodexDD production/base: 665f5d7c7966f9a6a9570b5b85f9d68c529c1639
+          - Target upstream: ff6aec96948b70d94983af2641a6b67c94faeff5
+          - Phase 3B ownership set: 59 overlap paths from the Phase 3A integration scaffold.
+
+          ## 3B.3 acceptance
+
+          - 59-path ownership manifest audited exactly once per path.
+          - No unresolved merge markers.
+          - No overlap path remained an exact 0.3.13 copy where rust-v0.159.2 changed it.
+          - Rust formatting passed.
+          - Git diff hygiene passed.
+          - All Phase 3B package targets compiled.
+          - Stable and experimental precomputed app-server export consistency tests passed.
+          - History, rollout, protocol, state, and thread-store library tests passed.
+          - Targeted core rollout-reconstruction, thread-manager, tool-registry, client, agent-control, and history tests passed.
+          - App-server library tests passed.
+          - Generated Python overlap files passed syntax compilation.
+          - Validation left the source tree clean.
+
+          Phase 3B is closed. Phase 3C must begin as a new numbered work packet.
+          EOF
+
+      - name: Commit Phase 3B checkpoint
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/codexdd-0.3.14-phase-3b-validation.md
+          git commit -m "codexdd 0.3.14: complete Phase 3B targeted validation"
+          git push origin HEAD:${GITHUB_REF_NAME}
