@@ -491,6 +491,7 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
         codex_protocol::config_types::ReasoningSummary::None,
         /*service_tier*/ None,
         &responses_metadata,
+        /*include_internal*/ false,
     )?;
     assert_eq!(terminalization.tool_choice, "required");
 
@@ -513,6 +514,7 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
         codex_protocol::config_types::ReasoningSummary::None,
         /*service_tier*/ None,
         &responses_metadata,
+        /*include_internal*/ false,
     )?;
     assert_eq!(after_signal.tool_choice, "auto");
 
@@ -524,6 +526,7 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
         codex_protocol::config_types::ReasoningSummary::None,
         /*service_tier*/ None,
         &responses_metadata,
+        /*include_internal*/ false,
     )?;
     assert_eq!(ordinary.tool_choice, "auto");
     Ok(())
