@@ -100,6 +100,29 @@ pub(crate) use codex_app_server_client::legacy_core;
 
 pub(crate) use worktree_startup::ManagedTuiWorktree;
 
+#[allow(dead_code)]
+mod adaptive_budget;
+#[allow(dead_code)]
+mod adaptive_classification;
+#[allow(dead_code)]
+mod adaptive_complexity;
+#[allow(dead_code)]
+mod adaptive_controller;
+#[cfg(test)]
+#[path = "adaptive_controller_tests.rs"]
+mod adaptive_controller_tests;
+#[allow(dead_code)]
+mod adaptive_evidence;
+#[cfg(test)]
+#[path = "adaptive_evidence_tests.rs"]
+mod adaptive_evidence_tests;
+#[allow(dead_code)]
+mod adaptive_policy;
+#[allow(dead_code)]
+mod adaptive_worker;
+#[cfg(test)]
+#[path = "adaptive_worker_tests.rs"]
+mod adaptive_worker_tests;
 mod additional_dirs;
 mod analytics;
 mod app;
