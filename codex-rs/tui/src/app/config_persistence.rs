@@ -1833,7 +1833,8 @@ enabled = false
                 message_history: None,
                 network_proxy: None,
                 rollout_path: Some(PathBuf::new()),
-            });
+                            adaptive_effort: Default::default(),
+});
 
         assert_eq!(app.chat_widget.config_ref().cwd.to_path_buf(), next_cwd);
         assert_eq!(app.config.cwd, original_cwd);
