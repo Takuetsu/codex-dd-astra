@@ -13,6 +13,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use tokio_util::sync::CancellationToken;
 
+use crate::adaptive_worker::NewWorkerBinding;
 use crate::inline_visualization::InlineVisualizationContext;
 use codex_app_server_protocol::AddCreditsNudgeCreditType;
 use codex_app_server_protocol::AddCreditsNudgeEmailStatus;
@@ -100,6 +101,7 @@ pub(crate) struct ManagedWorktreeTransition {
     pub(crate) config: Box<crate::legacy_core::config::Config>,
     pub(crate) mode: ManagedWorktreeMode,
     pub(crate) name: Option<String>,
+    pub(crate) worker_binding: Option<NewWorkerBinding>,
 }
 
 #[derive(Debug)]
@@ -108,6 +110,7 @@ pub(crate) struct ManagedWorktreeCreated {
     pub(crate) source_cwd: AbsolutePathBuf,
     pub(crate) mode: ManagedWorktreeMode,
     pub(crate) name: Option<String>,
+    pub(crate) worker_binding: Option<NewWorkerBinding>,
     pub(crate) result: Result<
         (
             codex_worktree::WorktreeManager,
@@ -485,12 +488,14 @@ pub(crate) enum AppEvent {
     /// Start a new session, optionally assigning it a name.
     NewSession {
         name: Option<String>,
+        worker_binding: Option<NewWorkerBinding>,
     },
 
     /// Create a managed checkout and start or fork a session into it.
     StartManagedWorktree {
         mode: ManagedWorktreeMode,
         name: Option<String>,
+        worker_binding: Option<NewWorkerBinding>,
     },
     /// Continue a checkout transition after synchronous Git work finishes off-loop.
     ManagedWorktreeCreated(Box<ManagedWorktreeCreated>),
