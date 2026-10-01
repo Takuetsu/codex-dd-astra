@@ -2307,6 +2307,7 @@ async fn thread_session_state_from_thread_start_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
+        WorkflowStateRestoreMode::FreshThread,
     )
     .await
 }
@@ -2351,6 +2352,7 @@ async fn thread_session_state_from_thread_resume_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
+        WorkflowStateRestoreMode::ExistingThread,
     )
     .await?;
     session.collaboration_mode = response.collaboration_mode.clone().map(Box::new);
@@ -2388,6 +2390,7 @@ async fn thread_session_state_from_thread_fork_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
+        WorkflowStateRestoreMode::FreshThread,
     )
     .await
 }
@@ -2417,6 +2420,12 @@ fn display_permission_profile_from_thread_response(
     }
 }
 
+#[derive(Clone, Copy)]
+enum WorkflowStateRestoreMode {
+    FreshThread,
+    ExistingThread,
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "session mapping keeps explicit fields"
@@ -2440,6 +2449,7 @@ async fn thread_session_state_from_thread_response(
     reasoning_effort: Option<codex_protocol::openai_models::ReasoningEffort>,
     personality: Option<codex_protocol::config_types::Personality>,
     local_settings: &LocalSettings,
+    workflow_state_restore_mode: WorkflowStateRestoreMode,
 ) -> Result<ThreadSessionState, String> {
     let thread_id = ThreadId::from_string(thread_id)
         .map_err(|err| format!("thread id `{thread_id}` is invalid: {err}"))?;
@@ -2453,6 +2463,18 @@ async fn thread_session_state_from_thread_response(
         &local_settings.history,
     );
     let (log_id, entry_count) = codex_message_history::history_metadata(&history_config).await;
+    let mut adaptive_effort = Default::default();
+    if matches!(
+        workflow_state_restore_mode,
+        WorkflowStateRestoreMode::ExistingThread
+    ) {
+        crate::session_state::restore_persisted_workflow_state(
+            rollout_path.as_deref(),
+            thread_id,
+            &mut adaptive_effort,
+        )
+        .await?;
+    }
     Ok(ThreadSessionState {
         windows_sandbox_host,
         thread_id,
@@ -2478,6 +2500,7 @@ async fn thread_session_state_from_thread_response(
         }),
         network_proxy: None,
         rollout_path,
+        adaptive_effort,
     })
 }
 
@@ -4196,6 +4219,7 @@ mod tests {
             /*reasoning_effort*/ None,
             config.personality,
             &LocalSettings::from(&config),
+            WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .expect("session should map");
@@ -4233,6 +4257,7 @@ mod tests {
             /*reasoning_effort*/ None,
             config.personality,
             &LocalSettings::from(&config),
+            WorkflowStateRestoreMode::ExistingThread,
         )
         .await
         .expect("session should map");
