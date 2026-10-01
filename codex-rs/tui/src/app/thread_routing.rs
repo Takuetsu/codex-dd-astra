@@ -1496,20 +1496,10 @@ impl App {
             should_send
         };
 
-        if should_send {
-            match sender.try_send(ThreadBufferedEvent::HistoryEntryResponse(event)) {
-                Ok(()) => {}
-                Err(TrySendError::Full(event)) => {
-                    tokio::spawn(async move {
-                        if let Err(err) = sender.send(event).await {
-                            tracing::warn!("thread {thread_id} event channel closed: {err}");
-                        }
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    tracing::warn!("thread {thread_id} event channel closed");
-                }
-            }
+        if should_send
+            && let Err(err) = sender.send(ThreadBufferedEvent::HistoryEntryResponse(event))
+        {
+            tracing::warn!("thread {thread_id} event channel closed: {err}");
         }
         Ok(())
     }
