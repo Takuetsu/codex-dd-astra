@@ -98,6 +98,7 @@ use codex_protocol::items::ModelInvocationContext;
 use codex_protocol::items::TurnItem as CoreTurnItem;
 use codex_protocol::models::AdditionalPermissionProfile as CoreAdditionalPermissionProfile;
 use codex_protocol::plan_tool::UpdatePlanArgs;
+use codex_protocol::protocol::AdaptiveRuntimeSignalEvent;
 use codex_protocol::protocol::Event;
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::ExecApprovalRequestEvent;
@@ -140,6 +141,39 @@ struct CommandExecutionCompletionItem {
     command_actions: Vec<V2ParsedCommand>,
 }
 
+async fn handle_adaptive_runtime_signal(
+    conversation_id: ThreadId,
+    source_turn_id: String,
+    signal: AdaptiveRuntimeSignalEvent,
+    outgoing: &ThreadScopedOutgoingMessageSender,
+    thread_state: &Arc<Mutex<ThreadState>>,
+) {
+    let signal = AdaptiveRuntimeSignalEnvelope {
+        source_turn_id,
+        signal_kind: signal.signal_kind,
+        evidence_refs: signal.evidence_refs,
+        diagnostic_note: signal.diagnostic_note,
+    };
+    // Keep a turn-scoped copy in addition to live delivery. turn/completed intentionally
+    // exposes only a summary view, so the TUI cannot recover report_adaptive_signal from
+    // completed turn items. Replaying the trusted envelope at the terminal boundary makes
+    // consumption deterministic even if the earlier live notification was delayed.
+    thread_state
+        .lock()
+        .await
+        .turn_summary
+        .adaptive_runtime_signals
+        .push(signal.clone());
+    outgoing
+        .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(
+            AdaptiveRuntimeSignalNotification {
+                thread_id: conversation_id.to_string(),
+                signal,
+            },
+        ))
+        .await;
+}
+
 pub(crate) async fn apply_bespoke_event_handling(
     event: Event,
     conversation_id: ThreadId,
@@ -155,30 +189,14 @@ pub(crate) async fn apply_bespoke_event_handling(
     } = event;
     match msg {
         EventMsg::AdaptiveRuntimeSignal(signal) => {
-            let signal = AdaptiveRuntimeSignalEnvelope {
-                source_turn_id: event_turn_id,
-                signal_kind: signal.signal_kind,
-                evidence_refs: signal.evidence_refs,
-                diagnostic_note: signal.diagnostic_note,
-            };
-            // Keep a turn-scoped copy in addition to live delivery. turn/completed intentionally
-            // exposes only a summary view, so the TUI cannot recover report_adaptive_signal from
-            // completed turn items. Replaying the trusted envelope at the terminal boundary makes
-            // consumption deterministic even if the earlier live notification was delayed.
-            thread_state
-                .lock()
-                .await
-                .turn_summary
-                .adaptive_runtime_signals
-                .push(signal.clone());
-            outgoing
-                .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(
-                    AdaptiveRuntimeSignalNotification {
-                        thread_id: conversation_id.to_string(),
-                        signal,
-                    },
-                ))
-                .await;
+            handle_adaptive_runtime_signal(
+                conversation_id,
+                event_turn_id,
+                signal,
+                &outgoing,
+                &thread_state,
+            )
+            .await;
         }
         EventMsg::TurnStarted(payload) => {
             // While not technically necessary as it was already done on TurnComplete, be extra cautios and abort any pending server requests.
@@ -3535,23 +3553,7 @@ mod tests {
 
     #[tokio::test]
     async fn adaptive_runtime_signal_binds_event_turn_and_conversation_identity() -> Result<()> {
-        let codex_home = TempDir::new()?;
-        let config = load_default_config_for_test(&codex_home).await;
-        let thread_manager = Arc::new(
-            codex_core::test_support::thread_manager_with_models_provider_and_home(
-                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
-                config.model_provider.clone(),
-                config.codex_home.to_path_buf(),
-                Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
-            ),
-        );
-        let codex_core::NewThread {
-            thread_id: conversation_id,
-            thread: conversation,
-            ..
-        } = thread_manager
-            .start_thread(codex_core::StartThreadOptions::new(config))
-            .await?;
+        let conversation_id = ThreadId::new();
         let source_turn_id = "native-source-turn".to_string();
         let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
         let outgoing = Arc::new(OutgoingMessageSender::new(
@@ -3564,24 +3566,16 @@ mod tests {
             ThreadId::new(),
         );
         let thread_state = new_thread_state();
-        apply_bespoke_event_handling(
-            Event {
-                id: source_turn_id.clone(),
-                msg: EventMsg::AdaptiveRuntimeSignal(
-                    codex_protocol::protocol::AdaptiveRuntimeSignalEvent {
-                        signal_kind:
-                            codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,
-                        evidence_refs: Vec::new(),
-                        diagnostic_note: None,
-                    },
-                ),
-            },
+        handle_adaptive_runtime_signal(
             conversation_id,
-            conversation,
-            thread_manager,
-            outgoing.clone(),
-            thread_state.clone(),
-            ThreadWatchManager::new(),
+            source_turn_id.clone(),
+            AdaptiveRuntimeSignalEvent {
+                signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+            &outgoing,
+            &thread_state,
         )
         .await;
 
