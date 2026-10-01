@@ -23,6 +23,7 @@ pub(crate) fn signal_from_user_interrupt() -> AdaptiveOutcomeSignal {
 pub(crate) fn signal_from_codex_error(error: &CodexErrorInfo) -> AdaptiveOutcomeSignal {
     AdaptiveOutcomeSignal::Failure(match error {
         CodexErrorInfo::RateLimitExceeded
+        | CodexErrorInfo::FlexUnavailable
         | CodexErrorInfo::ServerOverloaded
         | CodexErrorInfo::HttpConnectionFailed { .. }
         | CodexErrorInfo::ResponseStreamConnectionFailed { .. }
@@ -39,9 +40,9 @@ pub(crate) fn signal_from_codex_error(error: &CodexErrorInfo) -> AdaptiveOutcome
             AdaptiveFailureKind::Environment
         }
         CodexErrorInfo::SandboxError => AdaptiveFailureKind::Permission,
-        CodexErrorInfo::CyberPolicy | CodexErrorInfo::MisalignmentPolicyViolation => {
-            AdaptiveFailureKind::AuthorizationOrScope
-        }
+        CodexErrorInfo::CyberPolicy
+        | CodexErrorInfo::MisalignmentPolicyViolation
+        | CodexErrorInfo::TooManyDenials => AdaptiveFailureKind::AuthorizationOrScope,
         CodexErrorInfo::BadRequest
         | CodexErrorInfo::ActiveTurnNotSteerable { .. }
         | CodexErrorInfo::Other => AdaptiveFailureKind::Unknown,
