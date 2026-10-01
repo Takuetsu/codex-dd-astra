@@ -256,6 +256,12 @@ use crate::text_formatting::truncate_text;
 use crate::tui::FrameRequester;
 mod activity_groups;
 mod activity_presentation;
+mod adaptive_admission;
+pub(crate) mod adaptive_effort;
+mod adaptive_evidence;
+mod adaptive_runtime_bridge;
+mod adaptive_signal_transport;
+mod adaptive_trusted_signal;
 mod command_lifecycle;
 mod connector_mentions;
 mod connectors;
@@ -558,6 +564,7 @@ pub(crate) struct ChatWidget {
     rate_limit_snapshots_by_limit_id: BTreeMap<String, RateLimitSnapshotDisplay>,
     refreshing_status_outputs: Vec<(u64, StatusHistoryHandle)>,
     next_status_refresh_request_id: u64,
+    adaptive_effort: adaptive_effort::AdaptiveEffortState,
     pending_rate_limit_reset_request_id: Option<u64>,
     pending_rate_limit_reset_idempotency_key: Option<String>,
     rate_limit_reset_picker_request_id: Option<u64>,
