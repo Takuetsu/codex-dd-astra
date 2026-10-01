@@ -43,6 +43,8 @@ The partition below covers all 107 overlap candidates exactly once. It is an imp
 
 ### Phase 3B - core/runtime conflicts (59)
 
+**Status: COMPLETE.** Work packets 3B.1, 3B.2, and 3B.3 are closed. See `docs/codexdd-0.3.14-phase-3b-validation.md` for the validation record. Phase 3C must begin as a new numbered work packet.
+
 - `codex-rs/app-server-protocol/schema/json/ClientRequest.json`
 - `codex-rs/app-server-protocol/schema/json/ServerNotification.json`
 - `codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json`
