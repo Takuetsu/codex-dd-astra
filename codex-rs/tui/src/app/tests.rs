@@ -4470,7 +4470,6 @@ async fn inactive_thread_started_notification_initializes_replay_session() -> Re
         permission_profile: PermissionProfile::workspace_write(),
         runtime_workspace_roots: vec![primary_cwd.clone(), shared_root.clone()],
         ..test_thread_session(main_thread_id, primary_cwd.to_path_buf())
-            adaptive_effort: Default::default(),
 };
 
     app.primary_thread_id = Some(main_thread_id);
@@ -5150,7 +5149,6 @@ async fn side_thread_snapshot_hides_forked_parent_transcript() {
         forked_from_id: Some(parent_thread_id),
         fork_parent_title: None,
         ..test_thread_session(side_thread_id, test_path_buf("/tmp/side"))
-            adaptive_effort: Default::default(),
 };
     let parent_turn = test_turn(
         "parent-turn",
@@ -5219,7 +5217,6 @@ async fn side_thread_snapshot_skips_session_header_preamble() {
             forked_from_id: Some(parent_thread_id),
             fork_parent_title: None,
             ..test_thread_session(side_thread_id, test_path_buf("/tmp/side"))
-                    adaptive_effort: Default::default(),
 }),
         turns: Vec::new(),
         events: Vec::new(),
@@ -5812,7 +5809,7 @@ async fn render_clear_ui_header_after_long_transcript_for_snapshot() -> String {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-                    adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
 };
         Arc::new(new_session_info(
             app.chat_widget.config_ref(),
@@ -6416,8 +6413,8 @@ fn test_thread_session(thread_id: ThreadId, cwd: PathBuf) -> ThreadSessionState 
         message_history: None,
         network_proxy: None,
         rollout_path: Some(PathBuf::new()),
-    }
         adaptive_effort: Default::default(),
+    }
 }
 
 fn plain_line_cell(text: impl Into<String>) -> Arc<dyn HistoryCell> {
@@ -7516,7 +7513,7 @@ async fn backtrack_selection_preserves_selected_prompt_and_requests_branch() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-                    adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
 };
         Arc::new(new_session_info(
             app.chat_widget.config_ref(),
@@ -7591,7 +7588,7 @@ async fn backtrack_selection_preserves_selected_prompt_and_requests_branch() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-                    adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
 });
 
     app.backtrack.base_id = Some(base_id);
@@ -8887,7 +8884,7 @@ async fn new_session_requests_shutdown_for_previous_conversation() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-                    adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
 };
 
         app.chat_widget.handle_thread_session(event);
@@ -9639,7 +9636,7 @@ async fn clear_only_ui_reset_preserves_chat_session_state() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-                    adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
 });
     app.chat_widget
         .apply_external_edit("draft prompt".to_string());
