@@ -3333,6 +3333,7 @@ model_reasoning_effort = "low"
         AppEvent::StartManagedWorktree {
             mode: ManagedWorktreeMode::Fork,
             name: None,
+            worker_binding: None,
         },
     )
     .await?;
@@ -3406,6 +3407,7 @@ terminal_visualization_instructions = true
         AppEvent::StartManagedWorktree {
             mode: ManagedWorktreeMode::Fork,
             name: None,
+            worker_binding: None,
         },
     )
     .await?;
@@ -3430,6 +3432,7 @@ terminal_visualization_instructions = true
         AppEvent::StartManagedWorktree {
             mode: ManagedWorktreeMode::New,
             name: None,
+            worker_binding: None,
         },
     )
     .await?;
@@ -3505,6 +3508,7 @@ terminal_visualization_instructions = true
             AppEvent::StartManagedWorktree {
                 mode,
                 name: Some(format!("{mode:?} worktree")),
+                worker_binding: None,
             },
         )
         .await?;
@@ -3679,7 +3683,11 @@ terminal_visualization_instructions = true
         app.handle_event(
             &mut tui,
             &mut server,
-            AppEvent::StartManagedWorktree { mode, name: None },
+            AppEvent::StartManagedWorktree {
+                mode,
+                name: None,
+                worker_binding: None,
+            },
         )
         .await?;
         drain_managed_worktree_start(&mut app, &mut server).await;
