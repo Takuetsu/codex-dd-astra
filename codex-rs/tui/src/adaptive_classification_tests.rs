@@ -14,6 +14,10 @@ fn typed_codex_errors_normalize_without_text_inference() {
             AdaptiveFailureKind::TransientInfrastructure,
         ),
         (
+            CodexErrorInfo::FlexUnavailable,
+            AdaptiveFailureKind::TransientInfrastructure,
+        ),
+        (
             CodexErrorInfo::Unauthorized,
             AdaptiveFailureKind::Authentication,
         ),
@@ -31,6 +35,10 @@ fn typed_codex_errors_normalize_without_text_inference() {
         ),
         (
             CodexErrorInfo::CyberPolicy,
+            AdaptiveFailureKind::AuthorizationOrScope,
+        ),
+        (
+            CodexErrorInfo::TooManyDenials,
             AdaptiveFailureKind::AuthorizationOrScope,
         ),
         (CodexErrorInfo::Other, AdaptiveFailureKind::Unknown),
