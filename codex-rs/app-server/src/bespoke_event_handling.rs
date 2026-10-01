@@ -3608,8 +3608,7 @@ mod tests {
             bail!("unexpected replay notification: {replay:?}");
         };
         assert_eq!(
-            replayed_signal,
-            expected_signal,
+            replayed_signal, expected_signal,
             "trusted adaptive signal must be replayed immediately before turn completion"
         );
         let completed = recv_broadcast_notification(&mut rx).await?;
