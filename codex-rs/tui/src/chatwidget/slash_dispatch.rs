@@ -202,7 +202,11 @@ impl ChatWidget {
                 self.request_redraw();
             }
             SlashCommand::New => {
-                self.show_session_checkout_picker(ManagedWorktreeMode::New, /*name*/ None);
+                self.show_session_checkout_picker(
+                    ManagedWorktreeMode::New,
+                    /*name*/ None,
+                    None,
+                );
             }
             SlashCommand::Archive => {
                 self.bottom_pane.show_selection_view(SelectionViewParams {
@@ -272,7 +276,11 @@ impl ChatWidget {
                 self.app_event_tx.send(AppEvent::OpenResumePicker);
             }
             SlashCommand::Fork => {
-                self.show_session_checkout_picker(ManagedWorktreeMode::Fork, /*name*/ None);
+                self.show_session_checkout_picker(
+                    ManagedWorktreeMode::Fork,
+                    /*name*/ None,
+                    None,
+                );
             }
             SlashCommand::Worktree => {
                 self.show_managed_worktree_picker();
@@ -846,10 +854,35 @@ impl ChatWidget {
                 self.app_event_tx.set_thread_name(name);
             }
             SlashCommand::New if !trimmed.is_empty() => {
-                self.show_session_checkout_picker(
-                    ManagedWorktreeMode::New,
-                    Some(trimmed.to_string()),
-                );
+                if let Some(role) = crate::adaptive_worker::parse_new_worker_role(trimmed) {
+                    let Some(scope) = self
+                        .adaptive_effort
+                        .worker_context
+                        .authorized_scope
+                        .as_ref()
+                        .filter(|scope| !scope.trim().is_empty())
+                    else {
+                        self.add_error_message(
+                            "Cannot create a roleful Worker: current Worker has no authorized_scope."
+                                .to_string(),
+                        );
+                        return;
+                    };
+                    self.show_session_checkout_picker(
+                        ManagedWorktreeMode::New,
+                        None,
+                        Some(crate::adaptive_worker::NewWorkerBinding {
+                            role,
+                            authorized_scope: scope.clone(),
+                        }),
+                    );
+                } else {
+                    self.show_session_checkout_picker(
+                        ManagedWorktreeMode::New,
+                        Some(trimmed.to_string()),
+                        None,
+                    );
+                }
             }
             SlashCommand::Clear if !trimmed.is_empty() => {
                 self.app_event_tx.send(AppEvent::ClearUi {
@@ -860,6 +893,7 @@ impl ChatWidget {
                 self.show_session_checkout_picker(
                     ManagedWorktreeMode::Fork,
                     Some(trimmed.to_string()),
+                    None,
                 );
             }
             SlashCommand::Plan if !trimmed.is_empty() => {
