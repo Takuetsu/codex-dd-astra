@@ -953,12 +953,42 @@ impl App {
         initial_user_message: Option<crate::chatwidget::UserMessage>,
         new_thread_name: Option<String>,
     ) {
+        self.start_fresh_session_with_worker_binding(
+            tui,
+            app_server,
+            session_start_source,
+            initial_user_message,
+            new_thread_name,
+            None,
+        )
+        .await;
+    }
+
+    pub(super) async fn start_fresh_session_with_worker_binding(
+        &mut self,
+        tui: &mut tui::Tui,
+        app_server: &mut AppServerSession,
+        session_start_source: Option<ThreadStartSource>,
+        initial_user_message: Option<crate::chatwidget::UserMessage>,
+        new_thread_name: Option<String>,
+        worker_binding: Option<crate::adaptive_worker::NewWorkerBinding>,
+    ) {
         if self.reject_pending_permission_root_switch() {
             if let Some(message) = initial_user_message {
                 self.chat_widget.restore_user_message_to_composer(message);
             }
             return;
         }
+        let initial_user_message = initial_user_message.or_else(|| {
+            worker_binding.as_ref().and_then(|binding| {
+                self.chat_widget
+                    .automatic_validation_prompt_for_new_worker(binding)
+            })
+        });
+        let bound_worker = worker_binding.is_some();
+        let fresh_adaptive_effort = self
+            .chat_widget
+            .fresh_adaptive_effort_for_new_worker(worker_binding.as_ref());
         // Start a fresh in-memory session while preserving resumability via persisted rollout
         // history. If an initial message is provided, `enqueue_primary_thread_session` suppresses it
         // until the new session is configured and any replayed turns have been rendered.
@@ -980,6 +1010,40 @@ impl App {
             &self.cli_kv_overrides,
             &self.harness_overrides,
         );
+        if bound_worker
+            && let (Some(family), Some(effort)) = (
+                fresh_adaptive_effort.current_family,
+                fresh_adaptive_effort.current_effort,
+            )
+        {
+            config.model = Some(family.model().to_string());
+            config.model_reasoning_effort = Some(match effort {
+                crate::adaptive_policy::AdaptiveEffort::Low => ReasoningEffortConfig::Low,
+                crate::adaptive_policy::AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,
+                crate::adaptive_policy::AdaptiveEffort::High => ReasoningEffortConfig::High,
+                crate::adaptive_policy::AdaptiveEffort::XHigh => ReasoningEffortConfig::XHigh,
+                crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,
+            });
+        }
+        if let Some(binding) = worker_binding {
+            config.adaptive_worker = Some(codex_config::config_toml::AdaptiveWorkerConfigToml {
+                role: match binding.role {
+                    crate::adaptive_worker::AdaptiveWorkerRole::Implementation => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+                    }
+                    crate::adaptive_worker::AdaptiveWorkerRole::Validation => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+                    }
+                    crate::adaptive_worker::AdaptiveWorkerRole::Repair => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Repair
+                    }
+                    crate::adaptive_worker::AdaptiveWorkerRole::Unspecified => {
+                        codex_config::config_toml::AdaptiveWorkerRoleToml::Unspecified
+                    }
+                },
+                authorized_scope: Some(binding.authorized_scope),
+            });
+        }
         match app_server
             .start_thread_with_session_start_source(
                 &self.local_settings,
@@ -991,6 +1055,7 @@ impl App {
             .await
         {
             Ok(mut started) => {
+                started.session.adaptive_effort = fresh_adaptive_effort;
                 if let Some(thread_id) = self.current_displayed_thread_id()
                     && let Some(blank) = self.agents_overview.blank_sessions.get_mut(&thread_id)
                 {
