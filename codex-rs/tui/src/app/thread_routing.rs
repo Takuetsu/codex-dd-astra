@@ -6,15 +6,52 @@
 
 use super::session_lifecycle::ThreadAttachPresentation;
 use super::*;
+use crate::adaptive_worker::AdaptiveWorkerRole;
+use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use crate::app_event::ThreadTitleDestination;
 use crate::chatwidget::ThreadInputStateRestoreMode;
 use codex_app_server_protocol::ThreadStartedNotification;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
+use codex_app_server_protocol::UserInput;
 use codex_app_server_protocol::WarningNotification;
+use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 
 // Leave time for side-thread cleanup and unsubscribe inside the two-second exit budget.
 const REALTIME_STOP_TIMEOUT: Duration = Duration::from_secs(/*secs*/ 1);
+
+fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
+    let Some(text) = items.iter().find_map(|item| match item {
+        UserInput::Text { text, .. } => Some(text.as_str()),
+        _ => None,
+    }) else {
+        return false;
+    };
+
+    matches!(
+        parse_adaptive_worker_assignment(text),
+        Ok(Some(worker_context))
+            if worker_context.role == AdaptiveWorkerRole::Implementation
+    )
+}
+
+fn adaptive_turn_trigger(
+    reconnaissance_required: bool,
+    mechanical_validation_active: bool,
+    validation_terminalization_active: bool,
+) -> Option<String> {
+    if reconnaissance_required {
+        Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())
+    } else if mechanical_validation_active {
+        Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string())
+    } else if validation_terminalization_active {
+        Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string())
+    } else {
+        None
+    }
+}
 
 impl App {
     pub(super) async fn stop_realtime_conversation(&mut self, app_server: &mut AppServerSession) {
@@ -858,6 +895,17 @@ impl App {
                                 ),
                             )
                         };
+                    let adaptive_reconnaissance_required = self
+                        .chat_widget
+                        .adaptive_implementation_reconnaissance_required()
+                        || user_turn_starts_bound_implementation(items);
+                    let turn_trigger = adaptive_turn_trigger(
+                        adaptive_reconnaissance_required,
+                        self.chat_widget
+                            .adaptive_implementation_mechanical_validation_active(),
+                        self.chat_widget
+                            .adaptive_validation_terminalization_active(),
+                    );
                     let permissions_override = Self::turn_permissions_override_from_config(
                         config,
                         selected_active
@@ -873,6 +921,7 @@ impl App {
                             thread_id,
                             client_user_message_id.clone(),
                             items.to_vec(),
+                            turn_trigger,
                             cwd.clone(),
                             turn_approval_policy,
                             turn_approvals_reviewer,
@@ -2187,6 +2236,77 @@ mod tests {
             .build()
             .await
             .expect("config should build")
+    }
+
+    #[test]
+    fn adaptive_reconnaissance_detects_initial_implementation_assignment() {
+        let implementation = UserInput::Text {
+            text: "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"bounded docs change\"\n\nMake the change."
+                .to_string(),
+            text_elements: Vec::new(),
+        };
+        let validation = UserInput::Text {
+            text: "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"bounded docs change\"\n\nValidate the change."
+                .to_string(),
+            text_elements: Vec::new(),
+        };
+        let ordinary = UserInput::Text {
+            text: "Make the change.".to_string(),
+            text_elements: Vec::new(),
+        };
+
+        assert!(user_turn_starts_bound_implementation(&[implementation]));
+        assert!(!user_turn_starts_bound_implementation(&[validation]));
+        assert!(!user_turn_starts_bound_implementation(&[ordinary]));
+    }
+
+    #[test]
+    fn adaptive_turn_uses_lifecycle_write_gate_markers() {
+        assert_eq!(
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ true, /*mechanical_validation_active*/ false,
+                /*validation_terminalization_active*/ false,
+            )
+            .as_deref(),
+            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+        );
+
+        assert_eq!(
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ false, /*mechanical_validation_active*/ true,
+                /*validation_terminalization_active*/ false,
+            )
+            .as_deref(),
+            Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+        );
+
+        assert_eq!(
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ false,
+                /*mechanical_validation_active*/ false,
+                /*validation_terminalization_active*/ true,
+            )
+            .as_deref(),
+            Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        );
+
+        assert_eq!(
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ true, /*mechanical_validation_active*/ true,
+                /*validation_terminalization_active*/ true,
+            )
+            .as_deref(),
+            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+        );
+
+        assert_eq!(
+            adaptive_turn_trigger(
+                /*reconnaissance_required*/ false,
+                /*mechanical_validation_active*/ false,
+                /*validation_terminalization_active*/ false,
+            ),
+            None
+        );
     }
 
     #[tokio::test]

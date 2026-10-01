@@ -1984,6 +1984,7 @@ async fn run_ratatui_app(
         prompt,
         shared,
         daemon_cli_executable,
+        adaptive,
         ..
     } = cli;
     let images = shared.into_inner().images;
@@ -2072,6 +2073,9 @@ async fn run_ratatui_app(
         startup_bootstrap,
         startup_hooks_browser,
         daemon_startup_warning,
+        adaptive
+            .as_deref()
+            .and_then(crate::chatwidget::adaptive_effort::AdaptiveFamily::parse),
         startup_draft,
         managed_worktree,
         daemon_cli_executable,

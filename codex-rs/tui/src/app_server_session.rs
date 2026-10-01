@@ -1305,6 +1305,7 @@ impl AppServerSession {
         thread_id: ThreadId,
         client_user_message_id: String,
         items: Vec<UserInput>,
+        turn_trigger: Option<String>,
         cwd: PathBuf,
         approval_policy: Option<AskForApproval>,
         approvals_reviewer: Option<codex_app_server_protocol::ApprovalsReviewer>,
@@ -1327,7 +1328,7 @@ impl AppServerSession {
                 params: TurnStartParams {
                     disabled_plugin_ids: None,
                     thread_id: thread_id.to_string(),
-                    turn_trigger: Some("user".to_string()),
+                    turn_trigger: turn_trigger.or_else(|| Some("user".to_string())),
                     client_user_message_id: Some(client_user_message_id),
                     input: items,
                     tool_output: None,

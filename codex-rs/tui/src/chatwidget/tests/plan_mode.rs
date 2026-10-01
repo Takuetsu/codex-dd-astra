@@ -1284,7 +1284,7 @@ async fn submit_user_message_emits_structured_plugin_mentions_from_bindings() {
         network_proxy: None,
         rollout_path: Some(rollout_file.path().to_path_buf()),
         adaptive_effort: Default::default(),
-};
+    };
     chat.handle_thread_session(configured);
     chat.set_feature_enabled(Feature::Plugins, /*enabled*/ true);
     chat.bottom_pane

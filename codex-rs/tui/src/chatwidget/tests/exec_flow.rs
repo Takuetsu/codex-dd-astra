@@ -1503,7 +1503,7 @@ async fn bang_shell_enter_while_task_running_submits_run_user_shell_command() {
         network_proxy: None,
         rollout_path: Some(rollout_file.path().to_path_buf()),
         adaptive_effort: Default::default(),
-};
+    };
     chat.handle_thread_session(configured);
     drain_insert_history(&mut rx);
     while op_rx.try_recv().is_ok() {}
