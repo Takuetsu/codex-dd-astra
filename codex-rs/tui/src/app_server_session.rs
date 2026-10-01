@@ -66,6 +66,7 @@ use codex_app_server_protocol::SessionSource;
 use codex_app_server_protocol::SkillsListParams;
 use codex_app_server_protocol::SkillsListResponse;
 use codex_app_server_protocol::Thread;
+use codex_app_server_protocol::ThreadAdaptiveWorkflowState;
 use codex_app_server_protocol::ThreadApproveGuardianDeniedActionParams;
 use codex_app_server_protocol::ThreadApproveGuardianDeniedActionResponse;
 use codex_app_server_protocol::ThreadArchiveParams;
@@ -117,6 +118,9 @@ use codex_app_server_protocol::ThreadUnarchiveParams;
 use codex_app_server_protocol::ThreadUnarchiveResponse;
 use codex_app_server_protocol::ThreadUnsubscribeParams;
 use codex_app_server_protocol::ThreadUnsubscribeResponse;
+use codex_app_server_protocol::ThreadWorkflowStateOperation;
+use codex_app_server_protocol::ThreadWorkflowStateUpdateParams;
+use codex_app_server_protocol::ThreadWorkflowStateUpdateResponse;
 use codex_app_server_protocol::Turn;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
@@ -1271,6 +1275,28 @@ impl AppServerSession {
             })
             .await
             .wrap_err("thread/inject_items failed during TUI side conversation setup")
+    }
+
+    pub(crate) async fn thread_workflow_state_update(
+        &mut self,
+        thread_id: ThreadId,
+        operation: ThreadWorkflowStateOperation,
+        source_turn_id: Option<String>,
+        adaptive_state: Option<ThreadAdaptiveWorkflowState>,
+    ) -> Result<ThreadWorkflowStateUpdateResponse> {
+        let request_id = self.next_request_id();
+        self.client
+            .request_typed(ClientRequest::ThreadWorkflowStateUpdate {
+                request_id,
+                params: ThreadWorkflowStateUpdateParams {
+                    thread_id: thread_id.to_string(),
+                    operation,
+                    source_turn_id,
+                    adaptive_state,
+                },
+            })
+            .await
+            .wrap_err("thread/workflowState/update failed")
     }
 
     #[allow(clippy::too_many_arguments)]
