@@ -84,6 +84,7 @@ impl ChatWidget {
                         MisalignmentTurnSource::ServerNotification,
                     );
                 }
+                self.clear_stale_pending_adaptive_signal(&notification.turn.id);
                 self.turn_lifecycle.last_turn_id = Some(notification.turn.id);
                 self.last_non_retry_error = None;
                 if !matches!(replay_kind, Some(ReplayKind::ResumeInitialMessages)) {
@@ -95,10 +96,18 @@ impl ChatWidget {
                 self.restore_realtime_transcripts_before_turn(&notification.turn.id);
                 self.handle_turn_completed_notification(notification, replay_kind);
             }
+            ServerNotification::AdaptiveRuntimeSignal(notification) => {
+                if replay_kind.is_none() {
+                    self.handle_adaptive_runtime_signal(notification);
+                }
+            }
             ServerNotification::ItemStarted(notification) => {
                 self.handle_item_started_notification(notification, replay_kind);
             }
             ServerNotification::ItemCompleted(notification) => {
+                if replay_kind.is_none() {
+                    self.register_adaptive_evidence(&notification);
+                }
                 self.handle_item_completed_notification(notification, replay_kind);
             }
             ServerNotification::AgentMessageDelta(notification) => {
