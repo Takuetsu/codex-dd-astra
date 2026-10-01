@@ -625,6 +625,7 @@ fn session_configured_event(model: &str) -> ThreadSessionState {
         network_proxy: None,
         rollout_path: Some(PathBuf::new()),
     }
+        adaptive_effort: Default::default(),
 }
 
 #[test]
