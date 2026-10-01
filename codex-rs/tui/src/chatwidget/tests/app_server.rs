@@ -67,6 +67,7 @@ fn configured_thread_session(thread_id: ThreadId) -> crate::session_state::Threa
         network_proxy: None,
         rollout_path: None,
     }
+        adaptive_effort: Default::default(),
 }
 
 #[tokio::test]
