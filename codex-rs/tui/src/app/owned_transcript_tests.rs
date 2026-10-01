@@ -56,7 +56,7 @@ pub(in crate::app) fn attach_thread(app: &mut App, thread_id: ThreadId) {
         message_history: None,
         network_proxy: None,
         rollout_path: None,
-            adaptive_effort: Default::default(),
+        adaptive_effort: Default::default(),
 });
 }
 
