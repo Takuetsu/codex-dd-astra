@@ -149,6 +149,7 @@ impl ChatWidget {
             rate_limit_snapshots_by_limit_id: BTreeMap::new(),
             refreshing_status_outputs: Vec::new(),
             next_status_refresh_request_id: 0,
+            adaptive_effort: adaptive_effort::AdaptiveEffortState::default(),
             pending_rate_limit_reset_request_id: None,
             pending_rate_limit_reset_idempotency_key: None,
             rate_limit_reset_picker_request_id: None,
