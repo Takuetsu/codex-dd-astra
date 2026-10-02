@@ -1,4 +1,9 @@
 use super::*;
+use crate::adaptive_worker::AdaptiveWorkerRole;
+use crate::chatwidget::adaptive_effort::AdaptiveEffort;
+use crate::chatwidget::adaptive_effort::AdaptiveFailureKind;
+use crate::chatwidget::adaptive_effort::AdaptiveFamily;
+use crate::chatwidget::adaptive_effort::AdaptiveOutcome;
 use crate::app_event::TranscriptExportDestination;
 use crate::bottom_pane::BottomPaneView;
 use app_test_support::create_fake_paginated_rollout;
@@ -4470,6 +4475,81 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
         })?
         .join()
         .expect("session lifecycle request test thread")
+}
+
+#[tokio::test]
+async fn new_session_worker_binding_resets_dirty_adaptive_state() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let (mut server, requests, proxy) = start_recording_app_server(
+        &app.config,
+        /*blocked_thread_list*/ None,
+        /*failed_thread_name*/ None,
+    )
+    .await?;
+    let source = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(source, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+
+    {
+        let state = app.chat_widget.adaptive_effort_for_test_mut();
+        state.enabled = true;
+        state.starting_family = Some(AdaptiveFamily::Astra);
+        state.current_family = Some(AdaptiveFamily::Astra);
+        state.current_effort = Some(AdaptiveEffort::High);
+        state.attempt_number = 4;
+        state.last_outcome = Some(AdaptiveOutcome::Unknown);
+        state.last_failure_kind = Some(AdaptiveFailureKind::Capability);
+        state.unfinished_turn_pressure = 2;
+    }
+
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: Some(crate::adaptive_worker::NewWorkerBinding {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: "exact regression scope".to_string(),
+            }),
+        },
+    )
+    .await?;
+
+    let destination = app.chat_widget.thread_id().expect("attached destination");
+    assert_ne!(destination, source);
+    assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
+
+    let state = app.chat_widget.adaptive_effort_for_test();
+    assert_eq!(state.starting_family, Some(AdaptiveFamily::Astra));
+    assert_eq!(state.current_family, Some(AdaptiveFamily::Sol));
+    assert_eq!(state.current_effort, Some(AdaptiveEffort::Low));
+    assert_eq!(app.chat_widget.current_model(), "gpt-6-sol");
+    assert_eq!(state.attempt_number, 1);
+    assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+    assert_eq!(
+        state.worker_context.authorized_scope.as_deref(),
+        Some("exact regression scope")
+    );
+    assert!(state.worker_assignment_locked);
+    assert_eq!(state.unfinished_turn_pressure, 0);
+    assert!(state.last_outcome.is_none());
+    assert!(state.last_failure_kind.is_none());
+    assert!(state.workflow_terminal.is_none());
+    assert!(state.pending_attempt.is_none());
+    assert!(state.successor_admission.is_none());
+    assert!(state.pending_signal.is_none());
+    assert_eq!(
+        state.evidence_registry,
+        crate::adaptive_evidence::AdaptiveEvidenceRegistry::default()
+    );
+
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
 }
 
 #[path = "new_session_tests.rs"]
