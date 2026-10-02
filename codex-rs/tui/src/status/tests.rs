@@ -1745,7 +1745,9 @@ async fn status_snapshot_uses_default_reasoning_when_config_empty() {
             /*collaboration_mode*/ None,
             /*reasoning_effort_override*/ Some(Some(ReasoningEffort::Medium)),
             "<none>".to_string(),
-            /*adaptive_effort*/ None,
+            Some(
+                "Adaptive Effort\n  Enabled: yes\n  Preference: Astra\n  Current: Sol High\n  Budget mode: Surplus\n  Complexity: Complex\n  Implementation phase: Mechanical validation\n  Implementation floor: Luna High\n  Attempt: 2\n  Failure pressure: 0/2\n  Unfinished pressure: 0/2\n  Paused: no\n  Last outcome: None\n  Last failure: None\n  Worker role: Implementation\n  Worker scope: bounded status integration\n  Worker binding: Bound\n  Workflow terminal: READY_FOR_VALIDATION".to_string(),
+            ),
             /*refreshing_rate_limits*/ false,
         );
         let mut rendered_lines = render_lines(&composite.display_lines(/*width*/ 80));
