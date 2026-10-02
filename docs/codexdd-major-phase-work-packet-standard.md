@@ -51,23 +51,28 @@ There is no minimum packet size. Reliability is more important than keeping pack
 Every numbered work packet follows this lifecycle:
 
 1. **Scope**
+
    - State the exact files, subsystem, conflict set, generator, or validation target owned by the packet.
    - Explicitly identify work deferred to later packets.
 
 2. **Reconnaissance**
+
    - Verify the current branch/head and prior checkpoint.
    - Reconfirm relevant upstream/base anchors when applicable.
    - Inspect the packet's conflict or dependency surface before editing.
 
 3. **Implementation**
+
    - Perform only the packet's authorized work.
    - Do not opportunistically absorb unrelated later-phase work.
 
 4. **Narrow validation**
+
    - Run or inspect the smallest meaningful checks for the packet.
    - Full release validation remains a later dedicated packet/phase unless the packet explicitly owns it.
 
 5. **Durable checkpoint**
+
    - Commit the completed packet to the feature branch.
    - Verify the resulting branch/head SHA.
    - Do not rely on uncommitted or in-memory state as the handoff.
@@ -151,11 +156,13 @@ The change is that each major phase is now a container for one or more numbered 
 For CodexDD 0.3.14, Phase 3B is split as follows:
 
 - **3B.1 - Core/runtime integration**
+
   - Reconcile the Phase 3B handwritten/runtime overlap set onto upstream `rust-v0.159.2`.
   - Preserve CodexDD adaptive workflow behavior.
   - End with a WIP/checkpoint commit.
 
 - **3B.2 - Generated precomputed exports**
+
   - Regenerate the stable and experimental app-server precomputed `.json.zst` exports from the merged schema sources.
   - Verify source/artifact consistency.
   - Stop and checkpoint.
