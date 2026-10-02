@@ -188,6 +188,13 @@ Therefore:
 
 After the clean feature run, compare its JUnit failure set against the preserved vanilla baseline. Delete the temporary feature-validation target after Phase 4.4 closes to reclaim disk space.
 
+The first clean feature-only run reported 47 failures against the preserved 45-failure vanilla baseline. The two apparent feature-only failures were:
+
+- `backend_banner_fallback_applies_before_initial_and_queued_startup_prompts`
+- `luna_reserve_recovery_requires_permission_and_no_remaining_blocker`
+
+Both failed only because the Windows websocket test proxy surfaced `os error 10053` (`ConnectionAborted`) during shutdown. Both tests passed immediately when rerun individually. Commit `393ede2ea220b32e2519faf07b08e8f0bc8ddb96` extends the existing benign-shutdown handling (already covering `BrokenPipe` and `ConnectionReset`) to `ConnectionAborted`. The two targeted regressions passed on Daniel-CL after that change. One final full canonical TUI run in the isolated feature target remains required before Phase 4.4 can close.
+
 ## Packet 4.5 - release build and executable smoke
 
 Purpose: prove that the actual release-shaped CLI can be built and started before installation.
