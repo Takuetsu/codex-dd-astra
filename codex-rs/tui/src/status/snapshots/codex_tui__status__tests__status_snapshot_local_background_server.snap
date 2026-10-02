@@ -16,6 +16,25 @@ expression: sanitized
   Permissions:     Custom (workspace with network access, Ask for approval)
   Agents.md:       <none>
 
+Adaptive Effort
+  Enabled: yes
+  Preference: Astra
+  Current: Sol High
+  Budget mode: Surplus
+  Complexity: Complex
+  Implementation phase: Mechanical validation
+  Implementation floor: Luna High
+  Attempt: 2
+  Failure pressure: 0/2
+  Unfinished pressure: 0/2
+  Paused: no
+  Last outcome: None
+  Last failure: None
+  Worker role: Implementation
+  Worker scope: bounded status integration
+  Worker binding: Bound
+  Workflow terminal: READY_FOR_VALIDATION
+
   Token usage:     750 total  (500 input + 250 output)
   Context window:  100% left (750 used / 272K)
   Limits:          data not available yet
