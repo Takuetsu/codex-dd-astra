@@ -165,6 +165,15 @@ The earlier `oversized_read_preserves_answer_in_next_model_request` differential
 
 Before the next full CodexDD TUI run, preserve the vanilla JUnit failure names and run the two remaining differential candidates individually. Only feature-only failures block 0.3.14; the exact-upstream Windows baseline is recorded separately.
 
+Both remaining differential candidates passed individually under the canonical `just test` environment on Daniel-CL:
+
+- `recap_generation_uses_bounded_structured_request_and_inserts_result` - PASS.
+- `slash_copy_picker_copies_status_fields_and_preserves_source_after_copying` - PASS.
+
+The warning about an unused `ToolCallSource` import seen during these runs originates from the exact-upstream 0.159.2 `codex-core` artifact in the shared Cargo target cache; the CodexDD feature branch already removed that upstream-only unused import. It is not a feature-tree warning.
+
+The remaining 4.4 authority is one final full canonical CodexDD TUI run followed by a mechanical JUnit set comparison against the preserved vanilla 0.159.2 failure list. Phase 4.4 passes if the CodexDD failure set is a subset of the recorded vanilla baseline after the already-fixed dynamic-tool differential is excluded; any feature-only failure remains a blocker.
+
 ## Packet 4.5 - release build and executable smoke
 
 Purpose: prove that the actual release-shaped CLI can be built and started before installation.
