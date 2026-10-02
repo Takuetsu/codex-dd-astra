@@ -3627,9 +3627,18 @@ mod tests {
             .await?;
         let state = forked.session.adaptive_effort;
         assert!(state.enabled);
-        assert_eq!(state.starting_family, Some(crate::adaptive_policy::AdaptiveFamily::Astra));
-        assert_eq!(state.current_family, Some(crate::adaptive_policy::AdaptiveFamily::Sol));
-        assert_eq!(state.current_effort, Some(crate::adaptive_policy::AdaptiveEffort::High));
+        assert_eq!(
+            state.starting_family,
+            Some(crate::adaptive_policy::AdaptiveFamily::Astra)
+        );
+        assert_eq!(
+            state.current_family,
+            Some(crate::adaptive_policy::AdaptiveFamily::Sol)
+        );
+        assert_eq!(
+            state.current_effort,
+            Some(crate::adaptive_policy::AdaptiveEffort::High)
+        );
         assert_eq!(state.attempt_number, 3);
         assert_eq!(
             state.worker_context.role,
