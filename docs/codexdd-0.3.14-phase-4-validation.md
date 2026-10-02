@@ -123,9 +123,23 @@ Run full library suites for the most relevant changed/runtime packages:
 - `codex-app-server`;
 - `codex-tui`.
 
-Use the established Windows test stack for the heavier app-server/TUI portions when needed.
+Use the established Windows test stack for this packet so the heavier app-server/TUI resume/fork tests do not hit the known harness-only default-stack limit.
 
-This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
+Run these exact commands:
+
+```powershell
+$env:RUST_MIN_STACK = "16777216"
+
+cargo test -p codex-protocol --lib --locked
+cargo test -p codex-state --lib --locked
+cargo test -p codex-thread-store --lib --locked
+cargo test -p codex-app-server --lib --locked
+cargo test -p codex-tui --lib --locked
+
+Remove-Item Env:RUST_MIN_STACK
+```
+
+Stop at the first failure. This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
 
 ## Packet 4.5 - release build and executable smoke
 
