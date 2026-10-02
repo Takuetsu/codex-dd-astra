@@ -1,4 +1,5 @@
 use super::*;
+use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveFailureKind;
@@ -24,6 +25,8 @@ use codex_app_server_protocol::ThreadItemsListCursor;
 use codex_app_server_protocol::ThreadItemsListParams;
 use codex_app_server_protocol::ThreadItemsListResponse;
 use codex_app_server_protocol::ThreadStatus;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
+use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_protocol::AgentPath;
 use codex_protocol::items::AgentMessageContent;
 use codex_protocol::items::AgentMessageItem;
@@ -844,7 +847,11 @@ fn spawn_approved_task_tool_call(
 
 #[tokio::test]
 async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() -> Result<()> {
-    let (app, _codex_home) = make_history_test_app().await?;
+    let (mut app, _codex_home) = make_history_test_app().await?;
+    app.config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("opaque/startup-scope".to_string()),
+    });
     let (mut app_server, requests, proxy) = Box::pin(start_recording_app_server(
         &app.config,
         /*blocked_thread_list*/ None,
@@ -853,6 +860,10 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
     .await?;
 
     let started = app_server.start_thread(&app.config).await?;
+    assert_eq!(
+        started.session.adaptive_effort.worker_context,
+        AdaptiveWorkerContext::default()
+    );
     assert!(started.task_tools_available);
     assert!(app_server.task_tools_available(started.session.thread_id));
     let startup = crate::app_server_session::start_thread_with_request_handle(
@@ -865,6 +876,13 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
     )
     .await?;
     assert!(startup.task_tools_available);
+    assert_eq!(
+        startup.session.adaptive_effort.worker_context,
+        AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some("opaque/startup-scope".to_string()),
+        }
+    );
 
     let starts = recorded_params(&requests, "thread/start");
     assert_eq!(starts.len(), 2);
@@ -4475,6 +4493,47 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
         })?
         .join()
         .expect("session lifecycle request test thread")
+}
+
+#[tokio::test]
+async fn fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty() -> Result<()> {
+    let (mut app, _home) = make_history_test_app().await?;
+    let parent_id = ThreadId::new();
+    let mut parent = test_thread_session(parent_id, app.config.cwd.to_path_buf());
+    parent.adaptive_effort.enabled = true;
+    parent.adaptive_effort.starting_family = Some(AdaptiveFamily::Astra);
+    parent.adaptive_effort.current_family = Some(AdaptiveFamily::Astra);
+    parent.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
+    parent.adaptive_effort.attempt_number = 3;
+    parent.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("fork inheritance scope".to_string()),
+    };
+
+    app.enqueue_primary_thread_session(parent, Vec::new()).await?;
+
+    let child_id = ThreadId::new();
+    let mut child = test_thread_session(child_id, app.config.cwd.to_path_buf());
+    child.forked_from_id = Some(parent_id);
+    assert_eq!(child.adaptive_effort, Default::default());
+
+    app.enqueue_primary_thread_session(child, Vec::new()).await?;
+
+    let inherited = app.chat_widget.adaptive_effort_for_test();
+    assert!(inherited.enabled);
+    assert_eq!(inherited.starting_family, Some(AdaptiveFamily::Astra));
+    assert_eq!(inherited.current_family, Some(AdaptiveFamily::Astra));
+    assert_eq!(inherited.current_effort, Some(AdaptiveEffort::High));
+    assert_eq!(inherited.attempt_number, 3);
+    assert_eq!(
+        inherited.worker_context,
+        AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("fork inheritance scope".to_string()),
+        }
+    );
+
+    Ok(())
 }
 
 #[tokio::test]
