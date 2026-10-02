@@ -54,6 +54,7 @@ Fourteen of these anchors are byte-identical to the 0.3.13 production versions.
 Two contain narrow 0.159.2 compatibility changes:
 
 1. `adaptive_classification.rs`
+
    - classifies the new `FlexUnavailable` error as transient infrastructure;
    - classifies the new `TooManyDenials` error as authorization/scope;
    - otherwise preserves the existing CodexDD classification behavior.
@@ -80,12 +81,14 @@ No 3F.1 repair was required.
 ## Remaining Phase 3F packets
 
 - **3F.2 - lifecycle/protocol persistence audit**
+
   - resume/fork/new-session lifecycle;
   - per-thread adaptive state persistence;
   - interruption/recovery and terminal ordering;
   - app-server notification and workflow-state transport.
 
 - **3F.3 - model/status/version/generated-surface audit**
+
   - GPT-6 Luna/Sol/Astra routing contract;
   - `/status` adaptive fields;
   - version/provenance identity;
@@ -98,7 +101,6 @@ No 3F.1 repair was required.
   - close Phase 3F only after the audit and local validation gates are green.
 
 Phase 4 remains separate and owns the broader pre-install validation matrix.
-
 
 ## 3F.2 - lifecycle/protocol persistence audit
 
@@ -154,10 +156,12 @@ The source audit found no additional repair requirement.
 ## Updated remaining Phase 3F work
 
 - **3F.2 local validation**
+
   - detached-fork adaptive restore regression;
   - lifecycle persistence/terminal-ordering targeted tests.
 
 - **3F.3 local validation**
+
   - model-family/catalog regression;
   - adaptive `/status` regression.
 
@@ -168,7 +172,6 @@ The source audit found no additional repair requirement.
   - close Phase 3F only when the audit and local validation gates are green.
 
 Phase 4 remains separate and owns the broader pre-install validation matrix.
-
 
 ## 3F.4 - exact customization-tree reconciliation
 
