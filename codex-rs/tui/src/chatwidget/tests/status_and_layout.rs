@@ -342,8 +342,7 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
 
     chat.add_status_output(
-        /*refreshing_rate_limits*/ false,
-        /*request_id*/ None,
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
     );
 
     let rendered = drain_insert_history(&mut rx)
