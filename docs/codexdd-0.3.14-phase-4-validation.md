@@ -150,6 +150,8 @@ The representative analytics snapshot passed under the canonical `just test` env
 
 Stop at the first non-TUI failure. For the canonical TUI run, allow the full suite to finish so independent failures are visible. This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
 
+The canonical full TUI run later reproduced a multi-test failure set even after the dynamic-tool assertion repair. Do not patch those failures blindly. Classify them differentially against the exact target-upstream commit `ff6aec96948b70d94983af2641a6b67c94faeff5` on the same Daniel-CL host and with the same `just test` harness. A failure that reproduces unchanged on the vanilla target is upstream/environment baseline and is not a CodexDD release regression; a feature-only failure remains a Phase 4 blocker. Keep baseline validation in a disposable detached worktree and reuse the main target directory to avoid duplicating build storage.
+
 ## Packet 4.5 - release build and executable smoke
 
 Purpose: prove that the actual release-shaped CLI can be built and started before installation.
