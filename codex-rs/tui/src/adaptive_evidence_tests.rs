@@ -36,6 +36,7 @@ fn native_command_completion_becomes_small_typed_evidence() {
     let notification = ItemCompletedNotification {
         item: ThreadItem::CommandExecution {
             model_context: None,
+            sandbox_type: None,
             id: "native-call-1".to_string(),
             plugin_id: None,
             script_path: None,
@@ -149,6 +150,7 @@ fn native_command_outcomes_are_not_upgraded_from_output() {
         let notification = ItemCompletedNotification {
             item: ThreadItem::CommandExecution {
                 model_context: None,
+                sandbox_type: None,
                 id: format!("native-{status:?}"),
                 plugin_id: None,
                 script_path: None,

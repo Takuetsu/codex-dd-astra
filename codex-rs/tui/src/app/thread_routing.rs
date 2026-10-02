@@ -32,7 +32,8 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
 
     matches!(
         parse_adaptive_worker_assignment(text),
-        Ok(Some(worker_context)) if worker_context.role == AdaptiveWorkerRole::Implementation
+        Ok(Some(worker_context))
+            if worker_context.role == AdaptiveWorkerRole::Implementation
     )
 }
 
@@ -54,7 +55,13 @@ fn adaptive_turn_trigger(
 
 impl App {
     pub(super) async fn stop_realtime_conversation(&mut self, app_server: &mut AppServerSession) {
-        let Some(thread_id) = self.chat_widget.reset_realtime_conversation() else {
+        let thread_id = self
+            .background_voice
+            .as_mut()
+            .and_then(|owner| owner.reset_realtime_conversation())
+            .or_else(|| self.chat_widget.reset_realtime_conversation());
+        self.retire_background_voice();
+        let Some(thread_id) = thread_id else {
             return;
         };
         match tokio::time::timeout(
@@ -75,14 +82,8 @@ impl App {
 
     pub(super) async fn shutdown_current_thread(&mut self, app_server: &mut AppServerSession) {
         self.stop_realtime_conversation(app_server).await;
-        self.shutdown_side_threads(app_server).await;
-        if let Some(thread_id) = self.chat_widget.thread_id() {
-            if let Err(err) = app_server.thread_unsubscribe(thread_id).await {
-                tracing::warn!("failed to unsubscribe thread {thread_id}: {err}");
-            }
-            self.abort_thread_event_listener(thread_id);
-            self.pending_server_profiles.remove(&thread_id);
-        }
+        self.detach_current_thread_for_navigation(app_server, /*destination*/ None)
+            .await;
     }
 
     pub(super) async fn shutdown_side_threads(&mut self, app_server: &mut AppServerSession) {
@@ -1193,6 +1194,7 @@ impl App {
         thread_id: ThreadId,
         notification: ServerNotification,
     ) -> Result<()> {
+        self.deliver_background_voice_notification(thread_id, &notification);
         if self.abandoned_side_threads.contains(&thread_id) {
             return Ok(());
         }
@@ -1310,7 +1312,13 @@ impl App {
                 guard.push_notification_ref(&notification);
                 Some(notification)
             } else {
-                self.retain_inactive_realtime_transcript(thread_id, &notification);
+                if self
+                    .background_voice
+                    .as_ref()
+                    .is_none_or(|owner| owner.thread_id() != Some(thread_id))
+                {
+                    self.retain_inactive_realtime_transcript(thread_id, &notification);
+                }
                 guard.push_notification(notification);
                 None
             };
@@ -1559,6 +1567,7 @@ impl App {
                 session.inherit_adaptive_effort_from(&parent);
             }
         }
+
         if let Err(err) = self
             .config
             .permissions
@@ -1606,7 +1615,9 @@ impl App {
             self.chat_widget.set_token_info(/*info*/ None);
         }
         match presentation {
-            ThreadAttachPresentation::Fresh | ThreadAttachPresentation::SessionLineage => {
+            ThreadAttachPresentation::Fresh
+            | ThreadAttachPresentation::FreshWithDraft
+            | ThreadAttachPresentation::SessionLineage => {
                 self.chat_widget.handle_thread_session(session);
             }
         }
@@ -1634,6 +1645,7 @@ impl App {
             &replayed_final_items,
             retained_assistant_captions,
         );
+        self.restore_voice_owner_after_replay();
         let pending = std::mem::take(&mut self.pending_primary_events);
         for pending_event in pending {
             match pending_event {
@@ -1943,6 +1955,7 @@ impl App {
             &replayed_final_items,
             retained_assistant_captions,
         );
+        self.restore_voice_owner_after_replay();
         self.chat_widget
             .set_queue_autosend_suppressed(/*suppressed*/ false);
         self.chat_widget
@@ -2045,8 +2058,13 @@ impl App {
         match event {
             ThreadBufferedEvent::Notification(notification) => {
                 self.cache_collab_receiver_threads_for_notification(notification.as_ref());
+                let tip_ready = self.turn_tips.observe(&notification, Instant::now());
                 self.chat_widget
                     .handle_server_notification(*notification, /*replay_kind*/ None);
+                // History cells queued by completion must be applied before anchoring its tip.
+                if let Some(event) = tip_ready {
+                    self.app_event_tx.send(event);
+                }
             }
             ThreadBufferedEvent::Request(request) => {
                 if self
@@ -2078,6 +2096,7 @@ impl App {
     }
 
     pub(super) fn handle_thread_event_replay(&mut self, event: ThreadBufferedEvent) {
+        self.turn_tips.dismiss();
         match event {
             ThreadBufferedEvent::Notification(notification) => self
                 .chat_widget
@@ -2260,40 +2279,46 @@ mod tests {
     fn adaptive_turn_uses_lifecycle_write_gate_markers() {
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical*/ false,
-                /*terminalization*/ false,
+                /*reconnaissance_required*/ true, /*mechanical_validation_active*/ false,
+                /*validation_terminalization_active*/ false,
             )
             .as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
+
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ true,
-                /*terminalization*/ false,
+                /*reconnaissance_required*/ false, /*mechanical_validation_active*/ true,
+                /*validation_terminalization_active*/ false,
             )
             .as_deref(),
             Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
         );
+
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ false,
-                /*terminalization*/ true,
+                /*reconnaissance_required*/ false,
+                /*mechanical_validation_active*/ false,
+                /*validation_terminalization_active*/ true,
             )
             .as_deref(),
             Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
         );
+
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical*/ true,
-                /*terminalization*/ true,
+                /*reconnaissance_required*/ true, /*mechanical_validation_active*/ true,
+                /*validation_terminalization_active*/ true,
             )
             .as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
+
         assert_eq!(
             adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical*/ false,
-                /*terminalization*/ false,
+                /*reconnaissance_required*/ false,
+                /*mechanical_validation_active*/ false,
+                /*validation_terminalization_active*/ false,
             ),
             None
         );

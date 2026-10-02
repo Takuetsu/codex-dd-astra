@@ -197,6 +197,7 @@ pub(super) fn server_notification_thread_target(
         | ServerNotification::SkillsChanged(_)
         | ServerNotification::McpServerOauthLoginCompleted(_)
         | ServerNotification::AccountUpdated(_)
+        | ServerNotification::GatewayOAuthChanged(_)
         | ServerNotification::AccountRateLimitsUpdated(_)
         | ServerNotification::AppListUpdated(_)
         | ServerNotification::EnvironmentConnected(_)
@@ -233,6 +234,8 @@ mod tests {
     use super::server_notification_thread_target;
     use crate::test_support::PathBufExt;
     use crate::test_support::test_path_buf;
+    use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
+    use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
     use codex_app_server_protocol::GuardianWarningNotification;
     use codex_app_server_protocol::McpServerStartupState;
     use codex_app_server_protocol::McpServerStatusUpdatedNotification;
@@ -247,6 +250,7 @@ mod tests {
     use codex_protocol::config_types::ModeKind;
     use codex_protocol::config_types::Settings;
     use codex_protocol::openai_models::ReasoningEffort;
+    use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
     use pretty_assertions::assert_eq;
 
     fn test_thread_settings() -> ThreadSettings {
@@ -309,6 +313,25 @@ mod tests {
             thread_id: thread_id.to_string(),
             message: "warning".to_string(),
         });
+
+        let target = server_notification_thread_target(&notification);
+
+        assert_eq!(target, ServerNotificationThreadTarget::Thread(thread_id));
+    }
+
+    #[test]
+    fn adaptive_runtime_signal_notifications_route_to_threads() {
+        let thread_id = ThreadId::new();
+        let notification =
+            ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {
+                thread_id: thread_id.to_string(),
+                signal: AdaptiveRuntimeSignalEnvelope {
+                    source_turn_id: "turn-1".to_string(),
+                    signal_kind: AdaptiveRuntimeSignalKind::Capability,
+                    evidence_refs: Vec::new(),
+                    diagnostic_note: None,
+                },
+            });
 
         let target = server_notification_thread_target(&notification);
 

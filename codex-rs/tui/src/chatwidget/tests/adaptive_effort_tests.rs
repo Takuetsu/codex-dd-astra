@@ -1850,6 +1850,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
     chat.register_adaptive_evidence(&ItemCompletedNotification {
         item: ThreadItem::CommandExecution {
             model_context: None,
+            sandbox_type: None,
             id: "native-call-1".to_string(),
             plugin_id: None,
             script_path: None,
@@ -1889,6 +1890,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         ServerNotification::ItemCompleted(ItemCompletedNotification {
             item: ThreadItem::CommandExecution {
                 model_context: None,
+                sandbox_type: None,
                 id: "replayed-call".to_string(),
                 plugin_id: None,
                 script_path: None,

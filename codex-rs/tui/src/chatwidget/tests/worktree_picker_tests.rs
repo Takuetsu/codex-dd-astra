@@ -85,6 +85,62 @@ async fn slash_new_and_fork_offer_checkout_choices_inside_local_git_repository()
 }
 
 #[tokio::test]
+async fn slash_new_role_arguments_preserve_all_typed_worker_bindings_without_worktrees() {
+    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+    chat.set_feature_enabled(Feature::Worktrees, /*enabled*/ false);
+    chat.adaptive_effort.worker_context.authorized_scope = Some("scope-1".to_string());
+    let original_worker_context = chat.adaptive_effort.worker_context.clone();
+
+    for (role, command) in [
+        (
+            crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+            "/new implementation",
+        ),
+        (
+            crate::adaptive_worker::AdaptiveWorkerRole::Validation,
+            "/new validation",
+        ),
+        (
+            crate::adaptive_worker::AdaptiveWorkerRole::Repair,
+            "/new repair",
+        ),
+    ] {
+        chat.bottom_pane
+            .set_composer_text(command.to_string(), Vec::new(), Vec::new());
+        chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+
+        assert_matches!(rx.try_recv(), Ok(AppEvent::FollowTranscript));
+        assert_matches!(
+            rx.try_recv(),
+            Ok(AppEvent::NewSession {
+                name: None,
+                worker_binding: Some(crate::adaptive_worker::NewWorkerBinding {
+                    role: actual_role,
+                    authorized_scope,
+                }),
+            }) if actual_role == role && authorized_scope == "scope-1"
+        );
+    }
+
+    assert_eq!(chat.adaptive_effort.worker_context, original_worker_context);
+}
+
+#[tokio::test]
+async fn slash_new_role_requires_nonempty_current_worker_scope() {
+    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+    chat.set_feature_enabled(Feature::Worktrees, /*enabled*/ false);
+    chat.adaptive_effort.worker_context.authorized_scope = Some("   ".to_string());
+    chat.bottom_pane
+        .set_composer_text("/new repair".to_string(), Vec::new(), Vec::new());
+
+    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+
+    assert_matches!(rx.try_recv(), Ok(AppEvent::FollowTranscript));
+    assert_matches!(rx.try_recv(), Ok(AppEvent::InsertHistoryCell(_)));
+    assert_matches!(rx.try_recv(), Err(TryRecvError::Empty));
+}
+
+#[tokio::test]
 async fn slash_worktree_offers_current_or_new_conversation() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let checkout = tempdir().expect("temporary checkout");

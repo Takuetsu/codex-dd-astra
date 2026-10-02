@@ -28,20 +28,22 @@ impl ChatWidget {
                     None
                 }
             });
-        let elapsed_seconds = duration_ms
-            .map(|duration| duration / 1_000)
-            .filter(|seconds| *seconds > 60);
+        let elapsed_seconds = duration_ms.map(|duration| duration / 1_000);
+
         let worker_bound = self.adaptive_effort.worker_context.role
             != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified;
+
         if worker_bound && let Some(duration_ms) = duration_ms {
             self.turn_lifecycle
                 .record_worker_duration(&turn.id, duration_ms);
         }
+
         let completed_at = turn
             .completed_at
             .and_then(|timestamp| chrono::DateTime::from_timestamp(timestamp, /*nsecs*/ 0))
             .map(|timestamp| timestamp.with_timezone(&Local))
             .or_else(|| replay_kind.is_none().then(Local::now));
+
         let worker_done = worker_bound
             && self.adaptive_effort.workflow_terminal.is_some()
             && self
@@ -50,6 +52,7 @@ impl ChatWidget {
                 .as_deref()
                 == Some(turn.id.as_str())
             && completed_at.is_some();
+
         if completed_at.is_none() && elapsed_seconds.is_none() && !worker_done {
             return None;
         }
@@ -60,10 +63,12 @@ impl ChatWidget {
             elapsed_seconds,
             /*runtime_metrics*/ None,
         );
+
         if worker_done {
             cell =
                 cell.with_worker_completion(self.turn_lifecycle.worker_total_duration_ms() / 1_000);
         }
+
         Some(match completed_at {
             Some(completed_at) => {
                 cell.with_completed_at(completed_at, crate::clock_format::ClockFormat::system())

@@ -319,6 +319,60 @@ async fn stale_status_line_git_summary_update_is_ignored() {
 }
 
 #[tokio::test]
+async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
+    chat.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Sol);
+    chat.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::High);
+    chat.adaptive_effort.budget_mode = crate::adaptive_budget::AdaptiveBudgetMode::Surplus;
+    chat.adaptive_effort.complexity_class =
+        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex);
+    chat.adaptive_effort.implementation_phase =
+        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
+    chat.adaptive_effort.attempt_number = 2;
+    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("bounded status integration".to_string()),
+    };
+    chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.workflow_terminal =
+        Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
+
+    chat.add_status_output(
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
+    );
+
+    let rendered = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    for expected in [
+        "Adaptive Effort",
+        "Preference: Astra",
+        "Current: Sol High",
+        "Budget mode: Surplus",
+        "Complexity: Complex",
+        "Implementation phase: Mechanical validation",
+        "Implementation floor: Luna High",
+        "Attempt: 2",
+        "Worker role: Implementation",
+        "Worker scope: bounded status integration",
+        "Worker binding: Bound",
+        "Workflow terminal: READY_FOR_VALIDATION",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "expected {expected:?} in /status output: {rendered:?}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn raw_output_mode_can_change_without_inserting_notice() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
 
@@ -500,7 +554,7 @@ async fn completed_plan_table_tail_skips_provisional_history_insert() {
 async fn configured_pet_load_is_deferred_until_after_construction() {
     let (tx_raw, mut rx) = unbounded_channel::<AppEvent>();
     let tx = AppEventSender::new(tx_raw);
-    let mut cfg = test_config().await;
+    let (_codex_home, mut cfg) = test_config().await;
     cfg.tui_pet = Some(crate::pets::DEFAULT_PET_ID.to_string());
     crate::pets::write_test_pack(&cfg.codex_home);
     let resolved_model = get_model_offline_for_tests(cfg.model.as_deref());
@@ -4023,7 +4077,7 @@ async fn status_line_model_with_reasoning_includes_fast_for_fast_capable_models(
 
 #[tokio::test]
 async fn terminal_title_model_updates_on_model_change_without_manual_refresh() {
-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.5")).await;
     chat.local_settings.tui.terminal_title = Some(vec!["model".to_string()]);
     chat.refresh_terminal_title();
 
@@ -4228,7 +4282,7 @@ async fn status_line_goal_active_token_budget_footer_snapshot() {
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
 
-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.5")).await;
     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
     chat.show_welcome_banner = false;
     chat.local_settings.tui.status_line = Some(vec!["model-name".to_string()]);
@@ -4265,7 +4319,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
 
-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.5")).await;
     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
     chat.show_welcome_banner = false;
     chat.local_settings.tui.status_line = Some(vec!["model-name".to_string()]);
@@ -5679,6 +5733,7 @@ async fn chatwidget_exec_and_status_layout_vt100_snapshot() {
         &mut chat,
         AppServerThreadItem::CommandExecution {
             model_context: None,
+            sandbox_type: None,
             id: "c1".into(),
             command: codex_shell_command::parse_command::shlex_join(&command),
             cwd: cwd.clone().into(),
@@ -5697,6 +5752,7 @@ async fn chatwidget_exec_and_status_layout_vt100_snapshot() {
         &mut chat,
         AppServerThreadItem::CommandExecution {
             model_context: None,
+            sandbox_type: None,
             id: "c1".into(),
             command: codex_shell_command::parse_command::shlex_join(&command),
             cwd: cwd.into(),

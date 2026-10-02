@@ -286,7 +286,6 @@ impl ChatWidget {
             }
             self.plan_type = snapshot.plan_type.or(self.plan_type);
 
-            let is_codex_limit = limit_id.eq_ignore_ascii_case("codex");
             if is_codex_limit && matches!(source, RateLimitSnapshotSource::AccountUsage) {
                 self.adaptive_effort.budget_mode = assess_budget(
                     snapshot.primary.as_ref(),
@@ -295,6 +294,7 @@ impl ChatWidget {
                 )
                 .mode;
             }
+
             if is_codex_limit
                 && (matches!(source, RateLimitSnapshotSource::AccountUsage)
                     || snapshot.spend_control_reached.is_some())
@@ -389,8 +389,12 @@ impl ChatWidget {
                     .limit_name
                     .clone()
                     .unwrap_or_else(|| limit_id.clone());
-                let display =
-                    rate_limit_snapshot_display_for_limit(&snapshot, limit_label, Local::now());
+                let display = rate_limit_snapshot_display_for_limit(
+                    &snapshot,
+                    limit_label,
+                    Local::now(),
+                    self.clock_format,
+                );
                 self.rate_limit_snapshots_by_limit_id
                     .insert(limit_id, display);
             }
@@ -498,7 +502,7 @@ impl ChatWidget {
             tx.send(AppEvent::PersistRateLimitSwitchPromptHidden);
         })];
         let description = if preset.description.is_empty() {
-            Some("Uses fewer credits for upcoming turns.".to_string())
+            Some("Uses fewer credits for upcoming turns".to_string())
         } else {
             Some(preset.description)
         };
@@ -525,7 +529,7 @@ impl ChatWidget {
             SelectionItem {
                 name: "Keep current model (never show again)".to_string(),
                 description: Some(
-                    "Hide future rate limit reminders about switching models.".to_string(),
+                    "Hide future rate limit reminders about switching models".to_string(),
                 ),
                 selected_description: None,
                 is_current: false,
