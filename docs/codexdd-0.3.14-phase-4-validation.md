@@ -174,6 +174,20 @@ The warning about an unused `ToolCallSource` import seen during these runs origi
 
 The remaining 4.4 authority is one final full canonical CodexDD TUI run followed by a mechanical JUnit set comparison against the preserved vanilla 0.159.2 failure list. Phase 4.4 passes if the CodexDD failure set is a subset of the recorded vanilla baseline after the already-fixed dynamic-tool differential is excluded; any feature-only failure remains a blocker.
 
+### Differential harness correction
+
+The first full differential comparison is invalidated by cross-worktree Cargo artifact contamination. The disposable vanilla worktree was pointed at the feature tree's `CARGO_TARGET_DIR` to save disk space. A later feature-targeted status test, launched from `E:\codexdd`, produced its Insta `.snap.new` path under `E:\codexdd-upstream-01592\...`, proving that the executable in the shared target directory had been compiled from the vanilla worktree and was reused during feature validation.
+
+Therefore:
+
+- the reported 45-vs-45 JUnit comparison is diagnostic only and must not be used to classify feature-only failures;
+- the two apparent feature-only failures from that comparison do not justify source changes;
+- future cross-worktree differential runs must use distinct Cargo target directories;
+- the preserved vanilla 0.159.2 baseline remains valid for the vanilla run itself;
+- CodexDD must be rerun from a fresh feature-only target directory before Phase 4.4 can close.
+
+After the clean feature run, compare its JUnit failure set against the preserved vanilla baseline. Delete the temporary feature-validation target after Phase 4.4 closes to reclaim disk space.
+
 ## Packet 4.5 - release build and executable smoke
 
 Purpose: prove that the actual release-shaped CLI can be built and started before installation.
