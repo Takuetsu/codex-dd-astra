@@ -193,7 +193,9 @@ The first clean feature-only run reported 47 failures against the preserved 45-f
 - `backend_banner_fallback_applies_before_initial_and_queued_startup_prompts`
 - `luna_reserve_recovery_requires_permission_and_no_remaining_blocker`
 
-Both failed only because the Windows websocket test proxy surfaced `os error 10053` (`ConnectionAborted`) during shutdown. Both tests passed immediately when rerun individually. Commit `393ede2ea220b32e2519faf07b08e8f0bc8ddb96` extends the existing benign-shutdown handling (already covering `BrokenPipe` and `ConnectionReset`) to `ConnectionAborted`. The two targeted regressions passed on Daniel-CL after that change. One final full canonical TUI run in the isolated feature target remains required before Phase 4.4 can close.
+Both failed only because the Windows websocket test proxy surfaced `os error 10053` (`ConnectionAborted`) during shutdown. Both tests passed immediately when rerun individually. Commit `393ede2ea220b32e2519faf07b08e8f0bc8ddb96` extends the existing benign-shutdown handling (already covering `BrokenPipe` and `ConnectionReset`) to `ConnectionAborted`. The two targeted regressions passed on Daniel-CL after that change.
+
+The final full canonical CodexDD TUI run then completed from the isolated feature target. Mechanical JUnit comparison against the preserved exact-upstream `rust-v0.159.2` baseline produced 45 vanilla failures, 45 CodexDD failures, 0 feature-only failures, and 0 baseline-only failures. Packet 4.4 therefore passes: the complete remaining failure set is the recorded target-upstream Windows baseline, with no CodexDD-only TUI regression.
 
 ## Packet 4.5 - release build and executable smoke
 
