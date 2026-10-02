@@ -1,12 +1,12 @@
 use super::*;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
+use crate::app_event::TranscriptExportDestination;
+use crate::bottom_pane::BottomPaneView;
 use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveFailureKind;
 use crate::chatwidget::adaptive_effort::AdaptiveFamily;
 use crate::chatwidget::adaptive_effort::AdaptiveOutcome;
-use crate::app_event::TranscriptExportDestination;
-use crate::bottom_pane::BottomPaneView;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_fake_rollout;
@@ -4510,14 +4510,16 @@ async fn fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty() 
         authorized_scope: Some("fork inheritance scope".to_string()),
     };
 
-    app.enqueue_primary_thread_session(parent, Vec::new()).await?;
+    app.enqueue_primary_thread_session(parent, Vec::new())
+        .await?;
 
     let child_id = ThreadId::new();
     let mut child = test_thread_session(child_id, app.config.cwd.to_path_buf());
     child.forked_from_id = Some(parent_id);
     assert_eq!(child.adaptive_effort, Default::default());
 
-    app.enqueue_primary_thread_session(child, Vec::new()).await?;
+    app.enqueue_primary_thread_session(child, Vec::new())
+        .await?;
 
     let inherited = app.chat_widget.adaptive_effort_for_test();
     assert!(inherited.enabled);
