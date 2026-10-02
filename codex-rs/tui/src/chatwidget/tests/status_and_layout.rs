@@ -359,7 +359,7 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         "Budget mode: Surplus",
         "Complexity: Complex",
         "Implementation phase: Mechanical validation",
-        "Implementation floor: Sol Low",
+        "Implementation floor: Luna High",
         "Attempt: 2",
         "Worker role: Implementation",
         "Worker scope: bounded status integration",
