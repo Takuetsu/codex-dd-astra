@@ -74,8 +74,8 @@ You can also use Codex with an API key, but this requires [additional setup](htt
 ## Docs
 
 - [**Codex Documentation**](https://developers.openai.com/codex)
-- [**CodexDD Worker/Designer Integration Guide — Current**](./docs/codexdd-worker-designer-integration.md)
-- [CodexDD 0.3.2 Worker/Designer Integration Guide — historical](./docs/codexdd-0.3.2-worker-designer-integration.md)
+- [**CodexDD Worker/Designer Integration Guide - Current**](./docs/codexdd-worker-designer-integration.md)
+- [CodexDD 0.3.2 Worker/Designer Integration Guide - historical](./docs/codexdd-0.3.2-worker-designer-integration.md)
 - [**Contributing**](./docs/contributing.md)
 - [**Installing & building**](./docs/install.md)
 - [**Open source fund**](./docs/open-source-fund.md)
