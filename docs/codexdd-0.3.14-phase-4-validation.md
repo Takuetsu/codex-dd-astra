@@ -1,0 +1,111 @@
+# CodexDD 0.3.14 Phase 4 pre-install validation
+
+Phase 4 is the broad Windows pre-install validation stage for CodexDD 0.3.14 after the completion of Phase 3F.
+
+Target branch: `dd/codexdd-v0.3.14-upstream-0.159.2`
+
+Production/base: `665f5d7c7966f9a6a9570b5b85f9d68c529c1639`
+
+Target upstream: OpenAI Codex `rust-v0.159.2`
+
+Platform authority: Daniel-CL / Windows.
+
+Phase 4 is intentionally broader than the narrow Phase 3 validation gates. Its purpose is to catch integration defects before installation and soak testing, especially defects that only appear when CodexDD adaptive behavior interacts with upstream lifecycle, persistence, app-server, and TUI code.
+
+Validation remains operator-mediated on Daniel-CL. No temporary GitHub Actions workflow is used for iterative validation.
+
+## Packet 4.1 - repository/static and cross-crate compile baseline
+
+Purpose: establish that the finished feature tree is structurally clean and that the main executable surface compiles together before spending time on broad tests.
+
+Checks:
+
+- clean synchronized feature branch;
+- `git diff --check` against the 0.3.13 production base;
+- upstream-sync helper suite;
+- Cargo workspace-manifest verification;
+- TUI/core boundary verification;
+- Bazel/Cargo lint-setting verification;
+- locked Cargo metadata;
+- Rust formatting;
+- all-targets compile for CLI, TUI, app-server, and core.
+
+Stop on the first failure and repair it before proceeding.
+
+## Packet 4.2 - CodexDD adaptive control-plane sweep
+
+Purpose: run all tests discoverable by the `adaptive` filter across the three main runtime layers.
+
+Checks:
+
+- `codex-core` adaptive tests;
+- `codex-app-server` adaptive tests;
+- `codex-tui` adaptive tests.
+
+This packet covers signal validation, routing, escalation/de-escalation, complexity floors, Worker authority, evidence pressure, lifecycle state, trusted signal delivery, terminalization, and adaptive UI/state behavior represented by current regression names.
+
+## Packet 4.3 - persistence, resume, fork, and interruption matrix
+
+Purpose: stress the areas that have produced the most integration defects during 0.3.14 work.
+
+Use the established Windows Rust test stack:
+
+```powershell
+$env:RUST_MIN_STACK = "16777216"
+```
+
+Checks include:
+
+- `codex-history --lib`;
+- `codex-rollout --lib`;
+- core rollout reconstruction;
+- core thread-manager workflow-state preservation;
+- stopped-thread resume;
+- rollout-path resume/fork;
+- detached-fork adaptive restoration;
+- TUI session-state restoration;
+- app-server trusted signal replay immediately before terminal completion.
+
+Remove `RUST_MIN_STACK` when this packet completes.
+
+## Packet 4.4 - broad support/runtime package suites
+
+Purpose: catch interaction regressions outside test names that explicitly mention CodexDD or adaptive behavior.
+
+Run full library suites for the most relevant changed/runtime packages:
+
+- `codex-protocol`;
+- `codex-state`;
+- `codex-thread-store`;
+- `codex-app-server`;
+- `codex-tui`.
+
+Use the established Windows test stack for the heavier app-server/TUI portions when needed.
+
+This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
+
+## Packet 4.5 - release build and executable smoke
+
+Purpose: prove that the actual release-shaped CLI can be built and started before installation.
+
+Checks:
+
+- locked release build of `codex-cli`;
+- `codexdd 0.3.14` version identity from the built executable;
+- upstream provenance remains `rust-v0.159.2`;
+- basic CLI help/startup smoke that does not modify production installation;
+- clean worktree after validation.
+
+No production install occurs in this packet.
+
+## Packet 4.6 - Phase 4 closure
+
+Phase 4 closes only when:
+
+- every packet is green on Daniel-CL;
+- any defects discovered by Phase 4 have been repaired and their relevant packet rerun;
+- the feature branch is synchronized and clean;
+- product/version/upstream identities remain correct;
+- no production install has occurred yet.
+
+After Phase 4 closure, the release can proceed to the normal PR/CI stage, followed by install and soak under the existing release workflow.
