@@ -1720,6 +1720,9 @@ pub(crate) async fn start_thread_with_request_handle(
     let mut started =
         started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
             .await?;
+    if let Some(binding) = config.adaptive_worker.clone() {
+        started.session.adaptive_effort.worker_context = binding.into();
+    }
     started.task_tools_available = task_tools_available;
     Ok(started)
 }
