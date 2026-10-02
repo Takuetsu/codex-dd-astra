@@ -168,3 +168,82 @@ The source audit found no additional repair requirement.
   - close Phase 3F only when the audit and local validation gates are green.
 
 Phase 4 remains separate and owns the broader pre-install validation matrix.
+
+
+## 3F.4 - exact customization-tree reconciliation
+
+**Status: SOURCE AUDIT COMPLETE; local validation pending.**
+
+The final source audit used exact recursive Git tree/blob comparison rather than the GitHub compare-file cap.
+
+Tree anchors:
+
+- previous tracked upstream tree: `0a0b0bf9acf2f45e9239e7a52ef79f7702aa5799`
+- 0.3.13 production tree: `03fd53c7249d371aa795d92022f1a72150addcf0`
+- target 0.159.2 upstream tree: `406dfdd5c68f303a3a8d04f32b3965b3b0ca0361`
+- audited 0.3.14 feature tree before the local gate: `9be7141bb7e273a3f06caff79aad9030c490c4bf`
+
+The exact counts reconfirm the Phase 3A inventory:
+
+- 214 CodexDD customization paths versus the previous tracked upstream.
+- 2233 upstream paths changed from 0.156.1 to 0.159.2.
+- 209 of the 214 prior customization paths still differ from target upstream in the finished feature tree.
+- 5 prior customization paths intentionally no longer differ from target upstream.
+- 7 additional 0.3.14 feature-only paths are present for integration repairs, regressions, snapshots, and durable audit documentation.
+
+### Five intentional non-differences
+
+The five prior customization paths that now match target upstream are accounted for; none is an unexplained silent drop.
+
+1. `.github/workflows/rust-release-prepare.yml`
+2. `.github/workflows/rust-release.yml`
+3. `defs.bzl`
+
+These three are Phase 3E build/release surfaces intentionally realigned to the 0.159.2 upstream structure. CodexDD-specific provenance is carried by the separate product/upstream identity files and repo-check logic instead of preserving obsolete release-file drift.
+
+4. `codex-rs/core/src/agent/control_tests.rs`
+
+The old CodexDD delta was an exhaustive-match carryover adding `RolloutItem::WorkflowState(_)` to a helper that no longer exists in 0.159.2. The upstream 0.159.2 test structure replaced that helper, so there is no equivalent exhaustive match requiring a CodexDD arm.
+
+5. `codex-rs/rollout/src/model_context.rs`
+
+The old CodexDD delta added `WorkflowState` to an exhaustive scan match. Upstream 0.159.2 rewrote `ModelContextScan` so it only special-cases compaction boundaries and otherwise carries rollout items generically. `WorkflowState` therefore flows through without a dedicated arm; retaining the old match edit would reintroduce obsolete 0.156.1 structure.
+
+These two code paths are the two obsolete 0.156.1-only exhaustive-match carryovers called out by the Phase 3B integration checkpoint.
+
+### Seven deliberate feature-only paths
+
+The feature tree contains seven paths that were not part of the prior 214-path customization set:
+
+- `codex-rs/history/src/compaction_resume_metadata.rs` - 0.159.2 resume-metadata integration with explicit `WorkflowState` handling.
+- `codex-rs/tui/src/app/tests/model_catalog.rs` - 0.3.14 regression that locks Luna/Sol/Astra model-family and reasoning support.
+- `codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_local_background_server.snap` - restored CodexDD adaptive status surface on the 0.159.2 snapshot.
+- `docs/codexdd-0.3.14-phase-3b-validation.md`
+- `docs/codexdd-0.3.14-phase-3f-audit.md`
+- `docs/codexdd-0.3.14-upstream-integration-scaffold.md`
+- `docs/codexdd-major-phase-work-packet-standard.md`
+
+No CodexDD-only path is silently missing from the finished tree.
+
+### Windows fork-test stack handling
+
+The first detached-fork regression run on Daniel-CL ended with `STATUS_STACK_OVERFLOW` under the default Rust test-thread stack.
+
+That result is not yet classified as a runtime defect. The project-wide validation standard and the Phase 3B record already establish that heavy Windows resume/fork tests can require:
+
+```powershell
+$env:RUST_MIN_STACK = "16777216"
+```
+
+The unchanged detached-fork test must be rerun with that environment variable before the 3F.2 repair is accepted or rejected. A speculative production stack workaround was briefly evaluated and then removed so the source tree again contains only the detached-fork behavior repair plus its regression.
+
+## Phase 3F closure condition
+
+The GitHub/source side of 3F.1 through 3F.4 is complete. Phase 3F remains open only for the targeted Daniel-CL validation gates:
+
+1. detached-fork adaptive restore with the established Windows test stack;
+2. adaptive runtime signal terminal ordering;
+3. Luna/Sol/Astra catalog contract;
+4. adaptive `/status` projection.
+
+If those gates are green, Phase 3F can close and Phase 4 broad pre-install validation begins.
