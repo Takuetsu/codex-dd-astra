@@ -17,6 +17,9 @@ jobs:
 
       - uses: ./.github/actions/setup-ci
 
+      - name: Test codexdd upstream sync helpers
+        run: python3 .github/scripts/test_upstream_sync.py
+
       - name: Verify codex-rs Cargo manifests inherit workspace settings
         run: python3 .github/scripts/verify_cargo_workspace_manifests.py
 
