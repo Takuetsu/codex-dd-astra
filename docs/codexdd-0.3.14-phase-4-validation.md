@@ -32,6 +32,8 @@ Checks:
 
 Stop on the first failure and repair it before proceeding.
 
+Initial Daniel-CL execution compiled the full requested all-targets surface successfully and found one warning: an unused `ReasoningEffort` import in `core/tests/suite/scenarios.rs`. The warning was removed in commit `cd0235019a97f93322bbb30d3ea2098dac3eefd2`; packet 4.1 remains open only for the cheap clean rerun of the compile command.
+
 ## Packet 4.2 - CodexDD adaptive control-plane sweep
 
 Purpose: run all tests discoverable by the `adaptive` filter across the three main runtime layers.
@@ -43,6 +45,14 @@ Checks:
 - `codex-tui` adaptive tests.
 
 This packet covers signal validation, routing, escalation/de-escalation, complexity floors, Worker authority, evidence pressure, lifecycle state, trusted signal delivery, terminalization, and adaptive UI/state behavior represented by current regression names.
+
+Because the broad TUI `adaptive` filter includes the detached-fork regression, run this packet with the established Windows Rust test stack:
+
+```powershell
+$env:RUST_MIN_STACK = "16777216"
+```
+
+Remove the environment variable when the packet completes.
 
 ## Packet 4.3 - persistence, resume, fork, and interruption matrix
 
