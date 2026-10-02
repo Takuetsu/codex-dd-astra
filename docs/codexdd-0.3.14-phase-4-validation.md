@@ -146,6 +146,8 @@ Initial Daniel-CL execution with plain Cargo reached 5601 passing tests but repo
 
 Before another full TUI run, rerun representative failing tests through the exact recipe environment. Only failures reproduced there are Phase 4 product/test-baseline candidates.
 
+The representative analytics snapshot passed under the canonical `just test` environment. The representative dynamic-tool test reproduced and was traced to a CodexDD-specific stale upstream assertion: CodexDD intentionally prepends an `evidence_id` content item to dynamic-tool model outputs, changing the Responses API `output` from a string into a structured content array. The runtime behavior is intentional and required by adaptive evidence references. Commit `8e3a3820fc5da57b3cc0a1a9de5ffd8976b1a914` updates the regression to assert both the evidence metadata and the preserved JSON task response instead of requiring the obsolete upstream string-only shape. This repair requires targeted Daniel-CL validation before the full canonical TUI suite resumes.
+
 Stop at the first non-TUI failure. For the canonical TUI run, allow the full suite to finish so independent failures are visible. This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
 
 ## Packet 4.5 - release build and executable smoke
