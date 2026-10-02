@@ -3576,6 +3576,87 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn detached_fork_restores_persisted_adaptive_workflow_state() -> Result<()> {
+        let codex_home = tempfile::tempdir().expect("tempdir");
+        let config = build_config(&codex_home).await;
+        let source_thread_id = ThreadId::from_string(
+            &create_fake_rollout(
+                codex_home.path(),
+                "2025-01-05T12-00-00",
+                "2025-01-05T12:00:00Z",
+                "Saved user message",
+                Some(config.model_provider_id.as_str()),
+                /*git_info*/ None,
+            )
+            .expect("create source rollout"),
+        )?;
+        let mut app_server = crate::start_embedded_app_server_for_picker(&config).await?;
+
+        app_server
+            .resume_thread(
+                &LocalSettings::from(&config),
+                config.clone(),
+                source_thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        app_server
+            .thread_workflow_state_update(
+                source_thread_id,
+                ThreadWorkflowStateOperation::SetAdaptiveState,
+                Some("source-turn".to_string()),
+                Some(ThreadAdaptiveWorkflowState {
+                    enabled: true,
+                    starting_family: Some("astra".to_string()),
+                    current_family: Some("sol".to_string()),
+                    current_effort: Some("high".to_string()),
+                    complexity_class: Some("complex".to_string()),
+                    implementation_phase: Some("implementation".to_string()),
+                    attempt_number: 3,
+                    paused_by_user: false,
+                    worker_role: "implementation".to_string(),
+                    authorized_scope: Some("detached fork regression".to_string()),
+                    worker_assignment_locked: true,
+                    workflow_terminal: None,
+                }),
+            )
+            .await?;
+
+        let forked = app_server
+            .fork_thread(&LocalSettings::from(&config), config, source_thread_id)
+            .await?;
+        let state = forked.session.adaptive_effort;
+        assert!(state.enabled);
+        assert_eq!(state.starting_family, Some(crate::adaptive_policy::AdaptiveFamily::Astra));
+        assert_eq!(state.current_family, Some(crate::adaptive_policy::AdaptiveFamily::Sol));
+        assert_eq!(state.current_effort, Some(crate::adaptive_policy::AdaptiveEffort::High));
+        assert_eq!(state.attempt_number, 3);
+        assert_eq!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+        );
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("detached fork regression")
+        );
+        assert_eq!(
+            state.complexity_class,
+            Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex)
+        );
+        assert_eq!(
+            state.implementation_phase,
+            Some(crate::adaptive_complexity::AdaptiveImplementationPhase::Implementation)
+        );
+        assert!(state.worker_assignment_locked);
+        assert!(state.pending_attempt.is_none());
+        assert!(state.pending_signal.is_none());
+        assert!(state.successor_admission.is_none());
+
+        app_server.shutdown().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn side_fork_skips_parent_title_lookup_but_normal_ephemeral_fork_keeps_it() -> Result<()>
     {
         let codex_home = tempfile::tempdir().expect("tempdir");
