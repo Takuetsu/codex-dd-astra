@@ -1,3 +1,7 @@
+> **HISTORICAL / SUPERSEDED FOR CURRENT OPERATOR USE**
+>
+> This document records the CodexDD 0.3.2 Worker/Designer contract. It is preserved for release history and migration context. For current merged behavior, use [CodexDD Worker/Designer Integration Guide — Current](./codexdd-worker-designer-integration.md). The merged runtime and its regression tests remain authoritative.
+
 # CodexDD 0.3.2 Worker/Designer Integration Guide
 
 This guide is the integration contract for project Designers, milestone planners, and Worker prompts that use CodexDD 0.3.2.
