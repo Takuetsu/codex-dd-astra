@@ -22,6 +22,77 @@ fn bedrock_model_presets() -> Vec<ModelPreset> {
     .expect("Bedrock model catalog")
 }
 
+#[test]
+fn codexdd_adaptive_families_match_0159_catalog_and_reasoning_support() {
+    use crate::adaptive_policy::AdaptiveFamily;
+    use codex_protocol::openai_models::ReasoningEffort;
+
+    let presets = all_model_presets();
+    let cases: &[(AdaptiveFamily, &str, &[ReasoningEffort])] = &[
+        (
+            AdaptiveFamily::Luna,
+            "gpt-6-luna",
+            &[
+                ReasoningEffort::Low,
+                ReasoningEffort::Medium,
+                ReasoningEffort::High,
+            ],
+        ),
+        (
+            AdaptiveFamily::Sol,
+            "gpt-6-sol",
+            &[
+                ReasoningEffort::Low,
+                ReasoningEffort::Medium,
+                ReasoningEffort::High,
+            ],
+        ),
+        (
+            AdaptiveFamily::Astra,
+            "gpt-6-astra",
+            &[
+                ReasoningEffort::Low,
+                ReasoningEffort::Medium,
+                ReasoningEffort::High,
+                ReasoningEffort::XHigh,
+                ReasoningEffort::Max,
+            ],
+        ),
+    ];
+
+    for (family, expected_model, required_efforts) in cases {
+        assert_eq!(
+            family.model(),
+            *expected_model,
+            "CodexDD family mapping changed unexpectedly"
+        );
+        let preset = presets
+            .iter()
+            .find(|preset| preset.model == *expected_model)
+            .unwrap_or_else(|| panic!("missing CodexDD model {expected_model} from 0.159.2 catalog"));
+        assert!(
+            preset.show_in_picker,
+            "CodexDD model {expected_model} must remain catalog-visible"
+        );
+
+        for effort in *required_efforts {
+            assert!(
+                preset
+                    .supported_reasoning_efforts
+                    .iter()
+                    .any(|candidate| candidate.effort == *effort),
+                "CodexDD route {expected_model} {effort:?} is not supported by the catalog"
+            );
+        }
+    }
+
+    assert_eq!(
+        AdaptiveFamily::Sol.model(),
+        "gpt-6-sol",
+        "0.3.14 must not adopt the upstream gpt-6.1-sol family during this sync"
+    );
+}
+
 #[tokio::test]
 async fn model_picker_refresh_updates_app_catalog_from_app_server() -> Result<()> {
     let (mut app, mut rx, _op_rx) = make_test_app_with_channels().await;
