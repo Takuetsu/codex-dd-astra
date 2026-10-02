@@ -125,7 +125,7 @@ Run full library suites for the most relevant changed/runtime packages:
 
 Use the established Windows test stack for this packet so the heavier app-server/TUI resume/fork tests do not hit the known harness-only default-stack limit.
 
-Run the non-TUI library suites with Cargo, then run the full TUI library suite with the repository's supported nextest harness:
+Run the non-TUI library suites with Cargo, then run the full TUI library suite through the repository's canonical `just test` recipe:
 
 ```powershell
 $env:RUST_MIN_STACK = "16777216"
@@ -134,16 +134,19 @@ cargo test -p codex-protocol --lib --locked
 cargo test -p codex-state --lib --locked
 cargo test -p codex-thread-store --lib --locked
 cargo test -p codex-app-server --lib --locked
-cargo nextest run -p codex-tui --lib --no-fail-fast
 
 Remove-Item Env:RUST_MIN_STACK
+cd E:\codexdd
+just test -p codex-tui --lib
 ```
 
-The TUI suite must not use plain `cargo test -p codex-tui --lib` as the Phase 4 full-suite authority. The repository's `just test` recipe uses nextest, which isolates test cases in separate processes; the TUI suite contains process-global theme, terminal-palette, probe, and other state that can contaminate snapshot tests under a single libtest process.
+The TUI suite must not use plain `cargo test -p codex-tui --lib` as the Phase 4 full-suite authority. It also must not substitute a hand-written `cargo nextest` invocation for the canonical recipe until the recipe environment is reproduced exactly. The root `justfile` exports `CODEX_REPO_ROOT`, selects `NEXTEST_PROFILE=local`, and applies the repository test-stack setting before launching nextest.
 
-Initial Daniel-CL execution with plain Cargo reached 5601 passing tests but reported 70 snapshot/rendering failures. The visible failures came from upstream-identical tests/snapshots, including analytics/status/transcript surfaces. Treat that run as a harness-invalid result. Do not accept generated `.snap.new` files. Re-run only the TUI suite under nextest before classifying any remaining failure as a product defect.
+Initial Daniel-CL execution with plain Cargo reached 5601 passing tests but reported 70 snapshot/rendering failures. A follow-up direct nextest run still reported a broad cluster of failures, but that command omitted the root `justfile` environment. Both runs are diagnostic only. The visible snapshot sources were upstream-identical. Do not accept generated `.snap.new` files.
 
-Stop at the first non-TUI failure. For the TUI nextest run, allow the full suite to finish so independent failures are visible. This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
+Before another full TUI run, rerun representative failing tests through the exact recipe environment. Only failures reproduced there are Phase 4 product/test-baseline candidates.
+
+Stop at the first non-TUI failure. For the canonical TUI run, allow the full suite to finish so independent failures are visible. This is deliberately more expensive than earlier phase validation and is the primary pre-install whack-a-mole prevention gate.
 
 ## Packet 4.5 - release build and executable smoke
 
