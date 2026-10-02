@@ -267,7 +267,25 @@ stream_max_retries = 0
     let requests = mock.requests();
     assert_eq!(requests.len(), 2);
     let output = requests[1].function_call_output(call_id);
-    let text = output["output"].as_str().expect("text response");
+    let output_items = output["output"]
+        .as_array()
+        .expect("codex-dd dynamic tool output should carry evidence metadata");
+    let [evidence_item, response_item] = output_items.as_slice() else {
+        panic!("expected evidence metadata plus one JSON text response");
+    };
+    assert_eq!(evidence_item["type"], "input_text");
+    assert_eq!(
+        serde_json::from_str::<Value>(
+            evidence_item["text"]
+                .as_str()
+                .expect("evidence metadata text response")
+        )?,
+        json!({"evidence_id": call_id})
+    );
+    assert_eq!(response_item["type"], "input_text");
+    let text = response_item["text"]
+        .as_str()
+        .expect("JSON text response");
     assert!(text.len() > 999);
     assert!(text.len() <= response::MAX_RESPONSE_BYTES);
     assert_eq!(serde_json::from_str::<Value>(text)?, expected);
