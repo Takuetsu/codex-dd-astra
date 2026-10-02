@@ -2394,7 +2394,11 @@ async fn thread_session_state_from_thread_fork_response(
         response.reasoning_effort.clone(),
         config.personality,
         local_settings,
-        WorkflowStateRestoreMode::FreshThread,
+        // Core writes the inherited CodexDD workflow snapshot into the child rollout before the
+        // fork response is returned. Restore that canonical child snapshot here instead of relying
+        // only on an in-memory parent session: CLI/startup forks can begin without the parent ever
+        // being attached to this TUI process.
+        WorkflowStateRestoreMode::ExistingThread,
     )
     .await
 }
