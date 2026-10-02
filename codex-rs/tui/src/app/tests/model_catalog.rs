@@ -69,7 +69,9 @@ fn codexdd_adaptive_families_match_0159_catalog_and_reasoning_support() {
         let preset = presets
             .iter()
             .find(|preset| preset.model == *expected_model)
-            .unwrap_or_else(|| panic!("missing CodexDD model {expected_model} from 0.159.2 catalog"));
+            .unwrap_or_else(|| {
+                panic!("missing CodexDD model {expected_model} from 0.159.2 catalog")
+            });
         assert!(
             preset.show_in_picker,
             "CodexDD model {expected_model} must remain catalog-visible"
