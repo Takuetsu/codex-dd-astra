@@ -57,12 +57,12 @@ The runtime enforces the read-only reconnaissance boundary at tool dispatch.
 
 Current complexity inputs include estimated files, cross-module impact, public API/data-model impact, persistent state/serialization, concurrency/async, build/release/toolchain, uncertain root cause, and broad test surface.
 
-| Complexity | Implementation floor |
-| --- | --- |
-| Routine | Luna Low |
-| Standard | Luna High |
-| Complex | Sol Low |
-| Architectural | Sol Medium |
+| Complexity    | Implementation floor |
+| ------------- | -------------------- |
+| Routine       | Luna Low             |
+| Standard      | Luna High            |
+| Complex       | Sol Low              |
+| Architectural | Sol Medium           |
 
 Complexity may raise the starting floor; it does not authorize arbitrary mid-attempt jumps and never starts directly on Astra.
 
@@ -73,10 +73,10 @@ CodexDD 0.3.7+ distinguishes source-changing implementation from mechanical vali
 After source-changing work is explicitly complete, mechanical validation may de-escalate below the complexity floor. Current budget-aware routes stay within Luna:
 
 | Budget mode | Mechanical-validation route |
-| --- | --- |
-| Conserve | Luna Low |
-| Balanced | Luna Medium |
-| Surplus | Luna High |
+| ----------- | --------------------------- |
+| Conserve    | Luna Low                    |
+| Balanced    | Luna Medium                 |
+| Surplus     | Luna High                   |
 
 Mechanical validation may run bounded tests/checks/builds and read-only inspection but does **not** authorize source edits. The runtime tool gate enforces this. If evidence requires more source work, use the trusted lifecycle transition back to implementation rather than bypassing the gate.
 
@@ -106,10 +106,10 @@ Validation should verify the exact candidate, inspect independently, run require
 CodexDD derives budget mode from live rate-limit windows. Do not encode guessed quota state in prompts.
 
 | Budget mode | Independent-review floor |
-| --- | --- |
-| Conserve | Luna High |
-| Balanced | Sol Low |
-| Surplus | Sol High |
+| ----------- | ------------------------ |
+| Conserve    | Luna High                |
+| Balanced    | Sol Low                  |
+| Surplus     | Sol High                 |
 
 Budget surplus is spent on review quality before being treated as permission for implementation escalation.
 
