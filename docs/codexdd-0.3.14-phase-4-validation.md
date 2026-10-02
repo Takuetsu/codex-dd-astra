@@ -36,6 +36,8 @@ Initial Daniel-CL execution compiled the full requested all-targets surface succ
 
 ## Packet 4.2 - CodexDD adaptive control-plane sweep
 
+**Status: COMPLETE.**
+
 Purpose: run all tests discoverable by the `adaptive` filter across the three main runtime layers.
 
 Checks:
@@ -53,6 +55,8 @@ $env:RUST_MIN_STACK = "16777216"
 ```
 
 Remove the environment variable when the packet completes.
+
+Daniel-CL result: PASS across `codex-core`, `codex-app-server`, and `codex-tui`. The TUI adaptive filter completed with 174 passing tests and zero failures. No 4.2 defect was found.
 
 ## Packet 4.3 - persistence, resume, fork, and interruption matrix
 
