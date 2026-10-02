@@ -237,13 +237,19 @@ $env:RUST_MIN_STACK = "16777216"
 
 The unchanged detached-fork test must be rerun with that environment variable before the 3F.2 repair is accepted or rejected. A speculative production stack workaround was briefly evaluated and then removed so the source tree again contains only the detached-fork behavior repair plus its regression.
 
-## Phase 3F closure condition
+## Phase 3F closure
 
-The GitHub/source side of 3F.1 through 3F.4 is complete. Phase 3F remains open only for the targeted Daniel-CL validation gates:
+**Status: COMPLETE.**
 
-1. detached-fork adaptive restore with the established Windows test stack;
-2. adaptive runtime signal terminal ordering;
-3. Luna/Sol/Astra catalog contract;
-4. adaptive `/status` projection.
+All four targeted Daniel-CL gates passed against the completed 0.3.14 feature tree:
 
-If those gates are green, Phase 3F can close and Phase 4 broad pre-install validation begins.
+1. `detached_fork_restores_persisted_adaptive_workflow_state` - PASS with the established Windows `RUST_MIN_STACK=16777216` test-stack setting;
+2. `adaptive_runtime_signal_binds_event_turn_and_conversation_identity` - PASS;
+3. `codexdd_adaptive_families_match_0159_catalog_and_reasoning_support` - PASS;
+4. `status_output_includes_codexdd_adaptive_route_and_worker_state` - PASS.
+
+The detached-fork default-stack failure was therefore confirmed as the already-documented Windows Rust test-harness stack sensitivity rather than a production runtime defect.
+
+Phase 3F is closed. The full 214-path customization inventory is accounted for, the detached-fork persistence defect found during the audit is repaired, and the targeted lifecycle/model/status gates are green.
+
+The next release stage is **Phase 4 - robust pre-install validation**.
