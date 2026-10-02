@@ -18,6 +18,7 @@ use chrono::NaiveDate;
 #[derive(Debug)]
 pub struct FinalMessageSeparator {
     elapsed_seconds: Option<u64>,
+    worker_total_seconds: Option<u64>,
     runtime_metrics: Option<RuntimeMetricsSummary>,
     completed_at: Option<DateTime<Local>>,
     display_date: NaiveDate,
@@ -31,6 +32,7 @@ impl FinalMessageSeparator {
     ) -> Self {
         Self {
             elapsed_seconds,
+            worker_total_seconds: None,
             runtime_metrics,
             completed_at: None,
             display_date: Local::now().date_naive(),
@@ -48,6 +50,11 @@ impl FinalMessageSeparator {
         self
     }
 
+    pub(crate) fn with_worker_completion(mut self, total_seconds: u64) -> Self {
+        self.worker_total_seconds = Some(total_seconds);
+        self
+    }
+
     pub(crate) fn with_runtime_metrics(
         mut self,
         runtime_metrics: Option<RuntimeMetricsSummary>,
@@ -57,6 +64,40 @@ impl FinalMessageSeparator {
     }
 
     fn label(&self, today: NaiveDate) -> Option<String> {
+        if let Some(total_seconds) = self.worker_total_seconds {
+            let hours = total_seconds / 3_600;
+            let minutes = (total_seconds % 3_600) / 60;
+            let seconds = total_seconds % 60;
+
+            let total = if hours > 0 {
+                format!("{hours}h {minutes}m {seconds}s")
+            } else if minutes > 0 {
+                format!("{minutes}m {seconds}s")
+            } else {
+                format!("{seconds}s")
+            };
+
+            let mut label_parts = vec![format!("TOTAL TIME WORKED: {total}"), "DONE".to_string()];
+
+            if let Some(completed_at) = self.completed_at {
+                let date_format = if completed_at.date_naive() == today {
+                    ""
+                } else if completed_at.year() == today.year() {
+                    "%b %-d at "
+                } else {
+                    "%b %-d, %Y at "
+                };
+
+                label_parts.push(format!(
+                    "{}{}",
+                    completed_at.format(date_format),
+                    completed_at.format(self.clock_format.time_format()),
+                ));
+            }
+
+            return Some(label_parts.join(" | "));
+        }
+
         let mut label_parts = Vec::new();
         if let Some(elapsed_seconds) = self.elapsed_seconds {
             let hours = elapsed_seconds / 3_600;

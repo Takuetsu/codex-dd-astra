@@ -71,6 +71,45 @@ fn configured_thread_session(thread_id: ThreadId) -> crate::session_state::Threa
 }
 
 #[tokio::test]
+async fn session_attachment_restores_adaptive_state_and_route() {
+    let (mut chat, mut events, _ops) = make_chatwidget_manual(Some("gpt-5.2")).await;
+
+    while events.try_recv().is_ok() {}
+
+    let mut session = configured_thread_session(ThreadId::new());
+    session.model = "gpt-5.2".to_string();
+    session.reasoning_effort = None;
+    session.adaptive_effort.enabled = true;
+    session.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
+    session.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
+    session.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::High);
+    session.adaptive_effort.attempt_number = 3;
+
+    let expected = session.adaptive_effort.clone();
+
+    chat.handle_thread_session_quiet(session);
+
+    assert_eq!(chat.adaptive_effort_for_test(), &expected);
+
+    let mut model_update = None;
+    let mut effort_update = None;
+
+    while let Ok(event) = events.try_recv() {
+        match event {
+            AppEvent::UpdateModel(model) => model_update = Some(model),
+            AppEvent::UpdateReasoningEffort(effort) => effort_update = effort,
+            _ => {}
+        }
+    }
+
+    assert_eq!(
+        model_update.as_deref(),
+        Some(crate::adaptive_policy::AdaptiveFamily::Astra.model())
+    );
+    assert_eq!(effort_update, Some(ReasoningEffortConfig::High));
+}
+
+#[tokio::test]
 async fn session_header_uses_catalog_display_name_without_changing_model() {
     let slug = "us.openai.gpt-5.6-luna";
     for (name, first_event, display_name) in [

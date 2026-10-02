@@ -51,6 +51,38 @@ fn completion_label_shows_known_durations_including_short_turns() {
 }
 
 #[test]
+fn worker_completion_footer_shows_total_done_and_stop_time() {
+    let completed_at = completed_at();
+    let cell = FinalMessageSeparator::new(
+        /*elapsed_seconds*/ Some(12),
+        /*runtime_metrics*/ None,
+    )
+    .with_worker_completion(3_725)
+    .with_completed_at(completed_at, ClockFormat::TwelveHour);
+
+    assert_eq!(
+        cell.label(completed_at.date_naive()),
+        Some("TOTAL TIME WORKED: 1h 2m 5s | DONE | 2:32 PM".to_string())
+    );
+}
+
+#[test]
+fn worker_completion_footer_shows_short_total_instead_of_hiding_it() {
+    let completed_at = completed_at();
+    let cell = FinalMessageSeparator::new(
+        /*elapsed_seconds*/ Some(12),
+        /*runtime_metrics*/ None,
+    )
+    .with_worker_completion(12)
+    .with_completed_at(completed_at, ClockFormat::TwentyFourHour);
+
+    assert_eq!(
+        cell.label(completed_at.date_naive()),
+        Some("TOTAL TIME WORKED: 12s | DONE | 14:32".to_string())
+    );
+}
+
+#[test]
 fn completion_label_includes_date_when_viewed_on_another_day() {
     let completed_at = completed_at();
     let cell = FinalMessageSeparator::new(

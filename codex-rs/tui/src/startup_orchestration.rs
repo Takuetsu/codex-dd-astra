@@ -425,7 +425,15 @@ pub(super) async fn run_main_inner(
     let additional_dirs = cli.add_dir.clone();
 
     let mut overrides = ConfigOverrides {
-        model,
+        model: cli
+            .adaptive
+            .as_ref()
+            .map(|_| {
+                crate::adaptive_policy::AdaptiveFamily::Luna
+                    .model()
+                    .to_string()
+            })
+            .or(model),
         approval_policy,
         sandbox_mode,
         cwd: cwd_override,

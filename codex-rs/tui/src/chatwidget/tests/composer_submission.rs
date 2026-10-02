@@ -1722,6 +1722,40 @@ async fn output_free_esc_interrupt_keeps_prompt_and_opens_blank_composer() {
 }
 
 #[tokio::test]
+async fn output_free_esc_interrupt_pauses_adaptive_execution() {
+    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+
+    chat.thread_id = Some(ThreadId::new());
+    chat.adaptive_effort_for_test_mut().enabled = true;
+    chat.adaptive_effort_for_test_mut().unfinished_turn_pressure = 2;
+
+    chat.submit_user_message(UserMessage::from("interrupt adaptive work"));
+    assert_matches!(next_submit_op(&mut op_rx), Op::UserTurn { .. });
+    handle_turn_started(&mut chat, "turn-adaptive-interrupt");
+    chat.bottom_pane.ensure_status_indicator();
+
+    let esc = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+    assert!(chat.bottom_pane.should_interrupt_running_task(esc));
+    chat.handle_key_event(esc);
+
+    loop {
+        match rx.try_recv() {
+            Ok(AppEvent::CodexOp(Op::Interrupt)) => break,
+            Ok(_) => {}
+            Err(error) => panic!("expected Esc interrupt command, got {error:?}"),
+        }
+    }
+
+    assert!(chat.adaptive_effort_for_test().paused_by_user);
+    assert_eq!(
+        chat.adaptive_effort_for_test().last_outcome,
+        Some(crate::adaptive_policy::AdaptiveOutcome::UserInterrupted)
+    );
+    assert_eq!(chat.adaptive_effort_for_test().unfinished_turn_pressure, 0);
+    assert_eq!(chat.adaptive_effort_for_test().successor_admission, None);
+}
+
+#[tokio::test]
 async fn output_free_ctrl_c_interrupt_keeps_prompt_and_opens_blank_composer() {
     let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let prompt = "revise this prompt";

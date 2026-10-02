@@ -13,6 +13,7 @@ pub enum SlashCommand {
     // DO NOT ALPHA-SORT! Enum order is presentation order in the popup, so
     // more frequently used commands should be listed first.
     Model,
+    Adaptive,
     Ide,
     Permissions,
     Keymap,
@@ -129,6 +130,7 @@ impl SlashCommand {
             SlashCommand::MemoryDrop => "DO NOT USE",
             SlashCommand::MemoryUpdate => "DO NOT USE",
             SlashCommand::Model => "choose what model and reasoning effort to use",
+            SlashCommand::Adaptive => "control thread-local adaptive effort",
             SlashCommand::Ide => {
                 "include current selection, open files, and other context from your IDE"
             }
@@ -186,6 +188,7 @@ impl SlashCommand {
                 | SlashCommand::Side
                 | SlashCommand::Btw
                 | SlashCommand::Resume
+                | SlashCommand::Adaptive
         )
     }
 
@@ -264,6 +267,7 @@ impl SlashCommand {
             SlashCommand::Diff
             | SlashCommand::Resume
             | SlashCommand::Model
+            | SlashCommand::Adaptive
             | SlashCommand::Permissions
             | SlashCommand::Copy
             | SlashCommand::Raw

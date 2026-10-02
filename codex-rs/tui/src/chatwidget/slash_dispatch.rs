@@ -188,6 +188,7 @@ impl ChatWidget {
         }
 
         match cmd {
+            SlashCommand::Adaptive => self.dispatch_adaptive_command("status"),
             SlashCommand::Feedback => {
                 if !self.config.feedback_enabled {
                     let params = crate::bottom_pane::feedback_disabled_params();
@@ -642,6 +643,15 @@ impl ChatWidget {
     ) {
         if cmd != SlashCommand::Copy {
             self.transcript.last_status_copy_targets = None;
+        }
+        if cmd == SlashCommand::Adaptive {
+            let Some((prepared_args, _prepared_elements)) =
+                self.prepare_live_inline_args(args, text_elements)
+            else {
+                return;
+            };
+            self.dispatch_adaptive_command(&prepared_args);
+            return;
         }
         if !self.ensure_slash_command_allowed_in_side_conversation(cmd) {
             return;
@@ -1245,6 +1255,7 @@ impl ChatWidget {
             SlashCommand::Ide
             | SlashCommand::Status
             | SlashCommand::Daemon
+            | SlashCommand::Adaptive
             | SlashCommand::Pwd
             | SlashCommand::Usage
             | SlashCommand::DebugConfig

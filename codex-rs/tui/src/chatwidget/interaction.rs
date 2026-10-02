@@ -81,10 +81,21 @@ impl ChatWidget {
             let should_pause_active_goal = self
                 .bottom_pane
                 .active_view_will_interrupt_turn_on_key_event(key_event);
+            let is_manual_esc_interrupt = should_pause_active_goal
+                && key_event.code == KeyCode::Esc
+                && key_event.kind == KeyEventKind::Press;
+
+            self.flush_completed_tool_activity();
             self.bottom_pane.handle_key_event(key_event);
+
             if should_pause_active_goal {
                 self.pause_active_goal_for_interrupt();
             }
+
+            if is_manual_esc_interrupt {
+                self.on_adaptive_user_interrupt();
+            }
+
             if self.bottom_pane.no_modal_or_popup_active() {
                 self.on_modal_or_popup_closed();
             }
@@ -210,6 +221,10 @@ impl ChatWidget {
             self.input_queue.submit_pending_steers_after_interrupt = true;
             if self.submit_op(AppCommand::interrupt()) {
                 self.pause_active_goal_for_interrupt();
+
+                if key_event.code == KeyCode::Esc && key_event.kind == KeyEventKind::Press {
+                    self.on_adaptive_user_interrupt();
+                }
             } else {
                 self.input_queue.submit_pending_steers_after_interrupt = false;
             }
@@ -239,6 +254,14 @@ impl ChatWidget {
                 let had_modal_or_popup = !self.bottom_pane.no_modal_or_popup_active();
                 let should_pause_active_goal =
                     self.bottom_pane.should_interrupt_running_task(key_event);
+                let is_manual_esc_interrupt = should_pause_active_goal
+                    && key_event.code == KeyCode::Esc
+                    && key_event.kind == KeyEventKind::Press;
+
+                if key_event.code == KeyCode::Enter {
+                    self.flush_completed_tool_activity();
+                }
+
                 let input_result = self.bottom_pane.handle_key_event(key_event);
                 if matches!(
                     input_result,
@@ -251,6 +274,11 @@ impl ChatWidget {
                 if should_pause_active_goal {
                     self.pause_active_goal_for_interrupt();
                 }
+
+                if is_manual_esc_interrupt {
+                    self.on_adaptive_user_interrupt();
+                }
+
                 self.handle_composer_input_result(input_result, had_modal_or_popup);
             }
         }
