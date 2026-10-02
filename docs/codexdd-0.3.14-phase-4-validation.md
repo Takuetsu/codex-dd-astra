@@ -16,6 +16,8 @@ Validation remains operator-mediated on Daniel-CL. No temporary GitHub Actions w
 
 ## Packet 4.1 - repository/static and cross-crate compile baseline
 
+**Status: COMPLETE.**
+
 Purpose: establish that the finished feature tree is structurally clean and that the main executable surface compiles together before spending time on broad tests.
 
 Checks:
@@ -32,7 +34,7 @@ Checks:
 
 Stop on the first failure and repair it before proceeding.
 
-Initial Daniel-CL execution compiled the full requested all-targets surface successfully and found one warning: an unused `ReasoningEffort` import in `core/tests/suite/scenarios.rs`. The warning was removed in commit `cd0235019a97f93322bbb30d3ea2098dac3eefd2`; packet 4.1 remains open only for the cheap clean rerun of the compile command.
+Initial Daniel-CL execution compiled the full requested all-targets surface successfully and found one warning: an unused `ReasoningEffort` import in `core/tests/suite/scenarios.rs`. The warning was removed in commit `cd0235019a97f93322bbb30d3ea2098dac3eefd2`. The clean compile rerun passed, so packet 4.1 is closed.
 
 ## Packet 4.2 - CodexDD adaptive control-plane sweep
 
@@ -73,14 +75,37 @@ Checks include:
 - `codex-history --lib`;
 - `codex-rollout --lib`;
 - core rollout reconstruction;
-- core thread-manager workflow-state preservation;
-- stopped-thread resume;
-- rollout-path resume/fork;
+- `child_workflow_snapshot_preserves_adaptive_state`;
+- `resume_stopped_thread_from_rollout_spawns_new_thread`;
+- `resume_stopped_thread_from_rollout_preserves_thread_source`;
+- `rollout_path_resume_and_fork_read_history_through_thread_store`;
+- interrupted fork-snapshot boundary handling;
+- TUI persisted workflow-state restoration;
 - detached-fork adaptive restoration;
-- TUI session-state restoration;
-- app-server trusted signal replay immediately before terminal completion.
+- app-server trusted signal replay immediately before terminal completion;
+- app-server interrupted-turn terminal handling.
 
-Remove `RUST_MIN_STACK` when this packet completes.
+Run these exact commands:
+
+```powershell
+$env:RUST_MIN_STACK = "16777216"
+
+cargo test -p codex-history --lib --locked
+cargo test -p codex-rollout --lib --locked
+cargo test -p codex-core rollout_reconstruction --lib --locked
+cargo test -p codex-core child_workflow_snapshot_preserves_adaptive_state --lib --locked
+cargo test -p codex-core resume_stopped_thread_from_rollout --lib --locked
+cargo test -p codex-core rollout_path_resume_and_fork_read_history_through_thread_store --lib --locked
+cargo test -p codex-core interrupted_fork_snapshot --lib --locked
+cargo test -p codex-tui session_state::tests --lib --locked
+cargo test -p codex-tui detached_fork_restores_persisted_adaptive_workflow_state --locked
+cargo test -p codex-app-server adaptive_runtime_signal_binds_event_turn_and_conversation_identity --locked
+cargo test -p codex-app-server test_handle_turn_interrupted_emits_interrupted_without_error --locked
+
+Remove-Item Env:RUST_MIN_STACK
+```
+
+Stop at the first failure. Remove `RUST_MIN_STACK` when this packet completes.
 
 ## Packet 4.4 - broad support/runtime package suites
 
