@@ -62,6 +62,8 @@ Daniel-CL result: PASS across `codex-core`, `codex-app-server`, and `codex-tui`.
 
 ## Packet 4.3 - persistence, resume, fork, and interruption matrix
 
+**Status: COMPLETE.**
+
 Purpose: stress the areas that have produced the most integration defects during 0.3.14 work.
 
 Use the established Windows Rust test stack:
@@ -106,6 +108,8 @@ Remove-Item Env:RUST_MIN_STACK
 ```
 
 Stop at the first failure. Remove `RUST_MIN_STACK` when this packet completes.
+
+Daniel-CL result: PASS across the complete 4.3 matrix. History, rollout, reconstruction, workflow-state preservation, stopped-thread resume, rollout-path resume/fork, interrupted fork boundaries, TUI persisted-state restoration, detached-fork adaptive restoration, trusted adaptive signal replay, and interrupted-turn terminal handling all passed with zero failures. No 4.3 defect was found.
 
 ## Packet 4.4 - broad support/runtime package suites
 
