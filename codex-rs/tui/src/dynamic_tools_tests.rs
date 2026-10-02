@@ -283,9 +283,7 @@ stream_max_retries = 0
         json!({"evidence_id": call_id})
     );
     assert_eq!(response_item["type"], "input_text");
-    let text = response_item["text"]
-        .as_str()
-        .expect("JSON text response");
+    let text = response_item["text"].as_str().expect("JSON text response");
     assert!(text.len() > 999);
     assert!(text.len() <= response::MAX_RESPONSE_BYTES);
     assert_eq!(serde_json::from_str::<Value>(text)?, expected);
