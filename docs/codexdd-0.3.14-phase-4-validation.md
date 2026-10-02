@@ -154,6 +154,17 @@ The canonical full TUI run later reproduced a multi-test failure set even after 
 
 Daniel-CL differential baseline confirmed at least one canonical TUI failure on the exact vanilla `rust-v0.159.2` commit: `fresh_startup_reads_destination_and_cleared_model_uses_catalog` fails the same inline snapshot because the 0.159.2 test normalizes the wrong cwd value on Windows. Upstream main has since changed this test to normalize the destination path instead, confirming this specific failure is a target-upstream test-baseline defect rather than a CodexDD runtime regression. The next authoritative step is a full vanilla 0.159.2 TUI nextest run on Daniel-CL so the complete baseline failure set can be compared with the CodexDD run.
 
+That full vanilla run completed and reproduced the same broad Windows TUI failure clusters seen on the CodexDD run: owned-transcript/layout, reconnect/replay, realtime-caption replay, startup destination snapshot normalization, history-cell update snapshots, status snapshots, and update-prompt rendering. These overlapping failures are now classified as the 0.159.2 Windows baseline rather than CodexDD regressions.
+
+Two failures visible in the CodexDD final list were not visible in the completed vanilla baseline list and therefore remain differential candidates pending focused rerun:
+
+- `recap_generation_uses_bounded_structured_request_and_inserts_result`
+- `slash_copy_picker_copies_status_fields_and_preserves_source_after_copying`
+
+The earlier `oversized_read_preserves_answer_in_next_model_request` differential was already repaired in commit `8e3a3820fc5da57b3cc0a1a9de5ffd8976b1a914`.
+
+Before the next full CodexDD TUI run, preserve the vanilla JUnit failure names and run the two remaining differential candidates individually. Only feature-only failures block 0.3.14; the exact-upstream Windows baseline is recorded separately.
+
 ## Packet 4.5 - release build and executable smoke
 
 Purpose: prove that the actual release-shaped CLI can be built and started before installation.
