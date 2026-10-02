@@ -791,6 +791,7 @@ async fn status_uses_server_provider_id_and_auth_requirement() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        /*adaptive_effort*/ None,
         /*refreshing_rate_limits*/ false,
     );
     let rendered =
@@ -822,6 +823,7 @@ async fn status_uses_server_provider_id_and_auth_requirement() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        /*adaptive_effort*/ None,
         /*refreshing_rate_limits*/ false,
     );
     let rendered =
@@ -1505,6 +1507,7 @@ async fn status_wraps_long_paths_and_session_ids_without_losing_text() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        /*adaptive_effort*/ None,
         /*refreshing_rate_limits*/ false,
     );
     let directory = directory.to_string_lossy();
@@ -1742,6 +1745,7 @@ async fn status_snapshot_uses_default_reasoning_when_config_empty() {
             /*collaboration_mode*/ None,
             /*reasoning_effort_override*/ Some(Some(ReasoningEffort::Medium)),
             "<none>".to_string(),
+            /*adaptive_effort*/ None,
             /*refreshing_rate_limits*/ false,
         );
         let mut rendered_lines = render_lines(&composite.display_lines(/*width*/ 80));
@@ -1854,6 +1858,7 @@ async fn transcript_overlay_remeasures_status_after_rate_limit_refresh() {
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
         "<none>".to_string(),
+        /*adaptive_effort*/ None,
         /*refreshing_rate_limits*/ true,
     );
     let mut overlay =
