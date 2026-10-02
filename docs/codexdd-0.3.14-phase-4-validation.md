@@ -152,6 +152,8 @@ Stop at the first non-TUI failure. For the canonical TUI run, allow the full sui
 
 The canonical full TUI run later reproduced a multi-test failure set even after the dynamic-tool assertion repair. Do not patch those failures blindly. Classify them differentially against the exact target-upstream commit `ff6aec96948b70d94983af2641a6b67c94faeff5` on the same Daniel-CL host and with the same `just test` harness. A failure that reproduces unchanged on the vanilla target is upstream/environment baseline and is not a CodexDD release regression; a feature-only failure remains a Phase 4 blocker. Keep baseline validation in a disposable detached worktree and reuse the main target directory to avoid duplicating build storage.
 
+Daniel-CL differential baseline confirmed at least one canonical TUI failure on the exact vanilla `rust-v0.159.2` commit: `fresh_startup_reads_destination_and_cleared_model_uses_catalog` fails the same inline snapshot because the 0.159.2 test normalizes the wrong cwd value on Windows. Upstream main has since changed this test to normalize the destination path instead, confirming this specific failure is a target-upstream test-baseline defect rather than a CodexDD runtime regression. The next authoritative step is a full vanilla 0.159.2 TUI nextest run on Daniel-CL so the complete baseline failure set can be compared with the CodexDD run.
+
 ## Packet 4.5 - release build and executable smoke
 
 Purpose: prove that the actual release-shaped CLI can be built and started before installation.
