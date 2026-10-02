@@ -2476,14 +2476,11 @@ async fn thread_session_state_from_thread_response(
         workflow_state_restore_mode,
         WorkflowStateRestoreMode::ExistingThread
     ) {
-        // Keep rollout decoding off this already-large start/resume/fork future's poll stack.
-        // Fork setup is particularly deep on Windows, and restoring the newly persisted child
-        // workflow snapshot inline can otherwise overflow the test/runtime thread stack.
-        Box::pin(crate::session_state::restore_persisted_workflow_state(
+        crate::session_state::restore_persisted_workflow_state(
             rollout_path.as_deref(),
             thread_id,
             &mut adaptive_effort,
-        ))
+        )
         .await?;
     }
     Ok(ThreadSessionState {
