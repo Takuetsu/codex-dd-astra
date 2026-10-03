@@ -1,7 +1,7 @@
 //! Local daemon launch policy. Explicit embedded launches never discover or start a daemon;
 //! optional attachment may fall back to embedded mode, while automatic launches
 //! require a compatible shared server and a successful connection, except when
-//! the Windows launcher forbids detaching a missing server.
+//! Windows cannot safely create the shared daemon and startup falls back to embedded mode.
 
 use super::*;
 use std::collections::BTreeMap;
@@ -14,6 +14,17 @@ const SERVER_FEATURES: [Feature; 4] = [
 ];
 
 pub(super) const FAILURE_HINT: &str = "To work without the background server, rerun the same command with --no-daemon (including resume or fork and its arguments).";
+
+#[cfg(windows)]
+pub(super) fn windows_automatic_fallback_reason(err: &anyhow::Error) -> Option<&'static str> {
+    if err.is::<codex_app_server_daemon::ElevatedLaunchRestricted>() {
+        Some("an elevated Windows terminal")
+    } else if err.is::<codex_app_server_daemon::DetachedLaunchRestricted>() {
+        Some("this Windows launcher")
+    } else {
+        None
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 #[error("Cannot use the shared background server: {reason}.\n{FAILURE_HINT}")]
