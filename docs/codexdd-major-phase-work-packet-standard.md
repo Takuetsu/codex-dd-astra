@@ -132,6 +132,7 @@ Implementation validation before PR/CI is operator-mediated and runs on the Wind
 - Do not create temporary GitHub Actions workflows merely to perform implementation-phase validation.
 - GitHub CI is reserved for the later PR/CI stage after the local validation gates are green.
 - Windows-target validation on Daniel-CL is authoritative for pre-PR implementation testing unless a packet explicitly requires another environment.
+- Phase 4 release-shaped smoke must exercise the actual operator launch context, not only non-interactive CLI flags. For Windows releases that support automatic shared-daemon startup, test a normal interactive launch from the Administrator PowerShell used in production, verify safe embedded fallback when elevated daemon creation is intentionally refused, and separately verify that explicit elevated daemon creation remains blocked.
 - Heavy Rust resume/fork tests on Windows may require `RUST_MIN_STACK=16777216`; if a test fails only with `STATUS_STACK_OVERFLOW`, rerun the unchanged test with that stack before classifying it as a runtime defect.
 
 This policy keeps the human owner in the validation loop, catches Windows-specific defects before CI, and avoids spending GitHub runner time on iterative development failures.
