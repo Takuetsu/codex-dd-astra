@@ -88,6 +88,22 @@ pub(super) fn spawn_without_inheriting_stdio(
     Ok(command.spawn()?)
 }
 
+/// A managed shared daemon must not inherit an elevated client token.
+/// Automatic TUI startup may use its embedded server; explicit lifecycle operations
+/// still surface this error so they never create an elevated shared daemon.
+#[derive(Debug)]
+pub struct ElevatedLaunchRestricted;
+
+impl fmt::Display for ElevatedLaunchRestricted {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(
+            "start the Windows daemon from a non-elevated terminal; shared clients must not inherit administrator privileges",
+        )
+    }
+}
+
+impl std::error::Error for ElevatedLaunchRestricted {}
+
 pub(crate) fn ensure_not_elevated() -> Result<()> {
     let mut token = 0;
     if unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) } == 0 {
@@ -109,10 +125,9 @@ pub(crate) fn ensure_not_elevated() -> Result<()> {
         return Err(io::Error::last_os_error())
             .context("failed to query daemon launcher elevation");
     }
-    anyhow::ensure!(
-        elevation.TokenIsElevated == 0,
-        "start the Windows daemon from a non-elevated terminal; shared clients must not inherit administrator privileges"
-    );
+    if elevation.TokenIsElevated != 0 {
+        return Err(anyhow::Error::new(ElevatedLaunchRestricted));
+    }
     Ok(())
 }
 

@@ -5,6 +5,26 @@ use crate::legacy_core::config::ConfigBuilder;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
+#[cfg(windows)]
+#[test]
+fn elevated_daemon_auto_start_falls_back_to_embedded_mode() {
+    let error = anyhow::Error::new(codex_app_server_daemon::ElevatedLaunchRestricted);
+    assert_eq!(
+        daemon_startup::windows_automatic_fallback_reason(&error),
+        Some("an elevated Windows terminal")
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn unrelated_daemon_start_error_does_not_fall_back() {
+    let error = anyhow::anyhow!("unrelated daemon failure");
+    assert_eq!(
+        daemon_startup::windows_automatic_fallback_reason(&error),
+        None
+    );
+}
+
 #[test]
 fn audited_overrides_allow_daemon_without_allowing_arbitrary_config() {
     for (raw, eligible) in [

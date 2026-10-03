@@ -226,3 +226,25 @@ Phase 4 closes only when:
 - no production install has occurred yet.
 
 After Phase 4 closure, the release can proceed to the normal PR/CI stage, followed by install and soak under the existing release workflow.
+
+## Post-install soak finding - elevated Windows interactive startup
+
+The first production soak launch on Daniel-CL exposed a validation gap that Phase 4 did not cover. The installed 0.3.14 binary was started from the normal Administrator PowerShell used for CodexDD work. Upstream 0.159.2 enables automatic shared app-server daemon startup, and Windows correctly rejects creating that shared daemon from an elevated token so later clients cannot inherit administrator privileges. The rejection was surfaced as a fatal TUI startup error instead of falling back to the embedded server.
+
+Diagnosis and repair evidence:
+
+- `codexdd --no-daemon` launched successfully from the same Administrator terminal, isolating the failure to automatic shared-daemon startup.
+- Explicit `app-server daemon start` from the elevated terminal remained rejected with the security error requiring a non-elevated terminal.
+- The hotfix classifies that specific elevation restriction separately from unrelated daemon failures.
+- Normal interactive startup from the elevated terminal now falls back to the embedded app server and launches successfully without `--no-daemon`.
+- Targeted regressions `elevated_daemon_auto_start_falls_back_to_embedded_mode` and `unrelated_daemon_start_error_does_not_fall_back` both passed on Daniel-CL.
+- A debug `codex-cli` build from hotfix HEAD `976f48337142a6b3bcc72a815fd16a85f639ad98` reported `codexdd 0.3.14+g976f48337142` and passed both runtime launch checks above.
+
+This is a 0.3.14 soak hotfix, not a relaxation of daemon privilege isolation. Explicit shared-daemon lifecycle operations remain blocked from elevated Windows terminals.
+
+Future Phase 4 release-shaped smoke must include the installed/operator launch context, not only `--version` and `--help`. On Windows, that means at minimum:
+
+- normal interactive startup from the same elevated Administrator PowerShell used for CodexDD operation;
+- confirmation that an elevated automatic shared-daemon launch falls back safely to embedded mode;
+- confirmation that explicit elevated shared-daemon creation remains rejected;
+- normal interactive startup without requiring an operator-only workaround flag such as `--no-daemon`.
