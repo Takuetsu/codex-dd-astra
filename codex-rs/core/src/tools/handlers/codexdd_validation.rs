@@ -216,11 +216,7 @@ impl CodexDDValidationHandler {
             )));
         }
 
-        let command = validation_powershell_command(
-            &repository_root,
-            &script_path,
-            &temp_log_path,
-        );
+        let command = validation_powershell_command(&repository_root, &script_path, &temp_log_path);
         let inner_arguments = json!({
             "cmd": command,
             "shell": "powershell.exe",
