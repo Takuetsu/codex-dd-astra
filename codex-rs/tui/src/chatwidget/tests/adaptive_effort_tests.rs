@@ -571,7 +571,8 @@ async fn ready_for_validation_enforces_complete_role_matrix_as_hard_handoff() {
         (AdaptiveWorkerRole::Unspecified, false),
     ] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
         drain_events(&mut rx);
         chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
