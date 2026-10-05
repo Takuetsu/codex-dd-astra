@@ -334,12 +334,12 @@ fn validation_powershell_command(
     let script_path = powershell_single_quoted(script_path);
     let log_path = powershell_single_quoted(log_path);
     format!(
-        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; exit $code"
+        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; exit $code"
     )
 }
 
 fn powershell_single_quoted(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace(''', "''"))
+    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
 }
 
 fn validation_run_id(call_id: &str) -> String {
