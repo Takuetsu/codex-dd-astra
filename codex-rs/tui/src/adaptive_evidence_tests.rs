@@ -139,25 +139,17 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
 }
 
 #[test]
-fn runner_backed_work_packet_command_becomes_typed_validation_receipt() {
+fn native_validation_tool_completion_becomes_typed_work_packet_receipt() {
     let thread_id = ThreadId::new();
     let notification = ItemCompletedNotification {
-        item: ThreadItem::CommandExecution {
-            model_context: None,
-            sandbox_type: None,
+        item: ThreadItem::DynamicToolCall {
             id: "validation-call".to_string(),
-            plugin_id: None,
-            script_path: None,
-            command: "$env:CODEXDD_VALIDATION_RUNNER = 'contract-v1:work_packet'; powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\codexdd-test-workpacket.ps1".to_string(),
-            cwd: AbsolutePathBuf::from_absolute_path(std::env::current_dir().expect("cwd"))
-                .expect("absolute cwd")
-                .into(),
-            process_id: None,
-            source: CommandExecutionSource::Agent,
-            status: CommandExecutionStatus::Completed,
-            command_actions: Vec::new(),
-            aggregated_output: None,
-            exit_code: Some(0),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({ "profile": "work_packet" }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(true),
             duration_ms: Some(1),
         },
         thread_id: thread_id.to_string(),
@@ -168,7 +160,7 @@ fn runner_backed_work_packet_command_becomes_typed_validation_receipt() {
     let record = record_from_item_completion(&notification).expect("validation receipt");
     assert_eq!(record.evidence_id, "validation-call");
     assert_eq!(record.outcome, AdaptiveEvidenceOutcome::Success);
-    assert_eq!(record.kind, AdaptiveEvidenceKind::CommandExecution);
+    assert_eq!(record.kind, AdaptiveEvidenceKind::DynamicToolCall);
     assert_eq!(
         record.tool_name.as_deref(),
         Some(super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME)
@@ -187,38 +179,6 @@ fn runner_backed_work_packet_command_becomes_typed_validation_receipt() {
             "turn-validation",
         )
     );
-}
-
-#[test]
-fn similarly_named_command_without_runner_marker_is_not_a_validation_receipt() {
-    let thread_id = ThreadId::new();
-    let notification = ItemCompletedNotification {
-        item: ThreadItem::CommandExecution {
-            model_context: None,
-            sandbox_type: None,
-            id: "manual-validation-call".to_string(),
-            plugin_id: None,
-            script_path: None,
-            command: "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\codexdd-test-workpacket.ps1".to_string(),
-            cwd: AbsolutePathBuf::from_absolute_path(std::env::current_dir().expect("cwd"))
-                .expect("absolute cwd")
-                .into(),
-            process_id: None,
-            source: CommandExecutionSource::Agent,
-            status: CommandExecutionStatus::Completed,
-            command_actions: Vec::new(),
-            aggregated_output: None,
-            exit_code: Some(0),
-            duration_ms: Some(1),
-        },
-        thread_id: thread_id.to_string(),
-        turn_id: "turn-validation".to_string(),
-        completed_at_ms: 1,
-    };
-
-    let record = record_from_item_completion(&notification).expect("command evidence");
-    assert_eq!(record.tool_name, None);
-    assert_eq!(record.validation_profile, None);
 }
 
 #[test]
