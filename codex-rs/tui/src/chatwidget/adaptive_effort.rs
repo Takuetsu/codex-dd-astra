@@ -746,6 +746,8 @@ mod tests {
                 source_turn_id: "old-turn".to_string(),
                 outcome: crate::adaptive_evidence::AdaptiveEvidenceOutcome::Failure,
                 kind: crate::adaptive_evidence::AdaptiveEvidenceKind::CommandExecution,
+                tool_name: None,
+                validation_profile: None,
             });
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,
