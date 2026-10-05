@@ -246,7 +246,20 @@ fn adaptive_mechanical_powershell_file_command_allowed(args: &[String]) -> bool 
                     return false;
                 };
                 let script = script.trim_matches(|character| character == '\'' || character == '"');
-                return !script.starts_with('-') && script.to_ascii_lowercase().ends_with(".ps1");
+                let script_name = script
+                    .rsplit(['/', '\\'])
+                    .next()
+                    .unwrap_or(script)
+                    .to_ascii_lowercase();
+                let is_codexdd_validation_profile = matches!(
+                    script_name.as_str(),
+                    "codexdd-test-targeted.ps1"
+                        | "codexdd-test-workpacket.ps1"
+                        | "codexdd-test-release.ps1"
+                );
+                return !script.starts_with('-')
+                    && script_name.ends_with(".ps1")
+                    && !is_codexdd_validation_profile;
             }
             _ => return false,
         }
