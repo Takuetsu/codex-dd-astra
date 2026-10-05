@@ -341,7 +341,8 @@ async fn admission_suppresses_hard_terminals_and_user_controls() {
 
     for control in ["off", "pause"] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         let route = admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Low);
         configure_admission(&mut chat, AdaptivePendingDecision::RetrySameLevel, route);
         synchronize_admission_route(&mut chat, route);
@@ -540,6 +541,27 @@ fn register_evidence(
         });
 }
 
+fn register_work_packet_receipt(
+    chat: &mut ChatWidget,
+    thread_id: ThreadId,
+    turn_id: &str,
+    evidence_id: &str,
+) {
+    chat.adaptive_effort
+        .evidence_registry
+        .register(AdaptiveEvidenceRecord {
+            evidence_id: evidence_id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Success,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(
+                crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
+            ),
+        });
+}
+
 #[tokio::test]
 async fn ready_for_validation_enforces_complete_role_matrix_as_hard_handoff() {
     for (role, accepted) in [
@@ -556,14 +578,25 @@ async fn ready_for_validation_enforces_complete_role_matrix_as_hard_handoff() {
             role,
             authorized_scope: Some("fixed-scope".to_string()),
         };
-        if role == AdaptiveWorkerRole::Implementation {
+        let evidence_refs = if role == AdaptiveWorkerRole::Implementation {
             chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
-        }
+            chat.adaptive_effort.implementation_phase =
+                Some(AdaptiveImplementationPhase::MechanicalValidation);
+            register_work_packet_receipt(
+                &mut chat,
+                thread_id,
+                "role-turn",
+                "role-work-packet-validation",
+            );
+            vec!["role-work-packet-validation".to_string()]
+        } else {
+            Vec::new()
+        };
         let before = chat.adaptive_effort.clone();
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "role-turn",
             AdaptiveRuntimeSignalKind::ReadyForValidation,
-            Vec::new(),
+            evidence_refs,
         ));
 
         assert_eq!(
@@ -2348,7 +2381,8 @@ async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
         (AdaptiveComplexityClass::Standard, true),
     ] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
         drain_events(&mut rx);
         chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
@@ -2356,10 +2390,18 @@ async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
             authorized_scope: Some("automatic quality gate".to_string()),
         };
         chat.adaptive_effort.complexity_class = Some(complexity_class);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        register_work_packet_receipt(
+            &mut chat,
+            thread_id,
+            "quality-handoff-turn",
+            "quality-work-packet-validation",
+        );
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "quality-handoff-turn",
             AdaptiveRuntimeSignalKind::ReadyForValidation,
-            Vec::new(),
+            vec!["quality-work-packet-validation".to_string()],
         ));
 
         assert!(chat.consume_adaptive_signal_at_terminal("quality-handoff-turn"));
