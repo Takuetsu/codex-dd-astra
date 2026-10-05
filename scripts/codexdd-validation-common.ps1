@@ -176,7 +176,8 @@ function Invoke-CodexDDValidationProfile {
         try {
             Push-Location -LiteralPath $stage.WorkingDirectory
             try {
-                & $stage.FilePath @($stage.ArgumentList) 2>&1 | Write-CodexDDNativeOutput
+                $arguments = @($stage.ArgumentList)
+                & $stage.FilePath @arguments 2>&1 | Write-CodexDDNativeOutput
                 $nativeExitCode = $LASTEXITCODE
                 if ($null -eq $nativeExitCode) {
                     $nativeExitCode = 0
