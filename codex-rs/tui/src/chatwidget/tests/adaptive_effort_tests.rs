@@ -535,6 +535,8 @@ fn register_evidence(
             source_turn_id: "evidence-turn".to_string(),
             outcome,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
         });
 }
 
@@ -959,6 +961,8 @@ async fn workflow_signals_enforce_roles_and_native_evidence_outcomes() {
                 source_turn_id: "prior-validation-turn".to_string(),
                 outcome,
                 kind: AdaptiveEvidenceKind::CommandExecution,
+                tool_name: None,
+                validation_profile: None,
             });
         let before_route = (
             chat.adaptive_effort.current_family,
@@ -1770,6 +1774,8 @@ fn typed_forks_snapshot_immediate_parent_state_and_remain_independent() {
             source_turn_id: "parent-turn".to_string(),
             outcome: AdaptiveEvidenceOutcome::Success,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
         });
     let mut child = adaptive_test_session(
         ThreadId::new(),
@@ -1876,6 +1882,8 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         source_turn_id: "turn-1".to_string(),
         outcome: AdaptiveEvidenceOutcome::Success,
         kind: AdaptiveEvidenceKind::CommandExecution,
+        tool_name: None,
+        validation_profile: None,
     });
     assert_eq!(chat.adaptive_effort, expected);
     assert_matches!(
@@ -2254,6 +2262,8 @@ async fn mechanical_validation_refuses_deescalation_while_failure_pressure_is_li
             source_turn_id: source_turn_id.to_string(),
             outcome: AdaptiveEvidenceOutcome::Failure,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
         });
     chat.adaptive_effort.pending_signal = Some(pending_signal(
         source_turn_id,
