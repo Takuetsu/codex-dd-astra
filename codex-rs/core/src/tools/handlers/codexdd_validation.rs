@@ -23,7 +23,6 @@ use codex_tools::ToolName;
 use codex_tools::ToolSpec;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_json::Value;
 use serde_json::json;
 
 const TOOL_NAME: &str = "run_codexdd_validation";
