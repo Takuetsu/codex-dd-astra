@@ -929,6 +929,9 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
         Arc::new(TestHandler {
             tool_name: codex_tools::ToolName::plain("apply_patch"),
         }) as Arc<dyn CoreToolRuntime>,
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("run_codexdd_validation"),
+        }) as Arc<dyn CoreToolRuntime>,
     ]);
     let session = Arc::new(session);
     let turn = Arc::new(turn);
@@ -961,6 +964,18 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
     registry
         .dispatch_any_with_state(
             powershell_invocation,
+            /*terminal_outcome_reached*/ None,
+        )
+        .await?;
+
+    registry
+        .dispatch_any_with_state(
+            test_invocation(
+                Arc::clone(&session),
+                Arc::clone(&turn),
+                "mechanical-validation-runner-call",
+                codex_tools::ToolName::plain("run_codexdd_validation"),
+            ),
             /*terminal_outcome_reached*/ None,
         )
         .await?;
