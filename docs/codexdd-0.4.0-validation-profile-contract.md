@@ -37,8 +37,8 @@ Purpose: smallest deterministic CodexDD regression set used for focused validati
 Current self-host stages:
 
 1. `git diff --check`;
-2. `just test -p codex-core adaptive --lib`;
-3. `just test -p codex-tui adaptive --lib`.
+2. `just test -p codex-core --lib adaptive`;
+3. `just test -p codex-tui --lib adaptive`.
 
 ### work-packet
 
