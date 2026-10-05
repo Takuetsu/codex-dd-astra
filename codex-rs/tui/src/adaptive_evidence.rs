@@ -12,7 +12,6 @@ use codex_protocol::ThreadId;
 pub(crate) const ADAPTIVE_FAILURE_PRESSURE_THRESHOLD: usize = 2;
 pub(crate) const AUTO_FAILURE_PRESSURE_DIAGNOSTIC: &str = "native_failure_pressure_threshold";
 pub(crate) const CODEXDD_VALIDATION_TOOL_NAME: &str = "run_codexdd_validation";
-pub(crate) const CODEXDD_VALIDATION_RUNNER_MARKER: &str = "CODEXDD_VALIDATION_RUNNER";
 pub(crate) const CODEXDD_WORK_PACKET_PROFILE: &str = "work_packet";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -155,7 +154,7 @@ impl AdaptiveEvidenceRegistry {
                 self.resolve_for_turn(evidence_id, thread_id, source_turn_id)
                     .is_ok_and(|record| {
                         record.outcome == AdaptiveEvidenceOutcome::Success
-                            && record.kind == AdaptiveEvidenceKind::CommandExecution
+                            && record.kind == AdaptiveEvidenceKind::DynamicToolCall
                             && record.tool_name.as_deref() == Some(CODEXDD_VALIDATION_TOOL_NAME)
                             && record.validation_profile.as_deref()
                                 == Some(CODEXDD_WORK_PACKET_PROFILE)
@@ -268,50 +267,23 @@ impl AdaptiveEvidenceRegistry {
     }
 }
 
-fn codexdd_validation_profile_for_command(command: &str) -> Option<String> {
-    if !command.contains(CODEXDD_VALIDATION_RUNNER_MARKER) {
-        return None;
-    }
-
-    [
-        ("targeted", "codexdd-test-targeted.ps1"),
-        (CODEXDD_WORK_PACKET_PROFILE, "codexdd-test-workpacket.ps1"),
-        ("release", "codexdd-test-release.ps1"),
-    ]
-    .into_iter()
-    .find_map(|(profile, script)| {
-        (command.contains(&format!("contract-v1:{profile}")) && command.contains(script))
-            .then(|| profile.to_string())
-    })
-}
-
 pub(crate) fn record_from_item_completion(
     notification: &ItemCompletedNotification,
 ) -> Option<AdaptiveEvidenceRecord> {
     let thread_id = ThreadId::from_string(&notification.thread_id).ok()?;
     let (evidence_id, outcome, kind, tool_name, validation_profile) = match &notification.item {
-        ThreadItem::CommandExecution {
-            id,
-            command,
-            status,
-            ..
-        } => {
-            let validation_profile = codexdd_validation_profile_for_command(command);
-            (
-                id.clone(),
-                match status {
-                    CommandExecutionStatus::Completed => AdaptiveEvidenceOutcome::Success,
-                    CommandExecutionStatus::Failed => AdaptiveEvidenceOutcome::Failure,
-                    CommandExecutionStatus::Declined => AdaptiveEvidenceOutcome::Cancelled,
-                    CommandExecutionStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
-                },
-                AdaptiveEvidenceKind::CommandExecution,
-                validation_profile
-                    .as_ref()
-                    .map(|_| CODEXDD_VALIDATION_TOOL_NAME.to_string()),
-                validation_profile,
-            )
-        },
+        ThreadItem::CommandExecution { id, status, .. } => (
+            id.clone(),
+            match status {
+                CommandExecutionStatus::Completed => AdaptiveEvidenceOutcome::Success,
+                CommandExecutionStatus::Failed => AdaptiveEvidenceOutcome::Failure,
+                CommandExecutionStatus::Declined => AdaptiveEvidenceOutcome::Cancelled,
+                CommandExecutionStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
+            },
+            AdaptiveEvidenceKind::CommandExecution,
+            None,
+            None,
+        ),
         ThreadItem::McpToolCall { id, status, .. } => (
             id.clone(),
             match status {
