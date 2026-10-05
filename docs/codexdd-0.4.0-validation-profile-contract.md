@@ -55,7 +55,7 @@ Purpose: normal post-implementation Local Validation Orchestrator gate.
 Current self-host stages:
 
 1. `git diff --check`;
-2. repository format check;
+2. Rust formatting check using the repository's canonical `cargo fmt` configuration;
 3. scoped `cargo clippy --tests` for `codex-core` + `codex-tui`;
 4. adaptive core nextest;
 5. adaptive TUI nextest;
@@ -69,7 +69,7 @@ Purpose: broad explicit pre-CI/pre-install regression gate.
 
 Current self-host stages cover:
 
-- diff and formatting;
+- diff and Rust formatting;
 - workspace Clippy;
 - history and rollout;
 - protocol/state/thread-store;
@@ -188,3 +188,14 @@ This smoke does not run the expensive CodexDD validation profiles.
 This contract and the self-hosting scripts do not make validation automatic.
 
 3B.2 adds the bounded runtime runner. 3C.1 integrates that runner into protected mechanical validation and makes a current work-packet PASS receipt a prerequisite for `ready_for_validation`.
+
+
+### CodexDD self-host formatting scope
+
+The CodexDD self-host `work-packet` and `release` profiles run the canonical Rust formatting check directly:
+
+```text
+cargo fmt -- --config imports_granularity=Item --check
+```
+
+The repository-wide `scripts/format.py --check` also checks Just and Bazel/Starlark sources. On the frozen 0.3.14 production baseline those unrelated formatter groups are not clean in Daniel-CL's current formatter environment, even though the LVO packets do not modify those files. They therefore are not used as the routine LVO packet gate. This does not authorize formatting drift in files changed by a packet; each repo-owned profile is responsible for deterministic formatting checks appropriate to its owned source surfaces.
