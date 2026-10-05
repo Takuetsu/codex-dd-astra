@@ -308,6 +308,15 @@ Deliverables:
 
 ### 3B.1 — Validation profile contract + self-hosting scripts
 
+**Status:** COMPLETE and Windows-validated on Daniel-CL.
+
+Validation evidence:
+
+- contract outcome-class smoke passed with exit code 0;
+- targeted profile passed with exit code 0;
+- Codex TUI adaptive slice reported 174/174 tests passed;
+- native stderr is correctly treated as output evidence rather than an infrastructure exception.
+
 Scope:
 
 - define exact script invocation/exit-code/output contract;
@@ -322,6 +331,21 @@ Exit:
 - checkpoint commit.
 
 ### 3B.2 — Bounded validation runner tool
+
+**Status:** IMPLEMENTED on the feature branch; pending Daniel-CL Rust validation.
+
+Current implementation decisions:
+
+- model-visible input is only the fixed enum `targeted | work_packet | release`;
+- no arbitrary shell text is accepted;
+- the selected conventional PowerShell profile is resolved from the nearest valid repository root;
+- execution delegates through the existing unified exec command/sandbox path with a profile-specific hard timeout;
+- the validation process writes its complete output to a temporary UTF-8 log outside the source worktree;
+- core persists that log under `<CODEX_HOME>/codexdd/validation/<repo-id>/<run-id>/validation.log`;
+- retention is bounded to the 20 newest runs per repository;
+- only parsed contract events are returned as a compact structured tool result;
+- malformed/missing terminal contract output fails closed;
+- source/tool registration into the adaptive mechanical-validation phase remains deferred to 3C.1.
 
 Scope:
 
