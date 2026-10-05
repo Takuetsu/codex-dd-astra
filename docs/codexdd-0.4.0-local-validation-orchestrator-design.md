@@ -332,7 +332,12 @@ Exit:
 
 ### 3B.2 — Bounded validation runner tool
 
-**Status:** IMPLEMENTED on the feature branch; pending Daniel-CL Rust validation.
+**Status:** COMPLETE and targeted-Rust-validated on Daniel-CL.
+
+Validation evidence:
+
+- the two new runner Rust files passed targeted rustfmt after correction;
+- `cargo nextest run --no-fail-fast -p codex-core --lib codexdd_validation` passed 7/7 tests with exit code 0.
 
 Current implementation decisions:
 
@@ -363,6 +368,18 @@ Exit:
 - checkpoint commit.
 
 ### 3C.1 — Mechanical-validation lifecycle integration
+
+**Status:** IMPLEMENTED on the feature branch; pending Daniel-CL targeted regression validation.
+
+Current implementation:
+
+- `run_codexdd_validation` is registered only when the trusted turn trigger is mechanical validation;
+- the protected mechanical-validation dispatch gate explicitly allows the bounded runner while retaining the existing source-edit restrictions;
+- the mechanical-validation continuation instructs the Worker to run the repo-owned `work_packet` profile instead of manually recreating validation commands;
+- a successful runner call is recognized as typed adaptive evidence using the dynamic-tool name plus its fixed profile argument;
+- Implementation `ready_for_validation` now requires a successful `work_packet` receipt from the same mechanical-validation turn;
+- targeted-only, failed, cross-thread, or stale prior-turn receipts cannot satisfy the handoff gate;
+- Repair-worker handoff behavior is intentionally unchanged in this packet.
 
 Scope:
 
