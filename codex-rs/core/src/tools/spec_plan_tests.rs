@@ -599,6 +599,29 @@ async fn allowed_tools_filter_sources_before_code_mode_and_discovery() {
 }
 
 #[tokio::test]
+async fn codexdd_validation_runner_is_visible_only_during_mechanical_validation() {
+    let ordinary = probe_with(|_| {}, ToolPlanInputs::default()).await;
+    ordinary.assert_visible_lacks(&["run_codexdd_validation"]);
+    ordinary.assert_registered_lacks(&["run_codexdd_validation"]);
+
+    let mechanical = probe_with(
+        |turn| {
+            turn.turn_metadata_state.set_turn_trigger(
+                codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+            );
+        },
+        ToolPlanInputs::default(),
+    )
+    .await;
+    mechanical.assert_visible_contains(&["run_codexdd_validation"]);
+    mechanical.assert_registered_contains(&["run_codexdd_validation"]);
+    assert_eq!(
+        mechanical.exposure("run_codexdd_validation"),
+        ToolExposure::DirectModelOnly
+    );
+}
+
+#[tokio::test]
 async fn reviewer_tool_policy_exclude_optional_core_tools() {
     let (mut session, mut turn) = make_session_and_context().await;
     session.tool_policy = Arc::new(codex_guardian_reviewer::reviewer_tool_policy());
