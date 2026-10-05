@@ -2493,6 +2493,8 @@ async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
                 source_turn_id: source_turn_id.to_string(),
                 outcome: AdaptiveEvidenceOutcome::Failure,
                 kind: AdaptiveEvidenceKind::CommandExecution,
+                tool_name: None,
+                validation_profile: None,
             });
     }
 
