@@ -1155,8 +1155,9 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
 
     registry.add_with_exposure(AdaptiveSignalHandler, ToolExposure::DirectModelOnly);
 
-    let turn_trigger =
-        codex_analytics::TurnAnalyticsMetadata::turn_trigger(turn_context.turn_metadata_state.as_ref());
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        turn_context.turn_metadata_state.as_ref(),
+    );
     if turn_trigger.as_deref() == Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {
         registry.add_with_exposure(CodexDDValidationHandler, ToolExposure::DirectModelOnly);
     }
