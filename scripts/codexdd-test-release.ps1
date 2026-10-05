@@ -15,7 +15,7 @@ $env:NEXTEST_PROFILE = "local"
 
 $stages = @(
     (New-CodexDDValidationStage -Name "diff-check" -FilePath "git" -ArgumentList @("diff", "--check") -WorkingDirectory $repositoryRoot),
-    (New-CodexDDValidationStage -Name "format-check" -FilePath "python" -ArgumentList @("..\scripts\format.py", "--check") -WorkingDirectory $codexRsRoot),
+    (New-CodexDDValidationStage -Name "rust-format-check" -FilePath "cargo" -ArgumentList @("fmt", "--", "--config", "imports_granularity=Item", "--check") -WorkingDirectory $codexRsRoot),
     (New-CodexDDValidationStage -Name "workspace-clippy" -FilePath "cargo" -ArgumentList @("clippy", "--tests", "--workspace") -WorkingDirectory $codexRsRoot),
     (New-CodexDDValidationStage -Name "history-tests" -FilePath "cargo" -ArgumentList @("nextest", "run", "--no-fail-fast", "-p", "codex-history", "--lib") -WorkingDirectory $codexRsRoot),
     (New-CodexDDValidationStage -Name "rollout-tests" -FilePath "cargo" -ArgumentList @("nextest", "run", "--no-fail-fast", "-p", "codex-rollout", "--lib") -WorkingDirectory $codexRsRoot),
