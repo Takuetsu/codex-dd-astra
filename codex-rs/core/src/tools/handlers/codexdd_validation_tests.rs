@@ -61,6 +61,7 @@ fn repository_discovery_requires_markers_and_selected_profile() {
 #[test]
 fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() {
     let command = validation_powershell_command(
+        ValidationProfile::Targeted,
         Path::new("C:\\work\\owner's repo"),
         Path::new("C:\\work\\owner's repo\\scripts\\codexdd-test-targeted.ps1"),
         Path::new("C:\\Temp\\validation.log"),
@@ -69,6 +70,8 @@ fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() 
     assert!(command.contains("'C:\\work\\owner''s repo'"));
     assert!(command.contains("codexdd-test-targeted.ps1"));
     assert!(command.contains("AppendAllText"));
+    assert!(command.contains("CODEXDD_VALIDATION_RUNNER"));
+    assert!(command.contains("contract-v1:targeted"));
     assert!(!command.contains("work_packet"));
 }
 
