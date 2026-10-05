@@ -203,8 +203,7 @@ impl CodexDDValidationHandler {
             .join(args.profile.script_name());
 
         let run_id = validation_run_id(&invocation.call_id);
-        let temp_log_path =
-            std::env::temp_dir().join(format!("codexdd-validation-{run_id}.log"));
+        let temp_log_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.log"));
         if let Err(err) = tokio::fs::remove_file(&temp_log_path).await
             && err.kind() != std::io::ErrorKind::NotFound
         {
@@ -214,8 +213,7 @@ impl CodexDDValidationHandler {
             )));
         }
 
-        let command =
-            validation_powershell_command(&repository_root, &script_path, &temp_log_path);
+        let command = validation_powershell_command(&repository_root, &script_path, &temp_log_path);
         let inner_arguments = json!({
             "cmd": command,
             "shell": "powershell.exe",
