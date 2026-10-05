@@ -430,6 +430,18 @@ At minimum prove on Daniel-CL:
 
 Only after local Phase 4 is green should the normal PR/CI gate begin.
 
+## Post-LVO enhancement priority
+
+After the Local Validation Orchestrator is complete and proven, the next CodexDD enhancement is **GPT-6.1 Sol workflow integration**.
+
+Required order:
+
+1. complete and prove the Local Validation Orchestrator;
+2. integrate GPT-6.1 Sol into the adaptive model/effort workflow;
+3. only then proceed to the automatic upstream-update enhancement.
+
+The GPT-6.1 Sol packet must begin with its own bounded reconnaissance/design pass covering model catalog identity, adaptive routing ladders, complexity/failure/quality/budget routes, status surfaces, persistence/resume behavior, and regression coverage. Do not mix that model-workflow integration into the active LVO implementation packets.
+
 ## Upstream boundary
 
 Do not combine a Codex upstream refresh with packets 3B.1-3F.1.
