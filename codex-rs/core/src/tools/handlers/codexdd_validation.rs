@@ -214,11 +214,8 @@ impl CodexDDValidationHandler {
             )));
         }
 
-        let command = validation_powershell_command(
-            &repository_root,
-            &script_path,
-            &temp_log_path,
-        );
+        let command =
+            validation_powershell_command(&repository_root, &script_path, &temp_log_path);
         let inner_arguments = json!({
             "cmd": command,
             "shell": "powershell.exe",
@@ -398,12 +395,14 @@ async fn persist_validation_log(
         })?;
 
     let log_path = run_directory.join("validation.log");
-    tokio::fs::write(&log_path, log_bytes).await.map_err(|err| {
-        FunctionCallError::RespondToModel(format!(
-            "failed to persist CodexDD validation log {}: {err}",
-            log_path.display()
-        ))
-    })?;
+    tokio::fs::write(&log_path, log_bytes)
+        .await
+        .map_err(|err| {
+            FunctionCallError::RespondToModel(format!(
+                "failed to persist CodexDD validation log {}: {err}",
+                log_path.display()
+            ))
+        })?;
     prune_validation_logs(&repository_log_root).await;
     Ok(log_path)
 }
