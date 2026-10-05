@@ -371,6 +371,39 @@ mod tests {
     use codex_protocol::ThreadId;
 
     #[test]
+    fn mechanical_validation_prompt_requires_work_packet_runner_and_receipt() {
+        let permit = AdaptiveSuccessorPermit {
+            thread_id: ThreadId::new(),
+            source_turn_id: "implementation-complete".to_string(),
+            decision:
+                crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation,
+            route: AdaptiveRoute {
+                family: AdaptiveFamily::Sol,
+                effort: AdaptiveEffort::Medium,
+            },
+            attempt_number: 4,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("codexdd/0.4.0-lvo".to_string()),
+            },
+        };
+
+        let text = adaptive_continuation_text(
+            &permit,
+            /*requires_complexity_recovery*/ false,
+            &[],
+            &[],
+        );
+
+        assert!(text.contains("run_codexdd_validation"));
+        assert!(text.contains("profile=work_packet"));
+        assert!(text.contains("kind=ready_for_validation"));
+        assert!(text.contains("successful validation-runner evidence ref"));
+        assert!(text.contains("kind=implementation_work"));
+        assert!(text.contains("do not manually recreate"));
+    }
+
+    #[test]
     fn validation_terminalization_prompt_reuses_existing_evidence_and_forbids_rerun() {
         let permit = AdaptiveSuccessorPermit {
             thread_id: ThreadId::new(),
