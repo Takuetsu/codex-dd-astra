@@ -342,7 +342,6 @@ mod tests {
     use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
     use codex_app_server_protocol::CommandExecutionSource;
     use codex_app_server_protocol::CommandExecutionStatus;
-    use codex_app_server_protocol::DynamicToolCallStatus;
     use codex_app_server_protocol::ItemCompletedNotification;
     use codex_app_server_protocol::ThreadItem;
     use codex_utils_absolute_path::AbsolutePathBuf;
@@ -386,15 +385,39 @@ mod tests {
         profile: &str,
         success: bool,
     ) -> ItemCompletedNotification {
+        let script = match profile {
+            "targeted" => "codexdd-test-targeted.ps1",
+            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE => {
+                "codexdd-test-workpacket.ps1"
+            }
+            "release" => "codexdd-test-release.ps1",
+            other => panic!("unexpected validation profile {other}"),
+        };
+        let command = format!(
+            "$env:{} = 'contract-v1:{profile}'; powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\{script}",
+            crate::adaptive_evidence::CODEXDD_VALIDATION_RUNNER_MARKER,
+        );
         ItemCompletedNotification {
-            item: ThreadItem::DynamicToolCall {
+            item: ThreadItem::CommandExecution {
+                model_context: None,
+                sandbox_type: None,
                 id: item_id.to_string(),
-                namespace: None,
-                tool: crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
-                arguments: serde_json::json!({ "profile": profile }),
-                status: DynamicToolCallStatus::Completed,
-                content_items: None,
-                success: Some(success),
+                plugin_id: None,
+                script_path: None,
+                command,
+                cwd: AbsolutePathBuf::from_absolute_path(std::env::current_dir().expect("cwd"))
+                    .expect("absolute cwd")
+                    .into(),
+                process_id: None,
+                source: CommandExecutionSource::Agent,
+                status: if success {
+                    CommandExecutionStatus::Completed
+                } else {
+                    CommandExecutionStatus::Failed
+                },
+                command_actions: Vec::new(),
+                aggregated_output: None,
+                exit_code: Some(if success { 0 } else { 1 }),
                 duration_ms: Some(1),
             },
             thread_id: thread_id.to_string(),
