@@ -376,7 +376,7 @@ Current implementation:
 - `run_codexdd_validation` is registered only when the trusted turn trigger is mechanical validation;
 - the protected mechanical-validation dispatch gate explicitly allows the bounded runner while retaining the existing source-edit restrictions;
 - the mechanical-validation continuation instructs the Worker to run the repo-owned `work_packet` profile instead of manually recreating validation commands;
-- a successful runner call is recognized as typed adaptive evidence using the dynamic-tool name plus its fixed profile argument;
+- the bounded runner emits its own native default-namespace dynamic-tool receipt using the original tool-call ID plus the fixed profile argument; the internal exec uses a separate call ID, so arbitrary shell output cannot masquerade as the receipt;
 - Implementation `ready_for_validation` now requires a successful `work_packet` receipt from the same mechanical-validation turn;
 - targeted-only, failed, cross-thread, or stale prior-turn receipts cannot satisfy the handoff gate;
 - Repair-worker handoff behavior is intentionally unchanged in this packet.
