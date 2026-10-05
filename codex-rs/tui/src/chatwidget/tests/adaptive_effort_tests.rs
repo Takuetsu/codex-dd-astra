@@ -341,8 +341,7 @@ async fn admission_suppresses_hard_terminals_and_user_controls() {
 
     for control in ["off", "pause"] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
-        let thread_id = ThreadId::new();
-        chat.thread_id = Some(thread_id);
+        chat.thread_id = Some(ThreadId::new());
         let route = admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Low);
         configure_admission(&mut chat, AdaptivePendingDecision::RetrySameLevel, route);
         synchronize_admission_route(&mut chat, route);
