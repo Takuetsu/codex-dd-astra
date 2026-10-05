@@ -65,9 +65,11 @@ fn adaptive_reconnaissance_rejection(invocation: &ToolInvocation) -> Option<Stri
 
     let allowed = invocation.tool_name.is_default_namespace()
         && match invocation.tool_name.name.as_str() {
-            "report_adaptive_signal" | "update_plan" | "get_context_remaining" | "view_image" => {
-                true
-            }
+            "report_adaptive_signal"
+            | "run_codexdd_validation"
+            | "update_plan"
+            | "get_context_remaining"
+            | "view_image" => true,
             "exec_command" => shell_script_for_invocation(invocation)
                 .as_deref()
                 .is_some_and(adaptive_reconnaissance_shell_command_allowed),
