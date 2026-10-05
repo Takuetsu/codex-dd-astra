@@ -297,6 +297,7 @@ pub(crate) fn record_from_item_completion(
         ),
         ThreadItem::DynamicToolCall {
             id,
+            namespace,
             tool,
             arguments,
             status,
@@ -313,7 +314,7 @@ pub(crate) fn record_from_item_completion(
             },
             AdaptiveEvidenceKind::DynamicToolCall,
             Some(tool.clone()),
-            (tool == CODEXDD_VALIDATION_TOOL_NAME)
+            (namespace.is_none() && tool == CODEXDD_VALIDATION_TOOL_NAME)
                 .then(|| {
                     arguments
                         .get("profile")
