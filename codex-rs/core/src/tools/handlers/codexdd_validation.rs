@@ -213,7 +213,12 @@ impl CodexDDValidationHandler {
             )));
         }
 
-        let command = validation_powershell_command(&repository_root, &script_path, &temp_log_path);
+        let command = validation_powershell_command(
+            args.profile,
+            &repository_root,
+            &script_path,
+            &temp_log_path,
+        );
         let inner_arguments = json!({
             "cmd": command,
             "shell": "powershell.exe",
@@ -321,6 +326,7 @@ fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Option<Pa
 }
 
 fn validation_powershell_command(
+    profile: ValidationProfile,
     repository_root: &Path,
     script_path: &Path,
     log_path: &Path,
@@ -328,8 +334,9 @@ fn validation_powershell_command(
     let repository_root = powershell_single_quoted(repository_root);
     let script_path = powershell_single_quoted(script_path);
     let log_path = powershell_single_quoted(log_path);
+    let runner_marker = format!("contract-v1:{}", profile.tool_name());
     format!(
-        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; exit $code"
+        "$ErrorActionPreference = 'Stop'; $env:CODEXDD_VALIDATION_RUNNER = '{runner_marker}'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; exit $code"
     )
 }
 
