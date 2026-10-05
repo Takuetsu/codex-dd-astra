@@ -25,11 +25,7 @@ fn profiles_map_to_fixed_scripts_and_bounded_timeouts() {
         ],
         [
             ("targeted", "codexdd-test-targeted.ps1", 900_000),
-            (
-                "work_packet",
-                "codexdd-test-workpacket.ps1",
-                2_700_000,
-            ),
+            ("work_packet", "codexdd-test-workpacket.ps1", 2_700_000),
             ("release", "codexdd-test-release.ps1", 7_200_000),
         ]
     );
@@ -44,11 +40,7 @@ fn repository_discovery_requires_markers_and_selected_profile() {
     fs::create_dir_all(root.join("nested").join("work")).expect("nested");
     fs::write(root.join("justfile"), "").expect("justfile");
     fs::write(root.join("codex-rs").join("Cargo.toml"), "").expect("cargo");
-    fs::write(
-        root.join("scripts").join("codexdd-test-targeted.ps1"),
-        "",
-    )
-    .expect("profile");
+    fs::write(root.join("scripts").join("codexdd-test-targeted.ps1"), "").expect("profile");
 
     assert_eq!(
         discover_repository_root(
