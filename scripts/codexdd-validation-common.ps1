@@ -174,11 +174,29 @@ function Invoke-CodexDDValidationProfile {
 
         $nativeExitCode = $null
         try {
+            $resolvedCommand = Get-Command -Name $stage.FilePath -CommandType Application -ErrorAction Stop |
+                Select-Object -First 1
+            if ($null -eq $resolvedCommand) {
+                throw "Executable '$($stage.FilePath)' could not be resolved."
+            }
+
             Push-Location -LiteralPath $stage.WorkingDirectory
             try {
                 $arguments = @($stage.ArgumentList)
-                & $stage.FilePath @arguments 2>&1 | Write-CodexDDNativeOutput
-                $nativeExitCode = $LASTEXITCODE
+                $savedErrorActionPreference = $ErrorActionPreference
+                try {
+                    # Windows PowerShell 5.1 converts redirected native stderr into ErrorRecord
+                    # objects. Keep those records in the output stream without allowing the
+                    # caller's ErrorActionPreference=Stop to misclassify normal native stderr
+                    # as an execution-infrastructure exception.
+                    $ErrorActionPreference = "Continue"
+                    & $resolvedCommand.Source @arguments 2>&1 | Write-CodexDDNativeOutput
+                    $nativeExitCode = $LASTEXITCODE
+                }
+                finally {
+                    $ErrorActionPreference = $savedErrorActionPreference
+                }
+
                 if ($null -eq $nativeExitCode) {
                     $nativeExitCode = 0
                 }
