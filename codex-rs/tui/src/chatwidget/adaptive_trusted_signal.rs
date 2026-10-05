@@ -109,6 +109,17 @@ impl ChatWidget {
                     AdaptiveWorkerRole::Repair => true,
                     AdaptiveWorkerRole::Implementation => {
                         self.adaptive_effort.complexity_class.is_some()
+                            && self.adaptive_effort.implementation_phase
+                                == Some(AdaptiveImplementationPhase::MechanicalValidation)
+                            && self.thread_id.is_some_and(|thread_id| {
+                                self.adaptive_effort
+                                    .evidence_registry
+                                    .has_successful_codexdd_work_packet_receipt_for_turn(
+                                        &envelope.evidence_refs,
+                                        thread_id,
+                                        source_turn_id,
+                                    )
+                            })
                     }
                     AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Validation => false,
                 }
