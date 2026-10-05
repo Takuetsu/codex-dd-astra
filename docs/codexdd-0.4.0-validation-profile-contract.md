@@ -37,8 +37,16 @@ Purpose: smallest deterministic CodexDD regression set used for focused validati
 Current self-host stages:
 
 1. `git diff --check`;
-2. `just test -p codex-core --lib adaptive`;
-3. `just test -p codex-tui --lib adaptive`.
+2. canonical nextest environment + `cargo nextest run --no-fail-fast -p codex-core --lib adaptive`;
+3. canonical nextest environment + `cargo nextest run --no-fail-fast -p codex-tui --lib adaptive`.
+
+The scripts reproduce the root `just test` environment directly on Windows:
+
+- `CODEX_REPO_ROOT=<repository-root>`;
+- `RUST_MIN_STACK=8388608`;
+- `NEXTEST_PROFILE=local`.
+
+This avoids recursively entering the repository's Windows `just` shell adapter from inside a validation PowerShell process while preserving the same nextest settings.
 
 ### work-packet
 
@@ -48,9 +56,9 @@ Current self-host stages:
 
 1. `git diff --check`;
 2. repository format check;
-3. scoped `codex-core` + `codex-tui` Clippy;
-4. adaptive core tests;
-5. adaptive TUI tests;
+3. scoped `cargo clippy --tests` for `codex-core` + `codex-tui`;
+4. adaptive core nextest;
+5. adaptive TUI nextest;
 6. locked debug CLI build.
 
 This is the default profile intended for ordinary Implementation mechanical validation.
@@ -161,7 +169,7 @@ The Local Validation Orchestrator runtime must still execute the profile through
 
 ## Full-log ownership
 
-The profile itself streams native output and structured events.
+The profile itself streams native stdout/stderr and structured events. Native stderr is output evidence, not by itself an infrastructure exception; the native process exit code determines PASS/FAIL unless executable resolution or process launch itself fails.
 
 3B.2 owns persistent log capture. It must store the complete output outside the validated source worktree, under bounded CodexDD runtime storage, and return only compact stage/error evidence to the model by default.
 
@@ -169,8 +177,8 @@ The profile itself streams native output and structured events.
 
 `scripts/codexdd-validation-contract-tests.ps1` exercises the three process outcome classes on Windows:
 
-- success -> 0;
-- native validation failure -> 1;
+- success with native stderr -> 0;
+- native validation failure with stderr -> 1;
 - execution/infrastructure error -> 2.
 
 This smoke does not run the expensive CodexDD validation profiles.
