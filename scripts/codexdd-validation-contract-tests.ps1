@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 
 $passStages = @(
-    (New-CodexDDValidationStage -Name "pass-stage" -FilePath "cmd.exe" -ArgumentList @("/d", "/c", "exit", "0") -WorkingDirectory $repositoryRoot)
+    (New-CodexDDValidationStage -Name "pass-stage" -FilePath "cmd.exe" -ArgumentList @("/d", "/c", "echo fixture-stderr 1>&2 & exit /b 0") -WorkingDirectory $repositoryRoot)
 )
 $passExit = Invoke-CodexDDValidationProfile -Profile "targeted" -RepositoryRoot $repositoryRoot -Stages $passStages
 if ($passExit -ne 0) {
@@ -17,7 +17,7 @@ if ($passExit -ne 0) {
 }
 
 $failStages = @(
-    (New-CodexDDValidationStage -Name "fail-stage" -FilePath "cmd.exe" -ArgumentList @("/d", "/c", "exit", "7") -WorkingDirectory $repositoryRoot)
+    (New-CodexDDValidationStage -Name "fail-stage" -FilePath "cmd.exe" -ArgumentList @("/d", "/c", "echo fixture-failure 1>&2 & exit /b 7") -WorkingDirectory $repositoryRoot)
 )
 $failExit = Invoke-CodexDDValidationProfile -Profile "targeted" -RepositoryRoot $repositoryRoot -Stages $failStages
 if ($failExit -ne 1) {
