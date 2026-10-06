@@ -197,23 +197,31 @@ impl AdaptiveEvidenceRegistry {
         thread_id: ThreadId,
         source_turn_id: &str,
     ) -> Option<(String, String)> {
-        evidence_refs.iter().find_map(|evidence_id| {
-            let record = self
-                .resolve_for_turn(evidence_id, thread_id, source_turn_id)
-                .ok()?;
+        let mut targeted = None;
+        for evidence_id in evidence_refs {
+            let Ok(record) = self.resolve_for_turn(evidence_id, thread_id, source_turn_id) else {
+                continue;
+            };
             if record.outcome != AdaptiveEvidenceOutcome::Failure
                 || record.kind != AdaptiveEvidenceKind::DynamicToolCall
                 || record.tool_name.as_deref() != Some(CODEXDD_VALIDATION_TOOL_NAME)
             {
-                return None;
+                continue;
             }
-            let profile = record.validation_profile.as_deref()?;
-            if !matches!(profile, "targeted" | CODEXDD_WORK_PACKET_PROFILE) {
-                return None;
+            let (Some(profile), Some(fingerprint)) = (
+                record.validation_profile.as_deref(),
+                record.validation_failure_fingerprint.clone(),
+            ) else {
+                continue;
+            };
+            if profile == CODEXDD_WORK_PACKET_PROFILE {
+                return Some((profile.to_string(), fingerprint));
             }
-            let fingerprint = record.validation_failure_fingerprint.clone()?;
-            Some((profile.to_string(), fingerprint))
-        })
+            if profile == "targeted" && targeted.is_none() {
+                targeted = Some((profile.to_string(), fingerprint));
+            }
+        }
+        targeted
     }
 
     pub(crate) fn failure_count_for_turn(
