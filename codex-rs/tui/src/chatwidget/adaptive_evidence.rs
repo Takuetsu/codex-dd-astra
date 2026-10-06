@@ -3,8 +3,10 @@
 use super::*;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
+use crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME;
 use crate::adaptive_evidence::record_from_item_completion;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
+use crate::chatwidget::adaptive_effort::AdaptiveValidationStatus;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::ItemCompletedNotification;
 use codex_app_server_protocol::ThreadItem;
@@ -21,6 +23,7 @@ impl ChatWidget {
         }
 
         self.observe_adaptive_worker_assignment(notification);
+        self.observe_codexdd_validation_status(notification);
 
         let Some(record) = record_from_item_completion(notification) else {
             return;
@@ -55,6 +58,57 @@ impl ChatWidget {
         }
 
         self.save_adaptive_effort_for_current_thread();
+    }
+
+    fn observe_codexdd_validation_status(&mut self, notification: &ItemCompletedNotification) {
+        let ThreadItem::DynamicToolCall {
+            namespace,
+            tool,
+            arguments,
+            status,
+            ..
+        } = &notification.item
+        else {
+            return;
+        };
+        if namespace.is_some()
+            || tool != CODEXDD_VALIDATION_TOOL_NAME
+            || *status != codex_app_server_protocol::DynamicToolCallStatus::Completed
+        {
+            return;
+        }
+
+        let required = |key| {
+            arguments
+                .get(key)
+                .and_then(serde_json::Value::as_str)
+                .filter(|value| !value.trim().is_empty())
+                .map(str::to_string)
+        };
+        let (Some(profile), Some(result), Some(run_id), Some(head_sha), Some(log_path)) = (
+            required("profile"),
+            required("result"),
+            required("run_id"),
+            required("head_sha"),
+            required("log_path"),
+        ) else {
+            return;
+        };
+        if !matches!(profile.as_str(), "targeted" | "work_packet" | "release")
+            || !matches!(result.as_str(), "pass" | "fail" | "error")
+        {
+            return;
+        }
+
+        self.adaptive_effort.validation_status = Some(AdaptiveValidationStatus {
+            profile,
+            result,
+            run_id,
+            branch: required("branch"),
+            head_sha,
+            failed_stage: required("failed_stage"),
+            log_path,
+        });
     }
 
     fn observe_adaptive_worker_assignment(&mut self, notification: &ItemCompletedNotification) {
