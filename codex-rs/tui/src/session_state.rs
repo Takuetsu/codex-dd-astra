@@ -504,7 +504,10 @@ mod codexdd_complexity_persistence_regression {
                     "worker_assignment_locked": true,
                     "workflow_terminal": null,
                     "complexity_class": "architectural",
-                    "implementation_phase": "mechanical_validation"
+                    "implementation_phase": "mechanical_validation",
+                    "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
+                    "validation_repair_cycles_used": 2,
+                    "validation_targeted_retest_required": true
                 }"#,
         )
         .expect("snapshot should deserialize");
@@ -518,5 +521,12 @@ mod codexdd_complexity_persistence_regression {
             Some(AdaptiveImplementationPhase::MechanicalValidation)
         );
         assert!(adaptive.implementation_mechanical_validation_active());
+        assert_eq!(
+            adaptive.validation_repair_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert_eq!(adaptive.validation_repair_cycles_used, 2);
+        assert!(adaptive.validation_targeted_retest_required);
+        assert!(!adaptive.validation_repair_budget_available());
     }
 }
