@@ -737,7 +737,7 @@ impl ChatWidget {
             },
         );
         let validation_last = state.validation_status.as_ref().map_or_else(
-            || "None".to_string(),
+            || "not run".to_string(),
             |status| format!("{} {}", status.result.to_ascii_uppercase(), status.profile),
         );
         let validation_run = state
@@ -764,6 +764,10 @@ impl ChatWidget {
             .validation_status
             .as_ref()
             .map(|status| status.log_path.as_str())
+            .unwrap_or("None");
+        let validation_failure_fingerprint = state
+            .validation_repair_fingerprint
+            .as_deref()
             .unwrap_or("None");
         let validation_repair_remaining =
             CODEXDD_VALIDATION_REPAIR_LIMIT.saturating_sub(state.validation_repair_cycles_used);
@@ -792,7 +796,7 @@ impl ChatWidget {
         };
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}\n  LVO last: {}\n  LVO run: {}\n  LVO candidate: {}\n  LVO failed stage: {}\n  LVO repair budget: {}/{} used ({} remaining)\n  LVO next: {}\n  LVO log: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}\n  LVO last: {}\n  LVO run: {}\n  LVO candidate: {}\n  LVO failed stage: {}\n  LVO failure fingerprint: {}\n  LVO repair budget: {}/{} used ({} remaining)\n  LVO next: {}\n  LVO log: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
@@ -818,6 +822,7 @@ impl ChatWidget {
             validation_run,
             validation_candidate,
             validation_failed_stage,
+            validation_failure_fingerprint,
             state.validation_repair_cycles_used,
             CODEXDD_VALIDATION_REPAIR_LIMIT,
             validation_repair_remaining,
