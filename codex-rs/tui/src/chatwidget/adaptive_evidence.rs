@@ -61,54 +61,9 @@ impl ChatWidget {
     }
 
     fn observe_codexdd_validation_status(&mut self, notification: &ItemCompletedNotification) {
-        let ThreadItem::DynamicToolCall {
-            namespace,
-            tool,
-            arguments,
-            status,
-            ..
-        } = &notification.item
-        else {
-            return;
-        };
-        if namespace.is_some()
-            || tool != CODEXDD_VALIDATION_TOOL_NAME
-            || *status != codex_app_server_protocol::DynamicToolCallStatus::Completed
-        {
-            return;
+        if let Some(status) = validation_status_from_item_completion(notification) {
+            self.adaptive_effort.validation_status = Some(status);
         }
-
-        let required = |key| {
-            arguments
-                .get(key)
-                .and_then(serde_json::Value::as_str)
-                .filter(|value| !value.trim().is_empty())
-                .map(str::to_string)
-        };
-        let (Some(profile), Some(result), Some(run_id), Some(head_sha), Some(log_path)) = (
-            required("profile"),
-            required("result"),
-            required("run_id"),
-            required("head_sha"),
-            required("log_path"),
-        ) else {
-            return;
-        };
-        if !matches!(profile.as_str(), "targeted" | "work_packet" | "release")
-            || !matches!(result.as_str(), "pass" | "fail" | "error")
-        {
-            return;
-        }
-
-        self.adaptive_effort.validation_status = Some(AdaptiveValidationStatus {
-            profile,
-            result,
-            run_id,
-            branch: required("branch"),
-            head_sha,
-            failed_stage: required("failed_stage"),
-            log_path,
-        });
     }
 
     fn observe_adaptive_worker_assignment(&mut self, notification: &ItemCompletedNotification) {
@@ -140,6 +95,59 @@ impl ChatWidget {
     }
 }
 
+fn validation_status_from_item_completion(
+    notification: &ItemCompletedNotification,
+) -> Option<AdaptiveValidationStatus> {
+    let ThreadItem::DynamicToolCall {
+        namespace,
+        tool,
+        arguments,
+        status,
+        ..
+    } = &notification.item
+    else {
+        return None;
+    };
+    if namespace.is_some()
+        || tool != CODEXDD_VALIDATION_TOOL_NAME
+        || *status != codex_app_server_protocol::DynamicToolCallStatus::Completed
+    {
+        return None;
+    }
+
+    let required = |key| {
+        arguments
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .map(str::to_string)
+    };
+    let (Some(profile), Some(result), Some(run_id), Some(head_sha), Some(log_path)) = (
+        required("profile"),
+        required("result"),
+        required("run_id"),
+        required("head_sha"),
+        required("log_path"),
+    ) else {
+        return None;
+    };
+    if !matches!(profile.as_str(), "targeted" | "work_packet" | "release")
+        || !matches!(result.as_str(), "pass" | "fail" | "error")
+    {
+        return None;
+    }
+
+    Some(AdaptiveValidationStatus {
+        profile,
+        result,
+        run_id,
+        branch: required("branch"),
+        head_sha,
+        failed_stage: required("failed_stage"),
+        log_path,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,6 +166,46 @@ mod tests {
             turn_id: "turn".to_string(),
             completed_at_ms: 1,
         }
+    }
+
+    #[test]
+    fn native_validation_receipt_extracts_operator_status() {
+        let notification = ItemCompletedNotification {
+            item: ThreadItem::DynamicToolCall {
+                id: "validation-call".to_string(),
+                namespace: None,
+                tool: CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+                arguments: serde_json::json!({
+                    "profile": "work_packet",
+                    "result": "fail",
+                    "run_id": "run-42",
+                    "branch": "dd/status-evidence",
+                    "head_sha": "0123456789abcdef",
+                    "failed_stage": "core-adaptive-tests",
+                    "log_path": "C:\\codexdd\\validation\\run-42\\validation.log",
+                }),
+                status: codex_app_server_protocol::DynamicToolCallStatus::Completed,
+                content_items: None,
+                success: Some(false),
+                duration_ms: Some(1),
+            },
+            thread_id: "thread".to_string(),
+            turn_id: "turn".to_string(),
+            completed_at_ms: 1,
+        };
+
+        assert_eq!(
+            validation_status_from_item_completion(&notification),
+            Some(AdaptiveValidationStatus {
+                profile: "work_packet".to_string(),
+                result: "fail".to_string(),
+                run_id: "run-42".to_string(),
+                branch: Some("dd/status-evidence".to_string()),
+                head_sha: "0123456789abcdef".to_string(),
+                failed_stage: Some("core-adaptive-tests".to_string()),
+                log_path: "C:\\codexdd\\validation\\run-42\\validation.log".to_string(),
+            })
+        );
     }
 
     #[test]
