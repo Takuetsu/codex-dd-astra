@@ -553,6 +553,10 @@ Exit:
 
 ### Phase 4 — Robust Windows pre-install validation
 
+**Status:** ACTIVE — Packet 4.1.
+
+The numbered Phase-4 plan and durable evidence live in `docs/codexdd-0.4.0-phase-4-validation.md`.
+
 Use numbered Phase-4 packets.
 
 At minimum prove on Daniel-CL:
