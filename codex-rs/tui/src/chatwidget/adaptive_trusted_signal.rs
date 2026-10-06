@@ -81,6 +81,12 @@ impl ChatWidget {
                     })
                 })
                 .flatten();
+        let implementation_work_profile_allowed =
+            implementation_work_failure.as_ref().is_some_and(|(profile, _)| {
+                profile == crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE
+                    || (self.adaptive_effort.validation_targeted_retest_required
+                        && profile == "targeted")
+            });
         let implementation_work_budget_available =
             self.adaptive_effort.validation_repair_budget_available();
 
@@ -119,6 +125,7 @@ impl ChatWidget {
                     && self.adaptive_effort.implementation_phase
                         == Some(AdaptiveImplementationPhase::MechanicalValidation)
                     && implementation_work_failure.is_some()
+                    && implementation_work_profile_allowed
                     && implementation_work_budget_available
                     && envelope.diagnostic_note.is_none()
             }
@@ -179,6 +186,7 @@ impl ChatWidget {
         if !accepted {
             if signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork
                 && implementation_work_failure.is_some()
+                && implementation_work_profile_allowed
                 && !implementation_work_budget_available
             {
                 self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
