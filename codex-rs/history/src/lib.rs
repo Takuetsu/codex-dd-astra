@@ -155,6 +155,8 @@ pub struct AdaptiveValidationStatusSnapshot {
     pub head_sha: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub failed_stage: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_fingerprint: Option<String>,
     pub log_path: String,
 }
 
