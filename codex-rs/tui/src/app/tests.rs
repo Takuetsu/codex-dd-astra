@@ -1037,7 +1037,7 @@ async fn active_thread_drain_yields_after_frame_deadline_without_dropping_events
     assert!(
         app.active_thread_rx
             .as_ref()
-            .is_some_and(|receiver| receiver.is_empty()),
+            .is_some_and(tokio::sync::mpsc::UnboundedReceiver::is_empty),
         "the next foreground frame should deliver the preserved notification"
     );
     assert_eq!(
