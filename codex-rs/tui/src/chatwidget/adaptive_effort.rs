@@ -780,7 +780,7 @@ mod tests {
                 kind: crate::adaptive_evidence::AdaptiveEvidenceKind::CommandExecution,
                 tool_name: None,
                 validation_profile: None,
-    validation_failure_fingerprint: None,
+                validation_failure_fingerprint: None,
             });
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,
