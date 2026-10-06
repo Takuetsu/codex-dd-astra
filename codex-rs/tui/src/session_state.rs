@@ -624,7 +624,16 @@ mod codexdd_complexity_persistence_regression {
                     "implementation_phase": "mechanical_validation",
                     "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
                     "validation_repair_cycles_used": 2,
-                    "validation_targeted_retest_required": true
+                    "validation_targeted_retest_required": true,
+                    "validation_status": {
+                        "profile": "work_packet",
+                        "result": "fail",
+                        "run_id": "run-restore-42",
+                        "branch": "dd/restore",
+                        "head_sha": "0123456789abcdef",
+                        "failed_stage": "core-adaptive-tests",
+                        "log_path": "C:\\codexdd\\validation\\run-restore-42\\validation.log"
+                    }
                 }"#,
         )
         .expect("snapshot should deserialize");
@@ -645,5 +654,18 @@ mod codexdd_complexity_persistence_regression {
         assert_eq!(adaptive.validation_repair_cycles_used, 2);
         assert!(adaptive.validation_targeted_retest_required);
         assert!(!adaptive.validation_repair_budget_available());
+        let validation_status = adaptive
+            .validation_status
+            .as_ref()
+            .expect("validation operator status");
+        assert_eq!(validation_status.profile, "work_packet");
+        assert_eq!(validation_status.result, "fail");
+        assert_eq!(validation_status.run_id, "run-restore-42");
+        assert_eq!(validation_status.branch.as_deref(), Some("dd/restore"));
+        assert_eq!(validation_status.head_sha, "0123456789abcdef");
+        assert_eq!(
+            validation_status.failed_stage.as_deref(),
+            Some("core-adaptive-tests")
+        );
     }
 }
