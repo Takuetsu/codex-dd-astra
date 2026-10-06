@@ -338,6 +338,18 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         authorized_scope: Some("bounded status integration".to_string()),
     };
     chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.validation_repair_cycles_used = 1;
+    chat.adaptive_effort.validation_targeted_retest_required = true;
+    chat.adaptive_effort.validation_status =
+        Some(crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
+            profile: "work_packet".to_string(),
+            result: "pass".to_string(),
+            run_id: "run-status-42".to_string(),
+            branch: Some("dd/status-evidence".to_string()),
+            head_sha: "0123456789abcdef".to_string(),
+            failed_stage: None,
+            log_path: "C:\\codexdd\\validation\\run-status-42\\validation.log".to_string(),
+        });
     chat.adaptive_effort.workflow_terminal =
         Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
 
@@ -364,6 +376,13 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         "Worker scope: bounded status integration",
         "Worker binding: Bound",
         "Workflow terminal: READY_FOR_VALIDATION",
+        "LVO last: PASS work_packet",
+        "LVO run: run-status-42",
+        "LVO candidate: dd/status-evidence @ 0123456789abcdef",
+        "LVO failed stage: None",
+        "LVO repair budget: 1/2 used (1 remaining)",
+        "LVO next: handoff ready",
+        "LVO log: C:\\codexdd\\validation\\run-status-42\\validation.log",
     ] {
         assert!(
             rendered.contains(expected),
