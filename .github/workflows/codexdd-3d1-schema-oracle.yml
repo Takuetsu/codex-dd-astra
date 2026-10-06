@@ -1,0 +1,45 @@
+name: CodexDD 3D.1 schema oracle
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.0-local-validation-orchestrator
+    paths:
+      - ".github/workflows/codexdd-3d1-schema-oracle.yml"
+      - "codex-rs/app-server-protocol/src/**/*.rs"
+      - "codex-rs/history/src/**/*.rs"
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Ensure uv
+        shell: bash
+        run: |
+          if ! command -v uv >/dev/null 2>&1; then
+            python -m pip install uv
+          fi
+      - name: Generate committed app-server schema and SDK artifacts
+        shell: bash
+        run: |
+          cd codex-rs
+          python app-server-protocol/scripts/write_schema_fixtures.py
+          cd ..
+          git diff --binary > codexdd-3d1-schema.patch
+          if [ ! -s codexdd-3d1-schema.patch ]; then
+            printf 'NO_DIFF\n' > codexdd-3d1-schema.patch
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: codexdd-3d1-schema-patch
+          path: codexdd-3d1-schema.patch
+          if-no-files-found: error
+          retention-days: 1
