@@ -3625,6 +3625,9 @@ mod tests {
                             branch: Some("feature/fork".to_string()),
                             head_sha: "0123456789abcdef".to_string(),
                             failed_stage: Some("core-adaptive-tests".to_string()),
+                            failure_fingerprint: Some(
+                                "v1:work_packet:core-adaptive-tests".to_string(),
+                            ),
                             log_path: "C:\\codexdd\\validation\\validation.log".to_string(),
                         },
                     ),
@@ -3690,6 +3693,10 @@ mod tests {
         assert_eq!(
             validation_status.failed_stage.as_deref(),
             Some("core-adaptive-tests")
+        );
+        assert_eq!(
+            validation_status.failure_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
         );
         assert!(state.worker_assignment_locked);
         assert!(state.pending_attempt.is_none());
