@@ -130,13 +130,22 @@ impl ChatWidget {
                             && self.adaptive_effort.implementation_phase
                                 == Some(AdaptiveImplementationPhase::MechanicalValidation)
                             && self.thread_id.is_some_and(|thread_id| {
-                                self.adaptive_effort
-                                    .evidence_registry
-                                    .has_successful_codexdd_work_packet_receipt_for_turn(
+                                let evidence = &self.adaptive_effort.evidence_registry;
+                                let work_packet_passed =
+                                    evidence.has_successful_codexdd_work_packet_receipt_for_turn(
                                         &envelope.evidence_refs,
                                         thread_id,
                                         source_turn_id,
-                                    )
+                                    );
+                                let targeted_passed =
+                                    !self.adaptive_effort.validation_targeted_retest_required
+                                        || evidence
+                                            .has_successful_codexdd_targeted_receipt_for_turn(
+                                                &envelope.evidence_refs,
+                                                thread_id,
+                                                source_turn_id,
+                                            );
+                                work_packet_passed && targeted_passed
                             })
                     }
                     AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Validation => false,
