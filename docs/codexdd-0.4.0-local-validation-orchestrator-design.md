@@ -369,7 +369,14 @@ Exit:
 
 ### 3C.1 — Mechanical-validation lifecycle integration
 
-**Status:** IMPLEMENTED on the feature branch; pending Daniel-CL targeted regression validation.
+**Status:** COMPLETE and Windows-validated on Daniel-CL.
+
+Validation evidence:
+
+- targeted core validation-runner tests passed;
+- mechanical-validation core regression slice passed;
+- full Codex TUI adaptive regression slice passed 178/178 with exit code 0;
+- receipt-gate fallout in legacy tests was corrected to model the new required work-packet receipt rather than weakening the gate.
 
 Current implementation:
 
@@ -396,6 +403,21 @@ Exit:
 - checkpoint commit.
 
 ### 3C.2 — Bounded diagnose/repair/retest loop
+
+**Status:** IMPLEMENTED on the feature branch; pending Daniel-CL targeted regression validation.
+
+Current implementation:
+
+- repairable validation failures carry a stage-scoped fingerprint in the native LVO receipt;
+- `implementation_work` now requires a same-turn failed `targeted` or `work_packet` LVO receipt rather than model prose;
+- at most two source-changing repair cycles are admitted for the active work packet;
+- a third repair request with valid failure evidence deterministically latches `Blocked`;
+- after any admitted repair, the next mechanical-validation turn must pass `targeted` before `work_packet`;
+- `ready_for_validation` after repair requires both same-turn successful targeted and work-packet receipts;
+- a successful handoff clears the repair fingerprint, cycle count, and targeted-retest requirement;
+- failure fingerprint, repair-cycle count, and targeted-retest requirement are durable workflow state and survive resume/fork;
+- persisted repair state is validated fail-closed and cannot restore with an over-budget or internally inconsistent combination;
+- infrastructure/contract failures do not produce a repairable fingerprint and therefore cannot authorize `implementation_work`.
 
 Scope:
 
