@@ -270,11 +270,7 @@ fn work_packet_failure_is_preferred_over_targeted_regardless_of_ref_order() {
         ],
     ] {
         assert_eq!(
-            registry.codexdd_repairable_validation_failure_for_turn(
-                &refs,
-                thread_id,
-                turn_id,
-            ),
+            registry.codexdd_repairable_validation_failure_for_turn(&refs, thread_id, turn_id,),
             Some((
                 super::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
                 "v1:work_packet:tui-adaptive-tests".to_string(),
