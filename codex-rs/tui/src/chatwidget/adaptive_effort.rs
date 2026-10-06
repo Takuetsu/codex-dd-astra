@@ -768,8 +768,10 @@ impl ChatWidget {
             .map(|status| status.log_path.as_str())
             .unwrap_or("None");
         let validation_failure_fingerprint = state
-            .validation_repair_fingerprint
-            .as_deref()
+            .validation_status
+            .as_ref()
+            .and_then(|status| status.failure_fingerprint.as_deref())
+            .or(state.validation_repair_fingerprint.as_deref())
             .unwrap_or("None");
         let validation_repair_remaining =
             CODEXDD_VALIDATION_REPAIR_LIMIT.saturating_sub(state.validation_repair_cycles_used);
