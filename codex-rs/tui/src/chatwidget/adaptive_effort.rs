@@ -98,6 +98,7 @@ pub(crate) struct AdaptiveValidationStatus {
     pub(crate) branch: Option<String>,
     pub(crate) head_sha: String,
     pub(crate) failed_stage: Option<String>,
+    pub(crate) failure_fingerprint: Option<String>,
     pub(crate) log_path: String,
 }
 
@@ -360,6 +361,7 @@ impl AdaptiveEffortState {
                     branch: status.branch.clone(),
                     head_sha: status.head_sha.clone(),
                     failed_stage: status.failed_stage.clone(),
+                    failure_fingerprint: status.failure_fingerprint.clone(),
                     log_path: status.log_path.clone(),
                 }
             }),
