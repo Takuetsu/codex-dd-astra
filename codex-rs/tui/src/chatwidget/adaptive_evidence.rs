@@ -144,6 +144,7 @@ fn validation_status_from_item_completion(
         branch: required("branch"),
         head_sha,
         failed_stage: required("failed_stage"),
+        failure_fingerprint: required("failure_fingerprint"),
         log_path,
     })
 }
@@ -182,6 +183,7 @@ mod tests {
                     "branch": "dd/status-evidence",
                     "head_sha": "0123456789abcdef",
                     "failed_stage": "core-adaptive-tests",
+                    "failure_fingerprint": "v1:work_packet:core-adaptive-tests",
                     "log_path": "C:\\codexdd\\validation\\run-42\\validation.log",
                 }),
                 status: codex_app_server_protocol::DynamicToolCallStatus::Completed,
@@ -203,6 +205,7 @@ mod tests {
                 branch: Some("dd/status-evidence".to_string()),
                 head_sha: "0123456789abcdef".to_string(),
                 failed_stage: Some("core-adaptive-tests".to_string()),
+                failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
                 log_path: "C:\\codexdd\\validation\\run-42\\validation.log".to_string(),
             })
         );
