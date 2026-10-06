@@ -442,15 +442,34 @@ Exit:
 
 ### 3D.1 — Status, summaries, and operator evidence
 
-**Status:** IN PROGRESS.
+**Status:** IMPLEMENTATION COMPLETE; PENDING DANIEL-CL WINDOWS VALIDATION.
 
-Implementation direction:
+Implemented:
 
-- extend the existing `/status` Adaptive Effort block; do not add a separate status command;
-- record the latest native LVO profile/result/run/branch/HEAD/log/failed-stage metadata from the validation-runner receipt;
-- persist that compact operator status across resume/fork without persisting the ephemeral evidence registry;
-- show repair cycles used/remaining and the deterministic next validation step;
-- enrich the compact validation-runner result with run/branch/HEAD identity so PASS/FAIL handoff evidence is useful without full logs.
+- extended the existing `/status` Adaptive Effort block; no parallel status command was added;
+- native LVO receipts now carry compact operator identity including profile/result, run ID, branch, HEAD SHA, failed stage, and external log path;
+- the latest compact LVO operator status is persisted/restored across resume and detached-fork workflow state without treating model prose as authority;
+- `/status` reports:
+  - last LVO profile/result, with an explicit `not run` state before first validation;
+  - native validation run ID;
+  - branch + candidate HEAD SHA;
+  - failed stage;
+  - active stage-scoped validation failure fingerprint;
+  - repair cycles used/remaining against the global 2-cycle budget;
+  - deterministic next step such as `work_packet`, `targeted -> work_packet`, repair return, handoff ready, or owner review required;
+  - external validation log path;
+- the validation runner's compact structured result includes run/branch/HEAD identity while full logs remain outside model context;
+- app-server workflow protocol/schema and generated SDK artifacts carry the compact validation status needed for durable restore;
+- status, receipt-ingestion, persistence, detached-fork, and pre-validation rendering regressions were added.
+
+GitHub-side validation before the Daniel-CL gate:
+
+- 3D.1 rustfmt surface: green;
+- workflow-state constructor scan: green;
+- `codex-core` validation-runner slice: green;
+- `codex-history` library-test compile: green;
+- `codex-tui` Windows library-test compile: green on the pre-final-fingerprint checkpoint;
+- final fingerprint/pre-validation status delta is being rechecked by the same temporary oracle before cleanup.
 
 Scope:
 
@@ -461,6 +480,7 @@ Scope:
 Exit:
 
 - operator can identify what ran, against which SHA, and what remains;
+- targeted Windows validation and full adaptive regression are green on Daniel-CL;
 - checkpoint commit.
 
 ### 3E.1 — Version/provenance/docs policy transition
