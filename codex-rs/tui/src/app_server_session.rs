@@ -3612,6 +3612,11 @@ mod tests {
                     current_effort: Some("high".to_string()),
                     complexity_class: Some("complex".to_string()),
                     implementation_phase: Some("implementation".to_string()),
+                    validation_repair_fingerprint: Some(
+                        "v1:work_packet:core-adaptive-tests".to_string(),
+                    ),
+                    validation_repair_cycles_used: Some(1),
+                    validation_targeted_retest_required: Some(true),
                     attempt_number: 3,
                     paused_by_user: false,
                     worker_role: "implementation".to_string(),
@@ -3656,6 +3661,12 @@ mod tests {
             state.implementation_phase,
             Some(crate::adaptive_complexity::AdaptiveImplementationPhase::Implementation)
         );
+        assert_eq!(
+            state.validation_repair_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert_eq!(state.validation_repair_cycles_used, 1);
+        assert!(state.validation_targeted_retest_required);
         assert!(state.worker_assignment_locked);
         assert!(state.pending_attempt.is_none());
         assert!(state.pending_signal.is_none());
