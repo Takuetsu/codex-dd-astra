@@ -468,8 +468,8 @@ GitHub-side validation before the Daniel-CL gate:
 - workflow-state constructor scan: green;
 - `codex-core` validation-runner slice: green;
 - `codex-history` library-test compile: green;
-- `codex-tui` Windows library-test compile: green on the pre-final-fingerprint checkpoint;
-- final fingerprint/pre-validation status delta is being rechecked by the same temporary oracle before cleanup.
+- `codex-tui` Windows library-test compile: green on the final fingerprint/pre-validation status checkpoint;
+- temporary 3D.1 validation/schema oracle workflows removed after the final green runs.
 
 Scope:
 
