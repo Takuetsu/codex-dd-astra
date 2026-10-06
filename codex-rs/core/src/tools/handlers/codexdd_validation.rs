@@ -298,7 +298,7 @@ impl CodexDDValidationHandler {
         let receipt_arguments = json!({
             "profile": args.profile.tool_name(),
             "failure_fingerprint": failure_fingerprint,
-            "failed_stage": summary.failed_stage,
+            "failed_stage": summary.failed_stage.clone(),
         });
         let receipt_started = TurnItem::DynamicToolCall(DynamicToolCallItem {
             id: invocation.call_id.clone(),
