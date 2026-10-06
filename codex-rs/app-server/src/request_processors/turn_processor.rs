@@ -222,6 +222,13 @@ impl TurnRequestProcessor {
                         current_effort: state.current_effort,
                         complexity_class: state.complexity_class,
                         implementation_phase: state.implementation_phase,
+                        validation_repair_fingerprint: state.validation_repair_fingerprint,
+                        validation_repair_cycles_used: state
+                            .validation_repair_cycles_used
+                            .unwrap_or_default(),
+                        validation_targeted_retest_required: state
+                            .validation_targeted_retest_required
+                            .unwrap_or_default(),
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
                         worker_role: state.worker_role,
