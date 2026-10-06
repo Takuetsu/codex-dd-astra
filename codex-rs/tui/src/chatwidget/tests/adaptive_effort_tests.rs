@@ -537,6 +537,7 @@ fn register_evidence(
             kind: AdaptiveEvidenceKind::CommandExecution,
             tool_name: None,
             validation_profile: None,
+    validation_failure_fingerprint: None,
         });
 }
 
@@ -558,6 +559,7 @@ fn register_work_packet_receipt(
             validation_profile: Some(
                 crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
             ),
+            validation_failure_fingerprint: None,
         });
 }
 
@@ -996,6 +998,7 @@ async fn workflow_signals_enforce_roles_and_native_evidence_outcomes() {
                 kind: AdaptiveEvidenceKind::CommandExecution,
                 tool_name: None,
                 validation_profile: None,
+    validation_failure_fingerprint: None,
             });
         let before_route = (
             chat.adaptive_effort.current_family,
@@ -1809,6 +1812,7 @@ fn typed_forks_snapshot_immediate_parent_state_and_remain_independent() {
             kind: AdaptiveEvidenceKind::CommandExecution,
             tool_name: None,
             validation_profile: None,
+    validation_failure_fingerprint: None,
         });
     let mut child = adaptive_test_session(
         ThreadId::new(),
@@ -1917,6 +1921,7 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         kind: AdaptiveEvidenceKind::CommandExecution,
         tool_name: None,
         validation_profile: None,
+    validation_failure_fingerprint: None,
     });
     assert_eq!(chat.adaptive_effort, expected);
     assert_matches!(
@@ -2297,6 +2302,7 @@ async fn mechanical_validation_refuses_deescalation_while_failure_pressure_is_li
             kind: AdaptiveEvidenceKind::CommandExecution,
             tool_name: None,
             validation_profile: None,
+    validation_failure_fingerprint: None,
         });
     chat.adaptive_effort.pending_signal = Some(pending_signal(
         source_turn_id,
@@ -2537,6 +2543,7 @@ async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
                 kind: AdaptiveEvidenceKind::CommandExecution,
                 tool_name: None,
                 validation_profile: None,
+    validation_failure_fingerprint: None,
             });
     }
 
