@@ -521,7 +521,20 @@ Exit:
 
 ### 3F.1 — Full implementation audit
 
-**Status:** IN PROGRESS.
+**Status:** SOURCE AUDIT COMPLETE; PENDING DANIEL-CL WORK-PACKET VALIDATION.
+
+Audit result:
+
+- all production-to-feature paths are accounted for as LVO runtime, persistence, generated protocol, profile-script, version, or documentation surfaces;
+- no upstream refresh or unrelated merge is mixed into 0.4.0; the upstream workspace remains 0.159.2;
+- the protected mechanical-validation shell boundary is not widened, and direct execution of LVO profile scripts is tighter than the 0.3.14 baseline;
+- native same-turn work-packet receipt authority, stale-receipt rejection, bounded repair admission, global two-cycle budget, resume/fork persistence, and consequential owner gates are intact;
+- one operator-evidence defect was found: the latest failed native receipt fingerprint was not visible in `/status` until repair admission;
+- the defect is repaired by persisting the optional native receipt fingerprint in compact validation status and preferring it in `/status`, without changing repair authority or budget consumption;
+- the repair passed rustfmt, constructor scan, history compile, Windows TUI compile, and schema/SDK regeneration;
+- temporary audit/schema oracle workflows were removed after validation.
+
+Durable details are recorded in `docs/codexdd-0.4.0-phase-3f-audit.md`.
 
 Scope:
 
