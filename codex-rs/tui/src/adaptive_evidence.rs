@@ -38,6 +38,7 @@ pub(crate) struct AdaptiveEvidenceRecord {
     pub(crate) kind: AdaptiveEvidenceKind,
     pub(crate) tool_name: Option<String>,
     pub(crate) validation_profile: Option<String>,
+    pub(crate) validation_failure_fingerprint: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -162,6 +163,31 @@ impl AdaptiveEvidenceRegistry {
             })
     }
 
+    pub(crate) fn codexdd_repairable_validation_failure_for_turn(
+        &self,
+        evidence_refs: &[String],
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> Option<(String, String)> {
+        evidence_refs.iter().find_map(|evidence_id| {
+            let record = self
+                .resolve_for_turn(evidence_id, thread_id, source_turn_id)
+                .ok()?;
+            if record.outcome != AdaptiveEvidenceOutcome::Failure
+                || record.kind != AdaptiveEvidenceKind::DynamicToolCall
+                || record.tool_name.as_deref() != Some(CODEXDD_VALIDATION_TOOL_NAME)
+            {
+                return None;
+            }
+            let profile = record.validation_profile.as_deref()?;
+            if !matches!(profile, "targeted" | CODEXDD_WORK_PACKET_PROFILE) {
+                return None;
+            }
+            let fingerprint = record.validation_failure_fingerprint.clone()?;
+            Some((profile.to_string(), fingerprint))
+        })
+    }
+
     pub(crate) fn failure_count_for_turn(
         &self,
         thread_id: ThreadId,
@@ -271,7 +297,14 @@ pub(crate) fn record_from_item_completion(
     notification: &ItemCompletedNotification,
 ) -> Option<AdaptiveEvidenceRecord> {
     let thread_id = ThreadId::from_string(&notification.thread_id).ok()?;
-    let (evidence_id, outcome, kind, tool_name, validation_profile) = match &notification.item {
+    let (
+        evidence_id,
+        outcome,
+        kind,
+        tool_name,
+        validation_profile,
+        validation_failure_fingerprint,
+    ) = match &notification.item {
         ThreadItem::CommandExecution { id, status, .. } => (
             id.clone(),
             match status {
@@ -283,6 +316,7 @@ pub(crate) fn record_from_item_completion(
             AdaptiveEvidenceKind::CommandExecution,
             None,
             None,
+            None,
         ),
         ThreadItem::McpToolCall { id, status, .. } => (
             id.clone(),
@@ -292,6 +326,7 @@ pub(crate) fn record_from_item_completion(
                 McpToolCallStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
             },
             AdaptiveEvidenceKind::McpToolCall,
+            None,
             None,
             None,
         ),
@@ -322,6 +357,14 @@ pub(crate) fn record_from_item_completion(
                         .map(str::to_string)
                 })
                 .flatten(),
+            (namespace.is_none() && tool == CODEXDD_VALIDATION_TOOL_NAME)
+                .then(|| {
+                    arguments
+                        .get("failure_fingerprint")
+                        .and_then(serde_json::Value::as_str)
+                        .map(str::to_string)
+                })
+                .flatten(),
         ),
         _ => return None,
     };
@@ -333,5 +376,6 @@ pub(crate) fn record_from_item_completion(
         kind,
         tool_name,
         validation_profile,
+        validation_failure_fingerprint,
     })
 }
