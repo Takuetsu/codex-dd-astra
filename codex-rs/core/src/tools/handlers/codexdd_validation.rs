@@ -294,7 +294,12 @@ impl CodexDDValidationHandler {
         }
 
         let success = summary.status == "pass" && summary.exit_code == 0;
-        let receipt_arguments = json!({ "profile": args.profile.tool_name() });
+        let failure_fingerprint = validation_failure_fingerprint(args.profile, &summary);
+        let receipt_arguments = json!({
+            "profile": args.profile.tool_name(),
+            "failure_fingerprint": failure_fingerprint,
+            "failed_stage": summary.failed_stage,
+        });
         let receipt_started = TurnItem::DynamicToolCall(DynamicToolCallItem {
             id: invocation.call_id.clone(),
             namespace: None,
@@ -355,6 +360,17 @@ impl CoreToolRuntime for CodexDDValidationHandler {
     fn is_builtin_control_tool(&self) -> bool {
         true
     }
+}
+
+fn validation_failure_fingerprint(
+    profile: ValidationProfile,
+    summary: &ValidationSummary,
+) -> Option<String> {
+    if summary.status != "fail" || summary.exit_code != 1 {
+        return None;
+    }
+    let failed_stage = summary.failed_stage.as_deref()?;
+    Some(format!("v1:{}:{failed_stage}", profile.tool_name()))
 }
 
 fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Option<PathBuf> {
