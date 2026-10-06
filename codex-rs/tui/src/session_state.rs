@@ -229,6 +229,7 @@ fn apply_persisted_adaptive_workflow_state(
             branch: status.branch,
             head_sha: status.head_sha,
             failed_stage: status.failed_stage,
+            failure_fingerprint: status.failure_fingerprint,
             log_path: status.log_path,
         });
     if let Some(status) = validation_status.as_ref() {
@@ -236,6 +237,11 @@ fn apply_persisted_adaptive_workflow_state(
             || status.run_id.trim().is_empty()
             || status.head_sha.trim().is_empty()
             || status.log_path.trim().is_empty()
+            || status
+                .failure_fingerprint
+                .as_deref()
+                .is_some_and(|fingerprint| fingerprint.trim().is_empty())
+            || (status.failure_fingerprint.is_some() && status.result != "fail")
             || !matches!(status.result.as_str(), "pass" | "fail" | "error")
         {
             return Err(
