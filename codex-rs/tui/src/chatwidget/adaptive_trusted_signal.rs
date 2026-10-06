@@ -1017,12 +1017,12 @@ mod tests {
             Some("v1:work_packet:core-adaptive-tests")
         );
         assert!(chat.adaptive_effort.validation_targeted_retest_required);
-        assert_matches!(
+        assert!(matches!(
             chat.adaptive_effort.pending_attempt,
             Some(ref pending)
                 if pending.decision
                     == crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ResumeImplementation
-        );
+        ));
     }
 
     #[tokio::test]
