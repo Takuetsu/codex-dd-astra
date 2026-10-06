@@ -343,16 +343,14 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
     chat.adaptive_effort.validation_status = Some(
         crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
             profile: "work_packet".to_string(),
-            result: "pass".to_string(),
+            result: "fail".to_string(),
             run_id: "run-status-42".to_string(),
             branch: Some("dd/status-evidence".to_string()),
             head_sha: "0123456789abcdef".to_string(),
-            failed_stage: None,
+            failed_stage: Some("core-adaptive-tests".to_string()),
             log_path: "C:\\codexdd\\validation\\run-status-42\\validation.log".to_string(),
         },
     );
-    chat.adaptive_effort.workflow_terminal =
-        Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
 
     chat.add_status_output(
         /*refreshing_rate_limits*/ false, /*request_id*/ None,
@@ -376,13 +374,13 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         "Worker role: Implementation",
         "Worker scope: bounded status integration",
         "Worker binding: Bound",
-        "Workflow terminal: READY_FOR_VALIDATION",
-        "LVO last: PASS work_packet",
+        "Workflow terminal: None",
+        "LVO last: FAIL work_packet",
         "LVO run: run-status-42",
         "LVO candidate: dd/status-evidence @ 0123456789abcdef",
-        "LVO failed stage: None",
+        "LVO failed stage: core-adaptive-tests",
         "LVO repair budget: 1/2 used (1 remaining)",
-        "LVO next: handoff ready",
+        "LVO next: targeted -> work_packet",
         "LVO log: C:\\codexdd\\validation\\run-status-42\\validation.log",
     ] {
         assert!(
