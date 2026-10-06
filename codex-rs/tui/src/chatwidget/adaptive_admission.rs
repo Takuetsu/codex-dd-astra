@@ -111,7 +111,9 @@ impl ChatWidget {
             &validation_failure_refs,
             self.adaptive_effort.validation_targeted_retest_required,
             self.adaptive_effort.validation_repair_cycles_used,
-            self.adaptive_effort.validation_repair_fingerprint.as_deref(),
+            self.adaptive_effort
+                .validation_repair_fingerprint
+                .as_deref(),
         ));
         let accepted = self.submit_user_message_with_history_record(
             message,
