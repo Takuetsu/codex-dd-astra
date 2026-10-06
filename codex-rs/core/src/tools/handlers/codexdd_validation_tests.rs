@@ -162,10 +162,7 @@ fn validation_failure_fingerprint_is_stage_scoped_and_errors_are_not_repairable(
         ..failed
     };
     assert_eq!(
-        validation_failure_fingerprint(
-            ValidationProfile::WorkPacket,
-            &infrastructure_error,
-        ),
+        validation_failure_fingerprint(ValidationProfile::WorkPacket, &infrastructure_error,),
         None
     );
 }
