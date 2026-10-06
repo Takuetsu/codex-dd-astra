@@ -138,6 +138,39 @@ fn parser_preserves_failed_stage_without_full_native_output() {
 }
 
 #[test]
+fn validation_failure_fingerprint_is_stage_scoped_and_errors_are_not_repairable() {
+    let failed = ValidationSummary {
+        contract_version: 1,
+        profile: "work-packet".to_string(),
+        status: "fail".to_string(),
+        exit_code: 1,
+        stages: Vec::new(),
+        failed_stage: Some("core-adaptive-tests".to_string()),
+        error_type: None,
+        message: None,
+        log_path: "validation.log".to_string(),
+    };
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::WorkPacket, &failed),
+        Some("v1:work_packet:core-adaptive-tests".to_string())
+    );
+
+    let infrastructure_error = ValidationSummary {
+        status: "error".to_string(),
+        exit_code: 2,
+        error_type: Some("execution_error".to_string()),
+        ..failed
+    };
+    assert_eq!(
+        validation_failure_fingerprint(
+            ValidationProfile::WorkPacket,
+            &infrastructure_error,
+        ),
+        None
+    );
+}
+
+#[test]
 fn parser_fails_closed_without_terminal_event() {
     let log = "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"targeted\",\"stage_count\":1}\n";
 
