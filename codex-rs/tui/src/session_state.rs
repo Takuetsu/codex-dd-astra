@@ -216,6 +216,33 @@ fn apply_persisted_adaptive_workflow_state(
                 .to_string(),
         );
     }
+    let validation_repair_cycles_used = state.validation_repair_cycles_used;
+    let validation_repair_fingerprint = state.validation_repair_fingerprint;
+    let validation_targeted_retest_required = state.validation_targeted_retest_required;
+    if validation_repair_cycles_used
+        > crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT
+    {
+        return Err(format!(
+            "persisted validation repair cycle count {validation_repair_cycles_used} exceeds limit {}",
+            crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
+        ));
+    }
+    let has_repair_state = validation_repair_cycles_used > 0
+        || validation_repair_fingerprint.is_some()
+        || validation_targeted_retest_required;
+    if has_repair_state
+        && (validation_repair_cycles_used == 0
+            || validation_repair_fingerprint
+                .as_deref()
+                .is_none_or(|fingerprint| fingerprint.trim().is_empty())
+            || !validation_targeted_retest_required)
+    {
+        return Err(
+            "persisted validation repair state is incomplete or internally inconsistent"
+                .to_string(),
+        );
+    }
+
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -253,9 +280,9 @@ fn apply_persisted_adaptive_workflow_state(
         evidence_registry: Default::default(),
         complexity_class,
         implementation_phase,
-        validation_repair_fingerprint: state.validation_repair_fingerprint,
-        validation_repair_cycles_used: state.validation_repair_cycles_used,
-        validation_targeted_retest_required: state.validation_targeted_retest_required,
+        validation_repair_fingerprint,
+        validation_repair_cycles_used,
+        validation_targeted_retest_required,
         budget_mode,
     };
     Ok(())
