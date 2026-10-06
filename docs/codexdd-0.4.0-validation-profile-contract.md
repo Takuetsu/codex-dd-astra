@@ -1,6 +1,6 @@
 # CodexDD 0.4.0 validation profile contract
 
-**Status:** 3B.1 implementation contract
+**Status:** IMPLEMENTED in CodexDD 0.4.0
 
 **Contract version:** 1
 
@@ -183,11 +183,18 @@ The profile itself streams native stdout/stderr and structured events. Native st
 
 This smoke does not run the expensive CodexDD validation profiles.
 
-## 3B.1 boundary
+## Runtime integration
 
-This contract and the self-hosting scripts do not make validation automatic.
+Contract version 1 is implemented by the CodexDD 0.4.0 Local Validation Orchestrator.
 
-3B.2 adds the bounded runtime runner. 3C.1 integrates that runner into protected mechanical validation and makes a current work-packet PASS receipt a prerequisite for `ready_for_validation`.
+- `run_codexdd_validation` exposes only the fixed `targeted | work_packet | release` selector and does not accept arbitrary shell text.
+- The runner is exposed to an Implementation Worker only during protected mechanical validation.
+- Ordinary implementation mechanical validation uses `work_packet`.
+- A current same-turn native `work_packet` PASS receipt is required for `ready_for_validation`.
+- After an admitted repair, `targeted` PASS and then `work_packet` PASS are both required in the same mechanical-validation turn.
+- Failed product/test runs may authorize at most two bounded source-changing repair cycles; infrastructure/contract errors do not.
+- The latest compact native validation identity is surfaced through existing `/status` and persisted across resume/fork.
+- Full logs remain outside the source worktree and model context under bounded CodexDD runtime storage.
 
 
 ### CodexDD self-host formatting scope
