@@ -136,6 +136,10 @@ fn validation_status_from_item_completion(
     {
         return None;
     }
+    let failure_fingerprint = required("failure_fingerprint");
+    if failure_fingerprint.is_some() && result != "fail" {
+        return None;
+    }
 
     Some(AdaptiveValidationStatus {
         profile,
@@ -144,7 +148,7 @@ fn validation_status_from_item_completion(
         branch: required("branch"),
         head_sha,
         failed_stage: required("failed_stage"),
-        failure_fingerprint: required("failure_fingerprint"),
+        failure_fingerprint,
         log_path,
     })
 }
