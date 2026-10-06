@@ -152,8 +152,12 @@ The audit repair is green:
 
 The first Daniel-CL `work_packet` attempt then stopped at the `rust-format-check` stage before running later validation stages. The exact repository formatter was run through a temporary GitHub oracle; it changed exactly one Rust path, `codex-rs/core/src/tools/handlers/mod.rs`, by one formatting-only line replacement. No behavioral code changed. The temporary formatter oracle was removed immediately afterward.
 
-The repeated Daniel-CL `work_packet` is therefore the authoritative final 3F.1 gate.
+The second Daniel-CL `work_packet` passed formatting and then stopped at the exact `core-tui-clippy` stage. Two redundant closures in the LVO runner were fixed first. An exact Windows stage oracle then exposed six additional TUI Clippy errors: four panic-path `expect()` violations in LVO-touched adaptive code and two redundant closures in unchanged TUI app/test code. The adaptive cases were changed to fail closed instead of panicking, and the two unchanged TUI closures were mechanically simplified.
+
+The exact Windows work-packet rustfmt stage and exact `cargo clippy --tests -p codex-core -p codex-tui` stage both passed after those repairs. The temporary stage oracle was removed immediately afterward. No Rust source changed after that green strict stage run.
+
+The next Daniel-CL `work_packet` is therefore the authoritative final 3F.1 gate.
 
 ## Pending 3F.1 closure
 
-Rerun the repository-owned `work_packet` profile on Daniel-CL against the formatting-corrected branch. Phase 4 remains separate and owns the broader pre-install release matrix.
+Rerun the repository-owned `work_packet` profile on Daniel-CL against the strict-format/Clippy-clean branch. Phase 4 remains separate and owns the broader pre-install release matrix.
