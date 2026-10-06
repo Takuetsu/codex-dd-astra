@@ -2402,7 +2402,9 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
         assert_eq!(chat.adaptive_effort.current_effort, Some(expected_effort));
         assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 1);
         assert_eq!(
-            chat.adaptive_effort.validation_repair_fingerprint.as_deref(),
+            chat.adaptive_effort
+                .validation_repair_fingerprint
+                .as_deref(),
             Some("v1:work_packet:core-adaptive-tests")
         );
         assert!(chat.adaptive_effort.validation_targeted_retest_required);
