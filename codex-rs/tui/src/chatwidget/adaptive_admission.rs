@@ -109,6 +109,9 @@ impl ChatWidget {
             requires_complexity_recovery,
             &validation_success_refs,
             &validation_failure_refs,
+            self.adaptive_effort.validation_targeted_retest_required,
+            self.adaptive_effort.validation_repair_cycles_used,
+            self.adaptive_effort.validation_repair_fingerprint.as_deref(),
         ));
         let accepted = self.submit_user_message_with_history_record(
             message,
@@ -283,6 +286,9 @@ fn adaptive_continuation_text(
     requires_complexity_recovery: bool,
     validation_success_refs: &[String],
     validation_failure_refs: &[String],
+    validation_targeted_retest_required: bool,
+    validation_repair_cycles_used: u8,
+    validation_repair_fingerprint: Option<&str>,
 ) -> String {
     let decision = match permit.decision {
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute => {
@@ -338,13 +344,23 @@ fn adaptive_continuation_text(
             )
         }
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation => {
-            format!(
-                "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Run the repository-owned CodexDD work-packet profile by calling run_codexdd_validation with profile=work_packet; do not manually recreate the profile with ad-hoc shell commands. Do not edit source in this turn. If the validation runner returns PASS, call report_adaptive_signal with kind=ready_for_validation and include the successful validation-runner evidence ref, then end the turn. If validation reveals that source changes or renewed implementation reasoning are required, report kind=implementation_work and end the turn before editing. If the profile is missing or the runner reports an infrastructure/contract error, stop and report the blocker rather than improvising a replacement validation sequence. Preserve the existing task, scope, worktree, and acceptance criteria."
-            )
+            if validation_targeted_retest_required {
+                format!(
+                    "[Adaptive continuation] A bounded source repair was completed. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Repair cycle {validation_repair_cycles_used}/{} is active for failure fingerprint {}. First call run_codexdd_validation with profile=targeted. If targeted fails, call report_adaptive_signal with kind=implementation_work and include that failed validation-runner evidence ref, then end the turn before editing. If targeted passes, call run_codexdd_validation with profile=work_packet. If work_packet fails, report kind=implementation_work with the failed work-packet evidence ref and end the turn before editing. Only when both targeted and work_packet pass may you call report_adaptive_signal with kind=ready_for_validation; include both successful validation-runner evidence refs. Do not edit source in this turn and do not recreate either profile with ad-hoc shell commands. Infrastructure/contract errors are blockers and do not authorize source edits.",
+                    crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
+                    validation_repair_fingerprint.unwrap_or("unknown"),
+                )
+            } else {
+                format!(
+                    "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Run the repository-owned CodexDD work-packet profile by calling run_codexdd_validation with profile=work_packet; do not manually recreate the profile with ad-hoc shell commands. Do not edit source in this turn. If the validation runner returns PASS, call report_adaptive_signal with kind=ready_for_validation and include the successful validation-runner evidence ref, then end the turn. If validation fails with a repairable product/test failure, call report_adaptive_signal with kind=implementation_work and include the failed validation-runner evidence ref, then end the turn before editing. If the profile is missing or the runner reports an infrastructure/contract error, stop and report the blocker rather than improvising a replacement validation sequence. Preserve the existing task, scope, worktree, and acceptance criteria."
+                )
+            }
         }
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ResumeImplementation => {
             format!(
-                "[Adaptive continuation] Mechanical validation found source-changing implementation work. Attempt {attempt} is restored at {model} {effort} using {decision}; this route is at least the previously accepted complexity floor and preserves any stronger trusted route. Continue only the required bounded implementation edits. When source-changing work is complete again, report kind=mechanical_validation and end the turn before returning to tests/builds."
+                "[Adaptive continuation] Mechanical validation found a repairable product/test failure. Attempt {attempt} is restored at {model} {effort} using {decision}; repair cycle {validation_repair_cycles_used}/{} is active for failure fingerprint {}. Continue only the bounded source-changing repair needed for that failure. Do not broaden scope. When the repair is complete, report kind=mechanical_validation and end the turn; the next mechanical-validation turn must run targeted first and then work_packet before READY_FOR_VALIDATION can be accepted.",
+                crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
+                validation_repair_fingerprint.unwrap_or("unknown"),
             )
         }
         _ => format!(
@@ -393,6 +409,9 @@ mod tests {
             /*requires_complexity_recovery*/ false,
             &[],
             &[],
+            false,
+            0,
+            None,
         );
 
         assert!(text.contains("run_codexdd_validation"));
@@ -426,6 +445,9 @@ mod tests {
             /*requires_complexity_recovery*/ false,
             &["green-proof".to_string()],
             &["failed-proof".to_string()],
+            false,
+            0,
+            None,
         );
 
         assert!(text.contains("terminalization only"));
