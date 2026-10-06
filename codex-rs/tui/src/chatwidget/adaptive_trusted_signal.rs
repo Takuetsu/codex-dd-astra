@@ -69,17 +69,17 @@ impl ChatWidget {
 
         let implementation_work_failure =
             (envelope.signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork).then(|| {
-                    self.thread_id.and_then(|thread_id| {
-                        self.adaptive_effort
-                            .evidence_registry
-                            .codexdd_repairable_validation_failure_for_turn(
-                                &envelope.evidence_refs,
-                                thread_id,
-                                source_turn_id,
-                            )
-                    })
+                self.thread_id.and_then(|thread_id| {
+                    self.adaptive_effort
+                        .evidence_registry
+                        .codexdd_repairable_validation_failure_for_turn(
+                            &envelope.evidence_refs,
+                            thread_id,
+                            source_turn_id,
+                        )
                 })
-                .flatten();
+            })
+            .flatten();
         let implementation_work_profile_allowed = implementation_work_failure
             .as_ref()
             .is_some_and(|(profile, _)| {
