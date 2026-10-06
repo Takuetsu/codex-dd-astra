@@ -13,6 +13,7 @@ use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
 use crate::chatwidget::adaptive_effort::AdaptiveFamily;
+use crate::chatwidget::adaptive_effort::AdaptiveValidationStatus;
 use codex_app_server_protocol::AskForApproval;
 use codex_protocol::ThreadId;
 use codex_protocol::config_types::CollaborationMode;
@@ -219,6 +220,25 @@ fn apply_persisted_adaptive_workflow_state(
     let validation_repair_cycles_used = state.validation_repair_cycles_used;
     let validation_repair_fingerprint = state.validation_repair_fingerprint;
     let validation_targeted_retest_required = state.validation_targeted_retest_required;
+    let validation_status = state.validation_status.map(|status| AdaptiveValidationStatus {
+        profile: status.profile,
+        result: status.result,
+        run_id: status.run_id,
+        branch: status.branch,
+        head_sha: status.head_sha,
+        failed_stage: status.failed_stage,
+        log_path: status.log_path,
+    });
+    if let Some(status) = validation_status.as_ref() {
+        if status.profile.trim().is_empty()
+            || status.run_id.trim().is_empty()
+            || status.head_sha.trim().is_empty()
+            || status.log_path.trim().is_empty()
+            || !matches!(status.result.as_str(), "pass" | "fail" | "error")
+        {
+            return Err("persisted validation operator status is incomplete or invalid".to_string());
+        }
+    }
     if validation_repair_cycles_used
         > crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT
     {
@@ -293,6 +313,7 @@ fn apply_persisted_adaptive_workflow_state(
         validation_repair_fingerprint,
         validation_repair_cycles_used,
         validation_targeted_retest_required,
+        validation_status,
         budget_mode,
     };
     Ok(())
