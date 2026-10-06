@@ -1041,6 +1041,115 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn infrastructure_validation_failure_cannot_authorize_source_repair() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "infrastructure-validation-failure";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("codexdd/0.4.0-infrastructure-fail-closed".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        // A failed native LVO call without a repairable failure_fingerprint models
+        // an execution/contract/infrastructure error. It is evidence of failure,
+        // but it must not grant source-changing repair authority.
+        chat.register_adaptive_evidence(&validation_evidence(
+            thread_id,
+            turn_id,
+            "infrastructure-error",
+            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            false,
+        ));
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ImplementationWork,
+                evidence_refs: vec!["infrastructure-error".to_string()],
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+        assert_eq!(chat.adaptive_effort.validation_repair_fingerprint, None);
+        assert!(!chat.adaptive_effort.validation_targeted_retest_required);
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    }
+
+    #[tokio::test]
+    async fn second_repair_with_changed_fingerprint_consumes_global_cycle_two() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "second-repair-different-stage";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("codexdd/0.4.0-global-repair-budget".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.adaptive_effort.validation_repair_cycles_used = 1;
+        chat.adaptive_effort.validation_repair_fingerprint =
+            Some("v1:work_packet:core-adaptive-tests".to_string());
+        chat.adaptive_effort.validation_targeted_retest_required = true;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&failed_validation_evidence(
+            thread_id,
+            turn_id,
+            "different-targeted-failure",
+            "targeted",
+            "v1:targeted:tui-adaptive-tests",
+        ));
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ImplementationWork,
+                evidence_refs: vec!["different-targeted-failure".to_string()],
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 2);
+        assert_eq!(
+            chat.adaptive_effort
+                .validation_repair_fingerprint
+                .as_deref(),
+            Some("v1:targeted:tui-adaptive-tests")
+        );
+        assert!(chat.adaptive_effort.validation_targeted_retest_required);
+        assert!(matches!(
+            chat.adaptive_effort.pending_attempt,
+            Some(ref pending)
+                if pending.decision
+                    == crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ResumeImplementation
+        ));
+    }
+
+    #[tokio::test]
     async fn third_repair_request_hard_blocks_instead_of_admitting_source_edits() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
