@@ -224,24 +224,39 @@ impl ChatWidget {
         }
 
         match signal_kind {
-            AdaptiveRuntimeSignalKind::Complexity => self.apply_adaptive_complexity_floor(
-                source_turn_id,
-                complexity_class.expect("accepted complexity signal has a canonical class"),
-            ),
-            AdaptiveRuntimeSignalKind::Capability => self.apply_capability_signal_with_report(
-                source_turn_id,
-                capability_diagnostic
-                    .as_deref()
-                    .expect("accepted capability signal has a diagnostic report"),
-            ),
+            AdaptiveRuntimeSignalKind::Complexity => {
+                let Some(complexity_class) = complexity_class else {
+                    self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Cancelled {
+                        source_turn_id: source_turn_id.to_string(),
+                    });
+                    self.save_adaptive_effort_for_current_thread();
+                    return false;
+                };
+                self.apply_adaptive_complexity_floor(source_turn_id, complexity_class);
+            }
+            AdaptiveRuntimeSignalKind::Capability => {
+                let Some(capability_diagnostic) = capability_diagnostic.as_deref() else {
+                    self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Cancelled {
+                        source_turn_id: source_turn_id.to_string(),
+                    });
+                    self.save_adaptive_effort_for_current_thread();
+                    return false;
+                };
+                self.apply_capability_signal_with_report(source_turn_id, capability_diagnostic);
+            }
             AdaptiveRuntimeSignalKind::MechanicalValidation => self
                 .apply_adaptive_implementation_phase(
                     source_turn_id,
                     AdaptiveImplementationPhase::MechanicalValidation,
                 ),
             AdaptiveRuntimeSignalKind::ImplementationWork => {
-                let (_, fingerprint) = implementation_work_failure
-                    .expect("accepted implementation_work has repairable validation evidence");
+                let Some((_, fingerprint)) = implementation_work_failure else {
+                    self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Cancelled {
+                        source_turn_id: source_turn_id.to_string(),
+                    });
+                    self.save_adaptive_effort_for_current_thread();
+                    return false;
+                };
                 self.adaptive_effort
                     .record_validation_repair_cycle(fingerprint);
                 self.apply_adaptive_implementation_phase(
