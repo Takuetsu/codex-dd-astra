@@ -237,6 +237,7 @@ impl TurnRequestProcessor {
                                 branch: status.branch,
                                 head_sha: status.head_sha,
                                 failed_stage: status.failed_stage,
+                                failure_fingerprint: status.failure_fingerprint,
                                 log_path: status.log_path,
                             }
                         }),
