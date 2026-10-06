@@ -423,6 +423,41 @@ mod tests {
     }
 
     #[test]
+    fn repaired_mechanical_validation_prompt_requires_targeted_then_work_packet() {
+        let permit = AdaptiveSuccessorPermit {
+            thread_id: ThreadId::new(),
+            source_turn_id: "repaired-implementation".to_string(),
+            decision:
+                crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation,
+            route: AdaptiveRoute {
+                family: AdaptiveFamily::Sol,
+                effort: AdaptiveEffort::Medium,
+            },
+            attempt_number: 6,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("codexdd/0.4.0-repair".to_string()),
+            },
+        };
+
+        let text = adaptive_continuation_text(
+            &permit,
+            /*requires_complexity_recovery*/ false,
+            &[],
+            &[],
+            true,
+            1,
+            Some("v1:work_packet:core-adaptive-tests"),
+        );
+
+        assert!(text.contains("Repair cycle 1/2"));
+        assert!(text.contains("profile=targeted"));
+        assert!(text.contains("profile=work_packet"));
+        assert!(text.contains("include both successful validation-runner evidence refs"));
+        assert!(text.contains("v1:work_packet:core-adaptive-tests"));
+    }
+
+    #[test]
     fn validation_terminalization_prompt_reuses_existing_evidence_and_forbids_rerun() {
         let permit = AdaptiveSuccessorPermit {
             thread_id: ThreadId::new(),
