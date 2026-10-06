@@ -49,6 +49,8 @@ Exit:
 
 ## Packet 4.2 — native receipt and candidate-authority matrix
 
+**Status: SOURCE AUDIT COMPLETE; PENDING DANIEL-CL MATRIX.**
+
 Purpose: prove that native LVO evidence, not prose or shell output, controls handoff.
 
 Required evidence:
@@ -62,9 +64,20 @@ Required evidence:
 
 The same-turn protected-lifecycle rule is the source-change invalidation mechanism: source edits require lifecycle re-entry and therefore a later validation turn. External operator edits during an active protected turn are outside automated authority and require a fresh validation run before promotion.
 
+Existing regression coverage mapped during the Phase-4 audit:
+
+- native runner summary preserves run ID, branch, and HEAD identity;
+- native dynamic-tool completion becomes typed LVO evidence;
+- evidence resolution rejects missing, cross-thread, stale-turn, and wrong-outcome references;
+- Implementation handoff rejects missing, targeted-only, stale, or failed work-packet receipts;
+- direct execution of the fixed validation scripts is blocked during protected mechanical validation;
+- source-edit-capable tools remain blocked during that lifecycle.
+
 Exit: all receipt/admission regressions green on Daniel-CL.
 
 ## Packet 4.3 — bounded failure/repair/retest adversarial matrix
+
+**Status: SOURCE AUDIT COMPLETE; PENDING DANIEL-CL MATRIX.**
 
 Purpose: prove the full 3C.2 loop as one release gate.
 
@@ -79,6 +92,13 @@ Required evidence:
 - third repair request hard-blocks for owner review;
 - successful handoff clears repair state;
 - failure selection remains deterministic with `work_packet` preferred over `targeted`.
+
+Phase-4 audit hardening added two dedicated regressions that were previously implicit in implementation behavior:
+
+- a failed native LVO call without a repairable fingerprint (execution/contract/infrastructure class) cannot authorize `implementation_work` or consume repair budget;
+- after cycle 1, a failure with a different stage-scoped fingerprint consumes global cycle 2 instead of resetting the repair budget.
+
+Existing regressions already cover the initial work-packet-only gate, targeted+work-packet retest requirement, deterministic work-packet failure preference, third-repair hard block, and successful repair-state clearing.
 
 Exit: all repair-loop regressions green on Daniel-CL.
 
