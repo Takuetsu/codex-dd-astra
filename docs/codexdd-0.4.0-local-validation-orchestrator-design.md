@@ -532,7 +532,8 @@ Audit result:
 - one operator-evidence defect was found: the latest failed native receipt fingerprint was not visible in `/status` until repair admission;
 - the defect is repaired by persisting the optional native receipt fingerprint in compact validation status and preferring it in `/status`, without changing repair authority or budget consumption;
 - the repair passed rustfmt, constructor scan, history compile, Windows TUI compile, and schema/SDK regeneration;
-- temporary audit/schema oracle workflows were removed after validation.
+- temporary audit/schema oracle workflows were removed after validation;
+- the first Daniel-CL `work_packet` stopped only at `rust-format-check`; an exact formatter oracle changed one formatting-only line in `core/src/tools/handlers/mod.rs`, and that temporary oracle was removed.
 
 Durable details are recorded in `docs/codexdd-0.4.0-phase-3f-audit.md`.
 
