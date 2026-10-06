@@ -521,7 +521,7 @@ Exit:
 
 ### 3F.1 — Full implementation audit
 
-**Status:** SOURCE AUDIT COMPLETE; PENDING DANIEL-CL WORK-PACKET VALIDATION.
+**Status:** COMPLETE and Windows-validated on Daniel-CL.
 
 Audit result:
 
@@ -535,7 +535,8 @@ Audit result:
 - temporary audit/schema oracle workflows were removed after validation;
 - the first Daniel-CL `work_packet` stopped at `rust-format-check`; an exact formatter oracle changed one formatting-only line in `core/src/tools/handlers/mod.rs`;
 - the second `work_packet` advanced to `core-tui-clippy` and exposed two LVO-runner redundant closures plus six strict TUI Clippy violations; the LVO/adaptive cases were repaired fail-closed where needed, unchanged TUI closures were mechanically simplified, and the exact Windows rustfmt + core/tui Clippy stages are now green;
-- all temporary strict-stage oracles were removed after the green run.
+- all temporary strict-stage oracles were removed after the green run;
+- the final Daniel-CL `work_packet` completed all 6 configured stages with `status=pass` and `exit_code=0`.
 
 Durable details are recorded in `docs/codexdd-0.4.0-phase-3f-audit.md`.
 
