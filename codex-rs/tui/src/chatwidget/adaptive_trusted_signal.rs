@@ -67,6 +67,23 @@ impl ChatWidget {
             None
         };
 
+        let implementation_work_failure =
+            (envelope.signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork)
+                .then(|| {
+                    self.thread_id.and_then(|thread_id| {
+                        self.adaptive_effort
+                            .evidence_registry
+                            .codexdd_repairable_validation_failure_for_turn(
+                                &envelope.evidence_refs,
+                                thread_id,
+                                source_turn_id,
+                            )
+                    })
+                })
+                .flatten();
+        let implementation_work_budget_available =
+            self.adaptive_effort.validation_repair_budget_available();
+
         let accepted = match envelope.signal_kind {
             AdaptiveRuntimeSignalKind::Complexity => {
                 self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Implementation
@@ -101,7 +118,8 @@ impl ChatWidget {
                     && self.adaptive_effort.complexity_class.is_some()
                     && self.adaptive_effort.implementation_phase
                         == Some(AdaptiveImplementationPhase::MechanicalValidation)
-                    && envelope.evidence_refs.is_empty()
+                    && implementation_work_failure.is_some()
+                    && implementation_work_budget_available
                     && envelope.diagnostic_note.is_none()
             }
             AdaptiveRuntimeSignalKind::ReadyForValidation => {
@@ -150,6 +168,31 @@ impl ChatWidget {
             }
         });
         if !accepted {
+            if signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork
+                && implementation_work_failure.is_some()
+                && !implementation_work_budget_available
+            {
+                self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+                    source_turn_id: source_turn_id.to_string(),
+                });
+                self.add_info_message(
+                    format!(
+                        "CodexDD validation repair budget exhausted\n  Repair cycles used: {}/{}\n  Failure fingerprint: {}\n  Result: automatic source-changing repair is blocked; owner review is required.",
+                        self.adaptive_effort.validation_repair_cycles_used,
+                        crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
+                        implementation_work_failure
+                            .as_ref()
+                            .map(|(_, fingerprint)| fingerprint.as_str())
+                            .unwrap_or("unknown"),
+                    ),
+                    None,
+                );
+                self.latch_workflow_terminal(
+                    source_turn_id,
+                    AdaptiveWorkflowTerminal::Blocked,
+                );
+                return true;
+            }
             if self.native_failure_pressure_available(source_turn_id) {
                 self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
                     source_turn_id: source_turn_id.to_string(),
@@ -180,16 +223,22 @@ impl ChatWidget {
                     source_turn_id,
                     AdaptiveImplementationPhase::MechanicalValidation,
                 ),
-            AdaptiveRuntimeSignalKind::ImplementationWork => self
-                .apply_adaptive_implementation_phase(
+            AdaptiveRuntimeSignalKind::ImplementationWork => {
+                let (_, fingerprint) = implementation_work_failure
+                    .expect("accepted implementation_work has repairable validation evidence");
+                self.adaptive_effort
+                    .record_validation_repair_cycle(fingerprint);
+                self.apply_adaptive_implementation_phase(
                     source_turn_id,
                     AdaptiveImplementationPhase::Implementation,
-                ),
+                );
+            }
             // READY_FOR_VALIDATION is a hard handoff boundary for the current
             // Implementation/Repair Worker. Validation must run in a fresh,
             // independently bound Worker thread; never mutate this Worker's
             // authority or admit another same-thread adaptive successor.
             AdaptiveRuntimeSignalKind::ReadyForValidation => {
+                self.adaptive_effort.clear_validation_repair_state();
                 self.latch_workflow_terminal(
                     source_turn_id,
                     AdaptiveWorkflowTerminal::ReadyForValidation,
