@@ -66,6 +66,7 @@ fn register_work_packet_receipt(
             validation_profile: Some(
                 crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
             ),
+            validation_failure_fingerprint: None,
         });
 }
 
