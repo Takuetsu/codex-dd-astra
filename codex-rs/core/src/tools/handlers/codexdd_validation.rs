@@ -277,8 +277,8 @@ impl CodexDDValidationHandler {
             Err(err) => {
                 let execution_note = execution_result
                     .as_ref()
-                    .map(|output| output.log_output())
-                    .unwrap_or_else(|execution_err| execution_err.to_string());
+                    .map(ToolOutput::log_output)
+                    .unwrap_or_else(std::string::ToString::to_string);
                 return Err(FunctionCallError::RespondToModel(format!(
                     "CodexDD validation did not produce its required full log {}: {err}. Execution detail: {execution_note}",
                     temp_log_path.display()
