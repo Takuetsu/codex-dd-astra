@@ -340,8 +340,8 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
     chat.adaptive_effort.worker_assignment_locked = true;
     chat.adaptive_effort.validation_repair_cycles_used = 1;
     chat.adaptive_effort.validation_targeted_retest_required = true;
-    chat.adaptive_effort.validation_status =
-        Some(crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
+    chat.adaptive_effort.validation_status = Some(
+        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
             profile: "work_packet".to_string(),
             result: "pass".to_string(),
             run_id: "run-status-42".to_string(),
@@ -349,7 +349,8 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
             head_sha: "0123456789abcdef".to_string(),
             failed_stage: None,
             log_path: "C:\\codexdd\\validation\\run-status-42\\validation.log".to_string(),
-        });
+        },
+    );
     chat.adaptive_effort.workflow_terminal =
         Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
 
