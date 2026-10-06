@@ -29,6 +29,7 @@ fn record(
         kind: AdaptiveEvidenceKind::CommandExecution,
         tool_name: None,
         validation_profile: None,
+    validation_failure_fingerprint: None,
     }
 }
 
@@ -69,6 +70,7 @@ fn native_command_completion_becomes_small_typed_evidence() {
             kind: AdaptiveEvidenceKind::CommandExecution,
             tool_name: None,
             validation_profile: None,
+    validation_failure_fingerprint: None,
         })
     );
 }
@@ -122,6 +124,7 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             kind: AdaptiveEvidenceKind::McpToolCall,
             tool_name: None,
             validation_profile: None,
+    validation_failure_fingerprint: None,
         })
     );
     assert_eq!(
@@ -134,6 +137,7 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             kind: AdaptiveEvidenceKind::DynamicToolCall,
             tool_name: Some("tool".to_string()),
             validation_profile: None,
+    validation_failure_fingerprint: None,
         })
     );
 }
