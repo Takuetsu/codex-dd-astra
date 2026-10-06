@@ -117,6 +117,15 @@ struct ValidationSummary {
     log_path: String,
 }
 
+#[derive(Serialize)]
+struct ValidationOperatorSummary<'a> {
+    #[serde(flatten)]
+    summary: &'a ValidationSummary,
+    run_id: &'a str,
+    branch: Option<&'a str>,
+    head_sha: &'a str,
+}
+
 pub struct CodexDDValidationHandler;
 
 impl ToolExecutor<ToolInvocation> for CodexDDValidationHandler {
@@ -204,6 +213,21 @@ impl CodexDDValidationHandler {
         let script_path = repository_root
             .join("scripts")
             .join(args.profile.script_name());
+
+        let git_info = codex_git_utils::collect_git_info(&repository_root)
+            .await
+            .ok_or_else(|| {
+                FunctionCallError::RespondToModel(
+                    "CodexDD validation could not resolve Git branch/HEAD metadata for the active repository"
+                        .to_string(),
+                )
+            })?;
+        let head_sha = git_info.commit_hash.map(|sha| sha.0).ok_or_else(|| {
+            FunctionCallError::RespondToModel(
+                "CodexDD validation requires a resolvable Git HEAD commit".to_string(),
+            )
+        })?;
+        let branch = git_info.branch;
 
         let run_id = validation_run_id(&invocation.call_id);
         let temp_log_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.log"));
@@ -297,6 +321,11 @@ impl CodexDDValidationHandler {
         let failure_fingerprint = validation_failure_fingerprint(args.profile, &summary);
         let receipt_arguments = json!({
             "profile": args.profile.tool_name(),
+            "result": summary.status.clone(),
+            "run_id": run_id.clone(),
+            "branch": branch.clone(),
+            "head_sha": head_sha.clone(),
+            "log_path": summary.log_path.clone(),
             "failure_fingerprint": failure_fingerprint,
             "failed_stage": summary.failed_stage.clone(),
         });
@@ -344,7 +373,13 @@ impl CodexDDValidationHandler {
             )
             .await;
 
-        let text = serde_json::to_string(&summary).map_err(|err| {
+        let operator_summary = ValidationOperatorSummary {
+            summary: &summary,
+            run_id: &run_id,
+            branch: branch.as_deref(),
+            head_sha: &head_sha,
+        };
+        let text = serde_json::to_string(&operator_summary).map_err(|err| {
             FunctionCallError::RespondToModel(format!(
                 "failed to serialize CodexDD validation summary: {err}"
             ))
