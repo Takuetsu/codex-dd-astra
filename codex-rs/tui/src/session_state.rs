@@ -527,6 +527,62 @@ mod codexdd_complexity_persistence_regression {
     }
 
     #[test]
+    fn persisted_validation_repair_state_fails_closed_when_over_budget() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "sol",
+                    "current_effort": "medium",
+                    "attempt_number": 7,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/repair-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "standard",
+                    "implementation_phase": "mechanical_validation",
+                    "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
+                    "validation_repair_cycles_used": 3,
+                    "validation_targeted_retest_required": true
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        let error = apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect_err("over-budget repair state must fail closed");
+        assert!(error.contains("exceeds limit 2"));
+    }
+
+    #[test]
+    fn persisted_validation_repair_state_cannot_attach_to_non_implementation_worker() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "luna",
+                    "current_effort": "low",
+                    "attempt_number": 3,
+                    "paused_by_user": false,
+                    "worker_role": "validation",
+                    "authorized_scope": "codexdd/invalid-repair-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
+                    "validation_repair_cycles_used": 1,
+                    "validation_targeted_retest_required": true
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        let error = apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect_err("repair state on Validation worker must fail closed");
+        assert!(error.contains("requires a bound Implementation Worker"));
+    }
+
+    #[test]
     fn restored_snapshot_recovers_mechanical_validation_phase() {
         let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
             r#"{
