@@ -19,6 +19,8 @@ use crate::adaptive_worker::NewWorkerBinding;
 use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
+pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
     ContinueSameRoute,
@@ -209,6 +211,22 @@ impl AdaptiveEffortState {
                 .is_some_and(|scope| !scope.trim().is_empty())
             && self.complexity_class.is_some()
             && self.implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
+    }
+
+    pub(crate) fn record_validation_repair_cycle(&mut self, fingerprint: String) {
+        self.validation_repair_fingerprint = Some(fingerprint);
+        self.validation_repair_cycles_used = self.validation_repair_cycles_used.saturating_add(1);
+        self.validation_targeted_retest_required = true;
+    }
+
+    pub(crate) fn validation_repair_budget_available(&self) -> bool {
+        self.validation_repair_cycles_used < CODEXDD_VALIDATION_REPAIR_LIMIT
+    }
+
+    pub(crate) fn clear_validation_repair_state(&mut self) {
+        self.validation_repair_fingerprint = None;
+        self.validation_repair_cycles_used = 0;
+        self.validation_targeted_retest_required = false;
     }
 
     pub(crate) fn observe_worker_assignment_text(&mut self, text: &str) -> Result<bool, String> {
