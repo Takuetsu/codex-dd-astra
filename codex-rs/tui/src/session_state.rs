@@ -242,6 +242,16 @@ fn apply_persisted_adaptive_workflow_state(
                 .to_string(),
         );
     }
+    if has_repair_state
+        && (worker_role != AdaptiveWorkerRole::Implementation
+            || complexity_class.is_none()
+            || implementation_phase.is_none())
+    {
+        return Err(
+            "persisted validation repair state requires a bound Implementation Worker with accepted complexity and an active implementation phase"
+                .to_string(),
+        );
+    }
 
     let budget_mode = adaptive_effort.budget_mode;
 
