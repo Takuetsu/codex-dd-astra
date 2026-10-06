@@ -1,0 +1,84 @@
+name: CodexDD 3D.1 oracle
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.0-local-validation-orchestrator
+    paths:
+      - ".github/workflows/codexdd-3d1-oracle.yml"
+      - "codex-rs/**/*.rs"
+
+permissions:
+  contents: read
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Check 3D.1 Rust surface
+        shell: bash
+        run: |
+          cd codex-rs
+          rustfmt --edition 2024 --check \
+            app-server-protocol/src/protocol/v2/thread.rs \
+            app-server/src/request_processors/turn_processor.rs \
+            core/src/thread_manager_tests.rs \
+            core/src/tools/handlers/codexdd_validation.rs \
+            core/src/tools/handlers/codexdd_validation_tests.rs \
+            history/src/lib.rs \
+            history/src/tests.rs \
+            tui/src/app_server_session.rs \
+            tui/src/chatwidget/adaptive_effort.rs \
+            tui/src/chatwidget/adaptive_evidence.rs \
+            tui/src/chatwidget/tests/status_and_layout.rs \
+            tui/src/session_state.rs
+
+  constructor-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Scan workflow-state constructors
+        shell: bash
+        run: |
+          echo "=== AdaptiveWorkflowStateSnapshot ==="
+          grep -RIn --include='*.rs' 'AdaptiveWorkflowStateSnapshot {' codex-rs || true
+          echo "=== ThreadAdaptiveWorkflowState ==="
+          grep -RIn --include='*.rs' 'ThreadAdaptiveWorkflowState {' codex-rs || true
+
+  core-history:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codex-rs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Test validation runner slice
+        run: cargo test -p codex-core --lib codexdd_validation
+      - name: Compile history library tests
+        run: cargo test -p codex-history --lib --no-run --message-format short
+
+  windows-tui:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: codex-rs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Compile TUI library tests on Windows
+        run: cargo test -p codex-tui --lib --no-run --message-format short
