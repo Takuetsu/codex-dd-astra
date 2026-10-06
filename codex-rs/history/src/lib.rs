@@ -161,6 +161,12 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub complexity_class: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub implementation_phase: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub validation_repair_fingerprint: Option<String>,
+    #[serde(default)]
+    pub validation_repair_cycles_used: u8,
+    #[serde(default)]
+    pub validation_targeted_retest_required: bool,
     pub attempt_number: u32,
     pub paused_by_user: bool,
     pub worker_role: String,
