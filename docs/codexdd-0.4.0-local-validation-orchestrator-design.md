@@ -491,7 +491,7 @@ Exit:
 
 ### 3E.1 — Version/provenance/docs policy transition
 
-**Status:** IMPLEMENTATION COMPLETE; PENDING DANIEL-CL WINDOWS VALIDATION.
+**Status:** COMPLETE and Windows-validated on Daniel-CL.
 
 Current implementation:
 
@@ -500,6 +500,12 @@ Current implementation:
 - current Worker/Designer guidance updated for the native Local Validation Orchestrator contract;
 - the major-phase standard now makes LVO-owned work-packet validation the normal post-0.4.0 policy while preserving explicit owner/release gates and the bootstrap exception for validating an uninstalled candidate;
 - the validation-profile contract is marked implemented and documents the final receipt/repair/status semantics.
+
+Daniel-CL validation evidence:
+
+- `codexdd-version.txt` reported `0.4.0`;
+- `cargo test -p codex-build-info --lib` passed;
+- `cargo test -p codex-cli --test version_reporting` passed 1/1.
 
 Scope:
 
@@ -514,6 +520,8 @@ Exit:
 - checkpoint commit.
 
 ### 3F.1 — Full implementation audit
+
+**Status:** IN PROGRESS.
 
 Scope:
 
