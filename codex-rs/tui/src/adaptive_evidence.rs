@@ -333,77 +333,78 @@ pub(crate) fn record_from_item_completion(
     notification: &ItemCompletedNotification,
 ) -> Option<AdaptiveEvidenceRecord> {
     let thread_id = ThreadId::from_string(&notification.thread_id).ok()?;
-    let (
-        evidence_id,
-        outcome,
-        kind,
-        tool_name,
-        validation_profile,
-        validation_failure_fingerprint,
-    ) = match &notification.item {
-        ThreadItem::CommandExecution { id, status, .. } => (
-            id.clone(),
-            match status {
-                CommandExecutionStatus::Completed => AdaptiveEvidenceOutcome::Success,
-                CommandExecutionStatus::Failed => AdaptiveEvidenceOutcome::Failure,
-                CommandExecutionStatus::Declined => AdaptiveEvidenceOutcome::Cancelled,
-                CommandExecutionStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
-            },
-            AdaptiveEvidenceKind::CommandExecution,
-            None,
-            None,
-            None,
-        ),
-        ThreadItem::McpToolCall { id, status, .. } => (
-            id.clone(),
-            match status {
-                McpToolCallStatus::Completed => AdaptiveEvidenceOutcome::Success,
-                McpToolCallStatus::Failed => AdaptiveEvidenceOutcome::Failure,
-                McpToolCallStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
-            },
-            AdaptiveEvidenceKind::McpToolCall,
-            None,
-            None,
-            None,
-        ),
-        ThreadItem::DynamicToolCall {
-            id,
-            namespace,
-            tool,
-            arguments,
-            status,
-            success,
-            ..
-        } => (
-            id.clone(),
-            match (status, success) {
-                (DynamicToolCallStatus::Completed, Some(true)) => AdaptiveEvidenceOutcome::Success,
-                (DynamicToolCallStatus::Completed | DynamicToolCallStatus::Failed, Some(false))
-                | (DynamicToolCallStatus::Failed, _) => AdaptiveEvidenceOutcome::Failure,
-                (DynamicToolCallStatus::InProgress, _)
-                | (DynamicToolCallStatus::Completed, None) => AdaptiveEvidenceOutcome::Incomplete,
-            },
-            AdaptiveEvidenceKind::DynamicToolCall,
-            Some(tool.clone()),
-            (namespace.is_none() && tool == CODEXDD_VALIDATION_TOOL_NAME)
-                .then(|| {
-                    arguments
-                        .get("profile")
-                        .and_then(serde_json::Value::as_str)
-                        .map(str::to_string)
-                })
-                .flatten(),
-            (namespace.is_none() && tool == CODEXDD_VALIDATION_TOOL_NAME)
-                .then(|| {
-                    arguments
-                        .get("failure_fingerprint")
-                        .and_then(serde_json::Value::as_str)
-                        .map(str::to_string)
-                })
-                .flatten(),
-        ),
-        _ => return None,
-    };
+    let (evidence_id, outcome, kind, tool_name, validation_profile, validation_failure_fingerprint) =
+        match &notification.item {
+            ThreadItem::CommandExecution { id, status, .. } => (
+                id.clone(),
+                match status {
+                    CommandExecutionStatus::Completed => AdaptiveEvidenceOutcome::Success,
+                    CommandExecutionStatus::Failed => AdaptiveEvidenceOutcome::Failure,
+                    CommandExecutionStatus::Declined => AdaptiveEvidenceOutcome::Cancelled,
+                    CommandExecutionStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
+                },
+                AdaptiveEvidenceKind::CommandExecution,
+                None,
+                None,
+                None,
+            ),
+            ThreadItem::McpToolCall { id, status, .. } => (
+                id.clone(),
+                match status {
+                    McpToolCallStatus::Completed => AdaptiveEvidenceOutcome::Success,
+                    McpToolCallStatus::Failed => AdaptiveEvidenceOutcome::Failure,
+                    McpToolCallStatus::InProgress => AdaptiveEvidenceOutcome::Incomplete,
+                },
+                AdaptiveEvidenceKind::McpToolCall,
+                None,
+                None,
+                None,
+            ),
+            ThreadItem::DynamicToolCall {
+                id,
+                namespace,
+                tool,
+                arguments,
+                status,
+                success,
+                ..
+            } => (
+                id.clone(),
+                match (status, success) {
+                    (DynamicToolCallStatus::Completed, Some(true)) => {
+                        AdaptiveEvidenceOutcome::Success
+                    }
+                    (
+                        DynamicToolCallStatus::Completed | DynamicToolCallStatus::Failed,
+                        Some(false),
+                    )
+                    | (DynamicToolCallStatus::Failed, _) => AdaptiveEvidenceOutcome::Failure,
+                    (DynamicToolCallStatus::InProgress, _)
+                    | (DynamicToolCallStatus::Completed, None) => {
+                        AdaptiveEvidenceOutcome::Incomplete
+                    }
+                },
+                AdaptiveEvidenceKind::DynamicToolCall,
+                Some(tool.clone()),
+                (namespace.is_none() && tool == CODEXDD_VALIDATION_TOOL_NAME)
+                    .then(|| {
+                        arguments
+                            .get("profile")
+                            .and_then(serde_json::Value::as_str)
+                            .map(str::to_string)
+                    })
+                    .flatten(),
+                (namespace.is_none() && tool == CODEXDD_VALIDATION_TOOL_NAME)
+                    .then(|| {
+                        arguments
+                            .get("failure_fingerprint")
+                            .and_then(serde_json::Value::as_str)
+                            .map(str::to_string)
+                    })
+                    .flatten(),
+            ),
+            _ => return None,
+        };
     Some(AdaptiveEvidenceRecord {
         evidence_id,
         thread_id,
