@@ -144,6 +144,20 @@ where
 
 pub const WORKFLOW_STATE_SCHEMA_VERSION: u32 = 1;
 
+/// Compact operator-facing metadata for the latest native CodexDD validation receipt.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+pub struct AdaptiveValidationStatusSnapshot {
+    pub profile: String,
+    pub result: String,
+    pub run_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    pub head_sha: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failed_stage: Option<String>,
+    pub log_path: String,
+}
+
 /// Durable codex-dd adaptive workflow facts that may safely survive process restart.
 ///
 /// Ephemeral authorization state such as pending signals, pending attempts, successor permits,
@@ -167,6 +181,8 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub validation_repair_cycles_used: u8,
     #[serde(default)]
     pub validation_targeted_retest_required: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub validation_status: Option<AdaptiveValidationStatusSnapshot>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
     pub worker_role: String,
