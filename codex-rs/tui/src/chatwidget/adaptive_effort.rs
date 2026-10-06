@@ -337,9 +337,7 @@ impl AdaptiveEffortState {
                 .map(str::to_string),
             validation_repair_fingerprint: self.validation_repair_fingerprint.clone(),
             validation_repair_cycles_used: Some(self.validation_repair_cycles_used),
-            validation_targeted_retest_required: Some(
-                self.validation_targeted_retest_required,
-            ),
+            validation_targeted_retest_required: Some(self.validation_targeted_retest_required),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
             worker_role: worker_role.to_string(),
