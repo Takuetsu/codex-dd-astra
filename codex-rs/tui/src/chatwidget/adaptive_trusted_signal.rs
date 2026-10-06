@@ -144,14 +144,14 @@ impl ChatWidget {
                                         thread_id,
                                         source_turn_id,
                                     );
-                                let targeted_passed =
-                                    !self.adaptive_effort.validation_targeted_retest_required
-                                        || evidence
-                                            .has_successful_codexdd_targeted_receipt_for_turn(
-                                                &envelope.evidence_refs,
-                                                thread_id,
-                                                source_turn_id,
-                                            );
+                                let targeted_passed = !self
+                                    .adaptive_effort
+                                    .validation_targeted_retest_required
+                                    || evidence.has_successful_codexdd_targeted_receipt_for_turn(
+                                        &envelope.evidence_refs,
+                                        thread_id,
+                                        source_turn_id,
+                                    );
                                 work_packet_passed && targeted_passed
                             })
                     }
@@ -204,10 +204,7 @@ impl ChatWidget {
                     ),
                     None,
                 );
-                self.latch_workflow_terminal(
-                    source_turn_id,
-                    AdaptiveWorkflowTerminal::Blocked,
-                );
+                self.latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::Blocked);
                 return true;
             }
             if self.native_failure_pressure_available(source_turn_id) {
@@ -1012,7 +1009,9 @@ mod tests {
         );
         assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 1);
         assert_eq!(
-            chat.adaptive_effort.validation_repair_fingerprint.as_deref(),
+            chat.adaptive_effort
+                .validation_repair_fingerprint
+                .as_deref(),
             Some("v1:work_packet:core-adaptive-tests")
         );
         assert!(chat.adaptive_effort.validation_targeted_retest_required);
@@ -1130,10 +1129,7 @@ mod tests {
             AdaptiveRuntimeSignalEnvelope {
                 source_turn_id: turn_id.to_string(),
                 signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-                evidence_refs: vec![
-                    "targeted-pass".to_string(),
-                    "work-packet-pass".to_string(),
-                ],
+                evidence_refs: vec!["targeted-pass".to_string(), "work-packet-pass".to_string()],
                 diagnostic_note: Some("READY_FOR_VALIDATION".to_string()),
             },
         ));
