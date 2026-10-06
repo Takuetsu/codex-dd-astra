@@ -563,6 +563,28 @@ fn register_work_packet_receipt(
         });
 }
 
+fn register_failed_validation_receipt(
+    chat: &mut ChatWidget,
+    thread_id: ThreadId,
+    turn_id: &str,
+    evidence_id: &str,
+    profile: &str,
+    fingerprint: &str,
+) {
+    chat.adaptive_effort
+        .evidence_registry
+        .register(AdaptiveEvidenceRecord {
+            evidence_id: evidence_id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Failure,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(profile.to_string()),
+            validation_failure_fingerprint: Some(fingerprint.to_string()),
+        });
+}
+
 #[tokio::test]
 async fn ready_for_validation_enforces_complete_role_matrix_as_hard_handoff() {
     for (role, accepted) in [
@@ -2343,7 +2365,8 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
         ),
     ] {
         let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         chat.adaptive_effort.enabled = true;
         chat.adaptive_effort.starting_family = Some(AdaptiveFamily::Astra);
         chat.adaptive_effort.current_family = Some(current_family);
@@ -2356,10 +2379,18 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
             role: AdaptiveWorkerRole::Implementation,
             authorized_scope: Some("architectural integration".to_string()),
         };
+        register_failed_validation_receipt(
+            &mut chat,
+            thread_id,
+            "implementation-reentry",
+            "failed-work-packet",
+            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            "v1:work_packet:core-adaptive-tests",
+        );
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "implementation-reentry",
             AdaptiveRuntimeSignalKind::ImplementationWork,
-            Vec::new(),
+            vec!["failed-work-packet".to_string()],
         ));
 
         assert!(chat.consume_adaptive_signal_at_terminal("implementation-reentry"));
@@ -2369,6 +2400,12 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
         );
         assert_eq!(chat.adaptive_effort.current_family, Some(expected_family));
         assert_eq!(chat.adaptive_effort.current_effort, Some(expected_effort));
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 1);
+        assert_eq!(
+            chat.adaptive_effort.validation_repair_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert!(chat.adaptive_effort.validation_targeted_retest_required);
         assert_matches!(
             chat.adaptive_effort.pending_attempt,
             Some(AdaptivePendingAttempt {
