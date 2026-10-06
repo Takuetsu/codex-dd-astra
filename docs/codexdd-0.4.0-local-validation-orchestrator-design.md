@@ -442,7 +442,7 @@ Exit:
 
 ### 3D.1 — Status, summaries, and operator evidence
 
-**Status:** IMPLEMENTATION COMPLETE; PENDING DANIEL-CL WINDOWS VALIDATION.
+**Status:** COMPLETE and Windows-validated on Daniel-CL.
 
 Implemented:
 
@@ -471,6 +471,12 @@ GitHub-side validation before the Daniel-CL gate:
 - `codex-tui` Windows library-test compile: green on the final fingerprint/pre-validation status checkpoint;
 - temporary 3D.1 validation/schema oracle workflows removed after the final green runs.
 
+Daniel-CL validation evidence:
+
+- CodexDD `targeted` profile completed with `status=pass` and exit code `0`;
+- the TUI adaptive regression slice reported **186/186 passed** with 5506 skipped;
+- the targeted profile completed all three configured stages successfully.
+
 Scope:
 
 - surface current validation profile/run/result/repair budget in existing `/status` surfaces where useful;
@@ -484,6 +490,16 @@ Exit:
 - checkpoint commit.
 
 ### 3E.1 — Version/provenance/docs policy transition
+
+**Status:** IN PROGRESS.
+
+Current implementation:
+
+- source product identity bumped from `0.3.14` to `0.4.0`;
+- build-info and CLI version regressions updated for the 0.4.0 identity;
+- current Worker/Designer guidance updated for the native Local Validation Orchestrator contract;
+- the major-phase standard now makes LVO-owned work-packet validation the normal post-0.4.0 policy while preserving explicit owner/release gates and the bootstrap exception for validating an uninstalled candidate;
+- the validation-profile contract is marked implemented and documents the final receipt/repair/status semantics.
 
 Scope:
 
