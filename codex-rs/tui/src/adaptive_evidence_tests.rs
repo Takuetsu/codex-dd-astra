@@ -230,6 +230,60 @@ fn failed_validation_receipt_exposes_repairable_fingerprint() {
 }
 
 #[test]
+fn work_packet_failure_is_preferred_over_targeted_regardless_of_ref_order() {
+    let thread_id = ThreadId::new();
+    let turn_id = "turn-multiple-validation-failures";
+    let mut registry = AdaptiveEvidenceRegistry::default();
+
+    for (id, profile, fingerprint) in [
+        (
+            "targeted-failure",
+            "targeted",
+            "v1:targeted:core-adaptive-tests",
+        ),
+        (
+            "work-packet-failure",
+            super::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            "v1:work_packet:tui-adaptive-tests",
+        ),
+    ] {
+        registry.register(AdaptiveEvidenceRecord {
+            evidence_id: id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Failure,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(profile.to_string()),
+            validation_failure_fingerprint: Some(fingerprint.to_string()),
+        });
+    }
+
+    for refs in [
+        vec![
+            "targeted-failure".to_string(),
+            "work-packet-failure".to_string(),
+        ],
+        vec![
+            "work-packet-failure".to_string(),
+            "targeted-failure".to_string(),
+        ],
+    ] {
+        assert_eq!(
+            registry.codexdd_repairable_validation_failure_for_turn(
+                &refs,
+                thread_id,
+                turn_id,
+            ),
+            Some((
+                super::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
+                "v1:work_packet:tui-adaptive-tests".to_string(),
+            ))
+        );
+    }
+}
+
+#[test]
 fn native_command_outcomes_are_not_upgraded_from_output() {
     let thread_id = ThreadId::new();
     for (status, expected) in [
