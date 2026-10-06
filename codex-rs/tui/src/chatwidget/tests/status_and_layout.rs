@@ -338,6 +338,8 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         authorized_scope: Some("bounded status integration".to_string()),
     };
     chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.validation_repair_fingerprint =
+        Some("v1:work_packet:core-adaptive-tests".to_string());
     chat.adaptive_effort.validation_repair_cycles_used = 1;
     chat.adaptive_effort.validation_targeted_retest_required = true;
     chat.adaptive_effort.validation_status = Some(
@@ -379,6 +381,7 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         "LVO run: run-status-42",
         "LVO candidate: dd/status-evidence @ 0123456789abcdef",
         "LVO failed stage: core-adaptive-tests",
+        "LVO failure fingerprint: v1:work_packet:core-adaptive-tests",
         "LVO repair budget: 1/2 used (1 remaining)",
         "LVO next: targeted -> work_packet",
         "LVO log: C:\\codexdd\\validation\\run-status-42\\validation.log",
