@@ -1722,6 +1722,15 @@ pub struct ThreadAdaptiveWorkflowState {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub implementation_phase: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_repair_fingerprint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_repair_cycles_used: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_targeted_retest_required: Option<bool>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
     pub worker_role: String,
