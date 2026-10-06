@@ -404,7 +404,15 @@ Exit:
 
 ### 3C.2 — Bounded diagnose/repair/retest loop
 
-**Status:** IMPLEMENTED on the feature branch; pending Daniel-CL targeted regression validation.
+**Status:** COMPLETE and Windows-validated on Daniel-CL.
+
+Validation evidence:
+
+- CodexDD validation-runner slice passed with exit code 0;
+- adaptive workflow history/persistence slice passed with exit code 0;
+- persisted validation-repair-state TUI slice passed with exit code 0;
+- full Codex TUI adaptive regression slice passed 185/185 with exit code 0;
+- pre-handoff compile oracles also proved codex-core, codex-history, and codex-tui library-test compilation on the Windows target.
 
 Current implementation:
 
@@ -433,6 +441,16 @@ Exit:
 - checkpoint commit.
 
 ### 3D.1 — Status, summaries, and operator evidence
+
+**Status:** IN PROGRESS.
+
+Implementation direction:
+
+- extend the existing `/status` Adaptive Effort block; do not add a separate status command;
+- record the latest native LVO profile/result/run/branch/HEAD/log/failed-stage metadata from the validation-runner receipt;
+- persist that compact operator status across resume/fork without persisting the ephemeral evidence registry;
+- show repair cycles used/remaining and the deterministic next validation step;
+- enrich the compact validation-runner result with run/branch/HEAD identity so PASS/FAIL handoff evidence is useful without full logs.
 
 Scope:
 
