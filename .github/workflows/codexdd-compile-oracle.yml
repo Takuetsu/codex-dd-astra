@@ -12,31 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  constructor-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - name: Scan adaptive state constructors
-        shell: bash
-        run: |
-          printf '%s\n' '=== AdaptiveWorkflowStateSnapshot ==='
-          grep -RIn --include='*.rs' 'AdaptiveWorkflowStateSnapshot {' codex-rs || true
-          printf '%s\n' '=== ThreadAdaptiveWorkflowState ==='
-          grep -RIn --include='*.rs' 'ThreadAdaptiveWorkflowState {' codex-rs || true
-          printf '%s\n' '=== AdaptiveEvidenceRecord ==='
-          grep -RIn --include='*.rs' 'AdaptiveEvidenceRecord {' codex-rs || true
-
-  compile:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - codex-core
-          - codex-history
-          - codex-tui
+  windows-tui-compile:
+    runs-on: windows-latest
     defaults:
       run:
         working-directory: codex-rs
@@ -46,5 +23,5 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
-      - name: Compile library tests
-        run: cargo test -p ${{ matrix.package }} --lib --no-run --message-format short
+      - name: Compile codex-tui library tests on Windows
+        run: cargo test -p codex-tui --lib --no-run --message-format short
