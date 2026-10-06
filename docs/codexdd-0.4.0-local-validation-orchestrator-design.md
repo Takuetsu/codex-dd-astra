@@ -533,7 +533,9 @@ Audit result:
 - the defect is repaired by persisting the optional native receipt fingerprint in compact validation status and preferring it in `/status`, without changing repair authority or budget consumption;
 - the repair passed rustfmt, constructor scan, history compile, Windows TUI compile, and schema/SDK regeneration;
 - temporary audit/schema oracle workflows were removed after validation;
-- the first Daniel-CL `work_packet` stopped only at `rust-format-check`; an exact formatter oracle changed one formatting-only line in `core/src/tools/handlers/mod.rs`, and that temporary oracle was removed.
+- the first Daniel-CL `work_packet` stopped at `rust-format-check`; an exact formatter oracle changed one formatting-only line in `core/src/tools/handlers/mod.rs`;
+- the second `work_packet` advanced to `core-tui-clippy` and exposed two LVO-runner redundant closures plus six strict TUI Clippy violations; the LVO/adaptive cases were repaired fail-closed where needed, unchanged TUI closures were mechanically simplified, and the exact Windows rustfmt + core/tui Clippy stages are now green;
+- all temporary strict-stage oracles were removed after the green run.
 
 Durable details are recorded in `docs/codexdd-0.4.0-phase-3f-audit.md`.
 
