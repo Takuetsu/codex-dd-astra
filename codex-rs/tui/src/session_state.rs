@@ -590,6 +590,35 @@ mod codexdd_complexity_persistence_regression {
     }
 
     #[test]
+    fn persisted_validation_repair_state_fails_closed_when_incomplete() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "luna",
+                    "current_effort": "low",
+                    "attempt_number": 3,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/incomplete-repair-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "standard",
+                    "implementation_phase": "mechanical_validation",
+                    "validation_repair_fingerprint": null,
+                    "validation_repair_cycles_used": 1,
+                    "validation_targeted_retest_required": true
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        let error = apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect_err("incomplete repair state must fail closed");
+        assert!(error.contains("incomplete or internally inconsistent"));
+    }
+
+    #[test]
     fn persisted_validation_repair_state_cannot_attach_to_non_implementation_worker() {
         let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
             r#"{
@@ -682,5 +711,11 @@ mod codexdd_complexity_persistence_regression {
             validation_status.failure_fingerprint.as_deref(),
             Some("v1:work_packet:core-adaptive-tests")
         );
+        assert!(adaptive.pending_attempt.is_none());
+        assert!(adaptive.pending_signal.is_none());
+        assert!(adaptive.successor_admission.is_none());
+        assert_eq!(adaptive.evidence_registry.len(), 0);
+        assert_eq!(adaptive.last_outcome, None);
+        assert_eq!(adaptive.last_failure_kind, None);
     }
 }
