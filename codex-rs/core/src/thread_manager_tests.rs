@@ -293,6 +293,7 @@ fn child_workflow_snapshot_preserves_adaptive_state() {
         validation_repair_fingerprint: None,
         validation_repair_cycles_used: 0,
         validation_targeted_retest_required: false,
+        validation_status: None,
         attempt_number: 6,
         paused_by_user: false,
         worker_role: "repair".to_string(),
