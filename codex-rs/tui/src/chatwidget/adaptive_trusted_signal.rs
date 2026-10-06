@@ -67,8 +67,9 @@ impl ChatWidget {
             None
         };
 
-        let implementation_work_failure =
-            (envelope.signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork).then(|| {
+        let implementation_work_failure = (envelope.signal_kind
+            == AdaptiveRuntimeSignalKind::ImplementationWork)
+            .then(|| {
                 self.thread_id.and_then(|thread_id| {
                     self.adaptive_effort
                         .evidence_registry
@@ -80,13 +81,14 @@ impl ChatWidget {
                 })
             })
             .flatten();
-        let implementation_work_profile_allowed = implementation_work_failure
-            .as_ref()
-            .is_some_and(|(profile, _)| {
-                profile == crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE
-                    || (self.adaptive_effort.validation_targeted_retest_required
-                        && profile == "targeted")
-            });
+        let implementation_work_profile_allowed =
+            implementation_work_failure
+                .as_ref()
+                .is_some_and(|(profile, _)| {
+                    profile == crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE
+                        || (self.adaptive_effort.validation_targeted_retest_required
+                            && profile == "targeted")
+                });
         let implementation_work_budget_available =
             self.adaptive_effort.validation_repair_budget_available();
 
