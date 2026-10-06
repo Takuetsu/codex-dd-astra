@@ -1,0 +1,40 @@
+name: CodexDD Phase 4.4 oracle
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.0-local-validation-orchestrator
+    paths:
+      - ".github/workflows/codexdd-phase4-4-oracle.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: codex-rs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Exact format check
+        shell: pwsh
+        run: cargo fmt -- --config imports_granularity=Item --check
+      - name: Incomplete repair restore fails closed
+        shell: pwsh
+        run: cargo test -p codex-tui --lib persisted_validation_repair_state_fails_closed_when_incomplete
+      - name: Mechanical validation restore clears ephemeral authority
+        shell: pwsh
+        run: cargo test -p codex-tui --lib restored_snapshot_recovers_mechanical_validation_phase
+      - name: Detached fork preserves durable LVO state only
+        shell: pwsh
+        env:
+          RUST_MIN_STACK: "16777216"
+        run: cargo test -p codex-tui --lib detached_fork_restores_persisted_adaptive_workflow_state
