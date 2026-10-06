@@ -138,6 +138,43 @@ fn parser_preserves_failed_stage_without_full_native_output() {
 }
 
 #[test]
+fn operator_summary_adds_run_and_candidate_identity_without_full_log_output() {
+    let summary = ValidationSummary {
+        contract_version: 1,
+        profile: "work-packet".to_string(),
+        status: "pass".to_string(),
+        exit_code: 0,
+        stages: vec![ValidationStageSummary {
+            stage: "core-adaptive-tests".to_string(),
+            status: "pass".to_string(),
+            native_exit_code: Some(0),
+            duration_ms: Some(42),
+        }],
+        failed_stage: None,
+        error_type: None,
+        message: None,
+        log_path: "C:\\codexdd\\validation\\run-42\\validation.log".to_string(),
+    };
+    let operator = ValidationOperatorSummary {
+        summary: &summary,
+        run_id: "run-42",
+        branch: Some("dd/status-evidence"),
+        head_sha: "0123456789abcdef",
+    };
+
+    let value = serde_json::to_value(operator).expect("operator summary");
+    assert_eq!(value["status"], "pass");
+    assert_eq!(value["profile"], "work-packet");
+    assert_eq!(value["run_id"], "run-42");
+    assert_eq!(value["branch"], "dd/status-evidence");
+    assert_eq!(value["head_sha"], "0123456789abcdef");
+    assert_eq!(
+        value["log_path"],
+        "C:\\codexdd\\validation\\run-42\\validation.log"
+    );
+}
+
+#[test]
 fn validation_failure_fingerprint_is_stage_scoped_and_errors_are_not_repairable() {
     let failed = ValidationSummary {
         contract_version: 1,
