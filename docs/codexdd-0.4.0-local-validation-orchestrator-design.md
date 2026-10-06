@@ -491,7 +491,7 @@ Exit:
 
 ### 3E.1 — Version/provenance/docs policy transition
 
-**Status:** IN PROGRESS.
+**Status:** IMPLEMENTATION COMPLETE; PENDING DANIEL-CL WINDOWS VALIDATION.
 
 Current implementation:
 
