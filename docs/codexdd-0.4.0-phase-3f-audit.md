@@ -2,7 +2,7 @@
 
 ## Status
 
-**SOURCE AUDIT COMPLETE; 3F.1 REPAIR VALIDATION IN PROGRESS.**
+**SOURCE AUDIT COMPLETE; PENDING DANIEL-CL 3F.1 WORK-PACKET VALIDATION.**
 
 This document is the durable implementation audit for the CodexDD 0.4.0 Local Validation Orchestrator (LVO).
 
@@ -138,8 +138,20 @@ The LVO feature does not authorize or automate:
 
 The `release` validation profile is only a local validation workload. It does not grant any release action.
 
+## GitHub-side repair validation
+
+The audit repair is green:
+
+- Rust formatting check: PASS;
+- validation-status constructor scan: PASS;
+- `codex-history` library-test compile: PASS;
+- `codex-tui` library-test compile on Windows: PASS;
+- app-server protocol/schema and Python SDK regeneration: PASS;
+- generated artifacts include optional `failureFingerprint` on the compact validation status;
+- all temporary 3F.1 formatter/compile/schema oracle workflows were removed after the successful runs.
+
+No Rust source changed after the green compile oracle; only generated schema artifacts, audit documentation, and temporary-workflow cleanup followed.
+
 ## Pending 3F.1 closure
 
-Temporary formatter/compile/schema oracles are being used only to validate the audit repair and regenerate exact protocol artifacts. They must be removed before the final 3F.1 checkpoint.
-
-After GitHub-side repair validation is green, the final 3F.1 Windows gate is the repository-owned `work_packet` profile on Daniel-CL. Phase 4 remains separate and owns the broader pre-install release matrix.
+The final 3F.1 gate is the repository-owned `work_packet` profile on Daniel-CL. Phase 4 remains separate and owns the broader pre-install release matrix.
