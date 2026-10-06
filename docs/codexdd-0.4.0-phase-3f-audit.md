@@ -150,8 +150,10 @@ The audit repair is green:
 - generated artifacts include optional `failureFingerprint` on the compact validation status;
 - all temporary 3F.1 formatter/compile/schema oracle workflows were removed after the successful runs.
 
-No Rust source changed after the green compile oracle; only generated schema artifacts, audit documentation, and temporary-workflow cleanup followed.
+The first Daniel-CL `work_packet` attempt then stopped at the `rust-format-check` stage before running later validation stages. The exact repository formatter was run through a temporary GitHub oracle; it changed exactly one Rust path, `codex-rs/core/src/tools/handlers/mod.rs`, by one formatting-only line replacement. No behavioral code changed. The temporary formatter oracle was removed immediately afterward.
+
+The repeated Daniel-CL `work_packet` is therefore the authoritative final 3F.1 gate.
 
 ## Pending 3F.1 closure
 
-The final 3F.1 gate is the repository-owned `work_packet` profile on Daniel-CL. Phase 4 remains separate and owns the broader pre-install release matrix.
+Rerun the repository-owned `work_packet` profile on Daniel-CL against the formatting-corrected branch. Phase 4 remains separate and owns the broader pre-install release matrix.
