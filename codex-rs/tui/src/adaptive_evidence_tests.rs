@@ -186,6 +186,50 @@ fn native_validation_tool_completion_becomes_typed_work_packet_receipt() {
 }
 
 #[test]
+fn failed_validation_receipt_exposes_repairable_fingerprint() {
+    let thread_id = ThreadId::new();
+    let notification = ItemCompletedNotification {
+        item: ThreadItem::DynamicToolCall {
+            id: "failed-validation".to_string(),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({
+                "profile": "work_packet",
+                "failure_fingerprint": "v1:work_packet:core-adaptive-tests",
+                "failed_stage": "core-adaptive-tests"
+            }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(false),
+            duration_ms: Some(1),
+        },
+        thread_id: thread_id.to_string(),
+        turn_id: "turn-validation-failed".to_string(),
+        completed_at_ms: 1,
+    };
+
+    let record = record_from_item_completion(&notification).expect("failed validation receipt");
+    assert_eq!(
+        record.validation_failure_fingerprint.as_deref(),
+        Some("v1:work_packet:core-adaptive-tests")
+    );
+
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(record);
+    assert_eq!(
+        registry.codexdd_repairable_validation_failure_for_turn(
+            &["failed-validation".to_string()],
+            thread_id,
+            "turn-validation-failed",
+        ),
+        Some((
+            "work_packet".to_string(),
+            "v1:work_packet:core-adaptive-tests".to_string(),
+        ))
+    );
+}
+
+#[test]
 fn native_command_outcomes_are_not_upgraded_from_output() {
     let thread_id = ThreadId::new();
     for (status, expected) in [
