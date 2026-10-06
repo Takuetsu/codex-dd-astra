@@ -110,6 +110,9 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
+    pub(crate) validation_repair_fingerprint: Option<String>,
+    pub(crate) validation_repair_cycles_used: u8,
+    pub(crate) validation_targeted_retest_required: bool,
     pub(crate) budget_mode: AdaptiveBudgetMode,
 }
 
@@ -232,6 +235,9 @@ impl AdaptiveEffortState {
         let evidence_registry = self.evidence_registry.clone();
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
+        let validation_repair_fingerprint = self.validation_repair_fingerprint.clone();
+        let validation_repair_cycles_used = self.validation_repair_cycles_used;
+        let validation_targeted_retest_required = self.validation_targeted_retest_required;
         let budget_mode = self.budget_mode;
         *self = Self {
             enabled: true,
@@ -258,6 +264,9 @@ impl AdaptiveEffortState {
             evidence_registry,
             complexity_class,
             implementation_phase,
+            validation_repair_fingerprint,
+            validation_repair_cycles_used,
+            validation_targeted_retest_required,
             budget_mode,
         };
     }
@@ -308,6 +317,11 @@ impl AdaptiveEffortState {
                 .implementation_phase
                 .map(AdaptiveImplementationPhase::persisted_label)
                 .map(str::to_string),
+            validation_repair_fingerprint: self.validation_repair_fingerprint.clone(),
+            validation_repair_cycles_used: Some(self.validation_repair_cycles_used),
+            validation_targeted_retest_required: Some(
+                self.validation_targeted_retest_required,
+            ),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
             worker_role: worker_role.to_string(),
