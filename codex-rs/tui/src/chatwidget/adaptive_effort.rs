@@ -443,11 +443,7 @@ impl ChatWidget {
         if &expected != binding {
             return None;
         }
-        let complexity = self
-            .adaptive_effort
-            .complexity_class
-            .expect("automatic validation requires a complexity class")
-            .label();
+        let complexity = self.adaptive_effort.complexity_class?.label();
         Some(
             format!(
                 "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. If the change is green, report ready_for_owner_qa with successful native evidence refs. If a blocker is found, report repair_required with failing native evidence refs.",
