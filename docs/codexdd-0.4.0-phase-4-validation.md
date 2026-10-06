@@ -104,6 +104,8 @@ Exit: all repair-loop regressions green on Daniel-CL.
 
 ## Packet 4.4 — persistence, interruption, resume, and fork matrix
 
+**Status: SOURCE AUDIT COMPLETE; PENDING DANIEL-CL MATRIX.**
+
 Purpose: prove durable LVO state survives lifecycle boundaries without restoring ephemeral authority.
 
 Required evidence:
@@ -120,6 +122,13 @@ Required evidence:
 Use the established Windows test stack where needed:
 
 `RUST_MIN_STACK=16777216`
+
+Phase-4 audit hardening added:
+
+- an explicit regression that partially populated repair state (for example cycle count without a fingerprint) fails closed;
+- explicit resume assertions that pending attempt, pending signal, successor admission, evidence registry, last outcome, and last failure kind are not restored as authority.
+
+The detached-fork regression already proves durable repair/operator status survives while pending attempts/signals/successor permits are absent in the fork. Existing interrupted-turn regressions remain part of the Daniel-CL matrix.
 
 Exit: persistence/interruption matrix green on Daniel-CL.
 
