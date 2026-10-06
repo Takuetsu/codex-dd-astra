@@ -21064,6 +21064,12 @@
               "null"
             ]
           },
+          "failureFingerprint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "headSha": {
             "type": "string"
           },

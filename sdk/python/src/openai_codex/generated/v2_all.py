@@ -5068,6 +5068,7 @@ class ThreadAdaptiveValidationStatus(BaseModel):
     )
     branch: str | None = None
     failed_stage: Annotated[str | None, Field(alias="failedStage")] = None
+    failure_fingerprint: Annotated[str | None, Field(alias="failureFingerprint")] = None
     head_sha: Annotated[str, Field(alias="headSha")]
     log_path: Annotated[str, Field(alias="logPath")]
     profile: str
