@@ -144,11 +144,12 @@ impl AdaptiveEvidenceRegistry {
         Ok(record)
     }
 
-    pub(crate) fn has_successful_codexdd_work_packet_receipt_for_turn(
+    fn has_successful_codexdd_profile_receipt_for_turn(
         &self,
         evidence_refs: &[String],
         thread_id: ThreadId,
         source_turn_id: &str,
+        profile: &str,
     ) -> bool {
         !evidence_refs.is_empty()
             && evidence_refs.iter().any(|evidence_id| {
@@ -157,10 +158,37 @@ impl AdaptiveEvidenceRegistry {
                         record.outcome == AdaptiveEvidenceOutcome::Success
                             && record.kind == AdaptiveEvidenceKind::DynamicToolCall
                             && record.tool_name.as_deref() == Some(CODEXDD_VALIDATION_TOOL_NAME)
-                            && record.validation_profile.as_deref()
-                                == Some(CODEXDD_WORK_PACKET_PROFILE)
+                            && record.validation_profile.as_deref() == Some(profile)
                     })
             })
+    }
+
+    pub(crate) fn has_successful_codexdd_work_packet_receipt_for_turn(
+        &self,
+        evidence_refs: &[String],
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> bool {
+        self.has_successful_codexdd_profile_receipt_for_turn(
+            evidence_refs,
+            thread_id,
+            source_turn_id,
+            CODEXDD_WORK_PACKET_PROFILE,
+        )
+    }
+
+    pub(crate) fn has_successful_codexdd_targeted_receipt_for_turn(
+        &self,
+        evidence_refs: &[String],
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> bool {
+        self.has_successful_codexdd_profile_receipt_for_turn(
+            evidence_refs,
+            thread_id,
+            source_turn_id,
+            "targeted",
+        )
     }
 
     pub(crate) fn codexdd_repairable_validation_failure_for_turn(
