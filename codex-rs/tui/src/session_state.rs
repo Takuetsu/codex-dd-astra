@@ -642,6 +642,7 @@ mod codexdd_complexity_persistence_regression {
                         "branch": "dd/restore",
                         "head_sha": "0123456789abcdef",
                         "failed_stage": "core-adaptive-tests",
+                        "failure_fingerprint": "v1:work_packet:core-adaptive-tests",
                         "log_path": "C:\\codexdd\\validation\\run-restore-42\\validation.log"
                     }
                 }"#,
@@ -676,6 +677,10 @@ mod codexdd_complexity_persistence_regression {
         assert_eq!(
             validation_status.failed_stage.as_deref(),
             Some("core-adaptive-tests")
+        );
+        assert_eq!(
+            validation_status.failure_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
         );
     }
 }
