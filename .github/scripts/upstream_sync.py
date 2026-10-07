@@ -19,6 +19,7 @@ RELEASE_TAG = re.compile(
 )
 PRODUCT_VERSION = re.compile(r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$")
 GIT_OBJECT_ID = re.compile(r"^[0-9a-f]{40}$")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 KIND_ORDER = {"alpha": 0, "beta": 1, "rc": 2}
 
 CANDIDATE_MANIFEST_CONTRACT_VERSION = 1
@@ -531,6 +532,79 @@ def candidate_state_after_identity_check(
     if stale:
         return "blocked_stale_base", stale
     return manifest.state, ()
+
+
+def parse_validation_receipt_json(source: str) -> dict[str, object]:
+    try:
+        receipt = json.loads(source)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"invalid validation receipt JSON: {error}") from error
+    if not isinstance(receipt, dict):
+        raise ValueError("validation receipt must be a JSON object")
+    validate_validation_receipt(receipt)
+    return receipt
+
+
+def validate_validation_receipt(receipt: Mapping[str, object]) -> None:
+    if receipt.get("contract_version") != 1:
+        raise ValueError("unsupported upstream validation receipt contract")
+    if receipt.get("receipt_type") != "codexdd_upstream_local_validation":
+        raise ValueError("invalid upstream validation receipt type")
+    if receipt.get("validation_contract_version") != 1:
+        raise ValueError("unsupported native validation contract")
+    if receipt.get("validation_status") != "pass":
+        raise ValueError("upstream validation receipt is not PASS")
+
+    profile = receipt.get("profile")
+    if profile not in {"work-packet", "release"}:
+        raise ValueError(f"invalid upstream validation profile: {profile}")
+
+    completed_stages = receipt.get("completed_stages")
+    if not isinstance(completed_stages, int) or completed_stages <= 0:
+        raise ValueError("validation receipt must record completed stages")
+
+    target_tag = receipt.get("target_upstream_tag")
+    target_sha = receipt.get("target_upstream_sha")
+    candidate_branch_name = receipt.get("candidate_branch")
+    candidate_head_sha = receipt.get("candidate_head_sha")
+    production_sha = receipt.get("production_sha")
+    candidate_key_value = receipt.get("candidate_key")
+    manifest_path = receipt.get("manifest_path")
+    manifest_sha256 = receipt.get("manifest_sha256")
+    completed_at = receipt.get("completed_at")
+
+    if not isinstance(target_tag, str) or stable_release_version(target_tag) is None:
+        raise ValueError("validation receipt target tag is invalid")
+    if not isinstance(target_sha, str):
+        raise ValueError("validation receipt target SHA is invalid")
+    _validate_object_id(target_sha, "validation receipt target commit")
+    if not isinstance(candidate_head_sha, str):
+        raise ValueError("validation receipt candidate HEAD is invalid")
+    _validate_object_id(candidate_head_sha, "validation receipt candidate HEAD")
+    if not isinstance(production_sha, str):
+        raise ValueError("validation receipt production SHA is invalid")
+    _validate_object_id(production_sha, "validation receipt production commit")
+
+    expected_key = candidate_key(target_tag, target_sha)
+    if candidate_key_value != expected_key:
+        raise ValueError("validation receipt candidate key does not match target identity")
+
+    expected_branch = candidate_branch(target_tag, target_sha)
+    if candidate_branch_name != expected_branch:
+        raise ValueError("validation receipt branch does not match target identity")
+
+    if not isinstance(manifest_path, str) or not manifest_path.startswith(
+        "docs/upstream-candidates/"
+    ):
+        raise ValueError("validation receipt manifest path is outside the candidate area")
+    manifest_parts = Path(manifest_path).parts
+    if ".." in manifest_parts or Path(manifest_path).is_absolute():
+        raise ValueError("validation receipt manifest path is unsafe")
+
+    if not isinstance(manifest_sha256, str) or SHA256.fullmatch(manifest_sha256) is None:
+        raise ValueError("validation receipt manifest SHA-256 is invalid")
+    if not isinstance(completed_at, str) or not completed_at.strip():
+        raise ValueError("validation receipt completion timestamp is missing")
 
 
 def report_conflict_issue(
