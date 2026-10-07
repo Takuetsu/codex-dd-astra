@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -114,37 +113,9 @@ def product_version(version: str) -> tuple[int, int, int] | None:
     return tuple(int(match.group(name)) for name in ("major", "minor", "patch"))
 
 
-def next_patch_version(version: str) -> str:
-    """Legacy preparation helper retained until the 2A.2 workflow migration."""
-
-    parsed = product_version(version)
-    if parsed is None:
-        raise ValueError(f"invalid codexdd product version: {version}")
-    major, minor, patch = parsed
-    return f"{major}.{minor}.{patch + 1}"
-
-
-def rewrite_version_test(source: str, current: str, next_version: str) -> str:
-    """Legacy preparation helper retained until the 2A.2 workflow migration."""
-
-    if product_version(current) is None:
-        raise ValueError(f"invalid current codexdd product version: {current}")
-    if product_version(next_version) is None:
-        raise ValueError(f"invalid next codexdd product version: {next_version}")
-    current_prefix = f"codexdd {current}+g"
-    next_prefix = f"codexdd {next_version}+g"
-    if source.count(current_prefix) != 1:
-        raise ValueError(
-            "version-reporting test must contain exactly one current codexdd version prefix"
-        )
-    return source.replace(current_prefix, next_prefix, 1)
-
-
 def reconcile_workspace_lockfile(
     source: str, workspace_version: str
 ) -> tuple[str, int]:
-    """Legacy preparation helper retained until the 2A.2 workflow migration."""
-
     if product_version(workspace_version) is None:
         raise ValueError(f"invalid workspace version: {workspace_version}")
 
@@ -175,35 +146,11 @@ def select_latest_release(tags: Iterable[str]) -> str:
     return max(valid)[1]
 
 
-def integration_branch(tag: str) -> str:
-    if stable_release_version(tag) is None:
-        raise ValueError(f"invalid stable official release tag: {tag}")
-    return f"automation/upstream-sync-{tag}"
-
-
 def candidate_branch(tag: str, commit_sha: str) -> str:
     if stable_release_version(tag) is None:
         raise ValueError(f"invalid stable official release tag: {tag}")
     _validate_object_id(commit_sha, "target upstream commit")
     return f"automation/upstream-candidate-{tag}-{commit_sha[:12]}"
-
-
-def pr_marker(tag: str) -> str:
-    if stable_release_version(tag) is None:
-        raise ValueError(f"invalid stable official release tag: {tag}")
-    return f"codexdd-upstream-sync: {tag}"
-
-
-def conflict_issue_title(tag: str) -> str:
-    if stable_release_version(tag) is None:
-        raise ValueError(f"invalid stable official release tag: {tag}")
-    return f"codexdd: resolve upstream {tag} conflicts"
-
-
-def conflict_marker(tag: str) -> str:
-    if stable_release_version(tag) is None:
-        raise ValueError(f"invalid stable official release tag: {tag}")
-    return f"codexdd-upstream-conflict: {tag}"
 
 
 def candidate_key(tag: str, commit_sha: str) -> str:
@@ -607,80 +554,6 @@ def validate_validation_receipt(receipt: Mapping[str, object]) -> None:
         raise ValueError("validation receipt completion timestamp is missing")
 
 
-def report_conflict_issue(
-    body_path: Path, summary_path: Path, repository: str, title: str
-) -> bool:
-    """Publish primary conflict details before best-effort GitHub Issue reporting."""
-
-    with summary_path.open("a", encoding="utf-8") as summary:
-        summary.write(body_path.read_text(encoding="utf-8"))
-        summary.write("\n")
-
-    try:
-        listed = subprocess.run(
-            [
-                "gh",
-                "issue",
-                "list",
-                "--repo",
-                repository,
-                "--state",
-                "open",
-                "--limit",
-                "100",
-                "--json",
-                "number,title",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        issues = json.loads(listed.stdout)
-        existing = next(
-            (item["number"] for item in issues if item["title"] == title), None
-        )
-        if existing is None:
-            command = [
-                "gh",
-                "issue",
-                "create",
-                "--repo",
-                repository,
-                "--title",
-                title,
-                "--body-file",
-                str(body_path),
-            ]
-        else:
-            command = [
-                "gh",
-                "issue",
-                "edit",
-                str(existing),
-                "--repo",
-                repository,
-                "--body-file",
-                str(body_path),
-            ]
-        subprocess.run(command, check=True, capture_output=True, text=True)
-    except (
-        OSError,
-        subprocess.CalledProcessError,
-        ValueError,
-        KeyError,
-        TypeError,
-    ) as error:
-        detail = getattr(error, "stderr", None) or str(error)
-        secondary = (
-            f"Secondary diagnostic: GitHub Issue reporting failed: {detail.strip()}"
-        )
-        print(secondary, file=sys.stderr)
-        with summary_path.open("a", encoding="utf-8") as summary:
-            summary.write(f"\n{secondary}\n")
-        return False
-    return True
-
-
 def _validate_object_id(value: str, label: str) -> None:
     if GIT_OBJECT_ID.fullmatch(value) is None:
         raise ValueError(f"invalid {label} SHA: {value}")
@@ -688,10 +561,7 @@ def _validate_object_id(value: str, label: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--latest-from-stdin", action="store_true")
-    group.add_argument("--next-patch")
-    group.add_argument("--report-conflict", type=Path)
+    parser.add_argument("--latest-from-stdin", action="store_true", required=True)
     args = parser.parse_args()
     try:
         if args.latest_from_stdin:
@@ -700,19 +570,6 @@ def main() -> int:
                     line.strip() for line in sys.stdin if line.strip()
                 )
             )
-        elif args.report_conflict is not None:
-            return (
-                0
-                if report_conflict_issue(
-                    args.report_conflict,
-                    Path(os.environ["GITHUB_STEP_SUMMARY"]),
-                    os.environ["GITHUB_REPOSITORY"],
-                    os.environ["CONFLICT_TITLE"],
-                )
-                else 1
-            )
-        else:
-            print(next_patch_version(args.next_patch))
     except ValueError as error:
         print(error, file=sys.stderr)
         return 1
