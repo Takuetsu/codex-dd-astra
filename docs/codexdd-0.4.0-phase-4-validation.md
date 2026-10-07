@@ -149,7 +149,19 @@ The Phase-4 hardening regressions for infrastructure-failure repair rejection, g
 
 ## Packet 4.5 — broad release profile and candidate executable dogfood
 
-**Status: ACTIVE.**
+**Status: ACTIVE — RELEASE PROFILE REPAIR PENDING RERUN.**
+
+First Daniel-CL release-profile attempt:
+
+- stages 1 through 19 passed;
+- stage 20, `cli-daemon-startup-tests`, ran 4 Windows tests: 3 passed and 1 failed;
+- the failing test was `restrictive_launcher_uses_embedded_if_daemon_cannot_start`;
+- the actual candidate rendered the intended Administrator-PowerShell fallback warning: `Running without the shared background server: an elevated Windows terminal requires embedded mode.`;
+- the stale test still waited only for the non-elevated restrictive-job wording, `this Windows launcher requires embedded mode`, and timed out after 45 seconds;
+- runtime behavior was therefore correct, but the release gate correctly exposed an environment-sensitive test expectation;
+- the test now accepts exactly the two supported automatic fallback causes (elevated terminal or restrictive Windows launcher) and still rejects any unrelated fallback reason.
+
+A temporary Windows oracle is validating exact rustfmt plus that repaired daemon-startup smoke before the release profile is rerun.
 
 Purpose: exercise the complete repository-owned `release` profile and actual release-shaped candidate without installing it.
 
