@@ -128,8 +128,8 @@ pub(crate) fn quality_review_route(mode: AdaptiveBudgetMode) -> AdaptiveRoute {
             effort: AdaptiveEffort::Low,
         },
         AdaptiveBudgetMode::Surplus => AdaptiveRoute {
-            family: AdaptiveFamily::Sol,
-            effort: AdaptiveEffort::High,
+            family: AdaptiveFamily::Sol61,
+            effort: AdaptiveEffort::Medium,
         },
     }
 }
@@ -249,8 +249,8 @@ mod tests {
         assert_eq!(
             quality_review_route(AdaptiveBudgetMode::Surplus),
             AdaptiveRoute {
-                family: AdaptiveFamily::Sol,
-                effort: AdaptiveEffort::High,
+                family: AdaptiveFamily::Sol61,
+                effort: AdaptiveEffort::Medium,
             }
         );
     }

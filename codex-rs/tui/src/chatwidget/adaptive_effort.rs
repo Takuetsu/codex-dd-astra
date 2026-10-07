@@ -138,6 +138,7 @@ impl AdaptiveFamily {
             // 0.3.2 removes Terra from the active GPT-6 family ladder. Accept the old spelling
             // as a compatibility alias so persisted/operator input upgrades cleanly to Sol.
             "terra" | "sol" => Some(Self::Sol),
+            "sol61" => Some(Self::Sol61),
             "astra" => Some(Self::Astra),
             _ => None,
         }
@@ -147,6 +148,7 @@ impl AdaptiveFamily {
         match self {
             Self::Luna => "gpt-6-luna",
             Self::Sol => "gpt-6-sol",
+            Self::Sol61 => "gpt-6.1-sol",
             Self::Astra => "gpt-6-astra",
         }
     }
@@ -310,6 +312,7 @@ impl AdaptiveEffortState {
         let family_name = |family: AdaptiveFamily| match family {
             AdaptiveFamily::Luna => "luna",
             AdaptiveFamily::Sol => "sol",
+            AdaptiveFamily::Sol61 => "sol61",
             AdaptiveFamily::Astra => "astra",
         };
         let effort_name = |effort: AdaptiveEffort| match effort {
@@ -623,6 +626,7 @@ impl ChatWidget {
         let family = |value| match value {
             Some(AdaptiveFamily::Luna) => "Luna",
             Some(AdaptiveFamily::Sol) => "Sol",
+            Some(AdaptiveFamily::Sol61) => "Sol 6.1",
             Some(AdaptiveFamily::Astra) => "Astra",
             None => "-",
         };

@@ -101,8 +101,8 @@ pub(crate) fn implementation_floor(class: AdaptiveComplexityClass) -> AdaptiveRo
             effort: AdaptiveEffort::Low,
         },
         AdaptiveComplexityClass::Architectural => AdaptiveRoute {
-            family: AdaptiveFamily::Sol,
-            effort: AdaptiveEffort::Medium,
+            family: AdaptiveFamily::Sol61,
+            effort: AdaptiveEffort::Low,
         },
     }
 }
@@ -191,8 +191,8 @@ mod tests {
         assert_eq!(
             implementation_floor(classify_complexity(signals)),
             AdaptiveRoute {
-                family: AdaptiveFamily::Sol,
-                effort: AdaptiveEffort::Medium,
+                family: AdaptiveFamily::Sol61,
+                effort: AdaptiveEffort::Low,
             }
         );
     }
@@ -207,7 +207,7 @@ mod tests {
         ] {
             assert!(matches!(
                 implementation_floor(class).family,
-                AdaptiveFamily::Luna | AdaptiveFamily::Sol
+                AdaptiveFamily::Luna | AdaptiveFamily::Sol | AdaptiveFamily::Sol61
             ));
         }
     }
