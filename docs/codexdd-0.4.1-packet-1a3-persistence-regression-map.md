@@ -27,7 +27,7 @@ The current workflow-state schema remains valid for `sol61` because the serializ
 - legacy `terra` -> GPT-6 Sol
 - `astra` -> Astra
 
-0.4.1 adds:
+  0.4.1 adds:
 
 - `sol61` -> GPT-6.1 Sol
 
@@ -114,7 +114,8 @@ At minimum, 0.4.1 must cover:
 9. Worker role behavior:
    - Implementation/Validation/Repair semantics remain unchanged apart from the accepted floors;
 10. LVO:
-   - targeted/work_packet/release profile behavior remains unchanged.
+
+- targeted/work_packet/release profile behavior remains unchanged.
 
 ## Daniel-CL gate
 

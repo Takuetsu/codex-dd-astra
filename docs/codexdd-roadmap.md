@@ -11,7 +11,7 @@ CodexDD **0.4.0** is complete, merged, installed, and post-install smoke validat
 - target platform: Windows
 - authoritative validation host: Daniel-CL
 
-0.4.0 delivered the Local Validation Orchestrator (LVO):
+  0.4.0 delivered the Local Validation Orchestrator (LVO):
 
 - native bounded `run_codexdd_validation` runner;
 - repository-owned `targeted`, `work_packet`, and `release` profiles;

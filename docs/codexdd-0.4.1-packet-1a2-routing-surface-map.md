@@ -40,22 +40,22 @@ Supporting route selectors are:
 
 The current lower and upper families remain intact. GPT-6.1 Sol is inserted between GPT-6 Sol and GPT-6 Astra:
 
-| Order | Route |
-| ---: | --- |
-| 1 | Luna Low |
-| 2 | Luna Medium |
-| 3 | Luna High |
-| 4 | Sol Low |
-| 5 | Sol Medium |
-| 6 | Sol High |
-| 7 | Sol 6.1 Low |
-| 8 | Sol 6.1 Medium |
-| 9 | Sol 6.1 High |
-| 10 | Astra Low |
-| 11 | Astra Medium |
-| 12 | Astra High |
-| 13 | Astra XHigh |
-| 14 | Astra Max |
+| Order | Route          |
+| ----: | -------------- |
+|     1 | Luna Low       |
+|     2 | Luna Medium    |
+|     3 | Luna High      |
+|     4 | Sol Low        |
+|     5 | Sol Medium     |
+|     6 | Sol High       |
+|     7 | Sol 6.1 Low    |
+|     8 | Sol 6.1 Medium |
+|     9 | Sol 6.1 High   |
+|    10 | Astra Low      |
+|    11 | Astra Medium   |
+|    12 | Astra High     |
+|    13 | Astra XHigh    |
+|    14 | Astra Max      |
 
 GPT-6.1 Sol supports XHigh and Max, but those are intentionally omitted from the automatic CodexDD ladder. Once a task has justified stronger reasoning beyond Sol 6.1 High, CodexDD should spend that escalation on the frontier Astra family rather than add two more intermediate attempts.
 
@@ -71,11 +71,11 @@ Existing semantics remain unchanged: every adaptive run begins at Luna Low unles
 
 Accepted implementation floors:
 
-| Complexity | 0.4.0 | 0.4.1 |
-| --- | --- | --- |
-| Routine | Luna Low | Luna Low |
-| Standard | Luna High | Luna High |
-| Complex | Sol Low | Sol Low |
+| Complexity    | 0.4.0      | 0.4.1           |
+| ------------- | ---------- | --------------- |
+| Routine       | Luna Low   | Luna Low        |
+| Standard      | Luna High  | Luna High       |
+| Complex       | Sol Low    | Sol Low         |
 | Architectural | Sol Medium | **Sol 6.1 Low** |
 
 Rationale: Architectural is the only complexity class that should proactively buy the newer workhorse capability. Complex work remains on the proven lower-cost Sol floor. No complexity class starts directly on Astra.
@@ -84,11 +84,11 @@ Rationale: Architectural is the only complexity class that should proactively bu
 
 Accepted independent Validation floors:
 
-| Budget mode | 0.4.0 | 0.4.1 |
-| --- | --- | --- |
-| Conserve | Luna High | Luna High |
-| Balanced | Sol Low | Sol Low |
-| Surplus | Sol High | **Sol 6.1 Medium** |
+| Budget mode | 0.4.0     | 0.4.1              |
+| ----------- | --------- | ------------------ |
+| Conserve    | Luna High | Luna High          |
+| Balanced    | Sol Low   | Sol Low            |
+| Surplus     | Sol High  | **Sol 6.1 Medium** |
 
 Rationale: budget surplus is explicitly intended to buy review quality. Moving only Surplus review to Sol 6.1 Medium makes the new workhorse useful in a high-value independent-review path without raising normal Balanced spend.
 
@@ -96,11 +96,11 @@ Rationale: budget surplus is explicitly intended to buy review quality. Moving o
 
 Unchanged:
 
-| Budget mode | Route |
-| --- | --- |
-| Conserve | Luna Low |
-| Balanced | Luna Medium |
-| Surplus | Luna High |
+| Budget mode | Route       |
+| ----------- | ----------- |
+| Conserve    | Luna Low    |
+| Balanced    | Luna Medium |
+| Surplus     | Luna High   |
 
 Mechanical validation is deterministic low-cost verification and must not spend into Sol, Sol 6.1, or Astra by itself.
 

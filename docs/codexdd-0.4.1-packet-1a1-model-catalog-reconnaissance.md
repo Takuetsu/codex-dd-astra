@@ -43,26 +43,26 @@ There is no separate authoritative `model_family` field in `ModelInfo`. Model id
 
 The inherited `rust-v0.159.2` bundled entry advertises:
 
-| Field | Value |
-| --- | --- |
-| default Codex reasoning selection | `low` |
-| supported Codex selections | `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
-| normal Codex context window | `272000` |
-| max context override | `872000` |
-| input modalities | text + image |
-| verbosity | supported; default `low` |
-| parallel tool calls | supported |
-| tool mode | `code_mode_only` |
-| multi-agent backend | `v2` |
-| multi-agent reasoning effort | `xhigh` |
-| mid-session reasoning-effort updates | supported |
-| reasoning summaries | supported |
-| search | supported |
-| original image detail | supported |
-| minimum client version | `0.153.0` |
-| Responses Lite | enabled |
-| Fast service tier | supported |
-| truncation policy | tokens, limit `10000` |
+| Field                                | Value                                            |
+| ------------------------------------ | ------------------------------------------------ |
+| default Codex reasoning selection    | `low`                                            |
+| supported Codex selections           | `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
+| normal Codex context window          | `272000`                                         |
+| max context override                 | `872000`                                         |
+| input modalities                     | text + image                                     |
+| verbosity                            | supported; default `low`                         |
+| parallel tool calls                  | supported                                        |
+| tool mode                            | `code_mode_only`                                 |
+| multi-agent backend                  | `v2`                                             |
+| multi-agent reasoning effort         | `xhigh`                                          |
+| mid-session reasoning-effort updates | supported                                        |
+| reasoning summaries                  | supported                                        |
+| search                               | supported                                        |
+| original image detail                | supported                                        |
+| minimum client version               | `0.153.0`                                        |
+| Responses Lite                       | enabled                                          |
+| Fast service tier                    | supported                                        |
+| truncation policy                    | tokens, limit `10000`                            |
 
 These capability fields are unchanged in the current upstream Codex catalog checked on 2026-10-07.
 
