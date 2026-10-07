@@ -388,6 +388,57 @@ checksum = "abc"
         with self.assertRaisesRegex(ValueError, "SHA-256"):
             validate_validation_receipt(bad)
 
+    def test_workflow_boundaries_remain_fail_closed(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        discovery = (
+            repository_root / ".github/workflows/upstream-sync.yml"
+        ).read_text(encoding="utf-8")
+        preparation = (
+            repository_root / ".github/workflows/upstream-prepare.yml"
+        ).read_text(encoding="utf-8")
+        promotion = (
+            repository_root / ".github/workflows/upstream-promote.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("permissions:\n  contents: read", discovery)
+        self.assertNotIn("contents: write", discovery)
+        self.assertNotIn("pull-requests: write", discovery)
+        self.assertNotIn("issues: write", discovery)
+        self.assertNotIn("git push", discovery)
+        self.assertNotIn("gh pr create", discovery)
+
+        self.assertIn("permissions:\n  contents: write", preparation)
+        self.assertNotIn("pull-requests: write", preparation)
+        self.assertNotIn("issues: write", preparation)
+        self.assertNotIn("gh pr create", preparation)
+        self.assertNotIn("codexdd-version.txt\" >", preparation)
+
+        self.assertIn("contents: read", promotion)
+        self.assertIn("pull-requests: write", promotion)
+        self.assertNotIn("contents: write", promotion)
+        self.assertNotIn("issues: write", promotion)
+        self.assertIn("gh pr create", promotion)
+        self.assertNotIn("gh pr merge", promotion)
+
+        combined = discovery + preparation + promotion
+        self.assertNotIn("--next-patch", combined)
+        self.assertNotIn("next_product_version", combined)
+        self.assertNotIn("gh issue", combined)
+
+    def test_candidate_validation_script_emits_native_identity_bound_receipt(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        script = (
+            repository_root / "scripts/codexdd-validate-upstream-candidate.ps1"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("git status --porcelain", script)
+        self.assertIn("git merge-base --is-ancestor", script)
+        self.assertIn("CODEXDD_VALIDATION_JSON ", script)
+        self.assertIn("CODEXDD_UPSTREAM_VALIDATION_RECEIPT ", script)
+        self.assertIn("manifest_sha256", script)
+        self.assertIn("candidate_head_sha", script)
+        self.assertNotIn("[IO.Path]::GetRelativePath", script)
+
     def test_synthetic_delta_survives_squashed_upstream_history(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
