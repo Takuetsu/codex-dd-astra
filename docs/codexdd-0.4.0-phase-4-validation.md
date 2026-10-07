@@ -14,7 +14,7 @@ No production installation occurs until every Phase-4 packet is green. GitHub PR
 
 ## Packet 4.1 — profile contract and release-profile viability
 
-**Status: IN PROGRESS.**
+**Status: COMPLETE — DANIEL-CL GREEN.**
 
 Purpose:
 
@@ -49,7 +49,7 @@ Exit:
 
 ## Packet 4.2 — native receipt and candidate-authority matrix
 
-**Status: SOURCE AUDIT COMPLETE; PENDING DANIEL-CL MATRIX.**
+**Status: COMPLETE — DANIEL-CL GREEN.**
 
 Purpose: prove that native LVO evidence, not prose or shell output, controls handoff.
 
@@ -77,7 +77,7 @@ Exit: all receipt/admission regressions green on Daniel-CL.
 
 ## Packet 4.3 — bounded failure/repair/retest adversarial matrix
 
-**Status: SOURCE AUDIT COMPLETE; PENDING DANIEL-CL MATRIX.**
+**Status: COMPLETE — DANIEL-CL GREEN.**
 
 Purpose: prove the full 3C.2 loop as one release gate.
 
@@ -104,7 +104,7 @@ Exit: all repair-loop regressions green on Daniel-CL.
 
 ## Packet 4.4 — persistence, interruption, resume, and fork matrix
 
-**Status: SOURCE AUDIT COMPLETE; PENDING DANIEL-CL MATRIX.**
+**Status: COMPLETE — DANIEL-CL GREEN.**
 
 Purpose: prove durable LVO state survives lifecycle boundaries without restoring ephemeral authority.
 
@@ -132,7 +132,24 @@ The detached-fork regression already proves durable repair/operator status survi
 
 Exit: persistence/interruption matrix green on Daniel-CL.
 
+## Daniel-CL Phase 4.1–4.4 closure evidence
+
+The consolidated Windows gate completed successfully on Daniel-CL:
+
+- validation contract fixture tests passed;
+- release profile parsed successfully;
+- targeted profile passed with the full adaptive regression slice;
+- native validation-runner regressions passed;
+- TUI session-state persistence regressions passed;
+- detached-fork durable-state regression passed with the enlarged Windows test stack;
+- app-server adaptive runtime-signal identity binding passed;
+- app-server interrupted-turn behavior passed.
+
+The Phase-4 hardening regressions for infrastructure-failure repair rejection, global cycle-2 consumption across changed fingerprints, and incomplete persisted repair state also passed the temporary Windows oracles before those workflow files were removed.
+
 ## Packet 4.5 — broad release profile and candidate executable dogfood
+
+**Status: ACTIVE.**
 
 Purpose: exercise the complete repository-owned `release` profile and actual release-shaped candidate without installing it.
 
