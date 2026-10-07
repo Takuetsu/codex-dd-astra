@@ -518,6 +518,43 @@ mod tests {
         assert_eq!(adaptive.pending_signal, None);
         assert_eq!(adaptive.successor_admission, None);
     }
+
+    #[test]
+    fn persisted_sol_and_sol61_restore_to_distinct_model_families() {
+        for (persisted, expected_family, expected_model) in [
+            ("sol", AdaptiveFamily::Sol, "gpt-6-sol"),
+            ("sol61", AdaptiveFamily::Sol61, "gpt-6.1-sol"),
+        ] {
+            let mut adaptive = AdaptiveEffortState::default();
+            apply_persisted_adaptive_workflow_state(
+                &mut adaptive,
+                codex_history::AdaptiveWorkflowStateSnapshot {
+                    enabled: true,
+                    starting_family: Some(persisted.to_string()),
+                    current_family: Some(persisted.to_string()),
+                    current_effort: Some("low".to_string()),
+                    complexity_class: None,
+                    implementation_phase: None,
+                    validation_repair_fingerprint: None,
+                    validation_repair_cycles_used: 0,
+                    validation_targeted_retest_required: false,
+                    validation_status: None,
+                    attempt_number: 2,
+                    paused_by_user: false,
+                    worker_role: "repair".to_string(),
+                    authorized_scope: Some("family restore compatibility".to_string()),
+                    worker_assignment_locked: true,
+                    workflow_terminal: None,
+                },
+                None,
+            )
+            .expect("family snapshot should restore");
+
+            assert_eq!(adaptive.starting_family, Some(expected_family));
+            assert_eq!(adaptive.current_family, Some(expected_family));
+            assert_eq!(expected_family.model(), expected_model);
+        }
+    }
 }
 
 #[cfg(test)]

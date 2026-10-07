@@ -7,6 +7,7 @@
 pub(crate) enum AdaptiveFamily {
     Luna,
     Sol,
+    Sol61,
     Astra,
 }
 
@@ -155,13 +156,16 @@ pub(crate) fn stronger_route(first: AdaptiveRoute, second: AdaptiveRoute) -> Opt
 
 /// The automatic ladder ends at Astra Max. Ultra remains separately gated and is not part of this
 /// ladder.
-const AUTOMATIC_LADDER: [AdaptiveRoute; 11] = [
+const AUTOMATIC_LADDER: [AdaptiveRoute; 14] = [
     route(AdaptiveFamily::Luna, AdaptiveEffort::Low),
     route(AdaptiveFamily::Luna, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Luna, AdaptiveEffort::High),
     route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
     route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Sol, AdaptiveEffort::High),
+    route(AdaptiveFamily::Sol61, AdaptiveEffort::Low),
+    route(AdaptiveFamily::Sol61, AdaptiveEffort::Medium),
+    route(AdaptiveFamily::Sol61, AdaptiveEffort::High),
     route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
     route(AdaptiveFamily::Astra, AdaptiveEffort::Medium),
     route(AdaptiveFamily::Astra, AdaptiveEffort::High),
@@ -184,6 +188,9 @@ mod tests {
     const SOL_LOW: AdaptiveRoute = route(AdaptiveFamily::Sol, AdaptiveEffort::Low);
     const SOL_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Sol, AdaptiveEffort::Medium);
     const SOL_HIGH: AdaptiveRoute = route(AdaptiveFamily::Sol, AdaptiveEffort::High);
+    const SOL61_LOW: AdaptiveRoute = route(AdaptiveFamily::Sol61, AdaptiveEffort::Low);
+    const SOL61_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Sol61, AdaptiveEffort::Medium);
+    const SOL61_HIGH: AdaptiveRoute = route(AdaptiveFamily::Sol61, AdaptiveEffort::High);
     const ASTRA_LOW: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::Low);
     const ASTRA_MEDIUM: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::Medium);
     const ASTRA_HIGH: AdaptiveRoute = route(AdaptiveFamily::Astra, AdaptiveEffort::High);
@@ -195,6 +202,7 @@ mod tests {
         for family in [
             AdaptiveFamily::Luna,
             AdaptiveFamily::Sol,
+            AdaptiveFamily::Sol61,
             AdaptiveFamily::Astra,
         ] {
             assert_eq!(initial_route(family), LUNA_LOW);
@@ -209,7 +217,10 @@ mod tests {
             (LUNA_HIGH, AdaptiveTransition::EscalateModel(SOL_LOW)),
             (SOL_LOW, AdaptiveTransition::EscalateEffort(SOL_MEDIUM)),
             (SOL_MEDIUM, AdaptiveTransition::EscalateEffort(SOL_HIGH)),
-            (SOL_HIGH, AdaptiveTransition::EscalateModel(ASTRA_LOW)),
+            (SOL_HIGH, AdaptiveTransition::EscalateModel(SOL61_LOW)),
+            (SOL61_LOW, AdaptiveTransition::EscalateEffort(SOL61_MEDIUM)),
+            (SOL61_MEDIUM, AdaptiveTransition::EscalateEffort(SOL61_HIGH)),
+            (SOL61_HIGH, AdaptiveTransition::EscalateModel(ASTRA_LOW)),
             (ASTRA_LOW, AdaptiveTransition::EscalateEffort(ASTRA_MEDIUM)),
             (ASTRA_MEDIUM, AdaptiveTransition::EscalateEffort(ASTRA_HIGH)),
             (ASTRA_HIGH, AdaptiveTransition::EscalateEffort(ASTRA_XHIGH)),
@@ -220,6 +231,7 @@ mod tests {
         for preference in [
             AdaptiveFamily::Luna,
             AdaptiveFamily::Sol,
+            AdaptiveFamily::Sol61,
             AdaptiveFamily::Astra,
         ] {
             for (current_route, expected) in transitions {

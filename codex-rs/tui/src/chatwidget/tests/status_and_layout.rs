@@ -320,13 +320,13 @@ async fn stale_status_line_git_summary_update_is_ignored() {
 
 #[tokio::test]
 async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
-    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6.1-sol")).await;
     chat.thread_id = Some(ThreadId::new());
 
     chat.adaptive_effort.enabled = true;
     chat.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
-    chat.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Sol);
-    chat.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::High);
+    chat.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Sol61);
+    chat.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::Medium);
     chat.adaptive_effort.budget_mode = crate::adaptive_budget::AdaptiveBudgetMode::Surplus;
     chat.adaptive_effort.complexity_class =
         Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex);
@@ -368,7 +368,7 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
     for expected in [
         "Adaptive Effort",
         "Preference: Astra",
-        "Current: Sol High",
+        "Current: Sol 6.1 Medium",
         "Budget mode: Surplus",
         "Complexity: Complex",
         "Implementation phase: Mechanical validation",

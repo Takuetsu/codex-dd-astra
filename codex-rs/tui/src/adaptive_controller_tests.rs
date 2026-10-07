@@ -12,6 +12,7 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     for family in [
         AdaptiveFamily::Luna,
         AdaptiveFamily::Sol,
+        AdaptiveFamily::Sol61,
         AdaptiveFamily::Astra,
     ] {
         assert_eq!(
@@ -27,6 +28,9 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
         route(AdaptiveFamily::Sol, AdaptiveEffort::Low),
         route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Sol, AdaptiveEffort::High),
+        route(AdaptiveFamily::Sol61, AdaptiveEffort::Low),
+        route(AdaptiveFamily::Sol61, AdaptiveEffort::Medium),
+        route(AdaptiveFamily::Sol61, AdaptiveEffort::High),
         route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
         route(AdaptiveFamily::Astra, AdaptiveEffort::Medium),
         route(AdaptiveFamily::Astra, AdaptiveEffort::High),
@@ -40,7 +44,7 @@ fn every_preference_starts_at_luna_low_and_capability_ladder_is_exact() {
     }
     let reduced = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert_eq!(reduced.decision, AdaptiveControllerDecision::Blocked);
-    assert_eq!(reduced.state.attempt_number, 11);
+    assert_eq!(reduced.state.attempt_number, 14);
 }
 
 #[test]
@@ -220,8 +224,13 @@ fn unfinished_pressure_cannot_cross_any_model_family_boundary() {
         ),
         (
             route(AdaptiveFamily::Sol, AdaptiveEffort::High),
-            route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
+            route(AdaptiveFamily::Sol61, AdaptiveEffort::Low),
             8,
+        ),
+        (
+            route(AdaptiveFamily::Sol61, AdaptiveEffort::High),
+            route(AdaptiveFamily::Astra, AdaptiveEffort::Low),
+            11,
         ),
     ] {
         let state = AdaptiveControllerState {

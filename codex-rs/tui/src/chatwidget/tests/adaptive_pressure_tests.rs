@@ -722,19 +722,19 @@ async fn completed_complexity_recon_waits_for_late_signal_before_selecting_floor
     );
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Sol)
+        Some(AdaptiveFamily::Sol61)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
-        Some(AdaptiveEffort::Medium)
+        Some(AdaptiveEffort::Low)
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 2);
     assert_matches!(
         chat.adaptive_effort.pending_attempt,
         Some(ref pending)
             if pending.decision == AdaptivePendingDecision::EscalateModel
-                && pending.route.family == AdaptiveFamily::Sol
-                && pending.route.effort == AdaptiveEffort::Medium
+                && pending.route.family == AdaptiveFamily::Sol61
+                && pending.route.effort == AdaptiveEffort::Low
                 && pending.attempt_number == 2
     );
     assert_no_submit_op(&mut op_rx);
@@ -1061,11 +1061,11 @@ async fn completed_recon_without_report_output_waits_for_late_complexity_signal(
     );
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Sol)
+        Some(AdaptiveFamily::Sol61)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
-        Some(AdaptiveEffort::Medium)
+        Some(AdaptiveEffort::Low)
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 2);
 }

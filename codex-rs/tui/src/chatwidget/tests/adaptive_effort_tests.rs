@@ -1549,8 +1549,10 @@ async fn enable_family(
 fn adaptive_family_model_ids_use_gpt6_and_terra_is_legacy_sol_alias() {
     assert_eq!(AdaptiveFamily::Luna.model(), "gpt-6-luna");
     assert_eq!(AdaptiveFamily::Sol.model(), "gpt-6-sol");
+    assert_eq!(AdaptiveFamily::Sol61.model(), "gpt-6.1-sol");
     assert_eq!(AdaptiveFamily::Astra.model(), "gpt-6-astra");
     assert_eq!(AdaptiveFamily::parse("terra"), Some(AdaptiveFamily::Sol));
+    assert_eq!(AdaptiveFamily::parse("sol61"), Some(AdaptiveFamily::Sol61));
 }
 
 #[tokio::test]
@@ -1559,6 +1561,7 @@ async fn adaptive_families_initialize_state_and_sync_model_and_effort() {
         ("luna", AdaptiveFamily::Luna),
         ("terra", AdaptiveFamily::Sol),
         ("sol", AdaptiveFamily::Sol),
+        ("sol61", AdaptiveFamily::Sol61),
         ("astra", AdaptiveFamily::Astra),
     ] {
         let (mut chat, mut rx) = enable_family(family).await;
@@ -2164,7 +2167,7 @@ async fn adaptive_status_surfaces_budget_mode() {
     let status = chat.adaptive_effort_status_text();
     assert!(status.contains("Complexity: Architectural"));
     assert!(status.contains("Implementation phase: None"));
-    assert!(status.contains("Implementation floor: Sol Medium"));
+    assert!(status.contains("Implementation floor: Sol 6.1 Low"));
 
     chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
         role: AdaptiveWorkerRole::Implementation,
@@ -2217,11 +2220,11 @@ async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
     );
     assert_eq!(
         chat.adaptive_effort.current_family,
-        Some(AdaptiveFamily::Sol)
+        Some(AdaptiveFamily::Sol61)
     );
     assert_eq!(
         chat.adaptive_effort.current_effort,
-        Some(AdaptiveEffort::Medium)
+        Some(AdaptiveEffort::Low)
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 2);
     assert_matches!(
@@ -2231,19 +2234,19 @@ async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
             route,
             attempt_number: 2,
             ..
-        }) if route == admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Medium)
+        }) if route == admission_route(AdaptiveFamily::Sol61, AdaptiveEffort::Low)
     );
 
     synchronize_admission_route(
         &mut chat,
-        admission_route(AdaptiveFamily::Sol, AdaptiveEffort::Medium),
+        admission_route(AdaptiveFamily::Sol61, AdaptiveEffort::Low),
     );
     assert!(chat.maybe_submit_adaptive_successor());
     let Op::UserTurn { model, effort, .. } = next_submit_op(&mut op_rx) else {
         panic!("expected complexity-authorized successor");
     };
-    assert_eq!(model, AdaptiveFamily::Sol.model());
-    assert_eq!(effort, Some(ReasoningEffort::Medium));
+    assert_eq!(model, AdaptiveFamily::Sol61.model());
+    assert_eq!(effort, Some(ReasoningEffort::Low));
 }
 
 #[tokio::test]
@@ -2354,8 +2357,8 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
         (
             AdaptiveFamily::Luna,
             AdaptiveEffort::Low,
-            AdaptiveFamily::Sol,
-            AdaptiveEffort::Medium,
+            AdaptiveFamily::Sol61,
+            AdaptiveEffort::Low,
         ),
         (
             AdaptiveFamily::Astra,
@@ -2493,8 +2496,8 @@ async fn budget_and_complexity_route_implementation_and_review_independently() {
         ),
         (
             AdaptiveBudgetMode::Surplus,
-            AdaptiveFamily::Sol,
-            AdaptiveEffort::High,
+            AdaptiveFamily::Sol61,
+            AdaptiveEffort::Medium,
         ),
     ] {
         let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
@@ -2515,10 +2518,10 @@ async fn budget_and_complexity_route_implementation_and_review_independently() {
         let implementation =
             chat.fresh_adaptive_effort_for_new_worker(Some(&implementation_binding));
 
-        // Complexity determines the implementation floor. Budget surplus
-        // must not spend premium capacity here.
-        assert_eq!(implementation.current_family, Some(AdaptiveFamily::Sol));
-        assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Medium));
+        // Complexity determines the implementation floor. Budget mode must not
+        // lift the accepted architectural floor beyond GPT-6.1 Sol Low.
+        assert_eq!(implementation.current_family, Some(AdaptiveFamily::Sol61));
+        assert_eq!(implementation.current_effort, Some(AdaptiveEffort::Low));
         assert_eq!(
             implementation.implementation_phase,
             Some(AdaptiveImplementationPhase::Implementation)
@@ -2566,7 +2569,7 @@ async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
     };
 
     // Put the implementation at the top of Sol. Native failure pressure
-    // may justify more effort, but may not authorize Sol -> Astra.
+    // may justify more effort, but may not authorize Sol -> Sol 6.1.
     chat.adaptive_effort.current_family = Some(AdaptiveFamily::Sol);
     chat.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
     chat.adaptive_effort.attempt_number = 7;
@@ -2627,8 +2630,8 @@ fn durable_workflow_snapshot_persists_complexity_class() {
     let state = AdaptiveEffortState {
         enabled: true,
         starting_family: Some(AdaptiveFamily::Astra),
-        current_family: Some(AdaptiveFamily::Sol),
-        current_effort: Some(AdaptiveEffort::Medium),
+        current_family: Some(AdaptiveFamily::Sol61),
+        current_effort: Some(AdaptiveEffort::Low),
         attempt_number: 2,
         complexity_class: Some(AdaptiveComplexityClass::Architectural),
         implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
@@ -2638,6 +2641,12 @@ fn durable_workflow_snapshot_persists_complexity_class() {
     let snapshot = state.durable_workflow_snapshot();
     let value = serde_json::to_value(snapshot).expect("snapshot should serialize");
 
+    assert_eq!(
+        value
+            .get("currentFamily")
+            .and_then(serde_json::Value::as_str),
+        Some("sol61")
+    );
     assert_eq!(
         value
             .get("complexityClass")
