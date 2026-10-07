@@ -52,7 +52,7 @@ Feature branch:
 
 `013ab39780bd0adfb503f75742bb90f23e04d330`
 
-No 0.4.1 runtime/source behavior is implemented at activation. The branch is intentionally a clean descendant of 0.4.0 production.
+0.4.1 is active on this branch. Packets 1A.1-1A.3 completed model-catalog, routing, persistence, and regression reconnaissance before runtime changes. Implementation now adds a distinct GPT-6.1 Sol tier between GPT-6 Sol and GPT-6 Astra while preserving the established 0.4.0 lifecycle/LVO guarantees.
 
 ### Goal
 

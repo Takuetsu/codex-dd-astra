@@ -1,8 +1,8 @@
 # CodexDD Worker/Designer Integration Guide — Current
 
-**Status:** CURRENT for the CodexDD 0.4.0 source line.
+**Status:** CURRENT for the CodexDD 0.4.1 source line.
 
-The source product identity is **CodexDD 0.4.0**. Installed workstations may remain on an earlier production build until the normal release/install gate completes, so verify the active runtime with `codexdd --version` before making version-specific claims.
+The source product identity is **CodexDD 0.4.1**. Installed workstations may remain on an earlier production build until the normal release/install gate completes, so verify the active runtime with `codexdd --version` before making version-specific claims.
 
 The runtime and its regression tests are authoritative if this prose falls behind.
 
@@ -62,7 +62,7 @@ Current complexity inputs include estimated files, cross-module impact, public A
 | Routine       | Luna Low             |
 | Standard      | Luna High            |
 | Complex       | Sol Low              |
-| Architectural | Sol Medium           |
+| Architectural | Sol 6.1 Low          |
 
 Complexity may raise the starting floor; it does not authorize arbitrary mid-attempt jumps and never starts directly on Astra.
 
@@ -82,7 +82,7 @@ Mechanical validation may run bounded tests/checks/builds and read-only inspecti
 
 ### Local Validation Orchestrator — 0.4.0
 
-CodexDD 0.4.0 makes normal post-implementation local validation runtime-owned rather than model-authored or operator-typed.
+CodexDD 0.4.0 introduced normal post-implementation local validation runtime-owned rather than model-authored or operator-typed.
 
 During protected mechanical validation, the Implementation Worker uses the native `run_codexdd_validation` tool with one fixed repository-owned profile:
 
@@ -133,7 +133,7 @@ CodexDD derives budget mode from live rate-limit windows. Do not encode guessed 
 | ----------- | ------------------------ |
 | Conserve    | Luna High                |
 | Balanced    | Sol Low                  |
-| Surplus     | Sol High                 |
+| Surplus     | Sol 6.1 Medium           |
 
 Budget surplus is spent on review quality before being treated as permission for implementation escalation.
 
@@ -141,7 +141,7 @@ Budget surplus is spent on review quality before being treated as permission for
 
 Failure pressure remains separate from complexity, quality, and budget pressure.
 
-Current guardrails include objective-failure-driven pressure, no arbitrary complexity/budget model jumps, trusted capability-report gating at family boundaries, and authoritative pause/off/user interruption.
+Current guardrails include objective-failure-driven pressure, no arbitrary complexity/budget model jumps, trusted capability-report gating at family boundaries, and authoritative pause/off/user interruption. The automatic family order is Luna -> Sol -> Sol 6.1 -> Astra; Sol 6.1 uses `gpt-6.1-sol`. GPT-6.1 Sol XHigh/Max and Codex `ultra` are not automatic ladder rungs.
 
 Do not write prompts intended to bypass these guards.
 
@@ -164,7 +164,7 @@ CodexDD 0.3.10+ records cumulative Worker active-turn duration and renders a run
 
 ## Windows / PowerShell validation
 
-CodexDD 0.4.0 repositories opt into deterministic local validation with repository-owned PowerShell profiles such as:
+CodexDD 0.4.0+ repositories opt into deterministic local validation with repository-owned PowerShell profiles such as:
 
 - `scripts/codexdd-test-targeted.ps1`;
 - `scripts/codexdd-test-workpacket.ps1`;
