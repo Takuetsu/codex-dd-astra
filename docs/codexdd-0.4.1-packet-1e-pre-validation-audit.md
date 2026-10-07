@@ -10,13 +10,13 @@ Production comparison base:
 
 `013ab39780bd0adfb503f75742bb90f23e04d330`
 
-This audit is source-level only. Daniel-CL execution remains required before PR/CI.
+Source audit is complete. Daniel-CL targeted validation has now passed; broader work-packet validation remains required before PR/CI.
 
 ## Result
 
 No blocking source-level defect was found in the bounded 0.4.1 change surface.
 
-The candidate is ready for the first Daniel-CL targeted validation gate.
+The candidate passed the first Daniel-CL targeted validation gate on 2026-10-07.
 
 ## Accepted runtime behavior
 
@@ -142,16 +142,32 @@ Compared with production `013ab39780bd0adfb503f75742bb90f23e04d330`, executable 
 
 There are no changes to upstream model-catalog data because GPT-6.1 Sol already exists in frozen Codex `rust-v0.159.2`.
 
-## First Daniel-CL gate
+## Daniel-CL validation evidence
 
-Run the repository-owned targeted profile from the synchronized feature branch:
+### Targeted profile — PASS
+
+Validated on Daniel-CL after synchronizing feature-branch commit:
+
+`adf56e92ce4eb7c1e3dd4f271c26dd19d4d04114`
+
+Repository-owned command:
 
 `powershell -ExecutionPolicy Bypass -File .\scripts\codexdd-test-targeted.ps1`
 
-This gate executes:
+Result:
 
-- `git diff --check`;
-- core adaptive tests;
-- TUI adaptive tests.
+- profile: `targeted`
+- status: PASS
+- completed stages: 3
+- TUI adaptive suite: 189 passed, 0 failed, 5509 skipped
+- profile exit code: 0
 
-If green, continue to the broader work-packet profile before PR/CI.
+The first targeted run exposed three stale regression expectations only: the expanded ladder terminal attempt count and two Architectural-floor assertions. Those tests were corrected without changing runtime routing, then the complete targeted profile passed.
+
+### Next Daniel-CL gate
+
+Run the broader repository-owned work-packet profile:
+
+`powershell -ExecutionPolicy Bypass -File .\scripts\codexdd-test-workpacket.ps1`
+
+This adds formatting, Clippy, and CLI build coverage around the already-green adaptive suites. PR/CI should wait for this gate to pass.
