@@ -149,7 +149,7 @@ The Phase-4 hardening regressions for infrastructure-failure repair rejection, g
 
 ## Packet 4.5 — broad release profile and candidate executable dogfood
 
-**Status: RELEASE PROFILE COMPLETE — FINAL CANDIDATE DOGFOOD PENDING.**
+**Status: COMPLETE — DANIEL-CL RELEASE PROFILE + CANDIDATE DOGFOOD GREEN.**
 
 First Daniel-CL release-profile attempt:
 
@@ -164,6 +164,14 @@ First Daniel-CL release-profile attempt:
 The repaired daemon-startup smoke and exact rustfmt both passed on the temporary Windows oracle. The oracle workflow was removed immediately afterward. Daniel-CL Administrator PowerShell remains the authoritative environment for the narrow rerun and final release-profile pass.
 
 Final Daniel-CL release-profile rerun completed all 21 configured stages with `status=pass`, `exit_code=0`, and `completed_stages=21`. The locked release CLI build completed successfully.
+
+Final candidate dogfood on Daniel-CL also passed:
+
+- candidate identity matched `codexdd 0.4.0+g21a1a777c9b1`;
+- `--help` completed successfully;
+- upstream workspace version remained `0.159.2`;
+- source worktree remained clean;
+- installed production before candidate startup remained `codexdd 0.3.14+g06465383abb1`.
 
 Purpose: exercise the complete repository-owned `release` profile and actual release-shaped candidate without installing it.
 
@@ -180,6 +188,10 @@ Required evidence:
 Exit: broad local release gate green.
 
 ## Packet 4.6 — operator-context startup / daemon security smoke
+
+**Status: ACTIVE — NORMAL ADMINISTRATOR-POWERSHELL STARTUP GREEN; EXPLICIT DAEMON REJECTION + INSTALL-INTEGRITY CHECK PENDING.**
+
+Daniel-CL candidate smoke has already proven that the uninstalled 0.4.0 release executable launches successfully as a normal interactive TUI from Administrator PowerShell with no `--no-daemon` override.
 
 Purpose: cover the exact 0.3.14 soak gap before installation.
 
