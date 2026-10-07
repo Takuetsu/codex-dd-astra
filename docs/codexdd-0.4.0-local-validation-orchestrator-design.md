@@ -553,7 +553,7 @@ Exit:
 
 ### Phase 4 — Robust Windows pre-install validation
 
-**Status:** ACTIVE — Packet 4.5 (4.1–4.4 complete).
+**Status:** COMPLETE — all Phase 4 packets green; PR/CI promotion active.
 
 The numbered Phase-4 plan and durable evidence live in `docs/codexdd-0.4.0-phase-4-validation.md`.
 
