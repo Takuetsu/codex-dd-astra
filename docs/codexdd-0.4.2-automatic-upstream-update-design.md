@@ -31,7 +31,7 @@ The intended end state is a CodexDD-owned workflow that can discover a newer eli
 
 ## Phase 1 — reconnaissance and contract
 
-**Status: COMPLETE — awaiting acceptance before implementation.**
+**Status: COMPLETE — accepted.**
 
 Phase 1 deliverables:
 
@@ -82,14 +82,34 @@ Separate the workflow into:
 
 No implementation begins until Phase 1 is accepted.
 
-## Implementation plan after Phase 1 acceptance
+## Phase 2 — implementation
 
-- **2A.1 — candidate manifest and planner helpers:** immutable identity, exact tree deltas, overlap classification, stale-base checks, deterministic states, tests, and removal of product-version selection from planning.
-- **2A.2 — read-only discovery workflow:** scheduled/manual discovery with read-only permissions and machine-readable manifest evidence; no branch, PR, or version mutation.
-- **2A.3 — explicit preparation contract:** identity-bound preparation, synthetic transplant dry run, deterministic candidate branch on a clean preparation path, fail-closed conflict evidence, and no automatic PR.
-- **2B.1 — validation/promotion handoff:** Daniel-CL/LVO evidence before PR promotion.
-- **2B.2 — recovery hardening:** stale-base, duplicate/abandoned candidate, Issues-disabled, interrupted preparation, and deterministic rerun behavior.
-- **Phase 3/4:** source audit, Windows validation, CI, merge, install, and soak under the normal CodexDD release gates.
+**Status: SOURCE COMPLETE — DANIEL-CL VALIDATION PENDING.**
+
+Completed packets:
+
+- **2A.1 — candidate manifest and planner helpers:** immutable identity, exact Git tree deltas, overlap classification, stale-base checks, deterministic states, receipt validation, and regression coverage.
+- **2A.2 — read-only discovery workflow:** six-hour/manual discovery now has read-only repository permission and produces manifest/dry-run evidence only.
+- **2A.3 — explicit preparation contract:** manual identity-bound preparation can publish only an isolated deterministic candidate branch after stale-state rechecks; no product-version allocation and no automatic PR.
+- **2B.1 — validation/promotion handoff:** Windows candidate validation emits a native HEAD/manifest-bound receipt; PR promotion requires that receipt and re-verifies all identities.
+- **2B.2 — recovery hardening:** legacy auto-version/issue/auto-PR helpers are removed; duplicate, moved-base, interrupted, and rerun behavior fail closed.
+
+Durable implementation record:
+
+- `docs/codexdd-0.4.2-phase-2-implementation.md`
+
+The source identity is now `0.4.2`. The tracked OpenAI Codex upstream remains `rust-v0.159.2`; the observed `rust-v0.160.1` candidate is not integrated by this release.
+
+## Phase 3 / 4
+
+Next gates are:
+
+1. cheap Daniel-CL helper/identity validation;
+2. repository-owned work-packet profile;
+3. pre-validation source audit;
+4. broad Windows release profile;
+5. PR/CI;
+6. explicit merge/install/soak.
 
 ## Validation philosophy
 
