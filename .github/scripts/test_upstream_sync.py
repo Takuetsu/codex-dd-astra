@@ -8,6 +8,7 @@ from unittest.mock import patch
 from upstream_sync import (
     build_candidate_manifest,
     build_delta_inventory,
+    candidate_branch,
     candidate_key,
     candidate_manifest_json,
     candidate_state,
@@ -191,6 +192,10 @@ class UpstreamSyncTests(unittest.TestCase):
             candidate_key(tag, "a" * 40),
             f"{tag}@{'a' * 40}",
         )
+        self.assertEqual(
+            candidate_branch(tag, "a" * 40),
+            f"automation/upstream-candidate-{tag}-{'a' * 12}",
+        )
 
     def test_rejects_non_release_and_prerelease_tags(self):
         for helper in (
@@ -208,6 +213,8 @@ class UpstreamSyncTests(unittest.TestCase):
             candidate_key("rust-v0.156.0-rc.1", "a" * 40)
         with self.assertRaises(ValueError):
             candidate_key("rust-v0.156.0", "not-a-sha")
+        with self.assertRaises(ValueError):
+            candidate_branch("rust-v0.156.0", "not-a-sha")
 
     def test_next_patch_version_is_deterministic(self):
         self.assertEqual(next_patch_version("0.2.1"), "0.2.2")
