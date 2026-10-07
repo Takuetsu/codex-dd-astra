@@ -14,7 +14,7 @@ Platform: Windows.
 
 Upstream workspace remains OpenAI Codex `0.159.2`.
 
-No 0.4.1 runtime implementation has started. The first work is reconnaissance and design.
+Reconnaissance packets 1A.1-1A.3 are complete and accepted. Runtime implementation packets 1B-1D are complete on the feature branch, and packet 1E has reached the Daniel-CL pre-PR validation gate.
 
 ## Goal
 
@@ -24,13 +24,13 @@ The automatic upstream-update enhancement is not part of 0.4.1.
 
 ## Work packets
 
-### 1A.1 — Model catalog and capability reconnaissance
+### 1A.1 — Model catalog and capability reconnaissance — COMPLETE
 
 Identify the exact GPT-6.1 Sol model identifier, display/family metadata, supported reasoning-effort levels, capability metadata, and the current upstream model source of truth.
 
 Do not change adaptive routing in this packet.
 
-### 1A.2 — Adaptive routing surface map
+### 1A.2 — Adaptive routing surface map — COMPLETE
 
 Map every current route that can select, compare, persist, render, or reject model families:
 
@@ -45,7 +45,7 @@ Map every current route that can select, compare, persist, render, or reject mod
 
 Produce an explicit routing table for where GPT-6.1 Sol belongs.
 
-### 1A.3 — Persistence, status, and regression impact map
+### 1A.3 — Persistence, status, and regression impact map — COMPLETE
 
 Trace:
 
@@ -56,19 +56,19 @@ Trace:
 - snapshots/tests containing model-family assumptions
 - compatibility with persisted 0.4.0 state
 
-### 1B — Model identity integration
+### 1B — Model identity integration — COMPLETE
 
 Make GPT-6.1 Sol representable in the minimum authoritative model layer required by 1A.
 
-### 1C — Adaptive routing integration
+### 1C — Adaptive routing integration — COMPLETE
 
 Implement the accepted routing table in bounded sub-packets rather than one large change.
 
-### 1D — Status and persistence integration
+### 1D — Status and persistence integration — COMPLETE
 
 Update status/persistence only where the reconnaissance proves it is required.
 
-### 1E — Full implementation audit
+### 1E — Full implementation audit — PRE-VALIDATION AUDIT COMPLETE
 
 Audit the complete 0.4.1 change surface before release validation.
 
