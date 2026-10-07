@@ -149,7 +149,7 @@ The Phase-4 hardening regressions for infrastructure-failure repair rejection, g
 
 ## Packet 4.5 — broad release profile and candidate executable dogfood
 
-**Status: ACTIVE — RELEASE PROFILE REPAIR PENDING RERUN.**
+**Status: RELEASE PROFILE COMPLETE — FINAL CANDIDATE DOGFOOD PENDING.**
 
 First Daniel-CL release-profile attempt:
 
@@ -162,6 +162,8 @@ First Daniel-CL release-profile attempt:
 - the test now accepts exactly the two supported automatic fallback causes (elevated terminal or restrictive Windows launcher) and still rejects any unrelated fallback reason.
 
 The repaired daemon-startup smoke and exact rustfmt both passed on the temporary Windows oracle. The oracle workflow was removed immediately afterward. Daniel-CL Administrator PowerShell remains the authoritative environment for the narrow rerun and final release-profile pass.
+
+Final Daniel-CL release-profile rerun completed all 21 configured stages with `status=pass`, `exit_code=0`, and `completed_stages=21`. The locked release CLI build completed successfully.
 
 Purpose: exercise the complete repository-owned `release` profile and actual release-shaped candidate without installing it.
 
