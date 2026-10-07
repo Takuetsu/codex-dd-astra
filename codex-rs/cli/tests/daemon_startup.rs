@@ -208,7 +208,11 @@ async fn daemon_startup(command: &str) -> Result<()> {
             "Server:Localbackgroundserver"
         } else if command == "restrictive-job" {
             steps.push_back(("GPT-5.6-Terra", b"\x14"));
-            "Runningwithoutthesharedbackgroundserver:thisWindowslauncher"
+            // Administrator PowerShell is rejected before the nested restrictive-job
+            // probe and falls back for the elevation reason. A non-elevated launcher
+            // reaches the nested job probe and falls back for the launcher reason.
+            // Both are correct automatic embedded-mode outcomes.
+            "Runningwithoutthesharedbackgroundserver:"
         } else if mismatch {
             args.extend(if persisted {
                 ["--disable".into(), "api_key_model_discovery".into()]
@@ -338,10 +342,24 @@ async fn daemon_startup(command: &str) -> Result<()> {
                         ensure!(!pid_file.exists());
                         if command == "restrictive-job" {
                             let contents = screen.screen().contents();
-                            let warning = contents.lines()
-                                .find(|line| line.contains("Running without the shared background server:"))
+                            let warning = contents
+                                .lines()
+                                .find(|line| {
+                                    line.contains("Running without the shared background server:")
+                                })
                                 .context("missing rendered fallback warning")?;
-                            insta::assert_snapshot!("restrictive_launcher_warning", warning.trim());
+                            if warning.contains("this Windows launcher") {
+                                insta::assert_snapshot!(
+                                    "restrictive_launcher_warning",
+                                    warning.trim()
+                                );
+                            } else {
+                                ensure!(
+                                    warning.contains("an elevated Windows terminal")
+                                        && warning.contains("requires embedded mode"),
+                                    "unexpected restrictive/elevated fallback warning: {warning}"
+                                );
+                            }
                         }
                     }
                     return Ok::<_, anyhow::Error>(());
