@@ -180,6 +180,13 @@ def integration_branch(tag: str) -> str:
     return f"automation/upstream-sync-{tag}"
 
 
+def candidate_branch(tag: str, commit_sha: str) -> str:
+    if stable_release_version(tag) is None:
+        raise ValueError(f"invalid stable official release tag: {tag}")
+    _validate_object_id(commit_sha, "target upstream commit")
+    return f"automation/upstream-candidate-{tag}-{commit_sha[:12]}"
+
+
 def pr_marker(tag: str) -> str:
     if stable_release_version(tag) is None:
         raise ValueError(f"invalid stable official release tag: {tag}")
