@@ -161,7 +161,7 @@ First Daniel-CL release-profile attempt:
 - runtime behavior was therefore correct, but the release gate correctly exposed an environment-sensitive test expectation;
 - the test now accepts exactly the two supported automatic fallback causes (elevated terminal or restrictive Windows launcher) and still rejects any unrelated fallback reason.
 
-A temporary Windows oracle is validating exact rustfmt plus that repaired daemon-startup smoke before the release profile is rerun.
+The repaired daemon-startup smoke and exact rustfmt both passed on the temporary Windows oracle. The oracle workflow was removed immediately afterward. Daniel-CL Administrator PowerShell remains the authoritative environment for the narrow rerun and final release-profile pass.
 
 Purpose: exercise the complete repository-owned `release` profile and actual release-shaped candidate without installing it.
 
