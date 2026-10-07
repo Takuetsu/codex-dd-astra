@@ -164,10 +164,28 @@ Result:
 
 The first targeted run exposed three stale regression expectations only: the expanded ladder terminal attempt count and two Architectural-floor assertions. Those tests were corrected without changing runtime routing, then the complete targeted profile passed.
 
-### Next Daniel-CL gate
+### Work-packet profile — PASS
 
-Run the broader repository-owned work-packet profile:
+Validated on Daniel-CL after synchronizing feature-branch commit:
+
+`5dcba0587d916071fe3c871fc93ca4e27cef392a`
+
+Repository-owned command:
 
 `powershell -ExecutionPolicy Bypass -File .\scripts\codexdd-test-workpacket.ps1`
 
-This adds formatting, Clippy, and CLI build coverage around the already-green adaptive suites. PR/CI should wait for this gate to pass.
+Result:
+
+- profile: `work-packet`
+- status: PASS
+- completed stages: 6
+- rust format check: PASS
+- core/TUI Clippy: PASS
+- core adaptive tests: PASS
+- TUI adaptive tests: PASS
+- CLI build: PASS
+- profile exit code: 0
+
+The first work-packet run stopped at rustfmt because one new persistence assertion needed canonical line wrapping. That formatting-only fix was committed without changing runtime behavior; the complete rerun passed.
+
+With both targeted and work-packet validation green, the candidate is ready for PR/CI.
