@@ -84,11 +84,11 @@ The release profile is intentionally expensive and must not be selected silently
 
 Profile process exit codes are part of contract version 1:
 
-| Exit code | Meaning |
-| --- | --- |
-| `0` | Every stage passed. |
-| `1` | A validation command ran and returned a nonzero native exit code. This is a candidate product/test failure. |
-| `2` | Profile contract or execution infrastructure failed, for example an invalid repository root or missing executable. This is not automatically source-repair authority. |
+| Exit code | Meaning                                                                                                                                                               |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`       | Every stage passed.                                                                                                                                                   |
+| `1`       | A validation command ran and returned a nonzero native exit code. This is a candidate product/test failure.                                                           |
+| `2`       | Profile contract or execution infrastructure failed, for example an invalid repository root or missing executable. This is not automatically source-repair authority. |
 
 Profiles stop at the first failed/error stage.
 
@@ -195,7 +195,6 @@ Contract version 1 is implemented by the CodexDD 0.4.0 Local Validation Orchestr
 - Failed product/test runs may authorize at most two bounded source-changing repair cycles; infrastructure/contract errors do not.
 - The latest compact native validation identity is surfaced through existing `/status` and persisted across resume/fork.
 - Full logs remain outside the source worktree and model context under bounded CodexDD runtime storage.
-
 
 ### CodexDD self-host formatting scope
 

@@ -62,7 +62,7 @@ The current gate:
 - rejects command chaining, redirection, dynamic shell expressions, source-edit-capable tools, and unsupported commands;
 - requires a trusted `implementation_work` transition before source edits resume.
 
-0.4.0 must preserve this boundary. The orchestrator must not become a generic command bypass.
+  0.4.0 must preserve this boundary. The orchestrator must not become a generic command bypass.
 
 ### Native evidence already exists
 
