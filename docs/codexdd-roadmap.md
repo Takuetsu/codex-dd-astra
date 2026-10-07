@@ -23,7 +23,7 @@ The merged 0.4.1 design and reconnaissance evidence remains in:
 
 ## 0.4.2 — automatic upstream-update orchestration
 
-**Status: ACTIVE — RECONNAISSANCE.**
+**Status: PHASE 1 COMPLETE — AWAITING IMPLEMENTATION ACCEPTANCE.**
 
 Feature branch:
 
@@ -59,22 +59,15 @@ The workflow should reduce the manual work required to identify a new stable ups
 7. Windows validation on Daniel-CL.
 8. CI, merge, install, and soak only after explicit human gates.
 
-### First packet — 1A.1
+### Phase 1 result
 
-Perform bounded reconnaissance covering:
+Packets 1A.1–1A.3 are complete on the feature branch.
 
-- how the fork currently records the tracked upstream version and SHA;
-- existing scripts, workflows, docs, or commands used for upstream synchronization;
-- prior automatic-update/release experiments, including PR #13 artifacts that remain relevant;
-- version bump and source-identity surfaces;
-- upstream remote/tag discovery assumptions;
-- generated/vendor/lockfile surfaces affected by an upstream refresh;
-- CI and LVO profiles needed to validate a candidate update;
-- branch/PR conventions used for prior upstream integrations;
-- rollback/failure behavior;
-- what may safely be automated versus what must remain a human-controlled promotion gate.
+The existing six-hour sync already detects stable tags, reconstructs the CodexDD delta, pushes a branch, auto-bumps the next patch version, and opens a PR. 0.4.2 will replace that coupled behavior with a read-only scheduled planner plus explicit identity-bound preparation and promotion.
 
-Packet 1A.1 is reconnaissance only. Do not implement automatic synchronization behavior until its findings and acceptance criteria are recorded.
+Phase 1 also established that product versioning must be decoupled from upstream discovery, local Daniel-CL/LVO evidence must precede PR/CI promotion, and exact tag/commit/tree plus overlap evidence must be durable candidate state.
+
+The live reconnaissance candidate is OpenAI Codex `rust-v0.160.1`; it is not being integrated as part of Phase 1.
 
 ### Working standard
 
