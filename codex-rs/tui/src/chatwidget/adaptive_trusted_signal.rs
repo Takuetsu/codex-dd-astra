@@ -594,6 +594,60 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn trusted_capability_reports_cross_each_gpt61_family_boundary() {
+        for (from_family, to_family, turn_id) in [
+            (
+                AdaptiveFamily::Sol,
+                AdaptiveFamily::Sol61,
+                "sol-high-to-sol61",
+            ),
+            (
+                AdaptiveFamily::Sol61,
+                AdaptiveFamily::Astra,
+                "sol61-high-to-astra",
+            ),
+        ] {
+            let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+            let thread_id = ThreadId::new();
+            chat.thread_id = Some(thread_id);
+            chat.dispatch_adaptive_command("astra");
+            chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+            chat.adaptive_effort.worker_context.authorized_scope =
+                Some("bounded family-boundary proof".to_string());
+            chat.adaptive_effort.current_family = Some(from_family);
+            chat.adaptive_effort.current_effort = Some(AdaptiveEffort::High);
+            chat.adaptive_effort.attempt_number = 8;
+            chat.turn_lifecycle.agent_turn_running = true;
+            chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+            chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+                thread_id: thread_id.to_string(),
+                signal: AdaptiveRuntimeSignalEnvelope {
+                    source_turn_id: turn_id.to_string(),
+                    signal_kind: AdaptiveRuntimeSignalKind::Capability,
+                    evidence_refs: Vec::new(),
+                    diagnostic_note: Some(
+                        "The current family cannot satisfy the bounded implementation constraint."
+                            .to_string(),
+                    ),
+                },
+            });
+
+            chat.turn_lifecycle.agent_turn_running = false;
+            assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+            assert_eq!(chat.adaptive_effort.current_family, Some(to_family));
+            assert_eq!(
+                chat.adaptive_effort.current_effort,
+                Some(AdaptiveEffort::Low)
+            );
+            assert_eq!(
+                chat.adaptive_effort.last_failure_kind,
+                Some(crate::adaptive_policy::AdaptiveFailureKind::Capability)
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn native_failure_pressure_still_escalates_effort_inside_one_family() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
