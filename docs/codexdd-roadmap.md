@@ -9,7 +9,7 @@ CodexDD 0.4.0 begins from the soaked 0.3.14 production baseline:
 - baseline version: `0.3.14`
 - target platform: Windows
 
-0.4.0 is the next enhancement release line. It should not be treated as another patch-level whack-a-mole release.
+  0.4.0 is the next enhancement release line. It should not be treated as another patch-level whack-a-mole release.
 
 ### Working standard
 

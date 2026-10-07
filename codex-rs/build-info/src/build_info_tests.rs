@@ -144,20 +144,20 @@ fn build_info_serialization_preserves_build_provenance() {
 
 #[test]
 fn codexdd_product_version_is_independent_of_workspace_version() {
-    assert_eq!(codexdd_version(), "0.2.0");
+    assert_eq!(codexdd_version(), "0.4.0");
 }
 
 #[test]
 fn codexdd_compact_identity_preserves_dirty_marker() {
     assert_eq!(
         codexdd_compact_identity_for_commit(BUILD_COMMIT),
-        "0.2.0 (0123456789ab)"
+        "0.4.0 (0123456789ab)"
     );
     assert_eq!(
         codexdd_compact_identity_for_commit(&format!("{BUILD_COMMIT}-dirty")),
-        "0.2.0 (0123456789ab-dirty)"
+        "0.4.0 (0123456789ab-dirty)"
     );
-    assert_eq!(codexdd_compact_identity_for_commit("dev"), "0.2.0 (dev)");
+    assert_eq!(codexdd_compact_identity_for_commit("dev"), "0.4.0 (dev)");
 }
 
 #[test]

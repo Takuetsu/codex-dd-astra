@@ -902,6 +902,9 @@ fn adaptive_mechanical_validation_shell_gate_blocks_source_edit_capable_commands
         "python -c \"open('probe.txt','w').write('changed')\"",
         "powershell.exe -NoProfile -Command Set-Content probe.txt changed",
         "pwsh -EncodedCommand U2V0LUNvbnRlbnQgcHJvYmUudHh0IGNoYW5nZWQ=",
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\codexdd-test-targeted.ps1",
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\codexdd-test-workpacket.ps1",
+        "pwsh -NoProfile -File scripts/codexdd-test-release.ps1",
         "git add probe.txt",
         "Get-Content probe.txt > copy.txt",
         "cargo test | Tee-Object test.log",
@@ -925,6 +928,9 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
         }) as Arc<dyn CoreToolRuntime>,
         Arc::new(TestHandler {
             tool_name: codex_tools::ToolName::plain("apply_patch"),
+        }) as Arc<dyn CoreToolRuntime>,
+        Arc::new(TestHandler {
+            tool_name: codex_tools::ToolName::plain("run_codexdd_validation"),
         }) as Arc<dyn CoreToolRuntime>,
     ]);
     let session = Arc::new(session);
@@ -958,6 +964,18 @@ async fn adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch()
     registry
         .dispatch_any_with_state(
             powershell_invocation,
+            /*terminal_outcome_reached*/ None,
+        )
+        .await?;
+
+    registry
+        .dispatch_any_with_state(
+            test_invocation(
+                Arc::clone(&session),
+                Arc::clone(&turn),
+                "mechanical-validation-runner-call",
+                codex_tools::ToolName::plain("run_codexdd_validation"),
+            ),
             /*terminal_outcome_reached*/ None,
         )
         .await?;

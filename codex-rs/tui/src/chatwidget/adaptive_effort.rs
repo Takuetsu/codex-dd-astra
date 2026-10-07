@@ -19,6 +19,8 @@ use crate::adaptive_worker::NewWorkerBinding;
 use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
+pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
     ContinueSameRoute,
@@ -88,6 +90,18 @@ impl AdaptivePendingSignal {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AdaptiveValidationStatus {
+    pub(crate) profile: String,
+    pub(crate) result: String,
+    pub(crate) run_id: String,
+    pub(crate) branch: Option<String>,
+    pub(crate) head_sha: String,
+    pub(crate) failed_stage: Option<String>,
+    pub(crate) failure_fingerprint: Option<String>,
+    pub(crate) log_path: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub(crate) struct AdaptiveEffortState {
     pub(crate) enabled: bool,
@@ -110,6 +124,10 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
+    pub(crate) validation_repair_fingerprint: Option<String>,
+    pub(crate) validation_repair_cycles_used: u8,
+    pub(crate) validation_targeted_retest_required: bool,
+    pub(crate) validation_status: Option<AdaptiveValidationStatus>,
     pub(crate) budget_mode: AdaptiveBudgetMode,
 }
 
@@ -208,6 +226,22 @@ impl AdaptiveEffortState {
             && self.implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
     }
 
+    pub(crate) fn record_validation_repair_cycle(&mut self, fingerprint: String) {
+        self.validation_repair_fingerprint = Some(fingerprint);
+        self.validation_repair_cycles_used = self.validation_repair_cycles_used.saturating_add(1);
+        self.validation_targeted_retest_required = true;
+    }
+
+    pub(crate) fn validation_repair_budget_available(&self) -> bool {
+        self.validation_repair_cycles_used < CODEXDD_VALIDATION_REPAIR_LIMIT
+    }
+
+    pub(crate) fn clear_validation_repair_state(&mut self) {
+        self.validation_repair_fingerprint = None;
+        self.validation_repair_cycles_used = 0;
+        self.validation_targeted_retest_required = false;
+    }
+
     pub(crate) fn observe_worker_assignment_text(&mut self, text: &str) -> Result<bool, String> {
         if self.worker_assignment_locked {
             return Ok(false);
@@ -232,6 +266,10 @@ impl AdaptiveEffortState {
         let evidence_registry = self.evidence_registry.clone();
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
+        let validation_repair_fingerprint = self.validation_repair_fingerprint.clone();
+        let validation_repair_cycles_used = self.validation_repair_cycles_used;
+        let validation_targeted_retest_required = self.validation_targeted_retest_required;
+        let validation_status = self.validation_status.clone();
         let budget_mode = self.budget_mode;
         *self = Self {
             enabled: true,
@@ -258,6 +296,10 @@ impl AdaptiveEffortState {
             evidence_registry,
             complexity_class,
             implementation_phase,
+            validation_repair_fingerprint,
+            validation_repair_cycles_used,
+            validation_targeted_retest_required,
+            validation_status,
             budget_mode,
         };
     }
@@ -308,6 +350,21 @@ impl AdaptiveEffortState {
                 .implementation_phase
                 .map(AdaptiveImplementationPhase::persisted_label)
                 .map(str::to_string),
+            validation_repair_fingerprint: self.validation_repair_fingerprint.clone(),
+            validation_repair_cycles_used: Some(self.validation_repair_cycles_used),
+            validation_targeted_retest_required: Some(self.validation_targeted_retest_required),
+            validation_status: self.validation_status.as_ref().map(|status| {
+                codex_app_server_protocol::ThreadAdaptiveValidationStatus {
+                    profile: status.profile.clone(),
+                    result: status.result.clone(),
+                    run_id: status.run_id.clone(),
+                    branch: status.branch.clone(),
+                    head_sha: status.head_sha.clone(),
+                    failed_stage: status.failed_stage.clone(),
+                    failure_fingerprint: status.failure_fingerprint.clone(),
+                    log_path: status.log_path.clone(),
+                }
+            }),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
             worker_role: worker_role.to_string(),
@@ -386,11 +443,7 @@ impl ChatWidget {
         if &expected != binding {
             return None;
         }
-        let complexity = self
-            .adaptive_effort
-            .complexity_class
-            .expect("automatic validation requires a complexity class")
-            .label();
+        let complexity = self.adaptive_effort.complexity_class?.label();
         Some(
             format!(
                 "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. If the change is green, report ready_for_owner_qa with successful native evidence refs. If a blocker is found, report repair_required with failing native evidence refs.",
@@ -681,9 +734,69 @@ impl ChatWidget {
                 format!("{} {effort}", family(Some(route.family)))
             },
         );
+        let validation_last = state.validation_status.as_ref().map_or_else(
+            || "not run".to_string(),
+            |status| format!("{} {}", status.result.to_ascii_uppercase(), status.profile),
+        );
+        let validation_run = state
+            .validation_status
+            .as_ref()
+            .map(|status| status.run_id.as_str())
+            .unwrap_or("None");
+        let validation_candidate = state.validation_status.as_ref().map_or_else(
+            || "None".to_string(),
+            |status| {
+                format!(
+                    "{} @ {}",
+                    status.branch.as_deref().unwrap_or("(detached)"),
+                    status.head_sha
+                )
+            },
+        );
+        let validation_failed_stage = state
+            .validation_status
+            .as_ref()
+            .and_then(|status| status.failed_stage.as_deref())
+            .unwrap_or("None");
+        let validation_log = state
+            .validation_status
+            .as_ref()
+            .map(|status| status.log_path.as_str())
+            .unwrap_or("None");
+        let validation_failure_fingerprint = state
+            .validation_status
+            .as_ref()
+            .and_then(|status| status.failure_fingerprint.as_deref())
+            .or(state.validation_repair_fingerprint.as_deref())
+            .unwrap_or("None");
+        let validation_repair_remaining =
+            CODEXDD_VALIDATION_REPAIR_LIMIT.saturating_sub(state.validation_repair_cycles_used);
+        let validation_next = match state.workflow_terminal {
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation) => "handoff ready",
+            Some(AdaptiveWorkflowTerminal::Blocked) => "owner review required",
+            _ if state.worker_context.role != AdaptiveWorkerRole::Implementation => "n/a",
+            _ => match state.implementation_phase {
+                Some(AdaptiveImplementationPhase::MechanicalValidation)
+                    if state.validation_targeted_retest_required =>
+                {
+                    "targeted -> work_packet"
+                }
+                Some(AdaptiveImplementationPhase::MechanicalValidation) => "work_packet",
+                Some(AdaptiveImplementationPhase::Implementation)
+                    if state.validation_repair_cycles_used > 0 =>
+                {
+                    "repair -> mechanical_validation"
+                }
+                Some(AdaptiveImplementationPhase::Implementation) => {
+                    "implementation -> mechanical_validation"
+                }
+                None if state.complexity_class.is_none() => "reconnaissance",
+                None => "implementation",
+            },
+        };
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
         format!(
-            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}",
+            "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}\n  LVO last: {}\n  LVO run: {}\n  LVO candidate: {}\n  LVO failed stage: {}\n  LVO failure fingerprint: {}\n  LVO repair budget: {}/{} used ({} remaining)\n  LVO next: {}\n  LVO log: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
             family(state.starting_family),
@@ -704,7 +817,17 @@ impl ChatWidget {
             worker_role,
             worker_scope,
             worker_binding,
-            workflow_terminal
+            workflow_terminal,
+            validation_last,
+            validation_run,
+            validation_candidate,
+            validation_failed_stage,
+            validation_failure_fingerprint,
+            state.validation_repair_cycles_used,
+            CODEXDD_VALIDATION_REPAIR_LIMIT,
+            validation_repair_remaining,
+            validation_next,
+            validation_log
         )
     }
 }
@@ -746,6 +869,9 @@ mod tests {
                 source_turn_id: "old-turn".to_string(),
                 outcome: crate::adaptive_evidence::AdaptiveEvidenceOutcome::Failure,
                 kind: crate::adaptive_evidence::AdaptiveEvidenceKind::CommandExecution,
+                tool_name: None,
+                validation_profile: None,
+                validation_failure_fingerprint: None,
             });
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,

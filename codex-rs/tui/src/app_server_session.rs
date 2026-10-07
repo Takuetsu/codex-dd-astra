@@ -3612,6 +3612,25 @@ mod tests {
                     current_effort: Some("high".to_string()),
                     complexity_class: Some("complex".to_string()),
                     implementation_phase: Some("implementation".to_string()),
+                    validation_repair_fingerprint: Some(
+                        "v1:work_packet:core-adaptive-tests".to_string(),
+                    ),
+                    validation_repair_cycles_used: Some(1),
+                    validation_targeted_retest_required: Some(true),
+                    validation_status: Some(
+                        codex_app_server_protocol::ThreadAdaptiveValidationStatus {
+                            profile: "work_packet".to_string(),
+                            result: "fail".to_string(),
+                            run_id: "run-detached-fork".to_string(),
+                            branch: Some("feature/fork".to_string()),
+                            head_sha: "0123456789abcdef".to_string(),
+                            failed_stage: Some("core-adaptive-tests".to_string()),
+                            failure_fingerprint: Some(
+                                "v1:work_packet:core-adaptive-tests".to_string(),
+                            ),
+                            log_path: "C:\\codexdd\\validation\\validation.log".to_string(),
+                        },
+                    ),
                     attempt_number: 3,
                     paused_by_user: false,
                     worker_role: "implementation".to_string(),
@@ -3655,6 +3674,29 @@ mod tests {
         assert_eq!(
             state.implementation_phase,
             Some(crate::adaptive_complexity::AdaptiveImplementationPhase::Implementation)
+        );
+        assert_eq!(
+            state.validation_repair_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert_eq!(state.validation_repair_cycles_used, 1);
+        assert!(state.validation_targeted_retest_required);
+        let validation_status = state
+            .validation_status
+            .as_ref()
+            .expect("validation operator status");
+        assert_eq!(validation_status.profile, "work_packet");
+        assert_eq!(validation_status.result, "fail");
+        assert_eq!(validation_status.run_id, "run-detached-fork");
+        assert_eq!(validation_status.branch.as_deref(), Some("feature/fork"));
+        assert_eq!(validation_status.head_sha, "0123456789abcdef");
+        assert_eq!(
+            validation_status.failed_stage.as_deref(),
+            Some("core-adaptive-tests")
+        );
+        assert_eq!(
+            validation_status.failure_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
         );
         assert!(state.worker_assignment_locked);
         assert!(state.pending_attempt.is_none());

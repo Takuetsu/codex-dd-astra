@@ -13,6 +13,7 @@ use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveEffortState;
 use crate::chatwidget::adaptive_effort::AdaptiveFamily;
+use crate::chatwidget::adaptive_effort::AdaptiveValidationStatus;
 use codex_app_server_protocol::AskForApproval;
 use codex_protocol::ThreadId;
 use codex_protocol::config_types::CollaborationMode;
@@ -216,6 +217,72 @@ fn apply_persisted_adaptive_workflow_state(
                 .to_string(),
         );
     }
+    let validation_repair_cycles_used = state.validation_repair_cycles_used;
+    let validation_repair_fingerprint = state.validation_repair_fingerprint;
+    let validation_targeted_retest_required = state.validation_targeted_retest_required;
+    let validation_status = state
+        .validation_status
+        .map(|status| AdaptiveValidationStatus {
+            profile: status.profile,
+            result: status.result,
+            run_id: status.run_id,
+            branch: status.branch,
+            head_sha: status.head_sha,
+            failed_stage: status.failed_stage,
+            failure_fingerprint: status.failure_fingerprint,
+            log_path: status.log_path,
+        });
+    if let Some(status) = validation_status.as_ref() {
+        if status.profile.trim().is_empty()
+            || status.run_id.trim().is_empty()
+            || status.head_sha.trim().is_empty()
+            || status.log_path.trim().is_empty()
+            || status
+                .failure_fingerprint
+                .as_deref()
+                .is_some_and(|fingerprint| fingerprint.trim().is_empty())
+            || (status.failure_fingerprint.is_some() && status.result != "fail")
+            || !matches!(status.result.as_str(), "pass" | "fail" | "error")
+        {
+            return Err(
+                "persisted validation operator status is incomplete or invalid".to_string(),
+            );
+        }
+    }
+    if validation_repair_cycles_used
+        > crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT
+    {
+        return Err(format!(
+            "persisted validation repair cycle count {validation_repair_cycles_used} exceeds limit {}",
+            crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
+        ));
+    }
+    let has_repair_state = validation_repair_cycles_used > 0
+        || validation_repair_fingerprint.is_some()
+        || validation_targeted_retest_required;
+    if has_repair_state
+        && (validation_repair_cycles_used == 0
+            || validation_repair_fingerprint
+                .as_deref()
+                .is_none_or(|fingerprint| fingerprint.trim().is_empty())
+            || !validation_targeted_retest_required)
+    {
+        return Err(
+            "persisted validation repair state is incomplete or internally inconsistent"
+                .to_string(),
+        );
+    }
+    if has_repair_state
+        && (worker_role != AdaptiveWorkerRole::Implementation
+            || complexity_class.is_none()
+            || implementation_phase.is_none())
+    {
+        return Err(
+            "persisted validation repair state requires a bound Implementation Worker with accepted complexity and an active implementation phase"
+                .to_string(),
+        );
+    }
+
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -253,6 +320,10 @@ fn apply_persisted_adaptive_workflow_state(
         evidence_registry: Default::default(),
         complexity_class,
         implementation_phase,
+        validation_repair_fingerprint,
+        validation_repair_cycles_used,
+        validation_targeted_retest_required,
+        validation_status,
         budget_mode,
     };
     Ok(())
@@ -322,6 +393,10 @@ mod tests {
                 current_effort: Some("high".to_string()),
                 complexity_class: None,
                 implementation_phase: None,
+                validation_repair_fingerprint: None,
+                validation_repair_cycles_used: 0,
+                validation_targeted_retest_required: false,
+                validation_status: None,
                 attempt_number: 6,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -384,6 +459,10 @@ mod tests {
                     current_effort: Some("low".to_string()),
                     complexity_class: None,
                     implementation_phase: None,
+                    validation_repair_fingerprint: None,
+                    validation_repair_cycles_used: 0,
+                    validation_targeted_retest_required: false,
+                    validation_status: None,
                     attempt_number: 1,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
@@ -414,6 +493,10 @@ mod tests {
                 current_effort: Some("medium".to_string()),
                 complexity_class: None,
                 implementation_phase: None,
+                validation_repair_fingerprint: None,
+                validation_repair_cycles_used: 0,
+                validation_targeted_retest_required: false,
+                validation_status: None,
                 attempt_number: 4,
                 paused_by_user: true,
                 worker_role: "validation".to_string(),
@@ -478,6 +561,91 @@ mod codexdd_complexity_persistence_regression {
     }
 
     #[test]
+    fn persisted_validation_repair_state_fails_closed_when_over_budget() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "sol",
+                    "current_effort": "medium",
+                    "attempt_number": 7,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/repair-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "standard",
+                    "implementation_phase": "mechanical_validation",
+                    "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
+                    "validation_repair_cycles_used": 3,
+                    "validation_targeted_retest_required": true
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        let error = apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect_err("over-budget repair state must fail closed");
+        assert!(error.contains("exceeds limit 2"));
+    }
+
+    #[test]
+    fn persisted_validation_repair_state_fails_closed_when_incomplete() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "luna",
+                    "current_effort": "low",
+                    "attempt_number": 3,
+                    "paused_by_user": false,
+                    "worker_role": "implementation",
+                    "authorized_scope": "codexdd/incomplete-repair-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "complexity_class": "standard",
+                    "implementation_phase": "mechanical_validation",
+                    "validation_repair_fingerprint": null,
+                    "validation_repair_cycles_used": 1,
+                    "validation_targeted_retest_required": true
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        let error = apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect_err("incomplete repair state must fail closed");
+        assert!(error.contains("incomplete or internally inconsistent"));
+    }
+
+    #[test]
+    fn persisted_validation_repair_state_cannot_attach_to_non_implementation_worker() {
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            r#"{
+                    "enabled": true,
+                    "starting_family": "astra",
+                    "current_family": "luna",
+                    "current_effort": "low",
+                    "attempt_number": 3,
+                    "paused_by_user": false,
+                    "worker_role": "validation",
+                    "authorized_scope": "codexdd/invalid-repair-restore",
+                    "worker_assignment_locked": true,
+                    "workflow_terminal": null,
+                    "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
+                    "validation_repair_cycles_used": 1,
+                    "validation_targeted_retest_required": true
+                }"#,
+        )
+        .expect("snapshot should deserialize");
+
+        let mut adaptive = AdaptiveEffortState::default();
+        let error = apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect_err("repair state on Validation worker must fail closed");
+        assert!(error.contains("requires a bound Implementation Worker"));
+    }
+
+    #[test]
     fn restored_snapshot_recovers_mechanical_validation_phase() {
         let snapshot: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
             r#"{
@@ -492,7 +660,20 @@ mod codexdd_complexity_persistence_regression {
                     "worker_assignment_locked": true,
                     "workflow_terminal": null,
                     "complexity_class": "architectural",
-                    "implementation_phase": "mechanical_validation"
+                    "implementation_phase": "mechanical_validation",
+                    "validation_repair_fingerprint": "v1:work_packet:core-adaptive-tests",
+                    "validation_repair_cycles_used": 2,
+                    "validation_targeted_retest_required": true,
+                    "validation_status": {
+                        "profile": "work_packet",
+                        "result": "fail",
+                        "run_id": "run-restore-42",
+                        "branch": "dd/restore",
+                        "head_sha": "0123456789abcdef",
+                        "failed_stage": "core-adaptive-tests",
+                        "failure_fingerprint": "v1:work_packet:core-adaptive-tests",
+                        "log_path": "C:\\codexdd\\validation\\run-restore-42\\validation.log"
+                    }
                 }"#,
         )
         .expect("snapshot should deserialize");
@@ -506,5 +687,35 @@ mod codexdd_complexity_persistence_regression {
             Some(AdaptiveImplementationPhase::MechanicalValidation)
         );
         assert!(adaptive.implementation_mechanical_validation_active());
+        assert_eq!(
+            adaptive.validation_repair_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert_eq!(adaptive.validation_repair_cycles_used, 2);
+        assert!(adaptive.validation_targeted_retest_required);
+        assert!(!adaptive.validation_repair_budget_available());
+        let validation_status = adaptive
+            .validation_status
+            .as_ref()
+            .expect("validation operator status");
+        assert_eq!(validation_status.profile, "work_packet");
+        assert_eq!(validation_status.result, "fail");
+        assert_eq!(validation_status.run_id, "run-restore-42");
+        assert_eq!(validation_status.branch.as_deref(), Some("dd/restore"));
+        assert_eq!(validation_status.head_sha, "0123456789abcdef");
+        assert_eq!(
+            validation_status.failed_stage.as_deref(),
+            Some("core-adaptive-tests")
+        );
+        assert_eq!(
+            validation_status.failure_fingerprint.as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert!(adaptive.pending_attempt.is_none());
+        assert!(adaptive.pending_signal.is_none());
+        assert!(adaptive.successor_admission.is_none());
+        assert_eq!(adaptive.evidence_registry.len(), 0);
+        assert_eq!(adaptive.last_outcome, None);
+        assert_eq!(adaptive.last_failure_kind, None);
     }
 }

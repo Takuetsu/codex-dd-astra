@@ -27,6 +27,9 @@ fn record(
         source_turn_id: source_turn_id.to_string(),
         outcome,
         kind: AdaptiveEvidenceKind::CommandExecution,
+        tool_name: None,
+        validation_profile: None,
+        validation_failure_fingerprint: None,
     }
 }
 
@@ -65,6 +68,9 @@ fn native_command_completion_becomes_small_typed_evidence() {
             source_turn_id: "turn-1".to_string(),
             outcome: AdaptiveEvidenceOutcome::Success,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
+            validation_failure_fingerprint: None,
         })
     );
 }
@@ -116,6 +122,9 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             source_turn_id: "turn-1".to_string(),
             outcome: AdaptiveEvidenceOutcome::Success,
             kind: AdaptiveEvidenceKind::McpToolCall,
+            tool_name: None,
+            validation_profile: None,
+            validation_failure_fingerprint: None,
         })
     );
     assert_eq!(
@@ -126,8 +135,148 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             source_turn_id: "turn-1".to_string(),
             outcome: AdaptiveEvidenceOutcome::Success,
             kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some("tool".to_string()),
+            validation_profile: None,
+            validation_failure_fingerprint: None,
         })
     );
+}
+
+#[test]
+fn native_validation_tool_completion_becomes_typed_work_packet_receipt() {
+    let thread_id = ThreadId::new();
+    let notification = ItemCompletedNotification {
+        item: ThreadItem::DynamicToolCall {
+            id: "validation-call".to_string(),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({ "profile": "work_packet" }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(true),
+            duration_ms: Some(1),
+        },
+        thread_id: thread_id.to_string(),
+        turn_id: "turn-validation".to_string(),
+        completed_at_ms: 1,
+    };
+
+    let record = record_from_item_completion(&notification).expect("validation receipt");
+    assert_eq!(record.evidence_id, "validation-call");
+    assert_eq!(record.outcome, AdaptiveEvidenceOutcome::Success);
+    assert_eq!(record.kind, AdaptiveEvidenceKind::DynamicToolCall);
+    assert_eq!(
+        record.tool_name.as_deref(),
+        Some(super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME)
+    );
+    assert_eq!(
+        record.validation_profile.as_deref(),
+        Some(super::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE)
+    );
+
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(record);
+    assert!(
+        registry.has_successful_codexdd_work_packet_receipt_for_turn(
+            &["validation-call".to_string()],
+            thread_id,
+            "turn-validation",
+        )
+    );
+}
+
+#[test]
+fn failed_validation_receipt_exposes_repairable_fingerprint() {
+    let thread_id = ThreadId::new();
+    let notification = ItemCompletedNotification {
+        item: ThreadItem::DynamicToolCall {
+            id: "failed-validation".to_string(),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({
+                "profile": "work_packet",
+                "failure_fingerprint": "v1:work_packet:core-adaptive-tests",
+                "failed_stage": "core-adaptive-tests"
+            }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(false),
+            duration_ms: Some(1),
+        },
+        thread_id: thread_id.to_string(),
+        turn_id: "turn-validation-failed".to_string(),
+        completed_at_ms: 1,
+    };
+
+    let record = record_from_item_completion(&notification).expect("failed validation receipt");
+    assert_eq!(
+        record.validation_failure_fingerprint.as_deref(),
+        Some("v1:work_packet:core-adaptive-tests")
+    );
+
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(record);
+    assert_eq!(
+        registry.codexdd_repairable_validation_failure_for_turn(
+            &["failed-validation".to_string()],
+            thread_id,
+            "turn-validation-failed",
+        ),
+        Some((
+            "work_packet".to_string(),
+            "v1:work_packet:core-adaptive-tests".to_string(),
+        ))
+    );
+}
+
+#[test]
+fn work_packet_failure_is_preferred_over_targeted_regardless_of_ref_order() {
+    let thread_id = ThreadId::new();
+    let turn_id = "turn-multiple-validation-failures";
+    let mut registry = AdaptiveEvidenceRegistry::default();
+
+    for (id, profile, fingerprint) in [
+        (
+            "targeted-failure",
+            "targeted",
+            "v1:targeted:core-adaptive-tests",
+        ),
+        (
+            "work-packet-failure",
+            super::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            "v1:work_packet:tui-adaptive-tests",
+        ),
+    ] {
+        registry.register(AdaptiveEvidenceRecord {
+            evidence_id: id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Failure,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(profile.to_string()),
+            validation_failure_fingerprint: Some(fingerprint.to_string()),
+        });
+    }
+
+    for refs in [
+        vec![
+            "targeted-failure".to_string(),
+            "work-packet-failure".to_string(),
+        ],
+        vec![
+            "work-packet-failure".to_string(),
+            "targeted-failure".to_string(),
+        ],
+    ] {
+        assert_eq!(
+            registry.codexdd_repairable_validation_failure_for_turn(&refs, thread_id, turn_id,),
+            Some((
+                super::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
+                "v1:work_packet:tui-adaptive-tests".to_string(),
+            ))
+        );
+    }
 }
 
 #[test]

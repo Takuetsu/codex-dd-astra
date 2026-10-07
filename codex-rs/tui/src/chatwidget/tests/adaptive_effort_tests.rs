@@ -535,6 +535,53 @@ fn register_evidence(
             source_turn_id: "evidence-turn".to_string(),
             outcome,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
+            validation_failure_fingerprint: None,
+        });
+}
+
+fn register_work_packet_receipt(
+    chat: &mut ChatWidget,
+    thread_id: ThreadId,
+    turn_id: &str,
+    evidence_id: &str,
+) {
+    chat.adaptive_effort
+        .evidence_registry
+        .register(AdaptiveEvidenceRecord {
+            evidence_id: evidence_id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Success,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(
+                crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
+            ),
+            validation_failure_fingerprint: None,
+        });
+}
+
+fn register_failed_validation_receipt(
+    chat: &mut ChatWidget,
+    thread_id: ThreadId,
+    turn_id: &str,
+    evidence_id: &str,
+    profile: &str,
+    fingerprint: &str,
+) {
+    chat.adaptive_effort
+        .evidence_registry
+        .register(AdaptiveEvidenceRecord {
+            evidence_id: evidence_id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Failure,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(profile.to_string()),
+            validation_failure_fingerprint: Some(fingerprint.to_string()),
         });
 }
 
@@ -547,21 +594,33 @@ async fn ready_for_validation_enforces_complete_role_matrix_as_hard_handoff() {
         (AdaptiveWorkerRole::Unspecified, false),
     ] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
         drain_events(&mut rx);
         chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
             role,
             authorized_scope: Some("fixed-scope".to_string()),
         };
-        if role == AdaptiveWorkerRole::Implementation {
+        let evidence_refs = if role == AdaptiveWorkerRole::Implementation {
             chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
-        }
+            chat.adaptive_effort.implementation_phase =
+                Some(AdaptiveImplementationPhase::MechanicalValidation);
+            register_work_packet_receipt(
+                &mut chat,
+                thread_id,
+                "role-turn",
+                "role-work-packet-validation",
+            );
+            vec!["role-work-packet-validation".to_string()]
+        } else {
+            Vec::new()
+        };
         let before = chat.adaptive_effort.clone();
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "role-turn",
             AdaptiveRuntimeSignalKind::ReadyForValidation,
-            Vec::new(),
+            evidence_refs,
         ));
 
         assert_eq!(
@@ -959,6 +1018,9 @@ async fn workflow_signals_enforce_roles_and_native_evidence_outcomes() {
                 source_turn_id: "prior-validation-turn".to_string(),
                 outcome,
                 kind: AdaptiveEvidenceKind::CommandExecution,
+                tool_name: None,
+                validation_profile: None,
+                validation_failure_fingerprint: None,
             });
         let before_route = (
             chat.adaptive_effort.current_family,
@@ -1770,6 +1832,9 @@ fn typed_forks_snapshot_immediate_parent_state_and_remain_independent() {
             source_turn_id: "parent-turn".to_string(),
             outcome: AdaptiveEvidenceOutcome::Success,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
+            validation_failure_fingerprint: None,
         });
     let mut child = adaptive_test_session(
         ThreadId::new(),
@@ -1876,6 +1941,9 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         source_turn_id: "turn-1".to_string(),
         outcome: AdaptiveEvidenceOutcome::Success,
         kind: AdaptiveEvidenceKind::CommandExecution,
+        tool_name: None,
+        validation_profile: None,
+        validation_failure_fingerprint: None,
     });
     assert_eq!(chat.adaptive_effort, expected);
     assert_matches!(
@@ -2254,6 +2322,9 @@ async fn mechanical_validation_refuses_deescalation_while_failure_pressure_is_li
             source_turn_id: source_turn_id.to_string(),
             outcome: AdaptiveEvidenceOutcome::Failure,
             kind: AdaptiveEvidenceKind::CommandExecution,
+            tool_name: None,
+            validation_profile: None,
+            validation_failure_fingerprint: None,
         });
     chat.adaptive_effort.pending_signal = Some(pending_signal(
         source_turn_id,
@@ -2294,7 +2365,8 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
         ),
     ] {
         let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         chat.adaptive_effort.enabled = true;
         chat.adaptive_effort.starting_family = Some(AdaptiveFamily::Astra);
         chat.adaptive_effort.current_family = Some(current_family);
@@ -2307,10 +2379,18 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
             role: AdaptiveWorkerRole::Implementation,
             authorized_scope: Some("architectural integration".to_string()),
         };
+        register_failed_validation_receipt(
+            &mut chat,
+            thread_id,
+            "implementation-reentry",
+            "failed-work-packet",
+            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            "v1:work_packet:core-adaptive-tests",
+        );
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "implementation-reentry",
             AdaptiveRuntimeSignalKind::ImplementationWork,
-            Vec::new(),
+            vec!["failed-work-packet".to_string()],
         ));
 
         assert!(chat.consume_adaptive_signal_at_terminal("implementation-reentry"));
@@ -2320,6 +2400,14 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
         );
         assert_eq!(chat.adaptive_effort.current_family, Some(expected_family));
         assert_eq!(chat.adaptive_effort.current_effort, Some(expected_effort));
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 1);
+        assert_eq!(
+            chat.adaptive_effort
+                .validation_repair_fingerprint
+                .as_deref(),
+            Some("v1:work_packet:core-adaptive-tests")
+        );
+        assert!(chat.adaptive_effort.validation_targeted_retest_required);
         assert_matches!(
             chat.adaptive_effort.pending_attempt,
             Some(AdaptivePendingAttempt {
@@ -2338,7 +2426,8 @@ async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
         (AdaptiveComplexityClass::Standard, true),
     ] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
-        chat.thread_id = Some(ThreadId::new());
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
         chat.dispatch_command_with_args(SlashCommand::Adaptive, "terra".to_string(), Vec::new());
         drain_events(&mut rx);
         chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
@@ -2346,10 +2435,18 @@ async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
             authorized_scope: Some("automatic quality gate".to_string()),
         };
         chat.adaptive_effort.complexity_class = Some(complexity_class);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        register_work_packet_receipt(
+            &mut chat,
+            thread_id,
+            "quality-handoff-turn",
+            "quality-work-packet-validation",
+        );
         chat.adaptive_effort.pending_signal = Some(pending_signal(
             "quality-handoff-turn",
             AdaptiveRuntimeSignalKind::ReadyForValidation,
-            Vec::new(),
+            vec!["quality-work-packet-validation".to_string()],
         ));
 
         assert!(chat.consume_adaptive_signal_at_terminal("quality-handoff-turn"));
@@ -2483,6 +2580,9 @@ async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
                 source_turn_id: source_turn_id.to_string(),
                 outcome: AdaptiveEvidenceOutcome::Failure,
                 kind: AdaptiveEvidenceKind::CommandExecution,
+                tool_name: None,
+                validation_profile: None,
+                validation_failure_fingerprint: None,
             });
     }
 

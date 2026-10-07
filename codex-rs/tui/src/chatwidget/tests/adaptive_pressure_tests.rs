@@ -1,6 +1,10 @@
 use super::*;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
+use crate::adaptive_evidence::AdaptiveEvidenceKind;
+use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
+use crate::adaptive_evidence::AdaptiveEvidenceRecord;
 use crate::adaptive_policy::AdaptiveEffort;
 use crate::adaptive_policy::AdaptiveFamily;
 use crate::adaptive_worker::AdaptiveWorkerRole;
@@ -42,6 +46,28 @@ fn failed_command(thread_id: ThreadId, turn_id: &str, item_id: &str) -> ItemComp
         turn_id: turn_id.to_string(),
         completed_at_ms: 1,
     }
+}
+
+fn register_work_packet_receipt(
+    chat: &mut ChatWidget,
+    thread_id: ThreadId,
+    turn_id: &str,
+    evidence_id: &str,
+) {
+    chat.adaptive_effort
+        .evidence_registry
+        .register(AdaptiveEvidenceRecord {
+            evidence_id: evidence_id.to_string(),
+            thread_id,
+            source_turn_id: turn_id.to_string(),
+            outcome: AdaptiveEvidenceOutcome::Success,
+            kind: AdaptiveEvidenceKind::DynamicToolCall,
+            tool_name: Some(crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
+            validation_profile: Some(
+                crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
+            ),
+            validation_failure_fingerprint: None,
+        });
 }
 
 #[tokio::test]
@@ -103,17 +129,25 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
     chat.dispatch_adaptive_command("astra");
     chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
     chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+    chat.adaptive_effort.implementation_phase =
+        Some(AdaptiveImplementationPhase::MechanicalValidation);
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
     chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-1"));
     chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
+    register_work_packet_receipt(
+        &mut chat,
+        thread_id,
+        turn_id,
+        "recovered-work-packet-validation",
+    );
     chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
         thread_id: thread_id.to_string(),
         signal: AdaptiveRuntimeSignalEnvelope {
             source_turn_id: turn_id.to_string(),
             signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-            evidence_refs: Vec::new(),
+            evidence_refs: vec!["recovered-work-packet-validation".to_string()],
             diagnostic_note: None,
         },
     });
@@ -477,11 +511,19 @@ async fn trusted_handoff_resets_unfinished_pressure() {
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
 
     chat.adaptive_effort.last_processed_terminal_turn_id = None;
+    chat.adaptive_effort.implementation_phase =
+        Some(AdaptiveImplementationPhase::MechanicalValidation);
+    register_work_packet_receipt(
+        &mut chat,
+        thread_id,
+        "handoff-turn",
+        "handoff-work-packet-validation",
+    );
     chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Pending(
         AdaptiveRuntimeSignalEnvelope {
             source_turn_id: "handoff-turn".to_string(),
             signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-            evidence_refs: Vec::new(),
+            evidence_refs: vec!["handoff-work-packet-validation".to_string()],
             diagnostic_note: None,
         },
     ));
@@ -709,6 +751,8 @@ async fn late_workflow_terminal_still_overrides_synthetic_failure_pressure() {
     chat.adaptive_effort.worker_context.authorized_scope =
         Some("codexdd/late-terminal-overrides-pressure".to_string());
     chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+    chat.adaptive_effort.implementation_phase =
+        Some(AdaptiveImplementationPhase::MechanicalValidation);
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
@@ -738,12 +782,18 @@ async fn late_workflow_terminal_still_overrides_synthetic_failure_pressure() {
     );
     assert_no_submit_op(&mut op_rx);
 
+    register_work_packet_receipt(
+        &mut chat,
+        thread_id,
+        turn_id,
+        "late-terminal-work-packet-validation",
+    );
     chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
         thread_id: thread_id.to_string(),
         signal: AdaptiveRuntimeSignalEnvelope {
             source_turn_id: turn_id.to_string(),
             signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-            evidence_refs: Vec::new(),
+            evidence_refs: vec!["late-terminal-work-packet-validation".to_string()],
             diagnostic_note: None,
         },
     });

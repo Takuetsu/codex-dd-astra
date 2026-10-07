@@ -1711,6 +1711,22 @@ pub enum ThreadWorkflowStateOperation {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]
+pub struct ThreadAdaptiveValidationStatus {
+    pub profile: String,
+    pub result: String,
+    pub run_id: String,
+    pub branch: Option<String>,
+    pub head_sha: String,
+    pub failed_stage: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub failure_fingerprint: Option<String>,
+    pub log_path: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
 pub struct ThreadAdaptiveWorkflowState {
     pub enabled: bool,
     pub starting_family: Option<String>,
@@ -1722,6 +1738,18 @@ pub struct ThreadAdaptiveWorkflowState {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub implementation_phase: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_repair_fingerprint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_repair_cycles_used: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_targeted_retest_required: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub validation_status: Option<ThreadAdaptiveValidationStatus>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
     pub worker_role: String,

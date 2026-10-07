@@ -5062,6 +5062,20 @@ class ThreadActiveFlag(Enum):
     waiting_on_user_input = "waitingOnUserInput"
 
 
+class ThreadAdaptiveValidationStatus(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    branch: str | None = None
+    failed_stage: Annotated[str | None, Field(alias="failedStage")] = None
+    failure_fingerprint: Annotated[str | None, Field(alias="failureFingerprint")] = None
+    head_sha: Annotated[str, Field(alias="headSha")]
+    log_path: Annotated[str, Field(alias="logPath")]
+    profile: str
+    result: str
+    run_id: Annotated[str, Field(alias="runId")]
+
+
 class ThreadAdaptiveWorkflowState(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -5075,6 +5089,18 @@ class ThreadAdaptiveWorkflowState(BaseModel):
     implementation_phase: Annotated[str | None, Field(alias="implementationPhase")] = None
     paused_by_user: Annotated[bool, Field(alias="pausedByUser")]
     starting_family: Annotated[str | None, Field(alias="startingFamily")] = None
+    validation_repair_cycles_used: Annotated[
+        int | None, Field(alias="validationRepairCyclesUsed", ge=0)
+    ] = None
+    validation_repair_fingerprint: Annotated[
+        str | None, Field(alias="validationRepairFingerprint")
+    ] = None
+    validation_status: Annotated[
+        ThreadAdaptiveValidationStatus | None, Field(alias="validationStatus")
+    ] = None
+    validation_targeted_retest_required: Annotated[
+        bool | None, Field(alias="validationTargetedRetestRequired")
+    ] = None
     worker_assignment_locked: Annotated[bool, Field(alias="workerAssignmentLocked")]
     worker_role: Annotated[str, Field(alias="workerRole")]
     workflow_terminal: Annotated[str | None, Field(alias="workflowTerminal")] = None

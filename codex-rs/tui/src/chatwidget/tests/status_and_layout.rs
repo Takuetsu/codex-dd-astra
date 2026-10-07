@@ -338,8 +338,22 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         authorized_scope: Some("bounded status integration".to_string()),
     };
     chat.adaptive_effort.worker_assignment_locked = true;
-    chat.adaptive_effort.workflow_terminal =
-        Some(crate::adaptive_worker::AdaptiveWorkflowTerminal::ReadyForValidation);
+    chat.adaptive_effort.validation_repair_fingerprint =
+        Some("v1:work_packet:core-adaptive-tests".to_string());
+    chat.adaptive_effort.validation_repair_cycles_used = 1;
+    chat.adaptive_effort.validation_targeted_retest_required = true;
+    chat.adaptive_effort.validation_status = Some(
+        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
+            profile: "work_packet".to_string(),
+            result: "fail".to_string(),
+            run_id: "run-status-42".to_string(),
+            branch: Some("dd/status-evidence".to_string()),
+            head_sha: "0123456789abcdef".to_string(),
+            failed_stage: Some("core-adaptive-tests".to_string()),
+            failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
+            log_path: "C:\\codexdd\\validation\\run-status-42\\validation.log".to_string(),
+        },
+    );
 
     chat.add_status_output(
         /*refreshing_rate_limits*/ false, /*request_id*/ None,
@@ -363,7 +377,105 @@ async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
         "Worker role: Implementation",
         "Worker scope: bounded status integration",
         "Worker binding: Bound",
-        "Workflow terminal: READY_FOR_VALIDATION",
+        "Workflow terminal: None",
+        "LVO last: FAIL work_packet",
+        "LVO run: run-status-42",
+        "LVO candidate: dd/status-evidence @ 0123456789abcdef",
+        "LVO failed stage: core-adaptive-tests",
+        "LVO failure fingerprint: v1:work_packet:core-adaptive-tests",
+        "LVO repair budget: 1/2 used (1 remaining)",
+        "LVO next: targeted -> work_packet",
+        "LVO log: C:\\codexdd\\validation\\run-status-42\\validation.log",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "expected {expected:?} in /status output: {rendered:?}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn status_output_surfaces_failed_receipt_fingerprint_before_repair_admission() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("failed validation status".to_string()),
+    };
+    chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.complexity_class =
+        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);
+    chat.adaptive_effort.implementation_phase =
+        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
+    chat.adaptive_effort.validation_status = Some(
+        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
+            profile: "work_packet".to_string(),
+            result: "fail".to_string(),
+            run_id: "run-failed-before-repair".to_string(),
+            branch: Some("dd/status-evidence".to_string()),
+            head_sha: "fedcba9876543210".to_string(),
+            failed_stage: Some("core-adaptive-tests".to_string()),
+            failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
+            log_path: "C:\\codexdd\\validation\\run-failed-before-repair\\validation.log"
+                .to_string(),
+        },
+    );
+
+    chat.add_status_output(
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
+    );
+
+    let rendered = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    assert!(
+        rendered.contains("LVO failure fingerprint: v1:work_packet:core-adaptive-tests"),
+        "expected native failed-receipt fingerprint before repair admission: {rendered:?}"
+    );
+    assert!(
+        rendered.contains("LVO repair budget: 0/2 used (2 remaining)"),
+        "receipt visibility must not consume repair budget: {rendered:?}"
+    );
+}
+
+#[tokio::test]
+async fn status_output_marks_lvo_as_not_run_before_first_validation() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("fresh validation status".to_string()),
+    };
+    chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.complexity_class =
+        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);
+    chat.adaptive_effort.implementation_phase =
+        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
+
+    chat.add_status_output(
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
+    );
+
+    let rendered = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    for expected in [
+        "LVO last: not run",
+        "LVO run: None",
+        "LVO candidate: None",
+        "LVO failure fingerprint: None",
+        "LVO repair budget: 0/2 used (2 remaining)",
+        "LVO next: work_packet",
     ] {
         assert!(
             rendered.contains(expected),

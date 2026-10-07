@@ -123,19 +123,22 @@ This is specifically intended to prevent the old pattern where one long run atte
 
 ## Local validation execution policy
 
-Implementation validation before PR/CI is operator-mediated and runs on the Windows target machine, normally Daniel-CL, through PowerShell/SSH.
+CodexDD 0.4.0 changes routine pre-PR implementation validation from an operator-mediated shell loop to Local Validation Orchestrator ownership on the Windows target when the repository provides the fixed validation-profile contract.
 
-- The assistant defines small, explicit validation packets and gives the operator the exact PowerShell commands to run.
-- The operator runs those commands on Daniel-CL and returns the output before the next validation step proceeds.
-- Prefer cheap, targeted local checks first, then broaden only after earlier gates pass.
-- Phase-level validation and Phase 4 pre-install validation should be robust enough to expose integration defects before GitHub CI, but they still run locally through this operator-mediated loop.
-- Do not create temporary GitHub Actions workflows merely to perform implementation-phase validation.
-- GitHub CI is reserved for the later PR/CI stage after the local validation gates are green.
-- Windows-target validation on Daniel-CL is authoritative for pre-PR implementation testing unless a packet explicitly requires another environment.
+- During a bound Implementation Worker's protected mechanical-validation phase, the native `run_codexdd_validation` runner owns ordinary local validation.
+- Ordinary completed implementation uses the repository-owned `work_packet` profile. After an admitted source-changing repair, `targeted` must pass before `work_packet` is rerun.
+- Handoff authority comes from current native validation receipts, not model prose or manually reconstructed command sequences.
+- The operator is no longer the routine command typist for work-packet validation. Manual PowerShell is reserved for explicit owner gates, release-shaped environment checks, bootstrap validation of a candidate runtime that is not installed yet, or a diagnosed runner/infrastructure fallback.
+- Windows-target evidence on Daniel-CL remains authoritative for CodexDD pre-PR and pre-install release validation unless a packet explicitly requires another environment.
+- Prefer the repository-owned validation profiles over ad hoc test command lists. The `release` profile is an explicit broad gate and must never be silently selected by an ordinary Implementation Worker.
+- Infrastructure/contract failures do not authorize opportunistic source edits. Repair admission must follow the bounded native-evidence policy.
+- Narrow temporary GitHub Actions oracles are permitted only when they are the safest way to obtain exact formatter/schema/generated-artifact output or compile diagnostics that cannot be obtained reliably through the current local candidate. They must be scoped to the diagnostic purpose, removed immediately afterward, and never substitute for the authoritative Windows validation gate.
+- Normal GitHub PR/CI remains a later promotion stage after the required local Windows gates are green.
+- Consequential actions remain human-governed: merge, production install, release publication, deployment, destructive Git operations, and changes to external machines are not implied by an LVO PASS.
 - Phase 4 release-shaped smoke must exercise the actual operator launch context, not only non-interactive CLI flags. For Windows releases that support automatic shared-daemon startup, test a normal interactive launch from the Administrator PowerShell used in production, verify safe embedded fallback when elevated daemon creation is intentionally refused, and separately verify that explicit elevated daemon creation remains blocked.
 - Heavy Rust resume/fork tests on Windows may require `RUST_MIN_STACK=16777216`; if a test fails only with `STATUS_STACK_OVERFLOW`, rerun the unchanged test with that stack before classifying it as a runtime defect.
 
-This policy keeps the human owner in the validation loop, catches Windows-specific defects before CI, and avoids spending GitHub runner time on iterative development failures.
+The 0.4.0 development branch itself may still require operator-run profile scripts while the new runtime is being bootstrapped and proven before installation. That bootstrap exception does not revert the post-0.4.0 operating model: once the LVO-capable runtime is active, routine work-packet validation belongs to the orchestrator.
 
 ## Relationship to the 3A -> 3F + Phase 4 workflow
 
@@ -152,7 +155,7 @@ The existing major-phase structure remains valid:
 
 The change is that each major phase is now a container for one or more numbered work packets. No major phase is assumed to fit in one agent run.
 
-## Current 0.3.14 application
+## Historical 0.3.14 application
 
 For CodexDD 0.3.14, Phase 3B is split as follows:
 

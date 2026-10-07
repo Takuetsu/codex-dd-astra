@@ -1,10 +1,10 @@
 # CodexDD Worker/Designer Integration Guide — Current
 
-**Status:** CURRENT for the merged CodexDD runtime on `dd/astra-policy-v2`.
+**Status:** CURRENT for the CodexDD 0.4.0 source line.
 
-At this guide revision, the canonical merged product checkpoint is **CodexDD 0.3.13** at `665f5d7c7966f9a6a9570b5b85f9d68c529c1639`.
+The source product identity is **CodexDD 0.4.0**. Installed workstations may remain on an earlier production build until the normal release/install gate completes, so verify the active runtime with `codexdd --version` before making version-specific claims.
 
-The merged runtime and its regression tests are authoritative if this prose falls behind. Verify an installed workstation with `codexdd --version` before making version-specific claims.
+The runtime and its regression tests are authoritative if this prose falls behind.
 
 ## Responsibility split
 
@@ -68,7 +68,7 @@ Complexity may raise the starting floor; it does not authorize arbitrary mid-att
 
 ## Implementation lifecycle and mechanical validation
 
-CodexDD 0.3.7+ distinguishes source-changing implementation from mechanical validation.
+CodexDD distinguishes source-changing implementation from protected mechanical validation.
 
 After source-changing work is explicitly complete, mechanical validation may de-escalate below the complexity floor. Current budget-aware routes stay within Luna:
 
@@ -79,6 +79,30 @@ After source-changing work is explicitly complete, mechanical validation may de-
 | Surplus     | Luna High                   |
 
 Mechanical validation may run bounded tests/checks/builds and read-only inspection but does **not** authorize source edits. The runtime tool gate enforces this. If evidence requires more source work, use the trusted lifecycle transition back to implementation rather than bypassing the gate.
+
+### Local Validation Orchestrator — 0.4.0
+
+CodexDD 0.4.0 makes normal post-implementation local validation runtime-owned rather than model-authored or operator-typed.
+
+During protected mechanical validation, the Implementation Worker uses the native `run_codexdd_validation` tool with one fixed repository-owned profile:
+
+- `work_packet` — normal post-implementation gate;
+- `targeted` — focused retest after an admitted repair;
+- `release` — explicit broad pre-CI/pre-install validation; never silently selected for an ordinary work packet.
+
+The runner resolves conventional repository scripts, executes them through Codex's existing local execution/sandbox path, records full logs outside the source worktree, and emits a compact native receipt. It does not accept arbitrary model-generated shell text.
+
+For Implementation handoff, `ready_for_validation` requires a successful same-turn native `work_packet` receipt for the current candidate. After any admitted repair, the same mechanical-validation turn must first pass `targeted` and then `work_packet`.
+
+Repair authorization is also evidence-bound:
+
+- the initial automatic repair must originate from a failed `work_packet` run;
+- infrastructure or contract failures do not authorize source edits;
+- at most two source-changing repair cycles are admitted for the active work packet;
+- a third repair request deterministically blocks the workflow for owner review;
+- changing failed stages does not reset the repair budget.
+
+The existing `/status` surface reports the latest LVO profile/result, native run ID, candidate branch/SHA, failed stage, active failure fingerprint, repair budget, deterministic next validation step, and log path. Model prose is never validation authority.
 
 ## Completion and trusted terminals
 
@@ -140,9 +164,15 @@ CodexDD 0.3.10+ records cumulative Worker active-turn duration and renders a run
 
 ## Windows / PowerShell validation
 
-Current runtime supports bounded PowerShell validation commands during protected mechanical-validation phases without granting a general source-edit bypass.
+CodexDD 0.4.0 repositories opt into deterministic local validation with repository-owned PowerShell profiles such as:
 
-If a protected-phase command is rejected, treat it as tooling evidence, use the smallest supported bounded command, and do not reinterpret the rejection as a product defect or disable the protection merely to continue editing.
+- `scripts/codexdd-test-targeted.ps1`;
+- `scripts/codexdd-test-workpacket.ps1`;
+- `scripts/codexdd-test-release.ps1`.
+
+Routine Implementation mechanical validation should use the native LVO runner rather than reconstructing those commands manually. Protected mechanical validation still permits bounded read-only/diagnostic operations and does not grant a general source-edit bypass.
+
+If a protected-phase command is rejected, treat it as tooling evidence and do not weaken the protection merely to continue editing. Operator-run PowerShell remains appropriate for explicit owner validation gates, release-shaped environment checks, or transitional validation of a candidate runtime that is not installed yet.
 
 ## Operator guidance
 

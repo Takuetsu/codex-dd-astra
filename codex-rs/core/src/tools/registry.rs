@@ -87,9 +87,11 @@ fn adaptive_mechanical_validation_rejection(invocation: &ToolInvocation) -> Opti
 
     let allowed = invocation.tool_name.is_default_namespace()
         && match invocation.tool_name.name.as_str() {
-            "report_adaptive_signal" | "update_plan" | "get_context_remaining" | "view_image" => {
-                true
-            }
+            "report_adaptive_signal"
+            | "run_codexdd_validation"
+            | "update_plan"
+            | "get_context_remaining"
+            | "view_image" => true,
             "exec_command" => shell_script_for_invocation(invocation)
                 .as_deref()
                 .is_some_and(adaptive_mechanical_validation_shell_command_allowed),
@@ -244,7 +246,20 @@ fn adaptive_mechanical_powershell_file_command_allowed(args: &[String]) -> bool 
                     return false;
                 };
                 let script = script.trim_matches(|character| character == '\'' || character == '"');
-                return !script.starts_with('-') && script.to_ascii_lowercase().ends_with(".ps1");
+                let script_name = script
+                    .rsplit(['/', '\\'])
+                    .next()
+                    .unwrap_or(script)
+                    .to_ascii_lowercase();
+                let is_codexdd_validation_profile = matches!(
+                    script_name.as_str(),
+                    "codexdd-test-targeted.ps1"
+                        | "codexdd-test-workpacket.ps1"
+                        | "codexdd-test-release.ps1"
+                );
+                return !script.starts_with('-')
+                    && script_name.ends_with(".ps1")
+                    && !is_codexdd_validation_profile;
             }
             _ => return false,
         }

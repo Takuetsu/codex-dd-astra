@@ -476,6 +476,7 @@ export type { TextPosition } from "./TextPosition";
 export type { TextRange } from "./TextRange";
 export type { Thread } from "./Thread";
 export type { ThreadActiveFlag } from "./ThreadActiveFlag";
+export type { ThreadAdaptiveValidationStatus } from "./ThreadAdaptiveValidationStatus";
 export type { ThreadAdaptiveWorkflowState } from "./ThreadAdaptiveWorkflowState";
 export type { ThreadApproveGuardianDeniedActionParams } from "./ThreadApproveGuardianDeniedActionParams";
 export type { ThreadApproveGuardianDeniedActionResponse } from "./ThreadApproveGuardianDeniedActionResponse";

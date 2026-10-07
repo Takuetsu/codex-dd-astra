@@ -143,6 +143,10 @@ fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result
                 current_effort: Some("high".to_string()),
                 complexity_class: None,
                 implementation_phase: None,
+                validation_repair_fingerprint: None,
+                validation_repair_cycles_used: 0,
+                validation_targeted_retest_required: false,
+                validation_status: None,
                 attempt_number: 5,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -220,6 +224,9 @@ fn adaptive_workflow_snapshot_without_complexity_remains_backward_compatible() -
 
     assert_eq!(snapshot.complexity_class, None);
     assert_eq!(snapshot.implementation_phase, None);
+    assert_eq!(snapshot.validation_repair_fingerprint, None);
+    assert_eq!(snapshot.validation_repair_cycles_used, 0);
+    assert!(!snapshot.validation_targeted_retest_required);
     Ok(())
 }
 
@@ -232,6 +239,10 @@ fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
         current_effort: Some("high".to_string()),
         complexity_class: None,
         implementation_phase: None,
+        validation_repair_fingerprint: None,
+        validation_repair_cycles_used: 0,
+        validation_targeted_retest_required: false,
+        validation_status: None,
         attempt_number: 6,
         paused_by_user: false,
         worker_role: "repair".to_string(),

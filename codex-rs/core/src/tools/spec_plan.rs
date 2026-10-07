@@ -10,6 +10,7 @@ use crate::tools::handlers::AdaptiveSignalHandler;
 use crate::tools::handlers::ApplyPatchHandler;
 use crate::tools::handlers::CodeModeExecuteHandler;
 use crate::tools::handlers::CodeModeWaitHandler;
+use crate::tools::handlers::CodexDDValidationHandler;
 use crate::tools::handlers::CurrentTimeHandler;
 use crate::tools::handlers::DynamicToolHandler;
 use crate::tools::handlers::ExecCommandHandler;
@@ -68,6 +69,7 @@ use codex_features::SleepToolMode;
 use codex_login::AuthManager;
 use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
 use codex_prompts::ResolvedModelMessages;
+use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
 use codex_protocol::account::PlanType;
 use codex_protocol::config_types::WebSearchMode;
@@ -1152,6 +1154,13 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     let environment_mode = tool_environment_mode(context.environments);
 
     registry.add_with_exposure(AdaptiveSignalHandler, ToolExposure::DirectModelOnly);
+
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        turn_context.turn_metadata_state.as_ref(),
+    );
+    if turn_trigger.as_deref() == Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {
+        registry.add_with_exposure(CodexDDValidationHandler, ToolExposure::DirectModelOnly);
+    }
 
     if turn_context.config.update_plan_enabled {
         registry.add(PlanHandler);

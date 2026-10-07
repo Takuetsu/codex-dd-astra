@@ -222,6 +222,25 @@ impl TurnRequestProcessor {
                         current_effort: state.current_effort,
                         complexity_class: state.complexity_class,
                         implementation_phase: state.implementation_phase,
+                        validation_repair_fingerprint: state.validation_repair_fingerprint,
+                        validation_repair_cycles_used: state
+                            .validation_repair_cycles_used
+                            .unwrap_or_default(),
+                        validation_targeted_retest_required: state
+                            .validation_targeted_retest_required
+                            .unwrap_or_default(),
+                        validation_status: state.validation_status.map(|status| {
+                            codex_rollout::AdaptiveValidationStatusSnapshot {
+                                profile: status.profile,
+                                result: status.result,
+                                run_id: status.run_id,
+                                branch: status.branch,
+                                head_sha: status.head_sha,
+                                failed_stage: status.failed_stage,
+                                failure_fingerprint: status.failure_fingerprint,
+                                log_path: status.log_path,
+                            }
+                        }),
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
                         worker_role: state.worker_role,
