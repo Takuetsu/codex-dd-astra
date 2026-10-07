@@ -189,9 +189,17 @@ Exit: broad local release gate green.
 
 ## Packet 4.6 — operator-context startup / daemon security smoke
 
-**Status: ACTIVE — NORMAL ADMINISTRATOR-POWERSHELL STARTUP GREEN; EXPLICIT DAEMON REJECTION + INSTALL-INTEGRITY CHECK PENDING.**
+**Status: COMPLETE — DANIEL-CL OPERATOR-CONTEXT STARTUP / DAEMON SECURITY GREEN.**
 
 Daniel-CL candidate smoke has already proven that the uninstalled 0.4.0 release executable launches successfully as a normal interactive TUI from Administrator PowerShell with no `--no-daemon` override.
+
+Final 4.6 closure evidence:
+
+- F2 surfaced the expected background-server warning for Administrator PowerShell and embedded fallback;
+- explicit `app-server daemon start` from the elevated terminal failed, as required, with the non-elevated-terminal security message;
+- installed production remained `codexdd 0.3.14+g06465383abb1` before and after candidate dogfood;
+- the candidate did not replace or mutate the installed production runtime;
+- the scripted gate ended with `PHASE_4_6_DAEMON_SECURITY_PASS`.
 
 Purpose: cover the exact 0.3.14 soak gap before installation.
 
@@ -208,7 +216,9 @@ Exit: actual operator-context startup behavior is green before install.
 
 ## Phase 4 closure
 
-Phase 4 closes only when packets 4.1 through 4.6 are green on Daniel-CL and any discovered defects have had their affected packet rerun.
+**Status: COMPLETE — ALL 4.1 THROUGH 4.6 PACKETS GREEN ON DANIEL-CL.**
+
+All discovered defects/test-expectation issues had their affected gates rerun successfully before closure.
 
 After Phase 4:
 
