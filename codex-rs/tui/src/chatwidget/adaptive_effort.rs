@@ -920,8 +920,8 @@ mod tests {
             ),
             (
                 AdaptiveBudgetMode::Surplus,
-                AdaptiveFamily::Sol,
-                AdaptiveEffort::High,
+                AdaptiveFamily::Sol61,
+                AdaptiveEffort::Medium,
             ),
         ] {
             let previous = AdaptiveEffortState {
@@ -975,8 +975,8 @@ mod tests {
             ),
             (
                 AdaptiveComplexityClass::Architectural,
-                AdaptiveFamily::Sol,
-                AdaptiveEffort::Medium,
+                AdaptiveFamily::Sol61,
+                AdaptiveEffort::Low,
             ),
         ] {
             let previous = AdaptiveEffortState {
