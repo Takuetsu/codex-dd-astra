@@ -1,0 +1,367 @@
+name: upstream-codex-prepare
+
+on:
+  workflow_dispatch:
+    inputs:
+      production_sha:
+        description: Accepted production SHA from the discovery manifest
+        required: true
+        type: string
+      tracked_tag:
+        description: Accepted tracked upstream stable tag
+        required: true
+        type: string
+      tracked_sha:
+        description: Accepted tracked upstream commit SHA
+        required: true
+        type: string
+      target_tag:
+        description: Accepted target upstream stable tag
+        required: true
+        type: string
+      target_sha:
+        description: Accepted target upstream commit SHA
+        required: true
+        type: string
+
+concurrency:
+  group: upstream-codex-prepare-${{ inputs.target_tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: Prepare accepted Codex candidate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/astra-policy-v2
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify accepted candidate identity
+        id: identity
+        shell: bash
+        env:
+          EXPECTED_PRODUCTION_SHA: ${{ inputs.production_sha }}
+          EXPECTED_TRACKED_TAG: ${{ inputs.tracked_tag }}
+          EXPECTED_TRACKED_SHA: ${{ inputs.tracked_sha }}
+          TARGET_TAG: ${{ inputs.target_tag }}
+          EXPECTED_TARGET_SHA: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+
+          python3 - "$EXPECTED_TRACKED_TAG" "$EXPECTED_TRACKED_SHA" "$TARGET_TAG" "$EXPECTED_TARGET_SHA" <<'PY'
+          import sys
+
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import candidate_branch, candidate_key, stable_release_version
+
+          tracked_tag, tracked_sha, target_tag, target_sha = sys.argv[1:]
+          tracked_version = stable_release_version(tracked_tag)
+          target_version = stable_release_version(target_tag)
+          if tracked_version is None:
+              raise SystemExit(f"invalid tracked stable release: {tracked_tag}")
+          if target_version is None:
+              raise SystemExit(f"invalid target stable release: {target_tag}")
+          if target_version <= tracked_version:
+              raise SystemExit("target release must be strictly newer than tracked release")
+          candidate_key(tracked_tag, tracked_sha)
+          candidate_key(target_tag, target_sha)
+          candidate_branch(target_tag, target_sha)
+          PY
+
+          production_sha="$(git rev-parse HEAD)"
+          if [[ "$production_sha" != "$EXPECTED_PRODUCTION_SHA" ]]; then
+            echo "Production moved: expected $EXPECTED_PRODUCTION_SHA, found $production_sha" >&2
+            exit 1
+          fi
+
+          tracked_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
+          if [[ "$tracked_tag" != "$EXPECTED_TRACKED_TAG" ]]; then
+            echo "Tracked upstream moved: expected $EXPECTED_TRACKED_TAG, found $tracked_tag" >&2
+            exit 1
+          fi
+
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream --tags --force --prune
+
+          tracked_sha="$(git rev-parse "${EXPECTED_TRACKED_TAG}^{commit}")"
+          target_sha="$(git rev-parse "${TARGET_TAG}^{commit}")"
+
+          if [[ "$tracked_sha" != "$EXPECTED_TRACKED_SHA" ]]; then
+            echo "Tracked upstream SHA changed: expected $EXPECTED_TRACKED_SHA, found $tracked_sha" >&2
+            exit 1
+          fi
+          if [[ "$target_sha" != "$EXPECTED_TARGET_SHA" ]]; then
+            echo "Target upstream SHA changed: expected $EXPECTED_TARGET_SHA, found $target_sha" >&2
+            exit 1
+          fi
+
+          candidate_branch="$(
+            python3 - "$TARGET_TAG" "$EXPECTED_TARGET_SHA" <<'PY'
+          import sys
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import candidate_branch
+          print(candidate_branch(sys.argv[1], sys.argv[2]))
+          PY
+          )"
+
+          if git ls-remote --exit-code --heads origin "$candidate_branch" >/dev/null 2>&1; then
+            echo "Candidate branch already exists: $candidate_branch" >&2
+            exit 1
+          fi
+
+          product_version="$(tr -d '[:space:]' < codex-rs/codexdd-version.txt)"
+
+          echo "candidate_branch=${candidate_branch}" >> "$GITHUB_OUTPUT"
+          echo "product_version=${product_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build isolated candidate tree
+        id: build
+        shell: bash
+        env:
+          EXPECTED_PRODUCTION_SHA: ${{ inputs.production_sha }}
+          CURRENT_TAG: ${{ inputs.tracked_tag }}
+          CURRENT_SHA: ${{ inputs.tracked_sha }}
+          RELEASE_TAG: ${{ inputs.target_tag }}
+          RELEASE_SHA: ${{ inputs.target_sha }}
+          PRODUCT_VERSION: ${{ steps.identity.outputs.product_version }}
+          CANDIDATE_BRANCH: ${{ steps.identity.outputs.candidate_branch }}
+        run: |
+          set -euo pipefail
+
+          output_dir="$GITHUB_WORKSPACE/upstream-candidate-preparation"
+          manifest_path="$output_dir/manifest.json"
+          conflict_path="$output_dir/transplant-conflicts.txt"
+          cherry_pick_log="$output_dir/cherry-pick.log"
+          dry_run_dir="$RUNNER_TEMP/upstream-candidate-prepare"
+          mkdir -p "$output_dir"
+
+          production_tree="$(git rev-parse "${EXPECTED_PRODUCTION_SHA}^{tree}")"
+          current_tree="$(git rev-parse "${CURRENT_SHA}^{tree}")"
+          release_tree="$(git rev-parse "${RELEASE_SHA}^{tree}")"
+          merge_base="$(git merge-base "$CURRENT_SHA" "$RELEASE_SHA" || true)"
+
+          if git merge-base --is-ancestor "$CURRENT_SHA" "$RELEASE_SHA"; then
+            ancestry_status="target_descends_from_tracked"
+          else
+            ancestry_status="diverged"
+          fi
+
+          export GIT_AUTHOR_NAME="codexdd-upstream-preparer"
+          export GIT_AUTHOR_EMAIL="codexdd-upstream-preparer@example.invalid"
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          synthetic_delta="$(
+            printf '%s\n' "codexdd customization delta from ${CURRENT_TAG}" |
+              git commit-tree "$production_tree" -p "$CURRENT_SHA"
+          )"
+
+          git worktree add --detach "$dry_run_dir" "$RELEASE_SHA"
+          set +e
+          git -C "$dry_run_dir" cherry-pick --no-commit "$synthetic_delta"             >"$cherry_pick_log" 2>&1
+          transplant_status=$?
+          set -e
+
+          if [[ "$transplant_status" -eq 0 ]]; then
+            transplant_result="clean"
+            : > "$conflict_path"
+          else
+            transplant_result="conflict"
+            git -C "$dry_run_dir" diff --name-only --diff-filter=U |
+              sed '/^$/d' > "$conflict_path"
+          fi
+
+          discovery_timestamp="$(
+            python3 - <<'PY'
+          from datetime import datetime, timezone
+          print(datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
+          PY
+          )"
+
+          export DISCOVERY_TIMESTAMP="$discovery_timestamp"
+          export PRODUCTION_TREE="$production_tree"
+          export CURRENT_TREE="$current_tree"
+          export RELEASE_TREE="$release_tree"
+          export ANCESTRY_STATUS="$ancestry_status"
+          export MERGE_BASE="$merge_base"
+          export TRANSPLANT_RESULT="$transplant_result"
+          export MANIFEST_PATH="$manifest_path"
+
+          python3 - <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import (
+              build_candidate_manifest,
+              candidate_manifest_json,
+              git_tree_entries,
+          )
+
+          repo = Path(".")
+          manifest = build_candidate_manifest(
+              discovery_timestamp=os.environ["DISCOVERY_TIMESTAMP"],
+              production_branch="dd/astra-policy-v2",
+              production_sha=os.environ["EXPECTED_PRODUCTION_SHA"],
+              production_tree=os.environ["PRODUCTION_TREE"],
+              codexdd_product_version=os.environ["PRODUCT_VERSION"],
+              tracked_upstream_tag=os.environ["CURRENT_TAG"],
+              tracked_upstream_sha=os.environ["CURRENT_SHA"],
+              tracked_upstream_tree=os.environ["CURRENT_TREE"],
+              target_upstream_tag=os.environ["RELEASE_TAG"],
+              target_upstream_sha=os.environ["RELEASE_SHA"],
+              target_upstream_tree=os.environ["RELEASE_TREE"],
+              ancestry_status=os.environ["ANCESTRY_STATUS"],
+              merge_base_sha=os.environ["MERGE_BASE"] or None,
+              tracked_entries=git_tree_entries(repo, os.environ["CURRENT_SHA"]),
+              production_entries=git_tree_entries(repo, os.environ["EXPECTED_PRODUCTION_SHA"]),
+              target_entries=git_tree_entries(repo, os.environ["RELEASE_SHA"]),
+              transplant_result=os.environ["TRANSPLANT_RESULT"],
+          )
+          Path(os.environ["MANIFEST_PATH"]).write_text(
+              candidate_manifest_json(manifest),
+              encoding="utf-8",
+          )
+          PY
+
+          if [[ "$transplant_result" != "clean" ]]; then
+            git -C "$dry_run_dir" reset --hard "$RELEASE_SHA" >/dev/null 2>&1 || true
+            git worktree remove --force "$dry_run_dir"
+            {
+              echo "## CodexDD upstream preparation blocked"
+              echo
+              echo "The accepted candidate could not be transplanted cleanly."
+              echo
+              echo "- Target: $RELEASE_TAG ($RELEASE_SHA)"
+              echo "- Conflict paths: $(sed '/^$/d' "$conflict_path" | wc -l | tr -d ' ')"
+              echo
+              echo "No candidate branch or PR was created."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          printf '%s\n' "$RELEASE_TAG" > "$dry_run_dir/codex-rs/upstream-codex-release.txt"
+
+          workspace_version="$(
+            python3 - "$dry_run_dir/codex-rs/Cargo.toml" <<'PY'
+          import sys
+          import tomllib
+          with open(sys.argv[1], "rb") as handle:
+              print(tomllib.load(handle)["workspace"]["package"]["version"])
+          PY
+          )"
+
+          python3 - "$dry_run_dir/codex-rs/Cargo.lock" "$workspace_version" <<'PY'
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import reconcile_workspace_lockfile
+
+          lockfile = Path(sys.argv[1])
+          updated, changed = reconcile_workspace_lockfile(
+              lockfile.read_text(encoding="utf-8"),
+              sys.argv[2],
+          )
+          lockfile.write_text(updated, encoding="utf-8")
+          print(f"Reconciled {changed} local workspace packages to {sys.argv[2]}")
+          PY
+
+          manifest_name="codexdd-upstream-${RELEASE_TAG}-${RELEASE_SHA:0:12}.json"
+          manifest_target="$dry_run_dir/docs/upstream-candidates/$manifest_name"
+          mkdir -p "$(dirname "$manifest_target")"
+          cp "$manifest_path" "$manifest_target"
+
+          git -C "$dry_run_dir" add             codex-rs/Cargo.lock             codex-rs/upstream-codex-release.txt             "docs/upstream-candidates/$manifest_name"
+
+          integration_tree="$(git -C "$dry_run_dir" write-tree)"
+          git -C "$dry_run_dir" reset --hard "$RELEASE_SHA" >/dev/null 2>&1 || true
+          git worktree remove --force "$dry_run_dir"
+
+          echo "integration_tree=${integration_tree}" >> "$GITHUB_OUTPUT"
+          echo "manifest_name=${manifest_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Re-check identities before remote write
+        shell: bash
+        env:
+          EXPECTED_PRODUCTION_SHA: ${{ inputs.production_sha }}
+          TARGET_TAG: ${{ inputs.target_tag }}
+          EXPECTED_TARGET_SHA: ${{ inputs.target_sha }}
+          CANDIDATE_BRANCH: ${{ steps.identity.outputs.candidate_branch }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin dd/astra-policy-v2 --force
+          current_production="$(git rev-parse FETCH_HEAD)"
+          if [[ "$current_production" != "$EXPECTED_PRODUCTION_SHA" ]]; then
+            echo "Production moved during preparation: expected $EXPECTED_PRODUCTION_SHA, found $current_production" >&2
+            exit 1
+          fi
+
+          git fetch upstream --tags --force --prune
+          current_target_sha="$(git rev-parse "${TARGET_TAG}^{commit}")"
+          if [[ "$current_target_sha" != "$EXPECTED_TARGET_SHA" ]]; then
+            echo "Target tag moved during preparation: expected $EXPECTED_TARGET_SHA, found $current_target_sha" >&2
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --heads origin "$CANDIDATE_BRANCH" >/dev/null 2>&1; then
+            echo "Candidate branch appeared during preparation: $CANDIDATE_BRANCH" >&2
+            exit 1
+          fi
+
+      - name: Publish isolated candidate branch
+        id: publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_PRODUCTION_SHA: ${{ inputs.production_sha }}
+          RELEASE_TAG: ${{ inputs.target_tag }}
+          CANDIDATE_BRANCH: ${{ steps.identity.outputs.candidate_branch }}
+          INTEGRATION_TREE: ${{ steps.build.outputs.integration_tree }}
+          MANIFEST_NAME: ${{ steps.build.outputs.manifest_name }}
+        run: |
+          set -euo pipefail
+
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git switch --create "$CANDIDATE_BRANCH" "$EXPECTED_PRODUCTION_SHA"
+          git read-tree --reset -u "$INTEGRATION_TREE"
+          git commit -m "codexdd: prepare upstream $RELEASE_TAG candidate"
+          prepared_sha="$(git rev-parse HEAD)"
+          prepared_tree="$(git rev-parse 'HEAD^{tree}')"
+          git push --set-upstream origin "$CANDIDATE_BRANCH"
+
+          echo "prepared_sha=${prepared_sha}" >> "$GITHUB_OUTPUT"
+          echo "prepared_tree=${prepared_tree}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## CodexDD upstream candidate prepared"
+            echo
+            echo "- Candidate branch: $CANDIDATE_BRANCH"
+            echo "- Prepared commit: $prepared_sha"
+            echo "- Prepared tree: $prepared_tree"
+            echo "- Target upstream: $RELEASE_TAG"
+            echo "- Manifest: docs/upstream-candidates/$MANIFEST_NAME"
+            echo
+            echo "No product version was allocated and no pull request was opened."
+            echo "Daniel-CL/LVO validation is the next promotion gate."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload preparation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: upstream-preparation-${{ inputs.target_tag }}-${{ github.run_id }}
+          path: upstream-candidate-preparation/
+          if-no-files-found: warn
+          retention-days: 30
