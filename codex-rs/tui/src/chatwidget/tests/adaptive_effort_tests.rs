@@ -2642,7 +2642,9 @@ fn durable_workflow_snapshot_persists_complexity_class() {
     let value = serde_json::to_value(snapshot).expect("snapshot should serialize");
 
     assert_eq!(
-        value.get("currentFamily").and_then(serde_json::Value::as_str),
+        value
+            .get("currentFamily")
+            .and_then(serde_json::Value::as_str),
         Some("sol61")
     );
     assert_eq!(
