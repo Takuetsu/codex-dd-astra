@@ -19,6 +19,7 @@ from upstream_sync import (
     git_tree_entries,
     integration_branch,
     next_patch_version,
+    parse_validation_receipt_json,
     pr_marker,
     release_version,
     reconcile_workspace_lockfile,
@@ -28,6 +29,7 @@ from upstream_sync import (
     stable_release_version,
     stale_identity_fields,
     tree_delta_paths,
+    validate_validation_receipt,
 )
 
 
@@ -438,6 +440,50 @@ checksum = "abc"
         )
         self.assertEqual(state, "blocked_stale_base")
         self.assertEqual(stale, ("production_sha", "target_upstream_sha"))
+
+
+    def test_validation_receipt_is_bound_to_candidate_identity_and_native_pass(self):
+        receipt = {
+            "contract_version": 1,
+            "receipt_type": "codexdd_upstream_local_validation",
+            "candidate_key": f"rust-v0.160.1@{'5' * 40}",
+            "candidate_branch": f"automation/upstream-candidate-rust-v0.160.1-{'5' * 12}",
+            "candidate_head_sha": "8" * 40,
+            "production_sha": "1" * 40,
+            "target_upstream_tag": "rust-v0.160.1",
+            "target_upstream_sha": "5" * 40,
+            "manifest_path": "docs/upstream-candidates/codexdd-upstream-rust-v0.160.1-555555555555.json",
+            "manifest_sha256": "a" * 64,
+            "profile": "work-packet",
+            "validation_contract_version": 1,
+            "validation_status": "pass",
+            "completed_stages": 6,
+            "completed_at": "2026-10-07T20:00:00Z",
+        }
+
+        validate_validation_receipt(receipt)
+        parsed = parse_validation_receipt_json(json.dumps(receipt))
+        self.assertEqual(parsed["candidate_head_sha"], "8" * 40)
+
+        bad = dict(receipt)
+        bad["candidate_branch"] = "automation/upstream-candidate-wrong"
+        with self.assertRaisesRegex(ValueError, "branch"):
+            validate_validation_receipt(bad)
+
+        bad = dict(receipt)
+        bad["validation_status"] = "fail"
+        with self.assertRaisesRegex(ValueError, "not PASS"):
+            validate_validation_receipt(bad)
+
+        bad = dict(receipt)
+        bad["manifest_path"] = "../receipt.json"
+        with self.assertRaisesRegex(ValueError, "candidate area"):
+            validate_validation_receipt(bad)
+
+        bad = dict(receipt)
+        bad["manifest_sha256"] = "not-a-digest"
+        with self.assertRaisesRegex(ValueError, "SHA-256"):
+            validate_validation_receipt(bad)
 
     def test_synthetic_delta_survives_squashed_upstream_history(self):
         with tempfile.TemporaryDirectory() as temp_dir:
