@@ -1,3 +1,4 @@
+import json
 import subprocess
 import tempfile
 import unittest
@@ -5,8 +6,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 from upstream_sync import (
+    build_candidate_manifest,
+    build_delta_inventory,
+    candidate_key,
+    candidate_manifest_json,
+    candidate_state,
+    candidate_state_after_identity_check,
+    classify_sensitive_overlaps,
     conflict_issue_title,
     conflict_marker,
+    git_tree_entries,
     integration_branch,
     next_patch_version,
     pr_marker,
@@ -16,6 +25,8 @@ from upstream_sync import (
     rewrite_version_test,
     select_latest_release,
     stable_release_version,
+    stale_identity_fields,
+    tree_delta_paths,
 )
 
 
@@ -34,6 +45,37 @@ def commit_all(repo: Path, message: str) -> str:
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", message)
     return git(repo, "rev-parse", "HEAD").stdout.strip()
+
+
+def manifest_kwargs() -> dict[str, object]:
+    return {
+        "discovery_timestamp": "2026-10-07T20:00:00Z",
+        "production_branch": "dd/astra-policy-v2",
+        "production_sha": "1" * 40,
+        "production_tree": "2" * 40,
+        "codexdd_product_version": "0.4.1",
+        "tracked_upstream_tag": "rust-v0.159.2",
+        "tracked_upstream_sha": "3" * 40,
+        "tracked_upstream_tree": "4" * 40,
+        "target_upstream_tag": "rust-v0.160.1",
+        "target_upstream_sha": "5" * 40,
+        "target_upstream_tree": "6" * 40,
+        "ancestry_status": "diverged",
+        "merge_base_sha": "7" * 40,
+        "tracked_entries": {
+            "shared.txt": "100644 blob aaa",
+            "codex-rs/tui/src/status/card.rs": "100644 blob bbb",
+        },
+        "production_entries": {
+            "shared.txt": "100644 blob aaa",
+            "codex-rs/tui/src/status/card.rs": "100644 blob ccc",
+            "codexdd-only.txt": "100644 blob ddd",
+        },
+        "target_entries": {
+            "shared.txt": "100644 blob eee",
+            "codex-rs/tui/src/status/card.rs": "100644 blob fff",
+        },
+    }
 
 
 class UpstreamSyncTests(unittest.TestCase):
@@ -145,6 +187,10 @@ class UpstreamSyncTests(unittest.TestCase):
         self.assertEqual(
             conflict_marker(tag), "codexdd-upstream-conflict: rust-v0.155.0"
         )
+        self.assertEqual(
+            candidate_key(tag, "a" * 40),
+            f"{tag}@{'a' * 40}",
+        )
 
     def test_rejects_non_release_and_prerelease_tags(self):
         for helper in (
@@ -157,6 +203,11 @@ class UpstreamSyncTests(unittest.TestCase):
                 helper("main")
             with self.assertRaises(ValueError):
                 helper("rust-v0.156.0-alpha.2")
+
+        with self.assertRaises(ValueError):
+            candidate_key("rust-v0.156.0-rc.1", "a" * 40)
+        with self.assertRaises(ValueError):
+            candidate_key("rust-v0.156.0", "not-a-sha")
 
     def test_next_patch_version_is_deterministic(self):
         self.assertEqual(next_patch_version("0.2.1"), "0.2.2")
@@ -195,6 +246,191 @@ checksum = "abc"
             'name = "external"\nversion = "0.155.0"\nsource = "registry+',
             updated,
         )
+
+    def test_tree_delta_paths_detects_add_delete_content_and_mode_changes(self):
+        base = {
+            "same.txt": "100644 blob aaa",
+            "changed.txt": "100644 blob bbb",
+            "mode.txt": "100644 blob ccc",
+            "deleted.txt": "100644 blob ddd",
+        }
+        other = {
+            "same.txt": "100644 blob aaa",
+            "changed.txt": "100644 blob eee",
+            "mode.txt": "100755 blob ccc",
+            "added.txt": "100644 blob fff",
+        }
+        self.assertEqual(
+            tree_delta_paths(base, other),
+            ("added.txt", "changed.txt", "deleted.txt", "mode.txt"),
+        )
+
+    def test_git_tree_entries_reads_exact_recursive_tree_identity(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            git(repo, "init", "-q")
+            git(repo, "config", "user.name", "sync-test")
+            git(repo, "config", "user.email", "sync-test@example.invalid")
+            nested = repo / "nested"
+            nested.mkdir()
+            (repo / "root.txt").write_text("root\n")
+            (nested / "child.txt").write_text("child\n")
+            commit = commit_all(repo, "tree")
+
+            entries = git_tree_entries(repo, commit)
+
+            self.assertEqual(set(entries), {"nested/child.txt", "root.txt"})
+            self.assertRegex(
+                entries["root.txt"],
+                r"^100644 blob [0-9a-f]{40}$",
+            )
+
+    def test_delta_inventory_computes_exact_overlap_and_sensitive_categories(self):
+        tracked = {
+            "shared.txt": "base",
+            "codex-rs/tui/src/status/card.rs": "base-status",
+            "codex-rs/core/src/session/session.rs": "base-session",
+        }
+        production = {
+            "shared.txt": "base",
+            "codex-rs/tui/src/status/card.rs": "codexdd-status",
+            "codex-rs/core/src/session/session.rs": "codexdd-session",
+            "codexdd-only.txt": "custom",
+        }
+        target = {
+            "shared.txt": "upstream-change",
+            "codex-rs/tui/src/status/card.rs": "upstream-status",
+            "codex-rs/core/src/session/session.rs": "base-session",
+        }
+
+        inventory = build_delta_inventory(tracked, production, target)
+
+        self.assertEqual(
+            inventory.customization_paths,
+            (
+                "codex-rs/core/src/session/session.rs",
+                "codex-rs/tui/src/status/card.rs",
+                "codexdd-only.txt",
+            ),
+        )
+        self.assertEqual(
+            inventory.upstream_change_paths,
+            ("codex-rs/tui/src/status/card.rs", "shared.txt"),
+        )
+        self.assertEqual(
+            inventory.overlap_paths,
+            ("codex-rs/tui/src/status/card.rs",),
+        )
+        self.assertEqual(
+            inventory.sensitive_overlap_categories["status_rendering"],
+            ("codex-rs/tui/src/status/card.rs",),
+        )
+        self.assertEqual(
+            inventory.sensitive_overlap_paths,
+            ("codex-rs/tui/src/status/card.rs",),
+        )
+
+    def test_sensitive_overlap_classification_covers_codexdd_risk_surfaces(self):
+        classified = classify_sensitive_overlaps(
+            [
+                ".github/workflows/blocking-ci.yml",
+                "codex-rs/Cargo.lock",
+                "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+                "codex-rs/core/src/session/session.rs",
+                "codex-rs/tui/src/adaptive_policy.rs",
+                "codex-rs/tui/src/app/session_lifecycle.rs",
+                "codex-rs/tui/src/status/card.rs",
+                "codex-rs/upstream-codex-release.txt",
+            ]
+        )
+        self.assertIn("adaptive_routing", classified)
+        self.assertIn("worker_lifecycle", classified)
+        self.assertIn("persistence_resume_fork", classified)
+        self.assertIn("status_rendering", classified)
+        self.assertIn("generated_protocol", classified)
+        self.assertIn("version_provenance", classified)
+        self.assertIn("build_release_ci", classified)
+
+    def test_candidate_state_distinguishes_textual_and_semantic_risk(self):
+        self.assertEqual(candidate_state("not_run", 8), "discovered")
+        self.assertEqual(
+            candidate_state("conflict", 0),
+            "blocked_transplant_conflict",
+        )
+        self.assertEqual(candidate_state("clean", 0), "preparation_ready")
+        self.assertEqual(
+            candidate_state("clean", 1),
+            "manual_semantic_review_required",
+        )
+        with self.assertRaises(ValueError):
+            candidate_state("unknown", 0)
+
+    def test_manifest_is_immutable_identity_evidence_without_next_product_version(self):
+        kwargs = manifest_kwargs()
+        manifest = build_candidate_manifest(
+            **kwargs,
+            transplant_result="clean",
+        )
+        self.assertEqual(manifest.contract_version, 1)
+        self.assertEqual(
+            manifest.candidate_key,
+            f"rust-v0.160.1@{'5' * 40}",
+        )
+        self.assertEqual(manifest.codexdd_product_version, "0.4.1")
+        self.assertEqual(manifest.customization_path_count, 2)
+        self.assertEqual(manifest.upstream_change_path_count, 2)
+        self.assertEqual(manifest.overlap_path_count, 1)
+        self.assertEqual(
+            manifest.overlap_paths,
+            ("codex-rs/tui/src/status/card.rs",),
+        )
+        self.assertEqual(manifest.sensitive_overlap_count, 1)
+        self.assertEqual(
+            manifest.state,
+            "manual_semantic_review_required",
+        )
+
+        encoded = candidate_manifest_json(manifest)
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded["target_upstream_sha"], "5" * 40)
+        self.assertNotIn("next_product_version", decoded)
+        self.assertNotIn("product_version_target", decoded)
+        self.assertEqual(encoded, candidate_manifest_json(manifest))
+
+    def test_manifest_rejects_non_newer_or_prerelease_target(self):
+        kwargs = manifest_kwargs()
+        kwargs["target_upstream_tag"] = "rust-v0.159.2"
+        with self.assertRaisesRegex(ValueError, "strictly newer"):
+            build_candidate_manifest(**kwargs)
+
+        kwargs = manifest_kwargs()
+        kwargs["target_upstream_tag"] = "rust-v0.161.0-rc.1"
+        with self.assertRaisesRegex(ValueError, "invalid target stable"):
+            build_candidate_manifest(**kwargs)
+
+    def test_stale_identity_check_blocks_changed_production_or_upstream_identity(self):
+        manifest = build_candidate_manifest(**manifest_kwargs())
+        self.assertEqual(
+            stale_identity_fields(
+                manifest,
+                production_sha="1" * 40,
+                tracked_upstream_tag="rust-v0.159.2",
+                tracked_upstream_sha="3" * 40,
+                target_upstream_tag="rust-v0.160.1",
+                target_upstream_sha="5" * 40,
+            ),
+            (),
+        )
+        state, stale = candidate_state_after_identity_check(
+            manifest,
+            production_sha="8" * 40,
+            tracked_upstream_tag="rust-v0.159.2",
+            tracked_upstream_sha="3" * 40,
+            target_upstream_tag="rust-v0.160.1",
+            target_upstream_sha="9" * 40,
+        )
+        self.assertEqual(state, "blocked_stale_base")
+        self.assertEqual(stale, ("production_sha", "target_upstream_sha"))
 
     def test_synthetic_delta_survives_squashed_upstream_history(self):
         with tempfile.TemporaryDirectory() as temp_dir:
