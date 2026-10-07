@@ -23,7 +23,7 @@ The merged 0.4.1 design and reconnaissance evidence remains in:
 
 ## 0.4.2 — automatic upstream-update orchestration
 
-**Status: PHASE 1 COMPLETE — AWAITING IMPLEMENTATION ACCEPTANCE.**
+**Status: PHASE 2 SOURCE COMPLETE — DANIEL-CL VALIDATION PENDING.**
 
 Feature branch:
 
@@ -68,6 +68,28 @@ The existing six-hour sync already detects stable tags, reconstructs the CodexDD
 Phase 1 also established that product versioning must be decoupled from upstream discovery, local Daniel-CL/LVO evidence must precede PR/CI promotion, and exact tag/commit/tree plus overlap evidence must be durable candidate state.
 
 The live reconnaissance candidate is OpenAI Codex `rust-v0.160.1`; it is not being integrated as part of Phase 1.
+
+### Phase 2 result
+
+Packets 2A.1–2B.2 are source-complete.
+
+0.4.2 now separates the upstream lifecycle into:
+
+1. read-only scheduled discovery and manifest generation;
+2. explicit identity-bound candidate preparation;
+3. Daniel-CL native validation receipt;
+4. explicit receipt-bound PR promotion;
+5. normal human-controlled CI/merge/install gates.
+
+The old scheduled path can no longer allocate a CodexDD product version, push an integration branch, mutate GitHub Issues, or open a PR.
+
+The release source identity is now `codexdd 0.4.2`.
+
+Implementation record:
+
+- `docs/codexdd-0.4.2-phase-2-implementation.md`
+
+The next gate is cheap Daniel-CL validation before the normal work-packet profile.
 
 ### Working standard
 
