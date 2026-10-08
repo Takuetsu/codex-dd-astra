@@ -31,7 +31,12 @@ jobs:
           git remote add upstream https://github.com/openai/codex.git
           git fetch upstream --tags --force --prune
 
-          latest_tag="$(git tag --list 'rust-v*' | python3 .github/scripts/upstream_sync.py --latest-from-stdin)"
+          # Query canonical upstream refs rather than trusting origin/local tags.
+          latest_tag="$(
+            git ls-remote --tags --refs upstream 'refs/tags/rust-v*' |
+              awk '{ sub(/^refs\\/tags\\//, "", $2); print $2 }' |
+              python3 .github/scripts/upstream_sync.py --latest-from-stdin
+          )"
           current_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
 
           set +e
