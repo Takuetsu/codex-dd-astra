@@ -11,6 +11,15 @@ on:
         description: CODEXDD_UPSTREAM_VALIDATION_RECEIPT JSON from Daniel-CL
         required: true
         type: string
+      semantic_review_accepted:
+        description: Explicit owner acceptance of sensitive upstream overlap review
+        required: false
+        default: false
+        type: boolean
+      semantic_review_evidence:
+        description: GitHub link to accepted semantic review (required for sensitive overlap)
+        required: false
+        type: string
 
 concurrency:
   group: upstream-codex-promote-${{ inputs.candidate_branch }}
@@ -81,6 +90,9 @@ jobs:
           CANDIDATE_KEY: ${{ steps.receipt.outputs.candidate_key }}
           MANIFEST_PATH: ${{ steps.receipt.outputs.manifest_path }}
           MANIFEST_SHA256: ${{ steps.receipt.outputs.manifest_sha256 }}
+          LOCAL_VALIDATION_PROFILE: ${{ steps.receipt.outputs.profile }}
+          SEMANTIC_REVIEW_ACCEPTED: ${{ inputs.semantic_review_accepted }}
+          SEMANTIC_REVIEW_EVIDENCE: ${{ inputs.semantic_review_evidence }}
         run: |
           set -euo pipefail
 
@@ -144,6 +156,22 @@ jobs:
               raise SystemExit(
                   f"candidate manifest state is not promotable: {manifest.get('state')}"
               )
+          if manifest["state"] == "manual_semantic_review_required":
+              if os.environ["SEMANTIC_REVIEW_ACCEPTED"].lower() != "true":
+                  raise SystemExit("sensitive overlap requires explicit review acceptance")
+              if os.environ["LOCAL_VALIDATION_PROFILE"] != "release":
+                  raise SystemExit("sensitive overlap requires native release-profile PASS")
+              evidence = os.environ["SEMANTIC_REVIEW_EVIDENCE"].strip()
+              prefix = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/"
+              allowed = ("blob/", "pull/", "commit/")
+              if (
+                  not evidence.startswith(prefix)
+                  or not evidence[len(prefix):].startswith(allowed)
+                  or any(char.isspace() for char in evidence)
+              ):
+                  raise SystemExit(
+                      "sensitive overlap requires a repository GitHub review evidence link"
+                  )
           PY
 
           product_version="$(git show "${CANDIDATE_HEAD_SHA}:codex-rs/codexdd-version.txt" | tr -d '[:space:]')"
@@ -179,6 +207,7 @@ jobs:
           COMPLETED_STAGES: ${{ steps.receipt.outputs.completed_stages }}
           VALIDATED_AT: ${{ steps.receipt.outputs.completed_at }}
           PRODUCT_VERSION: ${{ steps.identity.outputs.product_version }}
+          SEMANTIC_REVIEW_EVIDENCE: ${{ inputs.semantic_review_evidence }}
         run: |
           set -euo pipefail
 
@@ -200,6 +229,13 @@ jobs:
             echo "- Profile: ${VALIDATION_PROFILE}"
             echo "- Completed stages: ${COMPLETED_STAGES}"
             echo "- Validated at: ${VALIDATED_AT}"
+            echo
+            echo "### Sensitive-overlap review"
+            if [[ -n "$SEMANTIC_REVIEW_EVIDENCE" ]]; then
+              echo "- Accepted review evidence: $SEMANTIC_REVIEW_EVIDENCE"
+            else
+              echo "- No sensitive-overlap review evidence required"
+            fi
             echo
             echo "The receipt, branch HEAD, manifest hash, production base, and target identity were re-verified immediately before opening this PR."
             echo
