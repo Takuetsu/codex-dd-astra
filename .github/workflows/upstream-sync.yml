@@ -34,7 +34,7 @@ jobs:
           # Query canonical upstream refs rather than trusting origin/local tags.
           latest_tag="$(
             git ls-remote --tags --refs upstream 'refs/tags/rust-v*' |
-              awk '{ sub(/^refs\\/tags\\//, "", $2); print $2 }' |
+              awk '{ if (index($2, "refs/tags/") == 1) print substr($2, 11) }' |
               python3 .github/scripts/upstream_sync.py --latest-from-stdin
           )"
           current_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
