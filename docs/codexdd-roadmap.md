@@ -23,7 +23,7 @@ The merged 0.4.1 design and reconnaissance evidence remains in:
 
 ## 0.4.2 — automatic upstream-update orchestration
 
-**Status: PHASE 2 SOURCE COMPLETE — DANIEL-CL VALIDATION PENDING.**
+**Status: PHASE 3 SOURCE AUDIT COMPLETE — UPDATED-HEAD LOCAL CHECKS PENDING.**
 
 Feature branch:
 
@@ -89,7 +89,11 @@ Implementation record:
 
 - `docs/codexdd-0.4.2-phase-2-implementation.md`
 
-The next gate is cheap Daniel-CL validation before the normal work-packet profile.
+Daniel-CL's earlier 0.4.2 gate passed: version identity 1/1 and work-packet 6/6 (native PASS, exit 0). The subsequent Phase 3 source audit found and repaired official-tag provenance, tracked-tag recheck, candidate branch race, semantic-risk classification, and sensitive-overlap promotion gating.
+
+The source audit record is in `docs/codexdd-0.4.2-phase-3-source-audit.md`.
+
+Because those GitHub source changes follow the earlier PASS, next run cheap updated-head Python/PowerShell/YAML checks on Daniel-CL before the broad release profile and PR/CI.
 
 ### Working standard
 
