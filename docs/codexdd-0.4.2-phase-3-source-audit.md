@@ -80,4 +80,4 @@ On Daniel-CL, fetch the updated feature HEAD and run:
 
 Do not start the expensive release profile or PR/CI until the cheap updated-head checks are green.
 
-Once they pass, the broad `release` profile is the next authoritative Windows gate. 
+Once they pass, the broad `release` profile is the next authoritative Windows gate.
