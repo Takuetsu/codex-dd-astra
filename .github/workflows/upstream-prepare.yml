@@ -292,6 +292,8 @@ jobs:
         shell: bash
         env:
           EXPECTED_PRODUCTION_SHA: ${{ inputs.production_sha }}
+          TRACKED_TAG: ${{ inputs.tracked_tag }}
+          EXPECTED_TRACKED_SHA: ${{ inputs.tracked_sha }}
           TARGET_TAG: ${{ inputs.target_tag }}
           EXPECTED_TARGET_SHA: ${{ inputs.target_sha }}
           CANDIDATE_BRANCH: ${{ steps.identity.outputs.candidate_branch }}
@@ -305,8 +307,19 @@ jobs:
             exit 1
           fi
 
+          current_tracked_tag="$(git show "${EXPECTED_PRODUCTION_SHA}:codex-rs/upstream-codex-release.txt" | tr -d '[:space:]')"
+          if [[ "$current_tracked_tag" != "$TRACKED_TAG" ]]; then
+            echo "Tracked upstream tag changed during preparation." >&2
+            exit 1
+          fi
+
           git fetch upstream --tags --force --prune
+          current_tracked_sha="$(git rev-parse "${TRACKED_TAG}^{commit}")"
           current_target_sha="$(git rev-parse "${TARGET_TAG}^{commit}")"
+          if [[ "$current_tracked_sha" != "$EXPECTED_TRACKED_SHA" ]]; then
+            echo "Tracked tag moved during preparation: expected $EXPECTED_TRACKED_SHA, found $current_tracked_sha" >&2
+            exit 1
+          fi
           if [[ "$current_target_sha" != "$EXPECTED_TARGET_SHA" ]]; then
             echo "Target tag moved during preparation: expected $EXPECTED_TARGET_SHA, found $current_target_sha" >&2
             exit 1
@@ -339,7 +352,10 @@ jobs:
           git commit -m "codexdd: prepare upstream $RELEASE_TAG candidate"
           prepared_sha="$(git rev-parse HEAD)"
           prepared_tree="$(git rev-parse 'HEAD^{tree}')"
-          git push --set-upstream origin "$CANDIDATE_BRANCH"
+          # Require the remote candidate ref to be absent even if a concurrent
+          # preparer creates it after the final ls-remote check.
+          git push --force-with-lease="refs/heads/${CANDIDATE_BRANCH}:" origin \
+            "HEAD:refs/heads/${CANDIDATE_BRANCH}"
 
           echo "prepared_sha=${prepared_sha}" >> "$GITHUB_OUTPUT"
           echo "prepared_tree=${prepared_tree}" >> "$GITHUB_OUTPUT"
