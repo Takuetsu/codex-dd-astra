@@ -42,7 +42,9 @@ pub(super) fn automatic_exclusion_warning(
     reason
         .filter(|reason| auto_start_daemon && *reason != ELEVATED_WINDOWS_EMBEDDED_REASON)
         .map(|reason| {
-            format!("Running without the shared background server: {reason} requires embedded mode.")
+            format!(
+                "Running without the shared background server: {reason} requires embedded mode."
+            )
         })
 }
 
