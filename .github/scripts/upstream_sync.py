@@ -206,6 +206,10 @@ def classify_sensitive_overlaps(
 
     categories: dict[str, set[str]] = {
         "adaptive_routing": set(),
+        "tui_runtime": set(),
+        "core_runtime": set(),
+        "app_server_runtime": set(),
+        "configuration": set(),
         "worker_lifecycle": set(),
         "persistence_resume_fork": set(),
         "local_validation_orchestrator": set(),
@@ -226,6 +230,31 @@ def classify_sensitive_overlaps(
             or "model/catalog" in lower
         ):
             categories["adaptive_routing"].add(normalized)
+
+        # A non-overlap with a named adaptive module is not sufficient proof
+        # that an upstream API or its CodexDD caller remains compatible.
+        if lower.startswith("codex-rs/tui/src/"):
+            categories["tui_runtime"].add(normalized)
+        if lower.startswith((
+            "codex-rs/core/src/",
+            "codex-rs/protocol/src/",
+            "codex-rs/rollout/src/",
+            "codex-rs/history/src/",
+            "codex-rs/state/src/",
+            "codex-rs/thread-store/src/",
+        )):
+            categories["core_runtime"].add(normalized)
+        if lower.startswith((
+            "codex-rs/app-server/src/",
+            "codex-rs/app-server-protocol/src/",
+        )):
+            categories["app_server_runtime"].add(normalized)
+        if (
+            lower.startswith("codex-rs/config/")
+            or lower.endswith("/config.schema.json")
+            or "/config_persistence" in lower
+        ):
+            categories["configuration"].add(normalized)
 
         if (
             "agent/control" in lower
