@@ -183,16 +183,24 @@ pub(super) async fn run_main_inner(
     // The explicit daemon lifecycle guard rejects elevated Windows clients. For
     // implicit interactive startup, mirror --no-daemon before probing an existing
     // shared socket, rather than attempting daemon startup and emitting F2.
+    // If token inspection fails, do not risk attaching to or starting a shared
+    // daemon: use embedded mode and keep a diagnostic warning visible in F2.
     #[cfg(windows)]
-    let elevated_windows_client = cli_daemon_exclusion.is_none()
+    let windows_elevation = if cli_daemon_exclusion.is_none()
         && !cli.agents_overview
         && explicit_remote_endpoint.is_none()
-        && codex_app_server_daemon::is_current_process_elevated().unwrap_or(false);
+    {
+        codex_app_server_daemon::is_current_process_elevated().map_err(|err| {
+            tracing::warn!(error = %err, "Windows elevation probe failed; using embedded mode");
+        })
+    } else {
+        Ok(false)
+    };
     #[cfg(not(windows))]
-    let elevated_windows_client = false;
+    let windows_elevation = Ok(false);
     let mut daemon_exclusion = daemon_startup::elevated_windows_implicit_exclusion(
         cli_daemon_exclusion,
-        elevated_windows_client,
+        windows_elevation,
         cli.agents_overview,
         explicit_remote_endpoint.is_some(),
     );
@@ -668,6 +676,9 @@ pub(super) async fn run_main_inner(
         (_, Some("--no-daemon")) => "explicit_no_daemon",
         (_, Some(reason)) if reason == daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON => {
             "elevated_windows_embedded"
+        }
+        (_, Some(reason)) if reason == daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON => {
+            "windows_elevation_unverified_embedded"
         }
         (_, Some(_)) => "incompatible_option",
         _ if auto_start_daemon => "auto_start",

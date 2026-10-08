@@ -22,12 +22,12 @@ In `tui/src/startup_orchestration.rs` the implicit daemon endpoint may be probed
 
 ## Bounded correction
 
-- Extract a read-only current-process elevation query from the existing Windows daemon-launch guard. The guard still rejects elevated lifecycle operations.
+- Extract a read-only current-process elevation query from the existing Windows daemon-launch guard. The guard still rejects elevated lifecycle operations and rejects malformed token-query responses.
 - Before implicit shared-daemon discovery, automatically select embedded mode for an elevated Windows interactive session with no explicit remote endpoint or daemon-wide agents view. This follows the supported `--no-daemon` path without requiring the operator to add the flag.
 - Do not probe, connect to, start, restart, or mutate the implicit shared daemon on this elevated embedded path.
-- Treat only the known elevation fallback as an expected non-warning. Preserve warnings for restrictive Windows launchers, explicit incompatible options, and daemon feature mismatch.
+- Treat only a successfully identified elevation fallback as an expected non-warning. If token elevation cannot be verified, fail closed into embedded mode without any implicit daemon discovery or startup, and show an F2 diagnostic. Preserve warnings for restrictive Windows launchers, explicit incompatible options, and daemon feature mismatch.
 - Preserve explicit remote selection, daemon-only agents operations, automatic daemon startup in a non-elevated session, and the fail-closed lifecycle guard.
-- Tag the selected runtime transport reason as `elevated_windows_embedded` in launch telemetry.
+- Tag the selected runtime transport reason as `elevated_windows_embedded` in launch telemetry (or `windows_elevation_unverified_embedded` for a failed elevation probe).
 
 No configuration migration, background-service privilege escalation, upstream Codex integration, or unrelated project changes.
 
@@ -37,7 +37,7 @@ Cheap checks first on Daniel-CL:
 
 1. Exact candidate HEAD + clean worktree + Git diff whitespace check.
 2. `cargo fmt --all -- --check`.
-3. Targeted Windows unit tests for the elevation-probe/guard consistency and elevated embedded-policy/other-warning behavior.
+3. Targeted Windows unit tests for elevation-probe/guard consistency, failed-probe fail-closed behavior, elevated embedded-policy, and unrelated-warning preservation.
 
 Then run a focused Windows build and a live `ssh -tt` elevated-session smoke:
 

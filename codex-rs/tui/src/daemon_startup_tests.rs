@@ -11,7 +11,7 @@ fn elevated_daemon_auto_start_falls_back_to_embedded_mode() {
     let error = anyhow::Error::new(codex_app_server_daemon::ElevatedLaunchRestricted);
     let reason = daemon_startup::windows_automatic_fallback_reason(&error);
     assert_eq!(reason, Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON));
-    // Also cover the fallback when the proactive elevation probe was unavailable.
+    // Preserve the classified legacy fallback without hiding unrelated failures.
     assert_eq!(
         daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
         None,
@@ -47,7 +47,7 @@ fn unrelated_daemon_start_error_does_not_fall_back() {
 fn elevated_windows_implicit_startup_uses_embedded_without_f2_warning() {
     let reason = daemon_startup::elevated_windows_implicit_exclusion(
         None,
-        /*is_elevated*/ true,
+        /*elevation*/ Ok(true),
         /*agents_overview*/ false,
         /*explicit_remote*/ false,
     );
@@ -61,10 +61,54 @@ fn elevated_windows_implicit_startup_uses_embedded_without_f2_warning() {
 }
 
 #[test]
+fn failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning() {
+    let reason = daemon_startup::elevated_windows_implicit_exclusion(
+        None,
+        /*elevation*/ Err(()),
+        /*agents_overview*/ false,
+        /*explicit_remote*/ false,
+    );
+    // This exclusion prevents both socket discovery and automatic daemon startup.
+    assert_eq!(reason, Some(daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON));
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        Some(format!(
+            "Running without the shared background server: {} requires embedded mode.",
+            daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON
+        )),
+    );
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ false),
+        None,
+    );
+    // Explicit remote or daemon-wide agents transport remains untouched.
+    for (agents_overview, explicit_remote) in [(true, false), (false, true)] {
+        assert_eq!(
+            daemon_startup::elevated_windows_implicit_exclusion(
+                None,
+                /*elevation*/ Err(()),
+                agents_overview,
+                explicit_remote,
+            ),
+            None,
+        );
+    }
+    assert_eq!(
+        daemon_startup::elevated_windows_implicit_exclusion(
+            Some("--no-daemon"),
+            /*elevation*/ Err(()),
+            /*agents_overview*/ false,
+            /*explicit_remote*/ false,
+        ),
+        Some("--no-daemon"),
+    );
+}
+
+#[test]
 fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnings() {
     let none = daemon_startup::elevated_windows_implicit_exclusion(
         None,
-        /*is_elevated*/ false,
+        /*elevation*/ Ok(false),
         /*agents_overview*/ false,
         /*explicit_remote*/ false,
     );
@@ -74,7 +118,7 @@ fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnin
         assert_eq!(
             daemon_startup::elevated_windows_implicit_exclusion(
                 None,
-                /*is_elevated*/ true,
+                /*elevation*/ Ok(true),
                 agents_overview,
                 explicit_remote,
             ),
@@ -86,7 +130,7 @@ fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnin
         assert_eq!(
             daemon_startup::elevated_windows_implicit_exclusion(
                 Some(excluded),
-                /*is_elevated*/ true,
+                /*elevation*/ Ok(true),
                 /*agents_overview*/ false,
                 /*explicit_remote*/ false,
             ),

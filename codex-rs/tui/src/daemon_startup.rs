@@ -16,20 +16,25 @@ const SERVER_FEATURES: [Feature; 4] = [
 pub(super) const FAILURE_HINT: &str = "To work without the background server, rerun the same command with --no-daemon (including resume or fork and its arguments).";
 
 pub(super) const ELEVATED_WINDOWS_EMBEDDED_REASON: &str = "an elevated Windows terminal";
+pub(super) const WINDOWS_ELEVATION_UNVERIFIED_REASON: &str =
+    "Windows terminal elevation could not be verified";
 
 /// Implicit elevated Windows sessions are embedded from the outset. Never probe,
 /// attach to, start, or mutate the shared daemon on this path. Explicit remote and
 /// daemon-wide agents actions retain their existing transport requirements.
 pub(super) fn elevated_windows_implicit_exclusion(
     existing: Option<&'static str>,
-    is_elevated: bool,
+    elevation: Result<bool, ()>,
     agents_overview: bool,
     explicit_remote: bool,
 ) -> Option<&'static str> {
-    if existing.is_none() && is_elevated && !agents_overview && !explicit_remote {
-        Some(ELEVATED_WINDOWS_EMBEDDED_REASON)
-    } else {
-        existing
+    if existing.is_some() || agents_overview || explicit_remote {
+        return existing;
+    }
+    match elevation {
+        Ok(true) => Some(ELEVATED_WINDOWS_EMBEDDED_REASON),
+        Ok(false) => None,
+        Err(()) => Some(WINDOWS_ELEVATION_UNVERIFIED_REASON),
     }
 }
 

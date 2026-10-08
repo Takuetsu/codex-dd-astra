@@ -127,6 +127,11 @@ pub fn is_current_process_elevated() -> Result<bool> {
         return Err(io::Error::last_os_error())
             .context("failed to query daemon launcher elevation");
     }
+    if returned != std::mem::size_of::<TOKEN_ELEVATION>() as u32 {
+        return Err(anyhow::anyhow!(
+            "unexpected Windows token elevation response length: {returned}"
+        ));
+    }
     Ok(elevation.TokenIsElevated != 0)
 }
 
