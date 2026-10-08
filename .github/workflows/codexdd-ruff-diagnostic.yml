@@ -23,3 +23,11 @@ jobs:
           set -euo pipefail
           ruff --version
           ruff format --diff .github/scripts/upstream_sync.py .github/scripts/test_upstream_sync.py || test "$?" -eq 1
+      - name: Print exact locked Prettier formatting diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in docs/codexdd-0.4.2-*.md docs/codexdd-roadmap.md .github/workflows/upstream-*.yml; do
+            echo "== PRETTIER SOURCE: $file =="
+            npm exec --yes --package=prettier@3.5.3 -- prettier "$file" | diff -u "$file" - || test "$?" -eq 1
+          done
