@@ -39,6 +39,12 @@ jobs:
           )"
           current_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
 
+          # The tracked baseline must also resolve in the official repository.
+          if ! git ls-remote --exit-code --tags --refs upstream "refs/tags/$current_tag" >/dev/null; then
+            echo "Tracked upstream release is not an official reachable tag: $current_tag" >&2
+            exit 1
+          fi
+
           set +e
           python3 - "$current_tag" "$latest_tag" <<'PY'
           import sys
