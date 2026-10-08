@@ -10,7 +10,10 @@ use tempfile::TempDir;
 fn elevated_daemon_auto_start_falls_back_to_embedded_mode() {
     let error = anyhow::Error::new(codex_app_server_daemon::ElevatedLaunchRestricted);
     let reason = daemon_startup::windows_automatic_fallback_reason(&error);
-    assert_eq!(reason, Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON));
+    assert_eq!(
+        reason,
+        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)
+    );
     // Preserve the classified legacy fallback without hiding unrelated failures.
     assert_eq!(
         daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
@@ -51,7 +54,10 @@ fn elevated_windows_implicit_startup_uses_embedded_without_f2_warning() {
         /*agents_overview*/ false,
         /*explicit_remote*/ false,
     );
-    assert_eq!(reason, Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON));
+    assert_eq!(
+        reason,
+        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)
+    );
     // A nonempty exclusion also disables implicit daemon socket discovery.
     assert!(reason.is_some());
     assert_eq!(
@@ -69,7 +75,10 @@ fn failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning() {
         /*explicit_remote*/ false,
     );
     // This exclusion prevents both socket discovery and automatic daemon startup.
-    assert_eq!(reason, Some(daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON));
+    assert_eq!(
+        reason,
+        Some(daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON)
+    );
     assert_eq!(
         daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
         Some(format!(
@@ -126,7 +135,11 @@ fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnin
         );
     }
 
-    for excluded in ["--no-daemon", "--strict-config", "custom configuration loader"] {
+    for excluded in [
+        "--no-daemon",
+        "--strict-config",
+        "custom configuration loader",
+    ] {
         assert_eq!(
             daemon_startup::elevated_windows_implicit_exclusion(
                 Some(excluded),
