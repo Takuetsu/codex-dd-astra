@@ -250,12 +250,28 @@ checksum = "abc"
                 "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
                 "codex-rs/core/src/session/session.rs",
                 "codex-rs/tui/src/adaptive_policy.rs",
+                "codex-rs/tui/src/app.rs",
                 "codex-rs/tui/src/app/session_lifecycle.rs",
                 "codex-rs/tui/src/status/card.rs",
+                "codex-rs/core/src/thread_manager.rs",
+                "codex-rs/app-server/src/message_processor.rs",
+                "codex-rs/config/src/config_toml.rs",
                 "codex-rs/upstream-codex-release.txt",
             ]
         )
         self.assertIn("adaptive_routing", classified)
+        self.assertIn("tui_runtime", classified)
+        self.assertIn("core_runtime", classified)
+        self.assertIn("app_server_runtime", classified)
+        self.assertIn("configuration", classified)
+        self.assertIn(
+            "codex-rs/tui/src/app.rs",
+            classified["tui_runtime"],
+        )
+        self.assertIn(
+            "codex-rs/core/src/thread_manager.rs",
+            classified["core_runtime"],
+        )
         self.assertIn("worker_lifecycle", classified)
         self.assertIn("persistence_resume_fork", classified)
         self.assertIn("status_rendering", classified)
@@ -406,12 +422,17 @@ checksum = "abc"
         self.assertNotIn("issues: write", discovery)
         self.assertNotIn("git push", discovery)
         self.assertNotIn("gh pr create", discovery)
+        self.assertIn("git ls-remote --tags --refs upstream", discovery)
+        self.assertNotIn("git tag --list", discovery)
 
         self.assertIn("permissions:\n  contents: write", preparation)
         self.assertNotIn("pull-requests: write", preparation)
         self.assertNotIn("issues: write", preparation)
         self.assertNotIn("gh pr create", preparation)
         self.assertNotIn("codexdd-version.txt\" >", preparation)
+        self.assertIn("git push --force-with-lease=", preparation)
+        self.assertIn("current_tracked_sha=", preparation)
+        self.assertIn('for tag in "$TRACKED_TAG" "$TARGET_TAG"; do', preparation)
 
         self.assertIn("contents: read", promotion)
         self.assertIn("pull-requests: write", promotion)
@@ -419,6 +440,9 @@ checksum = "abc"
         self.assertNotIn("issues: write", promotion)
         self.assertIn("gh pr create", promotion)
         self.assertNotIn("gh pr merge", promotion)
+        self.assertIn("semantic_review_accepted", promotion)
+        self.assertIn("SEMANTIC_REVIEW_EVIDENCE", promotion)
+        self.assertIn('LOCAL_VALIDATION_PROFILE"] != "release"', promotion)
 
         combined = discovery + preparation + promotion
         self.assertNotIn("--next-patch", combined)
