@@ -173,12 +173,28 @@ pub(super) async fn run_main_inner(
         .await;
     }
 
-    let mut daemon_exclusion = daemon_startup::exclusion(
+    let cli_daemon_exclusion = daemon_startup::exclusion(
         &cli,
         &cli_kv_overrides,
         &launch_loader_overrides,
         workload_identity_selected,
         std::env::var_os(codex_exec_server::CODEX_EXEC_SERVER_URL_ENV_VAR).as_deref(),
+    );
+    // The explicit daemon lifecycle guard rejects elevated Windows clients. For
+    // implicit interactive startup, mirror --no-daemon before probing an existing
+    // shared socket, rather than attempting daemon startup and emitting F2.
+    #[cfg(windows)]
+    let elevated_windows_client = cli_daemon_exclusion.is_none()
+        && !cli.agents_overview
+        && explicit_remote_endpoint.is_none()
+        && codex_app_server_daemon::is_current_process_elevated().unwrap_or(false);
+    #[cfg(not(windows))]
+    let elevated_windows_client = false;
+    let mut daemon_exclusion = daemon_startup::elevated_windows_implicit_exclusion(
+        cli_daemon_exclusion,
+        elevated_windows_client,
+        cli.agents_overview,
+        explicit_remote_endpoint.is_some(),
     );
     let reuse_implicit_local_daemon = daemon_exclusion.is_none();
     let search_only_config_override = !workload_identity_selected
@@ -586,13 +602,7 @@ pub(super) async fn run_main_inner(
         embedded_network_policy.activate(&mut config);
     }
     let daemon_startup_warning = compatibility_warning.or_else(|| {
-        daemon_exclusion
-            .filter(|_| auto_start_daemon)
-            .map(|reason| {
-                format!(
-                    "Running without the shared background server: {reason} requires embedded mode."
-                )
-            })
+        daemon_startup::automatic_exclusion_warning(daemon_exclusion, auto_start_daemon)
     });
     #[cfg(target_os = "macos")]
     let local_runtime_paths = local_runtime_paths.with_allowed_symlinked_codex_home(
@@ -656,6 +666,9 @@ pub(super) async fn run_main_inner(
         (AppServerTarget::Remote { .. }, _) => "explicit_remote",
         _ if cli.agents_overview => "agents",
         (_, Some("--no-daemon")) => "explicit_no_daemon",
+        (_, Some(reason)) if reason == daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON => {
+            "elevated_windows_embedded"
+        }
         (_, Some(_)) => "incompatible_option",
         _ if auto_start_daemon => "auto_start",
         (AppServerTarget::LocalDaemon { .. }, _) => "existing_daemon",
