@@ -157,6 +157,8 @@ impl fmt::Display for DetachedLaunchRestricted {
     }
 }
 
+impl std::error::Error for DetachedLaunchRestricted {}
+
 // Check that breakaway launch is permitted before stopping an existing daemon.
 // An outer system job may remain attached; membership alone does not establish
 // whether it will terminate the daemon. Suspend the probe before cleanup.
