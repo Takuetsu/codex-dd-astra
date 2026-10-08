@@ -104,7 +104,9 @@ impl fmt::Display for ElevatedLaunchRestricted {
 
 impl std::error::Error for ElevatedLaunchRestricted {}
 
-pub(crate) fn ensure_not_elevated() -> Result<()> {
+/// Read the current Windows process token before selecting an implicit shared daemon.
+/// An elevated TUI can choose embedded mode without weakening the daemon guard.
+pub fn is_current_process_elevated() -> Result<bool> {
     let mut token = 0;
     if unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) } == 0 {
         return Err(io::Error::last_os_error()).context("failed to query daemon launcher token");
@@ -125,7 +127,12 @@ pub(crate) fn ensure_not_elevated() -> Result<()> {
         return Err(io::Error::last_os_error())
             .context("failed to query daemon launcher elevation");
     }
-    if elevation.TokenIsElevated != 0 {
+    Ok(elevation.TokenIsElevated != 0)
+}
+
+/// Explicit daemon lifecycle operations must still reject elevated processes.
+pub(crate) fn ensure_not_elevated() -> Result<()> {
+    if is_current_process_elevated()? {
         return Err(anyhow::Error::new(ElevatedLaunchRestricted));
     }
     Ok(())
