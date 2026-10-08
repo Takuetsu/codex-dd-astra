@@ -235,19 +235,23 @@ def classify_sensitive_overlaps(
         # that an upstream API or its CodexDD caller remains compatible.
         if lower.startswith("codex-rs/tui/src/"):
             categories["tui_runtime"].add(normalized)
-        if lower.startswith((
-            "codex-rs/core/src/",
-            "codex-rs/protocol/src/",
-            "codex-rs/rollout/src/",
-            "codex-rs/history/src/",
-            "codex-rs/state/src/",
-            "codex-rs/thread-store/src/",
-        )):
+        if lower.startswith(
+            (
+                "codex-rs/core/src/",
+                "codex-rs/protocol/src/",
+                "codex-rs/rollout/src/",
+                "codex-rs/history/src/",
+                "codex-rs/state/src/",
+                "codex-rs/thread-store/src/",
+            )
+        ):
             categories["core_runtime"].add(normalized)
-        if lower.startswith((
-            "codex-rs/app-server/src/",
-            "codex-rs/app-server-protocol/src/",
-        )):
+        if lower.startswith(
+            (
+                "codex-rs/app-server/src/",
+                "codex-rs/app-server-protocol/src/",
+            )
+        ):
             categories["app_server_runtime"].add(normalized)
         if (
             lower.startswith("codex-rs/config/")
@@ -455,11 +459,14 @@ def build_candidate_manifest(
 def candidate_manifest_json(manifest: CandidateManifest) -> str:
     """Serialize a manifest deterministically for durable evidence."""
 
-    return json.dumps(
-        manifest.to_dict(),
-        sort_keys=True,
-        separators=(",", ":"),
-    ) + "\n"
+    return (
+        json.dumps(
+            manifest.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    )
 
 
 def stale_identity_fields(
@@ -481,9 +488,7 @@ def stale_identity_fields(
         "target_upstream_sha": target_upstream_sha,
     }
     stale = [
-        field
-        for field, value in current.items()
-        if getattr(manifest, field) != value
+        field for field, value in current.items() if getattr(manifest, field) != value
     ]
     return tuple(sorted(stale))
 
@@ -563,7 +568,9 @@ def validate_validation_receipt(receipt: Mapping[str, object]) -> None:
 
     expected_key = candidate_key(target_tag, target_sha)
     if candidate_key_value != expected_key:
-        raise ValueError("validation receipt candidate key does not match target identity")
+        raise ValueError(
+            "validation receipt candidate key does not match target identity"
+        )
 
     expected_branch = candidate_branch(target_tag, target_sha)
     if candidate_branch_name != expected_branch:
@@ -572,12 +579,17 @@ def validate_validation_receipt(receipt: Mapping[str, object]) -> None:
     if not isinstance(manifest_path, str) or not manifest_path.startswith(
         "docs/upstream-candidates/"
     ):
-        raise ValueError("validation receipt manifest path is outside the candidate area")
+        raise ValueError(
+            "validation receipt manifest path is outside the candidate area"
+        )
     manifest_parts = Path(manifest_path).parts
     if ".." in manifest_parts or Path(manifest_path).is_absolute():
         raise ValueError("validation receipt manifest path is unsafe")
 
-    if not isinstance(manifest_sha256, str) or SHA256.fullmatch(manifest_sha256) is None:
+    if (
+        not isinstance(manifest_sha256, str)
+        or SHA256.fullmatch(manifest_sha256) is None
+    ):
         raise ValueError("validation receipt manifest SHA-256 is invalid")
     if not isinstance(completed_at, str) or not completed_at.strip():
         raise ValueError("validation receipt completion timestamp is missing")
