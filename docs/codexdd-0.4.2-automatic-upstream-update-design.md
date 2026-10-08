@@ -43,7 +43,6 @@ Key finding: the repository already contains a six-hour scheduled, write-capable
 
 The current live stable candidate observed during reconnaissance is `rust-v0.160.1` at `d27764b82f7118f674371e6d6e76271d9d606edb`. Exact tree comparison against tracked `rust-v0.159.2` found 243 CodexDD customization paths, 378 upstream-changed paths, and 48 overlap candidates.
 
-
 ### Packet 1A.1 — current upstream-sync surface
 
 Inventory the existing repository mechanisms for:
