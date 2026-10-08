@@ -15,10 +15,41 @@ const SERVER_FEATURES: [Feature; 4] = [
 
 pub(super) const FAILURE_HINT: &str = "To work without the background server, rerun the same command with --no-daemon (including resume or fork and its arguments).";
 
+pub(super) const ELEVATED_WINDOWS_EMBEDDED_REASON: &str = "an elevated Windows terminal";
+
+/// Implicit elevated Windows sessions are embedded from the outset. Never probe,
+/// attach to, start, or mutate the shared daemon on this path. Explicit remote and
+/// daemon-wide agents actions retain their existing transport requirements.
+pub(super) fn elevated_windows_implicit_exclusion(
+    existing: Option<&'static str>,
+    is_elevated: bool,
+    agents_overview: bool,
+    explicit_remote: bool,
+) -> Option<&'static str> {
+    if existing.is_none() && is_elevated && !agents_overview && !explicit_remote {
+        Some(ELEVATED_WINDOWS_EMBEDDED_REASON)
+    } else {
+        existing
+    }
+}
+
+/// The elevated-session fallback is a deliberate supported mode, not a failed
+/// startup. Other automatic exclusions continue to appear in F2 warnings.
+pub(super) fn automatic_exclusion_warning(
+    reason: Option<&str>,
+    auto_start_daemon: bool,
+) -> Option<String> {
+    reason
+        .filter(|reason| auto_start_daemon && *reason != ELEVATED_WINDOWS_EMBEDDED_REASON)
+        .map(|reason| {
+            format!("Running without the shared background server: {reason} requires embedded mode.")
+        })
+}
+
 #[cfg(windows)]
 pub(super) fn windows_automatic_fallback_reason(err: &anyhow::Error) -> Option<&'static str> {
     if err.is::<codex_app_server_daemon::ElevatedLaunchRestricted>() {
-        Some("an elevated Windows terminal")
+        Some(ELEVATED_WINDOWS_EMBEDDED_REASON)
     } else if err.is::<codex_app_server_daemon::DetachedLaunchRestricted>() {
         Some("this Windows launcher")
     } else {
