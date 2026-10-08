@@ -360,7 +360,6 @@ checksum = "abc"
         self.assertEqual(state, "blocked_stale_base")
         self.assertEqual(stale, ("production_sha", "target_upstream_sha"))
 
-
     def test_validation_receipt_is_bound_to_candidate_identity_and_native_pass(self):
         receipt = {
             "contract_version": 1,
@@ -406,9 +405,9 @@ checksum = "abc"
 
     def test_workflow_boundaries_remain_fail_closed(self):
         repository_root = Path(__file__).resolve().parents[2]
-        discovery = (
-            repository_root / ".github/workflows/upstream-sync.yml"
-        ).read_text(encoding="utf-8")
+        discovery = (repository_root / ".github/workflows/upstream-sync.yml").read_text(
+            encoding="utf-8"
+        )
         preparation = (
             repository_root / ".github/workflows/upstream-prepare.yml"
         ).read_text(encoding="utf-8")
@@ -429,7 +428,7 @@ checksum = "abc"
         self.assertNotIn("pull-requests: write", preparation)
         self.assertNotIn("issues: write", preparation)
         self.assertNotIn("gh pr create", preparation)
-        self.assertNotIn("codexdd-version.txt\" >", preparation)
+        self.assertNotIn('codexdd-version.txt" >', preparation)
         self.assertIn("git push --force-with-lease=", preparation)
         self.assertIn("current_tracked_sha=", preparation)
         self.assertIn('for tag in "$TRACKED_TAG" "$TARGET_TAG"; do', preparation)
