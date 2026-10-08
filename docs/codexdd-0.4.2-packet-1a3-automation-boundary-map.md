@@ -10,19 +10,19 @@ The boundary is designed around the current working model: local/cheap evidence 
 
 ## Boundary map
 
-| Stage | Trigger | Automatic actions allowed | Remote writes | Human gate |
-| --- | --- | --- | --- | --- |
-| Scheduled discovery | schedule | fetch canonical tags, select newest stable, resolve immutable identity, compute exact tree deltas/overlap, produce summary/artifact | none | no |
-| Manual discovery | workflow dispatch / local helper | same as scheduled discovery | none | no |
-| Candidate acceptance | explicit operator action | re-resolve manifest identities and stale-base checks | none | **yes** |
-| Isolated preparation | accepted candidate | dry-run synthetic transplant; if clean, construct deterministic candidate tree/branch and candidate manifest | candidate branch only | accepted candidate required |
-| Conflict path | accepted candidate | collect exact conflicts and reproducible recovery data | no production write; no PR | manual reconciliation required |
-| Local validation | prepared branch | run repo-owned LVO profiles on Daniel-CL; capture native receipts | build/test artifacts only | operator initiates/observes gate |
-| PR promotion | current local evidence passes | open PR against production with immutable manifest and validation evidence | PR only | **yes** |
-| CI | promoted PR | normal required checks | CI artifacts/status only | merge remains gated |
-| Merge | green PR | none automatically | production merge | **yes** |
-| Install/deploy | merged production | build/install commands only when explicitly requested | local/external runtime change | **yes** |
-| Release publication | explicit matching release/tag process | package and publish after tag/version checks | GitHub Release/artifacts | **yes** |
+| Stage                | Trigger                               | Automatic actions allowed                                                                                                           | Remote writes                 | Human gate                       |
+| -------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------------------- |
+| Scheduled discovery  | schedule                              | fetch canonical tags, select newest stable, resolve immutable identity, compute exact tree deltas/overlap, produce summary/artifact | none                          | no                               |
+| Manual discovery     | workflow dispatch / local helper      | same as scheduled discovery                                                                                                         | none                          | no                               |
+| Candidate acceptance | explicit operator action              | re-resolve manifest identities and stale-base checks                                                                                | none                          | **yes**                          |
+| Isolated preparation | accepted candidate                    | dry-run synthetic transplant; if clean, construct deterministic candidate tree/branch and candidate manifest                        | candidate branch only         | accepted candidate required      |
+| Conflict path        | accepted candidate                    | collect exact conflicts and reproducible recovery data                                                                              | no production write; no PR    | manual reconciliation required   |
+| Local validation     | prepared branch                       | run repo-owned LVO profiles on Daniel-CL; capture native receipts                                                                   | build/test artifacts only     | operator initiates/observes gate |
+| PR promotion         | current local evidence passes         | open PR against production with immutable manifest and validation evidence                                                          | PR only                       | **yes**                          |
+| CI                   | promoted PR                           | normal required checks                                                                                                              | CI artifacts/status only      | merge remains gated              |
+| Merge                | green PR                              | none automatically                                                                                                                  | production merge              | **yes**                          |
+| Install/deploy       | merged production                     | build/install commands only when explicitly requested                                                                               | local/external runtime change | **yes**                          |
+| Release publication  | explicit matching release/tag process | package and publish after tag/version checks                                                                                        | GitHub Release/artifacts      | **yes**                          |
 
 ## Scheduled discovery must become read-only
 
@@ -129,7 +129,7 @@ The unmerged Windows packaging experiment used a strong safety split:
 - publication required an explicit matching `codexdd-vX.Y.Z` tag;
 - tag/version mismatch failed closed.
 
-0.4.2 should preserve the same pattern: automate reversible preparation, require explicit identity-bound promotion for consequential publication/merge/install steps.
+  0.4.2 should preserve the same pattern: automate reversible preparation, require explicit identity-bound promotion for consequential publication/merge/install steps.
 
 ## Implementation packets after Phase 1 acceptance
 
