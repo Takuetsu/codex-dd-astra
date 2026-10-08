@@ -11,7 +11,7 @@ CodexDD **0.4.1** is complete and merged to production.
 - target platform: Windows
 - authoritative validation host: Daniel-CL
 
-0.4.1 added GPT-6.1 Sol as a distinct adaptive tier between GPT-6 Sol and GPT-6 Astra while preserving the 0.4.0 lifecycle, validation, persistence, and fail-closed guarantees.
+  0.4.1 added GPT-6.1 Sol as a distinct adaptive tier between GPT-6 Sol and GPT-6 Astra while preserving the 0.4.0 lifecycle, validation, persistence, and fail-closed guarantees.
 
 The merged 0.4.1 design and reconnaissance evidence remains in:
 
