@@ -100,10 +100,27 @@ try {
         throw "Candidate HEAD is not descended from manifest production SHA $($manifest.production_sha)."
     }
 
-    $manifestRelativePath = [IO.Path]::GetRelativePath(
-        $repositoryRoot,
-        $resolvedManifestPath
-    ).Replace("\", "/")
+    # Resolve canonical paths without APIs absent from Windows PowerShell 5.1.
+    $canonicalRoot = [IO.Path]::GetFullPath($repositoryRoot)
+    $canonicalManifest = [IO.Path]::GetFullPath($resolvedManifestPath)
+    $repositoryPrefix = $canonicalRoot.TrimEnd(
+        [IO.Path]::DirectorySeparatorChar
+    ) + [IO.Path]::DirectorySeparatorChar
+    if (-not $canonicalManifest.StartsWith(
+        $repositoryPrefix,
+        [StringComparison]::OrdinalIgnoreCase
+    )) {
+        throw "Candidate manifest is outside the repository root."
+    }
+    $manifestRelativePath = $canonicalManifest.Substring(
+        $repositoryPrefix.Length
+    ).Replace("\\", "/")
+    if (-not $manifestRelativePath.StartsWith(
+        "docs/upstream-candidates/",
+        [StringComparison]::Ordinal
+    )) {
+        throw "Candidate manifest must be under docs/upstream-candidates."
+    }
     $manifestHash = (
         Get-FileHash -LiteralPath $resolvedManifestPath -Algorithm SHA256
     ).Hash.ToLowerInvariant()
