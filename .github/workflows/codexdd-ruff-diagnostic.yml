@@ -1,0 +1,25 @@
+name: CodexDD temporary Ruff diff diagnostic
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.2-automatic-upstream-update
+    paths:
+      - .github/workflows/codexdd-ruff-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  python-format-diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install exact locked Ruff
+        run: python3 -m pip install --disable-pip-version-check ruff==0.15.13
+      - name: Print exact Python formatting changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruff --version
+          ruff format --diff .github/scripts/upstream_sync.py .github/scripts/test_upstream_sync.py || test "$?" -eq 1
