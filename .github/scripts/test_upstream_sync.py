@@ -462,6 +462,9 @@ checksum = "abc"
         self.assertIn("manifest_sha256", script)
         self.assertIn("candidate_head_sha", script)
         self.assertNotIn("[IO.Path]::GetRelativePath", script)
+        self.assertIn(').Replace("\\", "/")', script)
+        self.assertIn("Candidate manifest is outside the repository root.", script)
+        self.assertIn("docs/upstream-candidates/", script)
 
     def test_synthetic_delta_survives_squashed_upstream_history(self):
         with tempfile.TemporaryDirectory() as temp_dir:
