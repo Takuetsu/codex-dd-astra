@@ -14,7 +14,7 @@ An elevated SSH PowerShell on Daniel-CL starts CodexDD 0.4.2 with:
 
 CodexDD already falls back to its embedded app server and continues working, but the normal expected fallback produces a persistent F2 startup warning. The operator proved the same terminal works without F2 when using `codexdd --no-daemon`.
 
-This is *not* authorization to start shared background services with an administrator token or bypass the daemon elevation guard.
+This is _not_ authorization to start shared background services with an administrator token or bypass the daemon elevation guard.
 
 ## Root cause
 
@@ -55,11 +55,11 @@ Candidate SHA: `2caa1b3afa55e23009ffc523fc23aa9abb3c3eba`, against production `8
 - Elevated interactive SSH session: launch the candidate directly with `--adaptive astra`, **without** `--no-daemon`; F2 showed **No warnings**. `/status` showed Adaptive Effort enabled, Astra preference, Luna Low startup, and Full Access.
 - Elevated isolated-profile daemon lifecycle: **start, restart, and bootstrap all rejected** as intended. This confirms the elevation guard remained intact.
 - Medium-integrity Windows scheduled-task regression: `whoami /groups` reported `S-1-16-8192`, and `elevated_token_probe_and_daemon_guard_agree` reported **1 passed, 0 failed**. The outer PowerShell scheduled-task wrapper remained running without writing its final status marker; the Rust test itself completed successfully.
-- **Not yet tested:** an actual managed shared-daemon startup/attachment from a non-elevated session using a *packaged hotfix candidate*. The debug `codex.exe` is not a complete daemon-installable package. This remains a distinct **pre-merge acceptance gate**, not a claimed pass.
+- **Not yet tested:** an actual managed shared-daemon startup/attachment from a non-elevated session using a _packaged hotfix candidate_. The debug `codex.exe` is not a complete daemon-installable package. This remains a distinct **pre-merge acceptance gate**, not a claimed pass.
 - **Not yet tested:** required GitHub Windows CI, final release validation, and production installation.
 
 The candidate is not considered shipped until the installed build and normal release gates pass. The CodexDD product version has **not** been changed in this source-only repair packet.
 
 ## Remaining expected limitation
 
-Elevated Windows sessions still cannot use a *locally managed shared background daemon*. This fix makes the already-supported embedded mode automatic and removes a misleading warning; it does not implement safe de-elevation or provide daemon-only functionality under SSH administrator tokens.
+Elevated Windows sessions still cannot use a _locally managed shared background daemon_. This fix makes the already-supported embedded mode automatic and removes a misleading warning; it does not implement safe de-elevation or provide daemon-only functionality under SSH administrator tokens.
