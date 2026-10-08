@@ -51,10 +51,7 @@ fn elevated_windows_implicit_startup_uses_embedded_without_f2_warning() {
         /*agents_overview*/ false,
         /*explicit_remote*/ false,
     );
-    assert_eq!(
-        reason,
-        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)
-    );
+    assert_eq!(reason, Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON));
     // A nonempty exclusion also disables implicit daemon socket discovery.
     assert!(reason.is_some());
     assert_eq!(
@@ -85,11 +82,7 @@ fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnin
         );
     }
 
-    for excluded in [
-        "--no-daemon",
-        "--strict-config",
-        "custom configuration loader",
-    ] {
+    for excluded in ["--no-daemon", "--strict-config", "custom configuration loader"] {
         assert_eq!(
             daemon_startup::elevated_windows_implicit_exclusion(
                 Some(excluded),
