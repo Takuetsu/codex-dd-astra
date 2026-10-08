@@ -9,9 +9,27 @@ use tempfile::TempDir;
 #[test]
 fn elevated_daemon_auto_start_falls_back_to_embedded_mode() {
     let error = anyhow::Error::new(codex_app_server_daemon::ElevatedLaunchRestricted);
+    let reason = daemon_startup::windows_automatic_fallback_reason(&error);
+    assert_eq!(reason, Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON));
+    // Also cover the fallback when the proactive elevation probe was unavailable.
     assert_eq!(
-        daemon_startup::windows_automatic_fallback_reason(&error),
-        Some("an elevated Windows terminal")
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        None,
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn restricted_windows_launcher_still_warns_on_implicit_fallback() {
+    let error = anyhow::Error::new(codex_app_server_daemon::DetachedLaunchRestricted);
+    let reason = daemon_startup::windows_automatic_fallback_reason(&error);
+    assert_eq!(reason, Some("this Windows launcher"));
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        Some(
+            "Running without the shared background server: this Windows launcher requires embedded mode."
+                .into()
+        ),
     );
 }
 
