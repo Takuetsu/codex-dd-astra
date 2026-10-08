@@ -1,6 +1,6 @@
 # CodexDD elevated-Windows F2 startup remediation
 
-**State:** Code candidate — Windows validation pending
+**State:** Local elevated SSH fix validated; non-elevated guard validated; Windows CI and live non-elevated shared-daemon startup pending
 
 **Branch:** `dd/codexdd-f2-elevated-ssh-embedded-startup`
 
@@ -45,6 +45,18 @@ Then run a focused Windows build and a live `ssh -tt` elevated-session smoke:
 - `/status` and normal adaptive behavior must remain available.
 - Explicit daemon lifecycle operations under elevation must still reject the administrative token.
 - A non-elevated interactive startup must remain eligible for normal shared-daemon operation.
+
+## Local validation evidence (2026-10-08)
+
+Candidate SHA: `2caa1b3afa55e23009ffc523fc23aa9abb3c3eba`, against production `8336ca046af71cbf032c76d933ca371336f92673`.
+
+- Daniel-CL: candidate HEAD, clean worktree, formatting/whitespace checks, and debug `codex-cli` build passed. Candidate reports `codexdd 0.4.2+g2caa1b3afa55`.
+- Targeted Windows TUI daemon-startup suite: **15 passed, 0 failed**, with `RUST_MIN_STACK=16777216` and `--test-threads=1`. A pre-existing embedded-server integration test overflowed its stack with the default Windows test-thread stack; the same test and full suite passed with 16 MiB. Release validation already sets `RUST_MIN_STACK=16777216`.
+- Elevated interactive SSH session: launch the candidate directly with `--adaptive astra`, **without** `--no-daemon`; F2 showed **No warnings**. `/status` showed Adaptive Effort enabled, Astra preference, Luna Low startup, and Full Access.
+- Elevated isolated-profile daemon lifecycle: **start, restart, and bootstrap all rejected** as intended. This confirms the elevation guard remained intact.
+- Medium-integrity Windows scheduled-task regression: `whoami /groups` reported `S-1-16-8192`, and `elevated_token_probe_and_daemon_guard_agree` reported **1 passed, 0 failed**. The outer PowerShell scheduled-task wrapper remained running without writing its final status marker; the Rust test itself completed successfully.
+- **Not yet tested:** an actual managed shared-daemon startup/attachment from a non-elevated session using a *packaged hotfix candidate*. The debug `codex.exe` is not a complete daemon-installable package. This remains a distinct **pre-merge acceptance gate**, not a claimed pass.
+- **Not yet tested:** required GitHub Windows CI, final release validation, and production installation.
 
 The candidate is not considered shipped until the installed build and normal release gates pass. The CodexDD product version has **not** been changed in this source-only repair packet.
 
