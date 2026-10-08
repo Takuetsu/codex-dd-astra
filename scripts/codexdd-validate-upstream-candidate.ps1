@@ -114,7 +114,7 @@ try {
     }
     $manifestRelativePath = $canonicalManifest.Substring(
         $repositoryPrefix.Length
-    ).Replace("\\", "/")
+    ).Replace("\", "/")
     if (-not $manifestRelativePath.StartsWith(
         "docs/upstream-candidates/",
         [StringComparison]::Ordinal
