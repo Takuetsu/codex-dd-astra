@@ -1,0 +1,260 @@
+name: upstream-codex-promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_branch:
+        description: Validated upstream candidate branch
+        required: true
+        type: string
+      receipt_json:
+        description: CODEXDD_UPSTREAM_VALIDATION_RECEIPT JSON from Daniel-CL
+        required: true
+        type: string
+      semantic_review_accepted:
+        description: Explicit owner acceptance of sensitive upstream overlap review
+        required: false
+        default: false
+        type: boolean
+      semantic_review_evidence:
+        description: GitHub link to accepted semantic review (required for sensitive overlap)
+        required: false
+        type: string
+
+concurrency:
+  group: upstream-codex-promote-${{ inputs.candidate_branch }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  promote:
+    name: Promote validated candidate to PR
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/astra-policy-v2
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate native local receipt
+        id: receipt
+        shell: bash
+        env:
+          RECEIPT_JSON: ${{ inputs.receipt_json }}
+          REQUESTED_BRANCH: ${{ inputs.candidate_branch }}
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".github/scripts")
+          from upstream_sync import parse_validation_receipt_json
+
+          receipt = parse_validation_receipt_json(os.environ["RECEIPT_JSON"])
+          if receipt["candidate_branch"] != os.environ["REQUESTED_BRANCH"]:
+              raise SystemExit("requested branch does not match validation receipt")
+
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              for key in (
+                  "candidate_key",
+                  "candidate_branch",
+                  "candidate_head_sha",
+                  "production_sha",
+                  "target_upstream_tag",
+                  "target_upstream_sha",
+                  "manifest_path",
+                  "manifest_sha256",
+                  "profile",
+                  "completed_stages",
+                  "completed_at",
+              ):
+                  output.write(f"{key}={receipt[key]}\n")
+          PY
+
+      - name: Re-check candidate, production, and manifest identity
+        id: identity
+        shell: bash
+        env:
+          CANDIDATE_BRANCH: ${{ steps.receipt.outputs.candidate_branch }}
+          CANDIDATE_HEAD_SHA: ${{ steps.receipt.outputs.candidate_head_sha }}
+          EXPECTED_PRODUCTION_SHA: ${{ steps.receipt.outputs.production_sha }}
+          TARGET_TAG: ${{ steps.receipt.outputs.target_upstream_tag }}
+          TARGET_SHA: ${{ steps.receipt.outputs.target_upstream_sha }}
+          CANDIDATE_KEY: ${{ steps.receipt.outputs.candidate_key }}
+          MANIFEST_PATH: ${{ steps.receipt.outputs.manifest_path }}
+          MANIFEST_SHA256: ${{ steps.receipt.outputs.manifest_sha256 }}
+          LOCAL_VALIDATION_PROFILE: ${{ steps.receipt.outputs.profile }}
+          SEMANTIC_REVIEW_ACCEPTED: ${{ inputs.semantic_review_accepted }}
+          SEMANTIC_REVIEW_EVIDENCE: ${{ inputs.semantic_review_evidence }}
+        run: |
+          set -euo pipefail
+
+          current_production="$(git rev-parse HEAD)"
+          if [[ "$current_production" != "$EXPECTED_PRODUCTION_SHA" ]]; then
+            echo "Production moved after local validation: expected $EXPECTED_PRODUCTION_SHA, found $current_production" >&2
+            exit 1
+          fi
+
+          git fetch origin "refs/heads/${CANDIDATE_BRANCH}:refs/remotes/origin/upstream-candidate"
+          resolved_candidate="$(git rev-parse refs/remotes/origin/upstream-candidate)"
+          if [[ "$resolved_candidate" != "$CANDIDATE_HEAD_SHA" ]]; then
+            echo "Candidate branch moved after local validation: expected $CANDIDATE_HEAD_SHA, found $resolved_candidate" >&2
+            exit 1
+          fi
+
+          if ! git merge-base --is-ancestor "$EXPECTED_PRODUCTION_SHA" "$CANDIDATE_HEAD_SHA"; then
+            echo "Validated candidate is not descended from the recorded production base." >&2
+            exit 1
+          fi
+
+          manifest_file="$RUNNER_TEMP/upstream-candidate-manifest.json"
+          git show "${CANDIDATE_HEAD_SHA}:${MANIFEST_PATH}" > "$manifest_file"
+          actual_manifest_hash="$(sha256sum "$manifest_file" | awk '{print $1}')"
+          if [[ "$actual_manifest_hash" != "$MANIFEST_SHA256" ]]; then
+            echo "Committed candidate manifest hash does not match local validation receipt." >&2
+            exit 1
+          fi
+
+          tracked_target="$(git show "${CANDIDATE_HEAD_SHA}:codex-rs/upstream-codex-release.txt" | tr -d '[:space:]')"
+          if [[ "$tracked_target" != "$TARGET_TAG" ]]; then
+            echo "Candidate tracked-upstream provenance does not match receipt target." >&2
+            exit 1
+          fi
+
+          export MANIFEST_FILE="$manifest_file"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = json.loads(Path(os.environ["MANIFEST_FILE"]).read_text(encoding="utf-8"))
+          expected = {
+              "candidate_key": os.environ["CANDIDATE_KEY"],
+              "production_sha": os.environ["EXPECTED_PRODUCTION_SHA"],
+              "target_upstream_tag": os.environ["TARGET_TAG"],
+              "target_upstream_sha": os.environ["TARGET_SHA"],
+          }
+          for field, value in expected.items():
+              if manifest.get(field) != value:
+                  raise SystemExit(
+                      f"candidate manifest {field} mismatch: "
+                      f"expected {value}, found {manifest.get(field)}"
+                  )
+          if manifest.get("contract_version") != 1:
+              raise SystemExit("unsupported candidate manifest contract")
+          if manifest.get("state") not in {
+              "preparation_ready",
+              "manual_semantic_review_required",
+          }:
+              raise SystemExit(
+                  f"candidate manifest state is not promotable: {manifest.get('state')}"
+              )
+          if manifest["state"] == "manual_semantic_review_required":
+              if os.environ["SEMANTIC_REVIEW_ACCEPTED"].lower() != "true":
+                  raise SystemExit("sensitive overlap requires explicit review acceptance")
+              if os.environ["LOCAL_VALIDATION_PROFILE"] != "release":
+                  raise SystemExit("sensitive overlap requires native release-profile PASS")
+              evidence = os.environ["SEMANTIC_REVIEW_EVIDENCE"].strip()
+              prefix = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/"
+              allowed = ("blob/", "pull/", "commit/")
+              if (
+                  not evidence.startswith(prefix)
+                  or not evidence[len(prefix):].startswith(allowed)
+                  or any(char.isspace() for char in evidence)
+              ):
+                  raise SystemExit(
+                      "sensitive overlap requires a repository GitHub review evidence link"
+                  )
+          PY
+
+          product_version="$(git show "${CANDIDATE_HEAD_SHA}:codex-rs/codexdd-version.txt" | tr -d '[:space:]')"
+          echo "product_version=${product_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse duplicate promotion
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_BRANCH: ${{ steps.receipt.outputs.candidate_branch }}
+        run: |
+          set -euo pipefail
+          duplicate="$(
+            gh pr list               --repo "$GITHUB_REPOSITORY"               --base dd/astra-policy-v2               --head "$CANDIDATE_BRANCH"               --state open               --json number               --jq 'length'
+          )"
+          if [[ "$duplicate" != "0" ]]; then
+            echo "An open PR already exists for $CANDIDATE_BRANCH." >&2
+            exit 1
+          fi
+
+      - name: Open owner-gated integration PR
+        id: pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_BRANCH: ${{ steps.receipt.outputs.candidate_branch }}
+          CANDIDATE_HEAD_SHA: ${{ steps.receipt.outputs.candidate_head_sha }}
+          TARGET_TAG: ${{ steps.receipt.outputs.target_upstream_tag }}
+          TARGET_SHA: ${{ steps.receipt.outputs.target_upstream_sha }}
+          MANIFEST_PATH: ${{ steps.receipt.outputs.manifest_path }}
+          MANIFEST_SHA256: ${{ steps.receipt.outputs.manifest_sha256 }}
+          VALIDATION_PROFILE: ${{ steps.receipt.outputs.profile }}
+          COMPLETED_STAGES: ${{ steps.receipt.outputs.completed_stages }}
+          VALIDATED_AT: ${{ steps.receipt.outputs.completed_at }}
+          PRODUCT_VERSION: ${{ steps.identity.outputs.product_version }}
+          SEMANTIC_REVIEW_EVIDENCE: ${{ inputs.semantic_review_evidence }}
+        run: |
+          set -euo pipefail
+
+          body_file="$RUNNER_TEMP/upstream-promotion-pr.md"
+          {
+            echo "codexdd-upstream-promotion: ${TARGET_TAG}@${TARGET_SHA}"
+            echo
+            echo "Promotes a locally validated, explicitly prepared OpenAI Codex upstream candidate."
+            echo
+            echo "### Candidate identity"
+            echo "- Candidate branch: ${CANDIDATE_BRANCH}"
+            echo "- Validated HEAD: ${CANDIDATE_HEAD_SHA}"
+            echo "- Target upstream: ${TARGET_TAG} (${TARGET_SHA})"
+            echo "- Candidate CodexDD product version: ${PRODUCT_VERSION}"
+            echo "- Manifest: ${MANIFEST_PATH}"
+            echo "- Manifest SHA-256: ${MANIFEST_SHA256}"
+            echo
+            echo "### Daniel-CL native validation"
+            echo "- Profile: ${VALIDATION_PROFILE}"
+            echo "- Completed stages: ${COMPLETED_STAGES}"
+            echo "- Validated at: ${VALIDATED_AT}"
+            echo
+            echo "### Sensitive-overlap review"
+            if [[ -n "$SEMANTIC_REVIEW_EVIDENCE" ]]; then
+              echo "- Accepted review evidence: $SEMANTIC_REVIEW_EVIDENCE"
+            else
+              echo "- No sensitive-overlap review evidence required"
+            fi
+            echo
+            echo "The receipt, branch HEAD, manifest hash, production base, and target identity were re-verified immediately before opening this PR."
+            echo
+            echo "This workflow cannot merge the PR. Normal required CI and explicit owner merge approval remain required."
+          } > "$body_file"
+
+          pr_url="$(
+            gh pr create               --repo "$GITHUB_REPOSITORY"               --base dd/astra-policy-v2               --head "$CANDIDATE_BRANCH"               --title "CodexDD upstream candidate: integrate $TARGET_TAG"               --body-file "$body_file"
+          )"
+          echo "pr_url=${pr_url}" >> "$GITHUB_OUTPUT"
+          echo "Opened $pr_url"
+
+          {
+            echo "## CodexDD upstream candidate promoted"
+            echo
+            echo "- PR: $pr_url"
+            echo "- Candidate HEAD: $CANDIDATE_HEAD_SHA"
+            echo "- Target: $TARGET_TAG"
+            echo "- Local profile: $VALIDATION_PROFILE"
+            echo
+            echo "Merge remains human-controlled."
+          } >> "$GITHUB_STEP_SUMMARY"
