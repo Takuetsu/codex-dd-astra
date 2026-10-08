@@ -89,6 +89,14 @@ jobs:
           git remote add upstream https://github.com/openai/codex.git
           git fetch upstream --tags --force --prune
 
+          # Refuse tags that exist only in origin or the local tag namespace.
+          for tag in "$EXPECTED_TRACKED_TAG" "$TARGET_TAG"; do
+            if ! git ls-remote --exit-code --tags --refs upstream "refs/tags/$tag" >/dev/null; then
+              echo "Official upstream tag is missing or unreachable: $tag" >&2
+              exit 1
+            fi
+          done
+
           tracked_sha="$(git rev-parse "${EXPECTED_TRACKED_TAG}^{commit}")"
           target_sha="$(git rev-parse "${TARGET_TAG}^{commit}")"
 
@@ -314,6 +322,12 @@ jobs:
           fi
 
           git fetch upstream --tags --force --prune
+          for tag in "$TRACKED_TAG" "$TARGET_TAG"; do
+            if ! git ls-remote --exit-code --tags --refs upstream "refs/tags/$tag" >/dev/null; then
+              echo "Official upstream tag disappeared during preparation: $tag" >&2
+              exit 1
+            fi
+          done
           current_tracked_sha="$(git rev-parse "${TRACKED_TAG}^{commit}")"
           current_target_sha="$(git rev-parse "${TARGET_TAG}^{commit}")"
           if [[ "$current_tracked_sha" != "$EXPECTED_TRACKED_SHA" ]]; then
