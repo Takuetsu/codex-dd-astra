@@ -61,18 +61,18 @@ function Invoke-F2Worker {
     $passed = $false
     $stoppedCleanly = $false
     $problem = ""
-    $home = $null
+    $isolatedHome = $null
     $exe = $null
 
     try {
         $config = Get-Content -LiteralPath (Join-Path $Dir "config.json") -Raw | ConvertFrom-Json
-        $home = [string]$config.home
+        $isolatedHome = [string]$config.home
         $exe = [string]$config.exe
 
         if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
             throw "Packaged candidate executable missing"
         }
-        if ((Split-Path -Leaf $home) -notmatch '^f2h-[0-9a-f]{8}$') {
+        if ((Split-Path -Leaf $isolatedHome) -notmatch '^f2h-[0-9a-f]{8}$') {
             throw "Unexpected temporary CODEX_HOME"
         }
 
@@ -83,14 +83,14 @@ function Invoke-F2Worker {
         }
         Write-F2Trace $Dir "PASS: Medium integrity"
 
-        $settingsPath = Join-Path $home "app-server-daemon\settings.json"
+        $settingsPath = Join-Path $isolatedHome "app-server-daemon\settings.json"
         $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
         if ($settings.updater.autoUpdateEnabled -ne $false) {
             throw "Isolated daemon auto-updates are not disabled"
         }
         Write-F2Trace $Dir "PASS: Isolated CODEX_HOME; auto-updates disabled"
 
-        $env:CODEX_HOME = $home
+        $env:CODEX_HOME = $isolatedHome
 
         $startAttempted = $true
         $first = Invoke-F2Daemon -Exe $exe -Dir $Dir -Verb "start" -Label "1-start"
@@ -112,7 +112,7 @@ function Invoke-F2Worker {
             throw "Daemon is not responsive"
         }
 
-        $prefix = [System.IO.Path]::GetFullPath($home).TrimEnd('\') + '\'
+        $prefix = [System.IO.Path]::GetFullPath($isolatedHome).TrimEnd('\') + '\'
         if (-not ([string]$info.socketPath).StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
             throw "Daemon socket is outside isolated CODEX_HOME"
         }
@@ -130,7 +130,7 @@ function Invoke-F2Worker {
         if ($startAttempted) {
             try {
                 # Never switch to the user's production profile for cleanup.
-                $env:CODEX_HOME = $home
+                $env:CODEX_HOME = $isolatedHome
                 $stop = Invoke-F2Daemon -Exe $exe -Dir $Dir -Verb "stop" -Label "4-stop"
                 Write-F2Trace $Dir "STOP: $($stop.status)"
                 if ($stop.status -notin @("stopped", "notRunning")) {
@@ -223,18 +223,18 @@ if ($LASTEXITCODE -ne 0 -or $version -notmatch '0\.4\.2\+g2caa1b3afa55') {
 }
 
 $id = [guid]::NewGuid().ToString("N").Substring(0, 8)
-$home = Join-Path $env:TEMP "f2h-$id"
-$socket = Join-Path $home "app-server-control\app-server-control.sock"
-if ($socket.Length -ge 100 -or (Test-Path -LiteralPath $home)) {
+$isolatedHome = Join-Path $env:TEMP "f2h-$id"
+$socket = Join-Path $isolatedHome "app-server-control\app-server-control.sock"
+if ($socket.Length -ge 100 -or (Test-Path -LiteralPath $isolatedHome)) {
     throw "Unsafe or overlong isolated CODEX_HOME path"
 }
 
 $runDir = Join-Path $PackageRoot "live-smoke-$id"
 New-Item -ItemType Directory -Path $runDir -ErrorAction Stop | Out-Null
-New-Item -ItemType Directory -Path (Join-Path $home "app-server-daemon") -Force -ErrorAction Stop | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $isolatedHome "app-server-daemon") -Force -ErrorAction Stop | Out-Null
 
-'{"updater":{"autoUpdateEnabled":false}}' | Set-Content -LiteralPath (Join-Path $home "app-server-daemon\settings.json") -Encoding ASCII
-@{ home = $home; exe = $exe } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $runDir "config.json") -Encoding ASCII
+'{"updater":{"autoUpdateEnabled":false}}' | Set-Content -LiteralPath (Join-Path $isolatedHome "app-server-daemon\settings.json") -Encoding ASCII
+@{ home = $isolatedHome; exe = $exe } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $runDir "config.json") -Encoding ASCII
 
 $taskName = "CodexDD-F2-$id"
 $registered = $false
@@ -278,7 +278,7 @@ try {
     }
 
     # The worker proved the daemon stopped and a second stop returned notRunning.
-    Remove-Item -LiteralPath $home -Recurse -Force -ErrorAction Stop
+    Remove-Item -LiteralPath $isolatedHome -Recurse -Force -ErrorAction Stop
     Write-Host "F2 HOTFIX: FINAL ACCEPTANCE PASSED"
     Write-Host "Production installation unchanged"
 }
