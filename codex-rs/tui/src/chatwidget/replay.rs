@@ -108,7 +108,6 @@ impl ChatWidget {
         if matches!(replay_kind, ReplayKind::ThreadSnapshot) && !turns.is_empty() {
             self.warning_display_state.startup_complete = true;
         }
-        let latest_turn_id = turns.last().map(|turn| turn.id.clone());
         if self.adaptive_effort.worker_context.role
             != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
         {
@@ -118,11 +117,11 @@ impl ChatWidget {
                         .duration_ms
                         .and_then(|duration| u64::try_from(duration).ok())
                 {
-                    self.turn_lifecycle
-                        .record_worker_duration(&turn.id, duration_ms);
+                    self.turn_lifecycle.record_worker_duration(&turn.id, duration_ms);
                 }
             }
         }
+        let latest_turn_id = turns.last().map(|turn| turn.id.clone());
         let hidden_nested_review_turns = std::iter::once(/*value*/ false)
             .chain(turns.windows(/*size*/ 2).map(|turns| {
                 crate::app_backtrack::is_hidden_nested_review_turn(&turns[0], &turns[1])
@@ -140,6 +139,7 @@ impl ChatWidget {
             }
             let Turn {
                 id: turn_id,
+                root_turn_id,
                 items_view: _,
                 items,
                 status,
@@ -238,6 +238,7 @@ impl ChatWidget {
                         thread_id: self.thread_id.map(|id| id.to_string()).unwrap_or_default(),
                         turn: Turn {
                             id: turn_id,
+                            root_turn_id,
                             items_view: codex_app_server_protocol::TurnItemsView::NotLoaded,
                             items: Vec::new(),
                             status,
