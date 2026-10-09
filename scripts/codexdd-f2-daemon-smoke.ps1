@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [switch]$Worker,
+    [switch]$Direct,
     [string]$CaseDir,
     [string]$PackageRoot
 )
@@ -194,6 +195,16 @@ if ($env:OS -ne "Windows_NT") {
     throw "Windows-only smoke test"
 }
 
+# A Task Scheduler Job Object can forbid daemon process detachment.
+# Run this acceptance check directly from a normal Medium desktop process.
+if (-not $Direct) {
+    throw "Use -Direct from non-elevated Daniel-CL desktop PowerShell; scheduled task execution is not a valid detached-daemon test."
+}
+$desktopGroups = whoami /groups | Out-String
+if ($desktopGroups -notmatch 'S-1-16-8192' -or $desktopGroups -match 'S-1-16-12288') {
+    throw "Expected Medium-integrity Windows desktop PowerShell, not elevated SSH."
+}
+
 $repository = Split-Path -Parent $PSScriptRoot
 $activeBranch = (& git -C $repository branch --show-current).Trim()
 if ($LASTEXITCODE -ne 0 -or $activeBranch -ne "dd/codexdd-f2-elevated-ssh-embedded-startup") {
@@ -276,37 +287,20 @@ New-Item -ItemType Directory -Path $runDir -ErrorAction Stop | Out-Null
 # The Medium worker owns protected ACL creation; never create it elevated.
 @{ home = $isolatedHome; exe = $exe } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $runDir "config.json") -Encoding ASCII
 
-$taskName = "CodexDD-F2-$id"
-$registered = $false
-Write-Host "F2 HOTFIX: Testing real shared-daemon lifecycle under Medium integrity"
+Write-Host "F2 HOTFIX: Testing direct shared-daemon lifecycle under Medium integrity"
 Write-Host "Isolated test log: $runDir"
 
+# Keep the user desktop CODEX_HOME intact after the test.
+$originalCodexHome = [Environment]::GetEnvironmentVariable("CODEX_HOME", "Process")
 try {
-    $principal = New-ScheduledTaskPrincipal -UserId (whoami) -LogonType Interactive -RunLevel Limited
-    $workerArguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -Worker -CaseDir "' + $runDir + '"'
-    $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument $workerArguments
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 7)
-    Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings -Force -ErrorAction Stop | Out-Null
-    $registered = $true
-
-    Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
+    Invoke-F2Worker -Dir $runDir
     $resultFile = Join-Path $runDir "result.txt"
-
-    for ($i = 0; $i -lt 360; $i++) {
-        if (Test-Path -LiteralPath $resultFile -PathType Leaf) {
-            break
-        }
-        Start-Sleep -Seconds 1
+    if (-not (Test-Path -LiteralPath $resultFile -PathType Leaf)) {
+        throw "Smoke worker produced no result; logs: $runDir"
     }
-
     if (Test-Path -LiteralPath (Join-Path $runDir "trace.txt")) {
         Get-Content -LiteralPath (Join-Path $runDir "trace.txt")
     }
-    if (-not (Test-Path -LiteralPath $resultFile -PathType Leaf)) {
-        $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName
-        throw "No worker result after 360 seconds; task code $($taskInfo.LastTaskResult). Logs: $runDir"
-    }
-
     $outcome = (Get-Content -LiteralPath $resultFile -Raw).Trim()
     Write-Host $outcome
     if ($outcome -notlike "PASS:*") {
@@ -316,26 +310,16 @@ try {
         }
         throw "Live daemon smoke test failed; logs: $runDir"
     }
-
-    # The worker proved the daemon stopped and a second stop returned notRunning.
+    # The worker verified clean shutdown and notRunning before this cleanup.
     Remove-Item -LiteralPath $isolatedHome -Recurse -Force -ErrorAction Stop
     Write-Host "F2 HOTFIX: FINAL ACCEPTANCE PASSED"
     Write-Host "Production installation unchanged"
 }
 finally {
-    if ($registered) {
-        # Clean up only the GUID-namespaced task created by this invocation.
-        try {
-            $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-            if ($null -ne $task) {
-                if ($task.State -eq "Running") {
-                    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-                }
-                Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-            }
-        }
-        catch {
-            Write-Warning "Could not unregister the test task $taskName : $($_.Exception.Message)"
-        }
+    if ($null -eq $originalCodexHome) {
+        Remove-Item Env:CODEX_HOME -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:CODEX_HOME = $originalCodexHome
     }
 }
