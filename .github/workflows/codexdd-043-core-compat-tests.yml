@@ -1,0 +1,93 @@
+# Temporary read-only core/app-server compile and regression smoke for 0.4.3.
+# Deletes after results have been inspected. Never targets production.
+name: CodexDD 0.4.3 core compatibility smoke
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-core-compat-tests.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-043-core-compat-tests
+  cancel-in-progress: false
+
+jobs:
+  native-source-smoke:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout isolated integration source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Pin source identity and nonproduction version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          echo "Source HEAD: $GITHUB_SHA"
+
+      - name: Configure repository build environment
+        uses: ./.github/actions/setup-ci
+
+      - name: Use pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+
+      - name: Compile core and app-server for source integration
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo check -p codex-core -p codex-app-server -p codex-rollout-trace
+
+      - name: Run trusted adaptive policy regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test -p codex-core --lib adaptive_ -- --nocapture
+          cargo test -p codex-core --lib validation_terminalization_requests_required_tool_choice -- --nocapture
+          cargo test -p codex-core --lib resumed_history_recovers_orphan_custom_tool_call_without_panicking -- --nocapture
+
+      - name: Run app-server adaptive turn replay regression
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test -p codex-app-server --lib adaptive_runtime_signal_binds_event_turn_and_conversation_identity -- --nocapture
+
+      - name: Compile and run newly reconciled core integration regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test -p codex-core --test all completed_exec_evidence_id_survives_into_next_model_request_and_signal -- --nocapture
+          cargo test -p codex-core --test all websocket_code_mode_nested_exec_result_reaches_final_request -- --nocapture
+
+      - name: Report isolated Cargo lock drift
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- codex-rs/Cargo.lock; then
+            echo "Cargo.lock drift belongs to 3E.2; no modifications are published by this job."
+            git diff --stat -- codex-rs/Cargo.lock
+          fi
+          echo "Source branch remains nonpromotable pending Gate 3 and Windows-native release validation."
