@@ -30,7 +30,9 @@ Historical implementation, provenance and validation material is preserved in:
 
 ## NEXT: CodexDD 0.4.3 — OpenAI Codex rust-v0.162.0 integration
 
-**Status: QUEUED — NOT ACTIVATED.** Begin only when the operator starts a new chat with **`activate 0.4.3`**.
+**Status: ACTIVE — PHASE 1 (1A.1–1A.3) COMPLETE, GATE 1 AWAITING EXPLICIT OWNER ACCEPTANCE.** Activated 2026-10-09. No source integration, candidate preparation, PR, test waiver, merge or installation is authorized yet.
+
+**Current Phase 1 evidence (documentation branch `dd/codexdd-v0.4.3-phase1-recon`):** `docs/codexdd-0.4.3-packet-1a1-baseline-reconnaissance.md`, `docs/codexdd-0.4.3-packet-1a2-full-overlap-reconnaissance.md`, `docs/codexdd-0.4.3-packet-1a2-tree-inventory.json`, and `docs/codexdd-0.4.3-packet-1a3-integration-contract-and-phase1-gate.md`. **Gate 1 is the next required owner decision.** The fixed-target upgrade currently has an expected blocked conflict-reconciliation path; do not run the unmodified preparer as if it can create a candidate from a conflicting synthetic transplant.
 
 **Authoritative design / activation handoff:**
 
