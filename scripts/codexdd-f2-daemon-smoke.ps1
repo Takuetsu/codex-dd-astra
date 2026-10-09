@@ -237,93 +237,16 @@ if ($LASTEXITCODE -ne 0 -or $version -ne "codexdd $expectedSnapshotVersion") {
     throw "Packaged executable is not the validated F2 hotfix candidate: $version"
 }
 
-# This debug candidate reports a build-metadata snapshot version. The test
-# package was originally assembled with STABLE 0.4.2 metadata. The installer
-# correctly rejects stable metadata that does not equal the binary's version.
-# Normalize only the disposable smoke fixture to its actual SemVer snapshot
-# version. Do NOT modify the CodexDD runtime, the executable or production.
+# This debug executable identifies a snapshot, not a stable release.
+# A stable "0.4.2" package manifest is deliberately rejected by the daemon
+# installer, because it does not match the executable's --version output.
+# Normalize ONLY this disposable smoke-test package, never production.
 $normalizedRoot = [System.IO.Path]::GetFullPath($PackageRoot).TrimEnd('\')
 $normalizedTemp = [System.IO.Path]::GetFullPath($env:TEMP).TrimEnd('\') + '\'
 if (-not $normalizedRoot.StartsWith($normalizedTemp, [System.StringComparison]::OrdinalIgnoreCase) -or
-    (Split-Path -Leaf $normalizedRoot) -notmatch '^codexdd-f2-final-[0-9a-f]{32}
-$isolatedHome = Join-Path $env:TEMP "f2h-$id"
-$socket = Join-Path $isolatedHome "app-server-control\app-server-control.sock"
-if ($socket.Length -ge 100 -or (Test-Path -LiteralPath $isolatedHome)) {
-    throw "Unsafe or overlong isolated CODEX_HOME path"
-}
-
-$runDir = Join-Path $PackageRoot "live-smoke-$id"
-New-Item -ItemType Directory -Path $runDir -ErrorAction Stop | Out-Null
-# The Medium worker owns protected ACL creation; never create it elevated.
-@{ home = $isolatedHome; exe = $exe } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $runDir "config.json") -Encoding ASCII
-
-$taskName = "CodexDD-F2-$id"
-$registered = $false
-Write-Host "F2 HOTFIX: Testing real shared-daemon lifecycle under Medium integrity"
-Write-Host "Isolated test log: $runDir"
-
-try {
-    $principal = New-ScheduledTaskPrincipal -UserId (whoami) -LogonType Interactive -RunLevel Limited
-    $workerArguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -Worker -CaseDir "' + $runDir + '"'
-    $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument $workerArguments
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 7)
-    Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings -Force -ErrorAction Stop | Out-Null
-    $registered = $true
-
-    Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
-    $resultFile = Join-Path $runDir "result.txt"
-
-    for ($i = 0; $i -lt 360; $i++) {
-        if (Test-Path -LiteralPath $resultFile -PathType Leaf) {
-            break
-        }
-        Start-Sleep -Seconds 1
-    }
-
-    if (Test-Path -LiteralPath (Join-Path $runDir "trace.txt")) {
-        Get-Content -LiteralPath (Join-Path $runDir "trace.txt")
-    }
-    if (-not (Test-Path -LiteralPath $resultFile -PathType Leaf)) {
-        $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName
-        throw "No worker result after 360 seconds; task code $($taskInfo.LastTaskResult). Logs: $runDir"
-    }
-
-    $outcome = (Get-Content -LiteralPath $resultFile -Raw).Trim()
-    Write-Host $outcome
-    if ($outcome -notlike "PASS:*") {
-        foreach ($log in (Get-ChildItem -LiteralPath $runDir -Filter "*.stderr.txt" -File -ErrorAction SilentlyContinue)) {
-            Write-Host "=== $($log.Name) ==="
-            Get-Content -LiteralPath $log.FullName -Tail 15
-        }
-        throw "Live daemon smoke test failed; logs: $runDir"
-    }
-
-    # The worker proved the daemon stopped and a second stop returned notRunning.
-    Remove-Item -LiteralPath $isolatedHome -Recurse -Force -ErrorAction Stop
-    Write-Host "F2 HOTFIX: FINAL ACCEPTANCE PASSED"
-    Write-Host "Production installation unchanged"
-}
-finally {
-    if ($registered) {
-        # Clean up only the GUID-namespaced task created by this invocation.
-        try {
-            $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-            if ($null -ne $task) {
-                if ($task.State -eq "Running") {
-                    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-                }
-                Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-            }
-        }
-        catch {
-            Write-Warning "Could not unregister the test task $taskName : $($_.Exception.Message)"
-        }
-    }
-}
-) {
+    (Split-Path -Leaf $normalizedRoot) -notmatch '^codexdd-f2-final-[0-9a-f]{32}$') {
     throw "Smoke package root is not a disposable CodexDD F2 test directory"
 }
-
 $manifestPath = Join-Path $package "codex-package.json"
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.version -eq "0.4.2") {
@@ -331,14 +254,14 @@ if ($manifest.version -eq "0.4.2") {
     $manifestJson = $manifest | ConvertTo-Json -Depth 10
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($manifestPath, $manifestJson + "`n", $utf8NoBom)
-    Write-Host "Updated temporary smoke package metadata to snapshot $expectedSnapshotVersion"
+    Write-Host "Prepared disposable smoke package snapshot $expectedSnapshotVersion"
 }
 elseif ($manifest.version -ne $expectedSnapshotVersion) {
     throw "Unexpected smoke package version: $($manifest.version)"
 }
 $manifestCheck = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifestCheck.version -ne $expectedSnapshotVersion) {
-    throw "Test snapshot package metadata did not match the candidate"
+    throw "Snapshot package metadata does not match the executable"
 }
 
 $id = [guid]::NewGuid().ToString("N").Substring(0, 8)
