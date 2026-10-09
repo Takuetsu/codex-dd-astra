@@ -152,7 +152,7 @@ jobs:
             echo "- Tracked upstream: ${CURRENT_TAG}"
             echo "- Selected official stable release: ${LATEST_TAG}"
             echo
-            echo "This scheduled workflow is read-only and made no repository changes."
+            echo "This discovery workflow is read-only and made no repository changes."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build candidate manifest and dry-run transplant
