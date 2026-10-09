@@ -1,0 +1,1741 @@
+{
+  "record_type": "codexdd_0_4_3_packet_3a3_overlap_ownership_v1",
+  "authority": "ownership_plan_not_accepted_semantic_review_or_resolved_source",
+  "production_sha": "4828e3b4232781963594cfaaebdc49c5531de8b1",
+  "tracked_upstream_sha": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+  "target_upstream_sha": "c1382380de69521303b416720a52f42d51af6248",
+  "executed_discovery_run_id": 37960772252,
+  "original_discovery_manifest_sha256": "59a9e5fbcace88827dc1edfd38abb0b6b45c8d41c7ff956d7af0ed94e9988ee3",
+  "original_conflict_report_sha256": "c3456c3e93130126f8f6f6bc1366bdafcc0c11835244ba70c31b91a564a450a4",
+  "overlap_paths_sha256": "27e3145698e3b5c486fd9660d61dbffb87ebf755c058bd29fb20958b01872bcd",
+  "exact_path_list_crosscheck": "136 paths in the executed artifact matched the prior immutable read-only observation; FNV-1a32 ad3f06bc at 136 entries",
+  "source_path_counts": {
+    "customizations": 257,
+    "upstream_changes": 2507,
+    "overlaps": 136,
+    "existing_classifier_sensitive": 124,
+    "previously_unclassified": 12,
+    "textual_conflicts": 22
+  },
+  "owner_packet_counts": {
+    "3E.2": 2,
+    "3C.1": 4,
+    "3C.4": 26,
+    "3B.4": 13,
+    "3B.3": 14,
+    "3D.2": 1,
+    "3B.1": 8,
+    "3B.2": 21,
+    "3B.5": 8,
+    "3C.2": 19,
+    "3D.1": 5,
+    "3C.3": 15
+  },
+  "conflict_packet_counts": {
+    "3C.1": 4,
+    "3B.4": 5,
+    "3B.1": 3,
+    "3C.3": 3,
+    "3C.2": 7
+  },
+  "conflict_paths_in_original_order": [
+    "codex-rs/app-server-daemon/src/backend/windows.rs",
+    "codex-rs/app-server-daemon/src/lib.rs",
+    "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+    "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+    "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+    "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+    "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+    "codex-rs/config/src/config_toml.rs",
+    "codex-rs/core/src/config/mod.rs",
+    "codex-rs/rollout/src/policy.rs",
+    "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
+    "codex-rs/tui/src/app/thread_routing.rs",
+    "codex-rs/tui/src/app/thread_session_state.rs",
+    "codex-rs/tui/src/app/working_directory.rs",
+    "codex-rs/tui/src/app_server_session.rs",
+    "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
+    "codex-rs/tui/src/app_server_session/rollout_history.rs",
+    "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+    "codex-rs/tui/src/daemon_startup.rs",
+    "codex-rs/tui/src/session_start.rs",
+    "codex-rs/tui/src/slash_command.rs",
+    "codex-rs/tui/src/startup_orchestration.rs"
+  ],
+  "rows": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "packet_owner": "3E.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "build_release_ci"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "packet_owner": "3E.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "build_release_ci"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "critical",
+        "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "critical",
+        "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/lib.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "critical",
+        "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "packet_owner": "3D.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "CLI startup, daemon test and Windows operator flow"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/cli/tests/daemon_startup.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "CLI startup, daemon test and Windows operator flow"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "configuration"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "configuration"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/history_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/mod.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/agent_websocket.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Core agent WebSocket/exec scenario regression coverage"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Core agent WebSocket/exec scenario regression coverage"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Core agent WebSocket/exec scenario regression coverage"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/external-agent-migration/src/sessions/append.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Migrated sessions and append integrity"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/history/src/compaction_resume_metadata.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/protocol/src/lib.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout-trace/src/protocol_event.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Protocol trace fidelity and persistence"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout/src/lib.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout/src/list.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout/src/persistence_metrics.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/state/src/extract.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/state/src/runtime/threads.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/thread-store/src/local/rollout_migration/canonicalizer.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/thread-store/src/thread_metadata_sync.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/thread-store/src/types.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/background_requests.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "configuration"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/managed_worktree_creation.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/model_catalog.rs",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "adaptive_routing",
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/turn_submission.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_events.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_session_state.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app/working_directory.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/interaction.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/misalignment_policy.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/rate_limits.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/exec_flow.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/permissions.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/plan_mode.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/worktree_picker_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/worktree_picker.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/dynamic_tools_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/session_start.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/session_state.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/status/card.rs",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_local_background_server.snap",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_uses_default_reasoning_when_config_empty.snap",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Generated SDK drift and protocol compatibility"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/v2_all.py",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Generated SDK drift and protocol compatibility"
+      },
+      "resolution_status": "not_started",
+      "semantic_review_status": "not_started"
+    }
+  ]
+}
