@@ -1,6 +1,6 @@
 # CodexDD 0.4.3 — Phase 1 packet 1A.3: integration contract, ownership and acceptance gate
 
-**Status:** 1A.3 COMPLETE — **Phase 1 Gate 1: AWAITING EXPLICIT OWNER ACCEPTANCE.**  
+**Status:** 1A.3 COMPLETE — **Phase 1 Gate 1 ACCEPTED by owner on 2026-10-09** for fixed-target read-only planning only. Subsequent tooling/source/preparation gates are separate.  
 **Prepared:** 2026-10-09.  
 **Documentation-only branch:** `dd/codexdd-v0.4.3-phase1-recon`.  
 **Scope:** source integration ownership, necessary blocked-conflict recovery design, pinned upstream identities, safety invariants, numbered packet decomposition, evidence and Windows validation plan. No runtime files, updater tools, CI workflows, source/provenance/version files or production branches changed by this packet.
@@ -143,4 +143,6 @@ Destructive branch deletion, force pushes, direct production edits, skipped rece
 
 **Next executable packet if Gate 1 is accepted:** **2A.1 — refreshed pinned-target manifest and safe conflict-preparation assessment**, with explicit checkpoint. If confirmed conflicts persist, stop before preparation and present the narrow reconciliation tooling/change gate. If no conflicts remain, use the normal safe `upstream-prepare.yml` path under its own explicit approval.
 
-**Gate 1 = NOT YET ACCEPTED. Gate 2 = NOT YET ACCEPTED. No actual source integration performed.**
+**Gate 1 = ACCEPTED 2026-10-09 (read-only fixed-target planning only). Gate 2 = NOT YET ACCEPTED. No actual source integration performed.**
+
+**Post-acceptance handoff:** [Packet 2A.1 observation and dry-run limitation](codexdd-0.4.3-packet-2a1-readonly-manifest-and-preparation-blocker.md) records the owner-selected 0.162.0 identity, refreshed current-production inventory and the separate upcoming tooling authorization. **No existing preparation or promotion rules were relaxed.**
