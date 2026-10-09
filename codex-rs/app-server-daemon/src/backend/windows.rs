@@ -22,6 +22,7 @@ use windows_sys::Win32::Foundation::ERROR_INVALID_HANDLE;
 use windows_sys::Win32::Foundation::ERROR_INVALID_PARAMETER;
 use windows_sys::Win32::Foundation::ERROR_LOCK_VIOLATION;
 use windows_sys::Win32::Foundation::FILETIME;
+use windows_sys::Win32::Foundation::HANDLE;
 use windows_sys::Win32::Foundation::HANDLE_FLAG_INHERIT;
 use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
 use windows_sys::Win32::Foundation::SetHandleInformation;
@@ -67,13 +68,13 @@ pub(super) fn spawn_without_inheriting_stdio(
         ("stdout", io::stdout().as_raw_handle()),
         ("stderr", io::stderr().as_raw_handle()),
     ] {
-        if handle.is_null() || handle as isize == INVALID_HANDLE_VALUE {
+        if handle.is_null() || handle == INVALID_HANDLE_VALUE {
             continue;
         }
         // SAFETY: these are borrowed standard handles; changing the inherit
         // flag neither closes them nor changes their read/write access.
         if unsafe {
-            SetHandleInformation(handle as _, HANDLE_FLAG_INHERIT, /*dwflags*/ 0)
+            SetHandleInformation(handle, HANDLE_FLAG_INHERIT, /*dwflags*/ 0)
         } == 0
         {
             let error = io::Error::last_os_error();
@@ -104,19 +105,19 @@ impl fmt::Display for ElevatedLaunchRestricted {
 
 impl std::error::Error for ElevatedLaunchRestricted {}
 
-/// Read the current Windows process token before selecting an implicit shared daemon.
-/// An elevated TUI can choose embedded mode without weakening the daemon guard.
-pub fn is_current_process_elevated() -> Result<bool> {
-    let mut token = 0;
+/// Reports whether this process has administrator privileges, rather than
+/// merely belonging to an administrator account.
+pub fn is_elevated() -> Result<bool> {
+    let mut token = std::ptr::null_mut();
     if unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) } == 0 {
         return Err(io::Error::last_os_error()).context("failed to query daemon launcher token");
     }
-    let token = unsafe { OwnedHandle::from_raw_handle(token as _) };
+    let token = unsafe { OwnedHandle::from_raw_handle(token) };
     let mut elevation: TOKEN_ELEVATION = unsafe { std::mem::zeroed() };
     let mut returned = 0;
     if unsafe {
         GetTokenInformation(
-            token.as_raw_handle() as _,
+            token.as_raw_handle(),
             TokenElevation,
             (&mut elevation as *mut TOKEN_ELEVATION).cast(),
             std::mem::size_of::<TOKEN_ELEVATION>() as u32,
@@ -135,9 +136,15 @@ pub fn is_current_process_elevated() -> Result<bool> {
     Ok(elevation.TokenIsElevated != 0)
 }
 
+/// The CodexDD Windows F2 policy and existing native tests also consume this name.
+/// Use upstream's single authoritative elevation probe, never a second token check.
+pub fn is_current_process_elevated() -> Result<bool> {
+    is_elevated()
+}
+
 /// Explicit daemon lifecycle operations must still reject elevated processes.
 pub(crate) fn ensure_not_elevated() -> Result<()> {
-    if is_current_process_elevated()? {
+    if is_elevated()? {
         return Err(anyhow::Error::new(ElevatedLaunchRestricted));
     }
     Ok(())
@@ -204,7 +211,7 @@ impl Process {
         let handle = unsafe {
             OpenProcess(access, /*binherithandle*/ 0, pid)
         };
-        if handle == 0 {
+        if handle.is_null() {
             let err = io::Error::last_os_error();
             return if err.raw_os_error() == Some(ERROR_INVALID_PARAMETER as i32) {
                 Ok(None)
@@ -212,9 +219,7 @@ impl Process {
                 Err(err).context("failed to open daemon process")
             };
         }
-        Ok(Some(Self(unsafe {
-            OwnedHandle::from_raw_handle(handle as _)
-        })))
+        Ok(Some(Self(unsafe { OwnedHandle::from_raw_handle(handle) })))
     }
 
     pub(super) fn start_time(&self) -> Result<String> {
@@ -224,7 +229,7 @@ impl Process {
         let mut user = created;
         if unsafe {
             GetProcessTimes(
-                self.0.as_raw_handle() as _,
+                self.0.as_raw_handle(),
                 &mut created,
                 &mut exited,
                 &mut kernel,
@@ -242,7 +247,7 @@ impl Process {
 
     pub(super) fn is_running(&self) -> Result<bool> {
         match unsafe {
-            WaitForSingleObject(self.0.as_raw_handle() as _, /*dwmilliseconds*/ 0)
+            WaitForSingleObject(self.0.as_raw_handle(), /*dwmilliseconds*/ 0)
         } {
             WAIT_TIMEOUT => Ok(true),
             WAIT_OBJECT_0 => Ok(false),
@@ -254,7 +259,7 @@ impl Process {
         if !self.is_running()? {
             return Ok(());
         }
-        let pid = unsafe { GetProcessId(self.0.as_raw_handle() as _) };
+        let pid = unsafe { GetProcessId(self.0.as_raw_handle()) };
         let Some(target) = Self::open_with_access(
             pid,
             PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE | PROCESS_TERMINATE,
@@ -268,7 +273,7 @@ impl Process {
             return Ok(());
         }
         if unsafe {
-            TerminateProcess(target.0.as_raw_handle() as _, /*uexitcode*/ 1)
+            TerminateProcess(target.0.as_raw_handle(), /*uexitcode*/ 1)
         } == 0
         {
             return Err(io::Error::last_os_error()).context("failed to terminate daemon process");
@@ -281,7 +286,7 @@ pub(crate) fn try_lock_file(file: &tokio::fs::File) -> Result<bool> {
     let mut overlapped = unsafe { std::mem::zeroed() };
     if unsafe {
         LockFileEx(
-            file.as_raw_handle() as _,
+            file.as_raw_handle(),
             LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY,
             /*dwreserved*/ 0,
             /*nnumberofbytestolocklow*/ 1,
@@ -310,15 +315,15 @@ pub(crate) fn installer_job(child: &tokio::process::Child) -> Result<OwnedHandle
     let process = child
         .raw_handle()
         .context("installer process handle is unavailable")?;
-    process_job(process as isize)
+    process_job(process)
 }
 
-fn process_job(process: isize) -> Result<OwnedHandle> {
+fn process_job(process: HANDLE) -> Result<OwnedHandle> {
     let job = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
-    if job == 0 {
+    if job.is_null() {
         return Err(io::Error::last_os_error()).context("failed to create updater job");
     }
-    let owned = unsafe { OwnedHandle::from_raw_handle(job as _) };
+    let owned = unsafe { OwnedHandle::from_raw_handle(job) };
     let mut limits: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = unsafe { std::mem::zeroed() };
     limits.BasicLimitInformation.LimitFlags =
         JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK;
