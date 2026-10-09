@@ -132,7 +132,7 @@ class UpstreamSyncTests(unittest.TestCase):
 
     def test_pinned_cli_selects_only_official_tags_and_fails_closed(self):
         script = Path(__file__).with_name("upstream_sync.py")
-        official = "rust-v0.162.0\\nrust-v0.165.0\\n"
+        official = "rust-v0.162.0\nrust-v0.165.0\n"
         command = [sys.executable, str(script), "--latest-from-stdin"]
         pinned = subprocess.run(
             [*command, "--target-tag", "rust-v0.162.0"],
