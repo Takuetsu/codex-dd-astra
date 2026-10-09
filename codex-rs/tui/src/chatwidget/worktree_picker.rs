@@ -52,7 +52,7 @@ impl ChatWidget {
             title: Some(title.into()),
             items: vec![
                 SelectionItem {
-                    name: "Current checkout".to_string(),
+                    name: "Use current Git worktree".to_string(),
                     description: Some("Keep using the current working directory".to_string()),
                     actions: vec![Box::new(move |tx| match mode {
                         ManagedWorktreeMode::New => {
@@ -71,8 +71,11 @@ impl ChatWidget {
                     ..Default::default()
                 },
                 SelectionItem {
-                    name: "New worktree".to_string(),
-                    description: Some("Create an isolated managed checkout".to_string()),
+                    name: "Create new Git worktree".to_string(),
+                    description: Some(
+                        "Create a separate checkout of this repository in another directory"
+                            .to_string(),
+                    ),
                     actions: vec![Box::new(move |tx| {
                         tx.send(AppEvent::StartManagedWorktree {
                             mode,
@@ -386,7 +389,7 @@ impl ChatWidget {
                     ..Default::default()
                 },
             ],
-            ..SelectionViewParams::picker()
+            ..SelectionViewParams::confirmation()
         });
     }
 }
