@@ -186,13 +186,11 @@ impl CodexDDValidationHandler {
             ))
         })?;
 
-        let turn_environment =
-            resolve_tool_environment(&invocation.step_context.environments, None)?;
-        let Some(turn_environment) = turn_environment else {
-            return Err(FunctionCallError::RespondToModel(
-                "CodexDD validation requires a local execution environment".to_string(),
-            ));
-        };
+        let turn_environment = resolve_tool_environment(
+            &invocation.step_context,
+            None,
+            "CodexDD validation requires a local execution environment",
+        )?;
         if turn_environment.environment.is_remote() {
             return Err(FunctionCallError::RespondToModel(
                 "CodexDD 0.4.0 local validation is Windows-local only".to_string(),
@@ -260,7 +258,7 @@ impl CodexDDValidationHandler {
         };
 
         let exec_handler = ExecCommandHandler::one_shot(ExecCommandHandlerOptions {
-            allow_login_shell: false,
+            include_login_parameter: false,
             allow_tty: false,
             exec_permission_approvals_enabled: invocation
                 .session
