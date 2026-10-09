@@ -255,8 +255,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
     },
     {
       "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
@@ -267,8 +268,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
     },
     {
       "path": "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
@@ -279,8 +281,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
     },
     {
       "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
@@ -291,8 +294,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
     },
     {
       "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
@@ -1795,7 +1799,11 @@
       "codex-rs/core/src/tools/handlers/mod.rs",
       "codex-rs/core/src/tools/spec_plan.rs",
       "codex-rs/core/src/tools/registry.rs",
-      "codex-rs/core/src/session/tests.rs"
+      "codex-rs/core/src/session/tests.rs",
+      "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
+      "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "codex-rs/app-server-protocol/src/protocol/common.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1814,7 +1822,8 @@
       "3B.2b": "docs/codexdd-0.4.3-packet-3b2b-state-and-replay.md",
       "3B.2c": "docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
       "3B.2d": "docs/codexdd-0.4.3-packet-3b2d-fail-closed-tool-gates.md",
-      "3B.2e": "docs/codexdd-0.4.3-packet-3b2e-session-tests-complete.md"
+      "3B.2e": "docs/codexdd-0.4.3-packet-3b2e-session-tests-complete.md",
+      "3B.3a": "docs/codexdd-0.4.3-packet-3b3a-protocol-workflow-types.md"
     },
     "release_validated_paths": [],
     "known_compile_blockers": [],
