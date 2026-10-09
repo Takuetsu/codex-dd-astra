@@ -1,0 +1,134 @@
+# Temporary CodexDD 0.4.3 source-integration codegen job.
+# Branch-only, one-shot push trigger: delete before release promotion.
+name: CodexDD 0.4.3 isolated schema generation
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-schema-generation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: codexdd-043-schema-generation
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Enforce isolated source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          echo "Generator input commit: $GITHUB_SHA"
+
+      - name: Configure repo CI paths and generator tools
+        uses: ./.github/actions/setup-ci
+
+      - name: Configure pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.3"
+
+      - name: Generate stable app-server schemas and Python SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 codex-rs/app-server-protocol/scripts/write_schema_fixtures.py
+
+      - name: Generate experimental compressed protocol exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 codex-rs/app-server-protocol/scripts/write_schema_fixtures.py --experimental
+
+      - name: Regenerate core config schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd codex-rs
+          cargo run -p codex-config-schema --bin codex-write-config-schema
+
+      - name: Verify source-derived Rust schema fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd codex-rs
+          cargo test -p codex-app-server-protocol --lib schema_fixtures_tests::
+          cargo test -p codex-app-server-protocol --lib precomputed_exports_tests::
+
+      - name: Verify Python SDK regeneration stability
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --project sdk/python --frozen --only-group test python -m pytest sdk/python/tests/test_contract_generation.py -q
+
+      - name: Fail closed on non-generated changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+
+          def output(*args):
+              return subprocess.check_output(args, text=True).splitlines()
+
+          paths = set(output("git", "diff", "--name-only"))
+          paths.update(output("git", "ls-files", "--others", "--exclude-standard"))
+          allowed_prefixes = (
+              "codex-rs/app-server-protocol/schema/",
+              "sdk/python/src/openai_codex/generated/",
+          )
+          allowed_exact = {
+              "codex-rs/core/config.schema.json",
+              "sdk/python/src/openai_codex/api.py",
+          }
+          unexpected = sorted(
+              path for path in paths
+              if path not in allowed_exact and not path.startswith(allowed_prefixes)
+          )
+          print(f"Generated output paths changed: {len(paths)}")
+          for path in sorted(paths):
+              print(path)
+          if unexpected:
+              raise SystemExit("Refusing non-generated file modifications: " + repr(unexpected))
+          if not paths:
+              raise SystemExit("No generated output changed; source/fixtures expected to differ")
+          PY
+
+      - name: Commit generator output on isolated integration branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git add -A -- codex-rs/app-server-protocol/schema sdk/python/src/openai_codex/generated sdk/python/src/openai_codex/api.py codex-rs/core/config.schema.json
+          test -z "$(git status --porcelain --untracked-files=all | grep '^??' || true)"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(codexdd 0.4.3): regenerate app-server and SDK schemas from reconciled source"
+          echo "Generator commit: $(git rev-parse HEAD)"
+          git push origin 'HEAD:refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
