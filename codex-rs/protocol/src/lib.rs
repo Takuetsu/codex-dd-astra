@@ -18,7 +18,6 @@ pub use thread_id::RolloutId;
 pub use thread_id::ThreadId;
 pub use tool_name::DEFAULT_FUNCTION_NAMESPACE;
 pub use tool_name::ToolName;
-
 /// Marks the CodexDD pre-complexity Implementation reconnaissance turn.
 ///
 /// The TUI sets this on turn/start while complexity is still missing, and core uses it to
@@ -44,6 +43,8 @@ pub mod approvals;
 pub mod capabilities;
 mod codex_error_info;
 pub mod config_types;
+mod guardian_transcript;
+pub use guardian_transcript::TranscriptFormat;
 pub mod dynamic_tools;
 mod environment;
 pub mod error;
