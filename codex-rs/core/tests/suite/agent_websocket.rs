@@ -764,8 +764,12 @@ text("CODEXDD_NESTED_EXEC_RESULT=" + JSON.stringify(result));
             model_info.tool_mode = Some(ToolMode::CodeMode);
         })
         .with_config(|config| {
-            let _ = config.features.enable(Feature::CodeMode);
-            let _ = config.features.enable(Feature::ExecutedToolCallMetadata);
+            config.features.enable(Feature::CodeMode).expect("enable code mode");
+            config.features.enable(Feature::CodeModeHost).expect("enable code-mode host");
+            config
+                .features
+                .enable(Feature::ExecutedToolCallMetadata)
+                .expect("enable executed tool metadata");
             config
                 .features
                 .enable(Feature::ResponsesWebsocketsV2)
