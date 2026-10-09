@@ -1038,6 +1038,36 @@ mod tests {
     const WORKSPACE_ID_B: &str = "123e4567-e89b-42d3-a456-426614174001";
 
     #[test]
+    fn adaptive_worker_and_daybreak_settings_deserialize_together() {
+        let cfg: ConfigToml = toml::from_str(
+            r#"
+daybreak = true
+
+[adaptive_worker]
+role = "implementation"
+authorized_scope = "codex-rs/config"
+"#,
+        )
+        .expect("upstream and CodexDD settings must be supported together");
+        assert_eq!(cfg.daybreak, Some(true));
+        let worker = cfg.adaptive_worker.expect("Worker authority must be retained");
+        assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
+        assert_eq!(worker.authorized_scope.as_deref(), Some("codex-rs/config"));
+    }
+
+    #[test]
+    fn adaptive_worker_rejects_unrecognized_role() {
+        let err = toml::from_str::<ConfigToml>(
+            r#"
+[adaptive_worker]
+role = "administrator"
+"#,
+        )
+        .expect_err("external Worker role must be explicitly enumerated");
+        assert!(err.to_string().contains("administrator"));
+    }
+
+    #[test]
     fn sandbox_mode_uses_executor_platform_and_sandbox_level() {
         use Platform::Linux;
         use Platform::Macos;
