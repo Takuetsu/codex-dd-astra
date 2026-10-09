@@ -135,8 +135,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
@@ -147,8 +148,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
@@ -159,8 +161,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
@@ -171,8 +174,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
@@ -183,8 +187,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
@@ -195,8 +200,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
@@ -207,8 +213,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
@@ -219,8 +226,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
@@ -231,8 +239,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
@@ -243,8 +252,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
@@ -320,8 +330,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/app-server/src/message_processor.rs",
@@ -332,8 +343,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/app-server/src/notification_media.rs",
@@ -344,8 +356,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/app-server/src/request_processors.rs",
@@ -356,8 +369,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
@@ -368,8 +382,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/app-server/src/thread_state.rs",
@@ -380,8 +395,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/cli/src/main.rs",
@@ -431,8 +447,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "codex-rs/core/src/agent/control/spawn.rs",
@@ -774,8 +791,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/protocol/src/protocol.rs",
@@ -786,8 +804,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/rollout-trace/src/protocol_event.rs",
@@ -799,8 +818,9 @@
         "priority": "high",
         "rationale": "Protocol trace fidelity and persistence"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
     },
     {
       "path": "codex-rs/rollout/src/lib.rs",
@@ -1754,8 +1774,9 @@
         "priority": "high",
         "rationale": "Generated SDK drift and protocol compatibility"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     {
       "path": "sdk/python/src/openai_codex/generated/v2_all.py",
@@ -1767,8 +1788,9 @@
         "priority": "high",
         "rationale": "Generated SDK drift and protocol compatibility"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     }
   ],
   "reconciliation_progress": {
@@ -1805,7 +1827,16 @@
       "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
       "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
       "codex-rs/app-server-protocol/src/protocol/common.rs",
-      "codex-rs/app-server-protocol/src/protocol/v2/turn.rs"
+      "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "codex-rs/app-server/src/message_processor.rs",
+      "codex-rs/app-server/src/notification_media.rs",
+      "codex-rs/app-server/src/request_processors.rs",
+      "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "codex-rs/app-server/src/thread_state.rs",
+      "codex-rs/protocol/src/lib.rs",
+      "codex-rs/protocol/src/protocol.rs",
+      "codex-rs/rollout-trace/src/protocol_event.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1826,7 +1857,9 @@
       "3B.2d": "docs/codexdd-0.4.3-packet-3b2d-fail-closed-tool-gates.md",
       "3B.2e": "docs/codexdd-0.4.3-packet-3b2e-session-tests-complete.md",
       "3B.3a": "docs/codexdd-0.4.3-packet-3b3a-protocol-workflow-types.md",
-      "3B.3b": "docs/codexdd-0.4.3-packet-3b3b-turn-protocol.md"
+      "3B.3b": "docs/codexdd-0.4.3-packet-3b3b-turn-protocol.md",
+      "3B.3c": "docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "3B.4": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
     },
     "release_validated_paths": [],
     "known_compile_blockers": [],
@@ -1837,6 +1870,38 @@
       "CRITICAL: native registry dispatch regression tests & pre-tool-hook input mutation safety",
       "Native client terminalization request tool_choice test",
       "Run complete 0.162.0 core/src/session/tests.rs tests with CodexDD Worker and history revision"
+    ],
+    "generated_paths_pending_release_validation": [
+      "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "codex-rs/core/config.schema.json",
+      "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "sdk/python/src/openai_codex/generated/v2_all.py"
+    ],
+    "generator_run_evidence": {
+      "packet": "3B.4",
+      "run_id": 37979330404,
+      "input_commit_sha": "c482f522882a60372bacd29384b0b62bdf21f5a6",
+      "generated_commit_sha": "63b4ff83dd192cbc9861bec7c22a4d3f6b74f078",
+      "generated_overlap_paths": 13,
+      "generator_and_drift_tests": "passed",
+      "native_windows_release_profile": "not_run",
+      "cargo_lock": "3E.2-owned drift isolated and preserved as artifact codexdd-043-cargo-lock-drift"
+    },
+    "generated_textual_conflict_paths": [
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts"
     ]
   }
 }
