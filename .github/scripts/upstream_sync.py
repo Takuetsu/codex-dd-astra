@@ -160,7 +160,9 @@ def select_official_stable_release(
     if stable_release_version(requested_tag) is None:
         raise ValueError(f"invalid requested official stable release: {requested_tag}")
     if requested_tag not in set(tags):
-        raise ValueError(f"requested stable release is not an official upstream tag: {requested_tag}")
+        raise ValueError(
+            f"requested stable release is not an official upstream tag: {requested_tag}"
+        )
     return requested_tag
 
 
@@ -621,7 +623,9 @@ def _validate_object_id(value: str, label: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--latest-from-stdin", action="store_true", required=True)
-    parser.add_argument("--target-tag", default="", help="Exact official stable tag, or empty for latest")
+    parser.add_argument(
+        "--target-tag", default="", help="Exact official stable tag, or empty for latest"
+    )
     args = parser.parse_args()
     try:
         if args.latest_from_stdin:
