@@ -16,14 +16,17 @@ use color_eyre::eyre::WrapErr;
 
 #[derive(Clone, Copy)]
 pub(crate) enum SessionStartAction {
-    Resume(ResumeModelSettings),
+    Resume(
+        ResumeModelSettings,
+        crate::resume_permissions::ResumePermissions,
+    ),
     Fork(ForkPermissionMode),
 }
 
 impl SessionStartAction {
     pub(crate) fn verb(self) -> &'static str {
         match self {
-            Self::Resume(_) => "resume",
+            Self::Resume(..) => "resume",
             Self::Fork(_) => "fork",
         }
     }
@@ -36,13 +39,14 @@ impl SessionStartAction {
         target: &SessionTarget,
     ) -> Result<AppServerStartedThread> {
         match self {
-            Self::Resume(settings) => {
+            Self::Resume(settings, permissions) => {
                 app_server
-                    .resume_initial_thread(
+                    .resume_initial_thread_with_permission_overrides(
                         local_settings,
                         config.clone(),
                         target.thread_id,
                         settings,
+                        permissions,
                     )
                     .await
             }
