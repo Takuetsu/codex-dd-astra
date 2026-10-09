@@ -18,10 +18,10 @@
 
 Use GitHub **Actions → upstream-codex-discovery → Run workflow**; supply exactly:
 
-| Input | Value |
-| --- | --- |
-| Branch | `dd/astra-policy-v2` |
-| `target_tag` | `rust-v0.162.0` |
+| Input                 | Value                                      |
+| --------------------- | ------------------------------------------ |
+| Branch                | `dd/astra-policy-v2`                       |
+| `target_tag`          | `rust-v0.162.0`                            |
 | `expected_target_sha` | `c1382380de69521303b416720a52f42d51af6248` |
 
 Leaving both optional inputs **empty** preserves the scheduled/latest behavior. Supplying only one input, a malformed tag/SHA, a tag absent from official upstream refs, or the wrong peeled commit must fail closed rather than choose a different target.
