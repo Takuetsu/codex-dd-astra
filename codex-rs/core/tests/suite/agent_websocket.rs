@@ -791,11 +791,17 @@ text(JSON.stringify(result));
         .unwrap_or_else(|| {
             panic!("final request should contain the code-mode output: {final_request}")
         });
+    // Custom tool outputs can be sent as a plain output string or as text blocks.
+    // Preserve the evidence assertion rather than coupling it to one wire shape.
     let result_text = output["output"]
-        .as_array()
-        .and_then(|items| items.last())
-        .and_then(|item| item["text"].as_str())
-        .expect("code-mode output should retain the nested exec result");
+        .as_str()
+        .or_else(|| {
+            output["output"]
+                .as_array()
+                .and_then(|items| items.last())
+                .and_then(|item| item["text"].as_str())
+        })
+        .unwrap_or_else(|| panic!("code-mode nested result missing from output: {output}"));
     let result: Value = serde_json::from_str(result_text)?;
 
     assert!(
