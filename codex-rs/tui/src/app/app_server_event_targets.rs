@@ -71,6 +71,9 @@ pub(super) fn server_notification_thread_target(
         ServerNotification::ThreadGoalUpdated(notification) => {
             Some(notification.thread_id.as_str())
         }
+        ServerNotification::ThreadPredictionUpdated(notification) => {
+            Some(notification.thread_id.as_str())
+        }
         ServerNotification::ThreadGoalCleared(notification) => {
             Some(notification.thread_id.as_str())
         }
@@ -80,10 +83,10 @@ pub(super) fn server_notification_thread_target(
         ServerNotification::ThreadSettingsUpdated(notification) => {
             Some(notification.thread_id.as_str())
         }
-        ServerNotification::TurnStarted(notification) => Some(notification.thread_id.as_str()),
         ServerNotification::AdaptiveRuntimeSignal(notification) => {
             Some(notification.thread_id.as_str())
         }
+        ServerNotification::TurnStarted(notification) => Some(notification.thread_id.as_str()),
         ServerNotification::HookStarted(notification) => Some(notification.thread_id.as_str()),
         ServerNotification::TurnCompleted(notification) => Some(notification.thread_id.as_str()),
         ServerNotification::HookCompleted(notification) => Some(notification.thread_id.as_str()),
@@ -187,6 +190,12 @@ pub(super) fn server_notification_thread_target(
         }
         ServerNotification::Warning(notification) => notification.thread_id.as_deref(),
         ServerNotification::GuardianWarning(notification) => Some(notification.thread_id.as_str()),
+        ServerNotification::McpServerOauthLoginCompleted(notification) => {
+            match notification.thread_id.as_deref() {
+                Some(thread_id) => Some(thread_id),
+                None => return ServerNotificationThreadTarget::AppScoped,
+            }
+        }
         ServerNotification::McpServerStatusUpdated(notification) => {
             match notification.thread_id.as_deref() {
                 Some(thread_id) => Some(thread_id),
@@ -195,7 +204,6 @@ pub(super) fn server_notification_thread_target(
         }
         ServerNotification::ProjectChanged(_)
         | ServerNotification::SkillsChanged(_)
-        | ServerNotification::McpServerOauthLoginCompleted(_)
         | ServerNotification::AccountUpdated(_)
         | ServerNotification::GatewayOAuthChanged(_)
         | ServerNotification::AccountRateLimitsUpdated(_)
@@ -246,11 +254,11 @@ mod tests {
     use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
     use codex_app_server_protocol::WarningNotification;
     use codex_protocol::ThreadId;
+    use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
     use codex_protocol::config_types::CollaborationMode;
     use codex_protocol::config_types::ModeKind;
     use codex_protocol::config_types::Settings;
     use codex_protocol::openai_models::ReasoningEffort;
-    use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
     use pretty_assertions::assert_eq;
 
     fn test_thread_settings() -> ThreadSettings {
