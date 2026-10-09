@@ -1,6 +1,6 @@
 # CodexDD 0.4.3 — OpenAI Codex rust-v0.162.0 integration
 
-**Status:** ACTIVATED — Phase 1 packets 1A.1–1A.3 completed on the read-only documentation branch; **Gate 1 awaiting explicit owner acceptance**. No upstream preparation, runtime implementation, source/version change, candidate PR, merge or installation has started.
+**Status:** ACTIVE — Phase 1 Gate 1 accepted by owner (2026-10-09). Packet 2A.1 read-only fixed-target observation is checkpointed, but its fresh current-base transplant dry run remains UNVERIFIED; **tooling authorization gate pending**. No upstream preparation, runtime/source change, candidate PR, merge or installation has started.
 
 **Activation phrase:** `activate 0.4.3`
 
@@ -8,9 +8,20 @@
 
 **Target platform:** Windows only. **Validation host:** Daniel-CL, accessible to the operator through SSH from Stonks; no Remote Desktop is available.
 
+## Current Phase 2 handoff (2026-10-09)
+
+**Owner acceptance:** Phase 1 Gate 1 accepted in conversation. This permits **read-only Phase 2 target-pinned planning** only; it is not source-change, candidate-publication, CI/PR, merge/install or test-waiver approval.
+
+- [Packet 2A.1 — target-pinned read-only observation and preparation blocker](codexdd-0.4.3-packet-2a1-readonly-manifest-and-preparation-blocker.md)
+- [2A.1 unprepared candidate observation JSON (state: discovered; transplant: not_run)](codexdd-0.4.3-packet-2a1-unprepared-target-observation.json)
+
+The live `0.162.0` target remains immutable. Exact Git source leaves outside `docs/` have **not** changed since the prior 22-conflict dry run, but that artifact was tied to a stale production SHA and is **not** current-base dry-run evidence. The connector cannot dispatch a new GitHub workflow, and local git has no network access; the current-base dry run is **not run**. Do not publish a candidate or soften `blocked_transplant_conflict` into a promotable v1 state.
+
+**Next owner decision:** whether to authorize drafting a narrowly scoped tooling-only change to support a read-only explicit target-pinned dry run and, if conflicts persist, a separately approved recovery contract. Tooling PR review/merge and any source reconciliation remain distinct, human-controlled gates.
+
 ## Current Phase 1 handoff (2026-10-09)
 
-Phase 1 is complete **for review, not yet accepted** on `dd/codexdd-v0.4.3-phase1-recon`. The authoritative planning evidence is:
+Phase 1 was subsequently **accepted by the owner for read-only Phase 2 planning** on `dd/codexdd-v0.4.3-phase1-recon`. The authoritative planning evidence is:
 
 - [1A.1 — source and tag baseline](codexdd-0.4.3-packet-1a1-baseline-reconnaissance.md)
 - [1A.2 — full upstream/overlap reconnaissance](codexdd-0.4.3-packet-1a2-full-overlap-reconnaissance.md)
@@ -19,7 +30,7 @@ Phase 1 is complete **for review, not yet accepted** on `dd/codexdd-v0.4.3-phase
 
 **Critical preparation blocker:** the current 0.4.2 preparer must fail closed on any textual conflict. The historical 0.162.0 dry run reported 22 conflicts, and its base is stale. Packet 1A.3 proposes a separate owner-gated, minimal conflict-reconciliation contract and an isolated source branch only if a refreshed exact-base dry run confirms conflicts. **Do not claim 0.4.2 promotion compatibility on a conflicted candidate until an approved default-branch workflow extension has been implemented and tested.**
 
-**Next action:** obtain explicit **Phase 1 Gate 1** acceptance before running an identity-bound preparation workflow, making runtime/tooling changes or starting 2A.1. The old “new-chat activation handoff” section below is historical; this subsection records the current active-phase state on the documentation branch.
+**Historical Phase 1 handoff:** Gate 1 was accepted on 2026-10-09, and packet 2A.1 read-only evidence was recorded. The next action is the separate limited tooling authorization described above, **not** candidate preparation or runtime changes. The old “new-chat activation handoff” section below is historical; this subsection records the current active-phase state on the documentation branch.
 
 ## Objective and release scope
 
