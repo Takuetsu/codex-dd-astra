@@ -252,7 +252,7 @@ $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.version -eq "0.4.2") {
     $manifest.version = $expectedSnapshotVersion
     $manifestJson = $manifest | ConvertTo-Json -Depth 10
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($manifestPath, $manifestJson + "`n", $utf8NoBom)
     Write-Host "Prepared disposable smoke package snapshot $expectedSnapshotVersion"
 }
