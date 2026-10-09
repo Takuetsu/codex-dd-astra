@@ -740,7 +740,7 @@ async fn websocket_code_mode_nested_exec_result_reaches_final_request() -> Resul
         "exec",
         r#"
 const result = await tools.exec_command({ cmd: "echo code-mode-evidence" });
-text(JSON.stringify(result));
+text("CODEXDD_NESTED_EXEC_RESULT=" + JSON.stringify(result));
 "#,
     );
     code_mode_call["item"]["id"] = serde_json::json!("custom_code_mode_exec");
@@ -791,18 +791,25 @@ text(JSON.stringify(result));
         .unwrap_or_else(|| {
             panic!("final request should contain the code-mode output: {final_request}")
         });
-    // Custom tool outputs can be sent as a plain output string or as text blocks.
-    // Preserve the evidence assertion rather than coupling it to one wire shape.
-    let result_text = output["output"]
-        .as_str()
-        .or_else(|| {
-            output["output"]
-                .as_array()
-                .and_then(|items| items.last())
-                .and_then(|item| item["text"].as_str())
-        })
-        .unwrap_or_else(|| panic!("code-mode nested result missing from output: {output}"));
-    let result: Value = serde_json::from_str(result_text)?;
+    // WebSocket mode can flatten code-mode output into a string containing
+    // the script completion banner, whereas SSE may retain separate text blocks.
+    // Require a unique marker emitted by the nested command's result so neither
+    // a completion banner nor unrelated JSON can satisfy this evidence check.
+    let output_texts = match &output["output"] {
+        Value::String(text) => vec![text.as_str()],
+        Value::Array(items) => items
+            .iter()
+            .filter_map(|item| item.get("text").and_then(Value::as_str))
+            .collect::<Vec<_>>(),
+        other => panic!("unexpected code-mode output wire shape: {other}"),
+    };
+    let result_text = output_texts
+        .iter()
+        .flat_map(|text| text.lines())
+        .find_map(|line| line.trim().strip_prefix("CODEXDD_NESTED_EXEC_RESULT="))
+        .unwrap_or_else(|| panic!("nested exec result marker absent in: {output}"));
+    let result: Value = serde_json::from_str(result_text)
+        .unwrap_or_else(|err| panic!("invalid nested exec JSON ({err}): {result_text:?}; {output}"));
 
     assert!(
         result
