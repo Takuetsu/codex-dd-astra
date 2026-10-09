@@ -81,8 +81,8 @@ jobs:
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          cargo test -p codex-core --test all completed_exec_evidence_id_survives_into_next_model_request_and_signal -- --nocapture
           cargo test -p codex-core --test all websocket_code_mode_nested_exec_result_reaches_final_request -- --nocapture
+          cargo test -p codex-core --test all completed_exec_evidence_id_survives_into_next_model_request_and_signal -- --nocapture
 
       - name: Report isolated Cargo lock drift
         if: always()
