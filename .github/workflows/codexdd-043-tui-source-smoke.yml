@@ -1,0 +1,74 @@
+# Temporary, read-only 3C TUI compile gate. Source-only and nonproduction.
+# Remove after evidence is captured and accepted. No generated sources or Cargo.lock are published.
+name: CodexDD 0.4.3 TUI source smoke
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-tui-source-smoke.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-043-tui-source-smoke
+  cancel-in-progress: false
+
+jobs:
+  tui-source-check:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout isolated integration source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assert nonproduction source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          echo "TUI source HEAD: $GITHUB_SHA"
+
+      - name: Configure repository build environment
+        uses: ./.github/actions/setup-ci
+
+      - name: Use pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+
+      - name: Use repository-provided verified V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-unknown-linux-gnu
+
+      - name: Focused TUI library compilation
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo check -p codex-tui --lib
+
+      - name: Report uncommitted Cargo lock drift owned by 3E.2
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- codex-rs/Cargo.lock; then
+            echo "Cargo.lock drift belongs to 3E.2 and cannot be published by this job."
+            git diff --stat -- codex-rs/Cargo.lock
+          fi
+          echo "No release promotion, production merge or installation is allowed by this smoke."
