@@ -92,7 +92,6 @@ impl AppServerSession {
             config.workspace_roots.clone(),
             Vec::new(),
             thread.reasoning_effort,
-            config.personality,
             local_settings,
             super::WorkflowStateRestoreMode::ExistingThread,
         )
@@ -139,16 +138,19 @@ impl AppServerSession {
         thread_id: ThreadId,
         model_settings: ResumeModelSettings,
     ) -> Result<AppServerStartedThread> {
-        self.resume_thread_with_worker_binding(
+        Box::pin(self.resume_thread_with_worker_binding(
             local_settings,
             config,
             thread_id,
             model_settings,
+            crate::resume_permissions::ResumePermissions::default(),
             ResumeWorkerBinding::Unbound,
-        )
+        ))
         .await
     }
 
+    /// The initial session may inherit a configuration-bound Worker grant.
+    /// Later interactive resume must never silently import that binding.
     pub(crate) async fn resume_initial_thread(
         &mut self,
         local_settings: &crate::local_settings::LocalSettings,
@@ -156,12 +158,50 @@ impl AppServerSession {
         thread_id: ThreadId,
         model_settings: ResumeModelSettings,
     ) -> Result<AppServerStartedThread> {
+        self.resume_initial_thread_with_permission_overrides(
+            local_settings,
+            config,
+            thread_id,
+            model_settings,
+            crate::resume_permissions::ResumePermissions::default(),
+        )
+        .await
+    }
+
+    pub(crate) async fn resume_initial_thread_with_permission_overrides(
+        &mut self,
+        local_settings: &crate::local_settings::LocalSettings,
+        config: Config,
+        thread_id: ThreadId,
+        model_settings: ResumeModelSettings,
+        permission_overrides: crate::resume_permissions::ResumePermissions,
+    ) -> Result<AppServerStartedThread> {
         self.resume_thread_with_worker_binding(
             local_settings,
             config,
             thread_id,
             model_settings,
+            permission_overrides,
             ResumeWorkerBinding::Startup,
+        )
+        .await
+    }
+
+    pub(crate) async fn resume_thread_with_permission_overrides(
+        &mut self,
+        local_settings: &crate::local_settings::LocalSettings,
+        config: Config,
+        thread_id: ThreadId,
+        model_settings: ResumeModelSettings,
+        permission_overrides: crate::resume_permissions::ResumePermissions,
+    ) -> Result<AppServerStartedThread> {
+        self.resume_thread_with_worker_binding(
+            local_settings,
+            config,
+            thread_id,
+            model_settings,
+            permission_overrides,
+            ResumeWorkerBinding::Unbound,
         )
         .await
     }
@@ -172,8 +212,10 @@ impl AppServerSession {
         config: Config,
         thread_id: ThreadId,
         model_settings: ResumeModelSettings,
+        permission_overrides: crate::resume_permissions::ResumePermissions,
         worker_binding: ResumeWorkerBinding,
     ) -> Result<AppServerStartedThread> {
+        self.thread_tool_transport().validate_config(&config)?;
         let session_config = if matches!(
             model_settings,
             ResumeModelSettings::RestoreFromThread | ResumeModelSettings::PreserveExistingThread
@@ -188,7 +230,11 @@ impl AppServerSession {
             self.thread_params_mode(),
             self.remote_cwd_override.as_deref(),
             model_settings,
+            permission_overrides,
         );
+        if model_settings == ResumeModelSettings::OverrideFromCurrentConfig {
+            params.model_provider = self.explicit_model_provider(&config);
+        }
         self.thread_tool_transport()
             .configure_mcp(&mut params.config);
         let mut rollout_maintenance_guard = None;
@@ -265,7 +311,6 @@ impl AppServerSession {
         let mut started = started_thread_from_resume_response(
             response,
             local_settings,
-            &config,
             self.thread_params_mode(),
         )
         .await?;
