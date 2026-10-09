@@ -83,7 +83,21 @@ function Invoke-F2Worker {
         }
         Write-F2Trace $Dir "PASS: Medium integrity"
 
-        $settingsPath = Join-Path $isolatedHome "app-server-daemon\settings.json"
+        # An inherited TEMP ACL is too broad for a shared daemon state dir.
+        # Create the protected user-only directory AT CREATION TIME from the
+        # Medium-integrity worker, matching codex-uds/windows_security.rs.
+        if (Test-Path -LiteralPath $isolatedHome) {
+            throw "Isolated CODEX_HOME exists; refusing ACL repair"
+        }
+        $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        $stateAcl = New-Object System.Security.AccessControl.DirectorySecurity
+        $stateAcl.SetSecurityDescriptorSddlForm("O:${currentSid}D:P(A;OICI;FA;;;${currentSid})")
+        [void][System.IO.Directory]::CreateDirectory($isolatedHome)
+        $stateDirectory = Join-Path $isolatedHome "app-server-daemon"
+        [void][System.IO.Directory]::CreateDirectory($stateDirectory, $stateAcl)
+        $settingsPath = Join-Path $stateDirectory "settings.json"
+        '{"updater":{"autoUpdateEnabled":false}}' | Set-Content -LiteralPath $settingsPath -Encoding ASCII
+        Write-F2Trace $Dir "PASS: State directory created with user-only protected ACL"
         $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
         if ($settings.updater.autoUpdateEnabled -ne $false) {
             throw "Isolated daemon auto-updates are not disabled"
@@ -231,9 +245,7 @@ if ($socket.Length -ge 100 -or (Test-Path -LiteralPath $isolatedHome)) {
 
 $runDir = Join-Path $PackageRoot "live-smoke-$id"
 New-Item -ItemType Directory -Path $runDir -ErrorAction Stop | Out-Null
-New-Item -ItemType Directory -Path (Join-Path $isolatedHome "app-server-daemon") -Force -ErrorAction Stop | Out-Null
-
-'{"updater":{"autoUpdateEnabled":false}}' | Set-Content -LiteralPath (Join-Path $isolatedHome "app-server-daemon\settings.json") -Encoding ASCII
+# The Medium worker owns protected ACL creation; never create it elevated.
 @{ home = $isolatedHome; exe = $exe } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $runDir "config.json") -Encoding ASCII
 
 $taskName = "CodexDD-F2-$id"
