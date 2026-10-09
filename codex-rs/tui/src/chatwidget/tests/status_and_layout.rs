@@ -13,6 +13,48 @@ use ratatui::backend::TestBackend;
 use serial_test::serial;
 
 #[tokio::test]
+async fn status_output_marks_lvo_as_not_run_before_first_validation() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("fresh validation status".to_string()),
+    };
+    chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.complexity_class =
+        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);
+    chat.adaptive_effort.implementation_phase =
+        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
+
+    chat.add_status_output(
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
+    );
+
+    let rendered = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    for expected in [
+        "LVO last: not run",
+        "LVO run: None",
+        "LVO candidate: None",
+        "LVO failure fingerprint: None",
+        "LVO repair budget: 0/2 used (2 remaining)",
+        "LVO next: work_packet",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "expected {expected:?} in /status output: {rendered:?}"
+        );
+    }
+}
+
+
+#[tokio::test]
 async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6.1-sol")).await;
     chat.thread_id = Some(ThreadId::new());
