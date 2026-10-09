@@ -35,3 +35,16 @@
 - Require Gate 2B, exact canonical HEAD, typed attestation, sensitive semantic review, native release-profile PASS, and owner merge/install approval separately.
 
 This document is a WIP engineering checkpoint and is not a preparation artifact.
+
+## Executed source-tree checkpoint (2026-10-09)
+
+**WIP tree commit:** 6f8c7692988181630483e2aa6602e622f6884e35  
+**WIP tree SHA:** 3792ebc491138858e3e234e012fd57323ce0184f  
+**First parent:** 7466345ca6099d7fb77b42f95b978b7a0d9b8f43  
+**Source Git leaf entries:** 9,099
+
+The isolated branch ref was advanced **fast-forward-only**, with an exact expected-old-HEAD guard. The full recursive candidate source-tree leaf map was read back from GitHub and matched the independently calculated expected path-to-object SHA, mode and type for **every file**. The resulting tree retained all 257 production customization decisions (including three fork deletions), all six existing 3A docs, and the target 0.162.0 objects for all 2,371 paths changed only upstream. All 136 overlap paths still hold the fork/production blobs, so **zero** overlap resolution reviews or native compilation tests are claimed.
+
+The authoritative discovery remains **blocked_transplant_conflict**. The WIP commit, source branch and this document must never be used in place of a canonical prepared candidate, reconciled v2 attestation or release receipt. Production remained at 4828e3b4232781963594cfaaebdc49c5531de8b1 after the source-tree ref update. The canonical candidate ref has not been created.
+
+**Next:** 3B.1, beginning with the three textual config/persistence conflicts and related semantic overlaps. Full Git three-way reconciliation, rather than these fork-preferred provisional blobs, is required before asserting a source-ready build.
