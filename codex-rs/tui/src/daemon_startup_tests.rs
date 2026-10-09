@@ -9,9 +9,30 @@ use tempfile::TempDir;
 #[test]
 fn elevated_daemon_auto_start_falls_back_to_embedded_mode() {
     let error = anyhow::Error::new(codex_app_server_daemon::ElevatedLaunchRestricted);
+    let reason = daemon_startup::windows_automatic_fallback_reason(&error);
     assert_eq!(
-        daemon_startup::windows_automatic_fallback_reason(&error),
-        Some("an elevated Windows terminal")
+        reason,
+        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)
+    );
+    // Preserve the classified legacy fallback without hiding unrelated failures.
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        None,
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn restricted_windows_launcher_still_warns_on_implicit_fallback() {
+    let error = anyhow::Error::new(codex_app_server_daemon::DetachedLaunchRestricted);
+    let reason = daemon_startup::windows_automatic_fallback_reason(&error);
+    assert_eq!(reason, Some("this Windows launcher"));
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        Some(
+            "Running without the shared background server: this Windows launcher requires embedded mode."
+                .into()
+        ),
     );
 }
 
@@ -22,6 +43,140 @@ fn unrelated_daemon_start_error_does_not_fall_back() {
     assert_eq!(
         daemon_startup::windows_automatic_fallback_reason(&error),
         None
+    );
+}
+
+#[test]
+fn elevated_windows_implicit_startup_uses_embedded_without_f2_warning() {
+    let reason = daemon_startup::elevated_windows_implicit_exclusion(
+        None,
+        /*elevation*/ Ok(true),
+        /*agents_overview*/ false,
+        /*explicit_remote*/ false,
+    );
+    assert_eq!(
+        reason,
+        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)
+    );
+    // A nonempty exclusion also disables implicit daemon socket discovery.
+    assert!(reason.is_some());
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        None,
+    );
+}
+
+#[test]
+fn failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning() {
+    let reason = daemon_startup::elevated_windows_implicit_exclusion(
+        None,
+        /*elevation*/ Err(()),
+        /*agents_overview*/ false,
+        /*explicit_remote*/ false,
+    );
+    // This exclusion prevents both socket discovery and automatic daemon startup.
+    assert_eq!(
+        reason,
+        Some(daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON)
+    );
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),
+        Some(format!(
+            "Running without the shared background server: {} requires embedded mode.",
+            daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON
+        )),
+    );
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ false),
+        None,
+    );
+    // Explicit remote or daemon-wide agents transport remains untouched.
+    for (agents_overview, explicit_remote) in [(true, false), (false, true)] {
+        assert_eq!(
+            daemon_startup::elevated_windows_implicit_exclusion(
+                None,
+                /*elevation*/ Err(()),
+                agents_overview,
+                explicit_remote,
+            ),
+            None,
+        );
+    }
+    assert_eq!(
+        daemon_startup::elevated_windows_implicit_exclusion(
+            Some("--no-daemon"),
+            /*elevation*/ Err(()),
+            /*agents_overview*/ false,
+            /*explicit_remote*/ false,
+        ),
+        Some("--no-daemon"),
+    );
+}
+
+#[test]
+fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnings() {
+    let none = daemon_startup::elevated_windows_implicit_exclusion(
+        None,
+        /*elevation*/ Ok(false),
+        /*agents_overview*/ false,
+        /*explicit_remote*/ false,
+    );
+    assert_eq!(none, None);
+
+    for (agents_overview, explicit_remote) in [(true, false), (false, true)] {
+        assert_eq!(
+            daemon_startup::elevated_windows_implicit_exclusion(
+                None,
+                /*elevation*/ Ok(true),
+                agents_overview,
+                explicit_remote,
+            ),
+            None,
+        );
+    }
+
+    for excluded in [
+        "--no-daemon",
+        "--strict-config",
+        "custom configuration loader",
+    ] {
+        assert_eq!(
+            daemon_startup::elevated_windows_implicit_exclusion(
+                Some(excluded),
+                /*elevation*/ Ok(true),
+                /*agents_overview*/ false,
+                /*explicit_remote*/ false,
+            ),
+            Some(excluded),
+        );
+    }
+
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(
+            Some("--strict-config"),
+            /*auto_start_daemon*/ true,
+        ),
+        Some(
+            "Running without the shared background server: --strict-config requires embedded mode."
+                .into()
+        ),
+    );
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(
+            Some("this Windows launcher"),
+            /*auto_start_daemon*/ true,
+        ),
+        Some(
+            "Running without the shared background server: this Windows launcher requires embedded mode."
+                .into()
+        ),
+    );
+    assert_eq!(
+        daemon_startup::automatic_exclusion_warning(
+            Some("--strict-config"),
+            /*auto_start_daemon*/ false,
+        ),
+        None,
     );
 }
 

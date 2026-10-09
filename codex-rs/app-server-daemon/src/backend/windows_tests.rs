@@ -15,6 +15,18 @@ use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
 use windows_sys::Win32::System::Threading::DETACHED_PROCESS;
 use windows_sys::Win32::System::Threading::TerminateProcess;
 
+#[test]
+fn elevated_token_probe_and_daemon_guard_agree() {
+    let elevated = super::is_current_process_elevated().expect("query Windows token");
+    let guard = super::ensure_not_elevated();
+    if elevated {
+        let error = guard.expect_err("elevated process must not launch a shared daemon");
+        assert!(error.is::<super::ElevatedLaunchRestricted>(), "{error:#}");
+    } else {
+        guard.expect("non-elevated process is eligible for daemon launch");
+    }
+}
+
 #[tokio::test]
 async fn captured_stdio_closes_while_child_is_alive() {
     const TEST: &str = "backend::windows::tests::captured_stdio_closes_while_child_is_alive";
