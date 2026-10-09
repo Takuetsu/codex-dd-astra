@@ -26,6 +26,18 @@ jobs:
       - name: cargo fmt
         run: cargo fmt -- --config imports_granularity=Item --check
 
+      - name: Parse F2 daemon smoke-test PowerShell
+        shell: powershell
+        run: |
+          $source = Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-f2-daemon-smoke.ps1'
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($source, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Host $_.ToString() }
+            throw 'Invalid PowerShell smoke-test syntax'
+          }
+
       - name: Build codex-cli
         run: cargo build -p codex-cli
 
