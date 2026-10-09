@@ -1,12 +1,25 @@
 # CodexDD 0.4.3 — OpenAI Codex rust-v0.162.0 integration
 
-**Status:** QUEUED — NOT ACTIVATED; reconnaissance and implementation have not started.
+**Status:** ACTIVATED — Phase 1 packets 1A.1–1A.3 completed on the read-only documentation branch; **Gate 1 awaiting explicit owner acceptance**. No upstream preparation, runtime implementation, source/version change, candidate PR, merge or installation has started.
 
 **Activation phrase:** `activate 0.4.3`
 
 **Release intent:** CodexDD `0.4.3` (explicit owner-selected product version; upstream discovery must not allocate it).
 
 **Target platform:** Windows only. **Validation host:** Daniel-CL, accessible to the operator through SSH from Stonks; no Remote Desktop is available.
+
+## Current Phase 1 handoff (2026-10-09)
+
+Phase 1 is complete **for review, not yet accepted** on `dd/codexdd-v0.4.3-phase1-recon`. The authoritative planning evidence is:
+
+- [1A.1 — source and tag baseline](codexdd-0.4.3-packet-1a1-baseline-reconnaissance.md)
+- [1A.2 — full upstream/overlap reconnaissance](codexdd-0.4.3-packet-1a2-full-overlap-reconnaissance.md)
+- [1A.2 — complete immutable Git tree inventory](codexdd-0.4.3-packet-1a2-tree-inventory.json)
+- [1A.3 — integration contract, conflict-recovery proposal, packet ownership and Gate 1 decision](codexdd-0.4.3-packet-1a3-integration-contract-and-phase1-gate.md)
+
+**Critical preparation blocker:** the current 0.4.2 preparer must fail closed on any textual conflict. The historical 0.162.0 dry run reported 22 conflicts, and its base is stale. Packet 1A.3 proposes a separate owner-gated, minimal conflict-reconciliation contract and an isolated source branch only if a refreshed exact-base dry run confirms conflicts. **Do not claim 0.4.2 promotion compatibility on a conflicted candidate until an approved default-branch workflow extension has been implemented and tested.**
+
+**Next action:** obtain explicit **Phase 1 Gate 1** acceptance before running an identity-bound preparation workflow, making runtime/tooling changes or starting 2A.1. The old “new-chat activation handoff” section below is historical; this subsection records the current active-phase state on the documentation branch.
 
 ## Objective and release scope
 
