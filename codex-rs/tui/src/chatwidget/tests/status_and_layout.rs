@@ -13,6 +13,132 @@ use ratatui::backend::TestBackend;
 use serial_test::serial;
 
 #[tokio::test]
+async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6.1-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
+    chat.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Sol61);
+    chat.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::Medium);
+    chat.adaptive_effort.budget_mode = crate::adaptive_budget::AdaptiveBudgetMode::Surplus;
+    chat.adaptive_effort.complexity_class =
+        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex);
+    chat.adaptive_effort.implementation_phase =
+        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
+    chat.adaptive_effort.attempt_number = 2;
+    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("bounded status integration".to_string()),
+    };
+    chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.validation_repair_fingerprint =
+        Some("v1:work_packet:core-adaptive-tests".to_string());
+    chat.adaptive_effort.validation_repair_cycles_used = 1;
+    chat.adaptive_effort.validation_targeted_retest_required = true;
+    chat.adaptive_effort.validation_status = Some(
+        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
+            profile: "work_packet".to_string(),
+            result: "fail".to_string(),
+            run_id: "run-status-42".to_string(),
+            branch: Some("dd/status-evidence".to_string()),
+            head_sha: "0123456789abcdef".to_string(),
+            failed_stage: Some("core-adaptive-tests".to_string()),
+            failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
+            log_path: "C:\\codexdd\\validation\\run-status-42\\validation.log".to_string(),
+        },
+    );
+
+    chat.add_status_output(
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
+    );
+
+    let rendered = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    for expected in [
+        "Adaptive Effort",
+        "Preference: Astra",
+        "Current: Sol 6.1 Medium",
+        "Budget mode: Surplus",
+        "Complexity: Complex",
+        "Implementation phase: Mechanical validation",
+        "Implementation floor: Luna High",
+        "Attempt: 2",
+        "Worker role: Implementation",
+        "Worker scope: bounded status integration",
+        "Worker binding: Bound",
+        "Workflow terminal: None",
+        "LVO last: FAIL work_packet",
+        "LVO run: run-status-42",
+        "LVO candidate: dd/status-evidence @ 0123456789abcdef",
+        "LVO failed stage: core-adaptive-tests",
+        "LVO failure fingerprint: v1:work_packet:core-adaptive-tests",
+        "LVO repair budget: 1/2 used (1 remaining)",
+        "LVO next: targeted -> work_packet",
+        "LVO log: C:\\codexdd\\validation\\run-status-42\\validation.log",
+    ] {
+        assert!(
+            rendered.contains(expected),
+            "expected {expected:?} in /status output: {rendered:?}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn status_output_surfaces_failed_receipt_fingerprint_before_repair_admission() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.adaptive_effort.enabled = true;
+    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("failed validation status".to_string()),
+    };
+    chat.adaptive_effort.worker_assignment_locked = true;
+    chat.adaptive_effort.complexity_class =
+        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);
+    chat.adaptive_effort.implementation_phase =
+        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
+    chat.adaptive_effort.validation_status = Some(
+        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
+            profile: "work_packet".to_string(),
+            result: "fail".to_string(),
+            run_id: "run-failed-before-repair".to_string(),
+            branch: Some("dd/status-evidence".to_string()),
+            head_sha: "fedcba9876543210".to_string(),
+            failed_stage: Some("core-adaptive-tests".to_string()),
+            failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
+            log_path: "C:\\codexdd\\validation\\run-failed-before-repair\\validation.log"
+                .to_string(),
+        },
+    );
+
+    chat.add_status_output(
+        /*refreshing_rate_limits*/ false, /*request_id*/ None,
+    );
+
+    let rendered = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    assert!(
+        rendered.contains("LVO failure fingerprint: v1:work_packet:core-adaptive-tests"),
+        "expected native failed-receipt fingerprint before repair admission: {rendered:?}"
+    );
+    assert!(
+        rendered.contains("LVO repair budget: 0/2 used (2 remaining)"),
+        "receipt visibility must not consume repair budget: {rendered:?}"
+    );
+}
+
+
+#[tokio::test]
 async fn finalized_voice_transcript_renders_beside_the_streamed_cell() {
     let (mut chat, _rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.local_settings.tui.animations = false;
@@ -123,9 +249,6 @@ async fn resumed_session_hides_unknown_token_usage_until_an_update_arrives() {
 #[tokio::test]
 async fn app_server_cyber_policy_error_renders_dedicated_notice() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-5.6-sol")).await;
-    chat.cyber_policy_notice
-        .set(crate::daybreak::Notice::Apply)
-        .unwrap();
 
     handle_error(
         &mut chat,
@@ -140,6 +263,70 @@ async fn app_server_cyber_policy_error_renders_dedicated_notice() {
     assert!(rendered.contains("We take extra care with some cybersecurity requests"));
     assert!(rendered.contains("Apply for Daybreak"));
     assert!(!rendered.contains("server fallback message"));
+}
+
+#[tokio::test]
+async fn daybreak_refusal_offers_enable_for_the_next_turn() {
+    let (mut chat, mut events, mut ops) = make_chatwidget_manual_with_auth(
+        Some("gpt-5.6-sol"),
+        /*has_chatgpt_account*/ true,
+        /*has_codex_backend_auth*/ true,
+        FrameRequester::test_dummy(),
+    )
+    .await;
+    chat.set_feature_enabled(Feature::CliDaybreak, /*enabled*/ true);
+    let thread_id = ThreadId::new();
+    chat.thread_id = Some(thread_id);
+    let mut model = crate::test_support::TEST_MODEL_PRESETS[0].clone();
+    model.model = "gpt-5.6-sol".into();
+    model.available_access_programs = Some(codex_protocol::openai_models::ModelAccessPrograms {
+        cyber: vec![codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue],
+    });
+    chat.model_catalog = std::sync::Arc::new(ModelCatalog::new(vec![model]));
+
+    chat.thread_usage.replaying_turn_completion = true;
+    chat.on_cyber_policy_error();
+    let cells = drain_insert_history(&mut events);
+    assert!(lines_to_single_string(&cells[0]).contains("Daybreak is currently off"));
+    assert!(chat.bottom_pane.no_modal_or_popup_active());
+    chat.thread_usage.replaying_turn_completion = false;
+
+    chat.daybreak_enabled = true;
+    chat.on_cyber_policy_error();
+    let cells = drain_insert_history(&mut events);
+    assert!(lines_to_single_string(&cells[0]).contains("even when Daybreak is on"));
+    assert!(chat.bottom_pane.no_modal_or_popup_active());
+    chat.daybreak_enabled = false;
+
+    chat.on_cyber_policy_error();
+    assert_chatwidget_snapshot!(
+        "daybreak_refusal_enable_picker",
+        render_bottom_popup(&chat, /*width*/ 80)
+    );
+    chat.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+    assert!(
+        std::iter::from_fn(|| events.try_recv().ok()).any(|event| matches!(event,
+            AppEvent::PersistDaybreakSelection { thread_id: id, enabled: true } if id == thread_id
+        ))
+    );
+    assert!(ops.try_recv().is_err());
+
+    chat.set_parent_owned_thread();
+    handle_error(
+        &mut chat,
+        "server fallback message",
+        Some(CodexErrorInfo::CyberPolicy),
+    );
+    let cells = drain_insert_history(&mut events);
+    assert!(chat.bottom_pane.no_modal_or_popup_active());
+    assert_chatwidget_snapshot!(
+        "daybreak_refusal_parent_owned",
+        normalize_snapshot_paths(format!(
+            "{}\n{}",
+            lines_to_single_string(cells.last().unwrap()),
+            render_bottom_popup(&chat, /*width*/ 80)
+        ))
+    );
 }
 
 #[tokio::test]
@@ -319,172 +506,6 @@ async fn stale_status_line_git_summary_update_is_ignored() {
 }
 
 #[tokio::test]
-async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
-    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6.1-sol")).await;
-    chat.thread_id = Some(ThreadId::new());
-
-    chat.adaptive_effort.enabled = true;
-    chat.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);
-    chat.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Sol61);
-    chat.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::Medium);
-    chat.adaptive_effort.budget_mode = crate::adaptive_budget::AdaptiveBudgetMode::Surplus;
-    chat.adaptive_effort.complexity_class =
-        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex);
-    chat.adaptive_effort.implementation_phase =
-        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
-    chat.adaptive_effort.attempt_number = 2;
-    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
-        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
-        authorized_scope: Some("bounded status integration".to_string()),
-    };
-    chat.adaptive_effort.worker_assignment_locked = true;
-    chat.adaptive_effort.validation_repair_fingerprint =
-        Some("v1:work_packet:core-adaptive-tests".to_string());
-    chat.adaptive_effort.validation_repair_cycles_used = 1;
-    chat.adaptive_effort.validation_targeted_retest_required = true;
-    chat.adaptive_effort.validation_status = Some(
-        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
-            profile: "work_packet".to_string(),
-            result: "fail".to_string(),
-            run_id: "run-status-42".to_string(),
-            branch: Some("dd/status-evidence".to_string()),
-            head_sha: "0123456789abcdef".to_string(),
-            failed_stage: Some("core-adaptive-tests".to_string()),
-            failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
-            log_path: "C:\\codexdd\\validation\\run-status-42\\validation.log".to_string(),
-        },
-    );
-
-    chat.add_status_output(
-        /*refreshing_rate_limits*/ false, /*request_id*/ None,
-    );
-
-    let rendered = drain_insert_history(&mut rx)
-        .iter()
-        .map(|lines| lines_to_single_string(lines))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    for expected in [
-        "Adaptive Effort",
-        "Preference: Astra",
-        "Current: Sol 6.1 Medium",
-        "Budget mode: Surplus",
-        "Complexity: Complex",
-        "Implementation phase: Mechanical validation",
-        "Implementation floor: Luna High",
-        "Attempt: 2",
-        "Worker role: Implementation",
-        "Worker scope: bounded status integration",
-        "Worker binding: Bound",
-        "Workflow terminal: None",
-        "LVO last: FAIL work_packet",
-        "LVO run: run-status-42",
-        "LVO candidate: dd/status-evidence @ 0123456789abcdef",
-        "LVO failed stage: core-adaptive-tests",
-        "LVO failure fingerprint: v1:work_packet:core-adaptive-tests",
-        "LVO repair budget: 1/2 used (1 remaining)",
-        "LVO next: targeted -> work_packet",
-        "LVO log: C:\\codexdd\\validation\\run-status-42\\validation.log",
-    ] {
-        assert!(
-            rendered.contains(expected),
-            "expected {expected:?} in /status output: {rendered:?}"
-        );
-    }
-}
-
-#[tokio::test]
-async fn status_output_surfaces_failed_receipt_fingerprint_before_repair_admission() {
-    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
-    chat.thread_id = Some(ThreadId::new());
-
-    chat.adaptive_effort.enabled = true;
-    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
-        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
-        authorized_scope: Some("failed validation status".to_string()),
-    };
-    chat.adaptive_effort.worker_assignment_locked = true;
-    chat.adaptive_effort.complexity_class =
-        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);
-    chat.adaptive_effort.implementation_phase =
-        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
-    chat.adaptive_effort.validation_status = Some(
-        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {
-            profile: "work_packet".to_string(),
-            result: "fail".to_string(),
-            run_id: "run-failed-before-repair".to_string(),
-            branch: Some("dd/status-evidence".to_string()),
-            head_sha: "fedcba9876543210".to_string(),
-            failed_stage: Some("core-adaptive-tests".to_string()),
-            failure_fingerprint: Some("v1:work_packet:core-adaptive-tests".to_string()),
-            log_path: "C:\\codexdd\\validation\\run-failed-before-repair\\validation.log"
-                .to_string(),
-        },
-    );
-
-    chat.add_status_output(
-        /*refreshing_rate_limits*/ false, /*request_id*/ None,
-    );
-
-    let rendered = drain_insert_history(&mut rx)
-        .iter()
-        .map(|lines| lines_to_single_string(lines))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    assert!(
-        rendered.contains("LVO failure fingerprint: v1:work_packet:core-adaptive-tests"),
-        "expected native failed-receipt fingerprint before repair admission: {rendered:?}"
-    );
-    assert!(
-        rendered.contains("LVO repair budget: 0/2 used (2 remaining)"),
-        "receipt visibility must not consume repair budget: {rendered:?}"
-    );
-}
-
-#[tokio::test]
-async fn status_output_marks_lvo_as_not_run_before_first_validation() {
-    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6-sol")).await;
-    chat.thread_id = Some(ThreadId::new());
-
-    chat.adaptive_effort.enabled = true;
-    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
-        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
-        authorized_scope: Some("fresh validation status".to_string()),
-    };
-    chat.adaptive_effort.worker_assignment_locked = true;
-    chat.adaptive_effort.complexity_class =
-        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);
-    chat.adaptive_effort.implementation_phase =
-        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);
-
-    chat.add_status_output(
-        /*refreshing_rate_limits*/ false, /*request_id*/ None,
-    );
-
-    let rendered = drain_insert_history(&mut rx)
-        .iter()
-        .map(|lines| lines_to_single_string(lines))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    for expected in [
-        "LVO last: not run",
-        "LVO run: None",
-        "LVO candidate: None",
-        "LVO failure fingerprint: None",
-        "LVO repair budget: 0/2 used (2 remaining)",
-        "LVO next: work_packet",
-    ] {
-        assert!(
-            rendered.contains(expected),
-            "expected {expected:?} in /status output: {rendered:?}"
-        );
-    }
-}
-
-#[tokio::test]
 async fn raw_output_mode_can_change_without_inserting_notice() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
 
@@ -556,60 +577,74 @@ async fn flush_answer_stream_keeps_default_reflow_for_plain_text_tail() {
 }
 
 #[tokio::test]
-async fn flush_answer_stream_requests_scrollback_reflow_for_live_table_tail() {
-    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-    let cwd = chat.config.cwd.to_path_buf();
+async fn flush_answer_stream_requests_scrollback_reflow_for_tables() {
+    for definition in [
+        None,
+        Some("[ref]: https://example.com\n"),
+        Some("[ref]: https://example.com"),
+    ] {
+        let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+        let cwd = chat.config.cwd.to_path_buf();
 
-    let mut controller = crate::streaming::controller::StreamController::new(
-        Some(80),
-        cwd.as_path(),
-        HistoryRenderMode::Rich,
-    );
-    controller.push("| Name | Notes |\n");
-    controller.push("| --- | --- |\n");
-    controller.push("| alpha | tail held until final table render |\n");
-    assert!(
-        controller.has_live_tail(),
-        "expected table holdback to leave a live tail for this regression",
-    );
-    chat.stream_controller = Some(controller);
-
-    while rx.try_recv().is_ok() {}
-
-    chat.flush_answer_stream_with_separator();
-
-    let mut saw_consolidate = false;
-    let mut saw_insert_history = false;
-    while let Ok(event) = rx.try_recv() {
-        match event {
-            AppEvent::InsertHistoryCell(_) => saw_insert_history = true,
-            AppEvent::ConsolidateAgentMessage {
-                scrollback_reflow,
-                deferred_history_cell,
-                ..
-            } => {
-                saw_consolidate = true;
-                assert_eq!(
-                    scrollback_reflow,
-                    crate::app_event::ConsolidationScrollbackReflow::Required
-                );
-                assert!(
-                    deferred_history_cell.is_some(),
-                    "live table tail should be staged for consolidation",
-                );
-            }
-            _ => {}
+        let mut controller = crate::streaming::controller::StreamController::new(
+            Some(80),
+            cwd.as_path(),
+            HistoryRenderMode::Rich,
+        );
+        controller.push("| Name | Notes |\n");
+        controller.push("| --- | --- |\n");
+        controller.push("| [A][ref] | tail held until final table render |\n");
+        assert!(
+            controller.has_live_tail(),
+            "expected table holdback to leave a live tail for this regression",
+        );
+        if let Some(definition) = definition {
+            controller.on_commit_tick_batch(usize::MAX);
+            controller.push("\nAfter table.\n\n");
+            controller.on_commit_tick_batch(usize::MAX);
+            controller.push(definition);
+            controller.on_commit_tick_batch(usize::MAX);
+            assert!(!controller.has_live_tail());
         }
-    }
+        chat.stream_controller = Some(controller);
 
-    assert!(
-        saw_consolidate,
-        "expected stream finalization to consolidate"
-    );
-    assert!(
-        !saw_insert_history,
-        "live table tail should not be inserted before canonical reflow"
-    );
+        while rx.try_recv().is_ok() {}
+
+        chat.flush_answer_stream_with_separator();
+
+        let mut saw_consolidate = false;
+        let mut saw_insert_history = false;
+        while let Ok(event) = rx.try_recv() {
+            match event {
+                AppEvent::InsertHistoryCell(_) => saw_insert_history = true,
+                AppEvent::ConsolidateAgentMessage {
+                    scrollback_reflow,
+                    deferred_history_cell,
+                    ..
+                } => {
+                    saw_consolidate = true;
+                    assert_eq!(
+                        scrollback_reflow,
+                        crate::app_event::ConsolidationScrollbackReflow::Required
+                    );
+                    assert!(
+                        deferred_history_cell.is_some() == definition.is_none(),
+                        "only the uncommitted tail should be staged for consolidation",
+                    );
+                }
+                _ => {}
+            }
+        }
+
+        assert!(
+            saw_consolidate,
+            "expected stream finalization to consolidate"
+        );
+        assert!(
+            !saw_insert_history,
+            "table rows should not be inserted before canonical reflow"
+        );
+    }
 }
 
 #[tokio::test]
@@ -2296,42 +2331,51 @@ async fn streaming_final_answer_keeps_task_running_state() {
 }
 
 #[tokio::test]
-async fn single_line_final_answer_hides_working_status_snapshot() {
-    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(Some("gpt-5")).await;
-    chat.thread_id = Some(ThreadId::new());
+async fn answer_phase_controls_working_status_snapshot() {
+    for (phase, working_visible, snapshot) in [
+        (
+            MessagePhase::FinalAnswer,
+            false,
+            "single_line_final_answer_hides_working_status",
+        ),
+        (
+            MessagePhase::PartialAnswer,
+            true,
+            "single_line_partial_answer_keeps_working_status",
+        ),
+    ] {
+        let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(Some("gpt-5")).await;
+        chat.thread_id = Some(ThreadId::new());
 
-    complete_user_message(&mut chat, "user-1", "count to 1");
-    chat.on_task_started();
-    complete_assistant_message(
-        &mut chat,
-        "msg-final-single-line",
-        "1",
-        Some(MessagePhase::FinalAnswer),
-    );
+        complete_user_message(&mut chat, "user-1", "count to 1");
+        chat.on_task_started();
+        complete_assistant_message(&mut chat, "msg-final-single-line", "1", Some(phase));
 
-    assert!(chat.bottom_pane.is_task_running());
-    assert!(!chat.bottom_pane.status_indicator_visible());
+        assert!(chat.bottom_pane.is_task_running());
+        assert_eq!(chat.bottom_pane.status_indicator_visible(), working_visible);
 
-    let width: u16 = 40;
-    let vt_height: u16 = 10;
-    let ui_height = chat.desired_height(width);
-    let viewport = Rect::new(0, vt_height - ui_height - 1, width, ui_height);
-    let backend = VT100Backend::new(width, vt_height);
-    let mut terminal = crate::custom_terminal::Terminal::with_options(backend).expect("terminal");
-    terminal.set_viewport_area(viewport);
+        let width: u16 = 40;
+        let vt_height: u16 = 10;
+        let ui_height = chat.desired_height(width);
+        let viewport = Rect::new(0, vt_height - ui_height - 1, width, ui_height);
+        let backend = VT100Backend::new(width, vt_height);
+        let mut terminal =
+            crate::custom_terminal::Terminal::with_options(backend).expect("terminal");
+        terminal.set_viewport_area(viewport);
 
-    for lines in drain_insert_history(&mut rx) {
-        crate::insert_history::insert_history_lines(&mut terminal, lines)
-            .expect("insert history lines");
+        for lines in drain_insert_history(&mut rx) {
+            crate::insert_history::insert_history_lines(&mut terminal, lines)
+                .expect("insert history lines");
+        }
+
+        terminal
+            .draw(|frame| chat.render(frame.area(), frame.buffer_mut()))
+            .expect("draw final answer");
+        assert_chatwidget_snapshot!(
+            snapshot,
+            normalize_snapshot_paths(terminal.backend().vt100().screen().contents())
+        );
     }
-
-    terminal
-        .draw(|frame| chat.render(frame.area(), frame.buffer_mut()))
-        .expect("draw final answer");
-    assert_chatwidget_snapshot!(
-        "single_line_final_answer_hides_working_status",
-        normalize_snapshot_paths(terminal.backend().vt100().screen().contents())
-    );
 }
 
 #[tokio::test]
@@ -2543,47 +2587,6 @@ async fn commentary_completion_restores_status_indicator_before_exec_begin() {
     assert_eq!(chat.bottom_pane.status_indicator_visible(), true);
 }
 
-#[tokio::test]
-async fn fast_status_indicator_requires_chatgpt_auth() {
-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
-    set_fast_mode_test_catalog(&mut chat);
-    assert!(get_available_model(&chat, "gpt-5.4").supports_fast_mode());
-    chat.set_service_tier(Some(ServiceTier::Fast.request_value().to_string()));
-
-    assert!(!chat.should_show_fast_status(chat.current_model(), chat.current_service_tier(),));
-
-    set_chatgpt_auth(&mut chat);
-    set_fast_mode_test_catalog(&mut chat);
-    assert!(get_available_model(&chat, "gpt-5.4").supports_fast_mode());
-
-    assert!(chat.should_show_fast_status(chat.current_model(), chat.current_service_tier(),));
-}
-
-#[tokio::test]
-async fn fast_status_indicator_is_hidden_for_models_without_fast_support() {
-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.2")).await;
-    set_fast_mode_test_catalog(&mut chat);
-    assert!(!get_available_model(&chat, "gpt-5.2").supports_fast_mode());
-    chat.set_service_tier(Some(ServiceTier::Fast.request_value().to_string()));
-    set_chatgpt_auth(&mut chat);
-    set_fast_mode_test_catalog(&mut chat);
-    assert!(!get_available_model(&chat, "gpt-5.2").supports_fast_mode());
-
-    assert!(!chat.should_show_fast_status(chat.current_model(), chat.current_service_tier(),));
-}
-
-#[tokio::test]
-async fn fast_status_indicator_is_hidden_when_fast_mode_is_off() {
-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
-    set_fast_mode_test_catalog(&mut chat);
-    assert!(get_available_model(&chat, "gpt-5.4").supports_fast_mode());
-    set_chatgpt_auth(&mut chat);
-    set_fast_mode_test_catalog(&mut chat);
-    assert!(get_available_model(&chat, "gpt-5.4").supports_fast_mode());
-
-    assert!(!chat.should_show_fast_status(chat.current_model(), chat.current_service_tier(),));
-}
-
 // Snapshot test: ChatWidget at very small heights (idle)
 // Ensures overall layout behaves when terminal height is extremely constrained.
 #[tokio::test]
@@ -2601,23 +2604,29 @@ async fn ui_snapshots_small_heights_idle() {
     }
 }
 
-// Snapshot test: ChatWidget at very small heights (task running)
-// Validates how status + composer are presented within tight space.
+// Running state remains hidden when the terminal is too short to present it.
 #[tokio::test]
-async fn ui_snapshots_small_heights_task_running() {
+async fn ui_small_heights_hide_running_state() {
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+    let (idle_chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
-    // Activate status line
     handle_turn_started(&mut chat, "turn-1");
     handle_agent_reasoning_delta(&mut chat, "**Thinking**");
     for h in [1u16, 2, 3] {
-        let name = format!("chat_small_running_h{h}");
+        let mut idle_terminal =
+            Terminal::new(TestBackend::new(40, h)).expect("create idle terminal");
+        idle_terminal
+            .draw(|f| idle_chat.render(f.area(), f.buffer_mut()))
+            .expect("draw idle chat");
         let mut terminal = Terminal::new(TestBackend::new(40, h)).expect("create terminal");
         terminal
             .draw(|f| chat.render(f.area(), f.buffer_mut()))
             .expect("draw chat running");
-        assert_chatwidget_snapshot!(name, normalized_backend_snapshot(terminal.backend()));
+        assert_eq!(
+            normalized_backend_snapshot(terminal.backend()),
+            normalized_backend_snapshot(idle_terminal.backend()),
+        );
     }
 }
 
@@ -4495,6 +4504,7 @@ async fn session_configured_clears_goal_status_footer() {
 
     let rollout_file = NamedTempFile::new().unwrap();
     chat.handle_thread_session(crate::session_state::ThreadSessionState {
+        daybreak_enabled: false,
         windows_sandbox_host: crate::app::WindowsSandboxHost::Local,
         thread_id: ThreadId::new(),
         forked_from_id: None,
@@ -4512,7 +4522,6 @@ async fn session_configured_clears_goal_status_footer() {
         instruction_source_paths: Vec::new(),
         reasoning_effort: Some(ReasoningEffortConfig::default()),
         collaboration_mode: None,
-        personality: None,
         message_history: None,
         network_proxy: None,
         rollout_path: Some(rollout_file.path().to_path_buf()),
@@ -5142,36 +5151,31 @@ async fn user_prompt_submit_app_server_hook_notifications_render_snapshot() {
 }
 
 #[tokio::test]
-async fn interrupt_hook_events_render_snapshot() {
-    assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::Interrupt,
-        "interrupt:0:/tmp/hooks.json",
-        "cleaning up the interrupted turn",
-        "interrupt_hook_events_render_snapshot",
-    )
-    .await;
-}
-
-#[tokio::test]
-async fn pre_tool_use_hook_events_render_snapshot() {
-    assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::PreToolUse,
-        "pre-tool-use:0:/tmp/hooks.json",
-        "warming the shell",
-        "pre_tool_use_hook_events_render_snapshot",
-    )
-    .await;
-}
-
-#[tokio::test]
-async fn post_tool_use_hook_events_render_snapshot() {
-    assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::PostToolUse,
-        "post-tool-use:0:/tmp/hooks.json",
-        "warming the shell",
-        "post_tool_use_hook_events_render_snapshot",
-    )
-    .await;
+async fn hook_events_render_consistently() {
+    for (event_name, run_id, status_message) in [
+        (
+            codex_app_server_protocol::HookEventName::Interrupt,
+            "interrupt:0:/tmp/hooks.json",
+            "cleaning up the interrupted turn",
+        ),
+        (
+            codex_app_server_protocol::HookEventName::PreToolUse,
+            "pre-tool-use:0:/tmp/hooks.json",
+            "warming the shell",
+        ),
+        (
+            codex_app_server_protocol::HookEventName::PostToolUse,
+            "post-tool-use:0:/tmp/hooks.json",
+            "warming the shell",
+        ),
+        (
+            codex_app_server_protocol::HookEventName::SessionStart,
+            "session-start:0:/tmp/hooks.json",
+            "warming the shell",
+        ),
+    ] {
+        assert_hook_events(event_name, run_id, status_message).await;
+    }
 }
 
 #[tokio::test]
@@ -5720,17 +5724,6 @@ async fn stopped_hook_hides_model_context_and_preserves_stop_reason_snapshot() {
         "stopped_hook_hides_model_context_and_preserves_stop_reason",
         history
     );
-}
-
-#[tokio::test]
-async fn session_start_hook_events_render_snapshot() {
-    assert_hook_events_snapshot(
-        codex_app_server_protocol::HookEventName::SessionStart,
-        "session-start:0:/tmp/hooks.json",
-        "warming the shell",
-        "session_start_hook_events_render_snapshot",
-    )
-    .await;
 }
 
 fn hook_started_run(
