@@ -60,33 +60,46 @@ Candidate SHA: `2caa1b3afa55e23009ffc523fc23aa9abb3c3eba`, against production `8
 
 The candidate is not considered shipped until the installed build and normal release gates pass. The CodexDD product version has **not** been changed in this source-only repair packet.
 
-## One-command live Medium-integrity smoke test
+## Direct Medium-integrity desktop smoke test
 
-After assembling a complete packaged candidate on a Windows validation host, the
-operator runs `scripts/codexdd-f2-daemon-smoke.ps1` from the F2 hotfix branch.
-The script discovers the existing package from the
-`codexdd-f2-last-smoke-root.txt` marker in the Windows user's temporary
-directory (or accepts `-PackageRoot` to select an existing package root).
+**Observed limitation (October 2026):** a Medium-integrity task scheduled with
+Interactive / Limited permissions passed elevation and private-ACL checks, but
+its Windows Job Object rejected the daemon's deliberate
+`CREATE_BREAKAWAY_FROM_JOB` preflight (`Access is denied`, error 5). This
+restrictive launch context does not demonstrate normal user-desktop daemon
+eligibility. Do not disable or bypass daemon detachment checks to pass a test.
 
-The script validates the candidate revision and package layout, creates a
-uniquely named short-path `CODEX_HOME` with daemon auto-updates disabled, and
-runs a temporary **Interactive / Limited** Scheduled Task. The worker must
-prove Medium integrity (`S-1-16-8192`), then run the real packaged CLI
-daemon lifecycle: `start` must return `started`, a second `start`
-must return `alreadyRunning`, `version` must return `running` and
-identify an app-server version, and `stop` followed by another `stop`
-must return `stopped` / `notRunning`. Managed executable and socket
-paths must remain under the temporary `CODEX_HOME`.
+Run the existing standalone package candidate from a **normal non-elevated
+desktop PowerShell session** on Daniel-CL (Remote Desktop from Stonks is
+acceptable when available). A desktop-launched process must still support
+daemon breakaway; not every terminal/host does. The `-Direct` switch refuses
+High-integrity execution and does not create a scheduled task:
 
-Temporary tasks are unregistered; on success the worker verifies daemon
-shutdown and the controller deletes the temporary home. Command output,
-task results, and a trace are retained in the package's `live-smoke-*`
-directory for review. Failures are not treated as passes. The script does
-not update the production CLI, install the hotfix, or alter daemon security
-settings. A pre-existing interactive user login and UAC are required.
+```powershell
+git -C E:\codexdd pull --ff-only
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\codexdd\scripts\codexdd-f2-daemon-smoke.ps1 -Direct
+```
 
-The final live-daemon smoke remains **pending** until the operator provides
-a successful `F2 HOTFIX: FINAL ACCEPTANCE PASSED` result.
+The test discovers its packaged candidate from
+`codexdd-f2-last-smoke-root.txt` in the current user's TEMP folder, or
+accepts a previously assembled `-PackageRoot`. It requires the validated
+`codexdd 0.4.2+g2caa1b3afa55` debug executable and normalizes only the
+**disposable test package's** metadata to the exact snapshot SemVer.
+
+The test creates a uniquely named short-path `CODEX_HOME` with daemon
+auto-updates disabled and a strict, protected user-only state-directory ACL.
+It requires Medium integrity (`S-1-16-8192`), then uses the real packaged
+CLI: `start` → `started`, second `start` → `alreadyRunning`, `version` →
+`running` with an app-server version, `stop` → `stopped`, and a second
+`stop` → `notRunning`. It also confirms the managed executable and control
+socket are within the disposable `CODEX_HOME`. On success it deletes that
+temporary profile and restores the caller's prior `CODEX_HOME`. Log files
+are retained in `live-smoke-*` under the test package root.
+
+**No production installation, daemon security setting, or user credentials
+are modified.** This acceptance gate remains **pending** until a run
+reports `F2 HOTFIX: FINAL ACCEPTANCE PASSED`. The earlier successful
+Medium-integrity eligibility test and elevated SSH F2 check remain valid.
 
 ## Remaining expected limitation
 
