@@ -817,8 +817,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1c"
     },
     {
       "path": "codex-rs/rollout/src/policy.rs",
@@ -844,8 +845,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1c"
     },
     {
       "path": "codex-rs/rollout/src/search.rs",
@@ -1747,7 +1749,9 @@
       "codex-rs/rollout/src/lib.rs",
       "codex-rs/rollout/src/policy.rs",
       "codex-rs/config/src/config_toml.rs",
-      "codex-rs/core/src/config/mod.rs"
+      "codex-rs/core/src/config/mod.rs",
+      "codex-rs/rollout/src/persistence_metrics.rs",
+      "codex-rs/rollout/src/recorder.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1760,8 +1764,17 @@
     "source_merge_commit": "df77e9c70b6102f318de8e83a848e0c577188ffb",
     "source_merge_evidence_by_packet": {
       "3B.1a": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
-      "3B.1b": "docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md"
+      "3B.1b": "docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "3B.1c": "docs/codexdd-0.4.3-packet-3b1c-rollout-projection.md"
     },
-    "release_validated_paths": []
+    "release_validated_paths": [],
+    "known_compile_blockers": [
+      {
+        "packet": "3B.2",
+        "file": "codex-rs/history/src/lib.rs",
+        "symbol": "ResumedHistory.history_revision",
+        "reason": "0.162.0 recorder initializer requires field not yet in fork-preserved history struct"
+      }
+    ]
   }
 }
