@@ -490,8 +490,9 @@
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/src/codex_thread.rs",
@@ -529,8 +530,9 @@
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
@@ -557,8 +559,9 @@
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/src/session/session.rs",
@@ -625,8 +628,9 @@
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.2a"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.2a",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
@@ -690,8 +694,9 @@
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/tests/suite/agent_websocket.rs",
@@ -704,8 +709,9 @@
         "rationale": "Core agent WebSocket/exec scenario regression coverage"
       },
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/tests/suite/scenarios.rs",
@@ -718,8 +724,9 @@
         "rationale": "Core agent WebSocket/exec scenario regression coverage"
       },
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/core/tests/suite/unified_exec.rs",
@@ -732,8 +739,9 @@
         "rationale": "Core agent WebSocket/exec scenario regression coverage"
       },
       "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
-      "source_merge_packet": "3B.5"
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
     },
     {
       "path": "codex-rs/external-agent-migration/src/sessions/append.rs",
@@ -1928,11 +1936,17 @@
       "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts"
     ],
     "core_compatibility_smoke": {
-      "run_id": 37982039843,
-      "state": "submitted_not_yet_accepted",
-      "source_rust_tests": "not_yet_verified",
+      "run_id": 37992789061,
+      "run_conclusion": "success",
+      "source_sha": "c428e11c750a5857fbe4c6dcf008451ae3402c08",
+      "source_rust_tests": "narrow_targeted_suites_passed",
+      "code_mode_host": "built_from_sha256_verified_codex_rusty_v8_assets",
+      "websocket_nested_evidence": "passed",
+      "core_app_server_rollout_trace_cargo_check": "passed",
       "native_windows_release_profile": "not_run",
-      "scope": "3B.3 app-server plus 3B.5 core regressions"
+      "broader_regression_and_gate3": "pending",
+      "scope": "3B.3 app-server event replay and 3B.5 core + WebSocket/direct-exec evidence regressions",
+      "doc": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md"
     },
     "windows_f2_source_risk": {
       "packet": "3C.1",
