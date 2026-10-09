@@ -788,8 +788,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1a"
     },
     {
       "path": "codex-rs/rollout/src/list.rs",
@@ -827,8 +828,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1a"
     },
     {
       "path": "codex-rs/rollout/src/recorder.rs",
@@ -1737,5 +1739,18 @@
       "resolution_status": "not_started",
       "semantic_review_status": "not_started"
     }
-  ]
+  ],
+  "reconciliation_progress": {
+    "source_merge_pending_native_validation_paths": [
+      "codex-rs/rollout/src/lib.rs",
+      "codex-rs/rollout/src/policy.rs"
+    ],
+    "validated_paths": [],
+    "textual_conflicts_still_pending_native_validation": 22,
+    "source_reviewed_textual_conflict_paths": [
+      "codex-rs/rollout/src/policy.rs"
+    ],
+    "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
+    "source_merge_commit": "df77e9c70b6102f318de8e83a848e0c577188ffb"
+  }
 }
