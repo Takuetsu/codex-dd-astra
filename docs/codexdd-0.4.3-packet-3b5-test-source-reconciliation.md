@@ -1,6 +1,6 @@
 # CodexDD 0.4.3 — Packet 3B.5: core regression-test source reconciliation
 
-**Status: ALL EIGHT OWNED TEST SOURCE OVERLAPS RECONCILED. Native Rust execution and wider integration semantic acceptance PENDING.** This is an isolated 0.162.0 source-development checkpoint, not release acceptance.
+**Status: ALL EIGHT OWNED TEST SOURCE OVERLAPS RECONCILED; targeted Linux Rust compilation and regression smoke GREEN at `c428e11c750a5857fbe4c6dcf008451ae3402c08`. Full Gate 3 and native Windows release validation PENDING.** This is an isolated 0.162.0 source-development checkpoint, not release acceptance.
 
 ## Source identity and scope
 
@@ -25,11 +25,28 @@ The three 3B.5a additions were individually checked against complete 0.159.2→p
 
 **Important distinction:** these are source-content checks. No debug/release Rust assertion, Cargo test, Windows signal/provenance runtime test, or final security check is claimed solely from byte alignment.
 
-## Current focused compile/test gate
+## Focused compile/test gate — verified green on 2026-10-09
 
-Read-only isolated [GitHub Actions core compatibility smoke #37982039843](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37982039843) is the packet's first narrow core/app-server compile and regression suite. Treat its run outcome as authoritative only after it reaches a terminal success/failure state. The job covers core and app-server `cargo check`, library-level adaptive and resumed-history regressions, the app-server trusted signal completion replay, and two newly reconciled core integration scenarios.
+- **Passing run:** [GitHub Actions #37992789061](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061), source SHA `c428e11c750a5857fbe4c6dcf008451ae3402c08`, Linux `ubuntu-24.04`, read-only `contents: read`, **success**.
+- `cargo build -p codex-code-mode-host --bin codex-code-mode-host` passed after using the repository's checked and SHA256-verified Codex rusty_v8 release assets via `.github/actions/setup-rusty-v8`. The vendor V8 build inputs were not silently substituted.
+- The **previously failing** `websocket_code_mode_nested_exec_result_reaches_final_request` passed with the actual Code Mode host present; it checked a marked nested exec result and its runtime-native evidence ID.
+- `cargo check -p codex-core -p codex-app-server -p codex-rollout-trace` passed.
+- `cargo test -p codex-core --lib adaptive_`: **20 passed, 0 failed, 0 ignored** (narrow filtered suite).
+- `cargo test -p codex-core --lib validation_terminalization_requests_required_tool_choice`: **1 passed**.
+- `cargo test -p codex-core --lib resumed_history_recovers_orphan_custom_tool_call_without_panicking`: **1 passed**.
+- `cargo test -p codex-app-server --lib adaptive_runtime_signal_binds_event_turn_and_conversation_identity`: **1 passed**.
+- `cargo test -p codex-core --test all completed_exec_evidence_id_survives_into_next_model_request_and_signal`: **1 passed**.
 
-Cargo may refresh `codex-rs/Cargo.lock` during compilation; its exact reconciliation is independently owned by **3E.2**. This read-only test workflow is not allowed to push or merge and cannot generate a release receipt.
+### Failures correctly diagnosed, not bypassed
+
+1. [#37982039843](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37982039843): obsolete `codexdd_validation` environment resolver and exec-option call signatures on the new upstream API; corrected upstream interface.
+2. [#37983354658](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37983354658): resumed-history revision fixture incompatibility; updated the regression fixture to the current contract.
+3. [#37984863608](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37984863608), [#37986916381](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37986916381), and [#37989174104](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37989174104): nested Code Mode/WebSocket regression failed; the final diagnostic revealed `unsupported custom tool call: exec`, due to a missing Code Mode host rather than a runtime evidence-ID failure. The test keeps the strict evidence assertion.
+4. [#37992402922](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992402922): the generic rusty_v8 prebuilt archive URL returned HTTP 404; replaced with the repository's validated Codex-built V8 artifact workflow. [#37992789061](https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061) then succeeded.
+
+These results are **not** a full Rust workspace test run, Windows binary build, Windows daemon/F2 soak, or runtime security acceptance. Only the exact narrow listed suites are green. The integration branch remains nonpromotable pending all other source packets and owner-gated release tests.
+
+`codex-rs/Cargo.lock` is owned by **3E.2** and was not published/merged by this read-only smoke.
 
 ## Deferred Gate 3 and Windows validation
 
