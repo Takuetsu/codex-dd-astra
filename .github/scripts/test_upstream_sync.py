@@ -486,9 +486,13 @@ checksum = "abc"
         self.assertNotIn("gh pr create", discovery)
         self.assertIn("git ls-remote --tags --refs upstream", discovery)
         self.assertIn("expected_target_sha:", discovery)
-        self.assertIn('--latest-from-stdin --target-tag "$REQUESTED_TARGET_TAG"', discovery)
+        self.assertIn(
+            '--latest-from-stdin --target-tag "$REQUESTED_TARGET_TAG"', discovery
+        )
         self.assertIn('canonical_oid="$(git ls-remote --exit-code', discovery)
-        self.assertIn('selected_commit="$(git rev-parse "${latest_tag}^{commit}")"', discovery)
+        self.assertIn(
+            'selected_commit="$(git rev-parse "${latest_tag}^{commit}")"', discovery
+        )
         self.assertNotIn("git tag --list", discovery)
 
         self.assertIn("permissions:\n  contents: write", preparation)
