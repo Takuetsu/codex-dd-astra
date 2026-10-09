@@ -487,8 +487,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/core/src/codex_thread.rs",
@@ -525,8 +526,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
@@ -552,8 +554,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/core/src/session/session.rs",
@@ -684,8 +687,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/core/tests/suite/agent_websocket.rs",
@@ -697,8 +701,9 @@
         "priority": "high",
         "rationale": "Core agent WebSocket/exec scenario regression coverage"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/core/tests/suite/scenarios.rs",
@@ -710,8 +715,9 @@
         "priority": "high",
         "rationale": "Core agent WebSocket/exec scenario regression coverage"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/core/tests/suite/unified_exec.rs",
@@ -723,8 +729,9 @@
         "priority": "high",
         "rationale": "Core agent WebSocket/exec scenario regression coverage"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.5"
     },
     {
       "path": "codex-rs/external-agent-migration/src/sessions/append.rs",
@@ -1836,7 +1843,14 @@
       "codex-rs/app-server/src/thread_state.rs",
       "codex-rs/protocol/src/lib.rs",
       "codex-rs/protocol/src/protocol.rs",
-      "codex-rs/rollout-trace/src/protocol_event.rs"
+      "codex-rs/rollout-trace/src/protocol_event.rs",
+      "codex-rs/core/src/client_tests.rs",
+      "codex-rs/core/src/context_manager/history_tests.rs",
+      "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "codex-rs/core/tests/suite/agent_websocket.rs",
+      "codex-rs/core/tests/suite/scenarios.rs",
+      "codex-rs/core/tests/suite/unified_exec.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1859,7 +1873,8 @@
       "3B.3a": "docs/codexdd-0.4.3-packet-3b3a-protocol-workflow-types.md",
       "3B.3b": "docs/codexdd-0.4.3-packet-3b3b-turn-protocol.md",
       "3B.3c": "docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
-      "3B.4": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+      "3B.4": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "3B.5": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md"
     },
     "release_validated_paths": [],
     "known_compile_blockers": [],
@@ -1902,6 +1917,13 @@
       "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
       "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
       "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts"
-    ]
+    ],
+    "core_compatibility_smoke": {
+      "run_id": 37982039843,
+      "state": "submitted_not_yet_accepted",
+      "source_rust_tests": "not_yet_verified",
+      "native_windows_release_profile": "not_run",
+      "scope": "3B.3 app-server plus 3B.5 core regressions"
+    }
   }
 }
