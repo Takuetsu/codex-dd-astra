@@ -998,8 +998,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
@@ -1010,8 +1012,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/background_requests.rs",
@@ -1022,8 +1026,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/config_persistence.rs",
@@ -1035,8 +1041,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/event_dispatch.rs",
@@ -1047,8 +1055,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/managed_worktree_creation.rs",
@@ -1059,8 +1069,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
@@ -1084,8 +1096,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/startup.rs",
@@ -1096,8 +1110,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/test_support.rs",
@@ -1157,8 +1173,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
@@ -1218,8 +1236,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/thread_routing.rs",
@@ -1231,8 +1251,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/thread_session_state.rs",
@@ -1243,8 +1265,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app/working_directory.rs",
@@ -1255,8 +1279,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app_event.rs",
@@ -1267,8 +1293,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app_server_session.rs",
@@ -1279,8 +1307,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
@@ -1291,8 +1321,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app_server_session/rollout_history.rs",
@@ -1303,8 +1335,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/app_server_session/rollout_history_tests.rs",
@@ -1339,8 +1373,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/constructor.rs",
@@ -1351,8 +1387,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
@@ -1363,8 +1401,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
@@ -1375,8 +1415,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/interaction.rs",
@@ -1387,8 +1429,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/misalignment_policy.rs",
@@ -1399,8 +1443,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/protocol.rs",
@@ -1411,8 +1457,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/rate_limits.rs",
@@ -1423,8 +1471,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/replay.rs",
@@ -1435,8 +1485,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
@@ -1448,8 +1500,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/settings.rs",
@@ -1460,8 +1514,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
@@ -1472,10 +1528,11 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "exact_fork_delta_replay_reviewed_tui_compile_pending",
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "prior_exact_fork_delta_replay_reviewed_tui_compile_pending",
       "source_merge_packet": "3C.3a",
-      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md"
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests.rs",
@@ -1619,8 +1676,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/daemon_startup.rs",
@@ -1680,8 +1739,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/session_start.rs",
@@ -1692,8 +1753,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/session_state.rs",
@@ -1704,8 +1767,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/slash_command.rs",
@@ -1716,10 +1781,11 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "source_merged_pending_native_validation",
-      "semantic_review_status": "exact_fork_delta_replay_reviewed_tui_compile_pending",
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "prior_exact_fork_delta_replay_reviewed_tui_compile_pending",
       "source_merge_packet": "3C.3a",
-      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md"
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
     },
     {
       "path": "codex-rs/tui/src/startup_orchestration.rs",
