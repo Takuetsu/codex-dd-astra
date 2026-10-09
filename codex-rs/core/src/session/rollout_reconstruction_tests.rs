@@ -138,6 +138,7 @@ async fn resumed_history_recovers_orphan_custom_tool_call_without_panicking() {
         .record_initial_history(InitialHistory::Resumed(ResumedHistory {
             conversation_id: session.thread_id,
             history: Arc::new(vec![RolloutItem::ResponseItem(call.clone().into())]),
+            history_revision: None,
             rollout_path: None,
         }))
         .await;
