@@ -58,7 +58,7 @@ Follow `docs/codexdd-major-phase-work-packet-standard.md`: keep packets small, c
 
 ### Phase 2 — bounded, explicitly approved candidate preparation
 
-- **2A.1 — candidate manifest.** Use the 0.4.2 read-only upstream discovery tooling when appropriate; ensure the manifest binds the *current* production SHA/tree, tracked 0.159.2 SHA/tree, target 0.162.0 peeled commit/tree, exact overlap inventory, and semantic-risk classification.
+- **2A.1 — candidate manifest.** Use the 0.4.2 read-only upstream discovery tooling when appropriate; ensure the manifest binds the _current_ production SHA/tree, tracked 0.159.2 SHA/tree, target 0.162.0 peeled commit/tree, exact overlap inventory, and semantic-risk classification.
 - **2A.2 — isolated transplant preparation.** Only after Gate 1 acceptance, explicitly prepare the target via `.github/workflows/upstream-prepare.yml` and its identity-bound inputs. Do not overwrite an existing candidate branch; stop on stale production/tag identity or textual conflict. No unattended PR.
 - **2A.3 — preparation audit and checkpoint.** Verify the prepared tree/manifest/branch HEAD and failure reports; settle the authorized release-integration branch strategy without breaking 0.4.2 receipt/promotion requirements. Record the first durable checkpoint.
 

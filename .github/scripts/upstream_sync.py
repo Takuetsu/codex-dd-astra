@@ -146,6 +146,24 @@ def select_latest_release(tags: Iterable[str]) -> str:
     return max(valid)[1]
 
 
+def select_official_stable_release(tags: Iterable[str], requested_tag: str = "") -> str:
+    """Resolve an exact owner-requested stable release, or latest for automation.
+
+    The caller must supply tag names obtained directly from official upstream
+    refs. Never silently substitute latest when an explicit target is invalid
+    or absent from those refs.
+    """
+    if not requested_tag:
+        return select_latest_release(tags)
+    if stable_release_version(requested_tag) is None:
+        raise ValueError(f"invalid requested official stable release: {requested_tag}")
+    if requested_tag not in set(tags):
+        raise ValueError(
+            f"requested stable release is not an official upstream tag: {requested_tag}"
+        )
+    return requested_tag
+
+
 def candidate_branch(tag: str, commit_sha: str) -> str:
     if stable_release_version(tag) is None:
         raise ValueError(f"invalid stable official release tag: {tag}")
@@ -603,12 +621,16 @@ def _validate_object_id(value: str, label: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--latest-from-stdin", action="store_true", required=True)
+    parser.add_argument(
+        "--target-tag", default="", help="Official stable tag (blank = latest)"
+    )
     args = parser.parse_args()
     try:
         if args.latest_from_stdin:
             print(
-                select_latest_release(
-                    line.strip() for line in sys.stdin if line.strip()
+                select_official_stable_release(
+                    (line.strip() for line in sys.stdin if line.strip()),
+                    requested_tag=args.target_tag,
                 )
             )
     except ValueError as error:

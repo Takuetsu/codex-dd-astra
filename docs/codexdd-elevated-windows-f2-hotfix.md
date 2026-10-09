@@ -112,6 +112,7 @@ Medium-integrity eligibility and elevated SSH F2 checks remain valid.
 - One-time non-elevated detached shared-daemon smoke waiver remains documented as an **unverified** path and is not reusable for CodexDD 0.4.3.
 
 **F2 hotfix: complete and deployed.** The next planned release is [CodexDD 0.4.3 upstream 0.162.0](codexdd-0.4.3-upstream-0.162.0-design.md).
+
 ## Remaining expected limitation
 
 Elevated Windows sessions still cannot use a _locally managed shared background daemon_. This fix makes the already-supported embedded mode automatic and removes a misleading warning; it does not implement safe de-elevation or provide daemon-only functionality under SSH administrator tokens.
