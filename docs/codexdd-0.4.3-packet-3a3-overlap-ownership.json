@@ -513,8 +513,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
     },
     {
       "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
@@ -539,8 +540,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
     },
     {
       "path": "codex-rs/core/src/session/tests.rs",
@@ -552,8 +554,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "partial_constructor_compatibility_pending_full_0_162_reconciliation",
+      "semantic_review_status": "not_started",
+      "source_merge_packet": "3B.2a"
     },
     {
       "path": "codex-rs/core/src/session/turn.rs",
@@ -577,8 +580,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
     },
     {
       "path": "codex-rs/core/src/thread_manager_tests.rs",
@@ -589,8 +593,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
     },
     {
       "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
@@ -714,8 +719,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
     },
     {
       "path": "codex-rs/history/src/lib.rs",
@@ -727,8 +733,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
     },
     {
       "path": "codex-rs/history/src/tests.rs",
@@ -740,8 +747,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
     },
     {
       "path": "codex-rs/protocol/src/lib.rs",
@@ -871,8 +879,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
     },
     {
       "path": "codex-rs/state/src/runtime/threads.rs",
@@ -883,8 +892,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
     },
     {
       "path": "codex-rs/thread-store/src/local/rollout_migration/canonicalizer.rs",
@@ -896,8 +906,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
     },
     {
       "path": "codex-rs/thread-store/src/thread_metadata_sync.rs",
@@ -909,8 +920,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
     },
     {
       "path": "codex-rs/thread-store/src/types.rs",
@@ -1751,7 +1763,18 @@
       "codex-rs/config/src/config_toml.rs",
       "codex-rs/core/src/config/mod.rs",
       "codex-rs/rollout/src/persistence_metrics.rs",
-      "codex-rs/rollout/src/recorder.rs"
+      "codex-rs/rollout/src/recorder.rs",
+      "codex-rs/history/src/lib.rs",
+      "codex-rs/history/src/compaction_resume_metadata.rs",
+      "codex-rs/history/src/tests.rs",
+      "codex-rs/core/src/thread_manager.rs",
+      "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "codex-rs/state/src/extract.rs",
+      "codex-rs/state/src/runtime/threads.rs",
+      "codex-rs/thread-store/src/thread_metadata_sync.rs",
+      "codex-rs/thread-store/src/local/rollout_migration/canonicalizer.rs",
+      "codex-rs/core/src/session/session.rs",
+      "codex-rs/core/src/thread_manager_tests.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1765,16 +1788,17 @@
     "source_merge_evidence_by_packet": {
       "3B.1a": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
       "3B.1b": "docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
-      "3B.1c": "docs/codexdd-0.4.3-packet-3b1c-rollout-projection.md"
+      "3B.1c": "docs/codexdd-0.4.3-packet-3b1c-rollout-projection.md",
+      "3B.2a": "docs/codexdd-0.4.3-packet-3b2a-history-fork-revision.md",
+      "3B.2b": "docs/codexdd-0.4.3-packet-3b2b-state-and-replay.md"
     },
     "release_validated_paths": [],
-    "known_compile_blockers": [
-      {
-        "packet": "3B.2",
-        "file": "codex-rs/history/src/lib.rs",
-        "symbol": "ResumedHistory.history_revision",
-        "reason": "0.162.0 recorder initializer requires field not yet in fork-preserved history struct"
-      }
+    "known_compile_blockers": [],
+    "pending_semantic_tests": [
+      "Complete 0.162.0 core/src/session/tests.rs merge",
+      "Replay/compaction attribution consistency",
+      "Cross-crate enum exhaustiveness and native cargo check",
+      "Windows-native release test at Gate 3/4"
     ]
   }
 }
