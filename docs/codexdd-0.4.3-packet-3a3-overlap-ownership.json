@@ -1472,8 +1472,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "exact_fork_delta_replay_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3a",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests.rs",
@@ -1714,8 +1716,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "exact_fork_delta_replay_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3a",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md"
     },
     {
       "path": "codex-rs/tui/src/startup_orchestration.rs",
@@ -1866,14 +1870,18 @@
       "codex-rs/app-server-daemon/src/backend/windows.rs",
       "codex-rs/app-server-daemon/src/lib.rs",
       "codex-rs/tui/src/daemon_startup.rs",
-      "codex-rs/tui/src/startup_orchestration.rs"
+      "codex-rs/tui/src/startup_orchestration.rs",
+      "codex-rs/tui/src/slash_command.rs",
+      "codex-rs/tui/src/chatwidget/slash_dispatch.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
     "source_reviewed_textual_conflict_paths": [
       "codex-rs/rollout/src/policy.rs",
       "codex-rs/config/src/config_toml.rs",
-      "codex-rs/core/src/config/mod.rs"
+      "codex-rs/core/src/config/mod.rs",
+      "codex-rs/tui/src/slash_command.rs",
+      "codex-rs/tui/src/chatwidget/slash_dispatch.rs"
     ],
     "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
     "source_merge_commit": "df77e9c70b6102f318de8e83a848e0c577188ffb",
@@ -1891,7 +1899,8 @@
       "3B.3c": "docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
       "3B.4": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
       "3B.5": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
-      "3C.1": "docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md"
+      "3C.1": "docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md",
+      "3C.3a": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md"
     },
     "release_validated_paths": [],
     "known_compile_blockers": [],
