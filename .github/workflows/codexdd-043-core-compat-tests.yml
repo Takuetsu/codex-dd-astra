@@ -2,7 +2,7 @@
 # Rerun after 3B.5 reconciled tests and codexdd_validation 0.162.0 API fix (227c22b).
 # Temporary read-only core/app-server compile and regression smoke for 0.4.3.
 # Deletes after results have been inspected. Never targets production.
-# Retry 3B.5 WebSocket custom tool output encoding with exact branch source.
+# Retry 3B.5 with actual code-mode host; fail focused WebSocket evidence before broad smoke.
 name: CodexDD 0.4.3 core compatibility smoke
 
 on:
@@ -53,6 +53,20 @@ jobs:
         with:
           components: rustfmt
 
+      - name: Build code-mode host required for CodeMode tool routing
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo build -p codex-code-mode-host --bin codex-code-mode-host
+
+      - name: Verify WebSocket nested exec evidence before broad smoke
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test -p codex-core --test all websocket_code_mode_nested_exec_result_reaches_final_request -- --nocapture
+
       - name: Compile core and app-server for source integration
         shell: bash
         working-directory: codex-rs
@@ -76,12 +90,11 @@ jobs:
           set -euo pipefail
           cargo test -p codex-app-server --lib adaptive_runtime_signal_binds_event_turn_and_conversation_identity -- --nocapture
 
-      - name: Compile and run newly reconciled core integration regressions
+      - name: Run separately reconciled direct-exec evidence regression
         shell: bash
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          cargo test -p codex-core --test all websocket_code_mode_nested_exec_result_reaches_final_request -- --nocapture
           cargo test -p codex-core --test all completed_exec_evidence_id_survives_into_next_model_request_and_signal -- --nocapture
 
       - name: Report isolated Cargo lock drift
