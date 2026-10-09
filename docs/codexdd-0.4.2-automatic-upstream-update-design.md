@@ -1,5 +1,7 @@
 # CodexDD 0.4.2 automatic upstream-update orchestration
 
+> **Historical release design:** CodexDD 0.4.2 was completed and merged via PR #47 at `8336ca046af71cbf032c76d933ca371336f92673`. The phase statuses below reflect the original work checkpoints rather than the current production state. The **next queued release is 0.4.3**, integrating OpenAI Codex `rust-v0.162.0` under `docs/codexdd-0.4.3-upstream-0.162.0-design.md`.
+
 ## Release identity
 
 - Release: CodexDD 0.4.2
@@ -113,3 +115,17 @@ Next gates are:
 ## Validation philosophy
 
 Use the existing LVO and repository-owned validation profiles wherever applicable. Upstream-update-specific validation should be additive and bounded, not a parallel ad hoc test framework.
+
+## Completed release / successor handoff (2026-10-09)
+
+CodexDD 0.4.2 merged and shipped the safe upstream-update orchestration contract. Production subsequently received the elevated Windows SSH F2 hotfix in PR #48 (`dc10de2b0240ebe51bba009bfa224fc305c9aa6a`), which was installed and verified on Daniel-CL. The tracked Codex upstream remains `rust-v0.159.2`.
+
+**Next item: CodexDD 0.4.3 — integrate the owner-selected stable upstream `rust-v0.162.0`.**
+
+- [0.4.3 integration design](codexdd-0.4.3-upstream-0.162.0-design.md)
+- [Current roadmap](codexdd-roadmap.md)
+- Activation phrase: `activate 0.4.3` in a new chat.
+- Start with read-only Phase 1 / packet 1A.1, accepting reconnaissance before any source modification or candidate preparation.
+- Reuse 0.4.2 read-only discovery, explicit preparation, native validation receipt, and manual promotion gates. No unattended merge/install or automatic CodexDD product version bump.
+
+This paragraph supersedes the older "next gates" wording in the historical 0.4.2 phase record.
