@@ -557,9 +557,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "partial_constructor_compatibility_pending_full_0_162_reconciliation",
-      "semantic_review_status": "not_started",
-      "source_merge_packet": "3B.2a"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2e"
     },
     {
       "path": "codex-rs/core/src/session/turn.rs",
@@ -1794,7 +1794,8 @@
       "codex-rs/core/src/tools/handlers/dynamic.rs",
       "codex-rs/core/src/tools/handlers/mod.rs",
       "codex-rs/core/src/tools/spec_plan.rs",
-      "codex-rs/core/src/tools/registry.rs"
+      "codex-rs/core/src/tools/registry.rs",
+      "codex-rs/core/src/session/tests.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1812,17 +1813,18 @@
       "3B.2a": "docs/codexdd-0.4.3-packet-3b2a-history-fork-revision.md",
       "3B.2b": "docs/codexdd-0.4.3-packet-3b2b-state-and-replay.md",
       "3B.2c": "docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
-      "3B.2d": "docs/codexdd-0.4.3-packet-3b2d-fail-closed-tool-gates.md"
+      "3B.2d": "docs/codexdd-0.4.3-packet-3b2d-fail-closed-tool-gates.md",
+      "3B.2e": "docs/codexdd-0.4.3-packet-3b2e-session-tests-complete.md"
     },
     "release_validated_paths": [],
     "known_compile_blockers": [],
     "pending_semantic_tests": [
-      "Complete 0.162.0 core/src/session/tests.rs merge",
       "Replay/compaction attribution consistency",
       "Cross-crate enum exhaustiveness and native cargo check",
       "Windows-native release test at Gate 3/4",
       "CRITICAL: native registry dispatch regression tests & pre-tool-hook input mutation safety",
-      "Native client terminalization request tool_choice test"
+      "Native client terminalization request tool_choice test",
+      "Run complete 0.162.0 core/src/session/tests.rs tests with CodexDD Worker and history revision"
     ]
   }
 }
