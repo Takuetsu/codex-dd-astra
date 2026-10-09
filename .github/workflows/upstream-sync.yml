@@ -2,6 +2,17 @@ name: upstream-codex-discovery
 
 on:
   workflow_dispatch:
+    inputs:
+      target_tag:
+        description: Exact official stable tag (blank selects newest)
+        required: false
+        type: string
+        default: ""
+      expected_target_sha:
+        description: Required peeled commit SHA with target_tag
+        required: false
+        type: string
+        default: ""
   schedule:
     - cron: "17 */6 * * *"
 
@@ -26,6 +37,9 @@ jobs:
       - name: Resolve stable official release
         id: release
         shell: bash
+        env:
+          REQUESTED_TARGET_TAG: ${{ inputs.target_tag || '' }}
+          EXPECTED_TARGET_SHA: ${{ inputs.expected_target_sha || '' }}
         run: |
           set -euo pipefail
           git remote add upstream https://github.com/openai/codex.git
@@ -35,7 +49,8 @@ jobs:
           latest_tag="$(
             git ls-remote --tags --refs upstream 'refs/tags/rust-v*' |
               awk '{ if (index($2, "refs/tags/") == 1) print substr($2, 11) }' |
-              python3 .github/scripts/upstream_sync.py --latest-from-stdin
+              python3 .github/scripts/upstream_sync.py \
+                --latest-from-stdin --target-tag "$REQUESTED_TARGET_TAG"
           )"
           current_tag="$(tr -d '[:space:]' < codex-rs/upstream-codex-release.txt)"
 
@@ -43,6 +58,42 @@ jobs:
           if ! git ls-remote --exit-code --tags --refs upstream "refs/tags/$current_tag" >/dev/null; then
             echo "Tracked upstream release is not an official reachable tag: $current_tag" >&2
             exit 1
+          fi
+
+          # Explicitly pinned discovery must not fall back to latest or use a
+          # tag with a different peeled commit than the owner selected.
+          if [[ -n "$REQUESTED_TARGET_TAG" ]]; then
+            if [[ ! "$EXPECTED_TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Pinned discovery requires the exact lowercase 40-character commit SHA." >&2
+              exit 1
+            fi
+            echo "selection_mode=pinned" >> "$GITHUB_OUTPUT"
+          else
+            if [[ -n "$EXPECTED_TARGET_SHA" ]]; then
+              echo "A target SHA without a target tag is invalid." >&2
+              exit 1
+            fi
+            echo "selection_mode=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+          # A canonical tag NAME match is insufficient: verify both ref
+          # object IDs (annotated tag objects or lightweight commit IDs).
+          for tag in "$current_tag" "$latest_tag"; do
+            canonical_oid="$(git ls-remote --exit-code --tags --refs upstream "refs/tags/$tag" | awk '{print $1}')"
+            local_oid="$(git rev-parse "refs/tags/$tag")"
+            if [[ -z "$canonical_oid" || "$local_oid" != "$canonical_oid" ]]; then
+              echo "Canonical official tag ref differs from local fetched ref: $tag" >&2
+              exit 1
+            fi
+          done
+
+          # The expected pinned SHA is the peeled commit, never a tag object.
+          if [[ -n "$REQUESTED_TARGET_TAG" ]]; then
+            selected_commit="$(git rev-parse "${latest_tag}^{commit}")"
+            if [[ "$selected_commit" != "$EXPECTED_TARGET_SHA" ]]; then
+              echo "Pinned target mismatch: expected $EXPECTED_TARGET_SHA; got $selected_commit" >&2
+              exit 1
+            fi
           fi
 
           set +e
@@ -96,10 +147,10 @@ jobs:
           {
             echo "## CodexDD upstream discovery"
             echo
-            echo "No newer stable official OpenAI Codex release was found."
+            echo "No newer selected official stable release was found relative to the tracked baseline."
             echo
             echo "- Tracked upstream: ${CURRENT_TAG}"
-            echo "- Latest stable: ${LATEST_TAG}"
+            echo "- Selected official stable release: ${LATEST_TAG}"
             echo
             echo "This scheduled workflow is read-only and made no repository changes."
           } >> "$GITHUB_STEP_SUMMARY"
@@ -114,6 +165,7 @@ jobs:
           PRODUCTION_SHA: ${{ steps.release.outputs.production_sha }}
           CURRENT_SHA: ${{ steps.release.outputs.current_sha }}
           RELEASE_SHA: ${{ steps.release.outputs.latest_sha }}
+          SELECTION_MODE: ${{ steps.release.outputs.selection_mode }}
         run: |
           set -euo pipefail
 
@@ -235,6 +287,7 @@ jobs:
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
               summary.write("## CodexDD upstream candidate\n\n")
               summary.write(f"- Candidate: {manifest['candidate_key']}\n")
+              summary.write(f"- Selection mode: {os.environ['SELECTION_MODE']}\n")
               summary.write(f"- State: {manifest['state']}\n")
               summary.write(
                   f"- Production: {manifest['production_sha']} "
