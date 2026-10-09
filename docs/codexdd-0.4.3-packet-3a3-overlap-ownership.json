@@ -413,8 +413,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1b"
     },
     {
       "path": "codex-rs/core/config.schema.json",
@@ -486,8 +487,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1b"
     },
     {
       "path": "codex-rs/core/src/context_manager/history_tests.rs",
@@ -1743,14 +1745,23 @@
   "reconciliation_progress": {
     "source_merge_pending_native_validation_paths": [
       "codex-rs/rollout/src/lib.rs",
-      "codex-rs/rollout/src/policy.rs"
+      "codex-rs/rollout/src/policy.rs",
+      "codex-rs/config/src/config_toml.rs",
+      "codex-rs/core/src/config/mod.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
     "source_reviewed_textual_conflict_paths": [
-      "codex-rs/rollout/src/policy.rs"
+      "codex-rs/rollout/src/policy.rs",
+      "codex-rs/config/src/config_toml.rs",
+      "codex-rs/core/src/config/mod.rs"
     ],
     "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
-    "source_merge_commit": "df77e9c70b6102f318de8e83a848e0c577188ffb"
+    "source_merge_commit": "df77e9c70b6102f318de8e83a848e0c577188ffb",
+    "source_merge_evidence_by_packet": {
+      "3B.1a": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
+      "3B.1b": "docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md"
+    },
+    "release_validated_paths": []
   }
 }
