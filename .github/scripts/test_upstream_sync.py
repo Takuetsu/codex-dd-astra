@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,7 @@ from upstream_sync import (
     release_version,
     reconcile_workspace_lockfile,
     select_latest_release,
+    select_official_stable_release,
     stable_release_version,
     stale_identity_fields,
     tree_delta_paths,
@@ -99,6 +101,67 @@ class UpstreamSyncTests(unittest.TestCase):
                     "rust-v0.155.0-rc.1",
                 ]
             )
+
+    def test_explicit_pinned_tag_does_not_advance_to_newer_stable(self):
+        official = [
+            "rust-v0.162.0",
+            "rust-v0.165.0",
+            "rust-v0.164.0-rc.1",
+        ]
+        self.assertEqual(
+            select_official_stable_release(official, "rust-v0.162.0"),
+            "rust-v0.162.0",
+        )
+        self.assertEqual(
+            select_official_stable_release(official),
+            "rust-v0.165.0",
+        )
+
+    def test_explicit_tag_rejects_missing_prerelease_and_malformed_input(self):
+        official = ["rust-v0.162.0", "rust-v0.163.0-rc.1"]
+        for invalid in (
+            "rust-v0.161.0",
+            "rust-v0.163.0-rc.1",
+            "rust-v0.162.0 ",
+            "rust-v0.162.0; echo untrusted",
+            "rust-vnot-a-version",
+        ):
+            with self.subTest(requested=invalid):
+                with self.assertRaises(ValueError):
+                    select_official_stable_release(official, invalid)
+
+    def test_pinned_cli_selects_only_official_tags_and_fails_closed(self):
+        script = Path(__file__).with_name("upstream_sync.py")
+        official = "rust-v0.162.0\\nrust-v0.165.0\\n"
+        command = [sys.executable, str(script), "--latest-from-stdin"]
+        pinned = subprocess.run(
+            [*command, "--target-tag", "rust-v0.162.0"],
+            input=official,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self.assertEqual(pinned.stdout.strip(), "rust-v0.162.0")
+
+        scheduled = subprocess.run(
+            command,
+            input=official,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self.assertEqual(scheduled.stdout.strip(), "rust-v0.165.0")
+
+        missing = subprocess.run(
+            [*command, "--target-tag", "rust-v0.161.0"],
+            input=official,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertEqual(missing.stdout, "")
+        self.assertIn("not an official upstream tag", missing.stderr)
 
     def test_prerelease_order_is_semver_like_for_historical_comparison(self):
         self.assertLess(
@@ -422,6 +485,10 @@ checksum = "abc"
         self.assertNotIn("git push", discovery)
         self.assertNotIn("gh pr create", discovery)
         self.assertIn("git ls-remote --tags --refs upstream", discovery)
+        self.assertIn("expected_target_sha:", discovery)
+        self.assertIn('--latest-from-stdin --target-tag "$REQUESTED_TARGET_TAG"', discovery)
+        self.assertIn('canonical_oid="$(git ls-remote --exit-code', discovery)
+        self.assertIn('selected_commit="$(git rev-parse "${latest_tag}^{commit}")"', discovery)
         self.assertNotIn("git tag --list", discovery)
 
         self.assertIn("permissions:\n  contents: write", preparation)
