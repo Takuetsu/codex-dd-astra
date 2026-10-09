@@ -97,8 +97,9 @@
         "priority": "critical",
         "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
     },
     {
       "path": "codex-rs/app-server-daemon/src/backend/windows_tests.rs",
@@ -123,8 +124,9 @@
         "priority": "critical",
         "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
     },
     {
       "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
@@ -1619,8 +1621,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
     },
     {
       "path": "codex-rs/tui/src/daemon_startup_tests.rs",
@@ -1716,8 +1719,9 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
     },
     {
       "path": "codex-rs/tui/src/status/card.rs",
@@ -1850,7 +1854,11 @@
       "codex-rs/core/src/tools/spec_plan_tests.rs",
       "codex-rs/core/tests/suite/agent_websocket.rs",
       "codex-rs/core/tests/suite/scenarios.rs",
-      "codex-rs/core/tests/suite/unified_exec.rs"
+      "codex-rs/core/tests/suite/unified_exec.rs",
+      "codex-rs/app-server-daemon/src/backend/windows.rs",
+      "codex-rs/app-server-daemon/src/lib.rs",
+      "codex-rs/tui/src/daemon_startup.rs",
+      "codex-rs/tui/src/startup_orchestration.rs"
     ],
     "validated_paths": [],
     "textual_conflicts_still_pending_native_validation": 22,
@@ -1874,7 +1882,8 @@
       "3B.3b": "docs/codexdd-0.4.3-packet-3b3b-turn-protocol.md",
       "3B.3c": "docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
       "3B.4": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
-      "3B.5": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md"
+      "3B.5": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "3C.1": "docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md"
     },
     "release_validated_paths": [],
     "known_compile_blockers": [],
@@ -1924,6 +1933,12 @@
       "source_rust_tests": "not_yet_verified",
       "native_windows_release_profile": "not_run",
       "scope": "3B.3 app-server plus 3B.5 core regressions"
+    },
+    "windows_f2_source_risk": {
+      "packet": "3C.1",
+      "native_windows_test_status": "not_run",
+      "static_source_checks": "15/15 pass",
+      "related_stale_upstream_behavior": "0.162.0 elevated warning and hard-error probe replaced with 0.4.2 CodexDD fail-closed/no-warning confirmed-elevation policy"
     }
   }
 }
