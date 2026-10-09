@@ -1597,7 +1597,7 @@ async fn handle_turn_complete(
             root_turn_id: turn_complete_event.root_turn_id,
             error,
             last_agent_message,
-            started_at: turn_summary.started_at,
+            started_at,
             completed_at: turn_complete_event.completed_at,
             duration_ms: turn_complete_event.duration_ms,
         },
