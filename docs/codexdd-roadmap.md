@@ -1,111 +1,78 @@
 # CodexDD roadmap
 
-## Current production state
+## Current production state (2026-10-09)
 
-CodexDD **0.4.1** is complete and merged to production.
+**CodexDD 0.4.2 is deployed and operational, including the elevated Windows SSH F2 warning hotfix.**
 
-- production branch: `dd/astra-policy-v2`
-- production/source SHA: `f45c5a119296d6e53c6429f9b101b3f52d91047e`
-- production PR: #46
-- upstream workspace: OpenAI Codex `0.159.2`
-- target platform: Windows
-- authoritative validation host: Daniel-CL
+- Production branch: `dd/astra-policy-v2` in `Takuetsu/codex-dd-astra`.
+- Last deployed **runtime source/merge SHA**: `dc10de2b0240ebe51bba009bfa224fc305c9aa6a` (F2 PR #48).
+- Daniel-CL installed executable reports: `codexdd 0.4.2+gdc10de2b0240`.
+- Product identity: `0.4.2`; tracked OpenAI Codex upstream: `rust-v0.159.2`.
+- Platform: Windows only; authoritative validation host Daniel-CL; access from Stonks is **SSH only** (no RDP).
+- Installation and production `/status` verified; F2 from elevated SSH showed **Warnings → No warnings**, without `--no-daemon`.
+- The live non-elevated shared-daemon startup/attachment test was **explicitly waived for PR #48 only** due to restrictive scheduled-task job behavior; it remains unverified, not passed.
+- **Important:** Planning-document commits may advance the GitHub production HEAD beyond the deployed runtime SHA. Always re-resolve the live production HEAD/tree before a new candidate manifest, feature branch, or upstream preparation. Do not assume that the deployed binary SHA is the current branch tip.
 
-  0.4.1 added GPT-6.1 Sol as a distinct adaptive tier between GPT-6 Sol and GPT-6 Astra while preserving the 0.4.0 lifecycle, validation, persistence, and fail-closed guarantees.
+### Recently completed milestones
 
-The merged 0.4.1 design and reconnaissance evidence remains in:
+- **0.4.0:** Local Validation Orchestrator (LVO), merged as PR #45.
+- **0.4.1:** GPT-6.1 Sol tier and adaptive routing/catalog integration, merged as PR #46.
+- **0.4.2:** Read-only automatic upstream discovery with explicit identity-bound preparation, native local validation receipts, and manual promotion; merged as PR #47 (`8336ca046af71cbf032c76d933ca371336f92673`).
+- **0.4.2 F2 hotfix:** Elevated Windows SSH automatic embedded startup without the misleading warning; merged as PR #48 (`dc10de2b0240ebe51bba009bfa224fc305c9aa6a`) and **verified after production installation**.
+
+Historical implementation, provenance and validation material is preserved in:
 
 - `docs/codexdd-0.4.1-gpt-6.1-sol-design.md`
-- `docs/codexdd-0.4.1-packet-1a1-model-catalog-reconnaissance.md`
-- `docs/codexdd-0.4.1-packet-1a2-routing-surface-map.md`
-- `docs/codexdd-0.4.1-packet-1a3-persistence-regression-map.md`
-- `docs/codexdd-0.4.1-packet-1e-pre-validation-audit.md`
-
-## 0.4.2 — automatic upstream-update orchestration
-
-**Status: PHASE 3 SOURCE AUDIT COMPLETE — UPDATED-HEAD LOCAL CHECKS PENDING.**
-
-Feature branch:
-
-`dd/codexdd-v0.4.2-automatic-upstream-update`
-
-0.4.2 begins from the exact merged 0.4.1 production SHA:
-
-`f45c5a119296d6e53c6429f9b101b3f52d91047e`
-
-### Goal
-
-Add a safe, explicit, CodexDD-owned workflow for discovering and preparing compatible OpenAI Codex upstream updates while preserving the rule that no upstream update is silently merged, installed, or deployed.
-
-The workflow should reduce the manual work required to identify a new stable upstream, create the bounded update work packet, perform cheap mechanical checks, and surface evidence for human-controlled promotion.
-
-### Non-goals / hard boundaries
-
-- No unattended production merge.
-- No unattended Daniel-CL installation or external-machine deployment.
-- No silent bundling of unrelated CodexDD feature work into an upstream refresh.
-- No automatic acceptance of an upstream version solely because a newer tag exists.
-- No weakening of LVO, lifecycle, persistence, adaptive-routing, or fail-closed guarantees.
-- No runtime behavior changes before reconnaissance identifies the complete update surface and acceptance criteria.
-
-### Required order
-
-1. Current upstream-sync mechanism and repository-surface reconnaissance.
-2. Define stable-version discovery and compatibility policy.
-3. Define bounded update-plan / work-packet generation.
-4. Implement read-only discovery and dry-run planning.
-5. Implement explicit preparation flow behind human-controlled promotion.
-6. Add validation, status/evidence, persistence, and failure handling.
-7. Windows validation on Daniel-CL.
-8. CI, merge, install, and soak only after explicit human gates.
-
-### Phase 1 result
-
-Packets 1A.1–1A.3 are complete on the feature branch.
-
-The existing six-hour sync already detects stable tags, reconstructs the CodexDD delta, pushes a branch, auto-bumps the next patch version, and opens a PR. 0.4.2 will replace that coupled behavior with a read-only scheduled planner plus explicit identity-bound preparation and promotion.
-
-Phase 1 also established that product versioning must be decoupled from upstream discovery, local Daniel-CL/LVO evidence must precede PR/CI promotion, and exact tag/commit/tree plus overlap evidence must be durable candidate state.
-
-The live reconnaissance candidate is OpenAI Codex `rust-v0.160.1`; it is not being integrated as part of Phase 1.
-
-### Phase 2 result
-
-Packets 2A.1–2B.2 are source-complete.
-
-0.4.2 now separates the upstream lifecycle into:
-
-1. read-only scheduled discovery and manifest generation;
-2. explicit identity-bound candidate preparation;
-3. Daniel-CL native validation receipt;
-4. explicit receipt-bound PR promotion;
-5. normal human-controlled CI/merge/install gates.
-
-The old scheduled path can no longer allocate a CodexDD product version, push an integration branch, mutate GitHub Issues, or open a PR.
-
-The release source identity is now `codexdd 0.4.2`.
-
-Implementation record:
-
+- `docs/codexdd-0.4.2-automatic-upstream-update-design.md`
 - `docs/codexdd-0.4.2-phase-2-implementation.md`
+- `docs/codexdd-0.4.2-phase-3-source-audit.md`
+- `docs/codexdd-elevated-windows-f2-hotfix.md`
 
-Daniel-CL's earlier 0.4.2 gate passed: version identity 1/1 and work-packet 6/6 (native PASS, exit 0). The subsequent Phase 3 source audit found and repaired official-tag provenance, tracked-tag recheck, candidate branch race, semantic-risk classification, and sensitive-overlap promotion gating.
+## NEXT: CodexDD 0.4.3 — OpenAI Codex rust-v0.162.0 integration
 
-The source audit record is in `docs/codexdd-0.4.2-phase-3-source-audit.md`.
+**Status: QUEUED — NOT ACTIVATED.** Begin only when the operator starts a new chat with **`activate 0.4.3`**.
 
-Because those GitHub source changes follow the earlier PASS, next run cheap updated-head Python/PowerShell/YAML checks on Daniel-CL before the broad release profile and PR/CI.
+**Authoritative design / activation handoff:**
 
-### Working standard
+`docs/codexdd-0.4.3-upstream-0.162.0-design.md`
 
-Continue using the major-phase + numbered work-packet standard.
+### Objective
 
-- Keep packets small enough for one agent run.
-- Assistant handles source/code changes directly on GitHub.
-- Daniel only runs meaningful Windows validation gates when requested.
-- Prefer LVO-owned routine validation where the current runtime can exercise it.
-- Native evidence outranks prose.
-- Fail closed on ambiguous upstream identity, version, branch, or validation state.
-- Consequential gates remain human-controlled: CI promotion, merge, installation, release publication, deployment, and external-machine changes.
+Upgrade the fork's tracked OpenAI Codex version **from `rust-v0.159.2` to the user-selected stable `rust-v0.162.0`**, integrating required compatibility changes across the intervening 0.160.x and 0.161.x release lines. Release as **CodexDD `0.4.3`** only after normal source, Windows, CI, and owner acceptance gates.
+
+Official target planning identity (reverify at activation):
+
+- Upstream repository: `openai/codex`.
+- Stable tag: `rust-v0.162.0` (published 2026-10-08).
+- Annotated tag object: `1f3f93473394b620b35580859b7e6864f7a9f948`.
+- Peeled target **commit**: `c1382380de69521303b416720a52f42d51af6248`.
+- No silent target change to 0.162.1 or a later release; require the operator's explicit scope approval for retargeting.
+
+### Working plan
+
+1. **Phase 1: Read-only reconnaissance.** Start **packet 1A.1** on activation. Reconfirm live production HEAD/tree, upstream target identity and tracked upstream, inspect current 0.4.2 planner artifacts, and map exact source/semantic overlaps through packets 1A.1–1A.3. **No runtime/source edits or upstream preparation before reconnaissance acceptance.**
+2. **Phase 2: Safe candidate preparation.** Reuse the 0.4.2 read-only `upstream-sync.yml`, explicit `upstream-prepare.yml`, immutable manifest and ownership checks. Avoid stale/duplicate candidate branches. Coordinate release-specific Git branch/manifest/receipt identity with the existing `automation/upstream-candidate-<tag>-<sha12>` contract.
+3. **Phase 3: Source integration and audits.** Divide into 3A (scaffold), 3B (core/runtime), 3C (TUI/Windows F2), 3D (model/catalog/status), 3E (LVO/updater/version/build/provenance), 3F (full source audit), with numbered, checkpointed work packets.
+4. **Phase 4: Windows acceptance and release.** Native cheap Daniel-CL/LVO validation before broad release profile, then candidate HEAD-bound receipt, `upstream-promote.yml`-compatible PR/CI, explicit squash merge, install with backup, elevated SSH `F2`/`/status` smoke and soak.
+
+Preserve GPT-6.1 Sol/Astra policy, adaptive state, LVO, 0.4.2 read-only discovery and human-controlled promotion, F2 elevated SSH embedded fallback, Windows daemon privilege boundaries, and resume/fork persistence. Do not include Breakwater or Cycle Vengeance work in this release.
+
+### Owner / assistant workflow
+
+- The assistant handles GitHub-side design, code changes, integration, and automation; the operator does **not** manually edit CodexDD source or assemble packages.
+- The operator provides only short, meaningful Windows validation commands over SSH to Daniel-CL when needed. Prefer LVO-native receipts and existing repo profiles, not repeated ad hoc scripts or reliance on RDP.
+- Use `docs/codexdd-major-phase-work-packet-standard.md`. Significant phases contain numbered work packets and durable Git SHA checkpoints.
+- Manual approval is required for reconnaissance acceptance, sensitive semantic-risk decisions, any test waiver, CI/PR promotion, merge, installation and deployment.
+- The F2 hotfix's previous non-elevated daemon test waiver **does not automatically extend to 0.4.3**.
+
+### New-chat activation contract
+
+When the operator says **`activate 0.4.3`**:
+
+1. Read the 0.4.3 design and this roadmap from the live production branch.
+2. Re-fetch the current production SHA, tracked upstream and official 0.162.0 target, and check for newer/stale planning artifacts.
+3. Start **Phase 1 / packet 1A.1** immediately as read-only GitHub reconnaissance. Prepare a durable report and stop at the acceptance gate.
+4. Do not change runtime/routing/source, prepare upstream, open a PR, merge, or install until the applicable later gates are explicitly accepted.
 
 ## Preserved backlog
 
