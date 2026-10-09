@@ -228,7 +228,7 @@ impl ChatWidget {
                 },
             ],
             allow_cancel: false,
-            ..SelectionViewParams::picker()
+            ..SelectionViewParams::confirmation()
         });
     }
 
