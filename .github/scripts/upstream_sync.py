@@ -146,9 +146,7 @@ def select_latest_release(tags: Iterable[str]) -> str:
     return max(valid)[1]
 
 
-def select_official_stable_release(
-    tags: Iterable[str], requested_tag: str = ""
-) -> str:
+def select_official_stable_release(tags: Iterable[str], requested_tag: str = "") -> str:
     """Resolve an exact owner-requested stable release, or latest for automation.
 
     The caller must supply tag names obtained directly from official upstream
@@ -624,7 +622,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--latest-from-stdin", action="store_true", required=True)
     parser.add_argument(
-        "--target-tag", default="", help="Exact official stable tag, or empty for latest"
+        "--target-tag", default="", help="Official stable tag (blank = latest)"
     )
     args = parser.parse_args()
     try:
