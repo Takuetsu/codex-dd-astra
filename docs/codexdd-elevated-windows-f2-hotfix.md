@@ -60,6 +60,34 @@ Candidate SHA: `2caa1b3afa55e23009ffc523fc23aa9abb3c3eba`, against production `8
 
 The candidate is not considered shipped until the installed build and normal release gates pass. The CodexDD product version has **not** been changed in this source-only repair packet.
 
+## One-command live Medium-integrity smoke test
+
+After assembling a complete packaged candidate on a Windows validation host, the
+operator runs `scripts/codexdd-f2-daemon-smoke.ps1` from the F2 hotfix branch.
+The script discovers the existing package from the
+`codexdd-f2-last-smoke-root.txt` marker in the Windows user's temporary
+directory (or accepts `-PackageRoot` to select an existing package root).
+
+The script validates the candidate revision and package layout, creates a
+uniquely named short-path `CODEX_HOME` with daemon auto-updates disabled, and
+runs a temporary **Interactive / Limited** Scheduled Task. The worker must
+prove Medium integrity (`S-1-16-8192`), then run the real packaged CLI
+daemon lifecycle: `start` must return `started`, a second `start`
+must return `alreadyRunning`, `version` must return `running` and
+identify an app-server version, and `stop` followed by another `stop`
+must return `stopped` / `notRunning`. Managed executable and socket
+paths must remain under the temporary `CODEX_HOME`.
+
+Temporary tasks are unregistered; on success the worker verifies daemon
+shutdown and the controller deletes the temporary home. Command output,
+task results, and a trace are retained in the package's `live-smoke-*`
+directory for review. Failures are not treated as passes. The script does
+not update the production CLI, install the hotfix, or alter daemon security
+settings. A pre-existing interactive user login and UAC are required.
+
+The final live-daemon smoke remains **pending** until the operator provides
+a successful `F2 HOTFIX: FINAL ACCEPTANCE PASSED` result.
+
 ## Remaining expected limitation
 
 Elevated Windows sessions still cannot use a _locally managed shared background daemon_. This fix makes the already-supported embedded mode automatic and removes a misleading warning; it does not implement safe de-elevation or provide daemon-only functionality under SSH administrator tokens.
