@@ -1508,6 +1508,7 @@ fn adaptive_test_session(
     reasoning_effort: Option<ReasoningEffort>,
 ) -> crate::session_state::ThreadSessionState {
     crate::session_state::ThreadSessionState {
+        daybreak_enabled: false,
         windows_sandbox_host: crate::app::WindowsSandboxHost::Local,
         thread_id,
         forked_from_id,
@@ -1525,7 +1526,6 @@ fn adaptive_test_session(
         instruction_source_paths: Vec::new(),
         reasoning_effort,
         collaboration_mode: None,
-        personality: None,
         message_history: None,
         network_proxy: None,
         rollout_path: None,
