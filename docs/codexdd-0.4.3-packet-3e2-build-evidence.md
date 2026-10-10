@@ -1,6 +1,6 @@
 # CodexDD 0.4.3 — Packet 3E.2: build and dependency reconciliation
 
-**Status: BAZEL WORKFLOW SOURCE RECONCILED; CARGO.LOCK GENERATION PENDING.**
+**Status: BAZEL WORKFLOW SOURCE RECONCILED; CARGO.LOCK GENERATOR SUCCESS AND COMMITTED, EXECUTABLE/RELEASE VALIDATION PENDING.**
 
 ## Immutable anchors
 
@@ -28,3 +28,14 @@ No cross-platform build or native Windows Bazel target test has yet been execute
 ## Pending release gates
 
 Run the pinned Rust toolchain's Cargo lock regeneration/check on an isolated branch-scoped CI worker, review generated dependency diff, commit only the named `codex-rs/Cargo.lock` artifact once valid. Follow with `cargo metadata --locked`, target CI profiles, and native Windows release tests. Version/provenance allocation remains a separate accepted 3E.3 gate and may require a lock rebuild if workspace version identity changes. Do not promote production, install or merge.
+
+## Executed 3E.2 generator and cleanup (2026-10-09 US Central)
+
+- Exact GitHub Actions [#38015463888](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015463888): **success** on pinned isolated source `e782c36db23e3359ad8489072f10ed39ad24a05e`.
+- Pinned Cargo toolchain performed `cargo metadata --format-version 1` resolution, then independently passed `cargo metadata --locked --format-version 1`. The resolver reported locking 16 packages to compatible versions.
+- CI fail-closed step observed **only** `codex-rs/Cargo.lock` modified, with 328 insertions and 240 deletions; no untracked or unrelated source files. Lock output SHA256 was printed to CI logs for independent verification.
+- Generated and committed only `codex-rs/Cargo.lock`: `4a2a2e05e1737039b02513d0b64bbf634e481036`; verified via GitHub commit's single changed-path list. Generated lock blob SHA `89f29a8a1d4f49d3759218f9949644526d7bee20`.
+- The one-shot write-enabled workflow was removed at `2a361697562275d3a00bdda65994dfe2bc3c5289` once the generator succeeded. No reusable write path remains from this temporary owner packet.
+- **Source-generation acceptance only**. Future `cargo check --locked`, Rust tests, workspace/Windows-native validation, 3F overlap audit, release-gated version/provenance review and operator validation still pending. Any final changes to the Cargo workspace manifest versions must be reflected through a new 3E.2 generator, not a manual lock patch.
+
+Do not infer a production or operator installation change from the generated lock. The tracked upstream-release marker and CodexDD product-version file remain at their pre-release values on the isolated integration branch.
