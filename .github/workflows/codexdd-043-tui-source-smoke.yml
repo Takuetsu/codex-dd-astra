@@ -1,6 +1,6 @@
-# Temporary, read-only 3C TUI compile gate. Source-only and nonproduction.
-# Remove after evidence is captured and accepted. No generated sources or Cargo.lock are published.
-name: CodexDD 0.4.3 TUI source smoke
+# Temporary, read-only 3C/3D/3B.1 executable regression gate. Nonproduction.
+# Remove after evidence is verified. No generated sources or Cargo.lock may be published.
+name: CodexDD 0.4.3 targeted runtime regressions
 
 on:
   push:
@@ -60,14 +60,44 @@ jobs:
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          cargo check -p codex-tui --lib --tests
+          cargo check --locked -p codex-tui --lib --tests
 
       - name: Compile 0.162 CLI with preserved adaptive launch flags
         shell: bash
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          cargo check -p codex-cli --bin codex
+          cargo check --locked -p codex-cli --bin codex
+
+      - name: Compile reconciled rollout listing and search
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo check --locked -p codex-rollout --lib
+
+      - name: Run rollout library regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-rollout --lib
+
+      - name: Run adaptive model-family and status snapshot regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib codexdd_adaptive_families_match_0162_catalog_and_reasoning_support
+          cargo test --locked -p codex-tui --lib status_snapshot_uses_default_reasoning_when_config_empty
+
+      - name: Run adaptive pressure and Worker lifecycle regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib chatwidget::tests::adaptive_pressure_tests
+          cargo test --locked -p codex-tui --lib app::tests::session_lifecycle_requests
 
       - name: Report uncommitted Cargo lock drift owned by 3E.2
         if: always()
