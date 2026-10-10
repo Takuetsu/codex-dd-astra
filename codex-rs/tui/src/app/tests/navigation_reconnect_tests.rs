@@ -597,7 +597,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
             let event = ThreadBufferedEvent::Notification(Box::new(
                 agent_message_delta_notification(id, "new-turn", "new-item", "fresh delivery"),
             ));
-            channel.sender.send(event).await?;
+            channel.sender.send(event)?;
             assert!(app.active_thread_rx.as_mut().unwrap().try_recv().is_ok());
         }
         session.shutdown().await?;
