@@ -1,0 +1,124 @@
+# Temporary read-only CodexDD 0.4.3 / 3E.1 updater and LVO compatibility gate.
+# This is not a v2 conflicted-candidate bridge, validation receipt or release approval.
+name: CodexDD 0.4.3 updater and LVO contract smoke
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-updater-lvo-contract.yml
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-v1-contract:
+    name: Existing upstream v1 and isolation contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout full integration history for base identity comparison
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert isolated source and current pre-allocation identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          git merge-base --is-ancestor 4828e3b4232781963594cfaaebdc49c5531de8b1 HEAD
+          echo "Unpromoted source: $GITHUB_SHA"
+
+      - name: Ensure all 0.4.2 upstream and LVO contract surfaces remain unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=4828e3b4232781963594cfaaebdc49c5531de8b1
+          files=(
+            .github/scripts/upstream_sync.py
+            .github/scripts/test_upstream_sync.py
+            .github/workflows/upstream-sync.yml
+            .github/workflows/upstream-prepare.yml
+            .github/workflows/upstream-promote.yml
+            scripts/codexdd-validate-upstream-candidate.ps1
+            scripts/codexdd-validation-common.ps1
+            scripts/codexdd-validation-contract-tests.ps1
+            scripts/codexdd-test-targeted.ps1
+            scripts/codexdd-test-workpacket.ps1
+            scripts/codexdd-test-release.ps1
+          )
+          for path in "${files[@]}"; do
+            if ! git diff --quiet "$base" HEAD -- "$path"; then
+              echo "::error::Unreviewed v1/LVO contract drift: $path"
+              exit 1
+            fi
+            echo "Byte-stable v1/LVO surface: $path"
+          done
+
+      - name: Run existing upstream sync/candidate receipt regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_sync.py
+
+  windows-lvo-process-contract:
+    name: Native Windows PowerShell 5.1 LVO contract fixtures
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact unpromoted integration tree
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Parse LVO scripts under Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration') {
+            throw 'Refusing non-integration Windows validation.'
+          }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) {
+            throw 'Windows validation checkout SHA mismatch.'
+          }
+          $paths = @(
+            'scripts/codexdd-validation-common.ps1'
+            'scripts/codexdd-validation-contract-tests.ps1'
+            'scripts/codexdd-test-targeted.ps1'
+            'scripts/codexdd-test-workpacket.ps1'
+            'scripts/codexdd-test-release.ps1'
+            'scripts/codexdd-validate-upstream-candidate.ps1'
+          )
+          foreach ($path in $paths) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path -LiteralPath $path).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -ne 0) {
+              $errors | Out-String | Write-Host
+              throw "Windows PowerShell parser failed for $path"
+            }
+            Write-Host "Windows PowerShell parser PASS: $path"
+          }
+
+      - name: Exercise genuine Windows LVO exit-code contracts
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\codexdd-validation-contract-tests.ps1
+          if ($LASTEXITCODE -ne 0) {
+            throw "Windows LVO pass/fail/infrastructure process fixture returned $LASTEXITCODE"
+          }
+          Write-Host 'LVO contract fixture PASS: native success, product failure and infrastructure error categories.'
+
+# Neither job installs CodexDD, creates a candidate, emits a v2 receipt or writes production.
