@@ -10,6 +10,7 @@ on:
     paths:
       - .github/workflows/codexdd-043-tui-source-smoke.yml
       - 'codex-rs/tui/src/status/snapshots/**'
+      - 'codex-rs/tui/src/chatwidget/snapshots/**'
       - codex-rs/tui/src/status/tests.rs
 
 permissions:
@@ -124,30 +125,45 @@ jobs:
           cargo test --locked -p codex-tui --lib chatwidget::tests::adaptive_pressure_tests
           cargo test --locked -p codex-tui --lib app::tests::session_lifecycle_requests
 
-      - name: Exercise adaptive admission and misalignment guard regressions
+      - name: Exercise remaining TUI regressions without hiding subsequent failures
         shell: bash
         working-directory: codex-rs
         run: |
-          set -euo pipefail
-          cargo test --locked -p codex-tui --lib chatwidget::tests::adaptive_effort_tests -- --test-threads=2
-          cargo test --locked -p codex-tui --lib chatwidget::tests::misalignment_policy_tests -- --test-threads=2
-
-      - name: Exercise slash command and permission authorization regressions
-        shell: bash
-        working-directory: codex-rs
-        run: |
-          set -euo pipefail
-          cargo test --locked -p codex-tui --lib chatwidget::tests::slash_commands -- --test-threads=2
-          cargo test --locked -p codex-tui --lib chatwidget::tests::permissions -- --test-threads=2
-          cargo test --locked -p codex-tui --lib app::tests::permission_selection_tests -- --test-threads=2
-
-      - name: Exercise resumed history and adaptive status layout regressions
-        shell: bash
-        working-directory: codex-rs
-        run: |
-          set -euo pipefail
-          cargo test --locked -p codex-tui --lib app_server_session::rollout_history::tests -- --test-threads=2
-          cargo test --locked -p codex-tui --lib chatwidget::tests::status_and_layout -- --test-threads=2
+          set -uo pipefail
+          failed=0
+          filters=(
+            chatwidget::tests::adaptive_effort_tests
+            chatwidget::tests::misalignment_policy
+            chatwidget::tests::slash_commands
+            chatwidget::tests::permissions
+            app::tests::permission_selection_tests
+            app_server_session::rollout_history::tests
+            chatwidget::tests::status_and_layout
+          )
+          for filter in "${filters[@]}"; do
+            printf '::group::Regression %s\n' "$filter"
+            if ! listing="$(cargo test --locked -p codex-tui --lib "$filter" -- --list 2>&1)"; then
+              printf '%s\n' "$listing"
+              echo "::error::Cannot enumerate regression tests for $filter"
+              failed=1
+            else
+              count="$(printf '%s\n' "$listing" | sed -nE 's/^([0-9]+) tests?, 0 benchmarks.*$/\1/p' | tail -n 1)"
+              if ! [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+                echo "::error::No executable tests were discovered for $filter; refusing vacuous PASS"
+                failed=1
+              elif cargo test --locked -p codex-tui --lib "$filter" -- --test-threads=2; then
+                echo "PASS: $filter ($count tests discovered)"
+              else
+                echo "::error::Regression test failure in $filter"
+                failed=1
+              fi
+            fi
+            echo '::endgroup::'
+          done
+          if (( failed != 0 )); then
+            echo "::error::One or more mandatory TUI regression groups failed"
+            exit 1
+          fi
 
       - name: Report uncommitted Cargo lock drift owned by 3E.2
         if: always()
