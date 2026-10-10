@@ -124,6 +124,31 @@ jobs:
           cargo test --locked -p codex-tui --lib chatwidget::tests::adaptive_pressure_tests
           cargo test --locked -p codex-tui --lib app::tests::session_lifecycle_requests
 
+      - name: Exercise adaptive admission and misalignment guard regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib chatwidget::tests::adaptive_effort_tests -- --test-threads=2
+          cargo test --locked -p codex-tui --lib chatwidget::tests::misalignment_policy_tests -- --test-threads=2
+
+      - name: Exercise slash command and permission authorization regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib chatwidget::tests::slash_commands -- --test-threads=2
+          cargo test --locked -p codex-tui --lib chatwidget::tests::permissions -- --test-threads=2
+          cargo test --locked -p codex-tui --lib app::tests::permission_selection_tests -- --test-threads=2
+
+      - name: Exercise resumed history and adaptive status layout regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib app_server_session::rollout_history::tests -- --test-threads=2
+          cargo test --locked -p codex-tui --lib chatwidget::tests::status_and_layout -- --test-threads=2
+
       - name: Report uncommitted Cargo lock drift owned by 3E.2
         if: always()
         shell: bash
