@@ -14,7 +14,7 @@ expression: "whole_status.replace(&directory,\n\"[[workspace]]\").replace(crate:
   Agents.md:           <none>
 
 Adaptive Effort
-  codexdd: 0.4.2 (dev)
+  codexdd: 0.4.3 (dev)
   Enabled: no
   Preference: -
   Current: - -

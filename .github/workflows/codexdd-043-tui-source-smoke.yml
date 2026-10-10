@@ -42,8 +42,8 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
-          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
           echo "TUI source HEAD: $GITHUB_SHA"
 
       - name: Verify all three 0.162 status snapshot headers before Rust compilation
