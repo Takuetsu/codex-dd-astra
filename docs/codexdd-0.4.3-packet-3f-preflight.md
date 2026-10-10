@@ -43,3 +43,12 @@ The preflight inventory above was taken at `c0f120485eb01f2f9457511445ba4642e67d
 - An isolated **read-only executable** test gate [#38015850664](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015850664) was launched at `eb20857e6f3049b296749f97a766e06945fd4da5`. It uses `--locked` and targets rollout, adaptive family/status snapshots, adaptive pressure and Worker lifecycle tests. **No result is claimed here until GitHub reports the final conclusion.**
 
 Reconciled source inventory and reproducible lockfile generation do not waive owner-protected release validation. The original blocked transplant, release/version allocation, native Windows SSH F2/daemon tests and detached non-elevated daemon gap remain unresolved gates.
+
+
+## Targeted 3F executable follow-up — 2026-10-10
+
+- [Run #38015850664](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015850664) failed after 150/150 rollout tests and the model-family test passed; the first dynamic `/status` snapshot still expected upstream `v0.159.2` rather than target `v0.162.0`. The default-reasoning snapshot header was corrected at `d156e0b66b560fb51c8d805f2a5e4b624f473dd1`.
+- [Run #38073722008](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38073722008) again passed TUI/CLI compilation, 150 rollout tests and the model-family test, then failed on the **remote-server** variant of the same `/status` test. The log diff was limited to the Codex header `v0.159.2` versus `v0.162.0`, with no Adaptive Effort content difference. The same test loops over **three** snapshot variants (none, remote server and local background server), so correcting only one expectation was insufficient.
+- Both remaining dynamic snapshot headers were updated at `a41dd544515257babb3b40252003c525711cf48c` (remote server) and `b41a6d9b11b322b6e93bad8edc527310c6e928e6` (local background server). All three fixture header expectations now specify the upstream `v0.162.0` target.
+- A read-only, early, three-snapshot expectation guard was added to the temporary regression workflow at `bfc051d16950bb9ccc014cb49c84b4232d4f0c2c`, and the push paths include status snapshot changes. [Run #38075250638](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38075250638) was launched on that exact commit. Its outcome must be checked before any regression gate can be marked green.
+- This work adjusts **test fixtures and read-only CI only**. No production changes, release version allocation, manual promotion, native Windows acceptance, or installation was performed.
