@@ -39,3 +39,13 @@ Run the pinned Rust toolchain's Cargo lock regeneration/check on an isolated bra
 - **Source-generation acceptance only**. Future `cargo check --locked`, Rust tests, workspace/Windows-native validation, 3F overlap audit, release-gated version/provenance review and operator validation still pending. Any final changes to the Cargo workspace manifest versions must be reflected through a new 3E.2 generator, not a manual lock patch.
 
 Do not infer a production or operator installation change from the generated lock. The tracked upstream-release marker and CodexDD product-version file remain at their pre-release values on the isolated integration branch.
+
+## Official upstream dependency identity alignment
+
+The initial Cargo-derived lock preserved two historical compatible external versions that differ from the official `rust-v0.162.0` lock (`h2 0.4.16` instead of `0.4.19`, `process-wrap 10.0.1` instead of `10.0.0`). This was discovered by independently parsing all workspace and external package identities; no release acceptance was claimed.
+
+- A second narrowly-scoped pinned toolchain job [#38015689709](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015689709) **passed**, invoking `cargo update -p h2 --precise 0.4.19` and `cargo update -p process-wrap --precise 10.0.0`, then `cargo metadata --locked`.
+- The job downloaded the official `rust-v0.162.0` `Cargo.lock` at immutable peeled commit `c1382380de69521303b416720a52f42d51af6248`, checked the Git blob hash against `1cee1174c2e937758713df47683521233a36b4f7`, parsed the dependency sets, and verified **all external package identity tuples** (name, version, registry source and checksum) match official upstream. The fork's `0.162.0` workspace package versions are intentionally distinct from upstream release-source `0.0.0` placeholders.
+- Exactly one source path changed in the resulting commit [`48d7667c6da03017f40f5d5a971c8626be7a9cf5`](https://github.com/Takuetsu/codex-dd-astra/commit/48d7667c6da03017f40f5d5a971c8626be7a9cf5): `codex-rs/Cargo.lock` (new blob `98a0b8273de93d649aaa5f25e53f4d76c729f8d5`). No other source/binary/provenance files were changed.
+- The temporary write-enabled alignment workflow was removed at commit `95a4933a26dd23913b6de5f2659e72499a8d7faf` after verifying green results. Both one-shot lock generator workflows are absent from the integration branch.
+- Source dependency generation and identity comparison are **accepted evidence**, not full target compilation, Windows runtime QA or final version allocation. The next read-only `--locked` source and targeted executable gate is [#38015850664](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015850664); do not record success until its final conclusion is verified.
