@@ -111,8 +111,10 @@
         "priority": "critical",
         "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/app-server-daemon/src/lib.rs",
@@ -424,8 +426,10 @@
         "priority": "high",
         "rationale": "CLI startup, daemon test and Windows operator flow"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_elevated_fallback_tests_subsume_mixed_warning_native_verification_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/config/src/config_toml.rs",
@@ -1083,8 +1087,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/session_lifecycle.rs",
@@ -1124,8 +1130,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests.rs",
@@ -1136,8 +1144,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
@@ -1148,8 +1158,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests/model_catalog.rs",
@@ -1188,8 +1200,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests/startup.rs",
@@ -1200,8 +1214,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
@@ -1212,8 +1228,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests/turn_submission.rs",
@@ -1224,8 +1242,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app/thread_events.rs",
@@ -1349,8 +1369,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
@@ -1361,8 +1383,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget.rs",
@@ -1543,8 +1567,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
@@ -1555,8 +1581,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
@@ -1567,8 +1595,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/exec_flow.rs",
@@ -1579,8 +1609,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
@@ -1591,8 +1623,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
@@ -1603,8 +1637,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/permissions.rs",
@@ -1615,8 +1651,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/plan_mode.rs",
@@ -1627,8 +1665,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
@@ -1639,8 +1679,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
@@ -1652,8 +1694,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/worktree_picker_tests.rs",
@@ -1664,8 +1708,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/worktree_picker.rs",
@@ -1703,8 +1749,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/dynamic_tools_tests.rs",
@@ -1715,8 +1763,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/history_cell/tests.rs",
@@ -1727,8 +1777,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
     },
     {
       "path": "codex-rs/tui/src/lib.rs",
