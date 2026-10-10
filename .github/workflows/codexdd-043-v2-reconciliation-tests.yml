@@ -1,0 +1,52 @@
+# CodexDD 0.4.3 / 3E.4a read-only tooling test lane; never publish candidates.
+name: CodexDD 0.4.3 v2 reconciliation parser preflight
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-v2-reconciliation-tooling
+    paths:
+      - .github/workflows/codexdd-043-v2-reconciliation-tests.yml
+      - .github/scripts/upstream_reconciliation.py
+      - .github/scripts/test_upstream_reconciliation.py
+
+permissions:
+  contents: read
+
+jobs:
+  strict-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact tooling-only branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert pre-merge tooling isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-v2-reconciliation-tooling'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          base=4828e3b4232781963594cfaaebdc49c5531de8b1
+          git merge-base --is-ancestor "$base" HEAD
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          git diff --quiet "$base" HEAD -- \
+            codex-rs .github/workflows/upstream-sync.yml \
+            .github/workflows/upstream-prepare.yml \
+            .github/workflows/upstream-promote.yml \
+            .github/scripts/upstream_sync.py \
+            .github/scripts/test_upstream_sync.py \
+            scripts/codexdd-validate-upstream-candidate.ps1
+      - name: Verify v2 parser rejects ambiguous and stale identity evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation.py
+      - name: Verify existing v1 contract still passes without alterations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_sync.py
