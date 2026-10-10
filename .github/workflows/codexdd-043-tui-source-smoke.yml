@@ -1,4 +1,5 @@
 # Temporary, read-only 3C/3D/3B.1 executable regression gate. Nonproduction.
+# Retest after the verified 0.159.2 to 0.162.0 status snapshot expectation correction.
 # Remove after evidence is verified. No generated sources or Cargo.lock may be published.
 name: CodexDD 0.4.3 targeted runtime regressions
 
