@@ -52,3 +52,18 @@ Reconciled source inventory and reproducible lockfile generation do not waive ow
 - Both remaining dynamic snapshot headers were updated at `a41dd544515257babb3b40252003c525711cf48c` (remote server) and `b41a6d9b11b322b6e93bad8edc527310c6e928e6` (local background server). All three fixture header expectations now specify the upstream `v0.162.0` target.
 - A read-only, early, three-snapshot expectation guard was added to the temporary regression workflow at `bfc051d16950bb9ccc014cb49c84b4232d4f0c2c`, and the push paths include status snapshot changes. [Run #38075250638](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38075250638) was launched on that exact commit. Its outcome must be checked before any regression gate can be marked green.
 - This work adjusts **test fixtures and read-only CI only**. No production changes, release version allocation, manual promotion, native Windows acceptance, or installation was performed.
+
+## Executable regression checkpoint: run #38075250638 — verified green
+
+The exact read-only Linux [run #38075250638](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38075250638) at source commit `bfc051d16950bb9ccc014cb49c84b4232d4f0c2c` completed with **success**, including every invoked test and the all-three-snapshot header guard:
+
+- `cargo check --locked -p codex-tui --lib --tests`, `cargo check --locked -p codex-cli --bin codex` and `cargo check --locked -p codex-rollout --lib`: passed.
+- `cargo test --locked -p codex-rollout --lib`: **150 passed**, 0 failed.
+- TUI model-family/0.162 catalog test: **1 passed**.
+- TUI default-reasoning `/status` test, covering none/remote/local-background snapshots in the same test: **1 passed**.
+- TUI `chatwidget::tests::adaptive_pressure_tests`: **20 passed**.
+- TUI `app::tests::session_lifecycle_requests`: **44 passed**.
+- **Total: 216 executed tests passed, 0 failed.** The run supplies executable Linux compatibility evidence for these filters only, not all TUI tests or native Windows runtime behavior.
+- This green run was followed by a **docs-only** checkpoint `cc16538349047d7e98499fdd8198f5c54c870602`. No substantive source changes occurred between that pinned tested SHA and this documentation note.
+
+**Still pending:** broader adaptive admission/trusted signal/Worker-scope, slash/permission, history/fork/resume, status-layout, updater/LVO receipt and provenance regressions, Windows-native elevated/non-elevated daemon/F2 smoke, release identity allocation and authorized production promotion. Do not treat the isolated source branch as release-ready.
