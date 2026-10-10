@@ -413,8 +413,10 @@
         "priority": "high",
         "rationale": "CLI startup, daemon test and Windows operator flow"
       },
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_cli_runtime_validation",
+      "semantic_review_status": "upstream_complete_with_adaptive_override_preserved_native_cli_test_pending",
+      "source_merge_packet": "3D.2",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d2-cli.md"
     },
     {
       "path": "codex-rs/cli/tests/daemon_startup.rs",
