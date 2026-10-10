@@ -1,0 +1,75 @@
+# Temporary read-only CodexDD 0.4.3 / 3E.3 product version and trusted LVO evidence gate.
+name: CodexDD 0.4.3 core and version smoke
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-core-version-smoke.yml
+
+permissions:
+  contents: read
+
+jobs:
+  core-version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction integration source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Verify allocated product and upstream identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          echo "Exact candidate source: $GITHUB_SHA"
+      - name: Configure pinned repository Rust environment
+        uses: ./.github/actions/setup-ci
+      - name: Use repository Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Use verified repository-built V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-unknown-linux-gnu
+      - name: Verify locked dependency resolution
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo metadata --locked --format-version 1 > /dev/null
+      - name: Execute CodexDD CLI version reporting integration test
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-cli --test version_reporting -- --nocapture
+      - name: Execute native core LVO handler regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-core --lib codexdd_validation -- --nocapture
+      - name: Execute app-server trusted adaptive identity regression
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-app-server --lib adaptive_runtime_signal_binds_event_turn_and_conversation_identity -- --nocapture
+      - name: Ensure no lockfile drift or source mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          echo 'Source and Cargo.lock remain unchanged by version/core smoke.'
+# No install, PR, candidate, production write, or native Windows approval.
