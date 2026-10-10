@@ -33,3 +33,13 @@
 6. Final provenance/identity-bound promotion and explicit owner approval are required before PR merge or installation.
 
 Production branch, installed clients and current version/provenance markers remain unchanged by this preflight. No Daniel-CL command is needed merely to record this source audit.
+
+## Subsequent verified compile and dependency evidence
+
+The preflight inventory above was taken at `c0f120485eb01f2f9457511445ba4642e67db492`. Later source and CI evidence must be tracked separately:
+- [TUI + CLI source gate #38015213286](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015213286) **success**, pinned to source `f9cc7d2b22d74c47c98f89b2151e3b29147fa8fa`. Both `cargo check -p codex-tui --lib --tests` and `cargo check -p codex-cli --bin codex` passed. This corrects the prior fixture compile failures, but does not establish executable behavior.
+- [Generated Cargo lockfile #38015463888](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015463888) **success**; later [official upstream external dependency identity alignment #38015689709](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015689709) **success**. The final lockfile commit `48d7667c6da03017f40f5d5a971c8626be7a9cf5` changed only `codex-rs/Cargo.lock`, and all external crate version/source/checksum identities match the pinned `rust-v0.162.0` lock. Both temporary write-enabled workflows were removed.
+- Source-identity comparison against live production `4828e3b4232781963594cfaaebdc49c5531de8b1` verified **exact blob equality** for `.github/workflows/upstream-prepare.yml`, `upstream-promote.yml`, `upstream-sync.yml`, `.github/scripts/upstream_sync.py` and `test_upstream_sync.py`. Those 0.4.2 preparation, manual promotion, discovery and related test sources remain unchanged by upstream integration.
+- An isolated **read-only executable** test gate [#38015850664](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015850664) was launched at `eb20857e6f3049b296749f97a766e06945fd4da5`. It uses `--locked` and targets rollout, adaptive family/status snapshots, adaptive pressure and Worker lifecycle tests. **No result is claimed here until GitHub reports the final conclusion.**
+
+Reconciled source inventory and reproducible lockfile generation do not waive owner-protected release validation. The original blocked transplant, release/version allocation, native Windows SSH F2/daemon tests and detached non-elevated daemon gap remain unresolved gates.
