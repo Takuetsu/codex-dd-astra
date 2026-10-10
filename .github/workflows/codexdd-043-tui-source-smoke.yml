@@ -55,12 +55,12 @@ jobs:
         with:
           target: x86_64-unknown-linux-gnu
 
-      - name: Focused TUI library compilation
+      - name: Compile reconciled TUI regression tests without linking
         shell: bash
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          cargo check -p codex-tui --lib
+          cargo check -p codex-tui --lib --tests
 
       - name: Report uncommitted Cargo lock drift owned by 3E.2
         if: always()
