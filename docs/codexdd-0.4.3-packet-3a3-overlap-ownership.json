@@ -1173,8 +1173,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
     },
     {
       "path": "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
@@ -1863,8 +1865,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
     },
     {
       "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_local_background_server.snap",
@@ -1876,8 +1880,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
     },
     {
       "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_uses_default_reasoning_when_config_empty.snap",
@@ -1889,8 +1895,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
     },
     {
       "path": "codex-rs/tui/src/status/tests.rs",
@@ -1902,8 +1910,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
     },
     {
       "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
