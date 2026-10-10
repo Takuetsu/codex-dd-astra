@@ -9,6 +9,8 @@ on:
       - dd/codexdd-v0.4.3-upstream-0.162.0-integration
     paths:
       - .github/workflows/codexdd-043-tui-source-smoke.yml
+      - 'codex-rs/tui/src/status/snapshots/**'
+      - codex-rs/tui/src/status/tests.rs
 
 permissions:
   contents: read
@@ -42,6 +44,28 @@ jobs:
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
           echo "TUI source HEAD: $GITHUB_SHA"
+
+      - name: Verify all three 0.162 status snapshot headers before Rust compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("codex-rs/tui/src/status/snapshots")
+          names = (
+              "status_snapshot_uses_default_reasoning_when_config_empty",
+              "status_snapshot_remote_server",
+              "status_snapshot_local_background_server",
+          )
+          for name in names:
+              path = root / f"codex_tui__status__tests__{name}.snap"
+              content = path.read_text(encoding="utf-8")
+              expected = "  >_ OpenAI Codex (v0.162.0)"
+              assert content.count(expected) == 1, f"Stale or missing 0.162.0 header: {path}"
+              assert "  >_ OpenAI Codex (v0.159.2)" not in content, f"Stale 0.159.2 header: {path}"
+              print("Verified 0.162.0 snapshot:", path)
+          PY
 
       - name: Configure repository build environment
         uses: ./.github/actions/setup-ci
