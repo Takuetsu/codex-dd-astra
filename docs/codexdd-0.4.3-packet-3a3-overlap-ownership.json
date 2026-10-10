@@ -86,8 +86,12 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "cargo_generated_from_integrated_source_pending_release_validation",
+      "semantic_review_status": "pinned_cargo_metadata_locked_success_exact_only_lock_commit_verified",
+      "source_merge_packet": "3E.2",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3e2-build-evidence.md",
+      "generated_commit": "4a2a2e05e1737039b02513d0b64bbf634e481036",
+      "generator_ci_run": 38015463888
     },
     {
       "path": "codex-rs/app-server-daemon/src/backend/windows.rs",
