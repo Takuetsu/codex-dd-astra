@@ -17,3 +17,11 @@ The upstream integration's original `rust-v0.162.0` discovery was blocked by 22 
 This initial packet does **not** define or accept a complete v2 manifest, conflict sidecar, Windows validation receipt, candidate snapshot, or GitHub PR. It does not verify official tag refs, final source commit/tree, native Windows release PASS, semantic review links, or an allowed metadata-only candidate delta. Lexical paths are not filesystem/symlink or Git object validation.
 
 The required follow-up packets are: complete strict v2 manifest/sidecar/receipt schemas with cross-identity checks and exhaustive negative tests; isolated source snapshot and generated-file provenance verifier; Windows native receipt support; guarded publish-once canonical candidate from current production ancestry; and v2-aware PR-only promoter with owner semantic approval. Preserve normal v1 behavior and keep all new write paths opt-in. Publish the bridge via a **tooling-only PR**, and do not merge before explicit owner acceptance. After any tooling merge, production identity changes and a fresh pinned discovery is mandatory.
+
+## Verified parser preflight CI — 2026-10-10
+
+- [GitHub Actions #38089565371](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38089565371) completed **success**, pinned to source `cf17f0203bcb9d5be1d24027f05cec39480b9446`.
+- New read-only conflict-evidence/strict-JSON primitives: **15 tests passed**, zero failed.
+- Existing v1 upstream-sync and receipt tests re-executed unchanged: **23 tests passed**, zero failed.
+- Job's isolation assertions checked unchanged production version (`0.4.2`), unchanged tracked upstream (`rust-v0.159.2`), exact production ancestry and no drift in production v1 prepare/promote/discovery files or candidate receipt script.
+- This parser does not yet accept any v2 receipt, write a candidate ref, or create a release PR. Missing complete sidecar/manifest/receipt schemas, native receipt adaptation, official-ref/current-base Git verification, source snapshot metadata-only proof, publish-once guard, and separate operator approval remain hard blockers. **Do not merge this incomplete tooling branch.**
