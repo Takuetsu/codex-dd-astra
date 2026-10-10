@@ -72,8 +72,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_bazel_windows_sharding_validation",
+      "semantic_review_status": "upstream_deterministic_windows_sharding_with_four_fork_90min_budgets_ci_validation_pending",
+      "source_merge_packet": "3E.2",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3e2-build-evidence.md"
     },
     {
       "path": "codex-rs/Cargo.lock",
@@ -869,8 +871,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_rollout_lookup_runtime_validation",
+      "semantic_review_status": "upstream_0162_reader_with_workflow_state_nonvisible_semantics_kept_runtime_test_pending",
+      "source_merge_packet": "3B.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1d-rollout-lookup.md"
     },
     {
       "path": "codex-rs/rollout/src/persistence_metrics.rs",
@@ -924,8 +928,10 @@
       ],
       "sensitivity_review": "classifier_flagged_review_pending",
       "provisional_risk": null,
-      "resolution_status": "not_started",
-      "semantic_review_status": "not_started"
+      "resolution_status": "source_merged_pending_rollout_lookup_runtime_validation",
+      "semantic_review_status": "upstream_0162_reader_with_workflow_state_nonvisible_semantics_kept_runtime_test_pending",
+      "source_merge_packet": "3B.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1d-rollout-lookup.md"
     },
     {
       "path": "codex-rs/state/src/extract.rs",
