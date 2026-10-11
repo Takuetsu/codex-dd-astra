@@ -19,6 +19,8 @@ on:
       - .github/scripts/test_upstream_reconciliation_cli.py
       - scripts/codexdd-v2-receipt.ps1
       - scripts/codexdd-v2-receipt-tests.ps1
+      - scripts/codexdd-validate-upstream-candidate-v2.ps1
+      - scripts/codexdd-validate-upstream-candidate.ps1
 
 permissions:
   contents: read
@@ -94,7 +96,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($path in @('scripts/codexdd-v2-receipt.ps1', 'scripts/codexdd-v2-receipt-tests.ps1')) {
+          foreach ($path in @('scripts/codexdd-v2-receipt.ps1', 'scripts/codexdd-v2-receipt-tests.ps1', 'scripts/codexdd-validate-upstream-candidate-v2.ps1', 'scripts/codexdd-validate-upstream-candidate.ps1')) {
             $tokens = $null
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile(

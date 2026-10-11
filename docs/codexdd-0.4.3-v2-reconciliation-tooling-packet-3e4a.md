@@ -57,3 +57,9 @@ The required follow-up packets are: complete strict v2 manifest/sidecar/receipt 
 Added a standalone read-only CLI which combines strict blocked v1 artifact digests, typed v2 manifest/sidecar, source snapshot Git commit/tree and live production ancestry, canonical candidate branch, and exact four-file metadata-only candidate diff. It rejects dirty local worktrees, escaping/symlinked paths, changed evidence blobs, and changed source/provenance. Promotion-mode preflight additionally checks official annotated upstream tags through the separate Git verifier.
 
 The CLI requires independent accepted original discovery digests and the exact production, source, and upstream target inputs. Native mode is a *preflight only*, not promotion authority. The canonical candidate does not yet exist; the separate tooling-only branch is not a release or a candidate.
+
+## Packet 3E.4g - v2 native release entrypoint
+
+Existing candidate-validator v1 behavior remains the default and unchanged for v1 manifest contracts. V2 is dispatched only on an explicit release profile and with independently accepted original discovery digests. A new native-only PowerShell script checks Daniel-CL Windows, the clean canonical branch, pinned original blocked discovery and Git source/candidate metadata through the Python read-only preflight before executing the existing repository release profile.
+
+On a complete release PASS it rechecks source/head/provenance and emits a candidate-bound canonical v2 receipt. Windows CI parses the entrypoints and exercises receipt byte serialization, but no release profile has run. Publication/promotion are still prohibited until separate checked workflows and owner gates are complete.
