@@ -1,0 +1,176 @@
+# CodexDD 0.4.3 / 3E.4a read-only tooling test lane; never publish candidates.
+name: CodexDD 0.4.3 v2 reconciliation parser preflight
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-v2-reconciliation-tooling
+    paths:
+      - .github/workflows/codexdd-043-v2-reconciliation-tests.yml
+      - .github/scripts/upstream_reconciliation.py
+      - .github/scripts/test_upstream_reconciliation.py
+      - .github/scripts/upstream_reconciliation_v2.py
+      - .github/scripts/test_upstream_reconciliation_v2.py
+      - .github/scripts/upstream_reconciliation_git.py
+      - .github/scripts/test_upstream_reconciliation_git.py
+      - .github/scripts/upstream_reconciliation_receipt.py
+      - .github/scripts/test_upstream_reconciliation_receipt.py
+      - .github/scripts/upstream_reconciliation_cli.py
+      - .github/scripts/test_upstream_reconciliation_cli.py
+      - .github/scripts/upstream_reconciliation_stage.py
+      - .github/scripts/test_upstream_reconciliation_stage.py
+      - .github/scripts/upstream_reconciliation_promotion.py
+      - .github/scripts/test_upstream_reconciliation_promotion.py
+      - .github/scripts/test_upstream_reconciliation_workflows.py
+      - .github/workflows/upstream-reconcile-publish.yml
+      - .github/workflows/upstream-reconcile-promote.yml
+      - scripts/codexdd-v2-receipt.ps1
+      - scripts/codexdd-v2-receipt-tests.ps1
+      - scripts/codexdd-validate-upstream-candidate-v2.ps1
+      - scripts/codexdd-validate-upstream-candidate.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  strict-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact tooling-only branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert pre-merge tooling isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-v2-reconciliation-tooling'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          base=4828e3b4232781963594cfaaebdc49c5531de8b1
+          git merge-base --is-ancestor "$base" HEAD
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+          git diff --quiet "$base" HEAD -- \
+            codex-rs .github/workflows/upstream-sync.yml \
+            .github/workflows/upstream-prepare.yml \
+            .github/workflows/upstream-promote.yml \
+            .github/scripts/upstream_sync.py \
+            .github/scripts/test_upstream_sync.py
+          # The v1 PowerShell validator has a bounded additive v2 dispatcher;
+          # exact original v1 behavior is asserted separately below.
+      - name: Verify v2 parser rejects ambiguous and stale identity evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation.py
+      - name: Verify typed v2 manifest and conflict sidecar bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_v2.py
+      - name: Verify source snapshot and metadata-only Git object invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_git.py
+      - name: Verify native Windows release receipt v2 fail-closed bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_receipt.py
+      - name: Verify complete read-only native/promotion candidate CLI preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_cli.py
+      - name: Verify v1 validator remains byte-exact outside v2 dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          path = "scripts/codexdd-validate-upstream-candidate.ps1"
+          baseline = subprocess.run(
+              ["git", "show", "4828e3b4232781963594cfaaebdc49c5531de8b1:" + path],
+              capture_output=True, text=True, check=True,
+          ).stdout
+          candidate = Path(path).read_text(encoding="utf-8")
+          old_parameters = '    [string]$ManifestPath = ""\n)'
+          new_parameters = (
+              '    [string]$ManifestPath = "",\n\n'
+              '    [string]$ApprovedDiscoveryManifestSha256 = "",\n'
+              '    [string]$ApprovedConflictsSha256 = ""\n)'
+          )
+          start = candidate.find('    if ($manifest.contract_version -eq 2) {')
+          end = candidate.find('    if ($manifest.contract_version -ne 1)', start)
+          if start < 0 or end <= start:
+              raise SystemExit("Missing bounded v2 before fail-closed v1 gate")
+          dispatch = candidate[start:end]
+          required = (
+              'if ($Profile -ne "release")',
+              'ApprovedDiscoveryManifestSha256',
+              'ApprovedConflictsSha256',
+              "codexdd-validate-upstream-candidate-v2.ps1",
+              'exit $LASTEXITCODE',
+          )
+          for guard in required:
+              if guard not in dispatch:
+                  raise SystemExit("Missing v2 branch guard: " + guard)
+          restored = candidate[:start] + candidate[end:]
+          restored = restored.replace(new_parameters, old_parameters, 1)
+          if restored != baseline:
+              raise SystemExit("Existing v1 validator has unreviewed changes")
+          print("Exact v1 validator source preserved; only additive v2 dispatcher present")
+          PY
+      - name: Verify purely local metadata-only candidate construction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_stage.py
+      - name: Verify manual owner acceptance and candidate-bound release receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_promotion.py
+      - name: Verify manual-only, immutable candidate, PR-only workflow safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_workflows.py
+      - name: Verify existing v1 contract still passes without alterations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_sync.py
+
+  native-ps51-v2-fixture:
+    name: Native Windows PowerShell 5.1 canonical v2 receipt fixture
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Checkout unpromoted tooling source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Parse and execute native v2 receipt byte fixture
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($path in @('scripts/codexdd-v2-receipt.ps1', 'scripts/codexdd-v2-receipt-tests.ps1', 'scripts/codexdd-validate-upstream-candidate-v2.ps1', 'scripts/codexdd-validate-upstream-candidate.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path -LiteralPath $path).Path, [ref]$tokens, [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -ne 0) {
+              throw "PowerShell parse failure in $path"
+            }
+          }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\codexdd-v2-receipt-tests.ps1
+          if ($LASTEXITCODE -ne 0) {
+            throw "Canonical v2 receipt fixture failed: $LASTEXITCODE"
+          }
