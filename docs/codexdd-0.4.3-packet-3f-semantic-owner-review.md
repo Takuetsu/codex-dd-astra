@@ -129,7 +129,7 @@ validation *before further final GitHub CI*, in
 [the major-phase work-packet standard](codexdd-major-phase-work-packet-standard.md)
 and the integration branch root `AGENTS.md`. This documentation checkpoint
 does **not** dispatch another CI job. The next local gate begins with safe
-read-only branch/HEAD/worktree verification at `E:\\codexdd` so an active
+read-only branch/HEAD/worktree verification at `E:\codexdd` so an active
 production checkout is not altered accidentally; only then select the smallest
 meaningful local source test. Do not infer Daniel-CL PASS from a hosted runner.
 
