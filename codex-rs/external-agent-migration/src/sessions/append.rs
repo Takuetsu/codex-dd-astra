@@ -221,8 +221,10 @@ fn source_model_items(items: &[RolloutItem]) -> Option<Vec<SourceModelItem<'_>>>
             RolloutItem::SessionMeta(_)
             | RolloutItem::InterAgentCommunicationMetadata { .. }
             | RolloutItem::TokenUsageRecord(_)
-            | RolloutItem::RealtimeItem(_)
-            | RolloutItem::WorkflowState(_) => {}
+            | RolloutItem::RealtimeItem(_) => {}
+            // External session content cannot create or replace native CodexDD
+            // workflow authority. Trusted destination history is handled below.
+            | RolloutItem::WorkflowState(_) => return None,
             RolloutItem::ResponseItem(response_item) => {
                 model_items.push(SourceModelItem {
                     response_item: &response_item.item,

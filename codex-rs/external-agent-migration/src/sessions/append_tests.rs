@@ -102,6 +102,36 @@ fn requires_a_strict_nonempty_model_prefix() {
     assert!(plan_append(&source, &with_tool_call).is_none());
 }
 
+
+#[test]
+fn external_import_source_rejects_workflow_authority_but_allows_native_history() {
+    let history = rollout(&[(MessageRole::User, "first request")]);
+    let source = rollout(&[
+        (MessageRole::User, "first request"),
+        (MessageRole::Assistant, "late answer"),
+        (MessageRole::User, "follow-up request"),
+    ]);
+    let workflow_authority = RolloutItem::WorkflowState(
+        codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(None),
+    );
+
+    // The native destination can legitimately carry durable workflow state;
+    // it must not alter transcript-prefix comparison or block a safe append.
+    let mut native_history = history.clone();
+    native_history.push(workflow_authority.clone());
+    assert!(model_transcripts_match(&history, &native_history));
+    assert!(plan_append(&source, &native_history).is_some());
+
+    // A malformed or substituted external source may never import that same
+    // privileged item, whether placed in the old prefix or the new suffix.
+    for insertion_index in [0, source.len() / 2, source.len()] {
+        let mut substituted_source = source.clone();
+        substituted_source.insert(insertion_index, workflow_authority.clone());
+        assert!(!model_transcripts_match(&substituted_source, &history));
+        assert!(plan_append(&substituted_source, &history).is_none());
+    }
+}
+
 fn rollout(messages: &[(MessageRole, &str)]) -> Vec<RolloutItem> {
     rollout_items_from_messages(
         messages
