@@ -102,7 +102,6 @@ fn requires_a_strict_nonempty_model_prefix() {
     assert!(plan_append(&source, &with_tool_call).is_none());
 }
 
-
 #[test]
 fn external_import_source_rejects_workflow_authority_but_allows_native_history() {
     let history = rollout(&[(MessageRole::User, "first request")]);
@@ -111,9 +110,8 @@ fn external_import_source_rejects_workflow_authority_but_allows_native_history()
         (MessageRole::Assistant, "late answer"),
         (MessageRole::User, "follow-up request"),
     ]);
-    let workflow_authority = RolloutItem::WorkflowState(
-        codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(None),
-    );
+    let workflow_item = codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(None);
+    let workflow_authority = RolloutItem::WorkflowState(workflow_item);
 
     // The native destination can legitimately carry durable workflow state;
     // it must not alter transcript-prefix comparison or block a safe append.
