@@ -52,8 +52,9 @@ jobs:
             .github/workflows/upstream-prepare.yml \
             .github/workflows/upstream-promote.yml \
             .github/scripts/upstream_sync.py \
-            .github/scripts/test_upstream_sync.py \
-            scripts/codexdd-validate-upstream-candidate.ps1
+            .github/scripts/test_upstream_sync.py
+          # The v1 PowerShell validator has a bounded additive v2 dispatcher;
+          # exact original v1 behavior is asserted separately below.
       - name: Verify v2 parser rejects ambiguous and stale identity evidence
         shell: bash
         run: |
