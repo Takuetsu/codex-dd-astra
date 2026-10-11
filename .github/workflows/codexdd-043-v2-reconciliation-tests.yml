@@ -21,6 +21,9 @@ on:
       - .github/scripts/test_upstream_reconciliation_stage.py
       - .github/scripts/upstream_reconciliation_promotion.py
       - .github/scripts/test_upstream_reconciliation_promotion.py
+      - .github/scripts/test_upstream_reconciliation_workflows.py
+      - .github/workflows/upstream-reconcile-publish.yml
+      - .github/workflows/upstream-reconcile-promote.yml
       - scripts/codexdd-v2-receipt.ps1
       - scripts/codexdd-v2-receipt-tests.ps1
       - scripts/codexdd-validate-upstream-candidate-v2.ps1
@@ -133,6 +136,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/test_upstream_reconciliation_promotion.py
+      - name: Verify manual-only, immutable candidate, PR-only workflow safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_workflows.py
       - name: Verify existing v1 contract still passes without alterations
         shell: bash
         run: |
