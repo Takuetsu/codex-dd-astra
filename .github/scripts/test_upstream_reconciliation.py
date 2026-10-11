@@ -34,7 +34,10 @@ class StrictReconciliationJsonTests(unittest.TestCase):
                 parse_strict_json(source)
 
     def test_rejects_nonfinite_numbers(self):
-        for source in (b'{"x":NaN}', b'{"x":Infinity}', b'{"x":-Infinity}'):
+        for source in (
+            b'{"x":NaN}', b'{"x":Infinity}', b'{"x":-Infinity}',
+            b'{"x":1e9999}', b'{"x":-1e9999}',
+        ):
             with self.subTest(source=source), self.assertRaisesRegex(ValueError, "non-finite"):
                 parse_strict_json(source)
         with self.assertRaises(ValueError):

@@ -86,13 +86,9 @@ class CandidateGitBoundaryTests(unittest.TestCase):
         )
 
     def verify_candidate(self, **kwargs):
-        return verify_metadata_only_candidate_git(
-            self.repo,
-            self.manifest,
-            candidate_sha=self.candidate,
-            manifest_path=self.manifest_path,
-            **kwargs,
-        )
+        parameters = {"candidate_sha": self.candidate, "manifest_path": self.manifest_path}
+        parameters.update(kwargs)
+        return verify_metadata_only_candidate_git(self.repo, self.manifest, **parameters)
 
     def test_source_snapshot_and_metadata_only_candidate_pass(self):
         self.verify_source()

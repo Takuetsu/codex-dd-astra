@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from collections.abc import Mapping, Sequence
 
@@ -30,6 +31,12 @@ def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]
 
 def _reject_nonfinite_number(value: str) -> None:
     raise ValueError(f"non-finite JSON number is forbidden: {value}")
+
+def _parse_finite_json_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError(f"non-finite JSON exponent is forbidden: {value}")
+    return parsed
 
 
 def canonical_json_bytes(value: object) -> bytes:
@@ -63,6 +70,7 @@ def parse_strict_json(source: bytes, *, canonical: bool = False) -> dict[str, ob
             decoded,
             object_pairs_hook=_reject_duplicate_keys,
             parse_constant=_reject_nonfinite_number,
+            parse_float=_parse_finite_json_float,
         )
     except (json.JSONDecodeError, UnicodeDecodeError) as error:
         raise ValueError("invalid reconciliation JSON") from error
