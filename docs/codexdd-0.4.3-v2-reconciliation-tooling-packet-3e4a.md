@@ -51,3 +51,9 @@ The required follow-up packets are: complete strict v2 manifest/sidecar/receipt 
 - Added scripts/codexdd-v2-receipt.ps1 as a standalone, nonpromoting canonical receipt writer. It accepts only a v2 reconciled manifest, exact candidate identity, Daniel-CL host claim, and successful native release-profile result with at least 21 stages.
 - Added scripts/codexdd-v2-receipt-tests.ps1 and a Windows PowerShell 5.1 GitHub Actions job. The tests compare emitted JSON bytes against Python canonical UTF-8 serialization and reject work-packet or unrelated-host evidence.
 - The existing production v1 candidate-validation script is not yet changed, and this writer cannot trigger a release. The next packet must bind the v2 writer to a complete verified candidate and approved native profile result before enabling the branch.
+
+## Packet 3E.4f - integrated read-only v2 candidate preflight
+
+Added a standalone read-only CLI which combines strict blocked v1 artifact digests, typed v2 manifest/sidecar, source snapshot Git commit/tree and live production ancestry, canonical candidate branch, and exact four-file metadata-only candidate diff. It rejects dirty local worktrees, escaping/symlinked paths, changed evidence blobs, and changed source/provenance. Promotion-mode preflight additionally checks official annotated upstream tags through the separate Git verifier.
+
+The CLI requires independent accepted original discovery digests and the exact production, source, and upstream target inputs. Native mode is a *preflight only*, not promotion authority. The canonical candidate does not yet exist; the separate tooling-only branch is not a release or a candidate.

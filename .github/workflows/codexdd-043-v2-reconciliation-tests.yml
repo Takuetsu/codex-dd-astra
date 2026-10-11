@@ -15,6 +15,8 @@ on:
       - .github/scripts/test_upstream_reconciliation_git.py
       - .github/scripts/upstream_reconciliation_receipt.py
       - .github/scripts/test_upstream_reconciliation_receipt.py
+      - .github/scripts/upstream_reconciliation_cli.py
+      - .github/scripts/test_upstream_reconciliation_cli.py
       - scripts/codexdd-v2-receipt.ps1
       - scripts/codexdd-v2-receipt-tests.ps1
 
@@ -68,6 +70,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/test_upstream_reconciliation_receipt.py
+      - name: Verify complete read-only native/promotion candidate CLI preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_cli.py
       - name: Verify existing v1 contract still passes without alterations
         shell: bash
         run: |
