@@ -81,3 +81,9 @@ The only remote write is a force-with-lease requiring the candidate ref to be ab
 Added read-only owner-acceptance plus candidate-bound native release receipt parser, requiring source-snapshot acceptance phrase and a same-repository review link equal to the attested sidecar, pinned official target, exact observed canonical candidate branch/HEAD and complete v2 release receipt. This is not a cryptographic host attestation: the owner must explicitly review and dispatch the separate PR-only promotion workflow, and its GitHub history supplies the actor audit log.
 
 Negative tests cover stale candidate HEAD, wrong source, target substitution, forged/partial release claims, missing source-specific acceptance, unknown fields, and mismatching semantic evidence. No PR is opened by these helper tests.
+
+## Packet 3E.4k — owner-dispatched PR-only v2 promotion workflow
+
+Added upstream-reconcile-promote.yml, a separate manual-only workflow. It checks exact pinned candidate/current production/source branch Git identities, validates GitHub's successful original blocked discovery run and archived artifact against committed copies, rechecks official annotated tag refs and the source metadata-only candidate, and requires the strict native Windows release-profile v2 receipt plus owner acceptance phrase/semantic review URL bound to the frozen source snapshot. It refuses duplicate PRs (including closed PRs), stale candidate HEAD or moved production, and may open a PR only.
+
+Existing v1 upstream-promote.yml stays unmodified. No PR/production merge, release, or installation occurs simply because this workflow source is committed. The separate v2 tooling-only PR requires explicit owner approval to merge before either new workflow becomes operational on production.

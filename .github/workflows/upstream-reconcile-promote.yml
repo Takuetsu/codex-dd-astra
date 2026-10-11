@@ -1,0 +1,203 @@
+name: upstream-codex-v2-reconciled-promote
+
+# Read-only candidate verification and owner-gated PR creation only.
+# Never move Git refs, merge, tag a release, install or deploy.
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_branch: {required: true, type: string}
+      candidate_head_sha: {required: true, type: string}
+      production_sha: {required: true, type: string}
+      source_sha: {required: true, type: string}
+      source_tree: {required: true, type: string}
+      discovery_run_id: {required: true, type: string}
+      approved_manifest_sha256: {required: true, type: string}
+      approved_conflicts_sha256: {required: true, type: string}
+      receipt_json: {required: true, type: string}
+      semantic_review_url: {required: true, type: string}
+      owner_source_acceptance: {required: true, type: string}
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+concurrency:
+  group: codexdd-upstream-v2-review-pr-rust-v0.162.0
+  cancel-in-progress: false
+
+jobs:
+  owner-gated-review-pr:
+    if: github.actor == 'Takuetsu'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BRANCH: ${{ inputs.candidate_branch }}
+      HEAD_SHA: ${{ inputs.candidate_head_sha }}
+      PROD: ${{ inputs.production_sha }}
+      SOURCE: ${{ inputs.source_sha }}
+      SOURCE_TREE: ${{ inputs.source_tree }}
+      DISCOVERY_RUN: ${{ inputs.discovery_run_id }}
+      MANIFEST_HASH: ${{ inputs.approved_manifest_sha256 }}
+      CONFLICTS_HASH: ${{ inputs.approved_conflicts_sha256 }}
+      RECEIPT_JSON: ${{ inputs.receipt_json }}
+      REVIEW_URL: ${{ inputs.semantic_review_url }}
+      OWNER_ACCEPTANCE: ${{ inputs.owner_source_acceptance }}
+      TARGET: c1382380de69521303b416720a52f42d51af6248
+      TAG: rust-v0.162.0
+      MANIFEST: docs/upstream-candidates/codexdd-upstream-rust-v0.162.0.json
+      SOURCE_REF: refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout production (no writeable Git credentials)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/astra-policy-v2
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate owner-submitted source, candidate and production identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
+          test "$BRANCH" = 'automation/upstream-candidate-rust-v0.162.0-c1382380de69'
+          for value in "$HEAD_SHA" "$PROD" "$SOURCE" "$SOURCE_TREE"; do
+            [[ "$value" =~ ^[0-9a-f]{40}$ ]] || exit 2
+          done
+          for value in "$MANIFEST_HASH" "$CONFLICTS_HASH"; do
+            [[ "$value" =~ ^[0-9a-f]{64}$ ]] || exit 2
+          done
+          [[ "$DISCOVERY_RUN" =~ ^[1-9][0-9]*$ ]] || exit 2
+          test "$(git rev-parse HEAD)" = "$PROD"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+
+      - name: Verify current production and original discovery run provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          live_prod="$(git ls-remote --heads origin refs/heads/dd/astra-policy-v2 | cut -f1)"
+          test "$live_prod" = "$PROD"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$DISCOVERY_RUN" --jq \
+            '[.name,.head_branch,.head_sha,.conclusion] | @tsv' \
+            | grep -Fx "upstream-codex-discovery"$'\t'"dd/astra-policy-v2"$'\t'"$PROD"$'\t'"success"
+          echo 'Original read-only discovery run identity PASS'
+
+      - name: Fetch exact candidate/source and official upstream tag objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/${BRANCH}:refs/remotes/origin/codexdd-v2-candidate"
+          git fetch origin "$SOURCE_REF:refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration"
+          test "$(git rev-parse refs/remotes/origin/codexdd-v2-candidate)" = "$HEAD_SHA"
+          test "$(git rev-parse refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration)" = "$SOURCE"
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream refs/tags/rust-v0.159.2:refs/tags/rust-v0.159.2
+          git fetch upstream refs/tags/rust-v0.162.0:refs/tags/rust-v0.162.0
+          test "$(git rev-parse 'rust-v0.162.0^{commit}')" = "$TARGET"
+          git switch -c "$BRANCH" refs/remotes/origin/codexdd-v2-candidate
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+
+      - name: Verify original immutable discovery artifact and committed copies
+        shell: bash
+        env:
+          ORIGINAL_DIR: ${{ runner.temp }}/codexdd-original-blocked
+        run: |
+          set -euo pipefail
+          mkdir -p "$ORIGINAL_DIR"
+          gh run download "$DISCOVERY_RUN" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "upstream-candidate-rust-v0.162.0-$DISCOVERY_RUN" \
+            --dir "$ORIGINAL_DIR"
+          echo "$MANIFEST_HASH  $ORIGINAL_DIR/manifest.json" | sha256sum --check --status
+          echo "$CONFLICTS_HASH  $ORIGINAL_DIR/transplant-conflicts.txt" | sha256sum --check --status
+          cmp "$ORIGINAL_DIR/manifest.json" docs/upstream-candidates/original-blocked-v1-manifest.json
+          cmp "$ORIGINAL_DIR/transplant-conflicts.txt" docs/upstream-candidates/original-blocked-conflicts.txt
+
+      - name: Verify v2 candidate Git, sidecar and official annotated tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/upstream_reconciliation_cli.py \
+            --mode promotion --repo . --manifest "$MANIFEST" \
+            --production-sha "$PROD" --source-sha "$SOURCE" \
+            --source-tree "$SOURCE_TREE" --target-tag "$TAG" --target-sha "$TARGET" \
+            --approved-manifest-sha256 "$MANIFEST_HASH" \
+            --approved-conflicts-sha256 "$CONFLICTS_HASH"
+
+      - name: Require native release receipt and exact owner semantic acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from upstream_reconciliation_promotion import validate_v2_owner_review_and_receipt
+
+          manifest_path = os.environ["MANIFEST"]
+          candidate_root = Path("docs/upstream-candidates")
+          manifest = (Path(manifest_path)).read_bytes()
+          from upstream_reconciliation import parse_strict_json
+          info = parse_strict_json(manifest, canonical=True)
+          sidecar = Path(info["sidecar_path"]).read_bytes()
+          receipt = validate_v2_owner_review_and_receipt(
+              manifest_bytes=manifest,
+              sidecar_bytes=sidecar,
+              receipt_bytes=os.environ["RECEIPT_JSON"].encode("utf-8"),
+              observed_candidate_branch=os.environ["BRANCH"],
+              observed_candidate_sha=os.environ["HEAD_SHA"],
+              manifest_path=manifest_path,
+              semantic_review_url=os.environ["REVIEW_URL"],
+              owner_source_acceptance=os.environ["OWNER_ACCEPTANCE"],
+          )
+          print("Native release receipt bound to exact candidate and accepted source")
+          print("Native validation stage count:", receipt["completed_stages"])
+          PY
+
+      - name: Refuse any previous promotion and re-check remote identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" \
+            --base dd/astra-policy-v2 --head "$BRANCH" \
+            --state all --json number --jq 'length')"
+          test "$existing" = '0' || { echo "::error::PR for candidate already exists"; exit 1; }
+          test "$(git ls-remote --heads origin refs/heads/dd/astra-policy-v2 | cut -f1)" = "$PROD"
+          test "$(git ls-remote --heads origin "$SOURCE_REF" | cut -f1)" = "$SOURCE"
+          test "$(git ls-remote --heads origin "refs/heads/${BRANCH}" | cut -f1)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Create review-only upstream integration PR (never merge)
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/codexdd-v2-promotion.md"
+          {
+            echo '## CodexDD 0.4.3 — owner-reviewed, native-validated upstream candidate'
+            echo
+            echo '- Target upstream: rust-v0.162.0 (c1382380de69521303b416720a52f42d51af6248)'
+            echo "- Production base: $PROD"
+            echo "- Frozen source commit/tree: $SOURCE / $SOURCE_TREE"
+            echo "- Candidate branch: $BRANCH"
+            echo "- Native-validated candidate HEAD: $HEAD_SHA"
+            echo "- Immutable original discovery run: $DISCOVERY_RUN"
+            echo "- Original blocked manifest SHA-256: $MANIFEST_HASH"
+            echo "- Original conflict report SHA-256: $CONFLICTS_HASH"
+            echo "- Reconciliation manifest: $MANIFEST"
+            echo "- Owner semantic evidence: $REVIEW_URL"
+            echo
+            echo '### Approval boundaries'
+            echo 'The owner explicitly dispatched this workflow after reviewing the reconciled'
+            echo 'conflicts, full overlaps and native release PASS receipt.'
+            echo 'The PR is review-only. CI green, explicit merge approval, Daniel-CL'
+            echo 'install, elevated SSH/F2 smoke and soak remain separate gates.'
+          } > "$body"
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base dd/astra-policy-v2 \
+            --head "$BRANCH" \
+            --title 'CodexDD 0.4.3: reconciled upstream rust-v0.162.0' \
+            --body-file "$body"
+          echo 'Review PR opened; no merge or installation attempted.'
