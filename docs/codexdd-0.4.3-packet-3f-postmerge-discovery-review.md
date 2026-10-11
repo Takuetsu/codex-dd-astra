@@ -107,3 +107,14 @@ The merged `.github/scripts/upstream_reconciliation_v2.py` enforces exact canoni
 **Release blockers unchanged:** exact native Daniel-CL 21-stage release profile, elevated F2/SSH and detached daemon smoke, semantic owner source review, candidate-bound native PASS receipt and separately approved publication/PR/merge/install gates. Do not manufacture success links, semantic sign-off, generated drift, host assertions, or a candidate ref to make the schema pass.
 
 *This index supports review. It grants no authority to merge, publish, install or promote.*
+
+## Official annotated upstream tag-object cross-check — 2026-10-11
+
+Using the official `openai/codex` GitHub repository's **actual ref objects** (not a fork-local tag alias):
+
+| Official annotated tag | Exact official tag-object SHA | Peeled commit SHA | Target tree from original discovery |
+| --- | --- | --- | --- |
+| `rust-v0.159.2` | `8b9fa496bbf2c47aebd62e85a080b9a522a455b5` | `ff6aec96948b70d94983af2641a6b67c94faeff5` | `406dfdd5c68f303a3a8d04f32b3965b3b0ca0361` |
+| `rust-v0.162.0` | `1f3f93473394b620b35580859b7e6864f7a9f948` | `c1382380de69521303b416720a52f42d51af6248` | `4899ef4940a8bc7fdf7873aa0d3f438085b8163f` |
+
+Both remote refs resolve to annotated Git `tag` objects, and both tag objects point directly to the listed commits. The target tree identities remain bound to the fresh original manifest; the read-only discovery gate checks these tag/ref/tree identities again, failing closed if a ref changes. GitHub reported `verification.verified: false` for both tag objects; this check establishes official Git object identity via the public repository API, **not** a verified cryptographic tag signature or owner semantic approval.
