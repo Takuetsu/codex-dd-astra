@@ -75,3 +75,9 @@ Only a separately accepted manual GitHub workflow may subsequently verify curren
 The new upstream-reconcile-publish workflow is owner-dispatched only, with write permission limited to candidate publication. It pins 0.162.0, requires current production and frozen source/staging SHAs, downloads the original blocked discovery artifact from the accepted GitHub run and compares the staging bytes exactly, then constructs a local-only candidate commit and verifies all typed/Git/official-tag contracts before checking candidate ref absence.
 
 The only remote write is a force-with-lease requiring the candidate ref to be absent. It does not promote a PR, merge, install, alter production, or launch automatically. It remains inert on the unmerged tooling branch and must not be dispatched without explicit approval and a new current-production discovery after the tooling merge.
+
+## Packet 3E.4j - v2 PR-only promotion gate primitives
+
+Added read-only owner-acceptance plus candidate-bound native release receipt parser, requiring source-snapshot acceptance phrase and a same-repository review link equal to the attested sidecar, pinned official target, exact observed canonical candidate branch/HEAD and complete v2 release receipt. This is not a cryptographic host attestation: the owner must explicitly review and dispatch the separate PR-only promotion workflow, and its GitHub history supplies the actor audit log.
+
+Negative tests cover stale candidate HEAD, wrong source, target substitution, forged/partial release claims, missing source-specific acceptance, unknown fields, and mismatching semantic evidence. No PR is opened by these helper tests.
