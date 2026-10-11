@@ -101,3 +101,43 @@ Existing packet: [review source](https://github.com/Takuetsu/codex-dd-astra/blob
 5. Stage exactly four metadata blobs atop the then-current production; only then consider the separately authorized, guarded candidate publish. After publication, run real Windows release profile, capture native receipt and finish owner-gated review PR and final merge/install decisions.
 
 **Not performed:** authorizing a semantic review, publishing a canonical candidate, accepting native release, merging 0.4.3 runtime, or updating Daniel-CL/Doug.
+
+## Post-review CI closure — 2026-10-11 (read-only, not semantic acceptance)
+
+The previously pending checks reached their terminal results; preserve both the
+successful source SHA and the explicitly limited coverage rather than promoting
+this note into an approval or release receipt.
+
+| Validation | Workflow run / source commit | Verified result and boundary |
+| --- | --- | --- |
+| Official-blob/136-overlap and 22-conflict evidence | [#38157286824](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38157286824), `9987d90f6c39d7e2d0d10841ca65eb8834556a42` | **Success**. SHA-level object and original-conflict inventory verification, not owner semantic acceptance. |
+| Re-anchored 628 runtime regressions | [#38155292769](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769), `544a29516353cb1e416b6097c46d8c83b23c7eb9` | **Success**. Linux targeted behavioral suites, not full Windows runtime acceptance. |
+| Core/CLI product identity and LVO native handler | [#38155292765](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765), `544a29516353cb1e416b6097c46d8c83b23c7eb9` | **Success**. |
+| Windows PowerShell v1/v2/LVO receipt fixture | [#38155292794](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292794), `544a29516353cb1e416b6097c46d8c83b23c7eb9` | **Success**. Contract fixture only, not a candidate-bound 21-stage release receipt. |
+| All 13 regenerated protocol/config/SDK outputs and Cargo.lock | [#38157430174](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38157430174), `d92c17ab5c4c3f00538651d203bfb9de350266bc` | **Success**. Full generator invocation, associated schema/SDK tests and final exact no-drift worktree check. Source guarded byte-identical to the re-anchored checkpoint. |
+| Hosted native Windows daemon/TUI compile and focused elevation/F2 unit tests | [#38158359012](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158359012), `31051a5fe069c489e66806269e347c88af9b3817` | **Success**. Compiled both crates including Windows tests; native token-probe/typed-denial and implicit elevated-startup/no-warning unit tests passed. This does **not** exercise a real elevated SSH TUI launch or non-elevated detached daemon lifecycle. |
+
+The earlier [hosted Windows #38158149605](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158149605)
+failure was infrastructure-only: Windows Server 2022 lacked the `-DevDrive`
+PowerShell parameter used by the default shared CI setup. Only the isolated
+read-only smoke's runner setup was changed in
+`31051a5fe069c489e66806269e347c88af9b3817`; the successful replacement
+did not require product/Rust source repair.
+
+**Local-first continuation policy:** The owner formalized cheap Daniel-CL SSH
+validation *before further final GitHub CI*, in
+[the major-phase work-packet standard](codexdd-major-phase-work-packet-standard.md)
+and the integration branch root `AGENTS.md`. This documentation checkpoint
+does **not** dispatch another CI job. The next local gate begins with safe
+read-only branch/HEAD/worktree verification at `E:\\codexdd` so an active
+production checkout is not altered accidentally; only then select the smallest
+meaningful local source test. Do not infer Daniel-CL PASS from a hosted runner.
+
+**Still awaiting explicit owner acceptance:** All 136 semantic dispositions and
+the 22 proposed conflict strategies, then canonical candidate staging/publication
+under the separate v2 protocol, real Windows 21-stage release profile plus
+elevated SSH F2, non-elevated daemon, adaptive runtime and resume/fork evidence,
+and finally the distinct review PR, production merge and installation gates.
+
+No candidate has been published and no production or Daniel-CL installation
+has been changed by this evidence note.
