@@ -9,6 +9,8 @@ on:
       - .github/workflows/codexdd-043-v2-reconciliation-tests.yml
       - .github/scripts/upstream_reconciliation.py
       - .github/scripts/test_upstream_reconciliation.py
+      - .github/scripts/upstream_reconciliation_v2.py
+      - .github/scripts/test_upstream_reconciliation_v2.py
 
 permissions:
   contents: read
@@ -45,6 +47,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/test_upstream_reconciliation.py
+      - name: Verify typed v2 manifest and conflict sidecar bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_v2.py
       - name: Verify existing v1 contract still passes without alterations
         shell: bash
         run: |

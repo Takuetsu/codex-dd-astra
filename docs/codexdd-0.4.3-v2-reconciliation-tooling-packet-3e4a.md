@@ -25,3 +25,10 @@ The required follow-up packets are: complete strict v2 manifest/sidecar/receipt 
 - Existing v1 upstream-sync and receipt tests re-executed unchanged: **23 tests passed**, zero failed.
 - Job's isolation assertions checked unchanged production version (`0.4.2`), unchanged tracked upstream (`rust-v0.159.2`), exact production ancestry and no drift in production v1 prepare/promote/discovery files or candidate receipt script.
 - This parser does not yet accept any v2 receipt, write a candidate ref, or create a release PR. Missing complete sidecar/manifest/receipt schemas, native receipt adaptation, official-ref/current-base Git verification, source snapshot metadata-only proof, publish-once guard, and separate operator approval remain hard blockers. **Do not merge this incomplete tooling branch.**
+
+## Packet 3E.4b — typed v2 manifest and reconciliation sidecar (2026-10-11)
+
+- Added \`.github/scripts/upstream_reconciliation_v2.py\`, a **read-only** parser for exact typed v2 candidate manifests and v1 reconciliation sidecars, using the existing strict JSON/digest primitives. It rejects unknown fields, wrong contract states, clean-relabeled blocked evidence, truncated or reordered conflict/overlap inventories, absent per-path owner and test/semantic evidence, missing generator provenance, and mismatched production/upstream/source identity.
+- Sidecar and manifest cross-bind the immutable discovery by SHA-256, candidate key, official target/peeled commit identity, full overlap inventory, typed security-review matrix, snapshot commit/tree, and a digest of the canonical sidecar bytes. The original blocked v1 artifact stays blocked, not promoted or modified.
+- Added \`.github/scripts/test_upstream_reconciliation_v2.py\` positive and negative fixtures; extended read-only parser CI and preserved existing v1 tests unchanged.
+- This schema validator is **not a candidate publisher**. Git tree verification, official annotated upstream-tag authenticity, Windows receipt v2 parsing, publish-once branch guards and PR-only promotion remain separately required. A parse PASS cannot make a v2 candidate releasable.
