@@ -33,6 +33,8 @@ class CommandPreflightTests(unittest.TestCase):
         git(self.repo, "init", "-q")
         git(self.repo, "config", "user.name", "CodexDD CLI fixture")
         git(self.repo, "config", "user.email", "fixture@example.invalid")
+        git(self.repo, "config", "gc.auto", "0")
+        git(self.repo, "config", "maintenance.auto", "false")
         git(self.repo, "checkout", "-qb", "dd/astra-policy-v2")
         root = self.repo / "codex-rs"
         root.mkdir()
