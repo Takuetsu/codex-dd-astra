@@ -58,6 +58,9 @@ jobs:
           test "$TAG" = 'rust-v0.162.0'
           test "$TARGET" = 'c1382380de69521303b416720a52f42d51af6248'
           test "$(git rev-parse HEAD)" = "$PROD"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$DISCOVERY_RUN" --jq \
+            '[.name,.head_branch,.head_sha,.conclusion] | @tsv' \
+            | grep -Fx "upstream-codex-discovery"$'\t'"dd/astra-policy-v2"$'\t'"$PROD"$'\t'"success"
           for value in "$PROD" "$SOURCE" "$SOURCE_TREE" "$STAGING" "$TARGET"; do
             [[ "$value" =~ ^[0-9a-f]{40}$ ]] || exit 2
           done
@@ -110,7 +113,16 @@ jobs:
           import os
           from pathlib import Path
           from upstream_reconciliation_stage import construct_local_v2_candidate
+          from upstream_reconciliation import parse_strict_json
 
+          import subprocess
+          staging = subprocess.run(
+              ["git", "show", f'{os.environ["STAGING"]}:{os.environ["MANIFEST"]}'],
+              capture_output=True, check=True,
+          ).stdout
+          staged = parse_strict_json(staging, canonical=True)
+          if staged["discovery_run_id"] != int(os.environ["DISCOVERY_RUN"]):
+              raise SystemExit("Reviewed discovery run does not match staged manifest")
           candidate_sha, branch = construct_local_v2_candidate(
               Path("."),
               production_sha=os.environ["PROD"],

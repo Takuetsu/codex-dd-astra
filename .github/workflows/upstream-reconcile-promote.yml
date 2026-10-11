@@ -154,6 +154,8 @@ jobs:
               semantic_review_url=os.environ["REVIEW_URL"],
               owner_source_acceptance=os.environ["OWNER_ACCEPTANCE"],
           )
+          if info["discovery_run_id"] != int(os.environ["DISCOVERY_RUN"]):
+              raise SystemExit("Owner-selected original discovery run differs from v2 manifest")
           print("Native release receipt bound to exact candidate and accepted source")
           print("Native validation stage count:", receipt["completed_stages"])
           PY
