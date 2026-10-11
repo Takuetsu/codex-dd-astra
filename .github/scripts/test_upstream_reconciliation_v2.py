@@ -192,8 +192,12 @@ class CrossBoundReconciliationTests(unittest.TestCase):
         original_data, _, _, _ = fixtures()
         original = __import__("json").loads(original_data)
         original["state"] = "preparation_ready"
+        relabeled = canonical_json_bytes(original)
         with self.assertRaisesRegex(ValueError, "immutably blocked"):
-            self.verify(original=canonical_json_bytes(original))
+            self.verify(
+                original=relabeled,
+                extra={"approved_manifest_sha256": hashlib.sha256(relabeled).hexdigest()},
+            )
 
     def test_wrong_original_digest_rejected_even_when_reconciled_pair_matches(self):
         with self.assertRaisesRegex(ValueError, "digest"):
@@ -286,9 +290,9 @@ class CrossBoundReconciliationTests(unittest.TestCase):
 
     def test_canonical_sidecar_hash_must_match(self):
         _, _, m, s = fixtures()
-        s["semantic_review_url"] = REPO + "commit/" + ("b" * 40)
-        blob = canonical_json_bytes(s)
-        m["sidecar_sha256"] = "f" * 64
+        altered = copy.deepcopy(s)
+        altered["semantic_review_url"] = REPO + "commit/" + ("b" * 40)
+        blob = canonical_json_bytes(altered)
         with self.assertRaisesRegex(ValueError, "sidecar digest"):
             self.verify(
                 manifest=m,
