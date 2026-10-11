@@ -91,6 +91,7 @@ def construct_local_v2_candidate(
         require_sha(value, name=name)
     _commit(repo, production_sha)
     _commit(repo, source_sha)
+    _git(repo, "merge-base", "--is-ancestor", production_sha, source_sha)
     _commit(repo, staging_sha, expected_parent=production_sha)
     actual_tree = _git(repo, "rev-parse", f"{source_sha}^{{tree}}").decode().strip()
     if actual_tree != source_tree:
