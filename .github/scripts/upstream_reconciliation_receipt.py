@@ -75,7 +75,11 @@ def validate_v2_release_receipt(
     ):
         raise ValueError("v2 receipt cannot promote a v1, clean or blocked candidate")
     sidecar = parse_strict_json(sidecar_bytes, canonical=True)
-    if sidecar.get("attestation_type") != "codexdd_upstream_conflict_reconciliation":
+    if (
+        sidecar.get("attestation_type") != "codexdd_upstream_conflict_reconciliation"
+        or type(sidecar.get("contract_version")) is not int
+        or sidecar["contract_version"] != 1
+    ):
         raise ValueError("v2 receipt requires a typed conflict reconciliation sidecar")
     digest = require_sha(
         manifest.get("sidecar_sha256"), sha256=True, name="manifest sidecar digest"

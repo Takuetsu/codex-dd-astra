@@ -178,7 +178,7 @@ class ReceiptBindingTests(unittest.TestCase):
 
     def test_corrupted_sidecar_bytes_are_rejected(self):
         _, _, _, raw = fixture()
-        corrupted = raw.replace(b'conflict_reconciliation', b'other_attestation')
+        corrupted = raw.replace((b"a" * 40), (b"b" * 40), 1)
         with self.assertRaisesRegex(ValueError, "checksum"):
             self.verify(override={"sidecar_bytes": corrupted})
 
