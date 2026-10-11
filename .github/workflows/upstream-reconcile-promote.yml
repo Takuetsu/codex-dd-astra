@@ -133,7 +133,10 @@ jobs:
           python3 - <<'PY'
           import os
           from pathlib import Path
-          from upstream_reconciliation_promotion import validate_v2_owner_review_and_receipt
+          from upstream_reconciliation_promotion import (
+              validate_v2_owner_review_and_receipt,
+              normalize_console_or_file_receipt_json,
+          )
 
           manifest_path = os.environ["MANIFEST"]
           candidate_root = Path("docs/upstream-candidates")
@@ -144,7 +147,7 @@ jobs:
           receipt = validate_v2_owner_review_and_receipt(
               manifest_bytes=manifest,
               sidecar_bytes=sidecar,
-              receipt_bytes=os.environ["RECEIPT_JSON"].encode("utf-8"),
+              receipt_bytes=normalize_console_or_file_receipt_json(os.environ["RECEIPT_JSON"]),
               observed_candidate_branch=os.environ["BRANCH"],
               observed_candidate_sha=os.environ["HEAD_SHA"],
               manifest_path=manifest_path,

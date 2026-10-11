@@ -20,6 +20,15 @@ from upstream_reconciliation_v2 import _url
 from upstream_sync import candidate_branch
 
 
+def normalize_console_or_file_receipt_json(text: str) -> bytes:
+    """Accept one-line PowerShell console paste or an exact canonical receipt file."""
+    if not isinstance(text, str) or not text or "\r" in text:
+        raise ValueError("invalid native release receipt JSON input")
+    if "\n" in text.rstrip("\n") or text.endswith("\n\n"):
+        raise ValueError("native release receipt must be a single canonical JSON line")
+    return (text if text.endswith("\n") else text + "\n").encode("utf-8")
+
+
 def validate_v2_owner_review_and_receipt(
     *,
     manifest_bytes: bytes,

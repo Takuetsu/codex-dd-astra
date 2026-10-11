@@ -12,7 +12,10 @@ from test_upstream_reconciliation_receipt import (
 )
 from test_upstream_reconciliation_v2 import REPO, SOURCE_SHA
 from upstream_reconciliation import canonical_json_bytes
-from upstream_reconciliation_promotion import validate_v2_owner_review_and_receipt
+from upstream_reconciliation_promotion import (
+    validate_v2_owner_review_and_receipt,
+    normalize_console_or_file_receipt_json,
+)
 
 ACCEPT = "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + SOURCE_SHA
 
@@ -46,6 +49,22 @@ class OwnerPromotionGateTests(unittest.TestCase):
 
     def test_positive_v2_owner_review_and_native_release_receipt(self):
         self.assertEqual(self.verify()["profile"], "release")
+
+    def test_console_receipt_copy_is_canonicalized_to_single_final_lf(self):
+        raw = b'{"contract_version":2}\n'
+        self.assertEqual(
+            normalize_console_or_file_receipt_json(raw.decode().rstrip("\n")), raw
+        )
+        self.assertEqual(normalize_console_or_file_receipt_json(raw.decode()), raw)
+        for invalid in ('', '{}\n\n', '{}\r\n', '{\n}', '  '):
+            with self.subTest(invalid=invalid):
+                if invalid == '  ':
+                    self.assertEqual(normalize_console_or_file_receipt_json(invalid), b'  \n')
+                else:
+                    with self.assertRaises(ValueError):
+                        normalize_console_or_file_receipt_json(invalid)
+
+
 
     def test_owner_acceptance_cannot_be_missing_or_for_different_source(self):
         for value in ("", "yes", ACCEPT[:-1], "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + ("f"*40)):
