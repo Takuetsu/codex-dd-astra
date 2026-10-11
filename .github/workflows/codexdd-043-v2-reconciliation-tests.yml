@@ -17,6 +17,8 @@ on:
       - .github/scripts/test_upstream_reconciliation_receipt.py
       - .github/scripts/upstream_reconciliation_cli.py
       - .github/scripts/test_upstream_reconciliation_cli.py
+      - .github/scripts/upstream_reconciliation_stage.py
+      - .github/scripts/test_upstream_reconciliation_stage.py
       - scripts/codexdd-v2-receipt.ps1
       - scripts/codexdd-v2-receipt-tests.ps1
       - scripts/codexdd-validate-upstream-candidate-v2.ps1
@@ -118,6 +120,11 @@ jobs:
               raise SystemExit("Existing v1 validator has unreviewed changes")
           print("Exact v1 validator source preserved; only additive v2 dispatcher present")
           PY
+      - name: Verify purely local metadata-only candidate construction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_stage.py
       - name: Verify existing v1 contract still passes without alterations
         shell: bash
         run: |

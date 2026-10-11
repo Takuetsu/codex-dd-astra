@@ -63,3 +63,9 @@ The CLI requires independent accepted original discovery digests and the exact p
 Existing candidate-validator v1 behavior remains the default and unchanged for v1 manifest contracts. V2 is dispatched only on an explicit release profile and with independently accepted original discovery digests. A new native-only PowerShell script checks Daniel-CL Windows, the clean canonical branch, pinned original blocked discovery and Git source/candidate metadata through the Python read-only preflight before executing the existing repository release profile.
 
 On a complete release PASS it rechecks source/head/provenance and emits a candidate-bound canonical v2 receipt. Windows CI parses the entrypoints and exercises receipt byte serialization, but no release profile has run. Publication/promotion are still prohibited until separate checked workflows and owner gates are complete.
+
+## Packet 3E.4h - local-only canonical candidate constructor
+
+Added upstream_reconciliation_stage.py and isolated Git fixtures. The constructor accepts an accepted source snapshot and a one-parent metadata-only staging commit from the current production base. It verifies exactly four Git-blob evidence files and the complete immutable discovery/v2 sidecar, then creates a candidate commit object on the accepted source snapshot using a temporary alternate Git index. Its output is an unreferenced local commit SHA and deterministic branch name; it never writes a Git ref or pushes.
+
+Only a separately accepted manual GitHub workflow may subsequently verify current production, official upstream tags, absent candidate branch, and perform a single absence-guarded push. No staging branch or canonical candidate exists in the actual repository yet.
