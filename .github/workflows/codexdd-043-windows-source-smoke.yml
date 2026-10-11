@@ -45,8 +45,45 @@ jobs:
           if ((Get-Content -Raw codex-rs/upstream-codex-release.txt).Trim() -ne 'rust-v0.162.0') { throw 'Unexpected upstream identity' }
           if ((git status --porcelain)) { throw 'Dirty source checkout' }
 
-      - name: Configure standard Codex CI environment
-        uses: ./.github/actions/setup-ci
+      # The shared setup-ci action provisions a Dev Drive via New-VHD -DevDrive.
+      # GitHub-hosted windows-2022 does not provide that parameter; use the
+      # runner's existing ephemeral workspace for this source-only smoke instead.
+      # Keep production setup-ci and the release profile unchanged.
+      - name: Configure isolated Windows build paths without Dev Drive provisioning
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-043-windows-build'
+          $target = Join-Path $root 'cargo-target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to enable long Windows Git paths' }
+          Write-Host 'Isolated hosted Windows runner paths configured without Dev Drive.'
+
+      - name: Install pinned DotSlash for Rust dependency tools
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Install repository-pinned just
+        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
+        with:
+          tool: just@1.51.0
+
+      - name: Make DotSlash reachable by Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\\WindowsApps\\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
 
       - name: Pin repository Rust 1.95.0 toolchain
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
