@@ -17,6 +17,9 @@ from upstream_reconciliation_promotion import (
     normalize_console_or_file_receipt_json,
 )
 
+from upstream_sync import candidate_branch, candidate_key
+
+PINNED = "c1382380de69521303b416720a52f42d51af6248"
 ACCEPT = "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + SOURCE_SHA
 
 
@@ -26,6 +29,13 @@ class OwnerPromotionGateTests(unittest.TestCase):
         manifest, sidecar, _, _ = fixture()
         manifest = copy.deepcopy(manifest)
         sidecar = copy.deepcopy(sidecar)
+        # Base fixture uses synthetic 40-hex target identities. The promotion
+        # gate intentionally allows ONLY the real owner-pinned 0.162.0 target.
+        manifest["target_upstream_sha"] = PINNED
+        manifest["candidate_key"] = candidate_key("rust-v0.162.0", PINNED)
+        manifest["candidate_branch"] = candidate_branch("rust-v0.162.0", PINNED)
+        sidecar["candidate_key"] = manifest["candidate_key"]
+        sidecar["target_upstream"]["sha"] = PINNED
         if change_manifest is not None:
             change_manifest(manifest)
         if change_sidecar is not None:
@@ -34,6 +44,9 @@ class OwnerPromotionGateTests(unittest.TestCase):
         manifest["sidecar_sha256"] = hashlib.sha256(raw_sidecar).hexdigest()
         raw_manifest = canonical_json_bytes(manifest)
         receipt = receipt_for(manifest, raw_manifest)
+        receipt["target_upstream_sha"] = manifest["target_upstream_sha"]
+        receipt["candidate_key"] = manifest["candidate_key"]
+        receipt["candidate_branch"] = manifest["candidate_branch"]
         if change_receipt is not None:
             change_receipt(receipt)
         return validate_v2_owner_review_and_receipt(
