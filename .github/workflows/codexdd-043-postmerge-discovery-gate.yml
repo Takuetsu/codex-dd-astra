@@ -168,10 +168,10 @@ jobs:
           def tree(commit_sha, expected_tree):
               assert git("rev-parse", f"{commit_sha}^{{tree}}").decode().strip() == expected_tree
               result = {}
-              for entry in git("ls-tree", "--full-tree", "-r", "-z", commit_sha).split(b"\\0"):
+              for entry in git("ls-tree", "--full-tree", "-r", "-z", commit_sha).split(b"\0"):
                   if not entry:
                       continue
-                  meta, pathname = entry.split(b"\\t", 1)
+                  meta, pathname = entry.split(b"\t", 1)
                   mode, kind, blob = meta.decode().split()
                   result[pathname.decode("utf-8")] = (mode, blob)
               return result
