@@ -1,0 +1,175 @@
+name: upstream-codex-v2-reconciled-publish
+
+# Owner-only manual dispatch, never an automatic fallback from clean v1.
+# May publish one candidate branch only; never PR, merge, install or deploy.
+on:
+  workflow_dispatch:
+    inputs:
+      production_sha: {required: true, type: string}
+      source_sha: {required: true, type: string}
+      source_tree: {required: true, type: string}
+      staging_sha: {required: true, type: string}
+      target_tag: {required: true, type: string}
+      target_sha: {required: true, type: string}
+      discovery_run_id: {required: true, type: string}
+      approved_manifest_sha256: {required: true, type: string}
+      approved_conflicts_sha256: {required: true, type: string}
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: codexdd-upstream-v2-publish-rust-v0.162.0
+  cancel-in-progress: false
+
+jobs:
+  guarded-publish:
+    if: github.actor == 'Takuetsu'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PROD: ${{ inputs.production_sha }}
+      SOURCE: ${{ inputs.source_sha }}
+      SOURCE_TREE: ${{ inputs.source_tree }}
+      STAGING: ${{ inputs.staging_sha }}
+      TAG: ${{ inputs.target_tag }}
+      TARGET: ${{ inputs.target_sha }}
+      DISCOVERY_RUN: ${{ inputs.discovery_run_id }}
+      MANIFEST_HASH: ${{ inputs.approved_manifest_sha256 }}
+      CONFLICTS_HASH: ${{ inputs.approved_conflicts_sha256 }}
+      MANIFEST: docs/upstream-candidates/codexdd-upstream-rust-v0.162.0.json
+      STAGING_REF: refs/heads/dd/codexdd-v0.4.3-v2-attestation-staging
+      SOURCE_REF: refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout production after separate tooling approval
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/astra-policy-v2
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Reject stale production and incorrect official target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
+          test "$TAG" = 'rust-v0.162.0'
+          test "$TARGET" = 'c1382380de69521303b416720a52f42d51af6248'
+          test "$(git rev-parse HEAD)" = "$PROD"
+          for value in "$PROD" "$SOURCE" "$SOURCE_TREE" "$STAGING" "$TARGET"; do
+            [[ "$value" =~ ^[0-9a-f]{40}$ ]] || exit 2
+          done
+          for value in "$MANIFEST_HASH" "$CONFLICTS_HASH"; do
+            [[ "$value" =~ ^[0-9a-f]{64}$ ]] || exit 2
+          done
+          [[ "$DISCOVERY_RUN" =~ ^[1-9][0-9]*$ ]] || exit 2
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.2'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.159.2'
+
+      - name: Fetch exact reviewed source, staging and upstream tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$SOURCE_REF:refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration"
+          git fetch origin "$STAGING_REF:refs/remotes/origin/dd/codexdd-v0.4.3-v2-attestation-staging"
+          test "$(git rev-parse refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration)" = "$SOURCE"
+          test "$(git rev-parse refs/remotes/origin/dd/codexdd-v0.4.3-v2-attestation-staging)" = "$STAGING"
+          git remote add upstream https://github.com/openai/codex.git
+          git fetch upstream refs/tags/rust-v0.159.2:refs/tags/rust-v0.159.2
+          git fetch upstream refs/tags/rust-v0.162.0:refs/tags/rust-v0.162.0
+          test "$(git rev-parse 'rust-v0.162.0^{commit}')" = "$TARGET"
+          test "$(git rev-parse "$SOURCE^{tree}")" = "$SOURCE_TREE"
+
+      - name: Download and bind immutable original blocked evidence
+        shell: bash
+        env:
+          ORIGINAL_DIR: ${{ runner.temp }}/codexdd-original-blocked
+        run: |
+          set -euo pipefail
+          mkdir -p "$ORIGINAL_DIR"
+          gh run download "$DISCOVERY_RUN" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "upstream-candidate-rust-v0.162.0-$DISCOVERY_RUN" \
+            --dir "$ORIGINAL_DIR"
+          test -f "$ORIGINAL_DIR/manifest.json"
+          test -f "$ORIGINAL_DIR/transplant-conflicts.txt"
+          echo "$MANIFEST_HASH  $ORIGINAL_DIR/manifest.json" | sha256sum --check --status
+          echo "$CONFLICTS_HASH  $ORIGINAL_DIR/transplant-conflicts.txt" | sha256sum --check --status
+          git show "$STAGING:docs/upstream-candidates/original-blocked-v1-manifest.json" | cmp - "$ORIGINAL_DIR/manifest.json"
+          git show "$STAGING:docs/upstream-candidates/original-blocked-conflicts.txt" | cmp - "$ORIGINAL_DIR/transplant-conflicts.txt"
+
+      - name: Construct local candidate object with no ref writes
+        id: local
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/.github/scripts"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from upstream_reconciliation_stage import construct_local_v2_candidate
+
+          candidate_sha, branch = construct_local_v2_candidate(
+              Path("."),
+              production_sha=os.environ["PROD"],
+              source_sha=os.environ["SOURCE"],
+              source_tree=os.environ["SOURCE_TREE"],
+              staging_sha=os.environ["STAGING"],
+              manifest_path=os.environ["MANIFEST"],
+              approved_manifest_sha256=os.environ["MANIFEST_HASH"],
+              approved_conflicts_sha256=os.environ["CONFLICTS_HASH"],
+              target_tag=os.environ["TAG"],
+              target_sha=os.environ["TARGET"],
+          )
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"candidate_sha={candidate_sha}\n")
+              output.write(f"candidate_branch={branch}\n")
+          PY
+
+      - name: Require full official Git and conflict-sidecar preflight
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ steps.local.outputs.candidate_sha }}
+          CANDIDATE_BRANCH: ${{ steps.local.outputs.candidate_branch }}
+        run: |
+          set -euo pipefail
+          test "$CANDIDATE_BRANCH" = 'automation/upstream-candidate-rust-v0.162.0-c1382380de69'
+          git branch "$CANDIDATE_BRANCH" "$CANDIDATE_SHA"
+          git switch "$CANDIDATE_BRANCH"
+          python3 .github/scripts/upstream_reconciliation_cli.py \
+            --mode promotion --repo . --manifest "$MANIFEST" \
+            --production-sha "$PROD" --source-sha "$SOURCE" \
+            --source-tree "$SOURCE_TREE" --target-tag "$TAG" --target-sha "$TARGET" \
+            --approved-manifest-sha256 "$MANIFEST_HASH" \
+            --approved-conflicts-sha256 "$CONFLICTS_HASH"
+
+      - name: Check remote absence and publish exactly once with empty lease
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ steps.local.outputs.candidate_sha }}
+          CANDIDATE_BRANCH: ${{ steps.local.outputs.candidate_branch }}
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote --heads origin refs/heads/dd/astra-policy-v2 | cut -f1)" = "$PROD"
+          test "$(git ls-remote --heads origin "$SOURCE_REF" | cut -f1)" = "$SOURCE"
+          test "$(git ls-remote --heads origin "$STAGING_REF" | cut -f1)" = "$STAGING"
+          if git ls-remote --exit-code --heads origin "refs/heads/${CANDIDATE_BRANCH}" >/dev/null; then
+            echo "::error::Candidate already exists; no overwrite allowed"
+            exit 1
+          else
+            rc="$?"
+            test "$rc" = '2' || exit "$rc"
+          fi
+          python3 .github/scripts/upstream_reconciliation_cli.py \
+            --mode promotion --repo . --manifest "$MANIFEST" \
+            --production-sha "$PROD" --source-sha "$SOURCE" \
+            --source-tree "$SOURCE_TREE" --target-tag "$TAG" --target-sha "$TARGET" \
+            --approved-manifest-sha256 "$MANIFEST_HASH" \
+            --approved-conflicts-sha256 "$CONFLICTS_HASH"
+          git push --force-with-lease="refs/heads/${CANDIDATE_BRANCH}:" \
+            origin "${CANDIDATE_SHA}:refs/heads/${CANDIDATE_BRANCH}"
+          test "$(git ls-remote --heads origin "refs/heads/${CANDIDATE_BRANCH}" | cut -f1)" = "$CANDIDATE_SHA"
+          echo "Candidate published at exact SHA $CANDIDATE_SHA"
+          echo 'No PR, production merge or install was performed.'

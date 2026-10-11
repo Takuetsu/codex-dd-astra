@@ -69,3 +69,9 @@ On a complete release PASS it rechecks source/head/provenance and emits a candid
 Added upstream_reconciliation_stage.py and isolated Git fixtures. The constructor accepts an accepted source snapshot and a one-parent metadata-only staging commit from the current production base. It verifies exactly four Git-blob evidence files and the complete immutable discovery/v2 sidecar, then creates a candidate commit object on the accepted source snapshot using a temporary alternate Git index. Its output is an unreferenced local commit SHA and deterministic branch name; it never writes a Git ref or pushes.
 
 Only a separately accepted manual GitHub workflow may subsequently verify current production, official upstream tags, absent candidate branch, and perform a single absence-guarded push. No staging branch or canonical candidate exists in the actual repository yet.
+
+## Packet 3E.4i - manually guarded publish-once workflow source
+
+The new upstream-reconcile-publish workflow is owner-dispatched only, with write permission limited to candidate publication. It pins 0.162.0, requires current production and frozen source/staging SHAs, downloads the original blocked discovery artifact from the accepted GitHub run and compares the staging bytes exactly, then constructs a local-only candidate commit and verifies all typed/Git/official-tag contracts before checking candidate ref absence.
+
+The only remote write is a force-with-lease requiring the candidate ref to be absent. It does not promote a PR, merge, install, alter production, or launch automatically. It remains inert on the unmerged tooling branch and must not be dispatched without explicit approval and a new current-production discovery after the tooling merge.
