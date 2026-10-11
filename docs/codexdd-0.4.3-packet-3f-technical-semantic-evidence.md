@@ -1,5 +1,7 @@
 # CodexDD 0.4.3 — packet 3F technical source-semantic review (decision draft)
 
+**POST-REVIEW SOURCE CHANGE — VALIDATION PENDING (2026-10-11):** A narrow fail-closed external-import safety patch and regression source at [`343be968e5c10b5703f95517eb6ed4be955f4f91`](https://github.com/Takuetsu/codex-dd-astra/commit/343be968e5c10b5703f95517eb6ed4be955f4f91) now supersede the historical `32ab09a141d626df5851965a557e0dce877ac2ec` *source fingerprint*, but do not supersede its earlier 136-row source-object audit or test evidence. Only `codex-rs/external-agent-migration/src/sessions/append.rs` and `append_tests.rs` differ from the old audited Rust tree. See [the import-source authority boundary packet](codexdd-0.4.3-packet-3f-import-workflow-authority.md). **No Daniel-CL PASS, new 136-row attestation, final CI, candidate receipt, or semantic owner acceptance is asserted for this patch.**
+
 **Status: TECHNICAL EVIDENCE PREPARED; OWNER SOURCE SEMANTIC ACCEPTANCE NOT GIVEN.** This is a read-only inspection of exact already committed sources. It neither creates a v2 semantic acceptance link nor authorizes a candidate branch, release receipt, GitHub promotion or installation.
 
 ## Authority and provenance

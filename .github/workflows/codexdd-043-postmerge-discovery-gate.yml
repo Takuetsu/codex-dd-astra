@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 20
     env:
       PROD_SHA: "16fdc9826e800ebabab920eadd8e1d976d2f645f"
-      SOURCE_CHECKPOINT: "32ab09a141d626df5851965a557e0dce877ac2ec"
+      SOURCE_CHECKPOINT: "343be968e5c10b5703f95517eb6ed4be955f4f91"
       RUN_ID: "38155514359"
       TAG: "rust-v0.162.0"
       TARGET_SHA: "c1382380de69521303b416720a52f42d51af6248"
