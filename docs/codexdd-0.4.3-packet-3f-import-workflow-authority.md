@@ -1,12 +1,12 @@
 # CodexDD 0.4.3 — 3F imported WorkflowState authority boundary
 
-**Status: NARROW SOURCE HARDENING COMMITTED, DANIEL-CL TARGETED TEST PENDING; NOT OWNER SEMANTIC ACCEPTANCE.**
+**Status: LOCAL DANIEL-CL TARGETED TEST PASSED (3/3); SOURCE INVENTORY UPDATED; NO OWNER SEMANTIC ACCEPTANCE OR CANDIDATE RELEASE RECEIPT.**
 
 ## Scope and exact ancestry
 
 - Production remains `16fdc9826e800ebabab920eadd8e1d976d2f645f` (CodexDD 0.4.2). Official upstream target is `rust-v0.162.0`, peeled `c1382380de69521303b416720a52f42d51af6248`.
 - Previous fully inventoried 136-overlap Rust snapshot: `32ab09a141d626df5851965a557e0dce877ac2ec`, full tree `a0bce7166cccb52e9b4fc8d658e0c08616752e62`.
-- Latest modified product source: [`343be968e5c10b5703f95517eb6ed4be955f4f91`](https://github.com/Takuetsu/codex-dd-astra/commit/343be968e5c10b5703f95517eb6ed4be955f4f91), full tree `4f58649164ea5ffcfa782b8c9075d68eafe5db65`. The previous object inventory remains **historical** until current-tree re-verification. The new source differs from the previous Rust snapshot in **exactly two files**, verified by GitHub compare; no updater, CLI, daemon, model router, generated SDK, version or release marker edits.
+- Latest modified product source: [`343be968e5c10b5703f95517eb6ed4be955f4f91`](https://github.com/Takuetsu/codex-dd-astra/commit/343be968e5c10b5703f95517eb6ed4be955f4f91), full tree `4f58649164ea5ffcfa782b8c9075d68eafe5db65`. The previous inventory remains immutable and **historical**; [updated 136-path Git-object audit](codexdd-0.4.3-packet-3f-posthardening-source-audit.md) now reconciles the current tree against its verified blobs. The new source differs from the previous Rust snapshot in **exactly two files**, verified by GitHub compare; no updater, CLI, daemon, model router, generated SDK, version or release marker edits.
 - Production and installed Windows clients are unchanged. No release candidate or CI job is intentionally launched by this work packet.
 
 ## Reachable authority and original failure mode
@@ -25,17 +25,19 @@
 
 **Why reject only source state?** Existing CodexDD threads legitimately persist WorkflowState, including trusted Worker scope and runtime snapshots. Rejecting it in destination history would needlessly break future external-session append to previously touched native history, whereas imported source generation has no legitimate reason to supply privileged metadata. The public API is also hardened against future caller mistakes.
 
-## Required targeted local validation (not claimed passed)
+## Local Daniel-CL targeted validation — PASS (operator screenshot, 2026-10-11)
 
-- Use the pre-existing isolated `E:\codexdd-043-validation` checkout on Daniel-CL, not active production `E:\codexdd`. Require tracked checkout files clean and exact source `343be968e5c10b5703f95517eb6ed4be955f4f91`; avoid treating the known unrelated untracked `M` file as part of a canonical candidate.
-- Cheap source gate: `cargo fmt --all -- --check`, from `codex-rs`, expecting exit code zero and no formatting hunks.
-- Targeted executable unit gate: `cargo test --locked -p codex-external-agent-migration --lib external_import_source_rejects_workflow_authority_but_allows_native_history -- --nocapture` with `RUST_MIN_STACK=16777216`. Verify that **one test actually runs**; an exit-zero zero-test filter is not acceptance. Existing prefix/append tests may be selected as a small follow-up after this gate.
-- If a local test fails, make a narrow GitHub-side correction and repeat the affected Daniel-CL check. No routine GitHub debugging runs.
+- Tested the isolated `E:\codexdd-043-validation\codex-rs` checkout using the previously provided branch/HEAD-pinned command sequence, not active `E:\codexdd`. The screenshot itself shows the checkout path but not `git rev-parse HEAD`; do **not** treat the console image as a signed source-SHA receipt.
+- `cargo fmt --all -- --check` cleared its stop-on-failure guard, as evidenced by subsequent execution of the test command. No separate `FORMAT_EXIT` line is visible in this screenshot.
+- `cargo test --locked -p codex-external-agent-migration --lib append::tests -- --nocapture` completed with **3 passed, 0 failed, 0 ignored, 0 measured; 162 filtered out**. Specifically: `external_import_source_rejects_workflow_authority_but_allows_native_history`, `returns_the_missing_suffix_from_its_visible_boundary` and `requires_a_strict_nonempty_model_prefix` each reported `ok`.
+- The initial compilation took **10m 39s** on Daniel-CL. This is the narrow source regression gate only: no elevated SSH F2 smoke, full 21-stage candidate release profile or final GitHub CI was run.
+
+[updated 136-path Git-object audit](codexdd-0.4.3-packet-3f-posthardening-source-audit.md) ties the single modified overlap object and new upstream-only regression test to the historical audited source; all semantic approval flags remain false.
 
 ## Remaining provenance and release gates
 
-- Update current-source Git-object inventory after passing local checks: original 136 overlap set remains intact, but `append.rs` now has a new blob, and upstream-only test `append_tests.rs` is an additional intentional exception. All untouched 135 overlap identities can be mechanically reverified against the historical 136-row manifest; do not rewrite the original `blocked_transplant_conflict` discovery.
-- Previous green Linux 628-test, 13-generator, Windows hosted F2 and PowerShell receipt runs were on older source. Treat this new source test as **pending**, not covered by earlier CI.
+- [updated 136-path Git-object audit](codexdd-0.4.3-packet-3f-posthardening-source-audit.md) is now committed: **135 unchanged overlap Git blobs, one modified overlap**, and one new upstream-only test exception (four total); the original 136/22 inventory membership and original blocked discovery are preserved.
+- The new imported-state unit check **passed on Daniel-CL**. Previous green Linux 628-test, 13-generator, hosted Windows F2 and PowerShell receipt runs still refer to older source and do not become refreshed final-source CI.
 - The **22 conflict strategies**, **136 semantics**, **six mandatory security-domain** review and true elevated/non-elevated Windows acceptance remain owner gated. Only an explicit source semantic acceptance may precede canonical v2 candidate creation, real 21-stage native release receipt and eventual final GitHub CI/PR/installation decisions.
 
-**Current authority disposition:** Source change committed; local proof and renewed candidate-bound review not yet established.
+**Current authority disposition:** Code plus local targeted test gate passed; source-object delta reconciled. No source-owner semantic acceptance, canonical candidate, elevated SSH/F2 or native release-profile receipt.

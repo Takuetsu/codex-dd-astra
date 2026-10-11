@@ -2,7 +2,9 @@
 
 **Status: SOURCE-SPECIFIC TECHNICAL REVIEW; NO OWNER SEMANTIC ACCEPTANCE OR NATIVE RELEASE.** This reviews the twelve original-classifier category-empty paths in the independently checked 136-overlap ledger. They are not new textual conflicts. Original `blocked_transplant_conflict`, 22 textual conflicts and proposed dispositions remain unchanged.
 
-**Post-audit source note:** [`343be968e5c10b5703f95517eb6ed4be955f4f91`](https://github.com/Takuetsu/codex-dd-astra/commit/343be968e5c10b5703f95517eb6ed4be955f4f91) adds fail-closed rejection of `WorkflowState` in external *source* append items, while retaining native destination history handling. [Review and pending test gate](codexdd-0.4.3-packet-3f-import-workflow-authority.md). The original 12-path hash table below remains a historical `32ab09a141d626df5851965a557e0dce877ac2ec` snapshot; it is **not** silently revised or source-accepted.
+**Post-audit source note:** [`343be968e5c10b5703f95517eb6ed4be955f4f91`](https://github.com/Takuetsu/codex-dd-astra/commit/343be968e5c10b5703f95517eb6ed4be955f4f91) adds fail-closed rejection of `WorkflowState` in external *source* append items, while retaining native destination history handling. [Review and now-passed focused Daniel-CL regression gate](codexdd-0.4.3-packet-3f-import-workflow-authority.md). The original 12-path hash table below remains a historical `32ab09a141d626df5851965a557e0dce877ac2ec` snapshot; it is **not** silently revised or source-accepted.
+
+**Audit update:** [updated 136-path Git-object audit](codexdd-0.4.3-packet-3f-posthardening-source-audit.md) confirms **135/136 original overlap Git blobs unchanged**, one new source-hardening blob and four upstream-only exceptions (one new test). The operator's `sessions::append::tests` run passed **3/3**; this does not fulfill live Windows resume/fork or owner semantic approval. The table below remains pinned to the earlier immutable formatted source and is retained for provenance.
 
 ## Immutable identity and scope
 

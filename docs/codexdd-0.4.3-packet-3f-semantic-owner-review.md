@@ -1,5 +1,7 @@
 # CodexDD 0.4.3 — owner-facing source semantic review packet
 
+**NEWER SOURCE AFTER THIS HISTORICAL REVIEW (2026-10-11):** Following this original decision draft, the branch added the imported `WorkflowState` source guard and a targeted regression. The operator's isolated Daniel-CL output shows **3/3 append tests passed**; [updated 136-path Git-object audit](codexdd-0.4.3-packet-3f-posthardening-source-audit.md) accounts for the updated 136-row source identity while keeping this older review's original provenance intact. This is **not** semantic owner acceptance, canonical v2 attestation, final CI, elevated SSH F2 or a Windows release-profile receipt.
+
 **Status: PREPARED FOR TECHNICAL REVIEW — NOT OWNER ACCEPTED.** Source-object reconciliation is complete but six security domains and native Windows release behavior remain distinct gates. This file cannot serve as a v2 signed attestation, success receipt or authorization to publish.
 
 ## Exact identity and evidence
