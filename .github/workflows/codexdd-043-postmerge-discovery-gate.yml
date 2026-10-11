@@ -56,6 +56,29 @@ jobs:
             '[.name,.event,.head_branch,.head_sha,.conclusion] | @tsv' \
             | grep -Fx "upstream-codex-discovery"$'\t'"workflow_dispatch"$'\t'"dd/astra-policy-v2"$'\t'"$PROD_SHA"$'\t'"success"
 
+      - name: Verify official upstream annotated tag objects and exact Git trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          for identity in \
+            'rust-v0.159.2:8b9fa496bbf2c47aebd62e85a080b9a522a455b5:ff6aec96948b70d94983af2641a6b67c94faeff5:406dfdd5c68f303a3a8d04f32b3965b3b0ca0361' \
+            'rust-v0.162.0:1f3f93473394b620b35580859b7e6864f7a9f948:c1382380de69521303b416720a52f42d51af6248:4899ef4940a8bc7fdf7873aa0d3f438085b8163f'; do
+            IFS=':' read -r tag object_sha peeled_sha tree_sha <<< "$identity"
+            ref_object="$(gh api "repos/openai/codex/git/ref/tags/$tag" --jq '.object.sha')"
+            ref_type="$(gh api "repos/openai/codex/git/ref/tags/$tag" --jq '.object.type')"
+            test "$ref_type" = 'tag'
+            test "$ref_object" = "$object_sha"
+            actual_tag="$(gh api "repos/openai/codex/git/tags/$object_sha" --jq '.tag')"
+            actual_peeled="$(gh api "repos/openai/codex/git/tags/$object_sha" --jq '.object.sha')"
+            actual_type="$(gh api "repos/openai/codex/git/tags/$object_sha" --jq '.object.type')"
+            actual_tree="$(gh api "repos/openai/codex/git/commits/$peeled_sha" --jq '.tree.sha')"
+            test "$actual_tag" = "$tag"
+            test "$actual_type" = 'commit'
+            test "$actual_peeled" = "$peeled_sha"
+            test "$actual_tree" = "$tree_sha"
+            echo "Canonical official annotated tag, peeled commit and source tree verified: $tag"
+          done
+
       - name: Download and hash the exact original blocked discovery artifact
         shell: bash
         run: |
