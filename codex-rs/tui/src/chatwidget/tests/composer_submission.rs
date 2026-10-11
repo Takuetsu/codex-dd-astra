@@ -98,7 +98,6 @@ async fn output_free_esc_interrupt_pauses_adaptive_execution() {
     assert_eq!(chat.adaptive_effort_for_test().successor_admission, None);
 }
 
-
 #[tokio::test]
 async fn user_submission_does_not_commit_recap_loading_to_history() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;

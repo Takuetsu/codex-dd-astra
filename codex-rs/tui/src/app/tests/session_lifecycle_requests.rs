@@ -1,12 +1,12 @@
 use super::*;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
+use crate::app_event::TranscriptExportDestination;
+use crate::bottom_pane::BottomPaneView;
 use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveFailureKind;
 use crate::chatwidget::adaptive_effort::AdaptiveFamily;
 use crate::chatwidget::adaptive_effort::AdaptiveOutcome;
-use crate::app_event::TranscriptExportDestination;
-use crate::bottom_pane::BottomPaneView;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_fake_rollout;

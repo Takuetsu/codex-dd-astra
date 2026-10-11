@@ -1050,7 +1050,9 @@ authorized_scope = "codex-rs/config"
         )
         .expect("upstream and CodexDD settings must be supported together");
         assert_eq!(cfg.daybreak, Some(true));
-        let worker = cfg.adaptive_worker.expect("Worker authority must be retained");
+        let worker = cfg
+            .adaptive_worker
+            .expect("Worker authority must be retained");
         assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
         assert_eq!(worker.authorized_scope.as_deref(), Some("codex-rs/config"));
     }

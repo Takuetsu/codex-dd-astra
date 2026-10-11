@@ -10,12 +10,7 @@ use serde_json::json;
 #[tokio::test]
 async fn reasoning_defaults_reach_responses() -> Result<()> {
     for (settings, summary, stream_options, mode) in [
-        (
-            "",
-            json!(null),
-            json!(null),
-            ThreadParamsMode::Embedded,
-        ),
+        ("", json!(null), json!(null), ThreadParamsMode::Embedded),
         (
             "[features]\nconcurrent_reasoning_summaries = false",
             json!(null),

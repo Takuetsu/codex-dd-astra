@@ -72,7 +72,11 @@ async fn worktree_creation_rejects_untrusted_source_before_allocation() -> Resul
         app.handle_event(
             &mut tui,
             &mut app_server,
-            AppEvent::StartManagedWorktree { mode, name: None, worker_binding: None },
+            AppEvent::StartManagedWorktree {
+                mode,
+                name: None,
+                worker_binding: None,
+            },
         )
         .await?;
         drain_managed_worktree_start(&mut app, &mut app_server).await;

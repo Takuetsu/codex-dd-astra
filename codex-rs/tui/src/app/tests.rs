@@ -5990,7 +5990,7 @@ async fn render_clear_ui_header_after_long_transcript_for_snapshot() -> String {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-        adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
         };
         Arc::new(new_session_info(
             app.chat_widget.config_ref(),
@@ -6336,7 +6336,7 @@ pub(super) async fn make_test_app_with_channels() -> (
             dynamic_tool_status_updates: tokio::sync::broadcast::channel(/*capacity*/ 64).0,
             dynamic_tool_tasks: HashMap::new(),
             pending_startup_thread_start: false,
-        adaptive_startup_preset: None,
+            adaptive_startup_preset: None,
             pending_server_version_notice: None,
             pending_open_resume_picker: false,
             pending_managed_worktree_creation: false,
@@ -7707,7 +7707,7 @@ async fn backtrack_selection_preserves_selected_prompt_and_requests_branch() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-        adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
         };
         Arc::new(new_session_info(
             app.chat_widget.config_ref(),
@@ -7781,7 +7781,7 @@ async fn backtrack_selection_preserves_selected_prompt_and_requests_branch() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-        adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
         });
 
     app.backtrack.base_id = Some(base_id);
@@ -9081,7 +9081,7 @@ async fn new_session_requests_shutdown_for_previous_conversation() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-        adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
         };
 
         app.chat_widget.handle_thread_session(event);
@@ -9829,7 +9829,7 @@ async fn clear_only_ui_reset_preserves_chat_session_state() {
             message_history: None,
             network_proxy: None,
             rollout_path: Some(PathBuf::new()),
-        adaptive_effort: Default::default(),
+            adaptive_effort: Default::default(),
         });
     app.chat_widget
         .apply_external_edit("draft prompt".to_string());

@@ -764,8 +764,14 @@ text("CODEXDD_NESTED_EXEC_RESULT=" + JSON.stringify(result));
             model_info.tool_mode = Some(ToolMode::CodeMode);
         })
         .with_config(|config| {
-            config.features.enable(Feature::CodeMode).expect("enable code mode");
-            config.features.enable(Feature::CodeModeHost).expect("enable code-mode host");
+            config
+                .features
+                .enable(Feature::CodeMode)
+                .expect("enable code mode");
+            config
+                .features
+                .enable(Feature::CodeModeHost)
+                .expect("enable code-mode host");
             config
                 .features
                 .enable(Feature::ExecutedToolCallMetadata)
@@ -812,8 +818,9 @@ text("CODEXDD_NESTED_EXEC_RESULT=" + JSON.stringify(result));
         .flat_map(|text| text.lines())
         .find_map(|line| line.trim().strip_prefix("CODEXDD_NESTED_EXEC_RESULT="))
         .unwrap_or_else(|| panic!("nested exec result marker absent in: {output}"));
-    let result: Value = serde_json::from_str(result_text)
-        .unwrap_or_else(|err| panic!("invalid nested exec JSON ({err}): {result_text:?}; {output}"));
+    let result: Value = serde_json::from_str(result_text).unwrap_or_else(|err| {
+        panic!("invalid nested exec JSON ({err}): {result_text:?}; {output}")
+    });
 
     assert!(
         result

@@ -55,10 +55,7 @@ pub fn persisted_rollout_item(
 /// Retained for CodexDD compatibility with persistence telemetry and callers
 /// of the prior boolean policy API. The new upstream persistence path may also
 /// truncate an item when it returns a durable representation.
-pub fn is_persisted_rollout_item(
-    item: &RolloutItem,
-    history_mode: ThreadHistoryMode,
-) -> bool {
+pub fn is_persisted_rollout_item(item: &RolloutItem, history_mode: ThreadHistoryMode) -> bool {
     persisted_rollout_item(item, history_mode).is_some()
 }
 

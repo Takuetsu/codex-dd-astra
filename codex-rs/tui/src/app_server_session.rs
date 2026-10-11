@@ -2589,7 +2589,10 @@ async fn thread_session_state_from_thread_response(
     );
     let (log_id, entry_count) = codex_message_history::history_metadata(&history_config).await;
     let mut adaptive_effort = Default::default();
-    if matches!(workflow_state_restore_mode, WorkflowStateRestoreMode::ExistingThread) {
+    if matches!(
+        workflow_state_restore_mode,
+        WorkflowStateRestoreMode::ExistingThread
+    ) {
         crate::session_state::restore_persisted_workflow_state(
             rollout_path.as_deref(),
             thread_id,
@@ -3914,7 +3917,6 @@ mod tests {
         app_server.shutdown().await?;
         Ok(())
     }
-
 
     #[tokio::test]
     async fn side_fork_skips_parent_title_lookup_but_normal_ephemeral_fork_keeps_it() -> Result<()>

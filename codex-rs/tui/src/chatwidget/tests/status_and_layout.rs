@@ -53,7 +53,6 @@ async fn status_output_marks_lvo_as_not_run_before_first_validation() {
     }
 }
 
-
 #[tokio::test]
 async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("gpt-6.1-sol")).await;
@@ -178,7 +177,6 @@ async fn status_output_surfaces_failed_receipt_fingerprint_before_repair_admissi
         "receipt visibility must not consume repair budget: {rendered:?}"
     );
 }
-
 
 #[tokio::test]
 async fn finalized_voice_transcript_renders_beside_the_streamed_cell() {

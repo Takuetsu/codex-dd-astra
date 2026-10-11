@@ -117,7 +117,8 @@ impl ChatWidget {
                         .duration_ms
                         .and_then(|duration| u64::try_from(duration).ok())
                 {
-                    self.turn_lifecycle.record_worker_duration(&turn.id, duration_ms);
+                    self.turn_lifecycle
+                        .record_worker_duration(&turn.id, duration_ms);
                 }
             }
         }

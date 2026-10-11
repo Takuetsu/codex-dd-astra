@@ -254,11 +254,11 @@ mod tests {
     use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
     use codex_app_server_protocol::WarningNotification;
     use codex_protocol::ThreadId;
-    use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
     use codex_protocol::config_types::CollaborationMode;
     use codex_protocol::config_types::ModeKind;
     use codex_protocol::config_types::Settings;
     use codex_protocol::openai_models::ReasoningEffort;
+    use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
     use pretty_assertions::assert_eq;
 
     fn test_thread_settings() -> ThreadSettings {
