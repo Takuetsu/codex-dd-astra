@@ -75,7 +75,14 @@ _PRODUCTION = frozenset({"branch", "sha", "tree"})
 _UPSTREAM = frozenset({"tag", "tag_object_sha", "sha", "tree"})
 _SNAPSHOT = frozenset({"branch", "commit_sha", "tree_sha"})
 _RESOLUTION = frozenset(
-    {"path", "owner_packet", "strategy", "review_sha", "test_evidence_url", "semantic_evidence_url"}
+    {
+        "path",
+        "owner_packet",
+        "strategy",
+        "review_sha",
+        "test_evidence_url",
+        "semantic_evidence_url",
+    }
 )
 _OVERLAP = frozenset(
     {
@@ -139,7 +146,9 @@ def _text(value: object, label: str) -> str:
 
 def _url(value: object, label: str) -> str:
     if not isinstance(value, str) or _GITHUB_EVIDENCE.fullmatch(value) is None:
-        raise ValueError(f"{label} must be an exact same-repository GitHub evidence URL")
+        raise ValueError(
+            f"{label} must be an exact same-repository GitHub evidence URL"
+        )
     return value
 
 
@@ -209,7 +218,9 @@ def validate_reconciled_v2_documents(
         raise ValueError("expected target must be an official stable version")
 
     original = parse_strict_json(original_manifest_bytes)
-    overlap_paths = unique_repo_paths(original.get("overlap_paths"), name="original overlaps")
+    overlap_paths = unique_repo_paths(
+        original.get("overlap_paths"), name="original overlaps"
+    )
     conflict_paths = unique_repo_paths(
         original_conflicts_bytes.decode("utf-8", errors="strict").splitlines(),
         name="original conflicts",
@@ -247,7 +258,11 @@ def validate_reconciled_v2_documents(
     _fields(manifest, _MANIFEST, "v2 candidate manifest")
     _fields(sidecar, _SIDECAR, "v1 reconciliation sidecar")
     _same(manifest["contract_version"], 2, "v2 contract version")
-    _same(manifest["state"], "manual_conflict_reconciled_review_required", "candidate state")
+    _same(
+        manifest["state"],
+        "manual_conflict_reconciled_review_required",
+        "candidate state",
+    )
     _same(manifest["transplant_dry_run"], "conflict", "immutable conflict outcome")
     _same(sidecar["contract_version"], 1, "sidecar contract version")
     _same(
@@ -257,21 +272,42 @@ def validate_reconciled_v2_documents(
     )
     _same(manifest["production_branch"], "dd/astra-policy-v2", "production branch")
     _same(manifest["production_sha"], expected_production_sha, "current production SHA")
-    _same(manifest["source_snapshot_commit_sha"], expected_source_snapshot_sha, "snapshot SHA")
-    _same(manifest["source_snapshot_tree_sha"], expected_source_snapshot_tree, "snapshot tree")
+    _same(
+        manifest["source_snapshot_commit_sha"],
+        expected_source_snapshot_sha,
+        "snapshot SHA",
+    )
+    _same(
+        manifest["source_snapshot_tree_sha"],
+        expected_source_snapshot_tree,
+        "snapshot tree",
+    )
 
-    for field in ("production_sha", "production_tree", "tracked_upstream_tag", "tracked_upstream_sha",
-                  "tracked_upstream_tree", "target_upstream_tag", "target_upstream_sha",
-                  "target_upstream_tree"):
+    for field in (
+        "production_sha",
+        "production_tree",
+        "tracked_upstream_tag",
+        "tracked_upstream_sha",
+        "tracked_upstream_tree",
+        "target_upstream_tag",
+        "target_upstream_sha",
+        "target_upstream_tree",
+    ):
         _same(manifest[field], original[field], f"v1 discovery {field}")
     for field in (
-        "production_tree", "tracked_upstream_sha", "tracked_upstream_tree",
-        "target_upstream_sha", "target_upstream_tree",
-        "tracked_upstream_tag_object_sha", "target_upstream_tag_object_sha",
+        "production_tree",
+        "tracked_upstream_sha",
+        "tracked_upstream_tree",
+        "target_upstream_sha",
+        "target_upstream_tree",
+        "tracked_upstream_tag_object_sha",
+        "target_upstream_tag_object_sha",
     ):
         require_sha(manifest[field], name=field)
     _same(manifest["target_upstream_tag"], expected_target_tag, "selected official tag")
-    _same(manifest["target_upstream_sha"], expected_target_sha, "selected peeled commit")
+    _same(
+        manifest["target_upstream_sha"], expected_target_sha, "selected peeled commit"
+    )
     if stable_release_version(manifest["tracked_upstream_tag"]) is None:
         raise ValueError("tracked upstream tag is not stable")
     if not (
@@ -288,28 +324,54 @@ def validate_reconciled_v2_documents(
 
     key = candidate_key(expected_target_tag, expected_target_sha)
     _same(manifest["candidate_key"], key, "candidate key")
-    _same(manifest["candidate_branch"], candidate_branch(expected_target_tag, expected_target_sha),
-          "canonical candidate branch")
+    _same(
+        manifest["candidate_branch"],
+        candidate_branch(expected_target_tag, expected_target_sha),
+        "canonical candidate branch",
+    )
     _same(sidecar["candidate_key"], key, "sidecar candidate key")
-    _same(manifest["discovery_manifest_sha256"], approved_manifest_sha256,
-          "original manifest digest")
-    _same(manifest["discovery_conflicts_sha256"], approved_conflicts_sha256,
-          "original conflicts digest")
-    require_sha(manifest["sidecar_sha256"], sha256=True, name="reconciliation sidecar digest")
-    if hashlib.sha256(reconciliation_sidecar_bytes).hexdigest() != manifest["sidecar_sha256"]:
+    _same(
+        manifest["discovery_manifest_sha256"],
+        approved_manifest_sha256,
+        "original manifest digest",
+    )
+    _same(
+        manifest["discovery_conflicts_sha256"],
+        approved_conflicts_sha256,
+        "original conflicts digest",
+    )
+    require_sha(
+        manifest["sidecar_sha256"], sha256=True, name="reconciliation sidecar digest"
+    )
+    if (
+        hashlib.sha256(reconciliation_sidecar_bytes).hexdigest()
+        != manifest["sidecar_sha256"]
+    ):
         raise ValueError("v2 reconciliation sidecar digest mismatch")
     sidecar_path = canonical_repo_path(
         manifest["sidecar_path"], prefix="docs/upstream-candidates"
     )
     if not sidecar_path.endswith(".json"):
         raise ValueError("reconciliation sidecar must be JSON")
-    _same(manifest["overlap_paths"], list(overlap_paths), "full original overlap inventory")
+    _same(
+        manifest["overlap_paths"],
+        list(overlap_paths),
+        "full original overlap inventory",
+    )
 
     discovery = _fields(sidecar["discovery"], _DISCOVERY, "discovery binding")
     _positive(discovery["run_id"], "discovery run ID")
     _same(manifest["discovery_run_id"], discovery["run_id"], "discovery run ID")
-    _same(discovery["manifest_sha256"], approved_manifest_sha256, "discovery manifest digest")
-    _same(discovery["conflicts_sha256"], approved_conflicts_sha256, "discovery conflicts digest")
+    _same(
+        discovery["manifest_sha256"],
+        approved_manifest_sha256,
+        "discovery manifest digest",
+    )
+    _same(
+        discovery["conflicts_sha256"],
+        approved_conflicts_sha256,
+        "discovery conflicts digest",
+    )
     _text(discovery["artifact_name"], "original discovery artifact name")
 
     production = _fields(sidecar["production"], _PRODUCTION, "production binding")
@@ -330,7 +392,8 @@ def validate_reconciled_v2_documents(
             label=which,
         )
         _same(
-            obj["tag_object_sha"], manifest[f"{which}_upstream_tag_object_sha"],
+            obj["tag_object_sha"],
+            manifest[f"{which}_upstream_tag_object_sha"],
             f"{which} tag object",
         )
     snapshot = _fields(sidecar["source_snapshot"], _SNAPSHOT, "source snapshot")
@@ -358,12 +421,18 @@ def validate_reconciled_v2_documents(
 
     conflicts = _list(sidecar["conflict_resolutions"], "conflict resolutions")
     if len(conflicts) != len(conflict_paths):
-        raise ValueError("not all original textual conflicts have an owner and resolution")
+        raise ValueError(
+            "not all original textual conflicts have an owner and resolution"
+        )
     for index, record in enumerate(conflicts):
         entry = _fields(record, _RESOLUTION, "per-conflict resolution")
         _same(entry["path"], conflict_paths[index], "ordered original conflict path")
         _packet(entry["owner_packet"])
-        if entry["strategy"] not in {"manual_merge", "generator_rebuilt", "upstream_supersedes"}:
+        if entry["strategy"] not in {
+            "manual_merge",
+            "generator_rebuilt",
+            "upstream_supersedes",
+        }:
             raise ValueError("invalid conflict resolution strategy")
         require_sha(entry["review_sha"], name="conflict source review commit")
         _url(entry["test_evidence_url"], "conflict test")
@@ -376,8 +445,12 @@ def validate_reconciled_v2_documents(
         entry = _fields(record, _OVERLAP, "per-overlap review")
         _same(entry["path"], overlap_paths[index], "ordered overlap path")
         _packet(entry["owner_packet"])
-        if entry["disposition"] not in {"merged", "upstream_supersedes", "fork_preserved",
-                                        "generator_rebuilt"}:
+        if entry["disposition"] not in {
+            "merged",
+            "upstream_supersedes",
+            "fork_preserved",
+            "generator_rebuilt",
+        }:
             raise ValueError("unreviewed overlap disposition")
         _url(entry["test_evidence_url"], "overlap tests")
         _url(entry["semantic_evidence_url"], "overlap semantic evidence")
@@ -388,11 +461,14 @@ def validate_reconciled_v2_documents(
 
     generated = _list(sidecar["generated_artifacts"], "generated artifact evidence")
     expected_generated = {
-        path for path in overlap_paths if path.startswith(_GENERATED_ROOT)
-        or path.endswith(".json.zst")
+        path
+        for path in overlap_paths
+        if path.startswith(_GENERATED_ROOT) or path.endswith(".json.zst")
     }
     if len(generated) != len(expected_generated):
-        raise ValueError("generated artifact provenance must cover every generated overlap")
+        raise ValueError(
+            "generated artifact provenance must cover every generated overlap"
+        )
     seen: set[str] = set()
     for record in generated:
         entry = _fields(record, _GENERATED, "generated artifact")
@@ -405,15 +481,21 @@ def validate_reconciled_v2_documents(
         ):
             raise ValueError("generator command is not an accepted tool family")
         require_sha(entry["generator_source_sha"], name="generated source commit")
-        _same(entry["generator_source_sha"], expected_source_snapshot_sha,
-              "generated artifact snapshot")
+        _same(
+            entry["generator_source_sha"],
+            expected_source_snapshot_sha,
+            "generated artifact snapshot",
+        )
         _url(entry["drift_evidence_url"], "generator drift test")
 
     reviews = _fields(sidecar["security_reviews"], _SECURITY, "security review matrix")
     for name, review in reviews.items():
         item = _fields(review, _REVIEW, f"security review {name}")
-        _same(item["source_snapshot_commit_sha"], expected_source_snapshot_sha,
-              f"security review {name} source commit")
+        _same(
+            item["source_snapshot_commit_sha"],
+            expected_source_snapshot_sha,
+            f"security review {name} source commit",
+        )
         _url(item["evidence_url"], f"security review {name}")
     _url(sidecar["semantic_review_url"], "owner source semantic review")
 

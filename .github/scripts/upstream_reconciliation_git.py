@@ -42,7 +42,9 @@ def _git(repo: Path, *args: str) -> bytes:
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
-        raise ValueError(f"Git identity verification infrastructure error: {args[0]}") from error
+        raise ValueError(
+            f"Git identity verification infrastructure error: {args[0]}"
+        ) from error
     if result.returncode:
         raise ValueError(
             f"Git identity verification failed ({args[0]}, code {result.returncode}): "
@@ -95,7 +97,9 @@ def verify_source_snapshot_git(
     production = manifest["production_sha"]
     snapshot = manifest["source_snapshot_commit_sha"]
     _commit_and_tree(repo, production, manifest["production_tree"], "production")
-    _commit_and_tree(repo, snapshot, manifest["source_snapshot_tree_sha"], "source snapshot")
+    _commit_and_tree(
+        repo, snapshot, manifest["source_snapshot_tree_sha"], "source snapshot"
+    )
     if _git_text(repo, "rev-parse", "--verify", production_ref) != production:
         raise ValueError("live production ref changed after discovery")
     if _git_text(repo, "rev-parse", "--verify", source_ref) != snapshot:
@@ -181,7 +185,9 @@ def verify_metadata_only_candidate_git(
         raise ValueError("candidate must be a commit object")
     parents = _git_text(repo, "rev-list", "--parents", "-n", "1", candidate_sha).split()
     if parents != [candidate_sha, source_sha]:
-        raise ValueError("candidate must be an immediate single-parent source metadata commit")
+        raise ValueError(
+            "candidate must be an immediate single-parent source metadata commit"
+        )
     main_path = canonical_repo_path(manifest_path, prefix="docs/upstream-candidates")
     sidecar_path = canonical_repo_path(
         manifest["sidecar_path"], prefix="docs/upstream-candidates"
@@ -199,7 +205,9 @@ def verify_metadata_only_candidate_git(
     raw = _git(
         repo, "diff", "--name-status", "--no-renames", "-z", source_sha, candidate_sha
     )
-    changes = [chunk.decode("utf-8", errors="strict") for chunk in raw.split(b"\0") if chunk]
+    changes = [
+        chunk.decode("utf-8", errors="strict") for chunk in raw.split(b"\0") if chunk
+    ]
     if len(changes) % 2 != 0:
         raise ValueError("malformed Git candidate metadata delta")
     found: dict[str, str] = {}
@@ -209,7 +217,9 @@ def verify_metadata_only_candidate_git(
             raise ValueError("duplicate candidate metadata path")
         found[path] = status
     if set(found) != set(allowed) or any(value != "A" for value in found.values()):
-        raise ValueError("candidate contains source edits, removals, or unauthorized metadata")
+        raise ValueError(
+            "candidate contains source edits, removals, or unauthorized metadata"
+        )
     for path in allowed:
         leaf = _git_text(repo, "ls-tree", "--full-tree", candidate_sha, "--", path)
         if not leaf.startswith("100644 blob ") or not leaf.endswith("\t" + path):

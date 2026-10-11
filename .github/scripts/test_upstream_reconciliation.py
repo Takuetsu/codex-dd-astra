@@ -19,37 +19,53 @@ class StrictReconciliationJsonTests(unittest.TestCase):
     def test_canonical_roundtrip(self):
         expected = {"a": [1, 2], "b": "é"}
         payload = canonical_json_bytes({"b": "é", "a": [1, 2]})
-        self.assertEqual(payload, b'{"a":[1,2],"b":"\\xc3\\xa9"}\n'.replace(b"\\xc3\\xa9", "é".encode()))
+        self.assertEqual(
+            payload,
+            b'{"a":[1,2],"b":"\\xc3\\xa9"}\n'.replace(b"\\xc3\\xa9", "é".encode()),
+        )
         self.assertEqual(parse_strict_json(payload, canonical=True), expected)
 
     def test_original_v1_json_may_be_pretty_but_new_artifacts_must_be_canonical(self):
         pretty = b'{ "state" : "blocked_transplant_conflict" }\n'
-        self.assertEqual(parse_strict_json(pretty)["state"], "blocked_transplant_conflict")
+        self.assertEqual(
+            parse_strict_json(pretty)["state"], "blocked_transplant_conflict"
+        )
         with self.assertRaisesRegex(ValueError, "not canonical"):
             parse_strict_json(pretty, canonical=True)
 
     def test_rejects_duplicate_keys_at_any_depth(self):
         for source in (b'{"a":1,"a":2}', b'{"a":{"x":1,"x":2}}'):
-            with self.subTest(source=source), self.assertRaisesRegex(ValueError, "duplicate"):
+            with (
+                self.subTest(source=source),
+                self.assertRaisesRegex(ValueError, "duplicate"),
+            ):
                 parse_strict_json(source)
 
     def test_rejects_nonfinite_numbers(self):
         for source in (
-            b'{"x":NaN}', b'{"x":Infinity}', b'{"x":-Infinity}',
-            b'{"x":1e9999}', b'{"x":-1e9999}',
+            b'{"x":NaN}',
+            b'{"x":Infinity}',
+            b'{"x":-Infinity}',
+            b'{"x":1e9999}',
+            b'{"x":-1e9999}',
         ):
-            with self.subTest(source=source), self.assertRaisesRegex(ValueError, "non-finite"):
+            with (
+                self.subTest(source=source),
+                self.assertRaisesRegex(ValueError, "non-finite"),
+            ):
                 parse_strict_json(source)
         with self.assertRaises(ValueError):
             canonical_json_bytes({"x": math.nan})
 
     def test_rejects_invalid_utf8_bom_and_root_type(self):
-        for source in (b"\xff", b'\xef\xbb\xbf{}', b'[]', b'{"x":1'):
+        for source in (b"\xff", b"\xef\xbb\xbf{}", b"[]", b'{"x":1'):
             with self.subTest(source=source), self.assertRaises(ValueError):
                 parse_strict_json(source)
 
     def test_requires_complete_exact_field_set(self):
-        self.assertEqual(require_fields({"a": 1}, frozenset({"a"}), context="receipt")["a"], 1)
+        self.assertEqual(
+            require_fields({"a": 1}, frozenset({"a"}), context="receipt")["a"], 1
+        )
         for item in ({"a": 1, "surprise": 2}, {}, ["a"]):
             with self.subTest(item=item), self.assertRaises(ValueError):
                 require_fields(item, frozenset({"a"}), context="receipt")
@@ -65,18 +81,32 @@ class IdentityAndPathTests(unittest.TestCase):
 
     def test_git_path_confinement(self):
         self.assertEqual(
-            canonical_repo_path("docs/upstream-candidates/attestation.json", prefix="docs/upstream-candidates"),
+            canonical_repo_path(
+                "docs/upstream-candidates/attestation.json",
+                prefix="docs/upstream-candidates",
+            ),
             "docs/upstream-candidates/attestation.json",
         )
         for value in (
-            "/abs", "../outside", "docs/../outside", r"docs\outside",
-            "docs//file", "docs/./file", "C:/Windows", "docs/%2e%2e/file",
-            "docs/file with space", "docs/\0bad", "", None,
+            "/abs",
+            "../outside",
+            "docs/../outside",
+            r"docs\outside",
+            "docs//file",
+            "docs/./file",
+            "C:/Windows",
+            "docs/%2e%2e/file",
+            "docs/file with space",
+            "docs/\0bad",
+            "",
+            None,
         ):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 canonical_repo_path(value)
         with self.assertRaisesRegex(ValueError, "confined"):
-            canonical_repo_path("scripts/executable.py", prefix="docs/upstream-candidates")
+            canonical_repo_path(
+                "scripts/executable.py", prefix="docs/upstream-candidates"
+            )
 
     def test_requires_ordered_unique_nonempty_array(self):
         paths = ["codex-rs/core/src/lib.rs", "codex-rs/tui/src/lib.rs"]
@@ -123,7 +153,10 @@ class ImmutableBlockedDiscoveryTests(unittest.TestCase):
 
     def test_rejects_original_artifact_hash_change(self):
         for field in ("manifest_sha256", "conflicts_sha256"):
-            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "digest mismatch"):
+            with (
+                self.subTest(field=field),
+                self.assertRaisesRegex(ValueError, "digest mismatch"),
+            ):
                 self.verify(**{field: "a" * 64})
 
     def test_rejects_relabeling_conflict_as_clean_or_ready(self):
@@ -135,7 +168,10 @@ class ImmutableBlockedDiscoveryTests(unittest.TestCase):
         ):
             altered = dict(self.doc)
             altered[field] = value
-            with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, "immutably blocked"):
+            with (
+                self.subTest(field=field, value=value),
+                self.assertRaisesRegex(ValueError, "immutably blocked"),
+            ):
                 self.verify(doc=altered)
 
     def test_rejects_stale_production_or_changed_target(self):
@@ -144,7 +180,10 @@ class ImmutableBlockedDiscoveryTests(unittest.TestCase):
             {"expected_target_sha": "9" * 40},
             {"expected_target_tag": "rust-v0.163.0"},
         ):
-            with self.subTest(kwargs=kwargs), self.assertRaisesRegex(ValueError, "identity mismatch"):
+            with (
+                self.subTest(kwargs=kwargs),
+                self.assertRaisesRegex(ValueError, "identity mismatch"),
+            ):
                 self.verify(**kwargs)
 
     def test_rejects_missing_extra_reordered_or_duplicate_conflicts(self):
@@ -160,7 +199,9 @@ class ImmutableBlockedDiscoveryTests(unittest.TestCase):
 
     def test_rejects_malformed_duplicate_key_v1(self):
         original = canonical_json_bytes(self.doc)
-        malformed = original.replace(b'"contract_version":1', b'"contract_version":1,"contract_version":1')
+        malformed = original.replace(
+            b'"contract_version":1', b'"contract_version":1,"contract_version":1'
+        )
         with self.assertRaisesRegex(ValueError, "duplicate"):
             self.verify(
                 manifest_bytes=malformed,

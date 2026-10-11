@@ -64,7 +64,9 @@ def validate_v2_owner_review_and_receipt(
     if target != "rust-v0.162.0" or target_sha != (
         "c1382380de69521303b416720a52f42d51af6248"
     ):
-        raise ValueError("owner review cannot silently change the pinned upstream target")
+        raise ValueError(
+            "owner review cannot silently change the pinned upstream target"
+        )
     expected_candidate_branch = candidate_branch(target, target_sha)
     if observed_candidate_branch != expected_candidate_branch or (
         manifest.get("candidate_branch") != expected_candidate_branch
@@ -101,5 +103,7 @@ def validate_v2_owner_review_and_receipt(
     if receipt["source_snapshot_commit_sha"] != source_sha:
         raise ValueError("native receipt is stale relative to owner-accepted source")
     if receipt["manifest_sha256"] != hashlib.sha256(manifest_bytes).hexdigest():
-        raise ValueError("native receipt manifest hash does not match committed evidence")
+        raise ValueError(
+            "native receipt manifest hash does not match committed evidence"
+        )
     return receipt

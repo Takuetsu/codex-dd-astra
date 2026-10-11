@@ -98,7 +98,9 @@ def verify_native_or_promotion_preflight(
         expected_source_snapshot_sha=expected_source_sha,
         expected_source_snapshot_tree=expected_source_tree,
     )
-    verify_source_snapshot_git(repo, manifest, production_ref=production_ref, source_ref=source_ref)
+    verify_source_snapshot_git(
+        repo, manifest, production_ref=production_ref, source_ref=source_ref
+    )
     verify_metadata_only_candidate_git(
         repo,
         manifest,

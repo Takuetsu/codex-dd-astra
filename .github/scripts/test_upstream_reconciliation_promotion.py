@@ -24,8 +24,16 @@ ACCEPT = "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + SOURCE_SHA
 
 
 class OwnerPromotionGateTests(unittest.TestCase):
-    def verify(self, *, change_receipt=None, change_manifest=None,
-               change_sidecar=None, semantic_url=None, accept=ACCEPT, observed=None):
+    def verify(
+        self,
+        *,
+        change_receipt=None,
+        change_manifest=None,
+        change_sidecar=None,
+        semantic_url=None,
+        accept=ACCEPT,
+        observed=None,
+    ):
         manifest, sidecar, _, _ = fixture()
         manifest = copy.deepcopy(manifest)
         sidecar = copy.deepcopy(sidecar)
@@ -56,7 +64,9 @@ class OwnerPromotionGateTests(unittest.TestCase):
             observed_candidate_branch=manifest["candidate_branch"],
             observed_candidate_sha=CANDIDATE if observed is None else observed,
             manifest_path=MANIFEST_PATH,
-            semantic_review_url=sidecar["semantic_review_url"] if semantic_url is None else semantic_url,
+            semantic_review_url=sidecar["semantic_review_url"]
+            if semantic_url is None
+            else semantic_url,
             owner_source_acceptance=accept,
         )
 
@@ -69,60 +79,84 @@ class OwnerPromotionGateTests(unittest.TestCase):
             normalize_console_or_file_receipt_json(raw.decode().rstrip("\n")), raw
         )
         self.assertEqual(normalize_console_or_file_receipt_json(raw.decode()), raw)
-        for invalid in ('', '{}\n\n', '{}\r\n', '{\n}', '  '):
+        for invalid in ("", "{}\n\n", "{}\r\n", "{\n}", "  "):
             with self.subTest(invalid=invalid):
-                if invalid == '  ':
-                    self.assertEqual(normalize_console_or_file_receipt_json(invalid), b'  \n')
+                if invalid == "  ":
+                    self.assertEqual(
+                        normalize_console_or_file_receipt_json(invalid), b"  \n"
+                    )
                 else:
                     with self.assertRaises(ValueError):
                         normalize_console_or_file_receipt_json(invalid)
 
-
-
     def test_owner_acceptance_cannot_be_missing_or_for_different_source(self):
-        for value in ("", "yes", ACCEPT[:-1], "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + ("f"*40)):
-            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "owner acceptance"):
+        for value in (
+            "",
+            "yes",
+            ACCEPT[:-1],
+            "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + ("f" * 40),
+        ):
+            with (
+                self.subTest(value=value),
+                self.assertRaisesRegex(ValueError, "owner acceptance"),
+            ):
                 self.verify(accept=value)
 
     def test_semantic_link_must_match_sidecar_and_same_repository(self):
         with self.assertRaisesRegex(ValueError, "review link"):
-            self.verify(semantic_url=REPO+"commit/"+("f"*40))
+            self.verify(semantic_url=REPO + "commit/" + ("f" * 40))
         with self.assertRaisesRegex(ValueError, "same-repository"):
             self.verify(semantic_url="https://example.com/attest")
 
     def test_receipt_workpacket_cannot_enable_review_promotion(self):
         with self.assertRaisesRegex(ValueError, "mismatch: profile"):
-            self.verify(change_receipt=lambda r:r.__setitem__("profile","work-packet"))
+            self.verify(
+                change_receipt=lambda r: r.__setitem__("profile", "work-packet")
+            )
 
     def test_receipt_incomplete_or_forged_platform_rejected(self):
-        for field,value in (("completed_stages",10),("validation_status","fail"),
-                            ("native_platform","linux"),("native_validation_host","CI")):
+        for field, value in (
+            ("completed_stages", 10),
+            ("validation_status", "fail"),
+            ("native_platform", "linux"),
+            ("native_validation_host", "CI"),
+        ):
             with self.subTest(field=field), self.assertRaises(ValueError):
-                self.verify(change_receipt=lambda r:r.__setitem__(field,value))
+                self.verify(change_receipt=lambda r: r.__setitem__(field, value))
 
     def test_stale_candidate_head_rejected(self):
         with self.assertRaisesRegex(ValueError, "candidate_head_sha"):
-            self.verify(observed="f"*40)
+            self.verify(observed="f" * 40)
 
     def test_source_or_target_mutation_fails_closed(self):
         with self.assertRaises(ValueError):
-            self.verify(change_manifest=lambda m:m.__setitem__("target_upstream_sha","f"*40))
+            self.verify(
+                change_manifest=lambda m: m.__setitem__("target_upstream_sha", "f" * 40)
+            )
         with self.assertRaises(ValueError):
-            self.verify(change_manifest=lambda m:m.__setitem__("source_snapshot_commit_sha","f"*40))
+            self.verify(
+                change_manifest=lambda m: m.__setitem__(
+                    "source_snapshot_commit_sha", "f" * 40
+                )
+            )
 
     def test_unknown_receipt_fields_rejected(self):
         with self.assertRaisesRegex(ValueError, "unknown"):
-            self.verify(change_receipt=lambda r:r.__setitem__("extra","yes"))
+            self.verify(change_receipt=lambda r: r.__setitem__("extra", "yes"))
 
     def test_v1_manifest_cannot_promote_through_v2(self):
         with self.assertRaisesRegex(ValueError, "cannot promote v1"):
-            self.verify(change_manifest=lambda m:m.__setitem__("contract_version",1))
+            self.verify(change_manifest=lambda m: m.__setitem__("contract_version", 1))
 
     def test_claimed_review_and_attested_review_must_be_identical(self):
         with self.assertRaisesRegex(ValueError, "review link"):
-            self.verify(change_sidecar=lambda s:s.__setitem__("semantic_review_url",REPO+"commit/"+("f"*40)),
-                        semantic_url=REPO+"commit/"+SOURCE_SHA)
+            self.verify(
+                change_sidecar=lambda s: s.__setitem__(
+                    "semantic_review_url", REPO + "commit/" + ("f" * 40)
+                ),
+                semantic_url=REPO + "commit/" + SOURCE_SHA,
+            )
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

@@ -88,6 +88,7 @@ def fixtures():
         "sidecar_path": "docs/upstream-candidates/codexdd-reconciliation.json",
         "sidecar_sha256": "f" * 64,
     }
+
     def resolution(path):
         return {
             "path": path,
@@ -97,9 +98,13 @@ def fixtures():
             "test_evidence_url": EVIDENCE,
             "semantic_evidence_url": EVIDENCE,
         }
+
     def overlap(path):
-        categories = sorted(k for k, value in original["sensitive_overlap_categories"].items()
-                            if path in value)
+        categories = sorted(
+            k
+            for k, value in original["sensitive_overlap_categories"].items()
+            if path in value
+        )
         return {
             "path": path,
             "owner_packet": "3B.4",
@@ -108,6 +113,7 @@ def fixtures():
             "test_evidence_url": EVIDENCE,
             "semantic_evidence_url": EVIDENCE,
         }
+
     sidecar = {
         "attestation_type": "codexdd_upstream_conflict_reconciliation",
         "contract_version": 1,
@@ -118,14 +124,22 @@ def fixtures():
             "manifest_sha256": discovery_sha,
             "conflicts_sha256": conflicts_sha,
         },
-        "production": {"branch": "dd/astra-policy-v2", "sha": PROD_SHA, "tree": PROD_TREE},
+        "production": {
+            "branch": "dd/astra-policy-v2",
+            "sha": PROD_SHA,
+            "tree": PROD_TREE,
+        },
         "tracked_upstream": {
-            "tag": OLD_TAG, "tag_object_sha": TRACKED_TAG_OBJECT,
-            "sha": TRACKED_SHA, "tree": TRACKED_TREE,
+            "tag": OLD_TAG,
+            "tag_object_sha": TRACKED_TAG_OBJECT,
+            "sha": TRACKED_SHA,
+            "tree": TRACKED_TREE,
         },
         "target_upstream": {
-            "tag": NEW_TAG, "tag_object_sha": TARGET_TAG_OBJECT,
-            "sha": TARGET_SHA, "tree": TARGET_TREE,
+            "tag": NEW_TAG,
+            "tag_object_sha": TARGET_TAG_OBJECT,
+            "sha": TARGET_SHA,
+            "tree": TARGET_TREE,
         },
         "source_snapshot": {
             "branch": "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
@@ -145,8 +159,12 @@ def fixtures():
         "security_reviews": {
             name: {"source_snapshot_commit_sha": SOURCE_SHA, "evidence_url": EVIDENCE}
             for name in (
-                "windows_elevated_f2", "adaptive_model_routing", "worker_scope_and_lifecycle",
-                "lvo_receipt", "updater_fail_closed", "resume_fork",
+                "windows_elevated_f2",
+                "adaptive_model_routing",
+                "worker_scope_and_lifecycle",
+                "lvo_receipt",
+                "updater_fail_closed",
+                "resume_fork",
             )
         },
         "semantic_review_url": EVIDENCE,
@@ -155,7 +173,9 @@ def fixtures():
 
 
 class CrossBoundReconciliationTests(unittest.TestCase):
-    def verify(self, *, manifest=None, sidecar=None, original=None, conflicts=None, extra=None):
+    def verify(
+        self, *, manifest=None, sidecar=None, original=None, conflicts=None, extra=None
+    ):
         original_data, conflicts_data, default_manifest, default_sidecar = fixtures()
         if original is not None:
             original_data = original
@@ -196,7 +216,9 @@ class CrossBoundReconciliationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "immutably blocked"):
             self.verify(
                 original=relabeled,
-                extra={"approved_manifest_sha256": hashlib.sha256(relabeled).hexdigest()},
+                extra={
+                    "approved_manifest_sha256": hashlib.sha256(relabeled).hexdigest()
+                },
             )
 
     def test_wrong_original_digest_rejected_even_when_reconciled_pair_matches(self):
@@ -214,8 +236,9 @@ class CrossBoundReconciliationTests(unittest.TestCase):
         ):
             broken = copy.deepcopy(m)
             broken[field] = changed
-            with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, "binding mismatch"
+            with (
+                self.subTest(field=field),
+                self.assertRaisesRegex(ValueError, "binding mismatch"),
             ):
                 self.verify(manifest=broken)
         s["contract_version"] = 2
@@ -228,7 +251,10 @@ class CrossBoundReconciliationTests(unittest.TestCase):
             ("\n".join(reversed(CONFLICTS)) + "\n").encode(),
             (CONFLICTS[0] + "\n").encode(),
         ):
-            with self.subTest(report=report), self.assertRaisesRegex(ValueError, "digest"):
+            with (
+                self.subTest(report=report),
+                self.assertRaisesRegex(ValueError, "digest"),
+            ):
                 self.verify(original=original_data, conflicts=report)
 
     def test_unlisted_or_duplicate_conflict_resolution_is_rejected(self):
@@ -252,7 +278,10 @@ class CrossBoundReconciliationTests(unittest.TestCase):
         ):
             altered = copy.deepcopy(s)
             altered["overlap_reviews"] = overlap_records
-            with self.subTest(overlap_records=overlap_records), self.assertRaises(ValueError):
+            with (
+                self.subTest(overlap_records=overlap_records),
+                self.assertRaises(ValueError),
+            ):
                 self.verify(sidecar=altered)
 
     def test_sensitive_classification_cannot_be_omitted_or_relabeled(self):
@@ -334,7 +363,9 @@ class CrossBoundReconciliationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "same-repository"):
             self.verify(sidecar=s)
         _, _, _, s = fixtures()
-        s["security_reviews"]["windows_elevated_f2"]["source_snapshot_commit_sha"] = "f" * 40
+        s["security_reviews"]["windows_elevated_f2"]["source_snapshot_commit_sha"] = (
+            "f" * 40
+        )
         with self.assertRaisesRegex(ValueError, "security review"):
             self.verify(sidecar=s)
 

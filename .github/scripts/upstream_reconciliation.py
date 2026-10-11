@@ -32,6 +32,7 @@ def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]
 def _reject_nonfinite_number(value: str) -> None:
     raise ValueError(f"non-finite JSON number is forbidden: {value}")
 
+
 def _parse_finite_json_float(value: str) -> float:
     parsed = float(value)
     if not math.isfinite(parsed):

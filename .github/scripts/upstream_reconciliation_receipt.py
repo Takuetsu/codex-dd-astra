@@ -46,9 +46,7 @@ _RECEIPT_FIELDS = frozenset(
         "native_validation_host",
     }
 )
-_TIME = re.compile(
-    r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:[.]\d{1,7})?(?:Z|[+]00:00)\Z"
-)
+_TIME = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:[.]\d{1,7})?(?:Z|[+]00:00)\Z")
 
 
 def validate_v2_release_receipt(
@@ -92,10 +90,18 @@ def validate_v2_release_receipt(
     for key, expected in (
         ("contract_version", 2),
         ("receipt_type", "codexdd_upstream_local_validation"),
-        ("candidate_key", candidate_key(manifest["target_upstream_tag"],
-                                        manifest["target_upstream_sha"])),
-        ("candidate_branch", candidate_branch(manifest["target_upstream_tag"],
-                                              manifest["target_upstream_sha"])),
+        (
+            "candidate_key",
+            candidate_key(
+                manifest["target_upstream_tag"], manifest["target_upstream_sha"]
+            ),
+        ),
+        (
+            "candidate_branch",
+            candidate_branch(
+                manifest["target_upstream_tag"], manifest["target_upstream_sha"]
+            ),
+        ),
         ("candidate_head_sha", candidate_sha),
         ("production_sha", manifest["production_sha"]),
         ("target_upstream_tag", manifest["target_upstream_tag"]),

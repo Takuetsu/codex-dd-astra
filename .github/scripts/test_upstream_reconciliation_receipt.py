@@ -5,7 +5,13 @@ import hashlib
 import unittest
 
 from test_upstream_reconciliation_v2 import (
-    NEW_TAG, PROD_SHA, REPO, SOURCE_SHA, SOURCE_TREE, TARGET_SHA, fixtures,
+    NEW_TAG,
+    PROD_SHA,
+    REPO,
+    SOURCE_SHA,
+    SOURCE_TREE,
+    TARGET_SHA,
+    fixtures,
 )
 from upstream_reconciliation import canonical_json_bytes
 from upstream_reconciliation_receipt import validate_v2_release_receipt
@@ -76,22 +82,25 @@ class ReceiptBindingTests(unittest.TestCase):
 
     def test_work_packet_and_targeted_cannot_substitute_for_release(self):
         for profile in ("work-packet", "targeted", ""):
-            with self.subTest(profile=profile), self.assertRaisesRegex(
-                ValueError, "mismatch: profile"
+            with (
+                self.subTest(profile=profile),
+                self.assertRaisesRegex(ValueError, "mismatch: profile"),
             ):
                 self.verify(lambda item: item.__setitem__("profile", profile))
 
     def test_failed_or_forged_validation_status_rejected(self):
         for status in ("fail", "error", None, True):
-            with self.subTest(status=status), self.assertRaisesRegex(
-                ValueError, "validation_status"
+            with (
+                self.subTest(status=status),
+                self.assertRaisesRegex(ValueError, "validation_status"),
             ):
                 self.verify(lambda item: item.__setitem__("validation_status", status))
 
     def test_short_or_noninteger_native_stage_count_rejected(self):
         for count in (0, 1, 20, True, "21", None):
-            with self.subTest(count=count), self.assertRaisesRegex(
-                ValueError, "complete native release stages"
+            with (
+                self.subTest(count=count),
+                self.assertRaisesRegex(ValueError, "complete native release stages"),
             ):
                 self.verify(lambda item: item.__setitem__("completed_stages", count))
 
@@ -102,8 +111,9 @@ class ReceiptBindingTests(unittest.TestCase):
             ("source_snapshot_commit_sha", "f" * 40),
             ("source_snapshot_tree_sha", "f" * 40),
         ):
-            with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, f"mismatch: {field}"
+            with (
+                self.subTest(field=field),
+                self.assertRaisesRegex(ValueError, f"mismatch: {field}"),
             ):
                 self.verify(lambda item: item.__setitem__(field, value))
 
@@ -115,8 +125,9 @@ class ReceiptBindingTests(unittest.TestCase):
             ("candidate_key", "forged"),
             ("reconciliation_sidecar_path", "../secret"),
         ):
-            with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, "identity/validation mismatch"
+            with (
+                self.subTest(field=field),
+                self.assertRaisesRegex(ValueError, "identity/validation mismatch"),
             ):
                 self.verify(lambda item: item.__setitem__(field, value))
 
@@ -140,8 +151,9 @@ class ReceiptBindingTests(unittest.TestCase):
             ("native_validation_host", "runner-windows-2022"),
             ("native_validation_host", "Doug"),
         ):
-            with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, "identity/validation mismatch"
+            with (
+                self.subTest(field=field),
+                self.assertRaisesRegex(ValueError, "identity/validation mismatch"),
             ):
                 self.verify(lambda item: item.__setitem__(field, value))
 
@@ -152,8 +164,9 @@ class ReceiptBindingTests(unittest.TestCase):
             "yesterday",
             "",
         ):
-            with self.subTest(value=value), self.assertRaisesRegex(
-                ValueError, "timestamp"
+            with (
+                self.subTest(value=value),
+                self.assertRaisesRegex(ValueError, "timestamp"),
             ):
                 self.verify(lambda item: item.__setitem__("completed_at", value))
 
@@ -172,7 +185,9 @@ class ReceiptBindingTests(unittest.TestCase):
         data = canonical_json_bytes(valid)
         with self.assertRaisesRegex(ValueError, "not canonical"):
             self.verify(override={"receipt_json": data.replace(b'":', b'" :', 1)})
-        dup = data.replace(b'"contract_version":2', b'"contract_version":2,"contract_version":2')
+        dup = data.replace(
+            b'"contract_version":2', b'"contract_version":2,"contract_version":2'
+        )
         with self.assertRaisesRegex(ValueError, "duplicate"):
             self.verify(override={"receipt_json": dup})
 

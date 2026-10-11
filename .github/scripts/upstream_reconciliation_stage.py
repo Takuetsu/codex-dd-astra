@@ -48,21 +48,33 @@ def _commit(repo: Path, sha: object, *, expected_parent: str | None = None) -> N
     if expected_parent:
         ancestors = _git(repo, "rev-list", "--parents", "-n", "1", sha).decode().split()
         if ancestors != [sha, expected_parent]:
-            raise ValueError("staging must be exactly one metadata-only commit on production")
+            raise ValueError(
+                "staging must be exactly one metadata-only commit on production"
+            )
 
 
 def _metadata_delta(
     repo: Path, *, production_sha: str, staging_sha: str, allowed: tuple[str, ...]
 ) -> None:
-    raw = _git(repo, "diff", "--name-status", "--no-renames", "-z", production_sha, staging_sha)
+    raw = _git(
+        repo, "diff", "--name-status", "--no-renames", "-z", production_sha, staging_sha
+    )
     chunks = [x.decode("utf-8") for x in raw.split(b"\0") if x]
     if len(chunks) % 2:
         raise ValueError("malformed staging Git metadata delta")
     edits = dict(zip(chunks[::2], chunks[1::2]))
-    if set(edits) != {"A"} or len(chunks) // 2 != len(allowed) or set(chunks[1::2]) != set(allowed):
+    if (
+        set(edits) != {"A"}
+        or len(chunks) // 2 != len(allowed)
+        or set(chunks[1::2]) != set(allowed)
+    ):
         raise ValueError("staging contains unauthorized source edits or metadata paths")
     for path in allowed:
-        leaf = _git(repo, "ls-tree", "--full-tree", staging_sha, "--", path).decode().strip()
+        leaf = (
+            _git(repo, "ls-tree", "--full-tree", staging_sha, "--", path)
+            .decode()
+            .strip()
+        )
         if not leaf.startswith("100644 blob ") or not leaf.endswith("\t" + path):
             raise ValueError("staging metadata must be regular Git blobs")
 
@@ -126,7 +138,9 @@ def construct_local_v2_candidate(
     )
     expected_branch = candidate_branch(target_tag, target_sha)
     if manifest["candidate_branch"] != expected_branch:
-        raise ValueError("staging manifest does not name the canonical candidate branch")
+        raise ValueError(
+            "staging manifest does not name the canonical candidate branch"
+        )
 
     with tempfile.TemporaryDirectory(prefix="codexdd-v2-index-") as root:
         index = str(Path(root) / "index")
@@ -135,7 +149,11 @@ def construct_local_v2_candidate(
         for path in paths:
             blob = _git(repo, "rev-parse", f"{staging_sha}:{path}").decode().strip()
             _git(
-                repo, "update-index", "--add", "--cacheinfo", f"100644,{blob},{path}",
+                repo,
+                "update-index",
+                "--add",
+                "--cacheinfo",
+                f"100644,{blob},{path}",
                 extra_env=context,
             )
         tree = _git(repo, "write-tree", extra_env=context).decode().strip()
@@ -145,11 +163,20 @@ def construct_local_v2_candidate(
         "GIT_COMMITTER_NAME": "codexdd-v2-candidate-preparer",
         "GIT_COMMITTER_EMAIL": "codexdd-v2-preparer@example.invalid",
     }
-    candidate_sha = _git(
-        repo, "commit-tree", tree, "-p", source_sha,
-        "-m", "codexdd: exact reconciled v2 candidate metadata",
-        extra_env=author,
-    ).decode().strip()
+    candidate_sha = (
+        _git(
+            repo,
+            "commit-tree",
+            tree,
+            "-p",
+            source_sha,
+            "-m",
+            "codexdd: exact reconciled v2 candidate metadata",
+            extra_env=author,
+        )
+        .decode()
+        .strip()
+    )
     verify_metadata_only_candidate_git(
         repo,
         manifest,

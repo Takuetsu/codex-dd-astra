@@ -5,17 +5,17 @@ name: upstream-codex-v2-reconciled-promote
 on:
   workflow_dispatch:
     inputs:
-      candidate_branch: {required: true, type: string}
-      candidate_head_sha: {required: true, type: string}
-      production_sha: {required: true, type: string}
-      source_sha: {required: true, type: string}
-      source_tree: {required: true, type: string}
-      discovery_run_id: {required: true, type: string}
-      approved_manifest_sha256: {required: true, type: string}
-      approved_conflicts_sha256: {required: true, type: string}
-      receipt_json: {required: true, type: string}
-      semantic_review_url: {required: true, type: string}
-      owner_source_acceptance: {required: true, type: string}
+      candidate_branch: { required: true, type: string }
+      candidate_head_sha: { required: true, type: string }
+      production_sha: { required: true, type: string }
+      source_sha: { required: true, type: string }
+      source_tree: { required: true, type: string }
+      discovery_run_id: { required: true, type: string }
+      approved_manifest_sha256: { required: true, type: string }
+      approved_conflicts_sha256: { required: true, type: string }
+      receipt_json: { required: true, type: string }
+      semantic_review_url: { required: true, type: string }
+      owner_source_acceptance: { required: true, type: string }
 
 permissions:
   contents: read

@@ -15,7 +15,9 @@ from upstream_reconciliation_stage import construct_local_v2_candidate
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(repo), *args],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
@@ -38,7 +40,12 @@ class MetadataConstructionTests(unittest.TestCase):
         git(self.repo, "commit", "-qm", "production")
         self.prod = git(self.repo, "rev-parse", "HEAD")
         self.prod_tree = git(self.repo, "rev-parse", "HEAD^{tree}")
-        git(self.repo, "checkout", "-qb", "dd/codexdd-v0.4.3-upstream-0.162.0-integration")
+        git(
+            self.repo,
+            "checkout",
+            "-qb",
+            "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+        )
         (root / "codexdd-version.txt").write_text("0.4.3\n")
         (root / "upstream-codex-release.txt").write_text("rust-v0.162.0\n")
         git(self.repo, "add", ".")
@@ -73,9 +80,17 @@ class MetadataConstructionTests(unittest.TestCase):
         self.sidecar_bytes = canonical_json_bytes(sidecar)
         manifest["sidecar_sha256"] = hashlib.sha256(self.sidecar_bytes).hexdigest()
         self.manifest_bytes = canonical_json_bytes(manifest)
-        self.manifest_path = "docs/upstream-candidates/codexdd-upstream-rust-v0.162.0.json"
+        self.manifest_path = (
+            "docs/upstream-candidates/codexdd-upstream-rust-v0.162.0.json"
+        )
         self.sidecar_path = manifest["sidecar_path"]
-        git(self.repo, "checkout", "-qb", "dd/codexdd-v0.4.3-v2-attestation-staging", self.prod)
+        git(
+            self.repo,
+            "checkout",
+            "-qb",
+            "dd/codexdd-v0.4.3-v2-attestation-staging",
+            self.prod,
+        )
         docs = self.repo / "docs/upstream-candidates"
         docs.mkdir(parents=True)
         (self.repo / self.manifest_path).write_bytes(self.manifest_bytes)
@@ -104,8 +119,10 @@ class MetadataConstructionTests(unittest.TestCase):
     def test_creates_candidate_git_object_with_exact_parent_and_no_ref_write(self):
         before_ref = git(self.repo, "rev-parse", "HEAD")
         sha, branch = self.build()
-        self.assertEqual(git(self.repo, "rev-list", "--parents", "-n", "1", sha),
-                         sha + " " + self.source)
+        self.assertEqual(
+            git(self.repo, "rev-list", "--parents", "-n", "1", sha),
+            sha + " " + self.source,
+        )
         self.assertIn("automation/upstream-candidate-", branch)
         self.assertEqual(git(self.repo, "rev-parse", "HEAD"), before_ref)
         self.assertEqual(git(self.repo, "rev-parse", "dd/astra-policy-v2"), self.prod)

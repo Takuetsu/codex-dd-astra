@@ -41,7 +41,12 @@ class CandidateGitBoundaryTests(unittest.TestCase):
         git(self.repo, "commit", "-qm", "production")
         self.production = git(self.repo, "rev-parse", "HEAD")
         self.production_tree = git(self.repo, "rev-parse", "HEAD^{tree}")
-        git(self.repo, "checkout", "-qb", "dd/codexdd-v0.4.3-upstream-0.162.0-integration")
+        git(
+            self.repo,
+            "checkout",
+            "-qb",
+            "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+        )
         (root / "codexdd-version.txt").write_text("0.4.3\n")
         (root / "upstream-codex-release.txt").write_text("rust-v0.162.0\n")
         (root / "fixture.rs").write_text("fn test() {}\n")
@@ -70,7 +75,9 @@ class CandidateGitBoundaryTests(unittest.TestCase):
         git(self.repo, "checkout", self.snapshot)
         base = self.repo / "docs/upstream-candidates"
         base.mkdir(parents=True, exist_ok=True)
-        (self.repo / self.manifest_path).write_bytes(canonical_json_bytes(self.manifest))
+        (self.repo / self.manifest_path).write_bytes(
+            canonical_json_bytes(self.manifest)
+        )
         (self.repo / self.sidecar_path).write_bytes(canonical_json_bytes(self.sidecar))
         git(self.repo, "add", ".")
         git(self.repo, "commit", "-qm", "metadata only")
@@ -86,9 +93,14 @@ class CandidateGitBoundaryTests(unittest.TestCase):
         )
 
     def verify_candidate(self, **kwargs):
-        parameters = {"candidate_sha": self.candidate, "manifest_path": self.manifest_path}
+        parameters = {
+            "candidate_sha": self.candidate,
+            "manifest_path": self.manifest_path,
+        }
         parameters.update(kwargs)
-        return verify_metadata_only_candidate_git(self.repo, self.manifest, **parameters)
+        return verify_metadata_only_candidate_git(
+            self.repo, self.manifest, **parameters
+        )
 
     def test_source_snapshot_and_metadata_only_candidate_pass(self):
         self.verify_source()
@@ -125,7 +137,8 @@ class CandidateGitBoundaryTests(unittest.TestCase):
     def test_untrusted_ref_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "untrusted.*Git ref"):
             verify_source_snapshot_git(
-                self.repo, self.manifest,
+                self.repo,
+                self.manifest,
                 production_ref="refs/heads/attacker",
                 source_ref="refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration",
             )
@@ -133,7 +146,9 @@ class CandidateGitBoundaryTests(unittest.TestCase):
     def test_extra_source_edit_in_candidate_metadata_is_rejected(self):
         git(self.repo, "checkout", self.snapshot)
         (self.repo / self.manifest_path).parent.mkdir(parents=True, exist_ok=True)
-        (self.repo / self.manifest_path).write_bytes(canonical_json_bytes(self.manifest))
+        (self.repo / self.manifest_path).write_bytes(
+            canonical_json_bytes(self.manifest)
+        )
         (self.repo / self.sidecar_path).write_bytes(canonical_json_bytes(self.sidecar))
         (self.repo / "codex-rs/fixture.rs").write_text("malicious edit\n")
         git(self.repo, "add", ".")
@@ -146,7 +161,9 @@ class CandidateGitBoundaryTests(unittest.TestCase):
         git(self.repo, "checkout", self.snapshot)
         base = self.repo / "docs/upstream-candidates"
         base.mkdir(parents=True, exist_ok=True)
-        (self.repo / self.manifest_path).write_bytes(canonical_json_bytes(self.manifest))
+        (self.repo / self.manifest_path).write_bytes(
+            canonical_json_bytes(self.manifest)
+        )
         (self.repo / self.sidecar_path).write_bytes(canonical_json_bytes(self.sidecar))
         (base / "unexpected.json").write_text("{}\n")
         git(self.repo, "add", ".")

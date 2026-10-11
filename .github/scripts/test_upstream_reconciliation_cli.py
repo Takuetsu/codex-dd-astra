@@ -9,7 +9,13 @@ import unittest
 from pathlib import Path
 
 from test_upstream_reconciliation_v2 import (
-    CONFLICTS, NEW_TAG, OLD_TAG, OVERLAPS, SOURCE_SHA, TARGET_SHA, fixtures,
+    CONFLICTS,
+    NEW_TAG,
+    OLD_TAG,
+    OVERLAPS,
+    SOURCE_SHA,
+    TARGET_SHA,
+    fixtures,
 )
 from upstream_reconciliation import canonical_json_bytes
 from upstream_reconciliation_cli import (
@@ -44,7 +50,12 @@ class CommandPreflightTests(unittest.TestCase):
         git(self.repo, "commit", "-qm", "production")
         self.production = git(self.repo, "rev-parse", "HEAD")
         self.production_tree = git(self.repo, "rev-parse", "HEAD^{tree}")
-        git(self.repo, "checkout", "-qb", "dd/codexdd-v0.4.3-upstream-0.162.0-integration")
+        git(
+            self.repo,
+            "checkout",
+            "-qb",
+            "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+        )
         (root / "codexdd-version.txt").write_text("0.4.3\n")
         (root / "upstream-codex-release.txt").write_text("rust-v0.162.0\n")
         git(self.repo, "add", ".")
