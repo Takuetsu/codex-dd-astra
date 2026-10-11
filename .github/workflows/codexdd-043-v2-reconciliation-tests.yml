@@ -15,6 +15,8 @@ on:
       - .github/scripts/test_upstream_reconciliation_git.py
       - .github/scripts/upstream_reconciliation_receipt.py
       - .github/scripts/test_upstream_reconciliation_receipt.py
+      - scripts/codexdd-v2-receipt.ps1
+      - scripts/codexdd-v2-receipt-tests.ps1
 
 permissions:
   contents: read
@@ -71,3 +73,31 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/test_upstream_sync.py
+
+  native-ps51-v2-fixture:
+    name: Native Windows PowerShell 5.1 canonical v2 receipt fixture
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Checkout unpromoted tooling source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Parse and execute native v2 receipt byte fixture
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($path in @('scripts/codexdd-v2-receipt.ps1', 'scripts/codexdd-v2-receipt-tests.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path -LiteralPath $path).Path, [ref]$tokens, [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -ne 0) {
+              throw "PowerShell parse failure in $path"
+            }
+          }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\codexdd-v2-receipt-tests.ps1
+          if ($LASTEXITCODE -ne 0) {
+            throw "Canonical v2 receipt fixture failed: $LASTEXITCODE"
+          }
