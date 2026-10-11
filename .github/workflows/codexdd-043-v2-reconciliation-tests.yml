@@ -11,6 +11,8 @@ on:
       - .github/scripts/test_upstream_reconciliation.py
       - .github/scripts/upstream_reconciliation_v2.py
       - .github/scripts/test_upstream_reconciliation_v2.py
+      - .github/scripts/upstream_reconciliation_git.py
+      - .github/scripts/test_upstream_reconciliation_git.py
 
 permissions:
   contents: read
@@ -52,6 +54,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/test_upstream_reconciliation_v2.py
+      - name: Verify source snapshot and metadata-only Git object invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/test_upstream_reconciliation_git.py
       - name: Verify existing v1 contract still passes without alterations
         shell: bash
         run: |
