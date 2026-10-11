@@ -1,4 +1,4 @@
-# Temporary read-only CodexDD 0.4.3 / 3E.3 product version and trusted LVO evidence gate.
+# Temporary read-only CodexDD 0.4.3 / 3E.3 gate, retested after PR #50 tooling merge and source reanchor.
 name: CodexDD 0.4.3 core and version smoke
 
 on:
@@ -24,6 +24,7 @@ jobs:
       - name: Checkout pinned nonproduction integration source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Verify allocated product and upstream identities
         shell: bash
@@ -33,7 +34,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
-          echo "Exact candidate source: $GITHUB_SHA"
+          git merge-base --is-ancestor 16fdc9826e800ebabab920eadd8e1d976d2f645f HEAD
+          git diff --quiet da2924dd6845bc7f8da46ac62c957300c80fcd2d HEAD -- codex-rs
+          echo "Reanchored nonproduction source: $GITHUB_SHA"
       - name: Configure pinned repository Rust environment
         uses: ./.github/actions/setup-ci
       - name: Use repository Rust toolchain

@@ -1,4 +1,4 @@
-# Temporary, read-only 3C/3D/3B.1 executable regression gate. Nonproduction.
+# Temporary, read-only 3F executable regression gate, rerun on the post-PR-50 re-anchored source. Nonproduction.
 # Retest after the verified 0.159.2 to 0.162.0 status snapshot expectation correction.
 # Remove after evidence is verified. No generated sources or Cargo.lock may be published.
 name: CodexDD 0.4.3 targeted runtime regressions
@@ -34,6 +34,7 @@ jobs:
       - name: Checkout isolated integration source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Assert nonproduction source identity
@@ -44,7 +45,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
-          echo "TUI source HEAD: $GITHUB_SHA"
+          git merge-base --is-ancestor 16fdc9826e800ebabab920eadd8e1d976d2f645f HEAD
+          git diff --quiet da2924dd6845bc7f8da46ac62c957300c80fcd2d HEAD -- codex-rs
+          echo "Reanchored TUI source HEAD: $GITHUB_SHA"
 
       - name: Verify all three 0.162 status snapshot headers before Rust compilation
         shell: bash
