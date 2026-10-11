@@ -132,6 +132,102 @@ jobs:
           print("No v2 attestation, candidate, release receipt or semantic acceptance generated.")
           PY
 
+      - name: Verify full 136-path Git blob and original-classification review ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add audited-upstream https://github.com/openai/codex.git
+          git fetch --no-tags --filter=blob:none --depth=1 audited-upstream \
+            refs/tags/rust-v0.159.2:refs/tags/codexdd-audit-rust-v0.159.2 \
+            refs/tags/rust-v0.162.0:refs/tags/codexdd-audit-rust-v0.162.0
+          test "$(git rev-parse 'refs/tags/codexdd-audit-rust-v0.159.2^{commit}')" = 'ff6aec96948b70d94983af2641a6b67c94faeff5'
+          test "$(git rev-parse 'refs/tags/codexdd-audit-rust-v0.162.0^{commit}')" = "$TARGET_SHA"
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from collections import defaultdict
+          from pathlib import Path
+
+          audit = json.loads(Path("docs/codexdd-0.4.3-packet-3f-source-object-review.json").read_bytes())
+          original = json.loads((Path(os.environ["RUNNER_TEMP"]) / "original" / "manifest.json").read_bytes())
+          history = json.loads(Path("docs/codexdd-0.4.3-packet-3a3-overlap-ownership.json").read_bytes())
+          assert audit["authority"] == "READ_ONLY_HASH_COMPARISON_NOT_OWNER_SEMANTIC_ACCEPTANCE_OR_NATIVE_RELEASE"
+          assert audit["history_provenance"]["run_id"] == int(os.environ["RUN_ID"])
+          assert audit["history_provenance"]["manifest_sha256"] == os.environ["MANIFEST_DIGEST"]
+          assert audit["history_provenance"]["conflicts_sha256"] == os.environ["CONFLICTS_DIGEST"]
+          assert audit["identities"]["new_prod"]["commit_sha"] == os.environ["PROD_SHA"]
+          assert audit["identities"]["integrated"]["commit_sha"] == "2e70b04e1c80b5d9d2ef9ae67a3c9a7e902e63ff"
+          assert len(audit["rows"]) == len(original["overlap_paths"]) == 136
+          assert [r["path"] for r in audit["rows"]] == original["overlap_paths"]
+          assert [r["path"] for r in audit["rows"]] == [r["path"] for r in history["rows"]]
+
+          def git(*args):
+              return subprocess.run(["git", *args], check=True, capture_output=True).stdout
+
+          def tree(commit_sha, expected_tree):
+              assert git("rev-parse", f"{commit_sha}^{{tree}}").decode().strip() == expected_tree
+              result = {}
+              for entry in git("ls-tree", "--full-tree", "-r", "-z", commit_sha).split(b"\\0"):
+                  if not entry:
+                      continue
+                  meta, pathname = entry.split(b"\\t", 1)
+                  mode, kind, blob = meta.decode().split()
+                  result[pathname.decode("utf-8")] = (mode, blob)
+              return result
+
+          ids = audit["identities"]
+          inventories = {name: tree(fields["commit_sha"], fields["tree_sha"])
+                         for name, fields in ids.items()}
+          old, prod, upstream, integrated = (
+              inventories["old_up"], inventories["new_prod"],
+              inventories["target"], inventories["integrated"],
+          )
+
+          all_paths = set().union(*(set(d) for d in inventories.values()))
+          def delta(a, b):
+              return {p for p in all_paths if a.get(p) != b.get(p)}
+          fork, new = delta(old, prod), delta(old, upstream)
+          overlaps = sorted(fork & new)
+          assert overlaps == original["overlap_paths"]
+          assert len(fork) == 279 and len(new) == 2507 and len(overlaps) == 136
+          assert len(audit["rows"]) == 136 and audit["summary"]["original_textual_conflicts"] == 22
+          for row in audit["rows"]:
+              p = row["path"]
+              for name, label in (
+                  ("old_up", "tracked_upstream"),
+                  ("old_prod", "pretooling_production"),
+                  ("new_prod", "current_production"),
+                  ("target", "target_upstream"),
+                  ("integrated", "reconciled_source"),
+              ):
+                  actual = inventories[name].get(p)
+                  assert row["git_blob_ids"][label] == (actual[1] if actual else None), (p, name)
+              assert row["semantic_review_accepted"] is False
+              assert row["native_windows_release_accepted"] is False
+          assert git("diff", "--quiet", os.environ["SOURCE_CHECKPOINT"], "HEAD", "--", "codex-rs") == b""
+          assert len({r["path"] for r in audit["rows"] if not r["classified_categories"]}) == 12
+          sensitive_by_path = defaultdict(list)
+          for category, paths in original["sensitive_overlap_categories"].items():
+              for p in paths:
+                  sensitive_by_path[p].append(category)
+          for row in audit["rows"]:
+              assert sorted(row["classified_categories"]) == sorted(sensitive_by_path[row["path"]]), row["path"]
+
+          upstream_only = new - fork
+          fork_only = fork - new
+          u_exceptions = sorted(p for p in upstream_only if integrated.get(p) != upstream.get(p))
+          f_exceptions = sorted(p for p in fork_only if integrated.get(p) != prod.get(p))
+          assert u_exceptions == sorted(x["path"] for x in audit["upstream_only_exceptions"])
+          assert f_exceptions == sorted(x["path"] for x in audit["fork_only_exceptions"])
+          assert len(u_exceptions) == 3 and len(f_exceptions) == 6
+          source_extras = [p for p in all_paths if p not in fork and p not in new and integrated.get(p) != upstream.get(p)]
+          assert all(p.startswith("docs/codexdd-0.4.3-") or p.startswith(".github/workflows/codexdd-043-") for p in source_extras)
+          print("PASS: 136 Git-blobs, 22 original conflict identities and 124+12 sensitive classifications")
+          print("PASS: 2,368 upstream-only target matches, 137 fork-only preservation matches")
+          print("PASS: no new isolated runtime change or unauthorized semantic/native approvals")
+          PY
+
       - name: Assert no Git changes were produced
         shell: bash
         run: |
