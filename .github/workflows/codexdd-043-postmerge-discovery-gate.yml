@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 20
     env:
       PROD_SHA: "16fdc9826e800ebabab920eadd8e1d976d2f645f"
-      SOURCE_CHECKPOINT: "544a29516353cb1e416b6097c46d8c83b23c7eb9"
+      SOURCE_CHECKPOINT: "32ab09a141d626df5851965a557e0dce877ac2ec"
       RUN_ID: "38155514359"
       TAG: "rust-v0.162.0"
       TARGET_SHA: "c1382380de69521303b416720a52f42d51af6248"
@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Verify source remained isolated and rebased only through approved production tooling
+      - name: Verify frozen postformat source and approved production ancestry
         shell: bash
         run: |
           set -euo pipefail

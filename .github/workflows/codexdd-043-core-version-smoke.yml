@@ -35,8 +35,8 @@ jobs:
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
           git merge-base --is-ancestor 16fdc9826e800ebabab920eadd8e1d976d2f645f HEAD
-          git diff --quiet da2924dd6845bc7f8da46ac62c957300c80fcd2d HEAD -- codex-rs
-          echo "Reanchored nonproduction source: $GITHUB_SHA"
+          git diff --quiet 32ab09a141d626df5851965a557e0dce877ac2ec HEAD -- codex-rs
+          echo "Postformat frozen nonproduction source: $GITHUB_SHA"
       - name: Configure pinned repository Rust environment
         uses: ./.github/actions/setup-ci
       - name: Use repository Rust toolchain
