@@ -66,6 +66,8 @@ def verify_native_or_promotion_preflight(
     approved_manifest_sha256: str,
     approved_conflicts_sha256: str,
     promotion: bool,
+    production_ref: str = "refs/remotes/origin/dd/astra-policy-v2",
+    source_ref: str = "refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration",
 ) -> str:
     """Return the observed candidate SHA only after all read-only guards pass."""
     current_sha = _git(repo, "rev-parse", "HEAD").decode("ascii").strip()
@@ -96,7 +98,7 @@ def verify_native_or_promotion_preflight(
         expected_source_snapshot_sha=expected_source_sha,
         expected_source_snapshot_tree=expected_source_tree,
     )
-    verify_source_snapshot_git(repo, manifest)
+    verify_source_snapshot_git(repo, manifest, production_ref=production_ref, source_ref=source_ref)
     verify_metadata_only_candidate_git(
         repo,
         manifest,

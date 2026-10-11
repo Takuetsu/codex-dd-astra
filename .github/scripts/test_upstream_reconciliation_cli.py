@@ -100,6 +100,8 @@ class CommandPreflightTests(unittest.TestCase):
             "approved_manifest_sha256": self.approved_manifest_sha,
             "approved_conflicts_sha256": self.approved_conflicts_sha,
             "promotion": False,
+            "production_ref": "refs/heads/dd/astra-policy-v2",
+            "source_ref": "refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration",
         }
         args.update(kwargs)
         return verify_native_or_promotion_preflight(**args)
