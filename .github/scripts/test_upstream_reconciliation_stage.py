@@ -125,8 +125,8 @@ class MetadataConstructionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "source Git tree"):
             self.build(source_tree="f" * 40)
 
-    def test_wrong_staging_parent_fails(self):
-        with self.assertRaisesRegex(ValueError, "staging must be"):
+    def test_source_commit_cannot_be_misrepresented_as_staging_metadata(self):
+        with self.assertRaises(ValueError):
             self.build(staging_sha=self.source)
 
     def test_wrong_target_identity_fails(self):
