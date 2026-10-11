@@ -165,6 +165,10 @@ profile, semantic sign-off or release publication.
 earlier Rust trees, so final CI must bind the source frozen after acceptance,
 rather than falsely claiming an old run validated a new commit.
 
+## Further exact sensitive-overlap source-delta inspection
+
+The [3F.5 twelve-file delta matrix](codexdd-0.4.3-packet-3f-sensitive-upstream-delta.md) compares the original twelve category-empty sensitive overlap paths against official `rust-v0.162.0` by immutable blob and line sequence. It distinguishes actual CodexDD changes from inherited upstream checks and isolates the three mixed diffs needing deliberate semantic attention. This additional review does **not** accept any of the original **136** overlap dispositions, **22** conflict proposals or **six** security domains.
+
 ## Final Git-object inventory and technical review decision gate — 2026-10-11
 
 - [Post-format **136/136 exact Git-object inventory**](codexdd-0.4.3-packet-3f-postformat-136-blob-audit.json) independently verifies current immutable source tree `a0bce7166cccb52e9b4fc8d658e0c08616752e62` at `32ab09a141d626df5851965a557e0dce877ac2ec`: **121** paths match historical review blob SHA, **15** have formatter-only SHA updates, **22** original textual conflict paths remain identifiable and **12** originally uncategorized risk paths are explicitly flagged for supplemental review (not reclassified as accepted).
