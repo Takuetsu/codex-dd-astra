@@ -162,3 +162,10 @@ profile, semantic sign-off or release publication.
 **Owner semantic review remains pending.** CI previously passed against
 earlier Rust trees, so final CI must bind the source frozen after acceptance,
 rather than falsely claiming an old run validated a new commit.
+
+## Final Git-object inventory and technical review decision gate — 2026-10-11
+
+- [Post-format **136/136 exact Git-object inventory**](codexdd-0.4.3-packet-3f-postformat-136-blob-audit.json) independently verifies current immutable source tree `a0bce7166cccb52e9b4fc8d658e0c08616752e62` at `32ab09a141d626df5851965a557e0dce877ac2ec`: **121** paths match historical review blob SHA, **15** have formatter-only SHA updates, **22** original textual conflict paths remain identifiable and **12** originally uncategorized risk paths are explicitly flagged for supplemental review (not reclassified as accepted).
+- [Technical source-semantic evidence and owner decision draft](codexdd-0.4.3-packet-3f-technical-semantic-evidence.md) lists **all 22** ordered conflict strategies and the **six** mandatory security domains, with exact pinned source anchors, existing prior CI/test evidence, and unverified real-Windows behaviors.
+- Windows source findings have newly applicable hosted native compile/focused F2 unit-test evidence [#38158359012](https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158359012), but **no** elevated SSH/non-elevated detached-daemon release sign-off. Native Daniel-CL Rust formatting and v2 receipt fixture were separately observed green; this is **not** a 21-stage candidate receipt.
+- No source-owner semantic acceptance has been recorded; the 136 proposed overlap dispositions, all 22 conflict strategies and six domain review decisions remain **pending**. The immutable source snapshot is ready for an explicit technical review decision, not for automatic candidate publication or PR promotion.
