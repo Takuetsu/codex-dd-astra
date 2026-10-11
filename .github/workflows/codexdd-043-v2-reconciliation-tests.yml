@@ -77,6 +77,47 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/test_upstream_reconciliation_cli.py
+      - name: Verify v1 validator remains byte-exact outside v2 dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          path = "scripts/codexdd-validate-upstream-candidate.ps1"
+          baseline = subprocess.run(
+              ["git", "show", "4828e3b4232781963594cfaaebdc49c5531de8b1:" + path],
+              capture_output=True, text=True, check=True,
+          ).stdout
+          candidate = Path(path).read_text(encoding="utf-8")
+          old_parameters = '    [string]$ManifestPath = ""\n)'
+          new_parameters = (
+              '    [string]$ManifestPath = "",\n\n'
+              '    [string]$ApprovedDiscoveryManifestSha256 = "",\n'
+              '    [string]$ApprovedConflictsSha256 = ""\n)'
+          )
+          start = candidate.find('    if ($manifest.contract_version -eq 2) {')
+          end = candidate.find('    if ($manifest.contract_version -ne 1)', start)
+          if start < 0 or end <= start:
+              raise SystemExit("Missing bounded v2 before fail-closed v1 gate")
+          dispatch = candidate[start:end]
+          required = (
+              'if ($Profile -ne "release")',
+              'ApprovedDiscoveryManifestSha256',
+              'ApprovedConflictsSha256',
+              "codexdd-validate-upstream-candidate-v2.ps1",
+              'exit $LASTEXITCODE',
+          )
+          for guard in required:
+              if guard not in dispatch:
+                  raise SystemExit("Missing v2 branch guard: " + guard)
+          restored = candidate[:start] + candidate[end:]
+          restored = restored.replace(new_parameters, old_parameters, 1)
+          if restored != baseline:
+              raise SystemExit("Existing v1 validator has unreviewed changes")
+          print("Exact v1 validator source preserved; only additive v2 dispatcher present")
+          PY
       - name: Verify existing v1 contract still passes without alterations
         shell: bash
         run: |
