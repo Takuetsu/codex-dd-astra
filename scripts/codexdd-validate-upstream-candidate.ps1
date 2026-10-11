@@ -3,7 +3,10 @@ param(
     [ValidateSet("work-packet", "release")]
     [string]$Profile = "work-packet",
 
-    [string]$ManifestPath = ""
+    [string]$ManifestPath = "",
+
+    [string]$ApprovedDiscoveryManifestSha256 = "",
+    [string]$ApprovedConflictsSha256 = ""
 )
 
 Set-StrictMode -Version Latest
@@ -73,6 +76,18 @@ try {
     $manifest = Get-Content -LiteralPath $resolvedManifestPath -Raw |
         ConvertFrom-Json -ErrorAction Stop
 
+    if ($manifest.contract_version -eq 2) {
+        if ($Profile -ne "release") {
+            throw "Reconciled v2 candidates require native release-profile validation."
+        }
+        if ($ApprovedDiscoveryManifestSha256 -cnotmatch '^[0-9a-f]{64}$' -or
+            $ApprovedConflictsSha256 -cnotmatch '^[0-9a-f]{64}$') {
+            throw "V2 requires independently accepted original discovery digests."
+        }
+        $v2script = Join-Path $PSScriptRoot 'codexdd-validate-upstream-candidate-v2.ps1'
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $v2script -ManifestPath $resolvedManifestPath -ApprovedDiscoveryManifestSha256 $ApprovedDiscoveryManifestSha256 -ApprovedConflictsSha256 $ApprovedConflictsSha256
+        exit $LASTEXITCODE
+    }
     if ($manifest.contract_version -ne 1) {
         throw "Unsupported candidate manifest contract version: $($manifest.contract_version)"
     }
