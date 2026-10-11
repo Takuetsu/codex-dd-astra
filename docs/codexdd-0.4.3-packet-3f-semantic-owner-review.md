@@ -141,3 +141,24 @@ and finally the distinct review PR, production merge and installation gates.
 
 No candidate has been published and no production or Daniel-CL installation
 has been changed by this evidence note.
+
+## Post-format source blob delta and Daniel-CL local checks — 2026-10-11
+
+[The post-rustfmt immutable source-blob delta](codexdd-0.4.3-packet-3f-postformat-source-delta.md)
+binds the current functional Rust source to `32ab09a141d626df5851965a557e0dce877ac2ec`
+(tree `a0bce7166cccb52e9b4fc8d658e0c08616752e62`) after a strictly
+mechanical formatter patch. It lists all **15** overlap blobs that differ
+from the pre-format 136-row historical ledger, including **4 of 22**
+original textual conflicts. Do not use old `reconciled_source` blob IDs
+for those paths when freezing a future v2 sidecar or recording owner review.
+
+The operator separately reported **PASS** on Daniel-CL for the Windows
+validation-outcome fixture, the post-patch `cargo fmt --all -- --check`
+(`FORMAT_EXIT=0`, `FORMAT_HUNKS=0`) and the canonical v2 PowerShell receipt
+fixture. These are useful inexpensive pre-CI Windows checks, **not** the
+full source-build/Windows F2 lifecycle tests, candidate-bound 21-stage
+profile, semantic sign-off or release publication.
+
+**Owner semantic review remains pending.** CI previously passed against
+earlier Rust trees, so final CI must bind the source frozen after acceptance,
+rather than falsely claiming an old run validated a new commit.
