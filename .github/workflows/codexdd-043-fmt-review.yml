@@ -1,0 +1,28 @@
+name: CodexDD 0.4.3 isolated formatting review
+on:
+  push:
+    branches: [dd/codexdd-v0.4.3-upstream-0.162.0-integration]
+    paths: [.github/workflows/codexdd-043-fmt-review.yml]
+permissions:
+  contents: read
+jobs:
+  rustfmt-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
+        with:
+          components: rustfmt
+      - name: Format disposable checkout and display change summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd codex-rs
+          cargo fmt --all 2>/dev/null
+          cd ..
+          git diff --check
+          git diff --stat
+          git diff --no-color -- codex-rs
