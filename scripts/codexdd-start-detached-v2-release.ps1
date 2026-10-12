@@ -57,6 +57,19 @@ $id = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().T
 $runDir = Join-Path $RunRoot (Join-Path $head $id)
 New-Item -ItemType Directory -Path $runDir -Force | Out-Null
 $runDir = [IO.Path]::GetFullPath($runDir)
+# A nested <runDir>\task-temp can exceed Windows AF_UNIX SUN_LEN.
+# Use a distinct short local directory for tempfile-backed test sockets.
+$volumeRoot = [IO.Path]::GetPathRoot($runDir)
+if ($volumeRoot -cnotmatch '^[A-Za-z]:\\$') {
+    throw 'Detached validation requires a local drive for short S4U scratch.'
+}
+$scratchPath = Join-Path $volumeRoot (Join-Path 'ddtmp' $id)
+if ($scratchPath.Length -gt 60 -or (Test-Path -LiteralPath $scratchPath)) {
+    throw 'Unique short S4U scratch path unavailable or exceeds socket length budget.'
+}
+# Allocate outside the candidate checkout; the S4U child must separately
+# prove its own create/write/delete access before running any tests.
+New-Item -ItemType Directory -Path $scratchPath -ErrorAction Stop | Out-Null
 $planPath = Join-Path $runDir 'plan.json'
 $runnerPath = Join-Path $runDir 'runner.ps1'
 $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name
@@ -66,7 +79,7 @@ $plan = [ordered]@{
     ProductionSha=[string]$m.production_sha; Manifest=$manifestPath; ManifestSha256=$manifestHash
     DiscoverySha256=$disc; ConflictsSha256=$conf; Git=$git; Cargo=$cargo; Python=$python
     PowerShell=$psExe; PathPrefix=$pathPrefix; CargoTargetDir=[string]([Environment]::GetEnvironmentVariable('CARGO_TARGET_DIR'))
-    User=$user; RunDir=$runDir
+    User=$user; RunDir=$runDir; ShortTempDir=$scratchPath
 }
 $utf8 = New-Object Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($planPath, (ConvertTo-Json -InputObject $plan -Depth 8), $utf8)
@@ -121,11 +134,14 @@ try {
         $helper=Join-Path $meta.target_directory 'debug\test_stdio_server.exe'
         if (!(Test-Path -LiteralPath $helper -PathType Leaf)) { throw "MCP test helper missing in task context: $helper" }
     } finally { Pop-Location }
-    # Windows S4U logons can inherit a TEMP path whose SQLite files cannot
-    # be opened with their limited batch token. Give BOTH smoke and release
-    # processes a unique, writable, candidate-run-local TEMP/TMP directory.
-    # This directory is outside the git checkout and survives for diagnosis.
-    $scratch=Join-Path $cfg.RunDir 'task-temp'
+    # S4U's inherited profile TEMP caused SQLite permission failures, while
+    # <runDir>\task-temp exceeded Windows AF_UNIX SUN_LEN for a TUI test.
+    # Bind BOTH smoke and release to one short, per-attempt local temp path.
+    $scratch=[IO.Path]::GetFullPath([string]$cfg.ShortTempDir)
+    $expectedScratch=Join-Path ([IO.Path]::GetPathRoot([string]$cfg.RunDir)) (Join-Path 'ddtmp' (Split-Path -Leaf ([string]$cfg.RunDir)))
+    if ($scratch -cne $expectedScratch -or $scratch.Length -gt 60) {
+        throw 'Short S4U scratch identity or socket length budget mismatch.'
+    }
     [IO.Directory]::CreateDirectory($scratch) | Out-Null
     $canary=Join-Path $scratch 'write-probe.tmp'
     [IO.File]::WriteAllText($canary, 'CodexDD SQLite scratch path preflight')
@@ -156,6 +172,26 @@ try {
         if ($ptyExit -ne 0 -or $ptyResult -notmatch '1 passed') {
             throw "CLI ConPTY smoke failed in S4U task (exit $ptyExit); review $ptyLog. Do not launch noninteractive full release."
         }
+        # Stage 19 failed on a too-long AF_UNIX socket path. Exercise the
+        # exact 15-test release-stage selection under S4U in the short TEMP.
+        $tuiLog=Join-Path $cfg.RunDir 'tui-daemon-smoke.log'
+        $savedPreference=$ErrorActionPreference
+        Push-Location -LiteralPath (Join-Path $cfg.Checkout 'codex-rs')
+        try {
+            try {
+                $ErrorActionPreference='Continue'
+                & $cfg.Cargo nextest run --no-fail-fast -p codex-tui --lib daemon_startup_tests *> $tuiLog
+                $tuiExit=$LASTEXITCODE
+            } finally {
+                $ErrorActionPreference=$savedPreference
+            }
+        } finally {
+            Pop-Location
+        }
+        $tuiResult=Get-Content -LiteralPath $tuiLog -Raw -ErrorAction Stop
+        if ($tuiExit -ne 0 -or $tuiResult -notmatch '15 tests run:\s+15 passed,\s+0 skipped') {
+            throw "TUI daemon S4U socket smoke failed (exit $tuiExit); review $tuiLog. Do not launch the 21-stage release."
+        }
         # Oct-12 r3 failed at stage 8 because a batch-logon thread-store
         # test could not open state_5.sqlite in a user-profile temp directory.
         # A complete stage-8 S4U test, with the exact same target + options
@@ -183,7 +219,7 @@ try {
         }
         $status='pass'
         $exitCode=0
-        $detail='Scheduled account, CLI ConPTY and 268/268 thread-store SQLite smoke PASS; no full release stages run'
+        $detail='Scheduled account, CLI ConPTY, 15/15 TUI socket and 268/268 thread-store SQLite smokes PASS; no full release stages run'
     } else {
         $validator=Join-Path $cfg.Checkout 'scripts\codexdd-validate-upstream-candidate-v2.ps1'
         $releaseArguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$validator+'" -ManifestPath "'+
@@ -260,7 +296,7 @@ function New-TaskAction([string]$mode) {
 foreach ($task in @($probeName,$releaseName)) {
     if (Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue) { throw "Task already exists: $task" }
 }
-Register-ScheduledTask -TaskName $probeName -Action (New-TaskAction 'Smoke') -Principal $principal -Settings $settings -Description 'One-shot CodexDD v2 release S4U smoke (no compilation)' | Out-Null
+Register-ScheduledTask -TaskName $probeName -Action (New-TaskAction 'Smoke') -Principal $principal -Settings $settings -Description 'One-shot CodexDD v2 S4U CLI/TUI/SQLite preflight' | Out-Null
 Start-ScheduledTask -TaskName $probeName
 $probeFile=Join-Path $runDir 'smoke-result.json'
 $timeout=[DateTime]::UtcNow.AddMinutes(15)
@@ -274,8 +310,10 @@ if (!(Test-Path -LiteralPath $probeFile -PathType Leaf)) {
 $smoke=Get-Content -LiteralPath $probeFile -Raw | ConvertFrom-Json -ErrorAction Stop
 if ($smoke.status -cne 'pass' -or $smoke.exit_code -ne 0) {
     $storeLog=Join-Path $runDir 'thread-store-smoke.log'
+    $tuiLog=Join-Path $runDir 'tui-daemon-smoke.log'
     $ptyLog=Join-Path $runDir 'cli-pty-smoke.log'
     $failureLog=if (Test-Path -LiteralPath $storeLog -PathType Leaf) { $storeLog }
+        elseif (Test-Path -LiteralPath $tuiLog -PathType Leaf) { $tuiLog }
         elseif (Test-Path -LiteralPath $ptyLog -PathType Leaf) { $ptyLog } else { $null }
     if ($null -ne $failureLog) {
         Write-Host ('CODEXDD_S4U_SMOKE_LOG: '+$failureLog)
@@ -290,6 +328,7 @@ Write-Host 'CODEXDD_DETACHED_RELEASE_STARTED (not a validation PASS)'
 Write-Host ('Task name: '+$releaseName)
 Write-Host ('Candidate: '+$head)
 Write-Host ('Run directory: '+$runDir)
+Write-Host ('Short S4U TEMP/TMP: '+$scratchPath)
 Write-Host ('Status: Get-ScheduledTask -TaskName "'+$releaseName+'"')
 Write-Host ('Result: '+(Join-Path $runDir 'release-result.json'))
 Write-Host ('Log: '+(Join-Path $runDir 'release-stdout.log'))
