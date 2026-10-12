@@ -1,0 +1,56 @@
+{
+  "record_kind": "codexdd_0_4_3_recovery_scaffold_v1",
+  "authority": "read_only_observation_not_promotion_contract",
+  "gate2": {
+    "status": "accepted",
+    "scope": "isolated upstream 0.162.0 conflict reconciliation; no production merge, canonical candidate publication, install, release, or validation waiver",
+    "accepted_date": "2026-10-09"
+  },
+  "production": {
+    "branch": "dd/astra-policy-v2",
+    "sha": "4828e3b4232781963594cfaaebdc49c5531de8b1",
+    "tree": "f486f0b7ec5a909849246ee91f01af098c08421a",
+    "product_version": "0.4.2"
+  },
+  "tracked_upstream": {
+    "tag": "rust-v0.159.2",
+    "tag_object_sha": "8b9fa496bbf2c47aebd62e85a080b9a522a455b5",
+    "peeled_commit_sha": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+    "tree": "406dfdd5c68f303a3a8d04f32b3965b3b0ca0361"
+  },
+  "target_upstream": {
+    "tag": "rust-v0.162.0",
+    "tag_object_sha": "1f3f93473394b620b35580859b7e6864f7a9f948",
+    "peeled_commit_sha": "c1382380de69521303b416720a52f42d51af6248",
+    "tree": "4899ef4940a8bc7fdf7873aa0d3f438085b8163f",
+    "candidate_key": "rust-v0.162.0@c1382380de69521303b416720a52f42d51af6248"
+  },
+  "source_branch": "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+  "canonical_candidate_branch": "automation/upstream-candidate-rust-v0.162.0-c1382380de69",
+  "canonical_candidate_published": false,
+  "discovery": {
+    "run_id": 37960772252,
+    "artifact_id": 11630164177,
+    "artifact_name": "upstream-candidate-rust-v0.162.0-37960772252",
+    "manifest_sha256": "59a9e5fbcace88827dc1edfd38abb0b6b45c8d41c7ff956d7af0ed94e9988ee3",
+    "conflicts_sha256": "c3456c3e93130126f8f6f6bc1366bdafcc0c11835244ba70c31b91a564a450a4",
+    "manifest_state": "blocked_transplant_conflict",
+    "transplant_result": "conflict",
+    "manifest_contract_version": 1,
+    "conflict_count": 22,
+    "customization_paths": 257,
+    "upstream_change_paths": 2507,
+    "overlap_paths": 136,
+    "sensitive_overlap_paths": 124,
+    "ancestry_status": "diverged",
+    "merge_base_sha": "06971ec9aad037d7c32b7466031fbb8b3b407103"
+  },
+  "constraints": [
+    "Immutable original blocked discovery artifact must remain blocked",
+    "Normal upstream-prepare refuses conflicts",
+    "Any future versioned resolution attestation is separate and additional",
+    "Do not create/update canonical candidate without its own accepted publication gate",
+    "No product source edits until 3A ownership and contract prerequisites are scoped",
+    "Refresh production identity and regenerate discovery if production changes"
+  ]
+}

@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
+use std::num::NonZeroUsize;
 use std::path::Path;
 
 use crate::HooksToml;
@@ -183,7 +184,8 @@ pub struct AdaptiveWorkerConfigToml {
 pub struct ConfigToml {
     /// Optional override of model selection.
     pub model: Option<String>,
-
+    /// Default Daybreak preference for new threads and non-interactive turns.
+    pub daybreak: Option<bool>,
     /// Startup-only external authority for the initial adaptive Worker.
     pub adaptive_worker: Option<AdaptiveWorkerConfigToml>,
     /// Review model override used by the `/review` feature.
@@ -600,6 +602,12 @@ pub struct AutoReviewToml {
     pub extra_policy: Option<String>,
     /// Experimental full Guardian prompt template containing the tenant policy placeholder.
     pub experimental_policy_template: Option<String>,
+    /// Experimental replacement for the history-retrieval instructions when history tools
+    /// and Apps are enabled. Omitted or blank values use the built-in prompt.
+    pub experimental_conversation_history_prompt: Option<String>,
+    /// Maximum estimated tokens per Guardian history-tool response, before the standard
+    /// serialization allowance. Defaults to 4,000; stricter parent tool limits still apply.
+    pub conversation_history_max_output_tokens: Option<NonZeroUsize>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, JsonSchema)]
@@ -628,8 +636,27 @@ impl ProjectConfig {
     }
 }
 
+/// Selected microphone inputs. Scalars preserve existing single-channel configuration.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(untagged)]
+pub enum MicrophoneChannels {
+    Single(std::num::NonZeroU16),
+    Multiple(Vec<std::num::NonZeroU16>),
+}
+
+impl MicrophoneChannels {
+    pub fn as_slice(&self) -> &[std::num::NonZeroU16] {
+        match self {
+            Self::Single(channel) => std::slice::from_ref(channel),
+            Self::Multiple(channels) => channels,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RealtimeAudioConfig {
+    /// One-based microphone channels to mix; unset mixes all input channels.
+    pub microphone_channel: Option<MicrophoneChannels>,
     pub microphone: Option<String>,
     pub speaker: Option<String>,
 }
@@ -677,6 +704,8 @@ pub struct RealtimeToml {
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct RealtimeAudioToml {
+    /// One-based microphone channels to mix; unset mixes all input channels.
+    pub microphone_channel: Option<MicrophoneChannels>,
     pub microphone: Option<String>,
     pub speaker: Option<String>,
 }
@@ -1007,6 +1036,38 @@ mod tests {
 
     const WORKSPACE_ID_A: &str = "123e4567-e89b-42d3-a456-426614174000";
     const WORKSPACE_ID_B: &str = "123e4567-e89b-42d3-a456-426614174001";
+
+    #[test]
+    fn adaptive_worker_and_daybreak_settings_deserialize_together() {
+        let cfg: ConfigToml = toml::from_str(
+            r#"
+daybreak = true
+
+[adaptive_worker]
+role = "implementation"
+authorized_scope = "codex-rs/config"
+"#,
+        )
+        .expect("upstream and CodexDD settings must be supported together");
+        assert_eq!(cfg.daybreak, Some(true));
+        let worker = cfg
+            .adaptive_worker
+            .expect("Worker authority must be retained");
+        assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
+        assert_eq!(worker.authorized_scope.as_deref(), Some("codex-rs/config"));
+    }
+
+    #[test]
+    fn adaptive_worker_rejects_unrecognized_role() {
+        let err = toml::from_str::<ConfigToml>(
+            r#"
+[adaptive_worker]
+role = "administrator"
+"#,
+        )
+        .expect_err("external Worker role must be explicitly enumerated");
+        assert!(err.to_string().contains("administrator"));
+    }
 
     #[test]
     fn sandbox_mode_uses_executor_platform_and_sandbox_level() {

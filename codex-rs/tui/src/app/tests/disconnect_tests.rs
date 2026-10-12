@@ -208,12 +208,8 @@ async fn disconnected_command_center_keeps_input_and_blocks_actions() -> Result<
     let view = app.agents_overview_view(Vec::new(), /*selected_thread_id*/ None);
     app.chat_widget.show_bottom_pane_view(Box::new(view));
     let mut tui = crate::tui::test_support::make_test_tui()?;
-    app.handle_tui_event(
-        &mut tui,
-        &mut session,
-        TuiEvent::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
-    )
-    .await?;
+    app.handle_tui_event(&mut tui, &mut session, TuiEvent::Key(KeyCode::F(3).into()))
+        .await?;
     app.handle_tui_event(
         &mut tui,
         &mut session,
@@ -231,6 +227,7 @@ async fn disconnected_command_center_keeps_input_and_blocks_actions() -> Result<
         KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE),
         KeyEvent::new(KeyCode::Char('w'), KeyModifiers::NONE),
         KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE),
+        KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE),
     ] {
         app.handle_tui_event(&mut tui, &mut session, TuiEvent::Key(key))
             .await?;
@@ -247,6 +244,7 @@ async fn disconnected_command_center_keeps_input_and_blocks_actions() -> Result<
             AppEvent::NewAgentsOverviewSession { .. }
                 | AppEvent::NewAgentsOverviewWorktree { .. }
                 | AppEvent::OpenResumePicker
+                | AppEvent::ForkAgentsOverviewThread { .. }
         ))
     );
     assert!(app.chat_widget.has_active_view());
@@ -331,6 +329,7 @@ where
             "model/list" => Some(json!({"result": {"data": [], "nextCursor": null}})),
             "collaborationMode/list" => Some(json!({"result": {"data": []}})),
             "configRequirements/read" => Some(json!({"result": {"requirements": null}})),
+            "config/read" => Some(json!({"error": {"code": -32601, "message": "unsupported"}})),
             _ => respond(request).await,
         };
         let Some(mut response) = response else {
@@ -375,6 +374,7 @@ async fn lost_initial_thread_reply_keeps_startup_draft_offline() -> Result<()> {
             ThreadParamsMode::Remote,
             /*remote_cwd_override*/ None,
             session.thread_tool_transport(),
+            crate::app_server_session::StartupLaunchChoices::default(),
         )
         .await;
         let mut tui = crate::tui::test_support::make_test_tui()?;

@@ -23,7 +23,7 @@ fn bedrock_model_presets() -> Vec<ModelPreset> {
 }
 
 #[test]
-fn codexdd_adaptive_families_match_0159_catalog_and_reasoning_support() {
+fn codexdd_adaptive_families_match_0162_catalog_and_reasoning_support() {
     use crate::adaptive_policy::AdaptiveFamily;
     use codex_protocol::openai_models::ReasoningEffort;
 
@@ -41,6 +41,15 @@ fn codexdd_adaptive_families_match_0159_catalog_and_reasoning_support() {
         (
             AdaptiveFamily::Sol,
             "gpt-6-sol",
+            &[
+                ReasoningEffort::Low,
+                ReasoningEffort::Medium,
+                ReasoningEffort::High,
+            ],
+        ),
+        (
+            AdaptiveFamily::Sol61,
+            "gpt-6.1-sol",
             &[
                 ReasoningEffort::Low,
                 ReasoningEffort::Medium,
@@ -70,7 +79,7 @@ fn codexdd_adaptive_families_match_0159_catalog_and_reasoning_support() {
             .iter()
             .find(|preset| preset.model == *expected_model)
             .unwrap_or_else(|| {
-                panic!("missing CodexDD model {expected_model} from 0.159.2 catalog")
+                panic!("missing CodexDD model {expected_model} from 0.162.0 integration catalog")
             });
         assert!(
             preset.show_in_picker,
@@ -91,7 +100,12 @@ fn codexdd_adaptive_families_match_0159_catalog_and_reasoning_support() {
     assert_eq!(
         AdaptiveFamily::Sol.model(),
         "gpt-6-sol",
-        "0.3.14 must not adopt the upstream gpt-6.1-sol family during this sync"
+        "legacy Sol and GPT-6.1 Sol are distinct routes during this upstream sync"
+    );
+    assert_eq!(
+        AdaptiveFamily::Sol61.model(),
+        "gpt-6.1-sol",
+        "0.4.3 must retain the GPT-6.1 Sol family established before upstream integration"
     );
 }
 
@@ -512,6 +526,7 @@ async fn accepted_model_migration_persists_target_default_reasoning_effort() -> 
         let app_event_tx = AppEventSender::new(tx_raw);
         apply_accepted_model_migration(
             &mut config,
+            &mut crate::app_server_session::StartupLaunchChoices::default(),
             &app_event_tx,
             current_model,
             upgrade.id,

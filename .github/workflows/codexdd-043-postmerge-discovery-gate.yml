@@ -1,0 +1,236 @@
+# Read-only CodexDD 0.4.3 original blocked discovery binding after PR #50.
+# This is NOT v2 semantic acceptance, candidate publication, a release receipt or approval.
+name: CodexDD 0.4.3 postmerge discovery evidence
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-postmerge-discovery-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  immutable-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PROD_SHA: "16fdc9826e800ebabab920eadd8e1d976d2f645f"
+      SOURCE_CHECKPOINT: "8fd46fbd52fd6bb98b17682bf80ceeea3504a175"
+      RUN_ID: "38155514359"
+      TAG: "rust-v0.162.0"
+      TARGET_SHA: "c1382380de69521303b416720a52f42d51af6248"
+      MANIFEST_DIGEST: "3286752a1f6c31dd2b4f0f9fcb0ccadb34bcf004e3bf686a8811c2dd2ff8ebb3"
+      CONFLICTS_DIGEST: "c3456c3e93130126f8f6f6bc1366bdafcc0c11835244ba70c31b91a564a450a4"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout current isolated source, no stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify frozen postformat source and approved production ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote --heads origin refs/heads/dd/astra-policy-v2 | cut -f1)" = "$PROD_SHA"
+          git merge-base --is-ancestor "$PROD_SHA" HEAD
+          git merge-base --is-ancestor "$SOURCE_CHECKPOINT" HEAD
+          git diff --quiet "$SOURCE_CHECKPOINT" HEAD -- codex-rs
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = "$TAG"
+
+      - name: Verify original successful discovery run is pinned to approved production
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq \
+            '[.name,.event,.head_branch,.head_sha,.conclusion] | @tsv' \
+            | grep -Fx "upstream-codex-discovery"$'\t'"workflow_dispatch"$'\t'"dd/astra-policy-v2"$'\t'"$PROD_SHA"$'\t'"success"
+
+      - name: Verify official upstream annotated tag objects and exact Git trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          for identity in \
+            'rust-v0.159.2:8b9fa496bbf2c47aebd62e85a080b9a522a455b5:ff6aec96948b70d94983af2641a6b67c94faeff5:406dfdd5c68f303a3a8d04f32b3965b3b0ca0361' \
+            'rust-v0.162.0:1f3f93473394b620b35580859b7e6864f7a9f948:c1382380de69521303b416720a52f42d51af6248:4899ef4940a8bc7fdf7873aa0d3f438085b8163f'; do
+            IFS=':' read -r tag object_sha peeled_sha tree_sha <<< "$identity"
+            ref_object="$(gh api "repos/openai/codex/git/ref/tags/$tag" --jq '.object.sha')"
+            ref_type="$(gh api "repos/openai/codex/git/ref/tags/$tag" --jq '.object.type')"
+            test "$ref_type" = 'tag'
+            test "$ref_object" = "$object_sha"
+            actual_tag="$(gh api "repos/openai/codex/git/tags/$object_sha" --jq '.tag')"
+            actual_peeled="$(gh api "repos/openai/codex/git/tags/$object_sha" --jq '.object.sha')"
+            actual_type="$(gh api "repos/openai/codex/git/tags/$object_sha" --jq '.object.type')"
+            actual_tree="$(gh api "repos/openai/codex/git/commits/$peeled_sha" --jq '.tree.sha')"
+            test "$actual_tag" = "$tag"
+            test "$actual_type" = 'commit'
+            test "$actual_peeled" = "$peeled_sha"
+            test "$actual_tree" = "$tree_sha"
+            echo "Canonical official annotated tag, peeled commit and source tree verified: $tag"
+          done
+
+      - name: Download and hash the exact original blocked discovery artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/original"
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "upstream-candidate-rust-v0.162.0-$RUN_ID" \
+            --dir "$RUNNER_TEMP/original"
+          test -f "$RUNNER_TEMP/original/manifest.json"
+          test -f "$RUNNER_TEMP/original/transplant-conflicts.txt"
+          printf '%s  %s\n' "$MANIFEST_DIGEST" "$RUNNER_TEMP/original/manifest.json" | sha256sum --check --status
+          printf '%s  %s\n' "$CONFLICTS_DIGEST" "$RUNNER_TEMP/original/transplant-conflicts.txt" | sha256sum --check --status
+
+      - name: Crosscheck blocked original and complete historical 136-path ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"]) / "original"
+          manifest = json.loads((root / "manifest.json").read_bytes())
+          conflict_paths = (root / "transplant-conflicts.txt").read_text("utf-8").splitlines()
+          history = json.loads(Path("docs/codexdd-0.4.3-packet-3a3-overlap-ownership.json").read_bytes())
+          assert type(manifest.get("contract_version")) is int and manifest["contract_version"] == 1
+          assert manifest["state"] == "blocked_transplant_conflict"
+          assert manifest["transplant_dry_run"] == "conflict"
+          assert manifest["production_sha"] == os.environ["PROD_SHA"]
+          assert manifest["production_tree"] == "76ce3087f8808dc57ed3db809ea0b919076e5f65"
+          assert manifest["target_upstream_tag"] == os.environ["TAG"]
+          assert manifest["target_upstream_sha"] == os.environ["TARGET_SHA"]
+          assert manifest["codexdd_product_version"] == "0.4.2"
+          assert manifest["overlap_path_count"] == 136
+          assert len(manifest["overlap_paths"]) == len(set(manifest["overlap_paths"])) == 136
+          assert len(conflict_paths) == len(set(conflict_paths)) == 22
+          assert set(conflict_paths).issubset(set(manifest["overlap_paths"]))
+          assert len(history["rows"]) == 136
+          assert [row["path"] for row in history["rows"]] == manifest["overlap_paths"]
+          assert history["conflict_paths_in_original_order"] == conflict_paths
+          overlap_digest = hashlib.sha256("\n".join(manifest["overlap_paths"]).encode("utf-8")).hexdigest()
+          assert overlap_digest == history["overlap_paths_sha256"]
+          assert history["original_conflict_report_sha256"] == os.environ["CONFLICTS_DIGEST"]
+          assert history["production_sha"] == "4828e3b4232781963594cfaaebdc49c5531de8b1"
+          assert all(row.get("packet_owner") and row.get("resolution_status") for row in history["rows"])
+          print("PASS: fresh original blocked discovery, 136 ordered overlaps, 22 ordered conflicts, stable historical ownership")
+          print("PASS: original manifest SHA-256", os.environ["MANIFEST_DIGEST"])
+          print("PASS: original conflicts SHA-256", os.environ["CONFLICTS_DIGEST"])
+          print("No v2 attestation, candidate, release receipt or semantic acceptance generated.")
+          PY
+
+      - name: Verify full 136-path Git blob and original-classification review ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add audited-upstream https://github.com/openai/codex.git
+          git fetch --no-tags --filter=blob:none --depth=1 audited-upstream \
+            refs/tags/rust-v0.159.2:refs/tags/codexdd-audit-rust-v0.159.2 \
+            refs/tags/rust-v0.162.0:refs/tags/codexdd-audit-rust-v0.162.0
+          test "$(git rev-parse 'refs/tags/codexdd-audit-rust-v0.159.2^{commit}')" = 'ff6aec96948b70d94983af2641a6b67c94faeff5'
+          test "$(git rev-parse 'refs/tags/codexdd-audit-rust-v0.162.0^{commit}')" = "$TARGET_SHA"
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from collections import defaultdict
+          from pathlib import Path
+
+          audit = json.loads(Path("docs/codexdd-0.4.3-packet-3f-source-object-review.json").read_bytes())
+          original = json.loads((Path(os.environ["RUNNER_TEMP"]) / "original" / "manifest.json").read_bytes())
+          history = json.loads(Path("docs/codexdd-0.4.3-packet-3a3-overlap-ownership.json").read_bytes())
+          assert audit["authority"] == "READ_ONLY_HASH_COMPARISON_NOT_OWNER_SEMANTIC_ACCEPTANCE_OR_NATIVE_RELEASE"
+          assert audit["history_provenance"]["run_id"] == int(os.environ["RUN_ID"])
+          assert audit["history_provenance"]["manifest_sha256"] == os.environ["MANIFEST_DIGEST"]
+          assert audit["history_provenance"]["conflicts_sha256"] == os.environ["CONFLICTS_DIGEST"]
+          assert audit["identities"]["new_prod"]["commit_sha"] == os.environ["PROD_SHA"]
+          assert audit["identities"]["integrated"]["commit_sha"] == "2e70b04e1c80b5d9d2ef9ae67a3c9a7e902e63ff"
+          assert len(audit["rows"]) == len(original["overlap_paths"]) == 136
+          assert [r["path"] for r in audit["rows"]] == original["overlap_paths"]
+          assert [r["path"] for r in audit["rows"]] == [r["path"] for r in history["rows"]]
+
+          def git(*args):
+              return subprocess.run(["git", *args], check=True, capture_output=True).stdout
+
+          def tree(commit_sha, expected_tree):
+              assert git("rev-parse", f"{commit_sha}^{{tree}}").decode().strip() == expected_tree
+              result = {}
+              for entry in git("ls-tree", "--full-tree", "-r", "-z", commit_sha).split(b"\0"):
+                  if not entry:
+                      continue
+                  meta, pathname = entry.split(b"\t", 1)
+                  mode, kind, blob = meta.decode().split()
+                  result[pathname.decode("utf-8")] = (mode, blob)
+              return result
+
+          ids = audit["identities"]
+          inventories = {name: tree(fields["commit_sha"], fields["tree_sha"])
+                         for name, fields in ids.items()}
+          old, prod, upstream, integrated = (
+              inventories["old_up"], inventories["new_prod"],
+              inventories["target"], inventories["integrated"],
+          )
+
+          all_paths = set().union(*(set(d) for d in inventories.values()))
+          def delta(a, b):
+              return {p for p in all_paths if a.get(p) != b.get(p)}
+          fork, new = delta(old, prod), delta(old, upstream)
+          overlaps = sorted(fork & new)
+          assert overlaps == original["overlap_paths"]
+          assert len(fork) == 279 and len(new) == 2507 and len(overlaps) == 136
+          assert len(audit["rows"]) == 136 and audit["summary"]["original_textual_conflicts"] == 22
+          for row in audit["rows"]:
+              p = row["path"]
+              for name, label in (
+                  ("old_up", "tracked_upstream"),
+                  ("old_prod", "pretooling_production"),
+                  ("new_prod", "current_production"),
+                  ("target", "target_upstream"),
+                  ("integrated", "reconciled_source"),
+              ):
+                  actual = inventories[name].get(p)
+                  assert row["git_blob_ids"][label] == (actual[1] if actual else None), (p, name)
+              assert row["semantic_review_accepted"] is False
+              assert row["native_windows_release_accepted"] is False
+          assert git("diff", "--quiet", os.environ["SOURCE_CHECKPOINT"], "HEAD", "--", "codex-rs") == b""
+          assert len({r["path"] for r in audit["rows"] if not r["classified_categories"]}) == 12
+          sensitive_by_path = defaultdict(list)
+          for category, paths in original["sensitive_overlap_categories"].items():
+              for p in paths:
+                  sensitive_by_path[p].append(category)
+          for row in audit["rows"]:
+              assert sorted(row["classified_categories"]) == sorted(sensitive_by_path[row["path"]]), row["path"]
+
+          upstream_only = new - fork
+          fork_only = fork - new
+          u_exceptions = sorted(p for p in upstream_only if integrated.get(p) != upstream.get(p))
+          f_exceptions = sorted(p for p in fork_only if integrated.get(p) != prod.get(p))
+          assert u_exceptions == sorted(x["path"] for x in audit["upstream_only_exceptions"])
+          assert f_exceptions == sorted(x["path"] for x in audit["fork_only_exceptions"])
+          assert len(u_exceptions) == 3 and len(f_exceptions) == 6
+          source_extras = [p for p in all_paths if p not in fork and p not in new and integrated.get(p) != upstream.get(p)]
+          assert all(p.startswith("docs/codexdd-0.4.3-") or p.startswith(".github/workflows/codexdd-043-") for p in source_extras)
+          print("PASS: 136 Git-blobs, 22 original conflict identities and 124+12 sensitive classifications")
+          print("PASS: 2,368 upstream-only target matches, 137 fork-only preservation matches")
+          print("PASS: no new isolated runtime change or unauthorized semantic/native approvals")
+          PY
+
+      - name: Assert no Git changes were produced
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          echo "Read-only identity gate PASS. No promotion or publication attempted."

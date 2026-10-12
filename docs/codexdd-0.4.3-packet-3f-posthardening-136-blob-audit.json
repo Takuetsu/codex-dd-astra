@@ -1,0 +1,3545 @@
+{
+  "record_type": "codexdd_0_4_3_posthardening_136_overlap_git_object_inventory_v1",
+  "authority": "TRANSITIVE_PINNED_GIT_OBJECT_COMPARISON_ONLY_NOT_SEMANTIC_OWNER_APPROVAL_OR_NATIVE_RELEASE",
+  "source_snapshot": {
+    "branch": "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+    "commit_sha": "343be968e5c10b5703f95517eb6ed4be955f4f91",
+    "tree_sha": "4f58649164ea5ffcfa782b8c9075d68eafe5db65",
+    "branch_head_at_audit": "d537ebf6b1fd492c6ee65ccc28422df93d5ed586"
+  },
+  "prior_verified_source_snapshot": {
+    "branch": "dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+    "commit_sha": "32ab09a141d626df5851965a557e0dce877ac2ec",
+    "tree_sha": "a0bce7166cccb52e9b4fc8d658e0c08616752e62"
+  },
+  "prior_inventory": {
+    "path": "docs/codexdd-0.4.3-packet-3f-postformat-136-blob-audit.json",
+    "git_blob_sha": "7a41dbcbaf2e686b886bb4efe55fd3d4ef23b88a"
+  },
+  "verification": {
+    "method": "Exact GitHub compare between prior audited source commit and current documentation branch head, complete 13-file result; independently fetched changed source and test Git blobs; inherited unmodified 135 Git-object IDs from pinned previously verified 136-path inventory. No unaccounted runtime diff in these 11 commits.",
+    "compare_url": "https://github.com/Takuetsu/codex-dd-astra/compare/32ab09a141d626df5851965a557e0dce877ac2ec...d537ebf6b1fd492c6ee65ccc28422df93d5ed586",
+    "compare_base": "32ab09a141d626df5851965a557e0dce877ac2ec",
+    "compare_head": "d537ebf6b1fd492c6ee65ccc28422df93d5ed586",
+    "total_git_changed_files": 13,
+    "total_runtime_or_sdk_changed_files": 2,
+    "runtime_or_sdk_changed_paths": [
+      "codex-rs/external-agent-migration/src/sessions/append.rs",
+      "codex-rs/external-agent-migration/src/sessions/append_tests.rs"
+    ],
+    "nonoverlap_test_originally_exact_upstream": true,
+    "nonoverlap_test_original_source_blob_sha": "81f3973f799c563715f088145123a1c4a1a5267d",
+    "nonoverlap_test_official_upstream_blob_sha": "81f3973f799c563715f088145123a1c4a1a5267d",
+    "nonoverlap_test_current_blob_sha": "3c4d1f4a86582aab173eef6c3ff2e286953f28f0",
+    "source_checksum_validation": "Git blob identity and full diff only; no new complete standalone CI Git audit dispatched"
+  },
+  "original_discovery": {
+    "run_id": 38155514359,
+    "manifest_sha256": "3286752a1f6c31dd2b4f0f9fcb0ccadb34bcf004e3bf686a8811c2dd2ff8ebb3",
+    "conflicts_sha256": "c3456c3e93130126f8f6f6bc1366bdafcc0c11835244ba70c31b91a564a450a4"
+  },
+  "counts": {
+    "original_overlap_paths": 136,
+    "prior_verified_overlap_blobs_unchanged": 135,
+    "changed_overlap_paths": 1,
+    "prior_historical_ledger_blob_matches": 120,
+    "original_formatter_only_blob_deltas": 15,
+    "newly_hardened_blob_deltas": 1,
+    "original_textual_conflicts": 22,
+    "additional_original_classifier_sensitive_blind_spots": 12,
+    "upstream_only_exception_prior": 3,
+    "upstream_only_exception_current": 4,
+    "fork_only_exception_count": 6,
+    "semantic_owner_accepted": 0,
+    "native_release_accepted": 0
+  },
+  "added_upstream_only_exception": {
+    "path": "codex-rs/external-agent-migration/src/sessions/append_tests.rs",
+    "original_target_sha": "81f3973f799c563715f088145123a1c4a1a5267d",
+    "current_source_sha": "3c4d1f4a86582aab173eef6c3ff2e286953f28f0",
+    "reason": "Source-specific fail-closed imported WorkflowState regression; original upstream file matched prior integration before this test"
+  },
+  "existing_upstream_only_exception_paths": [
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
+    "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap",
+    "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_remote_server.snap"
+  ],
+  "local_validation": {
+    "observation_date": "2026-10-11",
+    "host": "Daniel-CL",
+    "checkout": "E:\\codexdd-043-validation",
+    "operator_screenshot_observed": true,
+    "test_command": "cargo test --locked -p codex-external-agent-migration --lib append::tests -- --nocapture",
+    "filter": "sessions::append::tests",
+    "test_result": "3 passed; 0 failed; 0 ignored; 0 measured; 162 filtered out",
+    "compilation_duration": "10m 39s",
+    "format_check": "PASS inferred from success of provided stop-on-failure sequence; not independently printed in screenshot",
+    "screenshot_contains_head_sha": false,
+    "native_test_receipt_candidate_bound": false,
+    "final_source_ci_status": "NOT_RUN_AFTER_HARDENING",
+    "semantic_owner_acceptance": false,
+    "final_windows_21_stage_profile": false
+  },
+  "source_review_scope_note": "136 original overlaps and 22 textual conflicts remain unmodified in membership/ordering. The upstream-only test change is a fourth deliberate deviation. Earlier passing cross-platform CI applies to prior source snapshots, not the new source.",
+  "rows": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "owner_packet": "3E.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "716fcca85a3cd03f44647ffab051aed34bd9c95f",
+      "historical_review_blob_sha": "716fcca85a3cd03f44647ffab051aed34bd9c95f",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "build_release_ci"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3e2-build-evidence.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015689709",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "716fcca85a3cd03f44647ffab051aed34bd9c95f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "owner_packet": "3E.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "98a0b8273de93d649aaa5f25e53f4d76c729f8d5",
+      "historical_review_blob_sha": "98a0b8273de93d649aaa5f25e53f4d76c729f8d5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "build_release_ci"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3e2-build-evidence.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38015689709",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "98a0b8273de93d649aaa5f25e53f4d76c729f8d5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows.rs",
+      "owner_packet": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "1cc1889712a5daa85642739bc9d17869967f8ac5",
+      "historical_review_blob_sha": "1cc1889712a5daa85642739bc9d17869967f8ac5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "windows_privilege",
+        "daemon_lifecycle"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md",
+      "prior_area_level_tests_not_source_specific": [],
+      "focused_native_windows_test_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158359012",
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "1cc1889712a5daa85642739bc9d17869967f8ac5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "66cbaf83bc698641dd858de643a09bbfc8b21495",
+      "historical_review_blob_sha": "66cbaf83bc698641dd858de643a09bbfc8b21495",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "windows_privilege",
+        "daemon_lifecycle"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "66cbaf83bc698641dd858de643a09bbfc8b21495",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/lib.rs",
+      "owner_packet": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "bc3cf057bc8b39dfec1e67dfd4fb0a736f41a61f",
+      "historical_review_blob_sha": "bc3cf057bc8b39dfec1e67dfd4fb0a736f41a61f",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "windows_privilege",
+        "daemon_lifecycle"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md",
+      "prior_area_level_tests_not_source_specific": [],
+      "focused_native_windows_test_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158359012",
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "bc3cf057bc8b39dfec1e67dfd4fb0a736f41a61f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "ade3dbd6fa3698be5c6f54b070c74be093e517dc",
+      "historical_review_blob_sha": "ade3dbd6fa3698be5c6f54b070c74be093e517dc",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "ade3dbd6fa3698be5c6f54b070c74be093e517dc",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "d1cc19b7cfcb16d3684589eec2cf4870e21aa78c",
+      "historical_review_blob_sha": "d1cc19b7cfcb16d3684589eec2cf4870e21aa78c",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "d1cc19b7cfcb16d3684589eec2cf4870e21aa78c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "775354e0ae6e0d81aad038625f16c7e1675ce10f",
+      "historical_review_blob_sha": "775354e0ae6e0d81aad038625f16c7e1675ce10f",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "775354e0ae6e0d81aad038625f16c7e1675ce10f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e123a5131aecd33e574b1fcd87763176ae4af5ec",
+      "historical_review_blob_sha": "e123a5131aecd33e574b1fcd87763176ae4af5ec",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e123a5131aecd33e574b1fcd87763176ae4af5ec",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "owner_packet": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "94bf97c4c9ec45371794d37d49864542967be50d",
+      "historical_review_blob_sha": "94bf97c4c9ec45371794d37d49864542967be50d",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": "generator_rebuilt",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "94bf97c4c9ec45371794d37d49864542967be50d",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "owner_packet": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "6b29934a6fa191e695c8c580a25fac34b92edcc5",
+      "historical_review_blob_sha": "6b29934a6fa191e695c8c580a25fac34b92edcc5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": "generator_rebuilt",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "6b29934a6fa191e695c8c580a25fac34b92edcc5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "owner_packet": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "d396d4096bfa66dda6aa0cbdab1099ebd6763d23",
+      "historical_review_blob_sha": "d396d4096bfa66dda6aa0cbdab1099ebd6763d23",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": "generator_rebuilt",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "d396d4096bfa66dda6aa0cbdab1099ebd6763d23",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "owner_packet": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "c239fc7bfa81f75d4725237dcd967d5484a6f8f2",
+      "historical_review_blob_sha": "c239fc7bfa81f75d4725237dcd967d5484a6f8f2",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": "generator_rebuilt",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c239fc7bfa81f75d4725237dcd967d5484a6f8f2",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "owner_packet": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "2c34825523a52c69be6093c7f90e3c1923f6e581",
+      "historical_review_blob_sha": "2c34825523a52c69be6093c7f90e3c1923f6e581",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": "generator_rebuilt",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "2c34825523a52c69be6093c7f90e3c1923f6e581",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "786f961364a86a74347ab8806e3301d4e09d7135",
+      "historical_review_blob_sha": "786f961364a86a74347ab8806e3301d4e09d7135",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "generated_protocol"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "786f961364a86a74347ab8806e3301d4e09d7135",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "82f047ec52f9762e607a8f73db71357ddb3d1ad4",
+      "historical_review_blob_sha": "82f047ec52f9762e607a8f73db71357ddb3d1ad4",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "82f047ec52f9762e607a8f73db71357ddb3d1ad4",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "6941ecc90dc3c364b8029eb420aeb35d413da97f",
+      "historical_review_blob_sha": "6941ecc90dc3c364b8029eb420aeb35d413da97f",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "6941ecc90dc3c364b8029eb420aeb35d413da97f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "2a194e29ded8339caa33cefb66b05a19500d40c2",
+      "historical_review_blob_sha": "2a194e29ded8339caa33cefb66b05a19500d40c2",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "2a194e29ded8339caa33cefb66b05a19500d40c2",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2",
+      "historical_review_blob_sha": "a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "5b646bcb09da65e9752b5f318c9e48aab9b27b36",
+      "historical_review_blob_sha": "5b646bcb09da65e9752b5f318c9e48aab9b27b36",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "5b646bcb09da65e9752b5f318c9e48aab9b27b36",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "65824b0da966df860bcc901d681017545de0227e",
+      "historical_review_blob_sha": "65824b0da966df860bcc901d681017545de0227e",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "65824b0da966df860bcc901d681017545de0227e",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "c4011790aa019b25978cc86fad98d59c4206d88c",
+      "historical_review_blob_sha": "c4011790aa019b25978cc86fad98d59c4206d88c",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c4011790aa019b25978cc86fad98d59c4206d88c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "05256bae425f635997229a3b29b26c5f1e8eee19",
+      "historical_review_blob_sha": "05256bae425f635997229a3b29b26c5f1e8eee19",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "05256bae425f635997229a3b29b26c5f1e8eee19",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "da10d7c0781e81034b872292a280cf31b5a5b9c8",
+      "historical_review_blob_sha": "da10d7c0781e81034b872292a280cf31b5a5b9c8",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "da10d7c0781e81034b872292a280cf31b5a5b9c8",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "8b0825017d7a05793184b98134474a0f03c7c5de",
+      "historical_review_blob_sha": "8b0825017d7a05793184b98134474a0f03c7c5de",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "8b0825017d7a05793184b98134474a0f03c7c5de",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7",
+      "historical_review_blob_sha": "79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "app_server_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "owner_packet": "3D.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "173d95554ec555bd4ea5e04408a95d350f209015",
+      "historical_review_blob_sha": "173d95554ec555bd4ea5e04408a95d350f209015",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "cli_surface",
+        "daemon_lifecycle"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3d2-cli.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "173d95554ec555bd4ea5e04408a95d350f209015",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/cli/tests/daemon_startup.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e55abb91643cc93e0e401e0db851ac8777bc7f9b",
+      "historical_review_blob_sha": "e55abb91643cc93e0e401e0db851ac8777bc7f9b",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "windows_privilege",
+        "daemon_lifecycle"
+      ],
+      "proposed_disposition_unaccepted": "upstream_supersedes",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e55abb91643cc93e0e401e0db851ac8777bc7f9b",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "72f0ad4756d6f4a523bd2ed886be3757343677eb",
+      "historical_review_blob_sha": "373fc325ea968f735777dbcae919aa5a9b2af88b",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "configuration"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "72f0ad4756d6f4a523bd2ed886be3757343677eb",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "7945ce6b8c9d4b7fea174092ff90c4a7a466321b",
+      "historical_review_blob_sha": "7945ce6b8c9d4b7fea174092ff90c4a7a466321b",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "configuration"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "7945ce6b8c9d4b7fea174092ff90c4a7a466321b",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "cd6bf20ea4259d72926835b08dc502fbdf289ff7",
+      "historical_review_blob_sha": "cd6bf20ea4259d72926835b08dc502fbdf289ff7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "worker_lifecycle"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "cd6bf20ea4259d72926835b08dc502fbdf289ff7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a08e2386475b0c4e87d0d79aaccc27efeaff641d",
+      "historical_review_blob_sha": "964cedfe7950b5247cd86f20a89fea60da82e766",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a08e2386475b0c4e87d0d79aaccc27efeaff641d",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
+      "historical_review_blob_sha": "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "24fc487a32cd930f39a3c8137c40790d37e60713",
+      "historical_review_blob_sha": "24fc487a32cd930f39a3c8137c40790d37e60713",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "24fc487a32cd930f39a3c8137c40790d37e60713",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "95327c51bc04000d8eb72fe41c6d3a4da632dff7",
+      "historical_review_blob_sha": "95327c51bc04000d8eb72fe41c6d3a4da632dff7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "95327c51bc04000d8eb72fe41c6d3a4da632dff7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/history_tests.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "c2268ac3c142b8a788afa375f3b832b4c393464a",
+      "historical_review_blob_sha": "c2268ac3c142b8a788afa375f3b832b4c393464a",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c2268ac3c142b8a788afa375f3b832b4c393464a",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "61ae6cecd6573c4d51e2fcad94239e9fda226964",
+      "historical_review_blob_sha": "61ae6cecd6573c4d51e2fcad94239e9fda226964",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "61ae6cecd6573c4d51e2fcad94239e9fda226964",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "58afefe47716a4dce344685974db69b46a6d4d35",
+      "historical_review_blob_sha": "58afefe47716a4dce344685974db69b46a6d4d35",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "58afefe47716a4dce344685974db69b46a6d4d35",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "294d0a4e30e6db5a6a5415ded47305469c9a3af7",
+      "historical_review_blob_sha": "294d0a4e30e6db5a6a5415ded47305469c9a3af7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "294d0a4e30e6db5a6a5415ded47305469c9a3af7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "b1df117534bae52bd4e6dd1ecdbfc75350042f15",
+      "historical_review_blob_sha": "b1df117534bae52bd4e6dd1ecdbfc75350042f15",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "b1df117534bae52bd4e6dd1ecdbfc75350042f15",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "190e23137e6e4d4b097bea98b6b1814adec14720",
+      "historical_review_blob_sha": "190e23137e6e4d4b097bea98b6b1814adec14720",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "190e23137e6e4d4b097bea98b6b1814adec14720",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "ff796b8c877f3e671252d6db885ac968b08e5893",
+      "historical_review_blob_sha": "ff796b8c877f3e671252d6db885ac968b08e5893",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "ff796b8c877f3e671252d6db885ac968b08e5893",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "fe36ae0ae22feca5118d52d0dbee762b06b00c6d",
+      "historical_review_blob_sha": "fe36ae0ae22feca5118d52d0dbee762b06b00c6d",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "fe36ae0ae22feca5118d52d0dbee762b06b00c6d",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "4f039ad37bf9dbd49c585dd5a98e859777fbb1c6",
+      "historical_review_blob_sha": "4f039ad37bf9dbd49c585dd5a98e859777fbb1c6",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "4f039ad37bf9dbd49c585dd5a98e859777fbb1c6",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/mod.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "731da8b70bb1267333e84c406fea242ab830c8d7",
+      "historical_review_blob_sha": "731da8b70bb1267333e84c406fea242ab830c8d7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "731da8b70bb1267333e84c406fea242ab830c8d7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e124897cf6b9ac5db7db713f174f26615d1eadaa",
+      "historical_review_blob_sha": "e124897cf6b9ac5db7db713f174f26615d1eadaa",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e124897cf6b9ac5db7db713f174f26615d1eadaa",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a7e9353da4e397bc49df84521793cc06ae3341de",
+      "historical_review_blob_sha": "a7e9353da4e397bc49df84521793cc06ae3341de",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a7e9353da4e397bc49df84521793cc06ae3341de",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "7ca13db03fef4b0a77df2331a2d6b48b180307a3",
+      "historical_review_blob_sha": "7ca13db03fef4b0a77df2331a2d6b48b180307a3",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "7ca13db03fef4b0a77df2331a2d6b48b180307a3",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/tests/suite/agent_websocket.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "16b42c6a4709adb420b49c79e529266c8cdcb764",
+      "historical_review_blob_sha": "079983f449f017fb3b6247bf4b89e3a7e7b1ffcc",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "trusted_tool_boundary"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "16b42c6a4709adb420b49c79e529266c8cdcb764",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "6021db64243290630dc436c120d26cf428e9294f",
+      "historical_review_blob_sha": "6021db64243290630dc436c120d26cf428e9294f",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "trusted_tool_boundary"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "6021db64243290630dc436c120d26cf428e9294f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "owner_packet": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "02ae9e4f864ad69514f87a8ce3eab35ac6ed0df7",
+      "historical_review_blob_sha": "02ae9e4f864ad69514f87a8ce3eab35ac6ed0df7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "trusted_tool_boundary"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "02ae9e4f864ad69514f87a8ce3eab35ac6ed0df7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/external-agent-migration/src/sessions/append.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "47bc6fb417cfdc1e3415cf5f8f0aa1ea8b44be7b",
+      "historical_review_blob_sha": "4efe3d065c832f11846207a7ec1976efcebc7458",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "worker_lifecycle",
+        "persistence_resume_fork"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "4efe3d065c832f11846207a7ec1976efcebc7458",
+      "posthardening_change_kind": "manual_fail_closed_source_reconciliation",
+      "posthardening_evidence_path": "docs/codexdd-0.4.3-packet-3f-import-workflow-authority.md",
+      "posthardening_source_changed": true
+    },
+    {
+      "path": "codex-rs/history/src/compaction_resume_metadata.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "88abdfa64f97e476147f21e6255b3dfff9e0275c",
+      "historical_review_blob_sha": "88abdfa64f97e476147f21e6255b3dfff9e0275c",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "88abdfa64f97e476147f21e6255b3dfff9e0275c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "6822fa4b7bb5f7c7c2e658e694de4967cc9d7267",
+      "historical_review_blob_sha": "6822fa4b7bb5f7c7c2e658e694de4967cc9d7267",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "6822fa4b7bb5f7c7c2e658e694de4967cc9d7267",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a7eb71676d45219a8689790684e3012a93ed85cf",
+      "historical_review_blob_sha": "a7eb71676d45219a8689790684e3012a93ed85cf",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a7eb71676d45219a8689790684e3012a93ed85cf",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/protocol/src/lib.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "f4c9185e75410919af5d137fa669526658bd80ea",
+      "historical_review_blob_sha": "f4c9185e75410919af5d137fa669526658bd80ea",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "f4c9185e75410919af5d137fa669526658bd80ea",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "5a19125a22aa3ebccc83a91b20996687cdeb76f9",
+      "historical_review_blob_sha": "5a19125a22aa3ebccc83a91b20996687cdeb76f9",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "5a19125a22aa3ebccc83a91b20996687cdeb76f9",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout-trace/src/protocol_event.rs",
+      "owner_packet": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "c7d7a51775430045e358d89f7c4ef61f9d7addf2",
+      "historical_review_blob_sha": "c7d7a51775430045e358d89f7c4ef61f9d7addf2",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "persistence_resume_fork"
+      ],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c7d7a51775430045e358d89f7c4ef61f9d7addf2",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout/src/lib.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e6ac1f613b7b26184373a92bc75ef6b7498b7914",
+      "historical_review_blob_sha": "f9f1d7af740a7a3b57059f8278fea5bef77e00ef",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e6ac1f613b7b26184373a92bc75ef6b7498b7914",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout/src/list.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "6fd7ea78557af50371a488d8a1e4a56b9e077bb7",
+      "historical_review_blob_sha": "6fd7ea78557af50371a488d8a1e4a56b9e077bb7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "6fd7ea78557af50371a488d8a1e4a56b9e077bb7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout/src/persistence_metrics.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "280aecd66fcd11239523afd393c8256c01830bc9",
+      "historical_review_blob_sha": "280aecd66fcd11239523afd393c8256c01830bc9",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "280aecd66fcd11239523afd393c8256c01830bc9",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "84818a2e6dbd70ac46f2a96b34488b5e1a1a1155",
+      "historical_review_blob_sha": "a5d9581b7f3aa2e7716426f62b0a761692a4698b",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "84818a2e6dbd70ac46f2a96b34488b5e1a1a1155",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "5a334771fc6d42a2fd96c6904ebd6c05d66db068",
+      "historical_review_blob_sha": "5a334771fc6d42a2fd96c6904ebd6c05d66db068",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "5a334771fc6d42a2fd96c6904ebd6c05d66db068",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "owner_packet": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "cd928a6a977acbaa4a5be666c6a795ad164f3b33",
+      "historical_review_blob_sha": "cd928a6a977acbaa4a5be666c6a795ad164f3b33",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "cd928a6a977acbaa4a5be666c6a795ad164f3b33",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/state/src/extract.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "3bb6348621bcaeb460301b0453626b9c0735d8eb",
+      "historical_review_blob_sha": "3bb6348621bcaeb460301b0453626b9c0735d8eb",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "3bb6348621bcaeb460301b0453626b9c0735d8eb",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/state/src/runtime/threads.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "4e36e954a700d1d472cd6cab1a2a555fa4f9e9f9",
+      "historical_review_blob_sha": "4e36e954a700d1d472cd6cab1a2a555fa4f9e9f9",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "4e36e954a700d1d472cd6cab1a2a555fa4f9e9f9",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/thread-store/src/local/rollout_migration/canonicalizer.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "f088913775b825ea39121409891b11cd367c5c26",
+      "historical_review_blob_sha": "f088913775b825ea39121409891b11cd367c5c26",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "f088913775b825ea39121409891b11cd367c5c26",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/thread-store/src/thread_metadata_sync.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "75021b779277b1f1efdd111f6f2d1943583609e3",
+      "historical_review_blob_sha": "75021b779277b1f1efdd111f6f2d1943583609e3",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "75021b779277b1f1efdd111f6f2d1943583609e3",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/thread-store/src/types.rs",
+      "owner_packet": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "9a6696b209aebceee3d3976afb7f650bcf31f0ad",
+      "historical_review_blob_sha": "9a6696b209aebceee3d3976afb7f650bcf31f0ad",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292765",
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "9a6696b209aebceee3d3976afb7f650bcf31f0ad",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "b76ee1107fabcc98625fc663c7967e0dc6e906a5",
+      "historical_review_blob_sha": "b76ee1107fabcc98625fc663c7967e0dc6e906a5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "b76ee1107fabcc98625fc663c7967e0dc6e906a5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "521afcee6d57e0adfdb6ffdf89aad77f6bc7c11e",
+      "historical_review_blob_sha": "d4b51fd6c0c56975ffb20a959bdd32ac4a74f192",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "521afcee6d57e0adfdb6ffdf89aad77f6bc7c11e",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/background_requests.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "083a0e8fd4ed3b23ecd1961564844ac93f3f485c",
+      "historical_review_blob_sha": "083a0e8fd4ed3b23ecd1961564844ac93f3f485c",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "083a0e8fd4ed3b23ecd1961564844ac93f3f485c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a4a84eb699475a4042a3e7b038d2cc323e079c48",
+      "historical_review_blob_sha": "a4a84eb699475a4042a3e7b038d2cc323e079c48",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "configuration"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a4a84eb699475a4042a3e7b038d2cc323e079c48",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "86f62f5f80ea9691d96c62ba1151cd87f0c57c1e",
+      "historical_review_blob_sha": "86f62f5f80ea9691d96c62ba1151cd87f0c57c1e",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "86f62f5f80ea9691d96c62ba1151cd87f0c57c1e",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/managed_worktree_creation.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "4c1eac9c91dc015f75fef0ba0a230e22c3b7cfc5",
+      "historical_review_blob_sha": "4c1eac9c91dc015f75fef0ba0a230e22c3b7cfc5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "4c1eac9c91dc015f75fef0ba0a230e22c3b7cfc5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "28dbe32a743e3608225af6cfeb6ae036b30d74bf",
+      "historical_review_blob_sha": "28dbe32a743e3608225af6cfeb6ae036b30d74bf",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "28dbe32a743e3608225af6cfeb6ae036b30d74bf",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "3954842d391ae36715e335aba3ff9117fb630ae1",
+      "historical_review_blob_sha": "3954842d391ae36715e335aba3ff9117fb630ae1",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "3954842d391ae36715e335aba3ff9117fb630ae1",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "86f1afec7ce715799c9fa62859e53f312918d067",
+      "historical_review_blob_sha": "86f1afec7ce715799c9fa62859e53f312918d067",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "86f1afec7ce715799c9fa62859e53f312918d067",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "3007b910d9f155d68faf9f4c2e19346ef1dc848e",
+      "historical_review_blob_sha": "3007b910d9f155d68faf9f4c2e19346ef1dc848e",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "3007b910d9f155d68faf9f4c2e19346ef1dc848e",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "1a1d42c2cb3586e19aa22ec71f8d264d97ef2909",
+      "historical_review_blob_sha": "894a67199c0015527111a6e8f3e5bb2d76635e86",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "1a1d42c2cb3586e19aa22ec71f8d264d97ef2909",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e8506446b855b07a5ae44453c0a730bec627fc5d",
+      "historical_review_blob_sha": "7a156f55f1cdbb1aff2bd4f9e67d41c65146f398",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e8506446b855b07a5ae44453c0a730bec627fc5d",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/model_catalog.rs",
+      "owner_packet": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "7cddcc05f1e90d6c673f412899149b143874196a",
+      "historical_review_blob_sha": "7cddcc05f1e90d6c673f412899149b143874196a",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "adaptive_routing",
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3d1-model-status.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "7cddcc05f1e90d6c673f412899149b143874196a",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "d24946fa30baa9aff93c838b697cfec776e794b0",
+      "historical_review_blob_sha": "d24946fa30baa9aff93c838b697cfec776e794b0",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "upstream_supersedes",
+      "proposed_conflict_strategy_unaccepted": "upstream_supersedes",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "d24946fa30baa9aff93c838b697cfec776e794b0",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
+      "historical_review_blob_sha": "20b61c3f238c5240d8401d7eafa93fdc291ff0f1",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "2202f6cc661d54d6950e517e8f50adc4edb50a88",
+      "historical_review_blob_sha": "2202f6cc661d54d6950e517e8f50adc4edb50a88",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "2202f6cc661d54d6950e517e8f50adc4edb50a88",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "0ac1ba8cd4878e9cb61d412c4e0cb88d629b0398",
+      "historical_review_blob_sha": "0ac1ba8cd4878e9cb61d412c4e0cb88d629b0398",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "0ac1ba8cd4878e9cb61d412c4e0cb88d629b0398",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/turn_submission.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "2a094004581d928204bda120ec5c1cb3d9d5df09",
+      "historical_review_blob_sha": "18f21dee50e072a9fd446113d49324d1f127d23d",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "2a094004581d928204bda120ec5c1cb3d9d5df09",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_events.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "37ad3a1b66923fb65c8d5d681520f7df64c81370",
+      "historical_review_blob_sha": "37ad3a1b66923fb65c8d5d681520f7df64c81370",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "37ad3a1b66923fb65c8d5d681520f7df64c81370",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "8aae877b6724dcad18f1c4243c594736460dc790",
+      "historical_review_blob_sha": "8aae877b6724dcad18f1c4243c594736460dc790",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "8aae877b6724dcad18f1c4243c594736460dc790",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_session_state.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "15ccd2028149d135695927cecbe1eeea6790f0c3",
+      "historical_review_blob_sha": "15ccd2028149d135695927cecbe1eeea6790f0c3",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "15ccd2028149d135695927cecbe1eeea6790f0c3",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app/working_directory.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "9754938a063bd903216c8089b0abaf7817d6636f",
+      "historical_review_blob_sha": "9754938a063bd903216c8089b0abaf7817d6636f",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "9754938a063bd903216c8089b0abaf7817d6636f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "44cd4adbcc90db4f55500d9f10b3bd8e3220364c",
+      "historical_review_blob_sha": "44cd4adbcc90db4f55500d9f10b3bd8e3220364c",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "44cd4adbcc90db4f55500d9f10b3bd8e3220364c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "c95f1d080836e934d83296ebab20b01abf1af5be",
+      "historical_review_blob_sha": "0fc807cf3329083fa1fcd55ec56fdb98802d0d7b",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c95f1d080836e934d83296ebab20b01abf1af5be",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "22e9183f76ed8ea5545836f207b0496315f60509",
+      "historical_review_blob_sha": "8ac2804f130463a4b1d405dbc076e068210a79ed",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "22e9183f76ed8ea5545836f207b0496315f60509",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "037a97a658dc2187d390f049dca96f84c85a3348",
+      "historical_review_blob_sha": "037a97a658dc2187d390f049dca96f84c85a3348",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "037a97a658dc2187d390f049dca96f84c85a3348",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "17e450ef92539e4905e99a1ac6f0e36d40d89635",
+      "historical_review_blob_sha": "17e450ef92539e4905e99a1ac6f0e36d40d89635",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "17e450ef92539e4905e99a1ac6f0e36d40d89635",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "d0e8abc5667e513b233d87f9ad7449ca1cc11fc5",
+      "historical_review_blob_sha": "d0e8abc5667e513b233d87f9ad7449ca1cc11fc5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "d0e8abc5667e513b233d87f9ad7449ca1cc11fc5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e1a042122e0df76b990d4b2f6668de666fe3beab",
+      "historical_review_blob_sha": "e1a042122e0df76b990d4b2f6668de666fe3beab",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e1a042122e0df76b990d4b2f6668de666fe3beab",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "ab181ba6d60317df316bd2fcf70ab2385ef1db16",
+      "historical_review_blob_sha": "ab181ba6d60317df316bd2fcf70ab2385ef1db16",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "ab181ba6d60317df316bd2fcf70ab2385ef1db16",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a0a393269cf36201c43a901f778bf48823d34d9a",
+      "historical_review_blob_sha": "a0a393269cf36201c43a901f778bf48823d34d9a",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a0a393269cf36201c43a901f778bf48823d34d9a",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "c7e06368cf7336bfee8ceaf1ab9ee1913790639a",
+      "historical_review_blob_sha": "c7e06368cf7336bfee8ceaf1ab9ee1913790639a",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c7e06368cf7336bfee8ceaf1ab9ee1913790639a",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/interaction.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "f8ec1053365881baae512dc9b1575032bec99ac6",
+      "historical_review_blob_sha": "f8ec1053365881baae512dc9b1575032bec99ac6",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "f8ec1053365881baae512dc9b1575032bec99ac6",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/misalignment_policy.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "f1dcfc58713ca28006560ad2449fd7c6713f3be5",
+      "historical_review_blob_sha": "f1dcfc58713ca28006560ad2449fd7c6713f3be5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "f1dcfc58713ca28006560ad2449fd7c6713f3be5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "3ab2f3c9725816a332437ce29682b77ba6c3d244",
+      "historical_review_blob_sha": "3ab2f3c9725816a332437ce29682b77ba6c3d244",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "3ab2f3c9725816a332437ce29682b77ba6c3d244",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/rate_limits.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "97efd9994eaa6352564a7b9c8da97b18466de327",
+      "historical_review_blob_sha": "97efd9994eaa6352564a7b9c8da97b18466de327",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "97efd9994eaa6352564a7b9c8da97b18466de327",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "8b079cdb3863f0d613ec1f9eb702c142c6445133",
+      "historical_review_blob_sha": "2c58e0a2d69ad59147f5136593d960117e4ee3b6",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "8b079cdb3863f0d613ec1f9eb702c142c6445133",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "73d7f75b26e5de276be3357a5fda836c24b4090b",
+      "historical_review_blob_sha": "73d7f75b26e5de276be3357a5fda836c24b4090b",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "73d7f75b26e5de276be3357a5fda836c24b4090b",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "3779d5e6c557e3108f32a2ae329fb6a1e684bb10",
+      "historical_review_blob_sha": "3779d5e6c557e3108f32a2ae329fb6a1e684bb10",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "3779d5e6c557e3108f32a2ae329fb6a1e684bb10",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "63d8b4b41cc237167a6c32ace5eb60cb193e4c46",
+      "historical_review_blob_sha": "63d8b4b41cc237167a6c32ace5eb60cb193e4c46",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "63d8b4b41cc237167a6c32ace5eb60cb193e4c46",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "28a23fc322abc198ee684f6132e7384e672538d2",
+      "historical_review_blob_sha": "28a23fc322abc198ee684f6132e7384e672538d2",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "28a23fc322abc198ee684f6132e7384e672538d2",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "8c419bc8d3b1ae418b46a9db1dc3cba640cc8e3a",
+      "historical_review_blob_sha": "8c419bc8d3b1ae418b46a9db1dc3cba640cc8e3a",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "8c419bc8d3b1ae418b46a9db1dc3cba640cc8e3a",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "80a1b2d3022ea6d989b1b25122dfb786106b3c2f",
+      "historical_review_blob_sha": "96e372738867ed81d65d403e747a05f756899cf7",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "80a1b2d3022ea6d989b1b25122dfb786106b3c2f",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/exec_flow.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "09791e45f10afd17ff5f4355f22b10147d66cdc7",
+      "historical_review_blob_sha": "09791e45f10afd17ff5f4355f22b10147d66cdc7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "09791e45f10afd17ff5f4355f22b10147d66cdc7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "f9d994657238fca820e1062e239bb23c51cd2dbe",
+      "historical_review_blob_sha": "f9d994657238fca820e1062e239bb23c51cd2dbe",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "f9d994657238fca820e1062e239bb23c51cd2dbe",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "70cd5dfffc22f6f7ae1bdb66643a21a61c5cdc44",
+      "historical_review_blob_sha": "70cd5dfffc22f6f7ae1bdb66643a21a61c5cdc44",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "70cd5dfffc22f6f7ae1bdb66643a21a61c5cdc44",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/permissions.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "47f1f6a449dda768c86a42b5067c2d7135d7c2bf",
+      "historical_review_blob_sha": "47f1f6a449dda768c86a42b5067c2d7135d7c2bf",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "47f1f6a449dda768c86a42b5067c2d7135d7c2bf",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/plan_mode.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "d732453ad1dec44633188e6717aa85f51a81c7e1",
+      "historical_review_blob_sha": "d732453ad1dec44633188e6717aa85f51a81c7e1",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "d732453ad1dec44633188e6717aa85f51a81c7e1",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "d5405150df0ed218cb347010c9a9d817ba1ff3fc",
+      "historical_review_blob_sha": "d5405150df0ed218cb347010c9a9d817ba1ff3fc",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "d5405150df0ed218cb347010c9a9d817ba1ff3fc",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "0d1f1f28923ca09382c0cb2afc9bcf3b2248dbe9",
+      "historical_review_blob_sha": "1053429a21da072a25bc57b7cbc4cbfeba8b6a13",
+      "postformat_blob_changed": true,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "0d1f1f28923ca09382c0cb2afc9bcf3b2248dbe9",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/worktree_picker_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "3c2587d1ca72e1c2322215cde5563bac16d1d4fe",
+      "historical_review_blob_sha": "3c2587d1ca72e1c2322215cde5563bac16d1d4fe",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "3c2587d1ca72e1c2322215cde5563bac16d1d4fe",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/worktree_picker.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "39ef036b2c687814bf69a96c5e60a7711491fa7a",
+      "historical_review_blob_sha": "39ef036b2c687814bf69a96c5e60a7711491fa7a",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "39ef036b2c687814bf69a96c5e60a7711491fa7a",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "owner_packet": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "2a4c1190086bee4b16f86252ab802bf06e4a0361",
+      "historical_review_blob_sha": "2a4c1190086bee4b16f86252ab802bf06e4a0361",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md",
+      "prior_area_level_tests_not_source_specific": [],
+      "focused_native_windows_test_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158359012",
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "2a4c1190086bee4b16f86252ab802bf06e4a0361",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "f103b69a4629f9d019cd2a39c3823ae29dc646bf",
+      "historical_review_blob_sha": "f103b69a4629f9d019cd2a39c3823ae29dc646bf",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "f103b69a4629f9d019cd2a39c3823ae29dc646bf",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/dynamic_tools_tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "7c1553b412c13573b6e4119f7b96db07e7bd7448",
+      "historical_review_blob_sha": "7c1553b412c13573b6e4119f7b96db07e7bd7448",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "7c1553b412c13573b6e4119f7b96db07e7bd7448",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "owner_packet": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "c09c80cbfcea36a41d839822fe15ea9abb3514b5",
+      "historical_review_blob_sha": "c09c80cbfcea36a41d839822fe15ea9abb3514b5",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "c09c80cbfcea36a41d839822fe15ea9abb3514b5",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "83ad7124e531be410477bd097cde8950bca40ed2",
+      "historical_review_blob_sha": "83ad7124e531be410477bd097cde8950bca40ed2",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "83ad7124e531be410477bd097cde8950bca40ed2",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/session_start.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "7ecd2bd03e94180067d5a8869dd8dbee783f7ec4",
+      "historical_review_blob_sha": "7ecd2bd03e94180067d5a8869dd8dbee783f7ec4",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "7ecd2bd03e94180067d5a8869dd8dbee783f7ec4",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/session_state.rs",
+      "owner_packet": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "e3533e31146d1a5b9d3188079985d2b3767a43c3",
+      "historical_review_blob_sha": "e3533e31146d1a5b9d3188079985d2b3767a43c3",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e3533e31146d1a5b9d3188079985d2b3767a43c3",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "owner_packet": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "edd98b26ffdfba98d095ca6631830f2571928fe7",
+      "historical_review_blob_sha": "edd98b26ffdfba98d095ca6631830f2571928fe7",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "edd98b26ffdfba98d095ca6631830f2571928fe7",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "owner_packet": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "current_source_blob_sha": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
+      "historical_review_blob_sha": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": "manual_merge",
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md",
+      "prior_area_level_tests_not_source_specific": [],
+      "focused_native_windows_test_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38158359012",
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/status/card.rs",
+      "owner_packet": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "348a625eb43bb69f03e28655581485fbdeab6471",
+      "historical_review_blob_sha": "348a625eb43bb69f03e28655581485fbdeab6471",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3d1-model-status.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "348a625eb43bb69f03e28655581485fbdeab6471",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_local_background_server.snap",
+      "owner_packet": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "ac40b38564bd7e2ef76f62cb85c6bdd7e1966ec6",
+      "historical_review_blob_sha": "ac40b38564bd7e2ef76f62cb85c6bdd7e1966ec6",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3d1-model-status.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "ac40b38564bd7e2ef76f62cb85c6bdd7e1966ec6",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_uses_default_reasoning_when_config_empty.snap",
+      "owner_packet": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "101bc983df1bf70b3b24dbeb2d8a282c0f0a370c",
+      "historical_review_blob_sha": "101bc983df1bf70b3b24dbeb2d8a282c0f0a370c",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3d1-model-status.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "101bc983df1bf70b3b24dbeb2d8a282c0f0a370c",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "owner_packet": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "a3091a07c8d8927f7fc8fbeba2ed44434487d1fd",
+      "historical_review_blob_sha": "a3091a07c8d8927f7fc8fbeba2ed44434487d1fd",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "proposed_supplemental_attention_categories": [],
+      "proposed_disposition_unaccepted": "manual_union_review_required",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3d1-model-status.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/38155292769"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "a3091a07c8d8927f7fc8fbeba2ed44434487d1fd",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "b527068e804a5e7bbe697464c331b21424cdafa6",
+      "historical_review_blob_sha": "b527068e804a5e7bbe697464c331b21424cdafa6",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "generated_protocol"
+      ],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "b527068e804a5e7bbe697464c331b21424cdafa6",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/v2_all.py",
+      "owner_packet": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "current_source_blob_sha": "79e2b3a2e3b7620102ab12252efc7fd0a3d2bf81",
+      "historical_review_blob_sha": "79e2b3a2e3b7620102ab12252efc7fd0a3d2bf81",
+      "postformat_blob_changed": false,
+      "original_sensitive_categories": [],
+      "proposed_supplemental_attention_categories": [
+        "generated_protocol"
+      ],
+      "proposed_disposition_unaccepted": "generator_rebuilt",
+      "proposed_conflict_strategy_unaccepted": null,
+      "source_packet": "https://github.com/Takuetsu/codex-dd-astra/blob/544a29516353cb1e416b6097c46d8c83b23c7eb9/docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "prior_area_level_tests_not_source_specific": [
+        "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37979330404"
+      ],
+      "focused_native_windows_test_url": null,
+      "semantic_owner_accepted": false,
+      "native_release_accepted": false,
+      "prehardening_source_blob_sha": "79e2b3a2e3b7620102ab12252efc7fd0a3d2bf81",
+      "posthardening_change_kind": null,
+      "posthardening_evidence_path": null,
+      "posthardening_source_changed": false
+    }
+  ]
+}

@@ -546,6 +546,7 @@ fn completed_turn_with_adaptive_report(turn_id: &str) -> TurnCompletedNotificati
         thread_id: String::new(),
         turn: AppServerTurn {
             id: turn_id.to_string(),
+            root_turn_id: None,
             items: vec![ThreadItem::FunctionCallOutput {
                 id: "adaptive-signal-output".to_string(),
                 name: "report_adaptive_signal".to_string(),
@@ -970,6 +971,7 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
             thread_id: thread_id.to_string(),
             turn: AppServerTurn {
                 id: turn_id.to_string(),
+                root_turn_id: None,
                 items: Vec::new(),
                 items_view: codex_app_server_protocol::TurnItemsView::Full,
                 status: AppServerTurnStatus::Completed,
@@ -1012,6 +1014,7 @@ async fn completed_recon_without_report_output_waits_for_late_complexity_signal(
             thread_id: thread_id.to_string(),
             turn: AppServerTurn {
                 id: turn_id.to_string(),
+                root_turn_id: None,
                 items: Vec::new(),
                 items_view: codex_app_server_protocol::TurnItemsView::Full,
                 status: AppServerTurnStatus::Completed,

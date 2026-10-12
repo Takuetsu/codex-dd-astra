@@ -1,0 +1,180 @@
+# Temporary, read-only 3F executable regression gate, rerun on the post-PR-50 re-anchored source. Nonproduction.
+# Retest after the verified 0.159.2 to 0.162.0 status snapshot expectation correction.
+# Remove after evidence is verified. No generated sources or Cargo.lock may be published.
+name: CodexDD 0.4.3 targeted runtime regressions
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.3-upstream-0.162.0-integration
+    paths:
+      - .github/workflows/codexdd-043-tui-source-smoke.yml
+      - 'codex-rs/tui/src/status/snapshots/**'
+      - 'codex-rs/tui/src/chatwidget/snapshots/**'
+      - codex-rs/tui/src/status/tests.rs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-043-tui-source-smoke
+  cancel-in-progress: false
+
+jobs:
+  tui-source-check:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout isolated integration source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert nonproduction source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          git merge-base --is-ancestor 16fdc9826e800ebabab920eadd8e1d976d2f645f HEAD
+          git diff --quiet 8fd46fbd52fd6bb98b17682bf80ceeea3504a175 HEAD -- codex-rs
+          echo "Postformat frozen TUI source HEAD: $GITHUB_SHA"
+
+      - name: Verify all three 0.162 status snapshot headers before Rust compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("codex-rs/tui/src/status/snapshots")
+          names = (
+              "status_snapshot_uses_default_reasoning_when_config_empty",
+              "status_snapshot_remote_server",
+              "status_snapshot_local_background_server",
+          )
+          for name in names:
+              path = root / f"codex_tui__status__tests__{name}.snap"
+              content = path.read_text(encoding="utf-8")
+              expected = "  >_ OpenAI Codex (v0.162.0)"
+              assert content.count(expected) == 1, f"Stale or missing 0.162.0 header: {path}"
+              assert "  >_ OpenAI Codex (v0.159.2)" not in content, f"Stale 0.159.2 header: {path}"
+              print("Verified 0.162.0 snapshot:", path)
+          PY
+
+      - name: Configure repository build environment
+        uses: ./.github/actions/setup-ci
+
+      - name: Use pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+
+      - name: Use repository-provided verified V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-unknown-linux-gnu
+
+      - name: Compile reconciled TUI regression tests without linking
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo check --locked -p codex-tui --lib --tests
+
+      - name: Compile 0.162 CLI with preserved adaptive launch flags
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo check --locked -p codex-cli --bin codex
+
+      - name: Compile reconciled rollout listing and search
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo check --locked -p codex-rollout --lib
+
+      - name: Run rollout library regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-rollout --lib
+
+      - name: Run adaptive model-family and status snapshot regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib codexdd_adaptive_families_match_0162_catalog_and_reasoning_support
+          cargo test --locked -p codex-tui --lib status_snapshot_uses_default_reasoning_when_config_empty
+
+      - name: Run adaptive pressure and Worker lifecycle regressions
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-tui --lib chatwidget::tests::adaptive_pressure_tests
+          cargo test --locked -p codex-tui --lib app::tests::session_lifecycle_requests
+
+      - name: Exercise remaining TUI regressions without hiding subsequent failures
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -uo pipefail
+          failed=0
+          filters=(
+            chatwidget::tests::adaptive_effort_tests
+            chatwidget::tests::misalignment_policy
+            chatwidget::tests::slash_commands
+            chatwidget::tests::permissions
+            app::tests::permission_selection_tests
+            app_server_session::rollout_history::tests
+            chatwidget::tests::status_and_layout
+          )
+          for filter in "${filters[@]}"; do
+            printf '::group::Regression %s\n' "$filter"
+            if ! listing="$(cargo test --locked -p codex-tui --lib "$filter" -- --list 2>&1)"; then
+              printf '%s\n' "$listing"
+              echo "::error::Cannot enumerate regression tests for $filter"
+              failed=1
+            else
+              count="$(printf '%s\n' "$listing" | sed -nE 's/^([0-9]+) tests?, 0 benchmarks.*$/\1/p' | tail -n 1)"
+              if ! [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+                echo "::error::No executable tests were discovered for $filter; refusing vacuous PASS"
+                failed=1
+              elif cargo test --locked -p codex-tui --lib "$filter" -- --test-threads=2; then
+                echo "PASS: $filter ($count tests discovered)"
+              else
+                echo "::error::Regression test failure in $filter"
+                failed=1
+              fi
+            fi
+            echo '::endgroup::'
+          done
+          if (( failed != 0 )); then
+            echo "::error::One or more mandatory TUI regression groups failed"
+            exit 1
+          fi
+
+      - name: Report uncommitted Cargo lock drift owned by 3E.2
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- codex-rs/Cargo.lock; then
+            echo "Cargo.lock drift belongs to 3E.2 and cannot be published by this job."
+            git diff --stat -- codex-rs/Cargo.lock
+          fi
+          echo "No release promotion, production merge or installation is allowed by this smoke."

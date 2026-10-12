@@ -1,0 +1,2107 @@
+{
+  "record_type": "codexdd_0_4_3_packet_3a3_overlap_ownership_v1",
+  "authority": "ownership_plan_not_accepted_semantic_review_or_resolved_source",
+  "production_sha": "4828e3b4232781963594cfaaebdc49c5531de8b1",
+  "tracked_upstream_sha": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+  "target_upstream_sha": "c1382380de69521303b416720a52f42d51af6248",
+  "executed_discovery_run_id": 37960772252,
+  "original_discovery_manifest_sha256": "59a9e5fbcace88827dc1edfd38abb0b6b45c8d41c7ff956d7af0ed94e9988ee3",
+  "original_conflict_report_sha256": "c3456c3e93130126f8f6f6bc1366bdafcc0c11835244ba70c31b91a564a450a4",
+  "overlap_paths_sha256": "27e3145698e3b5c486fd9660d61dbffb87ebf755c058bd29fb20958b01872bcd",
+  "exact_path_list_crosscheck": "136 paths in the executed artifact matched the prior immutable read-only observation; FNV-1a32 ad3f06bc at 136 entries",
+  "source_path_counts": {
+    "customizations": 257,
+    "upstream_changes": 2507,
+    "overlaps": 136,
+    "existing_classifier_sensitive": 124,
+    "previously_unclassified": 12,
+    "textual_conflicts": 22
+  },
+  "owner_packet_counts": {
+    "3E.2": 2,
+    "3C.1": 4,
+    "3C.4": 26,
+    "3B.4": 13,
+    "3B.3": 14,
+    "3D.2": 1,
+    "3B.1": 8,
+    "3B.2": 21,
+    "3B.5": 8,
+    "3C.2": 19,
+    "3D.1": 5,
+    "3C.3": 15
+  },
+  "conflict_packet_counts": {
+    "3C.1": 4,
+    "3B.4": 5,
+    "3B.1": 3,
+    "3C.3": 3,
+    "3C.2": 7
+  },
+  "conflict_paths_in_original_order": [
+    "codex-rs/app-server-daemon/src/backend/windows.rs",
+    "codex-rs/app-server-daemon/src/lib.rs",
+    "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+    "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+    "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+    "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+    "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+    "codex-rs/config/src/config_toml.rs",
+    "codex-rs/core/src/config/mod.rs",
+    "codex-rs/rollout/src/policy.rs",
+    "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
+    "codex-rs/tui/src/app/thread_routing.rs",
+    "codex-rs/tui/src/app/thread_session_state.rs",
+    "codex-rs/tui/src/app/working_directory.rs",
+    "codex-rs/tui/src/app_server_session.rs",
+    "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
+    "codex-rs/tui/src/app_server_session/rollout_history.rs",
+    "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+    "codex-rs/tui/src/daemon_startup.rs",
+    "codex-rs/tui/src/session_start.rs",
+    "codex-rs/tui/src/slash_command.rs",
+    "codex-rs/tui/src/startup_orchestration.rs"
+  ],
+  "rows": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "packet_owner": "3E.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "build_release_ci"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_bazel_windows_sharding_validation",
+      "semantic_review_status": "upstream_deterministic_windows_sharding_with_four_fork_90min_budgets_ci_validation_pending",
+      "source_merge_packet": "3E.2",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3e2-build-evidence.md"
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "packet_owner": "3E.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "build_release_ci"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "cargo_generated_from_integrated_source_pending_release_validation",
+      "semantic_review_status": "pinned_cargo_metadata_locked_success_exact_only_lock_commit_verified",
+      "source_merge_packet": "3E.2",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3e2-build-evidence.md",
+      "generated_commit": "4a2a2e05e1737039b02513d0b64bbf634e481036",
+      "generator_ci_run": 38015463888
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "critical",
+        "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "critical",
+        "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
+      },
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/lib.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "critical",
+        "rationale": "Windows elevation, daemon launch/security guard must be manually reviewed"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "generated_protocol"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3a"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3b"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "app_server_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "packet_owner": "3D.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "CLI startup, daemon test and Windows operator flow"
+      },
+      "resolution_status": "source_merged_pending_cli_runtime_validation",
+      "semantic_review_status": "upstream_complete_with_adaptive_override_preserved_native_cli_test_pending",
+      "source_merge_packet": "3D.2",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d2-cli.md"
+    },
+    {
+      "path": "codex-rs/cli/tests/daemon_startup.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "CLI startup, daemon test and Windows operator flow"
+      },
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_elevated_fallback_tests_subsume_mixed_warning_native_verification_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "configuration"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1b"
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "configuration"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1b"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/history_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2e"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.2a",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/mod.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2d"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/agent_websocket.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Core agent WebSocket/exec scenario regression coverage"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Core agent WebSocket/exec scenario regression coverage"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "packet_owner": "3B.5",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Core agent WebSocket/exec scenario regression coverage"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "targeted_linux_rust_tests_passed_release_security_audit_pending",
+      "source_merge_packet": "3B.5",
+      "targeted_ci_evidence": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/37992789061"
+    },
+    {
+      "path": "codex-rs/external-agent-migration/src/sessions/append.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Migrated sessions and append integrity"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/history/src/compaction_resume_metadata.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2a"
+    },
+    {
+      "path": "codex-rs/protocol/src/lib.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/rollout-trace/src/protocol_event.rs",
+      "packet_owner": "3B.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Protocol trace fidelity and persistence"
+      },
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.3c"
+    },
+    {
+      "path": "codex-rs/rollout/src/lib.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1a"
+    },
+    {
+      "path": "codex-rs/rollout/src/list.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_rollout_lookup_runtime_validation",
+      "semantic_review_status": "upstream_0162_reader_with_workflow_state_nonvisible_semantics_kept_runtime_test_pending",
+      "source_merge_packet": "3B.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1d-rollout-lookup.md"
+    },
+    {
+      "path": "codex-rs/rollout/src/persistence_metrics.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1c"
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1a"
+    },
+    {
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.1c"
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "packet_owner": "3B.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_rollout_lookup_runtime_validation",
+      "semantic_review_status": "upstream_0162_reader_with_workflow_state_nonvisible_semantics_kept_runtime_test_pending",
+      "source_merge_packet": "3B.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1d-rollout-lookup.md"
+    },
+    {
+      "path": "codex-rs/state/src/extract.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
+    },
+    {
+      "path": "codex-rs/state/src/runtime/threads.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
+    },
+    {
+      "path": "codex-rs/thread-store/src/local/rollout_migration/canonicalizer.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
+    },
+    {
+      "path": "codex-rs/thread-store/src/thread_metadata_sync.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2b"
+    },
+    {
+      "path": "codex-rs/thread-store/src/types.rs",
+      "packet_owner": "3B.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "core_runtime",
+        "persistence_resume_fork"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "initial_source_review_complete_release_audit_pending",
+      "source_merge_packet": "3B.2c"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/background_requests.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "configuration"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/managed_worktree_creation.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/model_catalog.rs",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "adaptive_routing",
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/turn_submission.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_events.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_session_state.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app/working_directory.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/interaction.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/misalignment_policy.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/rate_limits.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "prior_exact_fork_delta_replay_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3a",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/exec_flow.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/permissions.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/plan_mode.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/worktree_picker_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/worktree_picker.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3b",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/dynamic_tools_tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "packet_owner": "3C.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_regression_compile_and_windows_native_validation",
+      "semantic_review_status": "upstream_source_union_retaining_fork_contract_runtime_validation_pending",
+      "source_merge_packet": "3C.4",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c4-tui-regression-source.md"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/session_start.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/session_state.rs",
+      "packet_owner": "3C.2",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "upstream_source_union_with_fork_specific_behavior_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.2",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "packet_owner": "3C.3",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_tui_compilation_and_native_validation",
+      "semantic_review_status": "prior_exact_fork_delta_replay_reviewed_tui_compile_pending",
+      "source_merge_packet": "3C.3a",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md",
+      "tui_gate_evidence": "none_until_focused_3C_TUI_compile_and_tests"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "packet_owner": "3C.1",
+      "overlap_kind": "textual_conflict",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "worker_lifecycle"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_native_validation",
+      "semantic_review_status": "static_15_of_15_passed_windows_native_release_audit_pending",
+      "source_merge_packet": "3C.1"
+    },
+    {
+      "path": "codex-rs/tui/src/status/card.rs",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
+    },
+    {
+      "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_local_background_server.snap",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
+    },
+    {
+      "path": "codex-rs/tui/src/status/snapshots/codex_tui__status__tests__status_snapshot_uses_default_reasoning_when_config_empty.snap",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "packet_owner": "3D.1",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [
+        "tui_runtime",
+        "status_rendering"
+      ],
+      "sensitivity_review": "classifier_flagged_review_pending",
+      "provisional_risk": null,
+      "resolution_status": "source_merged_pending_model_and_snapshot_runtime_validation",
+      "semantic_review_status": "all_fork_owned_contracts_retained_under_upstream_0162_test_execution_pending",
+      "source_merge_packet": "3D.1",
+      "source_merge_evidence": "docs/codexdd-0.4.3-packet-3d1-model-status.md"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Generated SDK drift and protocol compatibility"
+      },
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/v2_all.py",
+      "packet_owner": "3B.4",
+      "overlap_kind": "semantic_overlap",
+      "existing_classifier_categories": [],
+      "sensitivity_review": "previously_unclassified_manual_review_required",
+      "provisional_risk": {
+        "priority": "high",
+        "rationale": "Generated SDK drift and protocol compatibility"
+      },
+      "resolution_status": "generator_regenerated_pending_release_validation",
+      "semantic_review_status": "generator_drift_tests_passed_semantic_release_audit_pending",
+      "generator_evidence": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md"
+    }
+  ],
+  "reconciliation_progress": {
+    "source_merge_pending_native_validation_paths": [
+      "codex-rs/rollout/src/lib.rs",
+      "codex-rs/rollout/src/policy.rs",
+      "codex-rs/config/src/config_toml.rs",
+      "codex-rs/core/src/config/mod.rs",
+      "codex-rs/rollout/src/persistence_metrics.rs",
+      "codex-rs/rollout/src/recorder.rs",
+      "codex-rs/history/src/lib.rs",
+      "codex-rs/history/src/compaction_resume_metadata.rs",
+      "codex-rs/history/src/tests.rs",
+      "codex-rs/core/src/thread_manager.rs",
+      "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "codex-rs/state/src/extract.rs",
+      "codex-rs/state/src/runtime/threads.rs",
+      "codex-rs/thread-store/src/thread_metadata_sync.rs",
+      "codex-rs/thread-store/src/local/rollout_migration/canonicalizer.rs",
+      "codex-rs/core/src/session/session.rs",
+      "codex-rs/core/src/thread_manager_tests.rs",
+      "codex-rs/core/src/agent/control/spawn.rs",
+      "codex-rs/external-agent-migration/src/sessions/append.rs",
+      "codex-rs/thread-store/src/types.rs",
+      "codex-rs/core/src/codex_thread.rs",
+      "codex-rs/core/src/client.rs",
+      "codex-rs/core/src/session/turn.rs",
+      "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "codex-rs/core/src/tools/handlers/mod.rs",
+      "codex-rs/core/src/tools/spec_plan.rs",
+      "codex-rs/core/src/tools/registry.rs",
+      "codex-rs/core/src/session/tests.rs",
+      "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "codex-rs/app-server-protocol/src/protocol/thread_history_projection.rs",
+      "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "codex-rs/app-server/src/message_processor.rs",
+      "codex-rs/app-server/src/notification_media.rs",
+      "codex-rs/app-server/src/request_processors.rs",
+      "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "codex-rs/app-server/src/thread_state.rs",
+      "codex-rs/protocol/src/lib.rs",
+      "codex-rs/protocol/src/protocol.rs",
+      "codex-rs/rollout-trace/src/protocol_event.rs",
+      "codex-rs/core/src/client_tests.rs",
+      "codex-rs/core/src/context_manager/history_tests.rs",
+      "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "codex-rs/core/tests/suite/agent_websocket.rs",
+      "codex-rs/core/tests/suite/scenarios.rs",
+      "codex-rs/core/tests/suite/unified_exec.rs",
+      "codex-rs/app-server-daemon/src/backend/windows.rs",
+      "codex-rs/app-server-daemon/src/lib.rs",
+      "codex-rs/tui/src/daemon_startup.rs",
+      "codex-rs/tui/src/startup_orchestration.rs",
+      "codex-rs/tui/src/slash_command.rs",
+      "codex-rs/tui/src/chatwidget/slash_dispatch.rs"
+    ],
+    "validated_paths": [],
+    "textual_conflicts_still_pending_native_validation": 22,
+    "source_reviewed_textual_conflict_paths": [
+      "codex-rs/rollout/src/policy.rs",
+      "codex-rs/config/src/config_toml.rs",
+      "codex-rs/core/src/config/mod.rs",
+      "codex-rs/tui/src/slash_command.rs",
+      "codex-rs/tui/src/chatwidget/slash_dispatch.rs"
+    ],
+    "source_merge_evidence": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
+    "source_merge_commit": "df77e9c70b6102f318de8e83a848e0c577188ffb",
+    "source_merge_evidence_by_packet": {
+      "3B.1a": "docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md",
+      "3B.1b": "docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md",
+      "3B.1c": "docs/codexdd-0.4.3-packet-3b1c-rollout-projection.md",
+      "3B.2a": "docs/codexdd-0.4.3-packet-3b2a-history-fork-revision.md",
+      "3B.2b": "docs/codexdd-0.4.3-packet-3b2b-state-and-replay.md",
+      "3B.2c": "docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md",
+      "3B.2d": "docs/codexdd-0.4.3-packet-3b2d-fail-closed-tool-gates.md",
+      "3B.2e": "docs/codexdd-0.4.3-packet-3b2e-session-tests-complete.md",
+      "3B.3a": "docs/codexdd-0.4.3-packet-3b3a-protocol-workflow-types.md",
+      "3B.3b": "docs/codexdd-0.4.3-packet-3b3b-turn-protocol.md",
+      "3B.3c": "docs/codexdd-0.4.3-packet-3b3c-app-server-handlers.md",
+      "3B.4": "docs/codexdd-0.4.3-packet-3b4-generated-schemas.md",
+      "3B.5": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md",
+      "3C.1": "docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md",
+      "3C.3a": "docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md"
+    },
+    "release_validated_paths": [],
+    "known_compile_blockers": [],
+    "pending_semantic_tests": [
+      "Replay/compaction attribution consistency",
+      "Cross-crate enum exhaustiveness and native cargo check",
+      "Windows-native release test at Gate 3/4",
+      "CRITICAL: native registry dispatch regression tests & pre-tool-hook input mutation safety",
+      "Native client terminalization request tool_choice test",
+      "Run complete 0.162.0 core/src/session/tests.rs tests with CodexDD Worker and history revision"
+    ],
+    "generated_paths_pending_release_validation": [
+      "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "codex-rs/core/config.schema.json",
+      "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "sdk/python/src/openai_codex/generated/v2_all.py"
+    ],
+    "generator_run_evidence": {
+      "packet": "3B.4",
+      "run_id": 37979330404,
+      "input_commit_sha": "c482f522882a60372bacd29384b0b62bdf21f5a6",
+      "generated_commit_sha": "63b4ff83dd192cbc9861bec7c22a4d3f6b74f078",
+      "generated_overlap_paths": 13,
+      "generator_and_drift_tests": "passed",
+      "native_windows_release_profile": "not_run",
+      "cargo_lock": "3E.2-owned drift isolated and preserved as artifact codexdd-043-cargo-lock-drift"
+    },
+    "generated_textual_conflict_paths": [
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts"
+    ],
+    "core_compatibility_smoke": {
+      "run_id": 37992789061,
+      "run_conclusion": "success",
+      "source_sha": "c428e11c750a5857fbe4c6dcf008451ae3402c08",
+      "source_rust_tests": "narrow_targeted_suites_passed",
+      "code_mode_host": "built_from_sha256_verified_codex_rusty_v8_assets",
+      "websocket_nested_evidence": "passed",
+      "core_app_server_rollout_trace_cargo_check": "passed",
+      "native_windows_release_profile": "not_run",
+      "broader_regression_and_gate3": "pending",
+      "scope": "3B.3 app-server event replay and 3B.5 core + WebSocket/direct-exec evidence regressions",
+      "doc": "docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md"
+    },
+    "windows_f2_source_risk": {
+      "packet": "3C.1",
+      "native_windows_test_status": "not_run",
+      "static_source_checks": "15/15 pass",
+      "related_stale_upstream_behavior": "0.162.0 elevated warning and hard-error probe replaced with 0.4.2 CodexDD fail-closed/no-warning confirmed-elevation policy"
+    }
+  }
+}

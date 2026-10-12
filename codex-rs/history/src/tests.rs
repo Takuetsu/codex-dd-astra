@@ -308,6 +308,21 @@ fn unsupported_workflow_state_fails_closed_until_a_later_supported_record() -> R
 }
 
 #[test]
+fn resumed_history_revision_is_not_serialized_as_durable_history() -> Result<()> {
+    let resumed = ResumedHistory {
+        conversation_id: ThreadId::new(),
+        history: Arc::new(Vec::new()),
+        history_revision: Some("store-issued-revision".to_string()),
+        rollout_path: None,
+    };
+    let serialized = serde_json::to_value(&resumed)?;
+    assert!(serialized.get("history_revision").is_none());
+    let restored: ResumedHistory = serde_json::from_value(serialized)?;
+    assert_eq!(restored.history_revision, None);
+    Ok(())
+}
+
+#[test]
 fn response_item_envelope_accessors_preserve_item() {
     let expected_item = ResponseItem::Message {
         id: None,
@@ -756,6 +771,7 @@ fn compacted_resume_metadata_presence_round_trips_empty_values() -> Result<()> {
     let resume_metadata = CompactionResumeMetadata {
         multi_agent_version: None,
         last_started_turn_id: None,
+        turn_attribution: None,
         previous_turn_settings: None,
     };
     let item = CompactedItem {
@@ -866,6 +882,7 @@ fn compacted_metadata_remains_compatible_with_legacy_response_item_readers() -> 
         resume_metadata: Some(CompactionResumeMetadata {
             multi_agent_version: Some(MultiAgentVersion::V2),
             last_started_turn_id: Some("turn-1".to_string()),
+            turn_attribution: None,
             previous_turn_settings: None,
         }),
     }))?;
@@ -1135,6 +1152,7 @@ fn copied_history_uses_persisted_history_mode() -> Result<()> {
         git: None,
     });
     let history = InitialHistory::Resumed(ResumedHistory {
+        history_revision: None,
         conversation_id: thread_id,
         history: Arc::new(vec![session_meta.clone()]),
         rollout_path: None,
@@ -1154,6 +1172,7 @@ fn copied_history_uses_persisted_history_mode() -> Result<()> {
     );
     assert_eq!(
         InitialHistory::Resumed(ResumedHistory {
+            history_revision: None,
             conversation_id: thread_id,
             history: Arc::new(Vec::new()),
             rollout_path: None,

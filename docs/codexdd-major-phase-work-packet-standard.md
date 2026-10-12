@@ -123,6 +123,21 @@ This is specifically intended to prevent the old pattern where one long run atte
 
 ## Local validation execution policy
 
+### Owner directive (2026-10-11): cheap Windows local validation before final GitHub CI
+
+This is the default CodexDD testing workflow for 0.4.3 and future releases:
+
+1. **Assistant handles GitHub changes.** The assistant owns code, design, documentation and GitHub-side fixes. Before asking for validation, establish the exact integration-branch commit SHA. The operator does not manually edit source.
+2. **Run cheap checks locally first.** For every source-changing work packet, prefer the smallest meaningful read-only/status, formatting, targeted compilation or relevant regression check on **Daniel-CL over SSH**. The aim is to find inexpensive failures before consuming GitHub CI runs; do not make full builds or release suites the default.
+3. **Use LVO when applicable.** An installed, compatible Local Validation Orchestrator can run repository-owned `targeted` and `work_packet` profiles and provide authoritative receipts. If an unreleased candidate cannot run through that local orchestrator, the assistant provides concise, copy-pasteable, non-destructive PowerShell commands and the operator runs them on Daniel-CL over SSH. Do not assume RDP or claim the assistant has executed local commands.
+4. **Local fix/retest loop.** When a check fails, the assistant diagnoses it, changes the source on GitHub and asks only for the affected cheap local check again. Do not use temporary GitHub Actions workflows for routine trial-and-error or repeatedly push CI-only fixes when a feasible local check exists.
+5. **GitHub Actions is the final CI gate.** Launch/request broad GitHub CI only after relevant local checks pass for the intended commit. For a CI failure, inspect logs, distinguish infrastructure from a product defect, fix narrowly, then rerun applicable cheap Daniel-CL validation **before** another intentional CI run.
+6. **Native release acceptance is separate.** At the proper release gate, obtain the actual Windows candidate-bound release-profile receipt and live F2, elevated/non-elevated daemon and resume/fork evidence; GitHub tests and CI fixtures do not replace those gates. Production merge, install and release publication still require explicit owner authorization.
+7. **Exception must be justified and approved.** Only when the necessary diagnostic cannot reliably run on Daniel-CL may the assistant propose a narrowly scoped, read-only GitHub-only oracle. Document the specific local blocker and obtain explicit owner approval before dispatching it. Remove temporary diagnostic workflows when no longer needed.
+8. **No unnecessary test work.** Documentation-only changes require only appropriate diff/identity review, not a Rust build or a new CI workflow.
+
+This directive supersedes older informal GitHub-first test habits without changing the source reconnaissance, semantic acceptance, candidate publication, local release-profile, and separate human promotion gates. Keep the production branch unchanged during unapproved runtime integration.
+
 CodexDD 0.4.0 changes routine pre-PR implementation validation from an operator-mediated shell loop to Local Validation Orchestrator ownership on the Windows target when the repository provides the fixed validation-profile contract.
 
 - During a bound Implementation Worker's protected mechanical-validation phase, the native `run_codexdd_validation` runner owns ordinary local validation.
@@ -132,7 +147,7 @@ CodexDD 0.4.0 changes routine pre-PR implementation validation from an operator-
 - Windows-target evidence on Daniel-CL remains authoritative for CodexDD pre-PR and pre-install release validation unless a packet explicitly requires another environment.
 - Prefer the repository-owned validation profiles over ad hoc test command lists. The `release` profile is an explicit broad gate and must never be silently selected by an ordinary Implementation Worker.
 - Infrastructure/contract failures do not authorize opportunistic source edits. Repair admission must follow the bounded native-evidence policy.
-- Narrow temporary GitHub Actions oracles are permitted only when they are the safest way to obtain exact formatter/schema/generated-artifact output or compile diagnostics that cannot be obtained reliably through the current local candidate. They must be scoped to the diagnostic purpose, removed immediately afterward, and never substitute for the authoritative Windows validation gate.
+- Narrow temporary GitHub Actions oracles are **exceptional**, require a documented Daniel-CL blocker and explicit owner approval as specified above, and never substitute for the authoritative Windows validation gate.
 - Normal GitHub PR/CI remains a later promotion stage after the required local Windows gates are green.
 - Consequential actions remain human-governed: merge, production install, release publication, deployment, destructive Git operations, and changes to external machines are not implied by an LVO PASS.
 - Phase 4 release-shaped smoke must exercise the actual operator launch context, not only non-interactive CLI flags. For Windows releases that support automatic shared-daemon startup, test a normal interactive launch from the Administrator PowerShell used in production, verify safe embedded fallback when elevated daemon creation is intentionally refused, and separately verify that explicit elevated daemon creation remains blocked.

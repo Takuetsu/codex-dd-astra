@@ -87,15 +87,12 @@ impl ChatWidget {
 
             self.flush_completed_tool_activity();
             self.bottom_pane.handle_key_event(key_event);
-
             if should_pause_active_goal {
                 self.pause_active_goal_for_interrupt();
             }
-
             if is_manual_esc_interrupt {
                 self.on_adaptive_user_interrupt();
             }
-
             if self.bottom_pane.no_modal_or_popup_active() {
                 self.on_modal_or_popup_closed();
             }
@@ -172,12 +169,23 @@ impl ChatWidget {
             } if modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
                 && c.eq_ignore_ascii_case(&'v') =>
             {
+                if Instant::now() < self.suppress_image_paste_until {
+                    self.suppress_image_paste_until =
+                        Instant::now() + clipboard::IMAGE_PASTE_REPEAT_WINDOW;
+                    return KeyEventAction::None;
+                }
+                self.suppress_image_paste_until =
+                    Instant::now() + clipboard::IMAGE_PASTE_REPEAT_WINDOW;
                 return KeyEventAction::PasteImage;
             }
             other if other.kind == KeyEventKind::Press => {
+                self.suppress_image_paste_until = Instant::now();
                 self.bottom_pane.clear_quit_shortcut_hint();
                 self.quit_shortcut_expires_at = None;
                 self.quit_shortcut_key = None;
+            }
+            other if other.kind == KeyEventKind::Release => {
+                self.suppress_image_paste_until = Instant::now();
             }
             _ => {}
         }
@@ -221,7 +229,6 @@ impl ChatWidget {
             self.input_queue.submit_pending_steers_after_interrupt = true;
             if self.submit_op(AppCommand::interrupt()) {
                 self.pause_active_goal_for_interrupt();
-
                 if key_event.code == KeyCode::Esc && key_event.kind == KeyEventKind::Press {
                     self.on_adaptive_user_interrupt();
                 }
@@ -257,11 +264,9 @@ impl ChatWidget {
                 let is_manual_esc_interrupt = should_pause_active_goal
                     && key_event.code == KeyCode::Esc
                     && key_event.kind == KeyEventKind::Press;
-
                 if key_event.code == KeyCode::Enter {
                     self.flush_completed_tool_activity();
                 }
-
                 let input_result = self.bottom_pane.handle_key_event(key_event);
                 if matches!(
                     input_result,
@@ -274,11 +279,9 @@ impl ChatWidget {
                 if should_pause_active_goal {
                     self.pause_active_goal_for_interrupt();
                 }
-
                 if is_manual_esc_interrupt {
                     self.on_adaptive_user_interrupt();
                 }
-
                 self.handle_composer_input_result(input_result, had_modal_or_popup);
             }
         }

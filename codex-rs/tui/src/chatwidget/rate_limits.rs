@@ -285,7 +285,6 @@ impl ChatWidget {
                     });
             }
             self.plan_type = snapshot.plan_type.or(self.plan_type);
-
             if is_codex_limit && matches!(source, RateLimitSnapshotSource::AccountUsage) {
                 self.adaptive_effort.budget_mode = assess_budget(
                     snapshot.primary.as_ref(),
@@ -407,9 +406,9 @@ impl ChatWidget {
             }
         } else {
             self.rate_limit_snapshots_by_limit_id.clear();
+            self.adaptive_effort.budget_mode = AdaptiveBudgetMode::Balanced;
             self.codex_rate_limit_reached_type = None;
             self.codex_spend_control_reached = None;
-            self.adaptive_effort.budget_mode = AdaptiveBudgetMode::Balanced;
         }
         if usage_notice_blocked
             != (self.codex_rate_limit_reached_type.is_some()
@@ -488,7 +487,6 @@ impl ChatWidget {
                 /*summary*/ None,
                 /*service_tier*/ None,
                 /*collaboration_mode*/ None,
-                /*personality*/ None,
             )));
             tx.send(AppEvent::UpdateModel(switch_model_for_events.clone()));
             tx.send(AppEvent::UpdateReasoningEffort(Some(
@@ -579,9 +577,8 @@ impl ChatWidget {
                 ..Default::default()
             },
             SelectionItem {
-                name: "No".to_string(),
+                name: "No (default)".to_string(),
                 display_shortcut: Some(key_hint::plain(KeyCode::Char('n')).into()),
-                is_default: true,
                 dismiss_on_select: true,
                 ..Default::default()
             },
