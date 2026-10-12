@@ -201,13 +201,8 @@ impl CodexDDValidationHandler {
             .cwd()
             .to_abs_path()
             .map_err(|err| FunctionCallError::RespondToModel(err.to_string()))?;
-        let repository_root = discover_repository_root(cwd.as_path(), args.profile).ok_or_else(|| {
-            FunctionCallError::RespondToModel(format!(
-                "CodexDD validation profile '{}' is unavailable: could not find {} under a repository root containing justfile and codex-rs/Cargo.toml",
-                args.profile.tool_name(),
-                args.profile.script_name()
-            ))
-        })?;
+        let repository_root = discover_repository_root(cwd.as_path(), args.profile)
+            .map_err(FunctionCallError::RespondToModel)?;
         let script_path = repository_root
             .join("scripts")
             .join(args.profile.script_name());
@@ -406,16 +401,57 @@ fn validation_failure_fingerprint(
     Some(format!("v1:{}:{failed_stage}", profile.tool_name()))
 }
 
-fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Option<PathBuf> {
-    cwd.ancestors().find_map(|candidate| {
-        let has_markers = candidate.join("justfile").is_file()
-            && candidate.join("codex-rs").join("Cargo.toml").is_file();
-        let has_profile = candidate
-            .join("scripts")
-            .join(profile.script_name())
-            .is_file();
-        (has_markers && has_profile).then(|| candidate.to_path_buf())
-    })
+/// Resolve a validation profile only inside the *active* Git worktree.
+///
+/// A worktree can contain a .git directory or a worktree .git file. In particular,
+/// the nearest Git root takes precedence over any ancestor: a missing profile in
+/// a Node/TypeScript worktree must not fall back to another repository's scripts.
+/// The profile contract is language-neutral, but always explicit and repo-owned.
+fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Result<PathBuf, String> {
+    let repository_root = cwd
+        .ancestors()
+        .find(|candidate| {
+            let git = candidate.join(".git");
+            git.is_dir() || git.is_file()
+        })
+        .ok_or_else(|| {
+            "CodexDD validation requires a Git worktree; no .git root was found above the active working directory. No validation was run."
+                .to_string()
+        })?;
+
+    let script_path = repository_root
+        .join("scripts")
+        .join(profile.script_name());
+    if !script_path.is_file() {
+        return Err(format!(
+            "CodexDD validation profile '{}' is not configured in the active repository {} (expected {}). No validation ran or PASS receipt was issued. Register the repository-owned contract-v1 PowerShell profile for this project; stop for operator configuration rather than retrying or escalating model effort.",
+            profile.tool_name(),
+            repository_root.display(),
+            script_path.display(),
+        ));
+    }
+
+    let canonical_root = repository_root.canonicalize().map_err(|err| {
+        format!(
+            "CodexDD could not resolve the active Git repository root {}: {err}",
+            repository_root.display()
+        )
+    })?;
+    let canonical_script = script_path.canonicalize().map_err(|err| {
+        format!(
+            "CodexDD could not resolve the configured validation profile {}: {err}",
+            script_path.display()
+        )
+    })?;
+    if !canonical_script.starts_with(&canonical_root) {
+        return Err(format!(
+            "CodexDD validation profile '{}' resolves outside the active Git repository {}; cross-repository script execution is forbidden.",
+            profile.tool_name(),
+            repository_root.display()
+        ));
+    }
+
+    Ok(repository_root.to_path_buf())
 }
 
 fn validation_powershell_command(
