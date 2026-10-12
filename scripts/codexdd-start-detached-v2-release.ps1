@@ -189,8 +189,12 @@ try {
             Pop-Location
         }
         $tuiResult=Get-Content -LiteralPath $tuiLog -Raw -ErrorAction Stop
-        if ($tuiExit -ne 0 -or $tuiResult -notmatch '15 tests run:\s+15 passed,\s+0 skipped') {
-            throw "TUI daemon S4U socket smoke failed (exit $tuiExit); review $tuiLog. Do not launch the 21-stage release."
+        # Nextest reports unrelated TUI library tests excluded by this exact
+        # release-stage selector as "skipped" (e.g. 5827 skipped). The
+        # authoritative gate is native exit 0 AND exactly 15 run/15 passed.
+        # Keep the complete 15-case release-stage selection unchanged.
+        if ($tuiExit -ne 0 -or $tuiResult -notmatch '15 tests run:\s+15 passed,\s+[0-9]+ skipped') {
+            throw "TUI daemon S4U stage success evidence missing (exit $tuiExit); review $tuiLog. Do not launch the 21-stage release."
         }
         # Oct-12 r3 failed at stage 8 because a batch-logon thread-store
         # test could not open state_5.sqlite in a user-profile temp directory.
