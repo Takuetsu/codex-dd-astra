@@ -505,7 +505,10 @@ fn find_active_repository_root(cwd: &Path) -> Result<PathBuf, String> {
         })
 }
 
-fn validate_repository_profile(repository_root: &Path, profile: ValidationProfile) -> Result<(), String> {
+fn validate_repository_profile(
+    repository_root: &Path,
+    profile: ValidationProfile,
+) -> Result<(), String> {
     let script_path = repository_root
         .join("scripts")
         .join(profile.script_name());
