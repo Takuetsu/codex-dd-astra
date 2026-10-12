@@ -556,6 +556,144 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn missing_node_profile_blocks_mechanical_without_retry_or_false_handoff() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "node-profile-unavailable";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("breakwater/Z-A0.55E tooling integration".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        // This built-in error is never a native PASS or a repairable test FAIL.
+        chat.register_adaptive_evidence(&ItemCompletedNotification {
+            item: ThreadItem::DynamicToolCall {
+                id: "missing-profile-call".to_string(),
+                namespace: None,
+                tool: crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+                arguments: serde_json::json!({
+                    "profile": "work_packet",
+                    "result": "error",
+                    "run_id": "blocked-run",
+                    "branch": "codex/tooling/validation-evidence-retention",
+                    "head_sha": "65ee0ba1fc79a5711e93d8fcf0f4672954344ea6",
+                    "log_path": "C:\\codexdd\\validation\\blocked-run\\validation.log",
+                    "failure_fingerprint": null
+                }),
+                status: DynamicToolCallStatus::Completed,
+                content_items: None,
+                success: Some(false),
+                duration_ms: Some(1),
+            },
+            thread_id: thread_id.to_string(),
+            turn_id: turn_id.to_string(),
+            completed_at_ms: 1,
+        });
+
+        assert_eq!(
+            chat.adaptive_effort.validation_status.as_ref().map(|s| s.result.as_str()),
+            Some("error")
+        );
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.apply_adaptive_unfinished_authorized_turn(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+        assert!(!chat.maybe_submit_adaptive_successor());
+    }
+
+    #[tokio::test]
+    async fn nonrepairable_profile_error_overrides_capability_pressure_and_green_signal() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "profile-error-before-terminal";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded Node fix".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&validation_evidence(
+            thread_id, turn_id, "profile-error", "work_packet", false,
+        ));
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id, turn_id, "diagnostic-failed", CommandExecutionStatus::Failed, 1,
+        ));
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Pending(ref signal))
+                if signal.signal_kind == AdaptiveRuntimeSignalKind::Capability
+        ));
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+                evidence_refs: vec!["profile-error".to_string()],
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+    }
+
+    #[tokio::test]
+    async fn product_failures_and_other_turns_do_not_trigger_configuration_block() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "current-mechanical-turn";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded tests".to_string());
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.register_adaptive_evidence(&failed_validation_evidence(
+            thread_id,
+            turn_id,
+            "repairable-test-failure",
+            "work_packet",
+            "v1:work_packet:core-adaptive-tests",
+        ));
+        chat.register_adaptive_evidence(&validation_evidence(
+            thread_id,
+            "previous-mechanical-turn",
+            "prior-error",
+            "work_packet",
+            false,
+        ));
+        assert!(!chat.stop_for_nonrepairable_codexdd_profile_error(turn_id));
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+    }
+
+    #[tokio::test]
     async fn capability_signal_requires_nonblank_diagnostic_report() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
