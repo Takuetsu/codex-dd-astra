@@ -1,16 +1,18 @@
 # CodexDD roadmap
 
-## Current production state (2026-10-09)
+## Current production state (2026-10-12)
 
-**CodexDD 0.4.2 is deployed and operational, including the elevated Windows SSH F2 warning hotfix.**
+**CodexDD 0.4.3 is squash-merged, installed and verified in Daniel-CL's elevated SSH interactive environment.**
 
 - Production branch: `dd/astra-policy-v2` in `Takuetsu/codex-dd-astra`.
-- Last deployed **runtime source/merge SHA**: `dc10de2b0240ebe51bba009bfa224fc305c9aa6a` (F2 PR #48).
-- Daniel-CL installed executable reports: `codexdd 0.4.2+gdc10de2b0240`.
-- Product identity: `0.4.2`; tracked OpenAI Codex upstream: `rust-v0.159.2`.
+- Last deployed **runtime source/merge SHA**: `d8ad52cc223362a03f4dc5b40ec51695b3c48936` (upstream PR #52).
+- Daniel-CL installed executable reports: `codexdd 0.4.3+gd8ad52cc2233`. A timestamped backup of the previous executable was created during installation.
+- Product identity: `0.4.3`; tracked OpenAI Codex upstream: `rust-v0.162.0` (not the newer optional `0.162.1` update).
+- Production squash tree `cb43f0b3f48fb5b16b73b4ec18b08ea4fafc5221` exactly matches the candidate tree at `9349fa6d487ce3f64a07a3c468c7a1395d6d3787`.
+- Native Windows candidate release **21/21 PASS** with SHA-bound receipt; GitHub Windows adaptive `pr-fast` PASS; owner-gated reconciliation and receipt verified. Standard PR `blocking-ci` was suppressed by the frozen candidate's `[skip ci]` marker; separately audited candidate findings are documented in PR #52, including inherited baseline security advisories. Do not claim the original blocking workflow ran or passed.
+- Interactive `codexdd` startup, `/status`, and F2 on actual installed runtime **PASS** over elevated SSH: adaptive enabled, Astra preferred, Luna Low initial tier, Full Access; **Warnings → No warnings**.
 - Platform: Windows only; authoritative validation host Daniel-CL; access from Stonks is **SSH only** (no RDP).
-- Installation and production `/status` verified; F2 from elevated SSH showed **Warnings → No warnings**, without `--no-daemon`.
-- The live non-elevated shared-daemon startup/attachment test was **explicitly waived for PR #48 only** due to restrictive scheduled-task job behavior; it remains unverified, not passed.
+- **Not yet verified:** actual non-elevated Medium-integrity desktop shared-daemon startup/attachment and extended runtime soak. PR #48's one-time waiver cannot silently extend to 0.4.3. Track this as an explicit follow-up; elevated SSH smoke is not evidence for the normal desktop path.
 - **Important:** Planning-document commits may advance the GitHub production HEAD beyond the deployed runtime SHA. Always re-resolve the live production HEAD/tree before a new candidate manifest, feature branch, or upstream preparation. Do not assume that the deployed binary SHA is the current branch tip.
 
 ### Recently completed milestones
@@ -19,6 +21,7 @@
 - **0.4.1:** GPT-6.1 Sol tier and adaptive routing/catalog integration, merged as PR #46.
 - **0.4.2:** Read-only automatic upstream discovery with explicit identity-bound preparation, native local validation receipts, and manual promotion; merged as PR #47 (`8336ca046af71cbf032c76d933ca371336f92673`).
 - **0.4.2 F2 hotfix:** Elevated Windows SSH automatic embedded startup without the misleading warning; merged as PR #48 (`dc10de2b0240ebe51bba009bfa224fc305c9aa6a`) and **verified after production installation**.
+- **0.4.3:** Upstream `rust-v0.162.0` source integration, reconciled candidate and native release receipt; merged as PR #52 (`d8ad52cc223362a03f4dc5b40ec51695b3c48936`), installed, and **elevated SSH `/status` and F2 verified**.
 
 Historical implementation, provenance and validation material is preserved in:
 
@@ -28,9 +31,9 @@ Historical implementation, provenance and validation material is preserved in:
 - `docs/codexdd-0.4.2-phase-3-source-audit.md`
 - `docs/codexdd-elevated-windows-f2-hotfix.md`
 
-## NEXT: CodexDD 0.4.3 — OpenAI Codex rust-v0.162.0 integration
+## Completed: CodexDD 0.4.3 — OpenAI Codex rust-v0.162.0 integration
 
-**Status: QUEUED — NOT ACTIVATED.** Begin only when the operator starts a new chat with **`activate 0.4.3`**.
+**Status: MERGED, INSTALLED AND ELEVATED SSH SMOKE PASS (2026-10-12).** This section preserves the original activation scope and phase plan as historical release evidence. See [PR #52](https://github.com/Takuetsu/codex-dd-astra/pull/52) for native Windows, GitHub CI, installation and post-install smoke details. Non-elevated shared-daemon and extended soak remain separate unverified follow-ups.
 
 **Authoritative design / activation handoff:**
 
@@ -65,9 +68,11 @@ Preserve GPT-6.1 Sol/Astra policy, adaptive state, LVO, 0.4.2 read-only discover
 - Manual approval is required for reconnaissance acceptance, sensitive semantic-risk decisions, any test waiver, CI/PR promotion, merge, installation and deployment.
 - The F2 hotfix's previous non-elevated daemon test waiver **does not automatically extend to 0.4.3**.
 
-### New-chat activation contract
+### Historical new-chat activation contract (completed)
 
-When the operator says **`activate 0.4.3`**:
+The following is retained as an audit record of the original release gate; **do not reactivate 0.4.3**. New bugs and later upstream updates require their own scoped work packet and version decision.
+
+Original trigger: **`activate 0.4.3`**.
 
 1. Read the 0.4.3 design and this roadmap from the live production branch.
 2. Re-fetch the current production SHA, tracked upstream and official 0.162.0 target, and check for newer/stale planning artifacts.

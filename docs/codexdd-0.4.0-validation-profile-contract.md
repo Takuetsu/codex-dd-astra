@@ -80,6 +80,8 @@ Current self-host stages cover:
 
 The release profile is intentionally expensive and must not be selected silently by an ordinary Implementation Worker.
 
+The standard Windows **operator-initiated remote/SSH release** invocation uses a **manually started, nonrecurring Windows Task Scheduler job** as the execution host. It runs the same fixed release entrypoint with identical inputs, without SSH process lifetime dependence. See [SSH-safe native release-validation runbook](codexdd-ssh-safe-native-release-validation.md). The ordinary `targeted` and `work_packet` LVO profile contracts remain unchanged, as do the structured terminal events and exit codes. This is a procedural execution policy; it does not assert that every historical release run was detached.
+
 ## Exit codes
 
 Profile process exit codes are part of contract version 1:
