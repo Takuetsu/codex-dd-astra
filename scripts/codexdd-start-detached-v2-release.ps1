@@ -121,6 +121,17 @@ try {
         $helper=Join-Path $meta.target_directory 'debug\test_stdio_server.exe'
         if (!(Test-Path -LiteralPath $helper -PathType Leaf)) { throw "MCP test helper missing in task context: $helper" }
     } finally { Pop-Location }
+    # Windows S4U logons can inherit a TEMP path whose SQLite files cannot
+    # be opened with their limited batch token. Give BOTH smoke and release
+    # processes a unique, writable, candidate-run-local TEMP/TMP directory.
+    # This directory is outside the git checkout and survives for diagnosis.
+    $scratch=Join-Path $cfg.RunDir 'task-temp'
+    [IO.Directory]::CreateDirectory($scratch) | Out-Null
+    $canary=Join-Path $scratch 'write-probe.tmp'
+    [IO.File]::WriteAllText($canary, 'CodexDD SQLite scratch path preflight')
+    [IO.File]::Delete($canary)
+    $env:TEMP=$scratch
+    $env:TMP=$scratch
     if ($Mode -eq 'Smoke') {
         # This native gate also runs ConPTY-backed CLI integration tests.
         # Checking tool versions and the MCP helper alone cannot prove an S4U
@@ -145,9 +156,31 @@ try {
         if ($ptyExit -ne 0 -or $ptyResult -notmatch '1 passed') {
             throw "CLI ConPTY smoke failed in S4U task (exit $ptyExit); review $ptyLog. Do not launch noninteractive full release."
         }
+        # Oct-12 r3 failed at stage 8 because a batch-logon thread-store
+        # test could not open state_5.sqlite in a user-profile temp directory.
+        # A complete stage-8 S4U test, with the exact same target + options
+        # as the release profile, is a cheap (< 21 stages) environment gate.
+        $storeLog=Join-Path $cfg.RunDir 'thread-store-smoke.log'
+        $savedPreference=$ErrorActionPreference
+        Push-Location -LiteralPath (Join-Path $cfg.Checkout 'codex-rs')
+        try {
+            try {
+                $ErrorActionPreference='Continue'
+                & $cfg.Cargo nextest run --no-fail-fast -p codex-thread-store --lib *> $storeLog
+                $storeExit=$LASTEXITCODE
+            } finally {
+                $ErrorActionPreference=$savedPreference
+            }
+        } finally {
+            Pop-Location
+        }
+        $storeResult=Get-Content -LiteralPath $storeLog -Raw -ErrorAction Stop
+        if ($storeExit -ne 0 -or $storeResult -notmatch '268 tests run:\s+268 passed,\s+0 skipped') {
+            throw "Thread-store S4U SQLite smoke failed (exit $storeExit); review $storeLog. Do not launch the 21-stage release."
+        }
         $status='pass'
         $exitCode=0
-        $detail='Scheduled task Git/Python/Cargo/helper and real CLI ConPTY startup smoke PASS; no full release stages run'
+        $detail='Scheduled account, CLI ConPTY and 268/268 thread-store SQLite smoke PASS; no full release stages run'
     } else {
         $validator=Join-Path $cfg.Checkout 'scripts\codexdd-validate-upstream-candidate-v2.ps1'
         $releaseArguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$validator+'" -ManifestPath "'+
