@@ -127,12 +127,12 @@ try {
         $detail='Scheduled account/Cargo/Python/nextest/helper smoke PASS; no release stages run'
     } else {
         $validator=Join-Path $cfg.Checkout 'scripts\codexdd-validate-upstream-candidate-v2.ps1'
-        $args='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$validator+'" -ManifestPath "'+
+        $releaseArguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$validator+'" -ManifestPath "'+
             $cfg.Manifest+'" -ApprovedDiscoveryManifestSha256 '+$cfg.DiscoverySha256+
             ' -ApprovedConflictsSha256 '+$cfg.ConflictsSha256
         $stdout=Join-Path $cfg.RunDir 'release-stdout.log'
         $stderr=Join-Path $cfg.RunDir 'release-stderr.log'
-        $child=Start-Process -FilePath $cfg.PowerShell -ArgumentList $args -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+        $child=Start-Process -FilePath $cfg.PowerShell -ArgumentList $releaseArguments -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
         $child.WaitForExit()
         $exitCode=[int]$child.ExitCode
         $lines=@(Get-Content -LiteralPath $stdout)
@@ -148,9 +148,9 @@ try {
             $end=@($lines | Where-Object { $_.StartsWith('CODEXDD_VALIDATION_JSON ') -and $_.Contains('"event":"profile_end"') })
             $paths=@($lines | Where-Object { $_.StartsWith('CODEXDD_UPSTREAM_VALIDATION_RECEIPT_PATH ') })
             if ($end.Count -ne 1 -or $paths.Count -ne 1) { throw 'Release terminal or receipt path missing/ambiguous.' }
-            $profile=$end[0].Substring('CODEXDD_VALIDATION_JSON '.Length) | ConvertFrom-Json -ErrorAction Stop
-            if ($profile.profile -cne 'release' -or $profile.status -cne 'pass' -or
-                $profile.exit_code -ne 0 -or $profile.completed_stages -lt 21) { throw 'Incomplete release profile.' }
+            $profileEvent=$end[0].Substring('CODEXDD_VALIDATION_JSON '.Length) | ConvertFrom-Json -ErrorAction Stop
+            if ($profileEvent.profile -cne 'release' -or $profileEvent.status -cne 'pass' -or
+                $profileEvent.exit_code -ne 0 -or $profileEvent.completed_stages -lt 21) { throw 'Incomplete release profile.' }
             $path=$paths[0].Substring('CODEXDD_UPSTREAM_VALIDATION_RECEIPT_PATH '.Length).Trim()
             $receipt=Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -ErrorAction Stop
             if ($receipt.candidate_head_sha -cne $cfg.Sha -or $receipt.source_snapshot_commit_sha -cne $cfg.SourceSha -or
@@ -190,8 +190,8 @@ $taskPrefix='CodexDD-043-'+$head.Substring(0,12)+'-'+$id
 $probeName=$taskPrefix+'-probe'
 $releaseName=$taskPrefix+'-release'
 function New-TaskAction([string]$mode) {
-    $args='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$runnerPath+'" -PlanPath "'+$planPath+'" -Mode '+$mode
-    return (New-ScheduledTaskAction -Execute $psExe -Argument $args -WorkingDirectory $CandidateCheckout)
+    $taskArguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$runnerPath+'" -PlanPath "'+$planPath+'" -Mode '+$mode
+    return (New-ScheduledTaskAction -Execute $psExe -Argument $taskArguments -WorkingDirectory $CandidateCheckout)
 }
 foreach ($task in @($probeName,$releaseName)) {
     if (Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue) { throw "Task already exists: $task" }
