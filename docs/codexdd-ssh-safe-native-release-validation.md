@@ -183,6 +183,20 @@ if (Test-Path -LiteralPath $resultFile) {
 
 The monitor is **read-only**; `Ctrl+C` stops polling but **does not interrupt the independently running Scheduled Task**. A successful `CODEXDD_DETACHED_RELEASE_STARTED`, task state `Ready`, partial stage PASS, or monitor exit is **not** a full release PASS. Preserve the immutable release evidence on failure. The full native receipt, candidate/source/production binding, and GitHub promotion gates remain authoritative.
 
+## October 12, 2026 r3 native release PASS (screenshot-confirmed)
+
+The final detached run, **`CodexDD-043-9349fa6d487c-20261012-172813-09e8ed4e-release`**, used the short S4U `E:\ddtmp\20261012-172813-09e8ed4e` TEMP/TMP and passed its ConPTY CLI, complete 15-case TUI daemon startup, and 268-case thread-store preflights before launching the full 21-stage release.
+
+**Daniel-CL's terminal screenshot confirmed** `RELEASE FINISHED: PASS`, `status: pass`, `exit_code: 0`, empty `first_failed_stage`, and `Full 21-stage native candidate receipt verified`. The monitor independently found the receipt file at:
+
+```text
+E:\codexdd-validation-runs\9349fa6d487ce3f64a07a3c468c7a1395d6d3787\20261012-172813-09e8ed4e\native-release-receipt.json
+```
+
+The launcher verified its candidate/source/production identity and 21 completed stages before writing `release-result.json`. **This is native release gate PASS for candidate `9349fa6d487ce3f64a07a3c468c7a1395d6d3787`**, not a production release, merged PR, or approval of sensitive source overlap. The raw canonical receipt JSON still needs to be supplied to the separate owner-dispatched, fail-closed `upstream-reconcile-promote.yml` workflow; its independently verified result and owner source acceptance remain prerequisite to the final PR/CI and production promotion. The GitHub documentation entry is grounded in screenshot evidence, **not** a claim that GitHub already consumed or independently validated the raw receipt.
+
+All older r1/r2/r3 failed attempts retain their separate immutable run directories and failed evidence. Do not modify the native-verified candidate to add this documentation. PR #51 remains draft outside the candidate/production until the promotion identity contract is no longer anchored to the pre-merge baseline.
+
 ## Reconnect, inspect, and clean up
 
 From any later SSH session to Daniel-CL:
