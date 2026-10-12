@@ -54,6 +54,23 @@ Start-ScheduledTask -TaskName $taskName
 
 **Prerequisites and limitations:** Registration rights and batch-logon permission are Windows policy dependent. The wrapper must exist and must log/return the actual validator outcome; the above registers/starts it but does **not** magically create a valid release runner. A manual-only task has no scheduler-triggered recurring executions. Do **not** include passwords/tokens in the runner, task parameters or logs. If the candidate uses an account-specific Rust/Python installation, smoke the Scheduled Task identity before a heavy run. Never run a second profile merely because an SSH session disconnected.
 
+## CodexDD 0.4.3 one-command launcher
+
+The repository includes [`scripts/codexdd-start-detached-v2-release.ps1`](../scripts/codexdd-start-detached-v2-release.ps1). This launcher is intentionally **not** merged into the frozen v0.4.3 candidate. Obtain it at an exact documentation-branch Git object and execute a copy **outside the candidate worktree**. Do not amend the candidate to gain access to the launcher.
+
+The launcher:
+
+- Refuses non-Daniel-CL hosts, unexpected candidate SHA, wrong branch, dirty worktree, original blocked-discovery SHA drift, or sidecar drift.
+- Creates a **unique per-attempt external directory** under `E:\codexdd-validation-runs` for the candidate, local runner, nonsecret plan, native logs and candidate-bound receipt.
+- Registers and starts a **short, noncompiling S4U task-account smoke check** for Git/Python/Cargo/nextest and the previously required `test_stdio_server.exe` fixture. If the account, tool paths, permissions or helper are unavailable, it fails **before** starting the long release test and reports the run directory. The launcher removes the successful probe task.
+- Registers and starts one **manual, nonrecurring** eight-hour-bounded `CodexDD-043-<sha>-<id>-release` task, configured to ignore duplicate executions. **No Git ref, source file or candidate manifest is modified.**
+- The task executes the frozen candidate's unmodified v2 entrypoint with both approved blocked-discovery checksums. Native stdout/stderr are redirected to logs, the child exit code is propagated, and a full 21-stage PASS must include the exact candidate/source/production-bound JSON receipt copied to the run directory.
+- Distinguishes a `CODEXDD_DETACHED_RELEASE_STARTED` **launch acknowledgement** from actual `release-result.json` **PASS**. Never interpret a successful scheduler start, partial profile, missing result file or prior targeted-test PASS as native release completion.
+
+Current CodexDD 0.4.3 release candidate is `677dd64923afd4a2236075b9da92e5f6ff500485`. The previous stage-15 app-server test passed in a 1/1 focused Daniel-CL rerun after building the `test_stdio_server.exe` helper; this supports, but does not conclusively prove, a missing fixture as the original 377-test suite failure. A **fresh full native receipt is still required**. Obtain actual approved hashes and the exact launcher Git SHA from the release handoff; never trust copied example inputs or a moving branch.
+
+**S4U limitation:** The same user name does not guarantee the same interactive profile or network credentials. The first one-shot Scheduled Task smoke check is required; if it fails, do **not** automatically fall back to SSH-owned execution, `SYSTEM`, or an elevated account. Review its result and fix the account context first.
+
 ## Reconnect, inspect, and clean up
 
 From any later SSH session to Daniel-CL:
