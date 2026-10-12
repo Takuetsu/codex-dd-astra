@@ -122,9 +122,32 @@ try {
         if (!(Test-Path -LiteralPath $helper -PathType Leaf)) { throw "MCP test helper missing in task context: $helper" }
     } finally { Pop-Location }
     if ($Mode -eq 'Smoke') {
+        # This native gate also runs ConPTY-backed CLI integration tests.
+        # Checking tool versions and the MCP helper alone cannot prove an S4U
+        # task can drive an interactive Windows terminal. Probe exactly one
+        # existing startup test BEFORE spending ~40 minutes on the release.
+        $ptyLog=Join-Path $cfg.RunDir 'cli-pty-smoke.log'
+        $savedPreference=$ErrorActionPreference
+        Push-Location -LiteralPath (Join-Path $cfg.Checkout 'codex-rs')
+        try {
+            try {
+                # PowerShell 5.1 maps native stderr into ErrorRecord objects.
+                $ErrorActionPreference='Continue'
+                & $cfg.Cargo nextest run --no-fail-fast -p codex-cli --test daemon_startup -E 'test(daemon_exclusion_survives_resume_picker)' --no-capture *> $ptyLog
+                $ptyExit=$LASTEXITCODE
+            } finally {
+                $ErrorActionPreference=$savedPreference
+            }
+        } finally {
+            Pop-Location
+        }
+        $ptyResult=Get-Content -LiteralPath $ptyLog -Raw -ErrorAction Stop
+        if ($ptyExit -ne 0 -or $ptyResult -notmatch '1 passed') {
+            throw "CLI ConPTY smoke failed in S4U task (exit $ptyExit); review $ptyLog. Do not launch noninteractive full release."
+        }
         $status='pass'
         $exitCode=0
-        $detail='Scheduled account/Cargo/Python/nextest/helper smoke PASS; no release stages run'
+        $detail='Scheduled task Git/Python/Cargo/helper and real CLI ConPTY startup smoke PASS; no full release stages run'
     } else {
         $validator=Join-Path $cfg.Checkout 'scripts\codexdd-validate-upstream-candidate-v2.ps1'
         $releaseArguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$validator+'" -ManifestPath "'+

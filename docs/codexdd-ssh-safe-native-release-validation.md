@@ -62,7 +62,7 @@ The launcher:
 
 - Refuses non-Daniel-CL hosts, unexpected candidate SHA, wrong branch, dirty worktree, original blocked-discovery SHA drift, or sidecar drift.
 - Creates a **unique per-attempt external directory** under `E:\codexdd-validation-runs` for the candidate, local runner, nonsecret plan, native logs and candidate-bound receipt.
-- Registers and starts a **short, noncompiling S4U task-account smoke check** for Git/Python/Cargo/nextest and the previously required `test_stdio_server.exe` fixture. If the account, tool paths, permissions or helper are unavailable, it fails **before** starting the long release test and reports the run directory. The launcher removes the successful probe task.
+- Registers and starts an S4U task-account smoke check for Git/Python/Cargo/nextest, the previously required `test_stdio_server.exe`, **and one real ConPTY-backed CLI test**: `daemon_exclusion_survives_resume_picker`. Unlike a simple environment check, this can take up to the CLI test timeout (plus preparation) and may compile if its cache is cold. Captures the exact output in `cli-pty-smoke.log`. Failure blocks the long release test and preserves evidence. This is a targeted compatibility gate, not a waiver or a complete release PASS. The launcher removes the successful probe task.
 - Registers and starts one **manual, nonrecurring** eight-hour-bounded `CodexDD-043-<sha>-<id>-release` task, configured to ignore duplicate executions. **No Git ref, source file or candidate manifest is modified.**
 - The task executes the frozen candidate's unmodified v2 entrypoint with both approved blocked-discovery checksums. Native stdout/stderr are redirected to logs, the child exit code is propagated, and a full 21-stage PASS must include the exact candidate/source/production-bound JSON receipt copied to the run directory.
 - Distinguishes a `CODEXDD_DETACHED_RELEASE_STARTED` **launch acknowledgement** from actual `release-result.json` **PASS**. Never interpret a successful scheduler start, partial profile, missing result file or prior targeted-test PASS as native release completion.
@@ -91,6 +91,14 @@ if ($LASTEXITCODE -ne 0 -or $actual -cne $expectedBlob) {
 ```
 
 A failing guard must **terminate the whole launcher orchestration**. Pasting a second, separate PowerShell invocation after an earlier interactive `throw` bypasses the guard. Do not repair the hash by mutating the frozen candidate, disabling integrity checks, or running multiple concurrent release profiles. For the October 12 **already-running** detached candidate, do **not** stop or restart the task merely to improve extraction; await its actual `release-result.json` and preserve all logs/receipts.
+
+## October 12, 2026 Windows S4U ConPTY gate
+
+A detached 0.4.3 release run on Daniel-CL completed the preceding release stages but failed `cli-daemon-startup-tests`: **four of five Windows tests timed out** (`deadline has elapsed`), while the Bedrock onboarding test passed. The failing tests all wait for TUI startup readiness in a synthetic ConPTY terminal; the successful Bedrock test uses a different startup flow. The output proves a real stage-20 failure, **not** a complete native PASS. The exact reason (S4U noninteractive context, TUI startup/model display, or another runtime issue) remains unresolved without an interactive control run.
+
+**Future S4U runs must pass the exact single-test ConPTY probe before launching all 21 stages.** If it fails, do not repeat the whole profile, reclassify failures as success, disable/exclude these tests, or forge a `profile_end` receipt. First compare the same targeted test in an actual elevated SSH/interactive context. If it passes only interactively, the full profile must run in a supported interactive execution context while maintaining the normal SHA-bound receipt contract; schedule detached noninteractive regression checks separately. If it fails in both, investigate the source and captured TUI error before any source correction.
+
+The previous S4U run's `release-result.json` used `exit_code: 2` and `detail: Release terminal or receipt path missing/ambiguous`, but its `first_failed_stage` was `cli-daemon-startup-tests` and the native log showed real timeout failures. The reporting logic was corrected in this PR to prioritize stage failures. **Neither the report correction nor this added smoke test modifies the frozen 0.4.3 candidate.**
 
 ## Reconnect, inspect, and clean up
 
