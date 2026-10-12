@@ -166,6 +166,11 @@ impl ChatWidget {
         &mut self,
         source_turn_id: &str,
     ) -> bool {
+        // Missing profiles and contract/infrastructure errors are deterministic
+        // blockers. They must not become unfinished-turn retries or effort pressure.
+        if self.stop_for_nonrepairable_codexdd_profile_error(source_turn_id) {
+            return true;
+        }
         let state = &self.adaptive_effort;
         let bound_worker = matches!(
             state.worker_context.role,
