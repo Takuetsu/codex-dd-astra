@@ -191,6 +191,32 @@ impl AdaptiveEvidenceRegistry {
         )
     }
 
+    /// Infrastructure/profile errors never grant repair authority or model
+    /// escalation. A completed built-in LVO call with a failed outcome and no
+    /// product-failure fingerprint is a deterministic nonrepairable blocker.
+    /// Scope this to the current Worker turn and the two mechanical profiles.
+    pub(crate) fn has_nonrepairable_codexdd_validation_error_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> bool {
+        self.entries.values().any(|entry| {
+            let AdaptiveEvidenceEntry::Valid(record) = entry else {
+                return false;
+            };
+            record.thread_id == thread_id
+                && record.source_turn_id == source_turn_id
+                && record.outcome == AdaptiveEvidenceOutcome::Failure
+                && record.kind == AdaptiveEvidenceKind::DynamicToolCall
+                && record.tool_name.as_deref() == Some(CODEXDD_VALIDATION_TOOL_NAME)
+                && matches!(
+                    record.validation_profile.as_deref(),
+                    Some("targeted" | CODEXDD_WORK_PACKET_PROFILE)
+                )
+                && record.validation_failure_fingerprint.is_none()
+        })
+    }
+
     pub(crate) fn codexdd_repairable_validation_failure_for_turn(
         &self,
         evidence_refs: &[String],
