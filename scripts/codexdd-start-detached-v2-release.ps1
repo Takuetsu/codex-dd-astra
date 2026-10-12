@@ -69,7 +69,7 @@ if ($scratchPath.Length -gt 60 -or (Test-Path -LiteralPath $scratchPath)) {
 }
 # Allocate outside the candidate checkout; the S4U child must separately
 # prove its own create/write/delete access before running any tests.
-New-Item -ItemType Directory -Path $scratchPath -ErrorAction Stop | Out-Null
+[IO.Directory]::CreateDirectory($scratchPath) | Out-Null
 $planPath = Join-Path $runDir 'plan.json'
 $runnerPath = Join-Path $runDir 'runner.ps1'
 $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name
