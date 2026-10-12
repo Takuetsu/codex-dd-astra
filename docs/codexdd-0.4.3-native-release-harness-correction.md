@@ -17,6 +17,14 @@
 
 These changes touch only local validation tooling, fixture, attributes and this review document. **No product Rust/SDK code changes.** The canonical candidate is **not** automatically updated: its immutable source SHA, v2 staged metadata, and release receipt provenance must be refreshed in a separately verified corrective release-candidate revision. No old PASS can be silently transferred to a new commit. Publication, production merge and installation remain separate downstream gates.
 
+## Actual Daniel-CL checkpoint — 2026-10-11 local time
+
+The operator fetched the isolated `dd/codexdd-0.4.3-native-release-harness-fix` at `eaa14c7123d64a512fa6d9acb1bf8ba003d433e6` into `E:\\codexdd-043-harness-check`, ran `scripts/codexdd-native-release-harness-tests.ps1`, and observed **`CODEXDD_NATIVE_RELEASE_HARNESS_TEST PASS`**. This is a narrow PowerShell fixture pass, not a release PASS.
+
+The subsequent real `cargo fmt --all -- --check` **failed**, first reporting a diff in `external-agent-migration/src/sessions/append.rs` around line 224. A later manually entered `Write-Host 'CODEXDD_043_HARNESS_AND_FORMAT_PASS'` printed a success-looking label **after the exception**; it is expressly **not valid validation evidence**.
+
+A one-token lexical-formatting fix at [`10e26a282ca0553cd45a9236be1122723d67dff5`](https://github.com/Takuetsu/codex-dd-astra/commit/10e26a282ca0553cd45a9236be1122723d67dff5) removes the optional leading pattern separator `|` before the standalone `RolloutItem::WorkflowState(_) => return None` arm. The active fail-closed authority behavior and native-history handling are unchanged. This patch was isolated to **one Rust source line** and **has not yet passed** a follow-up Daniel-CL formatter check. Earlier 3/3 migration unit regressions were green on the preformat source and remain historical, not a new check of this exact blob.
+
 ## Next gate
 
 Run cheap Windows PowerShell fixture and stable `cargo fmt --all -- --check` in an isolated checkout of this repair branch. If green, reconcile source Git objects, make an explicit updated source freeze and rebuild all SHA-bound metadata; only then use the strict candidate-bound native release profile. Do not rerun all 21 stages against the known-broken original script.
