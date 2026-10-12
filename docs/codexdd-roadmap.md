@@ -1,5 +1,16 @@
 # CodexDD roadmap
 
+## Current DD-BL-006 priority — CodexDD 0.4.4 (2026-10-12)
+
+- **0.4.3 upstream integration:** PR #52 merged at `d8ad52cc223362a03f4dc5b40ec51695b3c48936` with tracked upstream `rust-v0.162.0` and product identity `0.4.3`. This GitHub merge does not itself prove a later production installation.
+- **0.4.4 activated, IN DEVELOPMENT:** fix DD-BL-006, the BREAKWATER Node/TypeScript Mechanical Validation profile blocker. Canonical issue: `codex-dd — Upcoming Version Backlog` in Google Drive. Dedicated CodexDD branch: `dd/codexdd-0.4.4-dd-bl-006`; durable working design/checkpoints: [`docs/codexdd-0.4.4-dd-bl-006-reconnaissance.md`](codexdd-0.4.4-dd-bl-006-reconnaissance.md).
+- Scope: active Git-worktree profile discovery, fail-closed LVO error evidence and blocked Worker termination, narrow Node command policy, and explicit Node contract integration on isolated BREAKWATER tooling branch. Preserve no-source-edit Mechanical Validation and SHA/run-bound native evidence.
+- **Validation not yet accepted.** Source branches are not release candidates until cheap Daniel-CL native checks, Node contract/runtime proof, and final CI pass. No automatic merge or install.
+- The historical 0.4.2/0.4.3 roadmap sections below are retained as release planning history; their earlier `NEXT` / `QUEUED` labels are superseded by this entry.
+
+---
+
+
 ## Current production state (2026-10-09)
 
 **CodexDD 0.4.2 is deployed and operational, including the elevated Windows SSH F2 warning hotfix.**
