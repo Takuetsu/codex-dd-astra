@@ -15,9 +15,54 @@ use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 
 impl ChatWidget {
+    /// Terminalize a deterministic native LVO configuration/infrastructure error
+    /// without spending another Worker attempt or treating it as capability pressure.
+    /// A failed built-in profile event must be current-thread/current-turn and have
+    /// no repairable product-failure fingerprint. Source remains untouched.
+    pub(super) fn stop_for_nonrepairable_codexdd_profile_error(
+        &mut self,
+        source_turn_id: &str,
+    ) -> bool {
+        if !self.adaptive_effort.enabled
+            || self.adaptive_effort.paused_by_user
+            || self.adaptive_effort.workflow_terminal.is_some()
+            || self.adaptive_effort.worker_context.role != AdaptiveWorkerRole::Implementation
+            || self.adaptive_effort.implementation_phase
+                != Some(AdaptiveImplementationPhase::MechanicalValidation)
+        {
+            return false;
+        }
+        let Some(thread_id) = self.thread_id else {
+            return false;
+        };
+        if !self
+            .adaptive_effort
+            .evidence_registry
+            .has_nonrepairable_codexdd_validation_error_for_turn(thread_id, source_turn_id)
+        {
+            return false;
+        }
+        self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+            source_turn_id: source_turn_id.to_string(),
+        });
+        self.adaptive_effort.last_outcome = Some(crate::adaptive_policy::AdaptiveOutcome::Unknown);
+        self.adaptive_effort.last_failure_kind =
+            Some(crate::adaptive_policy::AdaptiveFailureKind::OwnerDecision);
+        self.add_info_message(
+            "CodexDD Mechanical Validation stopped at BLOCKED: the repository-owned LVO profile is unavailable or returned a nonrepairable infrastructure/contract error. No source repair, model escalation, native PASS or automatic validation handoff is authorized. Preserve the working tree and resolve the profile/configuration blocker before starting a new Worker."
+                .to_string(),
+            None,
+        );
+        self.latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::Blocked);
+        true
+    }
+
     pub(super) fn consume_adaptive_signal_at_terminal(&mut self, source_turn_id: &str) -> bool {
         if self.adaptive_effort.workflow_terminal.is_some() {
             return false;
+        }
+        if self.stop_for_nonrepairable_codexdd_profile_error(source_turn_id) {
+            return true;
         }
         let Some(pending_signal) = self.adaptive_effort.pending_signal.as_ref() else {
             return false;
