@@ -159,7 +159,10 @@ try {
         # Oct-12 r3 failed at stage 8 because a batch-logon thread-store
         # test could not open state_5.sqlite in a user-profile temp directory.
         # A complete stage-8 S4U test, with the exact same target + options
-        # as the release profile, is a cheap (< 21 stages) environment gate.
+        # as the release profile, is a bounded (< 21 stages) environment gate.
+        # Compilation may be needed despite a warm target cache. The launcher
+        # allows up to 15 minutes for the probe to finish, without treating
+        # a probe timeout or launch acknowledgement as release success.
         $storeLog=Join-Path $cfg.RunDir 'thread-store-smoke.log'
         $savedPreference=$ErrorActionPreference
         Push-Location -LiteralPath (Join-Path $cfg.Checkout 'codex-rs')
@@ -260,7 +263,7 @@ foreach ($task in @($probeName,$releaseName)) {
 Register-ScheduledTask -TaskName $probeName -Action (New-TaskAction 'Smoke') -Principal $principal -Settings $settings -Description 'One-shot CodexDD v2 release S4U smoke (no compilation)' | Out-Null
 Start-ScheduledTask -TaskName $probeName
 $probeFile=Join-Path $runDir 'smoke-result.json'
-$timeout=[DateTime]::UtcNow.AddMinutes(3)
+$timeout=[DateTime]::UtcNow.AddMinutes(15)
 while (!(Test-Path -LiteralPath $probeFile -PathType Leaf) -and [DateTime]::UtcNow -lt $timeout) {
     Start-Sleep -Seconds 1
 }
