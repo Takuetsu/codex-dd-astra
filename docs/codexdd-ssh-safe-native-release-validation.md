@@ -126,6 +126,63 @@ The next short-path r3 S4U preflight (`20261012-172511-84f273df`) ran the exact 
 
 Launcher commit `1de016c521a47f0e0c65767083a85ef1a1c57fe8` requires native exit 0 and exactly `15 tests run: 15 passed`, accepts the nonnegative filtered skip count, and retains the **unchanged 15-test release-stage selection**. Parser cases were checked against the observed positive output and several fail/partial/native-nonzero negatives. The existing 268/268 SQLite gate, ConPTY gate, immutable candidate/source checks, and full native receipt requirement are unchanged. This correction is **GitHub-side only until a new Daniel-CL attempt supplies fresh evidence**.
 
+## Mandatory live monitor after every 21-stage launch
+
+**Operator handoff contract:** As soon as the launch command prints `CODEXDD_DETACHED_RELEASE_STARTED`, the assistant must provide the operator a **copy/paste-ready PowerShell monitor script**, populated with that launch's exact **Task name** and **Run directory**. This is required **every time a full 21-stage profile starts**, including retries and revised candidates. Do not wait for a separate request, send placeholder task IDs, or schedule periodic notifications. The monitor runs independently of the release, polls about every 30 seconds, reports the most recent begin/end stage when present in the recent log tail, and stops automatically when `release-result.json` appears.
+
+Template for the assistant to specialize (replace both placeholder values in the *user-facing* command):
+
+```powershell
+$run = 'REPLACE_WITH_EXACT_RUN_DIRECTORY_FROM_LAUNCHER'
+$task = 'REPLACE_WITH_EXACT_TASK_NAME_FROM_LAUNCHER'
+$resultFile = Join-Path $run 'release-result.json'
+$log = Join-Path $run 'release-stdout.log'
+
+while (-not (Test-Path -LiteralPath $resultFile)) {
+    $scheduledTask = Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue
+    $state = if ($scheduledTask) { $scheduledTask.State } else { 'NotFound' }
+    Write-Host "`n$(Get-Date -Format 'HH:mm:ss') - Task: $state"
+
+    if (Test-Path -LiteralPath $log) {
+        $latest = Get-Content -LiteralPath $log -Tail 500 |
+            Where-Object {
+                $_ -match '^CODEXDD_VALIDATION_JSON ' -and
+                $_ -match '"event":"stage_(begin|end)"'
+            } | Select-Object -Last 1
+        if ($latest) {
+            $eventData = ($latest -replace '^CODEXDD_VALIDATION_JSON ', '') |
+                ConvertFrom-Json
+            Write-Host "$($eventData.ordinal)/21 - $($eventData.stage) - $($eventData.event)"
+        }
+    }
+
+    if ($state -ne 'Running') {
+        Start-Sleep -Seconds 5
+        if (-not (Test-Path -LiteralPath $resultFile)) {
+            Write-Warning 'Task stopped without a release result. Inspect logs.'
+            break
+        }
+    } else {
+        Start-Sleep -Seconds 30
+    }
+}
+
+if (Test-Path -LiteralPath $resultFile) {
+    $result = Get-Content -LiteralPath $resultFile -Raw | ConvertFrom-Json
+    Write-Host "`nRELEASE FINISHED: $($result.status.ToUpper())"
+    $result | Format-List status,exit_code,first_failed_stage,detail,receipt_path
+
+    if ($result.status -eq 'pass' -and $result.exit_code -eq 0 -and
+        $result.receipt_path -and (Test-Path -LiteralPath $result.receipt_path)) {
+        Write-Host '21-stage release PASS with receipt found.'
+    } else {
+        Write-Warning 'Full release PASS with receipt is not confirmed.'
+    }
+}
+```
+
+The monitor is **read-only**; `Ctrl+C` stops polling but **does not interrupt the independently running Scheduled Task**. A successful `CODEXDD_DETACHED_RELEASE_STARTED`, task state `Ready`, partial stage PASS, or monitor exit is **not** a full release PASS. Preserve the immutable release evidence on failure. The full native receipt, candidate/source/production binding, and GitHub promotion gates remain authoritative.
+
 ## Reconnect, inspect, and clean up
 
 From any later SSH session to Daniel-CL:
