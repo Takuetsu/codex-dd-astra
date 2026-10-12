@@ -45,6 +45,15 @@ class ManualWorkflowSafetyTests(unittest.TestCase):
         self.assertIn("normalize_console_or_file_receipt_json", PROMOTE)
         self.assertIn("OWNER_ACCEPTANCE", PROMOTE)
         self.assertNotIn("codexdd-test-release.ps1", PROMOTE)
+        # This is an inline Python/stdin script, not a script executed from
+        # .github/scripts. Without PYTHONPATH the native receipt gate fails
+        # with ModuleNotFoundError before validating any receipt fields.
+        step = PROMOTE.split(
+            "      - name: Require native release receipt and exact owner semantic acceptance\n",
+            1,
+        )[1].split("\n      - name:", 1)[0]
+        self.assertIn("python3 - <<'PY'", step)
+        self.assertIn("PYTHONPATH: ${{ github.workspace }}/.github/scripts", step)
 
     def test_v1_workflows_never_implicitly_invoke_v2(self):
         for filename in ("upstream-prepare.yml", "upstream-promote.yml"):
