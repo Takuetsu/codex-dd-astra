@@ -65,7 +65,7 @@ $plan = [ordered]@{
     Checkout=$CandidateCheckout; Sha=$head; Branch=$branch; SourceSha=[string]$m.source_snapshot_commit_sha
     ProductionSha=[string]$m.production_sha; Manifest=$manifestPath; ManifestSha256=$manifestHash
     DiscoverySha256=$disc; ConflictsSha256=$conf; Git=$git; Cargo=$cargo; Python=$python
-    PowerShell=$psExe; PathPrefix=$pathPrefix; CargoTargetDir=[string]$env:CARGO_TARGET_DIR
+    PowerShell=$psExe; PathPrefix=$pathPrefix; CargoTargetDir=[string]([Environment]::GetEnvironmentVariable('CARGO_TARGET_DIR'))
     User=$user; RunDir=$runDir
 }
 $utf8 = New-Object Text.UTF8Encoding($false)
