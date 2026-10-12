@@ -4,7 +4,7 @@
 
 ## Why this exists
 
-PowerShell launched inside an SSH session is not reliably durable across SSH disconnects, laptop sleep or session teardown. A successful SSH command that *starts* a lengthy test does not guarantee the child process survives. **For long-running candidate-bound 21-stage and other broad Windows release gates, launch a manually started Windows Scheduled Task that owns the test process independently of SSH.** Never attempt to "detach" a test that is already running; let it finish as-is or follow the failure recovery contract.
+PowerShell launched inside an SSH session is not reliably durable across SSH disconnects, laptop sleep or session teardown. A successful SSH command that _starts_ a lengthy test does not guarantee the child process survives. **For long-running candidate-bound 21-stage and other broad Windows release gates, launch a manually started Windows Scheduled Task that owns the test process independently of SSH.** Never attempt to "detach" a test that is already running; let it finish as-is or follow the failure recovery contract.
 
 ## Non-negotiable requirements
 
@@ -19,7 +19,7 @@ PowerShell launched inside an SSH session is not reliably durable across SSH dis
 
 ## One-shot Task Scheduler pattern (operator SSH; future release runs)
 
-The assistant prepares and checks the repository-owned runner script and the *exact release-specific inputs* first. The operator should only need a short task-registration/start command and later a status command. A Scheduled Task runs a PowerShell **wrapper script stored outside the worktree**; the wrapper must implement the safety and logging contract above.
+The assistant prepares and checks the repository-owned runner script and the _exact release-specific inputs_ first. The operator should only need a short task-registration/start command and later a status command. A Scheduled Task runs a PowerShell **wrapper script stored outside the worktree**; the wrapper must implement the safety and logging contract above.
 
 ```powershell
 # Example only. Prepare a signed-off, exact-candidate runner outside the repo.
@@ -62,7 +62,7 @@ The launcher:
 
 - Refuses non-Daniel-CL hosts, unexpected candidate SHA, wrong branch, dirty worktree, original blocked-discovery SHA drift, or sidecar drift.
 - Creates a **unique per-attempt external directory** under `E:\codexdd-validation-runs` for the candidate, local runner, nonsecret plan, native logs and candidate-bound receipt. Creates a **separate short per-attempt** `E:\ddtmp\<run-id>` scratch directory for both `TEMP` and `TMP` (path budget at most 60 characters). A deep nested log directory is unsuitable for Windows AF_UNIX socket tests.
-- Registers and starts an S4U task-account smoke check for Git/Python/Cargo/nextest, the previously required `test_stdio_server.exe`, **one real ConPTY-backed CLI test** (`daemon_exclusion_survives_resume_picker`), **all 15 unfiltered TUI daemon-startup tests**, **and the full 268-test thread-store library stage**. This is a bounded *preflight suite* compared with all 21 release stages; cache misses can still add build time. Saves `cli-pty-smoke.log`, `tui-daemon-smoke.log` and `thread-store-smoke.log`. Any failure **blocks** the long release test without a waiver. The launcher removes the successful probe task.
+- Registers and starts an S4U task-account smoke check for Git/Python/Cargo/nextest, the previously required `test_stdio_server.exe`, **one real ConPTY-backed CLI test** (`daemon_exclusion_survives_resume_picker`), **all 15 unfiltered TUI daemon-startup tests**, **and the full 268-test thread-store library stage**. This is a bounded _preflight suite_ compared with all 21 release stages; cache misses can still add build time. Saves `cli-pty-smoke.log`, `tui-daemon-smoke.log` and `thread-store-smoke.log`. Any failure **blocks** the long release test without a waiver. The launcher removes the successful probe task.
 - Registers and starts one **manual, nonrecurring** eight-hour-bounded `CodexDD-043-<sha>-<id>-release` task, configured to ignore duplicate executions. **No Git ref, source file or candidate manifest is modified.**
 - The task executes the frozen candidate's unmodified v2 entrypoint with both approved blocked-discovery checksums. Native stdout/stderr are redirected to logs, the child exit code is propagated, and a full 21-stage PASS must include the exact candidate/source/production-bound JSON receipt copied to the run directory.
 - Distinguishes a `CODEXDD_DETACHED_RELEASE_STARTED` **launch acknowledgement** from actual `release-result.json` **PASS**. Never interpret a successful scheduler start, partial profile, missing result file or prior targeted-test PASS as native release completion.
@@ -102,7 +102,7 @@ The previous S4U run's `release-result.json` used `exit_code: 2` and `detail: Re
 
 ## Windows PowerShell 5.1 inline Python quoting failure (2026-10-12)
 
-During the revision-r3 launch, the candidate checkout updated correctly to `9349fa6d487ce3f64a07a3c468c7a1395d6d3787`, but the *separate launcher extraction* failed before task creation. A single-quoted PowerShell argument to `python.exe -c '...'` lost interior Python string quotation marks when passed through the Windows PowerShell 5.1 native process argument marshaller. Python returned `SyntaxError` and `RUNNER EXTRACTION FAILED`. **No new Scheduled Task or release test was started by that failed attempt.** This is a shell-command handoff defect, not a source or Cargo test failure.
+During the revision-r3 launch, the candidate checkout updated correctly to `9349fa6d487ce3f64a07a3c468c7a1395d6d3787`, but the _separate launcher extraction_ failed before task creation. A single-quoted PowerShell argument to `python.exe -c '...'` lost interior Python string quotation marks when passed through the Windows PowerShell 5.1 native process argument marshaller. Python returned `SyntaxError` and `RUNNER EXTRACTION FAILED`. **No new Scheduled Task or release test was started by that failed attempt.** This is a shell-command handoff defect, not a source or Cargo test failure.
 
 For all future launcher retrieval in Windows PowerShell 5.1, **do not use embedded `python -c` string literals** as a raw Git-byte extraction method. Use the earlier `git -c core.autocrlf=false archive` procedure, extract the ZIP outside the candidate checkout, and verify the exact Git blob with `git hash-object --no-filters` **inside the same fail-fast PowerShell script block before execution**. If the blob differs, stop and diagnose; never fall back to an unchecked launcher. This archive/hash method does not change the frozen candidate or source and does not repeat prior successful tests.
 
@@ -122,7 +122,7 @@ The test constructs a temporary Unix-domain socket under `TEMP` with a nested `c
 
 ## October 12, 2026 S4U TUI smoke parsing correction
 
-The next short-path r3 S4U preflight (`20261012-172511-84f273df`) ran the exact `cargo nextest run --no-fail-fast -p codex-tui --lib daemon_startup_tests` release-stage selector on Daniel-CL, including the previously failing AF_UNIX socket test. Native Nextest output showed **15 tests run: 15 passed, 5827 skipped** in 0.990 seconds; the task itself returned **native exit 0**. The launcher then mistakenly rejected the passed run because its summary expression required `0 skipped`. The 5,827 are *unselected unrelated TUI library tests* (Nextest's filtered skip count), **not skipped members of the 15 selected cases**. The launcher stopped fail-closed and **did not start another 21-stage release**; this is a launcher parser defect, not evidence of a new source failure.
+The next short-path r3 S4U preflight (`20261012-172511-84f273df`) ran the exact `cargo nextest run --no-fail-fast -p codex-tui --lib daemon_startup_tests` release-stage selector on Daniel-CL, including the previously failing AF_UNIX socket test. Native Nextest output showed **15 tests run: 15 passed, 5827 skipped** in 0.990 seconds; the task itself returned **native exit 0**. The launcher then mistakenly rejected the passed run because its summary expression required `0 skipped`. The 5,827 are _unselected unrelated TUI library tests_ (Nextest's filtered skip count), **not skipped members of the 15 selected cases**. The launcher stopped fail-closed and **did not start another 21-stage release**; this is a launcher parser defect, not evidence of a new source failure.
 
 Launcher commit `1de016c521a47f0e0c65767083a85ef1a1c57fe8` requires native exit 0 and exactly `15 tests run: 15 passed`, accepts the nonnegative filtered skip count, and retains the **unchanged 15-test release-stage selection**. Parser cases were checked against the observed positive output and several fail/partial/native-nonzero negatives. The existing 268/268 SQLite gate, ConPTY gate, immutable candidate/source checks, and full native receipt requirement are unchanged. This correction is **GitHub-side only until a new Daniel-CL attempt supplies fresh evidence**.
 
@@ -130,7 +130,7 @@ Launcher commit `1de016c521a47f0e0c65767083a85ef1a1c57fe8` requires native exit 
 
 **Operator handoff contract:** As soon as the launch command prints `CODEXDD_DETACHED_RELEASE_STARTED`, the assistant must provide the operator a **copy/paste-ready PowerShell monitor script**, populated with that launch's exact **Task name** and **Run directory**. This is required **every time a full 21-stage profile starts**, including retries and revised candidates. Do not wait for a separate request, send placeholder task IDs, or schedule periodic notifications. The monitor runs independently of the release, polls about every 30 seconds, reports the most recent begin/end stage when present in the recent log tail, and stops automatically when `release-result.json` appears.
 
-Template for the assistant to specialize (replace both placeholder values in the *user-facing* command):
+Template for the assistant to specialize (replace both placeholder values in the _user-facing_ command):
 
 ```powershell
 $run = 'REPLACE_WITH_EXACT_RUN_DIRECTORY_FROM_LAUNCHER'
