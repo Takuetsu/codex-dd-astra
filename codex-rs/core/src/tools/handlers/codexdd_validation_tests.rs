@@ -32,9 +32,10 @@ fn profiles_map_to_fixed_scripts_and_bounded_timeouts() {
 }
 
 #[test]
-fn repository_discovery_requires_markers_and_selected_profile() {
+fn repository_discovery_supports_explicit_rust_and_node_profiles() {
     let directory = tempdir().expect("tempdir");
     let root = directory.path();
+    fs::create_dir(root.join(".git")).expect("git");
     fs::create_dir_all(root.join("codex-rs")).expect("codex-rs");
     fs::create_dir_all(root.join("scripts")).expect("scripts");
     fs::create_dir_all(root.join("nested").join("work")).expect("nested");
@@ -42,20 +43,79 @@ fn repository_discovery_requires_markers_and_selected_profile() {
     fs::write(root.join("codex-rs").join("Cargo.toml"), "").expect("cargo");
     fs::write(root.join("scripts").join("codexdd-test-targeted.ps1"), "").expect("profile");
 
+    let nested = root.join("nested").join("work");
     assert_eq!(
-        discover_repository_root(
-            &root.join("nested").join("work"),
-            ValidationProfile::Targeted,
-        ),
-        Some(root.to_path_buf())
+        discover_repository_root(&nested, ValidationProfile::Targeted),
+        Ok(root.to_path_buf()),
     );
+    let missing = discover_repository_root(&nested, ValidationProfile::WorkPacket)
+        .expect_err("missing profile must fail closed");
+    assert!(missing.contains("is not configured"));
+    assert!(missing.contains("No validation ran or PASS receipt was issued"));
+
+    // A legitimate Node/TypeScript worktree can opt into the exact same
+    // repository-owned contract without inheriting CodexDD's Rust markers.
+    let node = tempdir().expect("node");
+    let node_root = node.path();
+    fs::write(node_root.join(".git"), "gitdir: ../metadata").expect("worktree marker");
+    fs::write(node_root.join("package.json"), r#"{"scripts":{"test":"vitest run"}}"#)
+        .expect("node manifest");
+    fs::create_dir_all(node_root.join("scripts")).expect("node scripts");
+    fs::create_dir_all(node_root.join("src")).expect("node source");
+    fs::write(node_root.join("scripts").join("codexdd-test-workpacket.ps1"), "")
+        .expect("node profile");
     assert_eq!(
-        discover_repository_root(
-            &root.join("nested").join("work"),
-            ValidationProfile::WorkPacket,
-        ),
-        None
+        discover_repository_root(&node_root.join("src"), ValidationProfile::WorkPacket),
+        Ok(node_root.to_path_buf())
     );
+}
+
+#[test]
+fn missing_node_profile_cannot_fall_back_to_parent_repository() {
+    let parent = tempdir().expect("parent");
+    let outer = parent.path();
+    fs::create_dir(outer.join(".git")).expect("outer git");
+    fs::create_dir(outer.join("scripts")).expect("outer scripts");
+    fs::write(outer.join("scripts").join("codexdd-test-workpacket.ps1"), "")
+        .expect("outer profile");
+
+    let inner = outer.join("breakwater");
+    fs::create_dir(&inner).expect("inner");
+    fs::create_dir(inner.join(".git")).expect("inner git");
+    fs::write(inner.join("package.json"), r#"{"name":"breakwater"}"#).expect("manifest");
+    fs::create_dir(inner.join("src")).expect("inner src");
+    let error = discover_repository_root(&inner.join("src"), ValidationProfile::WorkPacket)
+        .expect_err("must not use parent repo's profile");
+    assert!(error.contains(&inner.display().to_string()));
+    assert!(!error.contains("expected ") || error.contains("breakwater"));
+}
+
+#[test]
+fn validation_requires_a_git_worktree() {
+    let directory = tempdir().expect("tempdir");
+    let error = discover_repository_root(directory.path(), ValidationProfile::Targeted)
+        .expect_err("no git root");
+    assert!(error.contains("no .git root was found"));
+}
+
+#[cfg(unix)]
+#[test]
+fn validation_rejects_profile_symlink_escape() {
+    use std::os::unix::fs::symlink;
+    let directory = tempdir().expect("tempdir");
+    let root = directory.path();
+    fs::create_dir(root.join(".git")).expect("git");
+    fs::create_dir(root.join("scripts")).expect("scripts");
+    let outside = tempdir().expect("outside");
+    fs::write(outside.path().join("runner.ps1"), "").expect("outside script");
+    symlink(
+        outside.path().join("runner.ps1"),
+        root.join("scripts").join("codexdd-test-workpacket.ps1"),
+    )
+    .expect("symlink");
+    let error = discover_repository_root(root, ValidationProfile::WorkPacket)
+        .expect_err("symlink must not cross repository boundary");
+    assert!(error.contains("cross-repository script execution is forbidden"));
 }
 
 #[test]
