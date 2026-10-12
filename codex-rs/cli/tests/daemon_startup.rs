@@ -128,11 +128,6 @@ async fn bedrock_onboarding_leaves_a_running_daemon_untouched() -> Result<()> {
 }
 
 async fn daemon_startup(command: &str) -> Result<()> {
-    // SessionHeaderHistoryCell::display_lines renders "OpenAI Codex" but
-    // intentionally omits the model name. We strip whitespace from the
-    // vt100 screen below, so look for this visible brand title instead of
-    // the model name that exists only in raw transcript metadata.
-    const VISIBLE_TUI_HEADER: &str = "OpenAICodex";
     #[cfg(windows)]
     let elevated = codex_app_server_daemon::is_elevated()?;
     #[cfg(not(windows))]
@@ -246,17 +241,21 @@ async fn daemon_startup(command: &str) -> Result<()> {
         };
         let expected = if command == "start" {
             // The draft header is visible before the session's command composer is ready.
-            steps.push_back((VISIBLE_TUI_HEADER, b"/status\r"));
+            steps.push_back(("GPT-5.6-Terra", b"/status\r"));
             "Server:Localbackgroundserver"
         } else if elevated_launch || command == "restrictive-job" && elevated {
             if let Some(action) = command.strip_prefix("elevated-") {
                 args.push(action.into());
                 steps.push_back(("Nosessionsyet", b"\x1b"));
             }
-            steps.push_back((VISIBLE_TUI_HEADER, b"\x14"));
-            "Runningasadministrator:sharedbackgroundserverdisabled."
+            // Elevated Windows launches deliberately use embedded mode without
+            // an F2 warning (see elevated_windows_implicit_startup_uses_embedded_without_f2_warning).
+            // Verify that the interactive session accepts /status, then assert
+            // that no daemon was created. Waiting for the old warning would time out.
+            steps.push_back(("GPT-5.6-Terra", b"/status\r"));
+            "Model:"
         } else if command == "restrictive-job" {
-            steps.push_back((VISIBLE_TUI_HEADER, b"\x14"));
+            steps.push_back(("GPT-5.6-Terra", b"\x14"));
             "Runningwithoutthesharedbackgroundserver:thisWindowslauncher"
         } else if mismatch {
             args.extend(if disabling && !persisted {
@@ -274,7 +273,7 @@ async fn daemon_startup(command: &str) -> Result<()> {
             if command == "mismatch-cancel" {
                 "--no-daemon"
             } else {
-                steps.push_back((VISIBLE_TUI_HEADER, b"/status\r"));
+                steps.push_back(("GPT-5.6-Terra", b"/status\r"));
                 if restart { "Server:Localbackgroundserver" } else { "Model:" }
             }
         } else if bedrock_onboarding {
@@ -282,10 +281,13 @@ async fn daemon_startup(command: &str) -> Result<()> {
         } else {
             args.extend([command.into(), "--strict-config".into()]);
             steps.push_back(("Nosessionsyet", b"\x1b"));
-            steps.push_back((VISIBLE_TUI_HEADER, b"\x14"));
             if elevated {
-                "Runningasadministrator:sharedbackgroundserverdisabled."
+                // Like elevated fresh starts, elevated resume/fork shows no F2
+                // warning; use the visible /status model row for readiness.
+                steps.push_back(("GPT-5.6-Terra", b"/status\r"));
+                "Model:"
             } else {
+                steps.push_back(("GPT-5.6-Terra", b"\x14"));
                 "Runningwithoutthesharedbackgroundserver:--strict-config"
             }
         };
@@ -378,6 +380,10 @@ async fn daemon_startup(command: &str) -> Result<()> {
                     } else if elevated_launch {
                         ensure!(!home.path().join("app-server-daemon").exists());
                         ensure!(!home.path().join("packages/app-server-daemon").exists());
+                    } else if elevated && command != "restrictive-job" {
+                        // Embedded resume/fork must not create a shared daemon.
+                        ensure!(!pid_file.exists(), "unexpected shared daemon PID");
+                        ensure!(!home.path().join("app-server-daemon").exists());
                     } else if bedrock_onboarding || command == "restrictive-job" {
                         ensure!(!pid_file.exists());
                         if command == "restrictive-job" && !elevated {
