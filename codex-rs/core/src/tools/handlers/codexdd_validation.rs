@@ -305,10 +305,42 @@ impl CodexDDValidationHandler {
                     .as_ref()
                     .map(ToolOutput::log_output)
                     .unwrap_or_else(std::string::ToString::to_string);
-                return Err(FunctionCallError::RespondToModel(format!(
+                let message = format!(
                     "CodexDD validation did not produce its required full log {}: {err}. Execution detail: {execution_note}",
                     temp_log_path.display()
-                )));
+                );
+                // Missing native logs are infrastructure errors, not a reason to
+                // retry or reclassify model capability. Capture the diagnostic
+                // out-of-tree and emit an explicitly unsuccessful tool result.
+                let codex_home = invocation.turn.config.codex_home.to_path_buf();
+                let repo_id = repository_log_id(&repository_root);
+                let final_log_path = persist_validation_log(
+                    &codex_home,
+                    &repo_id,
+                    &run_id,
+                    message.as_bytes(),
+                )
+                .await?;
+                let summary = ValidationSummary {
+                    contract_version: CONTRACT_VERSION,
+                    profile: args.profile.contract_name().to_string(),
+                    status: "error".to_string(),
+                    exit_code: 2,
+                    stages: Vec::new(),
+                    failed_stage: None,
+                    error_type: Some("missing_native_log".to_string()),
+                    message: Some(message),
+                    log_path: final_log_path.display().to_string(),
+                };
+                return emit_validation_result(
+                    &invocation,
+                    args.profile,
+                    &run_id,
+                    &branch,
+                    &head_sha,
+                    &summary,
+                )
+                .await;
             }
         };
         let log_text = String::from_utf8(log_bytes.clone()).map_err(|err| {
