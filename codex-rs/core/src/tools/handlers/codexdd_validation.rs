@@ -201,8 +201,12 @@ impl CodexDDValidationHandler {
             .cwd()
             .to_abs_path()
             .map_err(|err| FunctionCallError::RespondToModel(err.to_string()))?;
-        let repository_root = discover_repository_root(cwd.as_path(), args.profile)
+        let repository_root = find_active_repository_root(cwd.as_path())
             .map_err(FunctionCallError::RespondToModel)?;
+        // Keep preflight errors as a typed, non-PASS LVO tool completion. A generic
+        // tool-call exception would disappear from the native receipt registry,
+        // leaving an unfinished Mechanical Validation Worker in retry pressure.
+        let profile_error = validate_repository_profile(&repository_root, args.profile).err();
         let script_path = repository_root
             .join("scripts")
             .join(args.profile.script_name());
@@ -223,6 +227,35 @@ impl CodexDDValidationHandler {
         let branch = git_info.branch;
 
         let run_id = validation_run_id(&invocation.call_id);
+        if let Some(message) = profile_error {
+            // No repository validation script is executed, and an ERROR can never
+            // become a successful work-packet receipt or repair fingerprint.
+            let codex_home = invocation.turn.config.codex_home.to_path_buf();
+            let repo_id = repository_log_id(&repository_root);
+            let final_log_path =
+                persist_validation_log(&codex_home, &repo_id, &run_id, message.as_bytes()).await?;
+            let summary = ValidationSummary {
+                contract_version: CONTRACT_VERSION,
+                profile: args.profile.contract_name().to_string(),
+                status: "error".to_string(),
+                exit_code: 2,
+                stages: Vec::new(),
+                failed_stage: None,
+                error_type: Some("profile_unavailable".to_string()),
+                message: Some(message),
+                log_path: final_log_path.display().to_string(),
+            };
+            return emit_validation_result(
+                &invocation,
+                args.profile,
+                &run_id,
+                &branch,
+                &head_sha,
+                &summary,
+            )
+            .await;
+        }
+
         let temp_log_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.log"));
         if let Err(err) = tokio::fs::remove_file(&temp_log_path).await
             && err.kind() != std::io::ErrorKind::NotFound
@@ -310,78 +343,98 @@ impl CodexDDValidationHandler {
             summary.message = Some(err.to_string());
         }
 
-        let success = summary.status == "pass" && summary.exit_code == 0;
-        let failure_fingerprint = validation_failure_fingerprint(args.profile, &summary);
-        let receipt_arguments = json!({
-            "profile": args.profile.tool_name(),
-            "result": summary.status.clone(),
-            "run_id": run_id.clone(),
-            "branch": branch.clone(),
-            "head_sha": head_sha.clone(),
-            "log_path": summary.log_path.clone(),
-            "failure_fingerprint": failure_fingerprint,
-            "failed_stage": summary.failed_stage.clone(),
-        });
-        let receipt_started = TurnItem::DynamicToolCall(DynamicToolCallItem {
-            id: invocation.call_id.clone(),
-            namespace: None,
-            tool: TOOL_NAME.to_string(),
-            arguments: receipt_arguments.clone(),
-            status: DynamicToolCallStatus::InProgress,
-            content_items: None,
-            success: None,
-            error: None,
-            duration: None,
-        });
-        invocation
-            .session
-            .emit_turn_item_started(invocation.turn.as_ref(), &receipt_started)
-            .await;
-        invocation
-            .session
-            .emit_turn_item_completed(
-                invocation.turn.as_ref(),
-                TurnItem::DynamicToolCall(DynamicToolCallItem {
-                    id: invocation.call_id.clone(),
-                    namespace: None,
-                    tool: TOOL_NAME.to_string(),
-                    arguments: receipt_arguments,
-                    status: DynamicToolCallStatus::Completed,
-                    content_items: None,
-                    success: Some(success),
-                    error: (!success).then(|| {
-                        summary
-                            .message
-                            .clone()
-                            .or_else(|| {
-                                summary
-                                    .failed_stage
-                                    .as_ref()
-                                    .map(|stage| format!("validation failed at {stage}"))
-                            })
-                            .unwrap_or_else(|| "validation did not pass".to_string())
-                    }),
-                    duration: None,
-                }),
-            )
-            .await;
-
-        let operator_summary = ValidationOperatorSummary {
-            summary: &summary,
-            run_id: &run_id,
-            branch: branch.as_deref(),
-            head_sha: &head_sha,
-        };
-        let text = serde_json::to_string(&operator_summary).map_err(|err| {
-            FunctionCallError::RespondToModel(format!(
-                "failed to serialize CodexDD validation summary: {err}"
-            ))
-        })?;
-        Ok(boxed_tool_output(
-            FunctionToolOutput::from_text(text, Some(success))
-                .with_evidence_id(invocation.call_id.clone()),
-        ))
+        emit_validation_result(
+            &invocation,
+            args.profile,
+            &run_id,
+            &branch,
+            &head_sha,
+            &summary,
+        )
+        .await
     }
+}
+
+/// Emits a typed completed control-tool result for both native executions and
+/// preflight-only profile errors. Errors are evidence of a blocker, never PASS.
+async fn emit_validation_result(
+    invocation: &ToolInvocation,
+    profile: ValidationProfile,
+    run_id: &str,
+    branch: &Option<String>,
+    head_sha: &str,
+    summary: &ValidationSummary,
+) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
+    let success = summary.status == "pass" && summary.exit_code == 0;
+    let failure_fingerprint = validation_failure_fingerprint(profile, summary);
+    let receipt_arguments = json!({
+        "profile": profile.tool_name(),
+        "result": summary.status.clone(),
+        "run_id": run_id,
+        "branch": branch.clone(),
+        "head_sha": head_sha,
+        "log_path": summary.log_path.clone(),
+        "failure_fingerprint": failure_fingerprint,
+        "failed_stage": summary.failed_stage.clone(),
+    });
+    let receipt_started = TurnItem::DynamicToolCall(DynamicToolCallItem {
+        id: invocation.call_id.clone(),
+        namespace: None,
+        tool: TOOL_NAME.to_string(),
+        arguments: receipt_arguments.clone(),
+        status: DynamicToolCallStatus::InProgress,
+        content_items: None,
+        success: None,
+        error: None,
+        duration: None,
+    });
+    invocation
+        .session
+        .emit_turn_item_started(invocation.turn.as_ref(), &receipt_started)
+        .await;
+    invocation
+        .session
+        .emit_turn_item_completed(
+            invocation.turn.as_ref(),
+            TurnItem::DynamicToolCall(DynamicToolCallItem {
+                id: invocation.call_id.clone(),
+                namespace: None,
+                tool: TOOL_NAME.to_string(),
+                arguments: receipt_arguments,
+                status: DynamicToolCallStatus::Completed,
+                content_items: None,
+                success: Some(success),
+                error: (!success).then(|| {
+                    summary
+                        .message
+                        .clone()
+                        .or_else(|| {
+                            summary
+                                .failed_stage
+                                .as_ref()
+                                .map(|stage| format!("validation failed at {stage}"))
+                        })
+                        .unwrap_or_else(|| "validation did not pass".to_string())
+                }),
+                duration: None,
+            }),
+        )
+        .await;
+    let operator_summary = ValidationOperatorSummary {
+        summary,
+        run_id,
+        branch: branch.as_deref(),
+        head_sha,
+    };
+    let text = serde_json::to_string(&operator_summary).map_err(|err| {
+        FunctionCallError::RespondToModel(format!(
+            "failed to serialize CodexDD validation summary: {err}"
+        ))
+    })?;
+    Ok(boxed_tool_output(
+        FunctionToolOutput::from_text(text, Some(success))
+            .with_evidence_id(invocation.call_id.clone()),
+    ))
 }
 
 impl CoreToolRuntime for CodexDDValidationHandler {
@@ -407,18 +460,20 @@ fn validation_failure_fingerprint(
 /// the nearest Git root takes precedence over any ancestor: a missing profile in
 /// a Node/TypeScript worktree must not fall back to another repository's scripts.
 /// The profile contract is language-neutral, but always explicit and repo-owned.
-fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Result<PathBuf, String> {
-    let repository_root = cwd
-        .ancestors()
+fn find_active_repository_root(cwd: &Path) -> Result<PathBuf, String> {
+    cwd.ancestors()
         .find(|candidate| {
             let git = candidate.join(".git");
             git.is_dir() || git.is_file()
         })
+        .map(Path::to_path_buf)
         .ok_or_else(|| {
             "CodexDD validation requires a Git worktree; no .git root was found above the active working directory. No validation was run."
                 .to_string()
-        })?;
+        })
+}
 
+fn validate_repository_profile(repository_root: &Path, profile: ValidationProfile) -> Result<(), String> {
     let script_path = repository_root
         .join("scripts")
         .join(profile.script_name());
@@ -450,8 +505,14 @@ fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Result<Pa
             repository_root.display()
         ));
     }
+    Ok(())
+}
 
-    Ok(repository_root.to_path_buf())
+#[cfg(test)]
+fn discover_repository_root(cwd: &Path, profile: ValidationProfile) -> Result<PathBuf, String> {
+    let repository_root = find_active_repository_root(cwd)?;
+    validate_repository_profile(&repository_root, profile)?;
+    Ok(repository_root)
 }
 
 fn validation_powershell_command(
