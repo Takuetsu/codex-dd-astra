@@ -137,12 +137,17 @@ try {
         $exitCode=[int]$child.ExitCode
         $lines=@(Get-Content -LiteralPath $stdout)
         $failure=@($lines | Where-Object { $_.StartsWith('CODEXDD_VALIDATION_JSON ') -and
-            $_.Contains('"event":"stage_end"') -and $_.Contains('"status":"fail"') } | Select-Object -Last 1)
+            $_.Contains('"event":"stage_end"') -and
+            ($_.Contains('"status":"fail"') -or $_.Contains('"status":"error"')) } | Select-Object -Last 1)
         if ($failure.Count -eq 1) {
             $event=$failure[0].Substring('CODEXDD_VALIDATION_JSON '.Length) | ConvertFrom-Json -ErrorAction Stop
             $failedStage=[string]$event.stage
-        }
-        if ($exitCode -ne 0) {
+            # A stage_end FAIL is authoritative even if an intermediate Windows
+            # PowerShell process unexpectedly reports exit code 0. Never bury
+            # a real failing test behind the missing-receipt fallback.
+            if ($exitCode -eq 0) { $exitCode=2 }
+            $detail="Native release stage '$failedStage' reported $($event.status); see release-stdout.log and release-stderr.log"
+        } elseif ($exitCode -ne 0) {
             $detail="Native release validator failed with exit $exitCode"
         } else {
             $end=@($lines | Where-Object { $_.StartsWith('CODEXDD_VALIDATION_JSON ') -and $_.Contains('"event":"profile_end"') })
