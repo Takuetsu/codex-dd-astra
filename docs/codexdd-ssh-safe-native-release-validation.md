@@ -120,6 +120,12 @@ The second detached r3 attempt (`CodexDD-043-9349fa6d487c-20261012-165708-da995b
 
 The test constructs a temporary Unix-domain socket under `TEMP` with a nested `control/server.sock` suffix. Because the previous scratch path was nested inside a long `E:\codexdd-validation-runs\<40-char SHA>\<run-id>` log directory, that filesystem path exceeded the native Windows socket name limit; changing the production TUI/runtime or weakening the socket-protection assertion is unnecessary and prohibited by the candidate freeze. The new external launcher instead allocates a short dedicated local scratch path, verifies S4U access, and requires the exact **15/15 TUI daemon tests** in S4U preflight before starting the costly release. This is a corrective proposal pending actual Daniel-CL validation, not a claimed native PASS. Preserve the failed task's result and logs separately.
 
+## October 12, 2026 S4U TUI smoke parsing correction
+
+The next short-path r3 S4U preflight (`20261012-172511-84f273df`) ran the exact `cargo nextest run --no-fail-fast -p codex-tui --lib daemon_startup_tests` release-stage selector on Daniel-CL, including the previously failing AF_UNIX socket test. Native Nextest output showed **15 tests run: 15 passed, 5827 skipped** in 0.990 seconds; the task itself returned **native exit 0**. The launcher then mistakenly rejected the passed run because its summary expression required `0 skipped`. The 5,827 are *unselected unrelated TUI library tests* (Nextest's filtered skip count), **not skipped members of the 15 selected cases**. The launcher stopped fail-closed and **did not start another 21-stage release**; this is a launcher parser defect, not evidence of a new source failure.
+
+Launcher commit `1de016c521a47f0e0c65767083a85ef1a1c57fe8` requires native exit 0 and exactly `15 tests run: 15 passed`, accepts the nonnegative filtered skip count, and retains the **unchanged 15-test release-stage selection**. Parser cases were checked against the observed positive output and several fail/partial/native-nonzero negatives. The existing 268/268 SQLite gate, ConPTY gate, immutable candidate/source checks, and full native receipt requirement are unchanged. This correction is **GitHub-side only until a new Daniel-CL attempt supplies fresh evidence**.
+
 ## Reconnect, inspect, and clean up
 
 From any later SSH session to Daniel-CL:
