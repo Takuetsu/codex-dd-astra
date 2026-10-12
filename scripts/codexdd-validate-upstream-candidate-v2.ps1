@@ -10,6 +10,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'codexdd-v2-receipt.ps1')
+. (Join-Path $PSScriptRoot 'codexdd-python-executable.ps1')
 
 Push-Location -LiteralPath $repositoryRoot
 try {
@@ -56,7 +57,9 @@ try {
     }
 
     $cli = Join-Path $repositoryRoot '.github\scripts\upstream_reconciliation_cli.py'
-    $python = (Get-Command python -CommandType Application -ErrorAction Stop).Source
+    $python = Resolve-CodexDDPythonPath -Candidates @(
+        Get-Command python -All -CommandType Application -ErrorAction Stop
+    )
     $preflightArgs = @(
         $cli, '--repo', $repositoryRoot, '--mode', 'native',
         '--manifest', $manifestRelative,
