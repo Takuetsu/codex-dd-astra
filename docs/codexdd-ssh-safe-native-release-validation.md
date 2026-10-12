@@ -71,6 +71,27 @@ Current CodexDD 0.4.3 release candidate is `677dd64923afd4a2236075b9da92e5f6ff50
 
 **S4U limitation:** The same user name does not guarantee the same interactive profile or network credentials. The first one-shot Scheduled Task smoke check is required; if it fails, do **not** automatically fall back to SSH-owned execution, `SYSTEM`, or an elevated account. Review its result and fix the account context first.
 
+## Git for Windows archive checksum guard (observed October 2026)
+
+When extracting the exact launcher commit into a **separate temporary directory** for Daniel-CL, note that `git archive` on Windows **can apply `core.autocrlf=true` working-tree conversion to archived `.ps1` files**. The Git blob is LF-only but the ZIP entry can be CRLF. As a result, `git hash-object --no-filters <extracted-file>` may differ from the committed Git blob although the text commands appear identical. This was reproduced in a separate Git fixture. The October 12 operator launch printed `LAUNCHER CONTENT MISMATCH` but then proceeded after the interactive `throw`, which is **not** an acceptable verification sequence for future runs. Its subsequent `CODEXDD_DETACHED_RELEASE_STARTED` proves the Scheduled Task launch command completed, **not** a native release PASS.
+
+For **future** retrieval, force raw-blob archive bytes and check before running anything:
+
+```powershell
+# Set exact release-specific commit/expected Git blob and already allocated destination first.
+git -c core.autocrlf=false -C $checkout archive --format=zip -o $zip $launcherCommit `
+    'scripts/codexdd-start-detached-v2-release.ps1'
+if ($LASTEXITCODE -ne 0) { throw 'Exact launcher archive failed' }
+Expand-Archive -LiteralPath $zip -DestinationPath $destination -ErrorAction Stop
+$actual = (git -C $checkout hash-object --no-filters $launcher).Trim()
+if ($LASTEXITCODE -ne 0 -or $actual -cne $expectedBlob) {
+    throw 'Exact launcher Git blob mismatch: DO NOT RUN'
+}
+# Launch the verified script only inside the same fail-fast script/function.
+```
+
+A failing guard must **terminate the whole launcher orchestration**. Pasting a second, separate PowerShell invocation after an earlier interactive `throw` bypasses the guard. Do not repair the hash by mutating the frozen candidate, disabling integrity checks, or running multiple concurrent release profiles. For the October 12 **already-running** detached candidate, do **not** stop or restart the task merely to improve extraction; await its actual `release-result.json` and preserve all logs/receipts.
+
 ## Reconnect, inspect, and clean up
 
 From any later SSH session to Daniel-CL:
