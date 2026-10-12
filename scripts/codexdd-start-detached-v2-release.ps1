@@ -270,6 +270,14 @@ if (!(Test-Path -LiteralPath $probeFile -PathType Leaf)) {
 }
 $smoke=Get-Content -LiteralPath $probeFile -Raw | ConvertFrom-Json -ErrorAction Stop
 if ($smoke.status -cne 'pass' -or $smoke.exit_code -ne 0) {
+    $storeLog=Join-Path $runDir 'thread-store-smoke.log'
+    $ptyLog=Join-Path $runDir 'cli-pty-smoke.log'
+    $failureLog=if (Test-Path -LiteralPath $storeLog -PathType Leaf) { $storeLog }
+        elseif (Test-Path -LiteralPath $ptyLog -PathType Leaf) { $ptyLog } else { $null }
+    if ($null -ne $failureLog) {
+        Write-Host ('CODEXDD_S4U_SMOKE_LOG: '+$failureLog)
+        Get-Content -LiteralPath $failureLog -Tail 45
+    }
     throw "Scheduled Task smoke failed: $($smoke.detail); inspect $runDir"
 }
 Unregister-ScheduledTask -TaskName $probeName -Confirm:$false
