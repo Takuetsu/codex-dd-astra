@@ -128,6 +128,10 @@ jobs:
 
       - name: Require native release receipt and exact owner semantic acceptance
         shell: bash
+        env:
+          # Inline python3 - <<'PY' executes from stdin; unlike .github/scripts/*.py,
+          # it does not put that module directory on sys.path automatically.
+          PYTHONPATH: ${{ github.workspace }}/.github/scripts
         run: |
           set -euo pipefail
           python3 - <<'PY'
