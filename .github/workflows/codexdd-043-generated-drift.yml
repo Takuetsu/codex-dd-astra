@@ -35,7 +35,7 @@ jobs:
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git merge-base --is-ancestor 16fdc9826e800ebabab920eadd8e1d976d2f645f HEAD
-          git diff --quiet 343be968e5c10b5703f95517eb6ed4be955f4f91 HEAD -- codex-rs sdk/python/src/openai_codex/generated
+          git diff --quiet fe0e375ab422273bab29b6c4e5e3aa45825f47b4 HEAD -- codex-rs sdk/python/src/openai_codex/generated
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
           test -z "$(git status --porcelain)"

@@ -39,7 +39,7 @@ jobs:
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unpinned checkout' }
           git merge-base --is-ancestor 16fdc9826e800ebabab920eadd8e1d976d2f645f HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Approved tooling production is not an ancestor' }
-          git diff --quiet 343be968e5c10b5703f95517eb6ed4be955f4f91 HEAD -- codex-rs sdk/python/src/openai_codex/generated
+          git diff --quiet fe0e375ab422273bab29b6c4e5e3aa45825f47b4 HEAD -- codex-rs sdk/python/src/openai_codex/generated
           if ($LASTEXITCODE -ne 0) { throw 'Rust or SDK source drifted from postformat audited snapshot' }
           if ((Get-Content -Raw codex-rs/codexdd-version.txt).Trim() -ne '0.4.3') { throw 'Unexpected CodexDD product identity' }
           if ((Get-Content -Raw codex-rs/upstream-codex-release.txt).Trim() -ne 'rust-v0.162.0') { throw 'Unexpected upstream identity' }
