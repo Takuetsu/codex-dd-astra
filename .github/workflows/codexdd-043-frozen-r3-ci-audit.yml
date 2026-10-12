@@ -1,0 +1,208 @@
+# Temporary, read-only GitHub CI audit of CodexDD 0.4.3 r3.
+# GitHub pull_request CI is skipped by the frozen candidate HEAD's [skip ci]
+# commit message. Do not amend/replace that HEAD: its native 21-stage receipt
+# binds its exact commit SHA. Every checkout below fetches THAT SAME SHA.
+# Delete this temporary workflow after capturing evidence; never merge it into
+# production. A green audit does not automatically set PR #52 required checks.
+name: CodexDD 0.4.3 frozen r3 exact-tree CI audit
+
+on:
+  push:
+    branches:
+      - docs/codexdd-ssh-safe-release-validation
+    paths:
+      - .github/workflows/codexdd-043-frozen-r3-ci-audit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-043-frozen-r3-ci-audit
+  cancel-in-progress: false
+
+jobs:
+  immutable-identity:
+    name: Immutable candidate and baseline evidence
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: 9349fa6d487ce3f64a07a3c468c7a1395d6d3787
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reject candidate tree or baseline drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '9349fa6d487ce3f64a07a3c468c7a1395d6d3787'
+          test "$(git rev-parse HEAD^{tree})" = 'cb43f0b3f48fb5b16b73b4ec18b08ea4fafc5221'
+          git cat-file -e '16fdc9826e800ebabab920eadd8e1d976d2f645f^{commit}'
+          git merge-base --is-ancestor '16fdc9826e800ebabab920eadd8e1d976d2f645f' '9349fa6d487ce3f64a07a3c468c7a1395d6d3787'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.3'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          echo 'Frozen candidate commit/tree and production ancestry PASS'
+  check:
+    name: Blob size policy
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: openai/fence@e6b39c80c51cb2b2a39448ddeff74b3b886c0a63 # pin@v0.10.0
+        with:
+          mode: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: 9349fa6d487ce3f64a07a3c468c7a1395d6d3787
+
+      - name: Exact frozen-tree/blob comparison (not a PR-triggered diff)
+        id: range
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '9349fa6d487ce3f64a07a3c468c7a1395d6d3787'
+          echo "base=16fdc9826e800ebabab920eadd8e1d976d2f645f" >> "$GITHUB_OUTPUT"
+          echo "head=9349fa6d487ce3f64a07a3c468c7a1395d6d3787" >> "$GITHUB_OUTPUT"
+
+      - name: Check changed blob sizes
+        env:
+          BASE_SHA: ${{ steps.range.outputs.base }}
+          HEAD_SHA: ${{ steps.range.outputs.head }}
+        run: |
+          python3 scripts/check_blob_size.py \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --max-bytes 512000 \
+            --allowlist .github/blob-size-allowlist.txt
+
+      - name: Check for a clean worktree
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree
+
+  cargo-deny:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./codex-rs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: 9349fa6d487ce3f64a07a3c468c7a1395d6d3787
+
+      - uses: ./.github/actions/setup-ci
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@82eb9f621fbc699dd0918f3ea06864c14cc84246 # v2
+        with:
+          rust-version: 1.95.0
+          manifest-path: ./codex-rs/Cargo.toml
+
+      - name: Check for a clean worktree
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree
+
+  codespell:
+    name: Check for spelling errors
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: 9349fa6d487ce3f64a07a3c468c7a1395d6d3787
+      - name: Annotate locations with typos
+        uses: codespell-project/codespell-problem-matcher@b80729f885d32f78a716c2f107b4db1025001c42 # v1.1.0
+      - name: Codespell
+        uses: codespell-project/actions-codespell@8f01853be192eb0f849a5c7d721450e7a467c579 # v2.2
+        with:
+          ignore_words_file: .codespellignore
+
+      - name: Check for a clean worktree
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree
+
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: 9349fa6d487ce3f64a07a3c468c7a1395d6d3787
+
+      - uses: ./.github/actions/setup-ci
+
+      - name: Test codexdd upstream sync helpers
+        run: python3 .github/scripts/test_upstream_sync.py
+
+      - name: Verify codex-rs Cargo manifests inherit workspace settings
+        run: python3 .github/scripts/verify_cargo_workspace_manifests.py
+
+      - name: Verify codex-tui does not import codex-core directly
+        run: python3 .github/scripts/verify_tui_core_boundary.py
+
+      - name: Verify Bazel clippy flags match Cargo workspace lints
+        run: python3 .github/scripts/verify_bazel_clippy_lints.py
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.3"
+
+      - name: Test downstream Python release resolution
+        run: python3 -m unittest discover -s .github/scripts -p 'test_resolve_python_cli_release.py'
+
+      - name: Test release version comparison
+        run: python3 -m unittest discover -s .github/scripts -p 'test_releases.py'
+
+      - name: Test PyPI release verification
+        run: uv run --no-project --with packaging==26.2 python -m unittest discover -s .github/scripts -p 'test_verify_pypi_release.py'
+
+      - name: Test Codex package builder
+        run: python3 -m unittest discover -s scripts/codex_package -p 'test_*.py'
+
+      - name: Test standalone installer
+        run: python3 -m unittest discover -s scripts/install -p 'test_*.py'
+
+      - name: Test macOS signing and notarization
+        run: python3 -m unittest discover -s .github/scripts/macos-signing -p 'test_*.py'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Ensure root README.md contains only ASCII and certain Unicode code points
+        run: ./scripts/asciicheck.py README.md
+      - name: Check root README ToC
+        run: python3 scripts/readme_toc.py README.md
+
+      - name: Check formatting (run `just fmt` to fix)
+        run: just fmt-check
+
+      - name: Prettier (run `pnpm run format:fix` to fix)
+        run: pnpm run format
+
+      - name: Check for a clean worktree
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree
+
