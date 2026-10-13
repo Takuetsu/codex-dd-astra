@@ -138,8 +138,10 @@ fn parser_returns_compact_pass_summary() {
     let log = concat!(
         "native output\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":2}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_begin\",\"profile\":\"work-packet\",\"stage\":\"format-check\",\"ordinal\":1,\"stage_count\":2}\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"work-packet\",\"stage\":\"format-check\",\"ordinal\":1,\"status\":\"pass\",\"native_exit_code\":0,\"duration_ms\":9}\n",
         "more output\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_begin\",\"profile\":\"work-packet\",\"stage\":\"tests\",\"ordinal\":2,\"stage_count\":2}\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"work-packet\",\"stage\":\"tests\",\"ordinal\":2,\"status\":\"pass\",\"native_exit_code\":0,\"duration_ms\":20}\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"duration_ms\":29,\"completed_stages\":2}\n"
     );
@@ -181,6 +183,8 @@ fn parser_returns_compact_pass_summary() {
 fn parser_preserves_failed_stage_without_full_native_output() {
     let log = concat!(
         "thousands of compiler lines would remain only in the log\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"targeted\",\"stage_count\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_begin\",\"profile\":\"targeted\",\"stage\":\"core-adaptive-tests\",\"ordinal\":1,\"stage_count\":1}\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"targeted\",\"stage\":\"core-adaptive-tests\",\"ordinal\":1,\"status\":\"fail\",\"native_exit_code\":101,\"duration_ms\":77}\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"targeted\",\"status\":\"fail\",\"exit_code\":1,\"duration_ms\":78,\"completed_stages\":0,\"failed_stage\":\"core-adaptive-tests\"}\n"
     );
@@ -261,6 +265,83 @@ fn validation_failure_fingerprint_is_stage_scoped_and_errors_are_not_repairable(
     assert_eq!(
         validation_failure_fingerprint(ValidationProfile::WorkPacket, &infrastructure_error,),
         None
+    );
+}
+
+#[test]
+fn parser_refuses_profile_end_only_pass_without_running_declared_stages() {
+    let log = concat!(
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":2}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":2}\n",
+    );
+    assert_eq!(
+        parse_validation_summary(ValidationProfile::WorkPacket, log, Path::new("validation.log")),
+        Err("profile PASS did not match all declared, successful stages".to_string())
+    );
+}
+
+#[test]
+fn parser_refuses_fake_zero_stage_and_mismatched_node_passes() {
+    let prefix =
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":0}\n";
+    let terminal =
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":0}\n";
+    let empty_pass = format!("{prefix}{terminal}");
+    assert!(parse_validation_summary(
+        ValidationProfile::WorkPacket,
+        &empty_pass,
+        Path::new("validation.log"),
+    ).is_err());
+
+    let real_node_begin = concat!(
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_begin\",\"profile\":\"work-packet\",\"stage\":\"node-focused\",\"ordinal\":1,\"stage_count\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"work-packet\",\"stage\":\"node-focused\",\"ordinal\":1,\"status\":\"fail\",\"native_exit_code\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":1}\n",
+    );
+    assert_eq!(
+        parse_validation_summary(
+            ValidationProfile::WorkPacket,
+            real_node_begin,
+            Path::new("validation.log"),
+        ),
+        Err("profile PASS did not match all declared, successful stages".to_string())
+    );
+}
+
+#[test]
+fn parser_refuses_unmatched_node_stage_and_duplicate_terminal() {
+    let prefix = concat!(
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"targeted\",\"stage_count\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_begin\",\"profile\":\"targeted\",\"stage\":\"node-focused\",\"ordinal\":1}\n",
+    );
+    let unmatched = format!(
+        "{prefix}CODEXDD_VALIDATION_JSON {{\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"targeted\",\"stage\":\"other-test\",\"ordinal\":1,\"status\":\"pass\",\"native_exit_code\":0}}\n"
+    );
+    assert_eq!(
+        parse_validation_summary(ValidationProfile::Targeted, &unmatched, Path::new("validation.log")),
+        Err("stage_end does not match its stage_begin".to_string())
+    );
+
+    let accepted = concat!(
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"targeted\",\"stage_count\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_begin\",\"profile\":\"targeted\",\"stage\":\"node-focused\",\"ordinal\":1}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"targeted\",\"stage\":\"node-focused\",\"ordinal\":1,\"status\":\"pass\",\"native_exit_code\":0}\n",
+        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"targeted\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":1}\n",
+    );
+    assert!(parse_validation_summary(
+        ValidationProfile::Targeted, accepted, Path::new("validation.log")
+    ).is_ok());
+    let duplicate = format!(
+        "{accepted}CODEXDD_VALIDATION_JSON {{\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"targeted\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":1}}\n"
+    );
+    assert_eq!(
+        parse_validation_summary(
+            ValidationProfile::Targeted,
+            &duplicate,
+            Path::new("validation.log"),
+        ),
+        Err("validation event emitted after profile_end".to_string())
     );
 }
 
