@@ -10,7 +10,6 @@
 
 ---
 
-
 ## Current production state (2026-10-09)
 
 **CodexDD 0.4.2 is deployed and operational, including the elevated Windows SSH F2 warning hotfix.**

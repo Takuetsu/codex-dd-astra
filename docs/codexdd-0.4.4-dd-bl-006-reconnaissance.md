@@ -15,7 +15,7 @@
 
 1. **Observed:** protected Mechanical Validation demands `scripts/codexdd-test-workpacket.ps1` beneath a directory with `justfile` and `codex-rs/Cargo.toml`; a valid Node repository fails before native testing. Follow-on shell commands and retries cannot legitimately create a PASS receipt.
 2. **Reproduction target:** the standalone `discover_repository_root` test on a mock Git worktree with `package.json`, and a nested Git repository beneath a parent with a different configured profile.
-3. **Expected:** resolve the nearest active Git worktree and *only* its explicit repo-owned contract-v1 profile; if missing, give a clear nonrepairable configuration blocker, no cross-repo execution, no PASS/repair evidence and no model-family escalation. Preserve worktree edits, valid identity-bound receipts, trusted terminals, and mechanical no-write guard.
+3. **Expected:** resolve the nearest active Git worktree and _only_ its explicit repo-owned contract-v1 profile; if missing, give a clear nonrepairable configuration blocker, no cross-repo execution, no PASS/repair evidence and no model-family escalation. Preserve worktree edits, valid identity-bound receipts, trusted terminals, and mechanical no-write guard.
 4. **Owning paths:** `codex-rs/core/src/tools/handlers/codexdd_validation.rs` and tests, mechanical command policy in `codex-rs/core/src/tools/registry.rs`, and TUI admission/continuation paths including `codex-rs/tui/src/chatwidget/adaptive_admission.rs`.
 
 ## Packet 1A — implemented, not yet locally validated
@@ -39,6 +39,7 @@
 ## Source checkpoint — October 12, 2026 (validation not run)
 
 CodexDD integration: `dd/codexdd-0.4.4-dd-bl-006` (product `0.4.4`, upstream retained at `rust-v0.162.0`). Changes:
+
 - Runner now discovers the nearest active Git worktree (`.git` file or directory), rejects path escapes and missing profiles, and emits a structured **non-PASS** result for a missing/invalid repo-owned profile or missing execution log. It preserves native SHA/run-bound evidence, log capture and repair fingerprints only for real test failures.
 - Mechanical command admission permits bounded, named BREAKWATER-style npm diagnostics (typecheck/lint/format checks/build/test/focused/maps) plus read-only Git inspection, with arbitrary scripts/flags/unguarded raw commands rejected. Shell diagnostics **do not** count as a native LVO PASS.
 - The current-turn, built-in failed `run_codexdd_validation` event without a repairable stage fingerprint deterministically blocks the Implementation Worker's Mechanical Validation phase, suppressing unfinished-turn retries, capability pressure and false `ready_for_validation` terminalization. Actual failed test stages retain their bounded repair path.
@@ -46,6 +47,7 @@ CodexDD integration: `dd/codexdd-0.4.4-dd-bl-006` (product `0.4.4`, upstream ret
 - Candidate product identity is `0.4.4`; no CI, binary or installation evidence yet.
 
 BREAKWATER opt-in on **separate untouched-gameplay branch**:
+
 - Repository: `Takuetsu/breakwater`
 - Branch: `codex/tooling/codexdd-044-node-lvo-contract`
 - Original owner-accepted evidence-tooling base: `fc20cb9c0576668b2853a09032b3d5086e5b423d`

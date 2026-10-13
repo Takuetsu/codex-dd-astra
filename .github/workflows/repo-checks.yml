@@ -79,12 +79,6 @@ jobs:
       - name: Prettier (run `pnpm run format:fix` to fix)
         run: pnpm run format
 
-      - name: Capture 0.4.4 Prettier exact patch (temporary diagnostic)
-        if: failure()
-        run: |
-          pnpm exec prettier --write docs/codexdd-0.4.4-dd-bl-006-reconnaissance.md docs/codexdd-roadmap.md
-          git diff -- docs/codexdd-0.4.4-dd-bl-006-reconnaissance.md docs/codexdd-roadmap.md
-
       - name: Check for a clean worktree
         if: always() && !cancelled()
         uses: ./.github/actions/check-clean-worktree

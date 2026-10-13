@@ -4,6 +4,7 @@
 Legacy audit evidence is not silently autoformatted as part of an unrelated
 0.4.4 runtime hotfix. Every excluded blob remains byte-for-byte checked.
 """
+
 import hashlib
 import json
 from pathlib import Path
@@ -26,7 +27,7 @@ def main() -> None:
         raise SystemExit("Frozen baseline ignore markers must occur once")
     start = ignored.index(START)
     end = ignored.index(END)
-    if end <= start or set(ignored[start + 1:end]) != set(entries):
+    if end <= start or set(ignored[start + 1 : end]) != set(entries):
         raise SystemExit("Frozen Prettier exclusions do not match audited manifest")
 
     for relpath, expected in sorted(entries.items()):
@@ -34,9 +35,8 @@ def main() -> None:
         if not path.is_file():
             raise SystemExit(f"Frozen source missing: {relpath}")
         content = path.read_bytes()
-        digest = hashlib.sha1(
-            f"blob {len(content)}".encode("ascii") + bytes([0]) + content
-        ).hexdigest()
+        blob = b"blob " + str(len(content)).encode("ascii") + bytes([0]) + content
+        digest = hashlib.sha1(blob).hexdigest()
         if digest != expected:
             raise SystemExit(
                 f"Frozen baseline changed: {relpath}; "
