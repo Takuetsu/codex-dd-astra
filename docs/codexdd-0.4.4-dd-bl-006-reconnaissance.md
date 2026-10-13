@@ -75,3 +75,20 @@ While reviewing the native runner after the successful Node smoke, a separate un
 - Stage FAIL still carries its deterministic failed_stage/failure_fingerprint for bounded source repair. Runtime/contract ERROR remains nonrepairable and terminalizes BLOCKED.
 - Additional regression fixtures include Rust + Node event streams, incomplete fake PASS, zero-stage fake PASS, failed stage followed by fake PASS, stage-name mismatch and duplicate terminal events.
 - This parser change is **not yet locally validated**. Before broad CI, re-run the cheap `cargo fmt --all -- --check` and `cargo test --locked -p codex-core --lib codexdd_validation` on the latest exact CodexDD feature commit, then (when dependencies are available) run only BREAKWATER `targeted` to exercise the real Node/TypeScript contract. Avoid `work_packet`, `release` and 21-stage suites at this step.
+
+## Real BREAKWATER targeted proof and independent exit guard — October 13, 2026
+
+**Owner-observed Daniel-CL PASS:** On the isolated `D:\bw55\.worktrees\codexdd-044-node-contract` tooling worktree at `3eedd91b111e4aa4049adce59764d4d94fee4463`, the Windows `targeted` LVO entrypoint executed the actual BREAKWATER semaphore-backed `npm run validation:focused` flow. Git diff, staged diff and TypeScript typecheck all exited zero. Native contract-v1 events reported `stage_count=3`, sequential stage PASS and `profile_end status=pass, exit_code=0, completed_stages=3`. Wall clock in the profile: 7.19 seconds; TypeScript focused check: 6.27 seconds. **This is not proof that CodexDD's tool itself emitted a bound completion receipt**; the check called the repo-owned profile directly.
+
+In the same owner command group, CodexDD Rust format and `codexdd_validation` unit-test filters completed without stopping. Those tests apply to earlier candidate `11f604bd7bf6abdad8c98650d534553f80856219`; additional SHA-bound changes after that require new CI.
+
+**Independent native child-exit safeguard:** A subsequent source audit identified a second fake-PASS vector: the outer runner previously validated contract events without comparing the subprocess's true PowerShell exit code to the terminal declaration. The wrapper now records the child's exit code in a separate per-run temporary sidecar, outside source; any missing or mismatched exit code downgrades to a typed nonrepairable `error` and no PASS or repair fingerprint, even if all JSON events claim success. Malformed UTF-8 output is also parsed fail-closed rather than throwing away the native result. Dedicated unit tests added for match, mismatch and absent exit file. **This newest candidate has not yet passed its GitHub CI.**
+
+**Independent BREAKWATER CI diagnostic:** existing push CI on the isolated Node tooling branch reached maps/typecheck/lint, then failed or was superseded during full Vitest. A completed prior run at `777e63d177137c0f570f293ff73d7d773d619a4f` logged 11 gameplay-test timeouts/failures among 1,210 tests; no gameplay source was changed on the tooling branch relative to `fc20cb9c0576668b2853a09032b3d5086e5b423d`. Do not treat unrelated historical gameplay-test flakes as this Node contract's PASS, change gameplay, or waive the actual independent milestone gate.
+
+### Release boundary remains open
+
+- Latest code must pass Windows CI with the new exit-status unit coverage, plus actual native CodexDD `run_codexdd_validation` receipt identity checks.
+- `targeted` Node contract PASS is verified; the standalone `work_packet` profile and native end-to-end handoff have not yet passed on an exact immutable candidate.
+- Keep BREAKWATER's scripts on the isolated tooling branch until project-level authorization to integrate. Do not merge into active 0.55E gameplay lineage or main without explicit gate approval.
+- No release/installer signoff or 21/21 native Windows full profile is asserted.
