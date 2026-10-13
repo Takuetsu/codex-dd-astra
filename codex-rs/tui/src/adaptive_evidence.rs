@@ -191,6 +191,30 @@ impl AdaptiveEvidenceRegistry {
         )
     }
 
+    /// Only the native LVO runner can count as progress in protected Mechanical
+    /// Validation. Inspection commands and ad-hoc tests cannot substitute for
+    /// a structured validation receipt or extend an unavailable-tool loop.
+    pub(crate) fn has_codexdd_validation_run_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> bool {
+        self.entries.values().any(|entry| {
+            matches!(
+                entry,
+                AdaptiveEvidenceEntry::Valid(record)
+                    if record.thread_id == thread_id
+                        && record.source_turn_id == source_turn_id
+                        && matches!(
+                            record.outcome,
+                            AdaptiveEvidenceOutcome::Success | AdaptiveEvidenceOutcome::Failure
+                        )
+                        && record.kind == AdaptiveEvidenceKind::DynamicToolCall
+                        && record.tool_name.as_deref() == Some(CODEXDD_VALIDATION_TOOL_NAME)
+            )
+        })
+    }
+
     /// Infrastructure/profile errors never grant repair authority or model
     /// escalation. A completed built-in LVO call with a failed outcome and no
     /// product-failure fingerprint is a deterministic nonrepairable blocker.
