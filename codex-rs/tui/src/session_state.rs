@@ -312,6 +312,9 @@ fn apply_persisted_adaptive_workflow_state(
         workflow_terminal,
         transient_retry_consumed: false,
         unfinished_turn_pressure: 0,
+        // Restored state has no trustworthy per-turn native evidence; restart
+        // the in-memory progress streak rather than inheriting a stale count.
+        consecutive_no_native_progress_turns: 0,
         last_processed_terminal_turn_id: workflow_terminal.and(source_turn_id),
         pending_attempt: None,
         successor_admission: None,
