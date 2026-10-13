@@ -124,11 +124,14 @@ fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() 
         Path::new("C:\\work\\owner's repo"),
         Path::new("C:\\work\\owner's repo\\scripts\\codexdd-test-targeted.ps1"),
         Path::new("C:\\Temp\\validation.log"),
+        Path::new("C:\\Temp\\validation.exit"),
     );
 
     assert!(command.contains("'C:\\work\\owner''s repo'"));
     assert!(command.contains("codexdd-test-targeted.ps1"));
     assert!(command.contains("AppendAllText"));
+    assert!(command.contains("WriteAllText"));
+    assert!(command.contains("'C:\\Temp\\validation.exit'"));
     assert!(!command.contains("CODEXDD_VALIDATION_RUNNER"));
     assert!(!command.contains("work_packet"));
 }
@@ -343,6 +346,45 @@ fn parser_refuses_unmatched_node_stage_and_duplicate_terminal() {
         ),
         Err("validation event emitted after profile_end".to_string())
     );
+}
+
+#[test]
+fn native_exit_consistency_refuses_fake_pass_and_missing_process_exit() {
+    let original = ValidationSummary {
+        contract_version: 1,
+        profile: "targeted".to_string(),
+        status: "pass".to_string(),
+        exit_code: 0,
+        stages: vec![ValidationStageSummary {
+            stage: "node-focused".to_string(),
+            status: "pass".to_string(),
+            native_exit_code: Some(0),
+            duration_ms: Some(4),
+        }],
+        failed_stage: None,
+        error_type: None,
+        message: None,
+        log_path: "validation.log".to_string(),
+    };
+    let mut valid = original.clone();
+    enforce_native_exit_consistency(&mut valid, Some(0));
+    assert_eq!(valid, original);
+
+    let mut fabricated = original.clone();
+    enforce_native_exit_consistency(&mut fabricated, Some(1));
+    assert_eq!(fabricated.status, "error");
+    assert_eq!(fabricated.exit_code, 2);
+    assert_eq!(fabricated.error_type.as_deref(), Some("native_exit_mismatch"));
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::Targeted, &fabricated),
+        None
+    );
+
+    let mut missing = original;
+    enforce_native_exit_consistency(&mut missing, None);
+    assert_eq!(missing.status, "error");
+    assert_eq!(missing.exit_code, 2);
+    assert_eq!(missing.error_type.as_deref(), Some("native_exit_mismatch"));
 }
 
 #[test]
