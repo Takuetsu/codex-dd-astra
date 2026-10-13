@@ -620,6 +620,112 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn missing_native_progress_blocks_before_runaway_adaptive_escalation() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        chat.thread_id = Some(ThreadId::new());
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("isolated Node LVO smoke; no source edits".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        for (index, turn_id) in ["no-tool-1", "no-tool-2", "no-tool-3"].iter().enumerate() {
+            chat.turn_lifecycle.last_turn_id = Some((*turn_id).to_string());
+            assert!(chat.apply_adaptive_unfinished_authorized_turn(turn_id));
+            if index < 2 {
+                assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+                assert_eq!(
+                    chat.adaptive_effort.consecutive_no_native_progress_turns,
+                    (index + 1) as u8
+                );
+            }
+        }
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.attempt_number, 3);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+        assert!(!chat.maybe_submit_adaptive_successor());
+    }
+
+    #[tokio::test]
+    async fn genuine_native_activity_resets_no_progress_streak() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("bounded ongoing implementation".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        assert!(chat.apply_adaptive_unfinished_authorized_turn("no-tool-1"));
+        assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 1);
+
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            "native-work-2",
+            "native-work-command",
+            CommandExecutionStatus::Completed,
+            0,
+        ));
+        assert!(chat.apply_adaptive_unfinished_authorized_turn("native-work-2"));
+        assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 0);
+
+        assert!(chat.apply_adaptive_unfinished_authorized_turn("no-tool-3"));
+        assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 1);
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    }
+
+    #[tokio::test]
+    async fn trusted_mechanical_handoff_recovers_after_one_unfinished_turn() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "trusted-recovered-handoff";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("isolate missing tool exposure".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.adaptive_effort.unfinished_turn_pressure = 1;
+        chat.adaptive_effort.consecutive_no_native_progress_turns = 1;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::MechanicalValidation,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+        assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 0);
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert!(chat.adaptive_effort.pending_attempt.is_some());
+    }
+
+    #[tokio::test]
     async fn nonrepairable_profile_error_overrides_capability_pressure_and_green_signal() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
