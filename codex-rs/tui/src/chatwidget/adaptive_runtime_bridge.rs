@@ -19,6 +19,7 @@ use crate::adaptive_policy::classify_outcome;
 use crate::adaptive_policy::stronger_route;
 use crate::chatwidget::adaptive_effort::AdaptivePendingAttempt;
 use crate::chatwidget::adaptive_effort::AdaptivePendingDecision;
+use crate::chatwidget::adaptive_effort::CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT;
 
 impl ChatWidget {
     pub(super) fn apply_adaptive_complexity_floor(
@@ -57,6 +58,7 @@ impl ChatWidget {
         self.adaptive_effort.current_effort = Some(route.effort);
         self.adaptive_effort.attempt_number = next_attempt;
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.last_outcome = None;
         self.adaptive_effort.last_failure_kind = None;
@@ -124,6 +126,7 @@ impl ChatWidget {
         self.adaptive_effort.current_effort = Some(route.effort);
         self.adaptive_effort.attempt_number = next_attempt;
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.last_outcome = None;
         self.adaptive_effort.last_failure_kind = None;
@@ -261,6 +264,47 @@ impl ChatWidget {
             }
         }
 
+        // Unlike alternating unfinished-turn pressure, this streak cannot reset
+        // merely because the model escalated effort. A bound Implementation Worker
+        // returning prose without a native result or accepted lifecycle signal
+        // must not burn unlimited continuations while its required tool is absent.
+        // Normal implementation turns that produced native command/tool evidence
+        // reset the streak, preserving long-running productive development.
+        if self.adaptive_effort.worker_context.role
+            == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+            && self.adaptive_effort.complexity_class.is_some()
+        {
+            let native_progress = self.thread_id().is_some_and(|thread_id| {
+                self.adaptive_effort
+                    .evidence_registry
+                    .has_conclusive_evidence_for_turn(thread_id, source_turn_id)
+            });
+            let streak = if native_progress {
+                0
+            } else {
+                self.adaptive_effort
+                    .consecutive_no_native_progress_turns
+                    .saturating_add(1)
+            };
+            self.adaptive_effort.consecutive_no_native_progress_turns = streak;
+            if streak >= CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT {
+                self.apply_adaptive_terminal_classification(
+                    source_turn_id,
+                    AdaptiveOutcomeSignal::Failure(AdaptiveFailureKind::OwnerDecision),
+                    AdaptiveClassification::Blocked,
+                );
+                self.add_info_message(
+                    format!(
+                        "CodexDD stopped at BLOCKED: {} consecutive Implementation turns ended without an accepted lifecycle signal or completed native validation/work result. More adaptive effort cannot make an unavailable tool visible. Inspect the Worker phase, tool exposure, and required profile before starting a new Worker. No source repair, model escalation, or PASS receipt is authorized.",
+                        CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT
+                    ),
+                    None,
+                );
+                return true;
+            }
+        }
+        let state = &self.adaptive_effort;
+
         let controller = AdaptiveControllerState {
             starting_family,
             current_route,
@@ -369,6 +413,7 @@ impl ChatWidget {
         };
         let reduction = reduce_adaptive_controller(controller, classification);
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.current_family = Some(reduction.state.current_route.family);
         self.adaptive_effort.current_effort = Some(reduction.state.current_route.effort);
