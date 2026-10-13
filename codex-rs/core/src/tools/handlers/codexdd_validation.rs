@@ -91,6 +91,9 @@ struct ValidationEvent {
     exit_code: Option<i32>,
     native_exit_code: Option<i32>,
     duration_ms: Option<u64>,
+    ordinal: Option<u64>,
+    stage_count: Option<u64>,
+    completed_stages: Option<u64>,
     failed_stage: Option<String>,
     error_type: Option<String>,
     message: Option<String>,
@@ -664,7 +667,10 @@ fn parse_validation_summary(
     log_path: &Path,
 ) -> Result<ValidationSummary, String> {
     let mut stages = Vec::new();
+    let mut stage_begins = Vec::new();
+    let mut profile_stage_count = None;
     let mut profile_end = None;
+    let mut pending_stage: Option<(String, u64)> = None;
 
     for line in log.lines() {
         let Some(payload) = line.strip_prefix(EVENT_PREFIX) else {
@@ -684,15 +690,54 @@ fn parse_validation_summary(
                 profile.contract_name()
             ));
         }
+        if profile_end.is_some() {
+            return Err("validation event emitted after profile_end".to_string());
+        }
 
         match event.event.as_str() {
+            "profile_begin" => {
+                if profile_stage_count.is_some() {
+                    return Err("duplicate profile_begin event".to_string());
+                }
+                profile_stage_count = Some(event.stage_count.ok_or_else(|| {
+                    "profile_begin event omitted stage_count".to_string()
+                })?);
+            }
+            "stage_begin" => {
+                if profile_stage_count.is_none() || pending_stage.is_some() {
+                    return Err("stage_begin outside a valid validation stage".to_string());
+                }
+                let name = event
+                    .stage
+                    .ok_or_else(|| "stage_begin event omitted stage".to_string())?;
+                let ordinal = event
+                    .ordinal
+                    .ok_or_else(|| "stage_begin event omitted ordinal".to_string())?;
+                if ordinal != (stage_begins.len() as u64) + 1 {
+                    return Err("stage_begin ordinal is not sequential".to_string());
+                }
+                stage_begins.push(name.clone());
+                pending_stage = Some((name, ordinal));
+            }
             "stage_end" => {
+                let (expected_name, expected_ordinal) = pending_stage.take().ok_or_else(|| {
+                    "stage_end event has no matching stage_begin".to_string()
+                })?;
                 let stage = event
                     .stage
                     .ok_or_else(|| "stage_end event omitted stage".to_string())?;
+                if stage != expected_name || event.ordinal != Some(expected_ordinal) {
+                    return Err("stage_end does not match its stage_begin".to_string());
+                }
                 let status = event
                     .status
                     .ok_or_else(|| "stage_end event omitted status".to_string())?;
+                if !matches!(status.as_str(), "pass" | "fail" | "error") {
+                    return Err(format!("unrecognized validation stage status {status}"));
+                }
+                if status == "pass" && event.native_exit_code != Some(0) {
+                    return Err("PASS stage must have native exit code 0".to_string());
+                }
                 stages.push(ValidationStageSummary {
                     stage,
                     status,
@@ -700,8 +745,15 @@ fn parse_validation_summary(
                     duration_ms: event.duration_ms,
                 });
             }
-            "profile_end" => profile_end = Some(event),
-            "profile_begin" | "stage_begin" => {}
+            "profile_end" => {
+                if profile_stage_count.is_none() {
+                    return Err("profile_end without profile_begin".to_string());
+                }
+                if pending_stage.is_some() {
+                    return Err("profile_end while a stage is incomplete".to_string());
+                }
+                profile_end = Some(event);
+            }
             other => return Err(format!("unknown validation event '{other}'")),
         }
     }
@@ -713,6 +765,35 @@ fn parse_validation_summary(
     let exit_code = profile_end
         .exit_code
         .ok_or_else(|| "profile_end event omitted exit_code".to_string())?;
+    let declared_count = profile_stage_count.ok_or_else(|| {
+        "profile_begin event was not emitted".to_string()
+    })?;
+    if stage_begins.len() as u64 > declared_count {
+        return Err("more stages began than the declared profile stage_count".to_string());
+    }
+    let completed_passes = stages.iter().filter(|stage| stage.status == "pass").count() as u64;
+    if status == "pass" {
+        if exit_code != 0
+            || declared_count == 0
+            || stages.len() as u64 != declared_count
+            || stage_begins.len() as u64 != declared_count
+            || completed_passes != declared_count
+            || profile_end.completed_stages != Some(declared_count)
+        {
+            return Err("profile PASS did not match all declared, successful stages".to_string());
+        }
+    } else if status == "fail" {
+        if exit_code != 1
+            || stages.last().is_none_or(|stage| stage.status != "fail")
+            || profile_end.failed_stage.as_deref()
+                != stages.last().map(|stage| stage.stage.as_str())
+            || profile_end.completed_stages != Some(completed_passes)
+        {
+            return Err("profile FAIL did not match its failed stage".to_string());
+        }
+    } else if status != "error" || exit_code != 2 {
+        return Err("validation profile returned an invalid terminal status or exit code".to_string());
+    }
 
     Ok(ValidationSummary {
         contract_version: CONTRACT_VERSION,
