@@ -35,7 +35,7 @@ def main() -> None:
             raise SystemExit(f"Frozen source missing: {relpath}")
         content = path.read_bytes()
         digest = hashlib.sha1(
-            f"blob {len(content)}".encode("ascii") + b"\\0" + content
+            f"blob {len(content)}".encode("ascii") + bytes([0]) + content
         ).hexdigest()
         if digest != expected:
             raise SystemExit(
