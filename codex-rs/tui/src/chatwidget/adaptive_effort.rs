@@ -20,6 +20,9 @@ use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
+/// Consecutive unfinished Implementation turns without a completed native tool
+/// result indicate a stalled Worker, not evidence that more model effort helps.
+pub(crate) const CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT: u8 = 3;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
@@ -117,6 +120,8 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) workflow_terminal: Option<AdaptiveWorkflowTerminal>,
     pub(crate) transient_retry_consumed: bool,
     pub(crate) unfinished_turn_pressure: u8,
+    /// Stops runaway no-tool continuations independently of alternating effort pressure.
+    pub(crate) consecutive_no_native_progress_turns: u8,
     pub(crate) last_processed_terminal_turn_id: Option<String>,
     pub(crate) pending_attempt: Option<AdaptivePendingAttempt>,
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
@@ -268,6 +273,7 @@ impl AdaptiveEffortState {
         let evidence_registry = self.evidence_registry.clone();
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
+        let consecutive_no_native_progress_turns = self.consecutive_no_native_progress_turns;
         let validation_repair_fingerprint = self.validation_repair_fingerprint.clone();
         let validation_repair_cycles_used = self.validation_repair_cycles_used;
         let validation_targeted_retest_required = self.validation_targeted_retest_required;
@@ -291,6 +297,7 @@ impl AdaptiveEffortState {
             workflow_terminal,
             transient_retry_consumed: false,
             unfinished_turn_pressure: 0,
+            consecutive_no_native_progress_turns,
             last_processed_terminal_turn_id: None,
             pending_attempt: None,
             successor_admission: None,
@@ -571,6 +578,7 @@ impl ChatWidget {
         if operation == codex_app_server_protocol::ThreadWorkflowStateOperation::Clear {
             self.adaptive_effort.workflow_terminal = None;
             self.adaptive_effort.unfinished_turn_pressure = 0;
+            self.adaptive_effort.consecutive_no_native_progress_turns = 0;
             self.adaptive_effort.pending_attempt = None;
             self.adaptive_effort.pending_signal = None;
             self.adaptive_effort.successor_admission = None;
