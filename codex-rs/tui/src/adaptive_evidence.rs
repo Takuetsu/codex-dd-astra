@@ -342,6 +342,48 @@ impl AdaptiveEvidenceRegistry {
         })
     }
 
+    /// Control-plane tools can finish successfully while the Implementation
+    /// Worker makes no actual progress. Do not let tool discovery, status
+    /// queries or repeated signal attempts reset the no-progress watchdog.
+    pub(crate) fn has_native_implementation_work_for_turn(
+        &self,
+        thread_id: ThreadId,
+        source_turn_id: &str,
+    ) -> bool {
+        self.entries.values().any(|entry| {
+            let AdaptiveEvidenceEntry::Valid(record) = entry else {
+                return false;
+            };
+            if record.thread_id != thread_id
+                || record.source_turn_id != source_turn_id
+                || !matches!(
+                    record.outcome,
+                    AdaptiveEvidenceOutcome::Success | AdaptiveEvidenceOutcome::Failure
+                )
+            {
+                return false;
+            }
+            match record.kind {
+                AdaptiveEvidenceKind::CommandExecution | AdaptiveEvidenceKind::McpToolCall => true,
+                AdaptiveEvidenceKind::DynamicToolCall => record
+                    .tool_name
+                    .as_deref()
+                    .is_some_and(|name| {
+                        !matches!(
+                            name,
+                            "report_adaptive_signal"
+                                | "get_context_remaining"
+                                | "update_plan"
+                                | "tool_search"
+                                | "current_time"
+                                | "sleep"
+                                | "send_message_to_user"
+                        )
+                    }),
+            }
+        })
+    }
+
     pub(crate) fn conclusive_refs_for_thread(
         &self,
         thread_id: ThreadId,
