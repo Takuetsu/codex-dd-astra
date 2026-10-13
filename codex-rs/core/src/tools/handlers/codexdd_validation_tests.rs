@@ -145,6 +145,24 @@ fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() 
     assert!(command.contains("'C:\\Temp\\validation.exit'"));
     assert!(!command.contains("CODEXDD_VALIDATION_RUNNER"));
     assert!(!command.contains("work_packet"));
+    // Rust deletes stale temporary files before launching the command.
+    // A second Remove-Item -Force in PowerShell causes the Windows
+    // dangerous-command classifier to request approval or reject execution.
+    assert!(!command.contains("Remove-Item"));
+    let argv = vec![
+        "powershell.exe".to_string(),
+        "-NoProfile".to_string(),
+        "-Command".to_string(),
+        command.clone(),
+    ];
+    assert_eq!(
+        codex_shell_command::is_dangerous_command::dangerous_command_match_for_platform(
+            &argv,
+            codex_shell_command::is_dangerous_command::DangerousCommandPlatform::Windows,
+        ),
+        None,
+        "native validation capture must not trigger force-delete command policy",
+    );
 }
 
 #[test]
