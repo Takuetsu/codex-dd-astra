@@ -260,16 +260,24 @@ impl CodexDDValidationHandler {
         }
 
         let temp_log_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.log"));
-        if let Err(err) = tokio::fs::remove_file(&temp_log_path).await
-            && err.kind() != std::io::ErrorKind::NotFound
-        {
-            return Err(FunctionCallError::RespondToModel(format!(
-                "failed to prepare CodexDD validation temp log {}: {err}",
-                temp_log_path.display()
-            )));
+        let temp_exit_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.exit"));
+        for temporary_path in [&temp_log_path, &temp_exit_path] {
+            if let Err(err) = tokio::fs::remove_file(temporary_path).await
+                && err.kind() != std::io::ErrorKind::NotFound
+            {
+                return Err(FunctionCallError::RespondToModel(format!(
+                    "failed to prepare CodexDD validation temp file {}: {err}",
+                    temporary_path.display()
+                )));
+            }
         }
 
-        let command = validation_powershell_command(&repository_root, &script_path, &temp_log_path);
+        let command = validation_powershell_command(
+            &repository_root,
+            &script_path,
+            &temp_log_path,
+            &temp_exit_path,
+        );
         let inner_arguments = json!({
             "cmd": command,
             "shell": "powershell.exe",
@@ -304,6 +312,7 @@ impl CodexDDValidationHandler {
         let log_bytes = match tokio::fs::read(&temp_log_path).await {
             Ok(bytes) => bytes,
             Err(err) => {
+                let _ = tokio::fs::remove_file(&temp_exit_path).await;
                 let execution_note = execution_result
                     .as_ref()
                     .map(ToolOutput::log_output)
@@ -346,11 +355,14 @@ impl CodexDDValidationHandler {
                 .await;
             }
         };
-        let log_text = String::from_utf8(log_bytes.clone()).map_err(|err| {
-            FunctionCallError::RespondToModel(format!(
-                "CodexDD validation log was not UTF-8: {err}"
-            ))
-        })?;
+        // Invalid native output must yield a typed ERROR receipt instead of
+        // abandoning Mechanical Validation without a completed tool record.
+        let log_text = String::from_utf8_lossy(&log_bytes).into_owned();
+        let native_exit_code = tokio::fs::read_to_string(&temp_exit_path)
+            .await
+            .ok()
+            .and_then(|code| code.trim().parse::<i32>().ok());
+        let _ = tokio::fs::remove_file(&temp_exit_path).await;
 
         let codex_home = invocation.turn.config.codex_home.to_path_buf();
         let repo_id = repository_log_id(&repository_root);
@@ -376,6 +388,8 @@ impl CodexDDValidationHandler {
             summary.exit_code = 2;
             summary.error_type = Some("execution_error".to_string());
             summary.message = Some(err.to_string());
+        } else {
+            enforce_native_exit_consistency(&mut summary, native_exit_code);
         }
 
         emit_validation_result(
@@ -388,6 +402,23 @@ impl CodexDDValidationHandler {
         )
         .await
     }
+}
+
+/// A repo-owned script is not allowed to fabricate a PASS terminal while
+/// exiting nonzero (or without completing the child process). The wrapper
+/// independently captures the PowerShell child's exit code outside the log.
+fn enforce_native_exit_consistency(summary: &mut ValidationSummary, observed: Option<i32>) {
+    if observed == Some(summary.exit_code) {
+        return;
+    }
+    let declared = summary.exit_code;
+    summary.status = "error".to_string();
+    summary.exit_code = 2;
+    summary.error_type = Some("native_exit_mismatch".to_string());
+    summary.message = Some(format!(
+        "Validation script exit code did not match its contract-v1 terminal: declared {declared}, observed {observed:?}. No PASS or repair fingerprint is authorized."
+    ));
+    summary.failed_stage = None;
 }
 
 /// Emits a typed completed control-tool result for both native executions and
@@ -557,12 +588,14 @@ fn validation_powershell_command(
     repository_root: &Path,
     script_path: &Path,
     log_path: &Path,
+    exit_path: &Path,
 ) -> String {
     let repository_root = powershell_single_quoted(repository_root);
     let script_path = powershell_single_quoted(script_path);
     let log_path = powershell_single_quoted(log_path);
+    let exit_path = powershell_single_quoted(exit_path);
     format!(
-        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; exit $code"
+        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $exitLog = {exit_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; [System.IO.File]::WriteAllText($exitLog, [string]$code, $utf8); exit $code"
     )
 }
 
