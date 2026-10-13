@@ -720,9 +720,9 @@ fn parse_validation_summary(
                 pending_stage = Some((name, ordinal));
             }
             "stage_end" => {
-                let (expected_name, expected_ordinal) = pending_stage.take().ok_or_else(|| {
-                    "stage_end event has no matching stage_begin".to_string()
-                })?;
+                let (expected_name, expected_ordinal) = pending_stage
+                    .take()
+                    .ok_or_else(|| "stage_end event has no matching stage_begin".to_string())?;
                 let stage = event
                     .stage
                     .ok_or_else(|| "stage_end event omitted stage".to_string())?;
@@ -765,13 +765,15 @@ fn parse_validation_summary(
     let exit_code = profile_end
         .exit_code
         .ok_or_else(|| "profile_end event omitted exit_code".to_string())?;
-    let declared_count = profile_stage_count.ok_or_else(|| {
-        "profile_begin event was not emitted".to_string()
-    })?;
+    let declared_count = profile_stage_count
+        .ok_or_else(|| "profile_begin event was not emitted".to_string())?;
     if stage_begins.len() as u64 > declared_count {
         return Err("more stages began than the declared profile stage_count".to_string());
     }
-    let completed_passes = stages.iter().filter(|stage| stage.status == "pass").count() as u64;
+    let completed_passes = stages
+        .iter()
+        .filter(|stage| stage.status == "pass")
+        .count() as u64;
     if status == "pass" {
         if exit_code != 0
             || declared_count == 0
@@ -792,7 +794,9 @@ fn parse_validation_summary(
             return Err("profile FAIL did not match its failed stage".to_string());
         }
     } else if status != "error" || exit_code != 2 {
-        return Err("validation profile returned an invalid terminal status or exit code".to_string());
+        return Err(
+            "validation profile returned an invalid terminal status or exit code".to_string(),
+        );
     }
 
     Ok(ValidationSummary {
