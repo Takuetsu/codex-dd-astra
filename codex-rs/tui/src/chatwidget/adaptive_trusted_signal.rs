@@ -1584,19 +1584,23 @@ mod tests {
             crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
             true,
         ));
-        chat.register_adaptive_evidence(&validation_evidence(
-            thread_id,
-            turn_id,
-            "failed-work-packet-validation",
-            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
-            false,
-        ));
-
         for evidence_id in [
             "targeted-validation",
             "stale-work-packet-validation",
             "failed-work-packet-validation",
         ] {
+            // Register the nonrepairable native error only at the final case:
+            // once it exists, the entire Worker turn must hard-stop at BLOCKED
+            // regardless of which evidence reference the signal carries.
+            if evidence_id == "failed-work-packet-validation" {
+                chat.register_adaptive_evidence(&validation_evidence(
+                    thread_id,
+                    turn_id,
+                    "failed-work-packet-validation",
+                    crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+                    false,
+                ));
+            }
             chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
                 thread_id: thread_id.to_string(),
                 signal: AdaptiveRuntimeSignalEnvelope {
