@@ -275,9 +275,14 @@ impl ChatWidget {
             && self.adaptive_effort.complexity_class.is_some()
         {
             let native_progress = self.thread_id().is_some_and(|thread_id| {
-                self.adaptive_effort
-                    .evidence_registry
-                    .has_conclusive_evidence_for_turn(thread_id, source_turn_id)
+                let evidence = &self.adaptive_effort.evidence_registry;
+                if self.adaptive_effort.implementation_phase
+                    == Some(AdaptiveImplementationPhase::MechanicalValidation)
+                {
+                    evidence.has_codexdd_validation_run_for_turn(thread_id, source_turn_id)
+                } else {
+                    evidence.has_conclusive_evidence_for_turn(thread_id, source_turn_id)
+                }
             });
             let streak = if native_progress {
                 0
