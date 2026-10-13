@@ -365,10 +365,8 @@ impl AdaptiveEvidenceRegistry {
             }
             match record.kind {
                 AdaptiveEvidenceKind::CommandExecution | AdaptiveEvidenceKind::McpToolCall => true,
-                AdaptiveEvidenceKind::DynamicToolCall => record
-                    .tool_name
-                    .as_deref()
-                    .is_some_and(|name| {
+                AdaptiveEvidenceKind::DynamicToolCall => {
+                    record.tool_name.as_deref().is_some_and(|name| {
                         !matches!(
                             name,
                             "report_adaptive_signal"
@@ -379,7 +377,8 @@ impl AdaptiveEvidenceRegistry {
                                 | "sleep"
                                 | "send_message_to_user"
                         )
-                    }),
+                    })
+                }
             }
         })
     }
