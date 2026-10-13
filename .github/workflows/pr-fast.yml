@@ -44,6 +44,9 @@ jobs:
       - name: Core adaptive signal tests
         run: cargo test -p codex-core adaptive_signal --lib --no-fail-fast
 
+      - name: Core CodexDD native LVO contract regressions
+        run: cargo test --locked -p codex-core codexdd_validation --lib --no-fail-fast
+
       - name: TUI adaptive controller tests
         run: cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
 
