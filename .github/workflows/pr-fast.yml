@@ -47,6 +47,9 @@ jobs:
       - name: Core CodexDD native LVO contract regressions
         run: cargo test --locked -p codex-core codexdd_validation --lib --no-fail-fast
 
+      - name: Mechanical Validation command-policy regressions
+        run: cargo test --locked -p codex-core adaptive_mechanical_validation_shell_gate --lib --no-fail-fast
+
       - name: TUI adaptive controller tests
         run: cargo test -p codex-tui adaptive_controller_tests --lib --no-fail-fast
 
