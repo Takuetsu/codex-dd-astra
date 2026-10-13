@@ -326,13 +326,9 @@ impl CodexDDValidationHandler {
                 // out-of-tree and emit an explicitly unsuccessful tool result.
                 let codex_home = invocation.turn.config.codex_home.to_path_buf();
                 let repo_id = repository_log_id(&repository_root);
-                let final_log_path = persist_validation_log(
-                    &codex_home,
-                    &repo_id,
-                    &run_id,
-                    message.as_bytes(),
-                )
-                .await?;
+                let final_log_path =
+                    persist_validation_log(&codex_home, &repo_id, &run_id, message.as_bytes())
+                        .await?;
                 let summary = ValidationSummary {
                     contract_version: CONTRACT_VERSION,
                     profile: args.profile.contract_name().to_string(),
@@ -543,9 +539,7 @@ fn validate_repository_profile(
     repository_root: &Path,
     profile: ValidationProfile,
 ) -> Result<(), String> {
-    let script_path = repository_root
-        .join("scripts")
-        .join(profile.script_name());
+    let script_path = repository_root.join("scripts").join(profile.script_name());
     if !script_path.is_file() {
         return Err(format!(
             "CodexDD validation profile '{}' is not configured in the active repository {} (expected {}). No validation ran or PASS receipt was issued. Register the repository-owned contract-v1 PowerShell profile for this project; stop for operator configuration rather than retrying or escalating model effort.",
@@ -732,9 +726,11 @@ fn parse_validation_summary(
                 if profile_stage_count.is_some() {
                     return Err("duplicate profile_begin event".to_string());
                 }
-                profile_stage_count = Some(event.stage_count.ok_or_else(|| {
-                    "profile_begin event omitted stage_count".to_string()
-                })?);
+                profile_stage_count = Some(
+                    event
+                        .stage_count
+                        .ok_or_else(|| "profile_begin event omitted stage_count".to_string())?,
+                );
             }
             "stage_begin" => {
                 if profile_stage_count.is_none() || pending_stage.is_some() {
@@ -798,15 +794,12 @@ fn parse_validation_summary(
     let exit_code = profile_end
         .exit_code
         .ok_or_else(|| "profile_end event omitted exit_code".to_string())?;
-    let declared_count = profile_stage_count
-        .ok_or_else(|| "profile_begin event was not emitted".to_string())?;
+    let declared_count =
+        profile_stage_count.ok_or_else(|| "profile_begin event was not emitted".to_string())?;
     if stage_begins.len() as u64 > declared_count {
         return Err("more stages began than the declared profile stage_count".to_string());
     }
-    let completed_passes = stages
-        .iter()
-        .filter(|stage| stage.status == "pass")
-        .count() as u64;
+    let completed_passes = stages.iter().filter(|stage| stage.status == "pass").count() as u64;
     if status == "pass" {
         if exit_code != 0
             || declared_count == 0
