@@ -281,7 +281,7 @@ impl ChatWidget {
                 {
                     evidence.has_codexdd_validation_run_for_turn(thread_id, source_turn_id)
                 } else {
-                    evidence.has_conclusive_evidence_for_turn(thread_id, source_turn_id)
+                    evidence.has_native_implementation_work_for_turn(thread_id, source_turn_id)
                 }
             });
             let streak = if native_progress {
