@@ -58,12 +58,20 @@ fn repository_discovery_supports_explicit_rust_and_node_profiles() {
     let node = tempdir().expect("node");
     let node_root = node.path();
     fs::write(node_root.join(".git"), "gitdir: ../metadata").expect("worktree marker");
-    fs::write(node_root.join("package.json"), r#"{"scripts":{"test":"vitest run"}}"#)
-        .expect("node manifest");
+    fs::write(
+        node_root.join("package.json"),
+        r#"{"scripts":{"test":"vitest run"}}"#,
+    )
+    .expect("node manifest");
     fs::create_dir_all(node_root.join("scripts")).expect("node scripts");
     fs::create_dir_all(node_root.join("src")).expect("node source");
-    fs::write(node_root.join("scripts").join("codexdd-test-workpacket.ps1"), "")
-        .expect("node profile");
+    fs::write(
+        node_root
+            .join("scripts")
+            .join("codexdd-test-workpacket.ps1"),
+        "",
+    )
+    .expect("node profile");
     assert_eq!(
         discover_repository_root(&node_root.join("src"), ValidationProfile::WorkPacket),
         Ok(node_root.to_path_buf())
@@ -76,8 +84,11 @@ fn missing_node_profile_cannot_fall_back_to_parent_repository() {
     let outer = parent.path();
     fs::create_dir(outer.join(".git")).expect("outer git");
     fs::create_dir(outer.join("scripts")).expect("outer scripts");
-    fs::write(outer.join("scripts").join("codexdd-test-workpacket.ps1"), "")
-        .expect("outer profile");
+    fs::write(
+        outer.join("scripts").join("codexdd-test-workpacket.ps1"),
+        "",
+    )
+    .expect("outer profile");
 
     let inner = outer.join("breakwater");
     fs::create_dir(&inner).expect("inner");
@@ -278,23 +289,28 @@ fn parser_refuses_profile_end_only_pass_without_running_declared_stages() {
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":2}\n",
     );
     assert_eq!(
-        parse_validation_summary(ValidationProfile::WorkPacket, log, Path::new("validation.log")),
+        parse_validation_summary(
+            ValidationProfile::WorkPacket,
+            log,
+            Path::new("validation.log")
+        ),
         Err("profile PASS did not match all declared, successful stages".to_string())
     );
 }
 
 #[test]
 fn parser_refuses_fake_zero_stage_and_mismatched_node_passes() {
-    let prefix =
-        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":0}\n";
-    let terminal =
-        "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":0}\n";
+    let prefix = "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":0}\n";
+    let terminal = "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"work-packet\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":0}\n";
     let empty_pass = format!("{prefix}{terminal}");
-    assert!(parse_validation_summary(
-        ValidationProfile::WorkPacket,
-        &empty_pass,
-        Path::new("validation.log"),
-    ).is_err());
+    assert!(
+        parse_validation_summary(
+            ValidationProfile::WorkPacket,
+            &empty_pass,
+            Path::new("validation.log"),
+        )
+        .is_err()
+    );
 
     let real_node_begin = concat!(
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_begin\",\"profile\":\"work-packet\",\"stage_count\":1}\n",
@@ -322,7 +338,11 @@ fn parser_refuses_unmatched_node_stage_and_duplicate_terminal() {
         "{prefix}CODEXDD_VALIDATION_JSON {{\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"targeted\",\"stage\":\"other-test\",\"ordinal\":1,\"status\":\"pass\",\"native_exit_code\":0}}\n"
     );
     assert_eq!(
-        parse_validation_summary(ValidationProfile::Targeted, &unmatched, Path::new("validation.log")),
+        parse_validation_summary(
+            ValidationProfile::Targeted,
+            &unmatched,
+            Path::new("validation.log")
+        ),
         Err("stage_end does not match its stage_begin".to_string())
     );
 
@@ -332,9 +352,14 @@ fn parser_refuses_unmatched_node_stage_and_duplicate_terminal() {
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"stage_end\",\"profile\":\"targeted\",\"stage\":\"node-focused\",\"ordinal\":1,\"status\":\"pass\",\"native_exit_code\":0}\n",
         "CODEXDD_VALIDATION_JSON {\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"targeted\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":1}\n",
     );
-    assert!(parse_validation_summary(
-        ValidationProfile::Targeted, accepted, Path::new("validation.log")
-    ).is_ok());
+    assert!(
+        parse_validation_summary(
+            ValidationProfile::Targeted,
+            accepted,
+            Path::new("validation.log")
+        )
+        .is_ok()
+    );
     let duplicate = format!(
         "{accepted}CODEXDD_VALIDATION_JSON {{\"contract_version\":1,\"event\":\"profile_end\",\"profile\":\"targeted\",\"status\":\"pass\",\"exit_code\":0,\"completed_stages\":1}}\n"
     );
@@ -374,7 +399,10 @@ fn native_exit_consistency_refuses_fake_pass_and_missing_process_exit() {
     enforce_native_exit_consistency(&mut fabricated, Some(1));
     assert_eq!(fabricated.status, "error");
     assert_eq!(fabricated.exit_code, 2);
-    assert_eq!(fabricated.error_type.as_deref(), Some("native_exit_mismatch"));
+    assert_eq!(
+        fabricated.error_type.as_deref(),
+        Some("native_exit_mismatch")
+    );
     assert_eq!(
         validation_failure_fingerprint(ValidationProfile::Targeted, &fabricated),
         None
