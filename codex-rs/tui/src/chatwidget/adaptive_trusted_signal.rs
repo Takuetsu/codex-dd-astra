@@ -687,6 +687,38 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn shell_inspection_cannot_extend_missing_native_lvo_tool_loop() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("isolated mechanical validation tool exposure".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        for (index, turn_id) in ["lookup-1", "lookup-2", "lookup-3"].iter().enumerate() {
+            chat.register_adaptive_evidence(&command_evidence(
+                thread_id,
+                turn_id,
+                &format!("shell-inspection-{index}"),
+                CommandExecutionStatus::Completed,
+                0,
+            ));
+            assert!(chat.apply_adaptive_unfinished_authorized_turn(turn_id));
+        }
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
+    }
+
+    #[tokio::test]
     async fn trusted_mechanical_handoff_recovers_after_one_unfinished_turn() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
