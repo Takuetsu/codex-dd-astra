@@ -1326,7 +1326,7 @@ mod tests {
         });
         chat.turn_lifecycle.agent_turn_running = false;
 
-        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
         assert_eq!(
             chat.adaptive_effort.implementation_phase,
             Some(AdaptiveImplementationPhase::MechanicalValidation)
@@ -1334,7 +1334,12 @@ mod tests {
         assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
         assert_eq!(chat.adaptive_effort.validation_repair_fingerprint, None);
         assert!(!chat.adaptive_effort.validation_targeted_retest_required);
-        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
     }
 
     #[tokio::test]
@@ -1602,8 +1607,21 @@ mod tests {
                 },
             });
             chat.turn_lifecycle.agent_turn_running = false;
-            assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
-            assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+            if evidence_id == "failed-work-packet-validation" {
+                // A native failed profile receipt without a product fingerprint is
+                // nonrepairable: reject the handoff and hard-stop at BLOCKED.
+                assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+                assert_eq!(
+                    chat.adaptive_effort.workflow_terminal,
+                    Some(AdaptiveWorkflowTerminal::Blocked)
+                );
+                assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+                assert_eq!(chat.adaptive_effort.pending_attempt, None);
+            } else {
+                // Targeted-only and stale PASS receipts cannot complete the handoff.
+                assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+                assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+            }
             chat.turn_lifecycle.agent_turn_running = true;
         }
     }
