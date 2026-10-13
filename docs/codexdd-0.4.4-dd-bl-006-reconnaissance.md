@@ -60,3 +60,18 @@ BREAKWATER opt-in on **separate untouched-gameplay branch**:
 2. On Windows, parse all four BREAKWATER PowerShell files with the built-in parser (syntax-only); check profile failure/contract-only cases without running heavy npm. Do not alter active Z-A0.55E lineage or its dirty worktree.
 3. Only after narrow source checks pass, exercise the configured Node contract in a disposable BREAKWATER checkout; verify PASS, product FAIL, profile-error BLOCKED, no fake native PASS, no cross-repo fallback and preserved staged/uncommitted files.
 4. Reinspect source and semantic diff, then run final targeted GitHub CI, owner-governed squash merge and separate install/soak gates. No owner's release decision has been inferred from branch creation.
+
+## Local evidence checkpoint — October 12 (Daniel-CL)
+
+- CodexDD feature SHA `e7d1271a637f2e7fa9528ff57b2a846030e1adac` passed the owner's **targeted Windows regression gate** (cargo fmt --check, core LVO tests, mechanical gate, TUI error/terminal/evidence filters). This does **not** constitute the 21-stage release suite or final Windows/Node end-to-end gate.
+- The BREAKWATER Node contract smoke initially failed because its own test dereferenced `.status` on a `profile_begin` event in PowerShell StrictMode. The production contract was not implicated by this exception. Smoke code corrected at `3eedd91b111e4aa4049adce59764d4d94fee4463`.
+- Daniel-CL then verified corrected exact BREAKWATER SHA `3eedd91b...`, which emitted **`CODEXDD NODE LVO CONTRACT SMOKE PASSED (syntax + fail-closed; npm not run)`**. It validated all registered scripts syntactically, negative profile ERROR=2, and no false PASS. This was a **mock missing-profile** test, not a real `npm` run.
+
+## Pre-Node hardening — latest GitHub-only change (requires narrow Rust retest)
+
+While reviewing the native runner after the successful Node smoke, a separate unsafe case was found: the LVO log parser accepted a lone `profile_end: pass` even if the declared validation stages were absent. This contradicted DD-BL-006's no-false-PASS requirement.
+
+- The parser now requires exactly one profile_begin, sequenced and matching stage_begin/stage_end pairs, consistent stage ordinal and result, and for PASS exactly the declared number of successful stages, completed_stages, exit_code 0 and stage native exit code 0. Duplicate/malformed terminal events or unexecuted stages cause an ERROR, not PASS.
+- Stage FAIL still carries its deterministic failed_stage/failure_fingerprint for bounded source repair. Runtime/contract ERROR remains nonrepairable and terminalizes BLOCKED.
+- Additional regression fixtures include Rust + Node event streams, incomplete fake PASS, zero-stage fake PASS, failed stage followed by fake PASS, stage-name mismatch and duplicate terminal events.
+- This parser change is **not yet locally validated**. Before broad CI, re-run the cheap `cargo fmt --all -- --check` and `cargo test --locked -p codex-core --lib codexdd_validation` on the latest exact CodexDD feature commit, then (when dependencies are available) run only BREAKWATER `targeted` to exercise the real Node/TypeScript contract. Avoid `work_packet`, `release` and 21-stage suites at this step.
