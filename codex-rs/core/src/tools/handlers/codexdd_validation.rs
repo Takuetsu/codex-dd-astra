@@ -261,6 +261,10 @@ impl CodexDDValidationHandler {
 
         let temp_log_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.log"));
         let temp_exit_path = std::env::temp_dir().join(format!("codexdd-validation-{run_id}.exit"));
+        // Remove both generated artifacts in Rust before invoking the wrapper.
+        // Repeating this as `Remove-Item -Force` in the delegated PowerShell
+        // script triggers Windows dangerous-command policy and can block the
+        // entire trusted LVO call before its native log is created.
         for temporary_path in [&temp_log_path, &temp_exit_path] {
             if let Err(err) = tokio::fs::remove_file(temporary_path).await
                 && err.kind() != std::io::ErrorKind::NotFound
@@ -589,7 +593,7 @@ fn validation_powershell_command(
     let log_path = powershell_single_quoted(log_path);
     let exit_path = powershell_single_quoted(exit_path);
     format!(
-        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $exitLog = {exit_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); if (Test-Path -LiteralPath $log) {{ Remove-Item -LiteralPath $log -Force }}; $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; [System.IO.File]::WriteAllText($exitLog, [string]$code, $utf8); exit $code"
+        "$ErrorActionPreference = 'Stop'; Set-Location -LiteralPath {repository_root}; $log = {log_path}; $exitLog = {exit_path}; $utf8 = New-Object System.Text.UTF8Encoding($false); $ErrorActionPreference = 'Continue'; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File {script_path} 2>&1 | ForEach-Object {{ [System.IO.File]::AppendAllText($log, $_.ToString() + [Environment]::NewLine, $utf8) }}; $code = $LASTEXITCODE; if ($null -eq $code) {{ $code = 2 }}; [System.IO.File]::WriteAllText($exitLog, [string]$code, $utf8); exit $code"
     )
 }
 
