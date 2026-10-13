@@ -156,7 +156,8 @@ impl ChatWidget {
                     && self.adaptive_effort.complexity_class.is_some()
                     && self.adaptive_effort.implementation_phase
                         == Some(AdaptiveImplementationPhase::Implementation)
-                    && self.adaptive_effort.unfinished_turn_pressure == 0
+                    // A previous unfinished turn must not permanently prevent
+                    // a subsequent trusted transition into read-only validation.
                     && envelope.evidence_refs.is_empty()
                     && envelope.diagnostic_note.is_none()
                     && self.thread_id.is_some_and(|thread_id| {
@@ -439,6 +440,7 @@ impl ChatWidget {
     ) {
         self.adaptive_effort.workflow_terminal = Some(terminal);
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.pending_attempt = None;
         self.adaptive_effort.successor_admission = None;
