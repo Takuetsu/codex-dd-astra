@@ -597,7 +597,10 @@ mod tests {
         });
 
         assert_eq!(
-            chat.adaptive_effort.validation_status.as_ref().map(|s| s.result.as_str()),
+            chat.adaptive_effort
+                .validation_status
+                .as_ref()
+                .map(|s| s.result.as_str()),
             Some("error")
         );
         assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
@@ -630,10 +633,18 @@ mod tests {
         chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
         chat.register_adaptive_evidence(&validation_evidence(
-            thread_id, turn_id, "profile-error", "work_packet", false,
+            thread_id,
+            turn_id,
+            "profile-error",
+            "work_packet",
+            false,
         ));
         chat.register_adaptive_evidence(&command_evidence(
-            thread_id, turn_id, "diagnostic-failed", CommandExecutionStatus::Failed, 1,
+            thread_id,
+            turn_id,
+            "diagnostic-failed",
+            CommandExecutionStatus::Failed,
+            1,
         ));
         assert!(matches!(
             chat.adaptive_effort.pending_signal,
