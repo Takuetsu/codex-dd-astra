@@ -687,6 +687,46 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn control_only_tool_lookups_do_not_mask_implementation_stall() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("Node LVO missing native tool exposure".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        for (index, turn_id) in ["lookup-1", "lookup-2", "lookup-3"].iter().enumerate() {
+            chat.register_adaptive_evidence(&ItemCompletedNotification {
+                item: ThreadItem::DynamicToolCall {
+                    id: format!("control-lookup-{index}"),
+                    namespace: None,
+                    tool: "get_context_remaining".to_string(),
+                    arguments: serde_json::json!({}),
+                    status: DynamicToolCallStatus::Completed,
+                    content_items: None,
+                    success: Some(true),
+                    duration_ms: Some(1),
+                },
+                thread_id: thread_id.to_string(),
+                turn_id: (*turn_id).to_string(),
+                completed_at_ms: 1,
+            });
+            assert!(chat.apply_adaptive_unfinished_authorized_turn(turn_id));
+        }
+
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+    }
+
+    #[tokio::test]
     async fn shell_inspection_cannot_extend_missing_native_lvo_tool_loop() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
