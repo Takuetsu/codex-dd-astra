@@ -24,7 +24,7 @@ The revised integration source snapshot extends `8fd46fbd52fd6bb98b17682bf80ceee
 - Preserve all original v1 blocked discovery bytes, SHA-256 checksums, official upstream Git identity, 136 overlap paths, 22 resolved textual conflicts, security reviews, and 12 generated-artifact evidence entries.
 - In the sidecar, re-anchor the CLI test overlap's semantic review to this exact review document at the final integration commit, and update all source snapshot references and generated/security source identity locks to that commit. Do not misrepresent prior native-test evidence URLs as new CI runs.
 - Stage exactly the four original v2 attestation file paths on an isolated metadata-only staging branch based on the unchanged production commit. Only then construct a one-parent revised candidate commit from the new integration HEAD plus precisely those four metadata files.
-- Preserve failed r2 candidate SHA under a separate archive ref **before** exact-expected-SHA update of the canonical candidate ref. Never silently overwrite or re-use r2 release receipts.
+- Preserve failed r2 candidate SHA under a separate archive ref **before** exact-expected-SHA update of the canonical candidate ref. Never silently overwrite or reuse r2 release receipts.
 - A fresh native v2 preflight and complete **21-stage native release PASS with candidate/source/production-bound receipt** remain mandatory; final GitHub CI/PR review and production merge/installation follow separately. No production merge while these gates are pending.
 - The Windows Task Scheduler release runner and its ConPTY compatibility preflight are maintained separately under draft PR #51. Scheduled-task launch acknowledgement and historical 19-stage completion are **not** release PASS.
 
