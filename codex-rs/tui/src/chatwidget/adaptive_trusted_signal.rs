@@ -131,8 +131,7 @@ impl ChatWidget {
                 if envelope.source_turn_id == source_turn_id
                     && envelope.signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork
         );
-        if !pending_repair_handoff
-            && self.stop_for_unhanded_codexdd_product_failure(source_turn_id)
+        if !pending_repair_handoff && self.stop_for_unhanded_codexdd_product_failure(source_turn_id)
         {
             return true;
         }
