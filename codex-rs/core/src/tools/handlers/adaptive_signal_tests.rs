@@ -260,7 +260,11 @@ fn tool_spec_documents_repository_handoff_terminal_mapping() {
     );
     assert!(spec.description.contains("mechanical_validation"));
     assert!(spec.description.contains("validation-only acceptance task"));
-    assert!(spec.description.contains("intentionally hidden until the following trusted Mechanical Validation turn"));
+    assert!(
+        spec.description.contains(
+            "intentionally hidden until the following trusted Mechanical Validation turn"
+        )
+    );
     assert!(spec.description.contains("implementation_work"));
 }
 
