@@ -1,0 +1,120 @@
+# Isolated 0.4.4 diagnostic: build the missing code-mode sidecar for a real
+# Windows native-LVO integration attempt. This is NOT a release or install.
+name: CodexDD 0.4.4 code-mode companion host artifact
+
+on:
+  push:
+    branches:
+      - dd/codexdd-0.4.4-code-mode-host-artifact
+    paths:
+      - .github/workflows/codexdd-044-code-mode-host-artifact.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-044-code-mode-host-artifact
+  cancel-in-progress: true
+
+jobs:
+  windows-code-mode-host:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-0.4.4-code-mode-host-artifact'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact isolated candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check exact candidate ancestry and read-only intent
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unpinned checkout' }
+          git merge-base --is-ancestor a79378618728a5ad63fbf7b204ae9a0ea1fecb29 HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'CodexDD validated source is not an ancestor' }
+          if ((Get-Content -Raw codex-rs/codexdd-version.txt).Trim() -ne '0.4.4') { throw 'Wrong product version' }
+          if ((Get-Content -Raw codex-rs/upstream-codex-release.txt).Trim() -ne 'rust-v0.162.0') { throw 'Wrong upstream version' }
+          if (git status --porcelain) { throw 'Source checkout is dirty before build' }
+
+      - name: Configure build outside source checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'dd044host'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to enable long Git paths' }
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          architecture: x64
+
+      - name: Set up repository Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          toolchain: "1.95.0"
+
+      - name: Verify official V8 release bindings and checksums
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Compile only missing Windows companion executable
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-code-mode-host --bin codex-code-mode-host
+          if ($LASTEXITCODE -ne 0) { throw 'Codex code-mode host build failed' }
+
+      - name: Smoke executable and assemble candidate-bound artifact
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $env:CARGO_TARGET_DIR 'debug/codex-code-mode-host.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Missing companion host executable' }
+          & $exe --help | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw 'Companion host executable failed --help' }
+          $dest = Join-Path $env:RUNNER_TEMP 'dd044-companion'
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item -LiteralPath $exe -Destination (Join-Path $dest 'codex-code-mode-host.exe')
+          $hash = (Get-FileHash -LiteralPath (Join-Path $dest 'codex-code-mode-host.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
+          "SHA256 $hash  codex-code-mode-host.exe" | Set-Content -Encoding utf8 (Join-Path $dest 'SHA256.txt')
+          "source_sha=$env:GITHUB_SHA" | Set-Content -Encoding utf8 (Join-Path $dest 'SOURCE.txt')
+          'product=CodexDD 0.4.4' | Add-Content -Encoding utf8 (Join-Path $dest 'SOURCE.txt')
+          'target=x86_64-pc-windows-msvc' | Add-Content -Encoding utf8 (Join-Path $dest 'SOURCE.txt')
+          if (git status --porcelain) { throw 'Build modified source checkout' }
+
+      - name: Upload isolated companion artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: codexdd-044-code-mode-host-windows
+          path: ${{ runner.temp }}/dd044-companion/*
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Verify clean source after build
+        if: always() && !cancelled()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (git status --porcelain) { git status --short; throw 'Windows host build changed checkout' }
