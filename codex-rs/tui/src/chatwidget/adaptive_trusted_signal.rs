@@ -1489,6 +1489,120 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn native_failed_work_packet_without_repair_handoff_blocks_before_successor() {
+        for (consume_signal, turn_id) in [
+            (true, "failed-profile-without-signal"),
+            (false, "failed-profile-unfinished-turn"),
+        ] {
+            let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+            let thread_id = ThreadId::new();
+            chat.thread_id = Some(thread_id);
+            chat.dispatch_adaptive_command("astra");
+            chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+            chat.adaptive_effort.worker_context.authorized_scope =
+                Some("BREAKWATER validation-only native work_packet acceptance".to_string());
+            chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+            chat.adaptive_effort.implementation_phase =
+                Some(AdaptiveImplementationPhase::MechanicalValidation);
+            chat.turn_lifecycle.agent_turn_running = true;
+            chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+            chat.register_adaptive_evidence(&failed_validation_evidence(
+                thread_id,
+                turn_id,
+                "failed-changed-format",
+                crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+                "v1:work_packet:changed-format",
+            ));
+            chat.turn_lifecycle.agent_turn_running = false;
+
+            assert!(if consume_signal {
+                chat.consume_adaptive_signal_at_terminal(turn_id)
+            } else {
+                chat.apply_adaptive_unfinished_authorized_turn(turn_id)
+            });
+            assert_eq!(
+                chat.adaptive_effort.workflow_terminal,
+                Some(AdaptiveWorkflowTerminal::Blocked)
+            );
+            assert_eq!(chat.adaptive_effort.attempt_number, 1);
+            assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+            assert_eq!(chat.adaptive_effort.pending_attempt, None);
+            assert_eq!(chat.adaptive_effort.successor_admission, None);
+            assert!(!chat.maybe_submit_adaptive_successor());
+        }
+    }
+
+    #[tokio::test]
+    async fn rejected_repair_signal_cannot_extend_failed_work_packet() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "failed-work-packet-bad-repair-ref";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("bounded native validation without ad-hoc repair".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+        chat.register_adaptive_evidence(&failed_validation_evidence(
+            thread_id,
+            turn_id,
+            "real-failed-profile",
+            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            "v1:work_packet:changed-format",
+        ));
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ImplementationWork,
+                evidence_refs: vec!["stale-or-fabricated-repair-ref".to_string()],
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
+    }
+
+    #[tokio::test]
+    async fn prior_turn_product_failure_does_not_block_current_implementation_turn() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("source-turn isolation for work_packet evidence".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::MechanicalValidation);
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        chat.register_adaptive_evidence(&failed_validation_evidence(
+            thread_id,
+            "previous-failed-turn",
+            "previous-failure",
+            crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE,
+            "v1:work_packet:changed-format",
+        ));
+        assert!(chat.apply_adaptive_unfinished_authorized_turn("current-no-validation"));
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    }
+
+    #[tokio::test]
     async fn implementation_work_requires_failed_lvo_receipt_and_consumes_one_repair_cycle() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
