@@ -605,6 +605,49 @@ async fn codexdd_validation_runner_is_visible_only_during_mechanical_validation(
 }
 
 #[tokio::test]
+async fn codexdd_validation_is_direct_only_in_code_mode_only_mechanical_turn() {
+    let reconnaissance = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    reconnaissance.assert_visible_lacks(&["run_codexdd_validation"]);
+    reconnaissance.assert_registered_lacks(&["run_codexdd_validation"]);
+
+    let mechanical = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(mechanical.tool_mode, ToolMode::CodeModeOnly);
+    mechanical.assert_visible_contains(&["run_codexdd_validation", "report_adaptive_signal"]);
+    mechanical.assert_registered_contains(&["run_codexdd_validation"]);
+    assert_eq!(
+        mechanical.exposure("run_codexdd_validation"),
+        ToolExposure::DirectModelOnly
+    );
+    assert!(
+        !mechanical
+            .code_mode_tool_names
+            .values()
+            .any(|name| name.name == "run_codexdd_validation"),
+        "the native validator must never become an indirect Code Mode tool"
+    );
+    let ToolSpec::Freeform(exec) = mechanical.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME)
+    else {
+        panic!("expected Code Mode exec tool");
+    };
+    assert!(
+        !exec.description.contains("run_codexdd_validation"),
+        "Code Mode nested-tool guidance must not expose the protected validator"
+    );
+}
+
+#[tokio::test]
 async fn reviewer_tool_policy_exclude_optional_core_tools() {
     let (mut session, mut turn) = make_session_and_context().await;
     session.tool_policy = Arc::new(codex_guardian_reviewer::reviewer_tool_policy());
