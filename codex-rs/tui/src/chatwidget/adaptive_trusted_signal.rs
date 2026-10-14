@@ -57,11 +57,83 @@ impl ChatWidget {
         true
     }
 
+    /// A product-stage FAIL is repairable only when the Worker explicitly
+    /// reports implementation_work with the native same-turn failure receipt.
+    /// Without that trusted handoff, do not treat a completed LVO failure as
+    /// ordinary unfinished work and auto-continue into more model attempts.
+    fn has_repairable_codexdd_failure_for_turn(&self, source_turn_id: &str) -> bool {
+        if self.adaptive_effort.worker_context.role != AdaptiveWorkerRole::Implementation
+            || self.adaptive_effort.implementation_phase
+                != Some(AdaptiveImplementationPhase::MechanicalValidation)
+        {
+            return false;
+        }
+        let Some(thread_id) = self.thread_id else {
+            return false;
+        };
+        let evidence = &self.adaptive_effort.evidence_registry;
+        let failure_refs = evidence.conclusive_refs_for_turn(
+            thread_id,
+            source_turn_id,
+            AdaptiveEvidenceOutcome::Failure,
+        );
+        evidence
+            .codexdd_repairable_validation_failure_for_turn(
+                &failure_refs,
+                thread_id,
+                source_turn_id,
+            )
+            .is_some()
+    }
+
+    /// No trusted repair authorization was accepted after an objective LVO FAIL.
+    /// Preserve the failure receipt, repair budget, and candidate source for
+    /// owner review instead of consuming expensive unfinished-turn successors.
+    pub(super) fn stop_for_unhanded_codexdd_product_failure(
+        &mut self,
+        source_turn_id: &str,
+    ) -> bool {
+        if !self.adaptive_effort.enabled
+            || self.adaptive_effort.paused_by_user
+            || self.adaptive_effort.workflow_terminal.is_some()
+            || !self.has_repairable_codexdd_failure_for_turn(source_turn_id)
+        {
+            return false;
+        }
+        self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+            source_turn_id: source_turn_id.to_string(),
+        });
+        self.adaptive_effort.last_outcome = Some(crate::adaptive_policy::AdaptiveOutcome::Unknown);
+        self.adaptive_effort.last_failure_kind =
+            Some(crate::adaptive_policy::AdaptiveFailureKind::OwnerDecision);
+        self.add_info_message(
+            "CodexDD Mechanical Validation stopped at BLOCKED: the native work_packet/targeted profile reported a repairable test-stage FAIL, but this turn ended without an accepted evidence-backed implementation_work signal. No automatic retries, model escalation, source repair, or PASS handoff is authorized. Keep the native failure log and obtain owner review before starting a new Worker."
+                .to_string(),
+            None,
+        );
+        self.latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::Blocked);
+        true
+    }
+
     pub(super) fn consume_adaptive_signal_at_terminal(&mut self, source_turn_id: &str) -> bool {
         if self.adaptive_effort.workflow_terminal.is_some() {
             return false;
         }
         if self.stop_for_nonrepairable_codexdd_profile_error(source_turn_id) {
+            return true;
+        }
+        // An explicit implementation_work report is the only repair handoff
+        // eligible to proceed after native test-stage failure. All other
+        // signals (including capability pressure) and missing signals block.
+        let pending_repair_handoff = matches!(
+            self.adaptive_effort.pending_signal.as_ref(),
+            Some(AdaptivePendingSignal::Pending(envelope))
+                if envelope.source_turn_id == source_turn_id
+                    && envelope.signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork
+        );
+        if !pending_repair_handoff
+            && self.stop_for_unhanded_codexdd_product_failure(source_turn_id)
+        {
             return true;
         }
         let Some(pending_signal) = self.adaptive_effort.pending_signal.as_ref() else {
@@ -253,6 +325,9 @@ impl ChatWidget {
                     None,
                 );
                 self.latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::Blocked);
+                return true;
+            }
+            if self.stop_for_unhanded_codexdd_product_failure(source_turn_id) {
                 return true;
             }
             if self.native_failure_pressure_available(source_turn_id) {
