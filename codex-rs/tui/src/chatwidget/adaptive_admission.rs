@@ -416,7 +416,9 @@ mod tests {
                 attempt_number: 2,
                 worker_context: AdaptiveWorkerContext {
                     role: AdaptiveWorkerRole::Implementation,
-                    authorized_scope: Some("CodexDD 0.4.4 configured Node native LVO acceptance".to_string()),
+                    authorized_scope: Some(
+                        "CodexDD 0.4.4 configured Node native LVO acceptance".to_string(),
+                    ),
                 },
             };
             let text = adaptive_continuation_text(
@@ -445,7 +447,8 @@ mod tests {
         let permit = AdaptiveSuccessorPermit {
             thread_id: ThreadId::new(),
             source_turn_id: "reviewer-turn".to_string(),
-            decision: crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute,
+            decision:
+                crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute,
             route: AdaptiveRoute {
                 family: AdaptiveFamily::Sol,
                 effort: AdaptiveEffort::Medium,
@@ -456,16 +459,7 @@ mod tests {
                 authorized_scope: Some("independent review".to_string()),
             },
         };
-        let text = adaptive_continuation_text(
-            &permit,
-            false,
-            None,
-            &[],
-            &[],
-            false,
-            0,
-            None,
-        );
+        let text = adaptive_continuation_text(&permit, false, None, &[], &[], false, 0, None);
         assert!(!text.contains("mechanical_validation"));
         assert!(!text.contains("run_codexdd_validation"));
         assert!(text.contains("Continue the current assigned Worker task"));
