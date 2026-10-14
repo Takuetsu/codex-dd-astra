@@ -90,10 +90,10 @@ pub(crate) fn effective_tool_mode(turn_context: &TurnContext, model_info: &Model
     // may lead the model to try a blocked shell substitute instead. Keep this
     // turn direct while the hard dispatch allowlist retains the no-edit gate.
     // All other turns retain their configured/model-requested tool mode.
-    if codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
         turn_context.turn_metadata_state.as_ref(),
-    )
-    .as_deref()
+    );
+    if turn_trigger.as_deref()
         == Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
     {
         return ToolMode::Direct;
