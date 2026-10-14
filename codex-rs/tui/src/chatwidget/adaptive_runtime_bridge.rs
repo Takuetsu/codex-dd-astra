@@ -295,6 +295,15 @@ impl ChatWidget {
             };
             self.adaptive_effort.consecutive_no_native_progress_turns = streak;
             if streak >= CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT {
+                // Distinguish a missing trusted *phase transition* from a tool
+                // that is genuinely missing in an authorized validation turn.
+                let phase_guidance = if self.adaptive_effort.implementation_phase
+                    == Some(AdaptiveImplementationPhase::Implementation)
+                {
+                    "The Worker is still in Implementation. run_codexdd_validation is deliberately hidden until a trusted report_adaptive_signal(kind=mechanical_validation) ends this phase and the controller starts the NEXT turn. Check the missing handoff before investigating the native tool or profile."
+                } else {
+                    "The Worker already entered Mechanical Validation. Inspect the turn-triggered tool catalog and repository-owned profile; do not substitute ad-hoc shell validation."
+                };
                 self.apply_adaptive_terminal_classification(
                     source_turn_id,
                     AdaptiveOutcomeSignal::Failure(AdaptiveFailureKind::OwnerDecision),
@@ -302,8 +311,9 @@ impl ChatWidget {
                 );
                 self.add_info_message(
                     format!(
-                        "CodexDD stopped at BLOCKED: {} consecutive Implementation turns ended without an accepted lifecycle signal or completed native validation/work result. More adaptive effort cannot make an unavailable tool visible. Inspect the Worker phase, tool exposure, and required profile before starting a new Worker. No source repair, model escalation, or PASS receipt is authorized.",
-                        CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT
+                        "CodexDD stopped at BLOCKED: {} consecutive Implementation turns ended without an accepted lifecycle signal or completed native validation/work result. {} More adaptive effort cannot make an unavailable tool visible. No source repair, model escalation, or PASS receipt is authorized.",
+                        CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT,
+                        phase_guidance
                     ),
                     None,
                 );
