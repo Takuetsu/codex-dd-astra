@@ -87,6 +87,37 @@ fn admission_route(
 }
 
 #[tokio::test]
+async fn accepted_routine_complexity_successor_explains_how_to_expose_native_validator() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+    chat.thread_id = Some(ThreadId::new());
+    let route = admission_route(AdaptiveFamily::Luna, AdaptiveEffort::Low);
+    configure_admission(&mut chat, AdaptivePendingDecision::ContinueSameRoute, route);
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+    chat.adaptive_effort.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+    synchronize_admission_route(&mut chat, route);
+
+    assert!(chat.maybe_submit_adaptive_successor());
+    let Op::UserTurn { items, .. } = next_submit_op(&mut op_rx) else {
+        panic!("expected runtime-authored continuation");
+    };
+    assert_matches!(
+        items.as_slice(),
+        [UserInput::Text { text, .. }]
+            if text.contains("ContinueSameRoute")
+                && text.contains("run_codexdd_validation is intentionally not exposed")
+                && text.contains("report_adaptive_signal with kind=mechanical_validation")
+                && text.contains("then END THIS TURN")
+    );
+    // A prompt does not grant validation authority. Only the trusted signal
+    // can move the controller to the next, tool-exposing validation turn.
+    assert_eq!(
+        chat.adaptive_effort.implementation_phase,
+        Some(AdaptiveImplementationPhase::Implementation)
+    );
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+}
+
+#[tokio::test]
 async fn adaptive_successor_submits_each_authorized_decision_once() {
     for (decision, route) in [
         (
