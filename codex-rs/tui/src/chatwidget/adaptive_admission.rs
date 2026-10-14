@@ -501,7 +501,7 @@ mod tests {
         assert!(text.contains("kind=ready_for_validation"));
         assert!(text.contains("successful validation-runner evidence ref"));
         assert!(text.contains("kind=implementation_work"));
-        assert!(text.contains("do not manually recreate"));
+        assert!(text.contains("do not recreate the profile with exec_command or ad-hoc shell commands"));
     }
 
     #[test]
