@@ -1,0 +1,63 @@
+# Temporary, branch-only security preflight. Remove after green validation.
+name: CodexDD 0.4.4 rustls advisory fast gate
+
+on:
+  push:
+    branches:
+      - dd/codexdd-0.4.4-rustls-02346-security
+    paths:
+      - codex-rs/Cargo.lock
+      - .github/workflows/codexdd-044-rustls-advisory-fast.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-044-rustls-advisory-fast
+  cancel-in-progress: true
+
+jobs:
+  cargo-deny:
+    name: Exact blocking cargo-deny security gate (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ./codex-rs
+    steps:
+      - name: Checkout temporary pinned security candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Confirm the pinned PR #53 candidate ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'dd/codexdd-0.4.4-rustls-02346-security'
+          git merge-base --is-ancestor cfe119dba838706f822cb8620d476a4e50ae7582 HEAD
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('Cargo.lock').read_text(encoding='utf-8')
+          package = text.split('[[package]]\nname = "rustls"\n', 1)[1].split('\n[[package]]', 1)[0]
+          assert 'version = "0.23.46"' in package
+          assert 'checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"' in package
+          assert '0.23.45' not in package
+          print('Verified registry-published rustls 0.23.46 checksum and lockfile.')
+          PY
+
+      - uses: ./.github/actions/setup-ci
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Exact blocking cargo-deny action
+        uses: EmbarkStudios/cargo-deny-action@82eb9f621fbc699dd0918f3ea06864c14cc84246 # v2
+        with:
+          rust-version: 1.95.0
+          manifest-path: ./codex-rs/Cargo.toml
+
+      - name: Verify clean source
+        if: always() && !cancelled()
+        uses: ./.github/actions/check-clean-worktree
