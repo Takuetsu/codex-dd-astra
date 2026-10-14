@@ -1,6 +1,7 @@
 //! Exact-once admission state for a controller-authorized adaptive successor.
 
 use super::*;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_policy::AdaptiveEffort;
 use crate::adaptive_policy::AdaptiveRoute;
@@ -107,6 +108,7 @@ impl ChatWidget {
         let message = UserMessage::from(adaptive_continuation_text(
             &permit,
             requires_complexity_recovery,
+            self.adaptive_effort.implementation_phase,
             &validation_success_refs,
             &validation_failure_refs,
             self.adaptive_effort.validation_targeted_retest_required,
@@ -286,6 +288,7 @@ impl ChatWidget {
 fn adaptive_continuation_text(
     permit: &AdaptiveSuccessorPermit,
     requires_complexity_recovery: bool,
+    implementation_phase: Option<AdaptiveImplementationPhase>,
     validation_success_refs: &[String],
     validation_failure_refs: &[String],
     validation_targeted_retest_required: bool,
@@ -365,6 +368,13 @@ fn adaptive_continuation_text(
                 validation_repair_fingerprint.unwrap_or("unknown"),
             )
         }
+        _ if permit.worker_context.role == AdaptiveWorkerRole::Implementation
+            && implementation_phase == Some(AdaptiveImplementationPhase::Implementation) =>
+        {
+            format!(
+                "[Adaptive continuation] Attempt {attempt} is authorized at {model} {effort} using {decision} in the Implementation phase, after the complexity gate was accepted. IMPORTANT: run_codexdd_validation is intentionally not exposed while the Worker remains in Implementation; repeatedly searching for it or asking for more model effort cannot expose it. If the assigned task is validation-only or all authorized source work is already complete, immediately call report_adaptive_signal with kind=mechanical_validation (no evidence_refs, complexity or diagnostic_note), then END THIS TURN. Only the controller-authorized NEXT turn enters Mechanical Validation and exposes run_codexdd_validation for profile=work_packet. If source changes are genuinely still required by the existing assignment, perform only those authorized changes, then report kind=mechanical_validation and end the turn when implementation is complete. Do not create an ad-hoc validation script, fabricate receipts, broaden the task or claim PASS. Preserve the existing task, scope, worktree and evidence."
+            )
+        }
         _ => format!(
             "[Adaptive continuation] Continue the current assigned Worker task from the existing thread state. Attempt {attempt} is authorized at {model} {effort} using {decision}. Preserve the existing task, scope, worktree, evidence, and acceptance criteria. Continue from current progress; do not restart or broaden the task."
         ),
@@ -389,6 +399,79 @@ mod tests {
     use codex_protocol::ThreadId;
 
     #[test]
+    fn accepted_complexity_implementation_prompts_validation_only_mechanical_handoff() {
+        for decision in [
+            crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute,
+            crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EscalateEffort,
+            crate::chatwidget::adaptive_effort::AdaptivePendingDecision::RetrySameLevel,
+        ] {
+            let permit = AdaptiveSuccessorPermit {
+                thread_id: ThreadId::new(),
+                source_turn_id: "completed-complexity".to_string(),
+                decision,
+                route: AdaptiveRoute {
+                    family: AdaptiveFamily::Luna,
+                    effort: AdaptiveEffort::Low,
+                },
+                attempt_number: 2,
+                worker_context: AdaptiveWorkerContext {
+                    role: AdaptiveWorkerRole::Implementation,
+                    authorized_scope: Some("CodexDD 0.4.4 configured Node native LVO acceptance".to_string()),
+                },
+            };
+            let text = adaptive_continuation_text(
+                &permit,
+                false,
+                Some(AdaptiveImplementationPhase::Implementation),
+                &[],
+                &[],
+                false,
+                0,
+                None,
+            );
+            assert!(text.contains("validation-only"));
+            assert!(text.contains("run_codexdd_validation is intentionally not exposed"));
+            assert!(text.contains("report_adaptive_signal with kind=mechanical_validation"));
+            assert!(text.contains("then END THIS TURN"));
+            assert!(text.contains("Only the controller-authorized NEXT turn"));
+            assert!(text.contains("profile=work_packet"));
+            assert!(text.contains("If source changes are genuinely still required"));
+            assert!(!text.contains("Continue the current assigned Worker task"));
+        }
+    }
+
+    #[test]
+    fn nonimplementation_continuation_does_not_gain_mechanical_validation_authority() {
+        let permit = AdaptiveSuccessorPermit {
+            thread_id: ThreadId::new(),
+            source_turn_id: "reviewer-turn".to_string(),
+            decision: crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute,
+            route: AdaptiveRoute {
+                family: AdaptiveFamily::Sol,
+                effort: AdaptiveEffort::Medium,
+            },
+            attempt_number: 3,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: Some("independent review".to_string()),
+            },
+        };
+        let text = adaptive_continuation_text(
+            &permit,
+            false,
+            None,
+            &[],
+            &[],
+            false,
+            0,
+            None,
+        );
+        assert!(!text.contains("mechanical_validation"));
+        assert!(!text.contains("run_codexdd_validation"));
+        assert!(text.contains("Continue the current assigned Worker task"));
+    }
+
+    #[test]
     fn mechanical_validation_prompt_requires_work_packet_runner_and_receipt() {
         let permit = AdaptiveSuccessorPermit {
             thread_id: ThreadId::new(),
@@ -409,6 +492,7 @@ mod tests {
         let text = adaptive_continuation_text(
             &permit,
             /*requires_complexity_recovery*/ false,
+            Some(AdaptiveImplementationPhase::MechanicalValidation),
             &[],
             &[],
             false,
@@ -445,6 +529,7 @@ mod tests {
         let text = adaptive_continuation_text(
             &permit,
             /*requires_complexity_recovery*/ false,
+            Some(AdaptiveImplementationPhase::MechanicalValidation),
             &[],
             &[],
             true,
@@ -480,6 +565,7 @@ mod tests {
         let text = adaptive_continuation_text(
             &permit,
             /*requires_complexity_recovery*/ false,
+            Some(AdaptiveImplementationPhase::MechanicalValidation),
             &["green-proof".to_string()],
             &["failed-proof".to_string()],
             false,
