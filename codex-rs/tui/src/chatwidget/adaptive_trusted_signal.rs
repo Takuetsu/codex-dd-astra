@@ -1478,13 +1478,24 @@ mod tests {
         });
         chat.turn_lifecycle.agent_turn_running = false;
 
-        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        // An initial targeted-only failure cannot grant repair authority in
+        // place of the required work_packet receipt. The failed native profile
+        // now terminates at BLOCKED instead of permitting another unfinished
+        // continuation that could retry or escalate without authorization.
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
         assert_eq!(
             chat.adaptive_effort.implementation_phase,
             Some(AdaptiveImplementationPhase::MechanicalValidation)
         );
         assert_eq!(chat.adaptive_effort.validation_repair_cycles_used, 0);
-        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(chat.adaptive_effort.attempt_number, 1);
+        assert_eq!(chat.adaptive_effort.pending_attempt, None);
+        assert_eq!(chat.adaptive_effort.successor_admission, None);
+        assert!(!chat.maybe_submit_adaptive_successor());
     }
 
     #[tokio::test]
