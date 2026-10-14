@@ -605,7 +605,16 @@ async fn codexdd_validation_runner_is_visible_only_during_mechanical_validation(
 }
 
 #[tokio::test]
-async fn codexdd_validation_is_direct_only_in_code_mode_only_mechanical_turn() {
+async fn codexdd_mechanical_turn_forces_direct_tools_without_widening_other_turns() {
+    let ordinary = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+    })
+    .await;
+    assert_eq!(ordinary.tool_mode, ToolMode::CodeModeOnly);
+    ordinary.assert_visible_lacks(&["run_codexdd_validation"]);
+    ordinary.assert_registered_lacks(&["run_codexdd_validation"]);
+    ordinary.assert_visible_contains(&[codex_code_mode::PUBLIC_TOOL_NAME]);
+
     let reconnaissance = probe(|turn| {
         set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
         turn.turn_metadata_state.set_turn_trigger(
@@ -613,6 +622,7 @@ async fn codexdd_validation_is_direct_only_in_code_mode_only_mechanical_turn() {
         );
     })
     .await;
+    assert_eq!(reconnaissance.tool_mode, ToolMode::CodeModeOnly);
     reconnaissance.assert_visible_lacks(&["run_codexdd_validation"]);
     reconnaissance.assert_registered_lacks(&["run_codexdd_validation"]);
 
@@ -623,28 +633,29 @@ async fn codexdd_validation_is_direct_only_in_code_mode_only_mechanical_turn() {
         );
     })
     .await;
-    assert_eq!(mechanical.tool_mode, ToolMode::CodeModeOnly);
+    assert_eq!(mechanical.tool_mode, ToolMode::Direct);
     mechanical.assert_visible_contains(&["run_codexdd_validation", "report_adaptive_signal"]);
     mechanical.assert_registered_contains(&["run_codexdd_validation"]);
+    mechanical.assert_visible_lacks(&[
+        codex_code_mode::PUBLIC_TOOL_NAME,
+        codex_code_mode::WAIT_TOOL_NAME,
+    ]);
+    assert!(mechanical.code_mode_tool_names.is_empty());
     assert_eq!(
         mechanical.exposure("run_codexdd_validation"),
         ToolExposure::DirectModelOnly
     );
-    assert!(
-        !mechanical
-            .code_mode_tool_names
-            .values()
-            .any(|name| name.name == "run_codexdd_validation"),
-        "the native validator must never become an indirect Code Mode tool"
-    );
-    let ToolSpec::Freeform(exec) = mechanical.visible_spec(codex_code_mode::PUBLIC_TOOL_NAME)
-    else {
-        panic!("expected Code Mode exec tool");
-    };
-    assert!(
-        !exec.description.contains("run_codexdd_validation"),
-        "Code Mode nested-tool guidance must not expose the protected validator"
-    );
+
+    let terminalization = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(terminalization.tool_mode, ToolMode::CodeModeOnly);
+    terminalization.assert_visible_lacks(&["run_codexdd_validation"]);
+    terminalization.assert_registered_lacks(&["run_codexdd_validation"]);
 }
 
 #[tokio::test]
