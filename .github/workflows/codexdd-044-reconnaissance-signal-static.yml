@@ -7,6 +7,9 @@ on:
       - dd/codexdd-0.4.4-native-tool-direct-guidance
     paths:
       - .github/workflows/codexdd-044-reconnaissance-signal-static.yml
+      - codex-rs/core/src/tools/mod.rs
+      - codex-rs/core/src/tools/spec_plan_tests.rs
+      - codex-rs/tui/src/chatwidget/tests/adaptive_effort_tests.rs
 
 permissions:
   contents: read
