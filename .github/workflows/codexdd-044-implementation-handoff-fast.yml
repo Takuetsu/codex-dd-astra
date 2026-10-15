@@ -1,0 +1,114 @@
+# Isolated 0.4.4 Implementation handoff regression contract, cheap Windows check.
+# Never runs Node work_packet, full Windows release profile, or a production installer.
+name: CodexDD 0.4.4 Implementation handoff fast gate
+
+on:
+  push:
+    branches:
+      - dd/codexdd-0.4.4-native-tool-direct-guidance
+    paths:
+      - .github/workflows/codexdd-044-implementation-handoff-fast.yml
+      - codex-rs/protocol/src/lib.rs
+      - codex-rs/tui/src/chatwidget/adaptive_effort.rs
+      - codex-rs/tui/src/app/thread_routing.rs
+      - codex-rs/core/src/tools/mod.rs
+      - codex-rs/core/src/tools/spec_plan_tests.rs
+      - codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-044-implementation-handoff-fast
+  cancel-in-progress: true
+
+jobs:
+  windows-static:
+    name: Protected Implementation handoff and rustfmt
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact handoff-only scope and trusted tool boundary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = '50bc6e0c2d6020870834c070be0921d6175cbae2'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong SHA' }
+          git merge-base --is-ancestor $base HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Baseline ancestry lost' }
+          $allowed = @(
+            '.github/workflows/codexdd-044-implementation-handoff-fast.yml',
+            'codex-rs/protocol/src/lib.rs',
+            'codex-rs/tui/src/chatwidget/adaptive_effort.rs',
+            'codex-rs/tui/src/app/thread_routing.rs',
+            'codex-rs/core/src/tools/mod.rs',
+            'codex-rs/core/src/tools/spec_plan_tests.rs',
+            'codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs'
+          )
+          $actual = @(git diff --name-only $base HEAD)
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect changed paths' }
+          if ($actual.Count -ne $allowed.Count) { throw "Expected $($allowed.Count) files; got $($actual.Count)" }
+          foreach ($file in $actual) {
+            if ($allowed -notcontains $file) { throw "Unexpected file: $file" }
+          }
+          if ((Get-Content -Raw codex-rs/codexdd-version.txt).Trim() -ne '0.4.4') {
+            throw 'Version mismatch'
+          }
+          $protocol = Get-Content -Raw codex-rs/protocol/src/lib.rs
+          $tui = Get-Content -Raw codex-rs/tui/src/app/thread_routing.rs
+          $state = Get-Content -Raw codex-rs/tui/src/chatwidget/adaptive_effort.rs
+          $mode = Get-Content -Raw codex-rs/core/src/tools/mod.rs
+          $spec = Get-Content -Raw codex-rs/core/src/tools/spec_plan_tests.rs
+          $signal = Get-Content -Raw codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs
+          $registry = Get-Content -Raw codex-rs/core/src/tools/registry.rs
+          foreach ($source in @($protocol, $tui, $mode, $spec)) {
+            if (-not $source.Contains('CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER')) {
+              throw 'Trusted Implementation marker missing from source path'
+            }
+          }
+          if (-not $state.Contains('implementation_control_signal_required')) {
+            throw 'Implementation binding/scope/phase gate missing'
+          }
+          if (-not $spec.Contains('implementation.assert_visible_lacks')) {
+            throw 'Missing test prohibiting early LVO exposure'
+          }
+          if (-not $signal.Contains('accepted_complexity_with_missing_phase_can_report_mechanical_validation')) {
+            throw 'Missing inconsistent-phase regression'
+          }
+          if (-not $signal.Contains('missing_phase_does_not_skip_unaccepted_complexity_or_worker_binding')) {
+            throw 'Missing missing-complexity / unbound fail-closed regression'
+          }
+          if (-not $registry.Contains('adaptive_mechanical_validation_rejection')) {
+            throw 'Mechanical read-only registry contract missing'
+          }
+          $native = Get-Content -Raw codex-rs/core/src/tools/spec_plan.rs
+          if (-not $native.Contains('registry.add_with_exposure(CodexDDValidationHandler, ToolExposure::DirectModelOnly)')) {
+            throw 'Validator direct-only exposure changed'
+          }
+          Write-Host 'IMPLEMENTATION_HANDOFF_STATIC_PASS'
+
+      - name: Install pinned rustfmt
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          toolchain: '1.95.0'
+          components: rustfmt
+
+      - name: Check workspace Rust formatting
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          & cargo fmt --all -- --check
+          if ($LASTEXITCODE -ne 0) { throw 'Rust formatting failure' }
+
+      - name: Verify source remains unchanged
+        if: always() && !cancelled()
+        shell: pwsh
+        run: |
+          $dirty = @(git status --porcelain)
+          if ($dirty.Count -gt 0) { $dirty | Write-Host; throw 'Source changed during check' }
