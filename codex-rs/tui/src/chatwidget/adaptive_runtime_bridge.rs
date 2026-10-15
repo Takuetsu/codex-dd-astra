@@ -311,9 +311,7 @@ impl ChatWidget {
                 );
                 self.add_info_message(
                     format!(
-                        "CodexDD stopped at BLOCKED: {} consecutive Implementation turns ended without an accepted lifecycle signal or completed native validation/work result. {} More adaptive effort cannot make an unavailable tool visible. No source repair, model escalation, or PASS receipt is authorized.",
-                        CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT,
-                        phase_guidance
+                        "CodexDD stopped at BLOCKED: {CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT} consecutive Implementation turns ended without an accepted lifecycle signal or completed native validation/work result. {phase_guidance} More adaptive effort cannot make an unavailable tool visible. No source repair, model escalation, or PASS receipt is authorized."
                     ),
                     None,
                 );
