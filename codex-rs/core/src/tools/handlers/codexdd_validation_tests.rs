@@ -153,7 +153,7 @@ fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() 
         "powershell.exe".to_string(),
         "-NoProfile".to_string(),
         "-Command".to_string(),
-        command.clone(),
+        command,
     ];
     assert_eq!(
         codex_shell_command::is_dangerous_command::dangerous_command_match_for_platform(
