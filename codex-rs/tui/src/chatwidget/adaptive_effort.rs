@@ -219,6 +219,29 @@ impl AdaptiveEffortState {
             && self.complexity_class.is_none()
     }
 
+    /// Bind the direct-only lifecycle signal tool to the trusted Implementation
+    /// turn. CodeModeOnly cannot call this control tool through its nested
+    /// executor, but ordinary non-Worker turns must retain their tool mode.
+    pub(crate) fn implementation_control_signal_required(&self) -> bool {
+        self.enabled
+            && !self.paused_by_user
+            && self.workflow_terminal.is_none()
+            && self.worker_context.role == AdaptiveWorkerRole::Implementation
+            && self
+                .worker_context
+                .authorized_scope
+                .as_deref()
+                .is_some_and(|scope| !scope.trim().is_empty())
+            && self.complexity_class.is_some()
+            // Legacy/inconsistent state with accepted complexity but no phase
+            // can request a trusted Mechanical Validation handoff. The phase
+            // is never inferred to be Mechanical Validation by this predicate.
+            && matches!(
+                self.implementation_phase,
+                None | Some(AdaptiveImplementationPhase::Implementation)
+            )
+    }
+
     pub(crate) fn implementation_mechanical_validation_active(&self) -> bool {
         self.enabled
             && !self.paused_by_user
@@ -399,6 +422,10 @@ impl ChatWidget {
     pub(crate) fn adaptive_implementation_reconnaissance_required(&self) -> bool {
         self.adaptive_effort
             .implementation_reconnaissance_required()
+    }
+
+    pub(crate) fn adaptive_implementation_control_signal_required(&self) -> bool {
+        self.adaptive_effort.implementation_control_signal_required()
     }
 
     pub(crate) fn adaptive_implementation_mechanical_validation_active(&self) -> bool {
@@ -1061,6 +1088,43 @@ mod tests {
         state.paused_by_user = false;
         state.worker_context.authorized_scope = Some("   ".to_string());
         assert!(!state.implementation_reconnaissance_required());
+    }
+
+    #[test]
+    fn implementation_control_signal_requires_bound_nonterminal_worker() {
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Luna),
+            current_effort: Some(AdaptiveEffort::Medium),
+            attempt_number: 2,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("isolated native acceptance".to_string()),
+            },
+            complexity_class: Some(AdaptiveComplexityClass::Standard),
+            implementation_phase: Some(AdaptiveImplementationPhase::Implementation),
+            ..Default::default()
+        };
+        assert!(state.implementation_control_signal_required());
+        state.implementation_phase = None;
+        assert!(state.implementation_control_signal_required());
+        assert!(!state.implementation_mechanical_validation_active());
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        assert!(!state.implementation_control_signal_required());
+        assert!(state.implementation_mechanical_validation_active());
+        state.complexity_class = None;
+        assert!(!state.implementation_control_signal_required());
+        state.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        state.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+        state.worker_context.role = AdaptiveWorkerRole::Validation;
+        assert!(!state.implementation_control_signal_required());
+        state.worker_context.role = AdaptiveWorkerRole::Implementation;
+        state.worker_context.authorized_scope = Some(" ".to_string());
+        assert!(!state.implementation_control_signal_required());
+        state.worker_context.authorized_scope = Some("isolated native acceptance".to_string());
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::Blocked);
+        assert!(!state.implementation_control_signal_required());
     }
 
     #[test]
