@@ -2237,7 +2237,9 @@ async fn first_reconnaissance_without_trusted_tool_receipt_does_not_wait_forever
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
     assert_eq!(chat.adaptive_effort.attempt_number, 2);
     assert_eq!(
-        chat.adaptive_effort.last_processed_terminal_turn_id.as_deref(),
+        chat.adaptive_effort
+            .last_processed_terminal_turn_id
+            .as_deref(),
         Some("recon-prose-only")
     );
 }
