@@ -1,0 +1,83 @@
+name: CodexDD 0.4.4 detached helper syntax
+
+on:
+  push:
+    branches: [dd/codexdd-0.4.4-ssh-safe-release-helper]
+    paths:
+      - scripts/codexdd-start-detached-044-release.ps1
+      - scripts/codexdd-monitor-detached-044-release.ps1
+      - .github/workflows/codexdd-044-helper-static.yml
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-scope:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Checkout helper branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Parse both helpers and verify fail-closed isolation
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git merge-base --is-ancestor ac5d950b6feb3881892c0375c11ecf90cece3d40 HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Not based on accepted PR head' }
+          $changed = @(git diff --name-only ac5d950b6feb3881892c0375c11ecf90cece3d40 HEAD)
+          $allowed = @(
+            'scripts/codexdd-start-detached-044-release.ps1',
+            'scripts/codexdd-monitor-detached-044-release.ps1',
+            '.github/workflows/codexdd-044-helper-static.yml'
+          )
+          if ($changed.Count -ne 3) { throw "Unexpected file count: $($changed.Count)" }
+          foreach ($file in $changed) { if ($allowed -notcontains $file) { throw "Unexpected path $file" } }
+          foreach ($file in $allowed[0..1]) {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path $PWD $file), [ref]$tokens, [ref]$parseErrors
+            )
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Host $_ }
+              throw "Windows PowerShell parser failed: $file"
+            }
+          }
+          $launcher = Get-Content -Raw $allowed[0]
+          $monitor = Get-Content -Raw $allowed[1]
+          if ($launcher -match 'validate-upstream-candidate-v2|ApprovedDiscoveryManifestSha256|ApprovedConflictsSha256' ) {
+            throw 'Obsolete 0.4.3 manifest gating found in launcher'
+          }
+          foreach ($needle in @(
+            "codexdd-test-release.ps1",
+            "codexdd-version.txt",
+            "New-ScheduledTaskPrincipal",
+            "-LogonType S4U -RunLevel Limited",
+            "Start-ScheduledTask",
+            "cli-pty-smoke.log",
+            "tui-daemon-smoke.log",
+            "thread-store-smoke.log",
+            "CodexDD-044-",
+            "CODEXDD_DETACHED_RELEASE_STARTED",
+            "release-result.json",
+            "21/21"
+          )) {
+            if (!$launcher.Contains($needle)) { throw "Launcher missing $needle" }
+          }
+          foreach ($needle in @(
+            "codexdd-044-current.json",
+            "ExpectedCandidateSha",
+            "Get-ScheduledTask",
+            "release-result.json",
+            "CODEXDD_044_RELEASE_21_OF_21_PASS"
+          )) {
+            if (!$monitor.Contains($needle)) { throw "Monitor missing $needle" }
+          }
+          if (([regex]::Matches((Get-Content -Raw scripts/codexdd-test-release.ps1), 'New-CodexDDValidationStage -Name')).Count -ne 21) {
+            throw 'Release stage contract no longer defines 21 stages'
+          }
+          if ((git status --porcelain).Count -ne 0) { throw 'Checkout changed unexpectedly' }
+          Write-Host 'CODEXDD_044_S4U_HELPERS_SYNTAX_AND_SCOPE_PASS'
