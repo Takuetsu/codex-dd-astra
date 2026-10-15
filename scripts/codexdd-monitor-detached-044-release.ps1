@@ -25,7 +25,7 @@ if (!$dir.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) -or
 }
 $resultFile = Join-Path $dir 'release-result.json'
 $log = Join-Path $dir 'release-stdout.log'
-Write-Host "CodexDD 0.4.4 release monitor — $($run.candidate_sha)"
+Write-Host "CodexDD 0.4.4 release monitor - $($run.candidate_sha)"
 Write-Host "Task: $task"
 Write-Host "Run directory: $dir"
 Write-Host 'Ctrl+C stops monitoring only. It does not stop or restart the Scheduled Task.'
