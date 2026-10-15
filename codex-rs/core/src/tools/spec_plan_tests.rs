@@ -625,10 +625,8 @@ async fn codexdd_protected_turns_force_direct_tools_without_widening_other_turns
     assert_eq!(reconnaissance.tool_mode, ToolMode::Direct);
     reconnaissance.assert_visible_contains(&["report_adaptive_signal"]);
     reconnaissance.assert_registered_contains(&["report_adaptive_signal"]);
-    reconnaissance.assert_visible_lacks(&[
-        "run_codexdd_validation",
-        codex_code_mode::PUBLIC_TOOL_NAME,
-    ]);
+    reconnaissance
+        .assert_visible_lacks(&["run_codexdd_validation", codex_code_mode::PUBLIC_TOOL_NAME]);
     reconnaissance.assert_registered_lacks(&["run_codexdd_validation"]);
     assert!(reconnaissance.code_mode_tool_names.is_empty());
     assert_eq!(
