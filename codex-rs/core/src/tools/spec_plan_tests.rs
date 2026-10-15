@@ -634,6 +634,27 @@ async fn codexdd_protected_turns_force_direct_tools_without_widening_other_turns
         ToolExposure::DirectModelOnly
     );
 
+    // The post-complexity Implementation successor still needs to emit a
+    // trusted lifecycle signal. It must not see the native validator early.
+    let implementation = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(implementation.tool_mode, ToolMode::Direct);
+    implementation.assert_visible_contains(&["report_adaptive_signal"]);
+    implementation.assert_registered_contains(&["report_adaptive_signal"]);
+    implementation
+        .assert_visible_lacks(&["run_codexdd_validation", codex_code_mode::PUBLIC_TOOL_NAME]);
+    implementation.assert_registered_lacks(&["run_codexdd_validation"]);
+    assert!(implementation.code_mode_tool_names.is_empty());
+    assert_eq!(
+        implementation.exposure("report_adaptive_signal"),
+        ToolExposure::DirectModelOnly
+    );
+
     let mechanical = probe(|turn| {
         set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
         turn.turn_metadata_state.set_turn_trigger(
