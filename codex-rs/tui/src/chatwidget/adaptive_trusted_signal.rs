@@ -225,8 +225,20 @@ impl ChatWidget {
             AdaptiveRuntimeSignalKind::MechanicalValidation => {
                 self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Implementation
                     && self.adaptive_effort.complexity_class.is_some()
-                    && self.adaptive_effort.implementation_phase
-                        == Some(AdaptiveImplementationPhase::Implementation)
+                    // An already-accepted complexity class plus a bound
+                    // Implementation scope can recover a missing legacy phase.
+                    // A direct trusted mechanical_validation signal is still
+                    // mandatory; this does not expose the native runner early.
+                    && matches!(
+                        self.adaptive_effort.implementation_phase,
+                        None | Some(AdaptiveImplementationPhase::Implementation)
+                    )
+                    && self
+                        .adaptive_effort
+                        .worker_context
+                        .authorized_scope
+                        .as_deref()
+                        .is_some_and(|scope| !scope.trim().is_empty())
                     // A previous unfinished turn must not permanently prevent
                     // a subsequent trusted transition into read-only validation.
                     && envelope.evidence_refs.is_empty()
