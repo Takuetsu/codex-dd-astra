@@ -425,7 +425,8 @@ impl ChatWidget {
     }
 
     pub(crate) fn adaptive_implementation_control_signal_required(&self) -> bool {
-        self.adaptive_effort.implementation_control_signal_required()
+        self.adaptive_effort
+            .implementation_control_signal_required()
     }
 
     pub(crate) fn adaptive_implementation_mechanical_validation_active(&self) -> bool {
