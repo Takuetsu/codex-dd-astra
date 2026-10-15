@@ -2212,6 +2212,37 @@ async fn adaptive_status_surfaces_budget_mode() {
 }
 
 #[tokio::test]
+async fn first_reconnaissance_without_trusted_tool_receipt_does_not_wait_forever() {
+    let (mut chat, mut events, _ops) = make_chatwidget_manual(None).await;
+    chat.thread_id = Some(ThreadId::new());
+    chat.dispatch_command_with_args(SlashCommand::Adaptive, "astra".to_string(), Vec::new());
+    drain_events(&mut events);
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("isolated native validation acceptance".to_string()),
+    };
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+
+    handle_turn_started(&mut chat, "recon-prose-only");
+    // This completed turn contains no report_adaptive_signal output. The
+    // model's text must not be treated as a trusted complexity report.
+    handle_turn_completed(&mut chat, "recon-prose-only", Some(1));
+
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert!(!matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { .. })
+    ));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert_eq!(
+        chat.adaptive_effort.last_processed_terminal_turn_id.as_deref(),
+        Some("recon-prose-only")
+    );
+}
+
+#[tokio::test]
 async fn complexity_reconnaissance_authorizes_bounded_floor_and_successor() {
     let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
