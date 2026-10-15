@@ -845,6 +845,85 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn accepted_complexity_with_missing_phase_can_report_mechanical_validation() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "trusted-missing-implementation-phase";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("isolated native LVO acceptance".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase = None;
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::MechanicalValidation,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert!(chat.adaptive_effort.pending_attempt.is_some());
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    }
+
+    #[tokio::test]
+    async fn missing_phase_does_not_skip_unaccepted_complexity_or_worker_binding() {
+        for (complexity, role, scope) in [
+            (
+                None,
+                AdaptiveWorkerRole::Implementation,
+                Some("isolated acceptance".to_string()),
+            ),
+            (
+                Some(AdaptiveComplexityClass::Standard),
+                AdaptiveWorkerRole::Validation,
+                Some("isolated acceptance".to_string()),
+            ),
+            (
+                Some(AdaptiveComplexityClass::Standard),
+                AdaptiveWorkerRole::Implementation,
+                None,
+            ),
+        ] {
+            let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+            let thread_id = ThreadId::new();
+            let turn_id = "untrusted-missing-phase";
+            chat.thread_id = Some(thread_id);
+            chat.dispatch_adaptive_command("astra");
+            chat.adaptive_effort.worker_context.role = role;
+            chat.adaptive_effort.worker_context.authorized_scope = scope;
+            chat.adaptive_effort.complexity_class = complexity;
+            chat.adaptive_effort.implementation_phase = None;
+            chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Pending(
+                AdaptiveRuntimeSignalEnvelope {
+                    source_turn_id: turn_id.to_string(),
+                    signal_kind: AdaptiveRuntimeSignalKind::MechanicalValidation,
+                    evidence_refs: Vec::new(),
+                    diagnostic_note: None,
+                },
+            ));
+            assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+            assert_ne!(
+                chat.adaptive_effort.implementation_phase,
+                Some(AdaptiveImplementationPhase::MechanicalValidation)
+            );
+            assert!(chat.adaptive_effort.pending_attempt.is_none());
+        }
+    }
+
+    #[tokio::test]
     async fn trusted_mechanical_handoff_recovers_after_one_unfinished_turn() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
