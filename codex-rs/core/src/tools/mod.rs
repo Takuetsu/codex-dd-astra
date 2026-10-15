@@ -94,8 +94,7 @@ pub(crate) fn effective_tool_mode(turn_context: &TurnContext, model_info: &Model
     let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
         turn_context.turn_metadata_state.as_ref(),
     );
-    if turn_trigger.as_deref()
-        == Some(codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+    if turn_trigger.as_deref() == Some(codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         || turn_trigger.as_deref()
             == Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
     {
