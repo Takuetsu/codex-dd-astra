@@ -15,6 +15,7 @@ use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
 use codex_app_server_protocol::UserInput;
 use codex_app_server_protocol::WarningNotification;
+use codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
@@ -33,12 +34,9 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
     matches!(
         parse_adaptive_worker_assignment(text),
         Ok(Some(worker_context))
-            if worker_context.role == AdaptiveWorkerRole::Implementation
-    )
-}
-
-fn adaptive_turn_trigger(
+            if wfn adaptive_turn_trigger(
     reconnaissance_required: bool,
+    implementation_control_signal_required: bool,
     mechanical_validation_active: bool,
     validation_terminalization_active: bool,
 ) -> Option<String> {
@@ -48,6 +46,13 @@ fn adaptive_turn_trigger(
         Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string())
     } else if validation_terminalization_active {
         Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string())
+    } else if implementation_control_signal_required {
+        Some(CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER.to_string())
+    } else {
+        None
+    }
+}
+ATION_TURN_TRIGGER.to_string())
     } else {
         None
     }
@@ -930,6 +935,8 @@ impl App {
                         || user_turn_starts_bound_implementation(items);
                     let turn_trigger = adaptive_turn_trigger(
                         adaptive_reconnaissance_required,
+                        self.chat_widget
+                            .adaptive_implementation_control_signal_required(),
                         self.chat_widget
                             .adaptive_implementation_mechanical_validation_active(),
                         self.chat_widget
@@ -2330,51 +2337,25 @@ mod tests {
 
     #[test]
     fn adaptive_turn_uses_lifecycle_write_gate_markers() {
+        // Reconnaissance and Mechanical Validation remain distinct protected
+        // phases. The Implementation marker never grants the native LVO runner.
         assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical_validation_active*/ false,
-                /*validation_terminalization_active*/ false,
-            )
-            .as_deref(),
+            adaptive_turn_trigger(true, true, true, true).as_deref(),
             Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
         );
-
         assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ false, /*mechanical_validation_active*/ true,
-                /*validation_terminalization_active*/ false,
-            )
-            .as_deref(),
+            adaptive_turn_trigger(false, true, true, true).as_deref(),
             Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
         );
-
         assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ false,
-                /*mechanical_validation_active*/ false,
-                /*validation_terminalization_active*/ true,
-            )
-            .as_deref(),
+            adaptive_turn_trigger(false, true, false, true).as_deref(),
             Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
         );
-
         assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ true, /*mechanical_validation_active*/ true,
-                /*validation_terminalization_active*/ true,
-            )
-            .as_deref(),
-            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+            adaptive_turn_trigger(false, true, false, false).as_deref(),
+            Some(CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER)
         );
-
-        assert_eq!(
-            adaptive_turn_trigger(
-                /*reconnaissance_required*/ false,
-                /*mechanical_validation_active*/ false,
-                /*validation_terminalization_active*/ false,
-            ),
-            None
-        );
+        assert_eq!(adaptive_turn_trigger(false, false, false, false), None);
     }
 
     #[tokio::test]
