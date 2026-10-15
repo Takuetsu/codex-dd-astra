@@ -34,7 +34,11 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
     matches!(
         parse_adaptive_worker_assignment(text),
         Ok(Some(worker_context))
-            if wfn adaptive_turn_trigger(
+            if worker_context.role == AdaptiveWorkerRole::Implementation
+    )
+}
+
+fn adaptive_turn_trigger(
     reconnaissance_required: bool,
     implementation_control_signal_required: bool,
     mechanical_validation_active: bool,
@@ -48,11 +52,6 @@ fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {
         Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string())
     } else if implementation_control_signal_required {
         Some(CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER.to_string())
-    } else {
-        None
-    }
-}
-ATION_TURN_TRIGGER.to_string())
     } else {
         None
     }
