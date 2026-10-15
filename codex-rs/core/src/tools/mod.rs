@@ -85,16 +85,19 @@ pub(crate) fn requested_tool_mode(turn_context: &TurnContext, model_info: &Model
 }
 
 pub(crate) fn effective_tool_mode(turn_context: &TurnContext, model_info: &ModelInfo) -> ToolMode {
-    // The controller-authorized Mechanical Validation turn has one protected,
-    // direct-only native runner. Code Mode's nested tools cannot invoke it and
-    // may lead the model to try a blocked shell substitute instead. Keep this
-    // turn direct while the hard dispatch allowlist retains the no-edit gate.
-    // All other turns retain their configured/model-requested tool mode.
+    // The protected reconnaissance and Mechanical Validation turns each depend
+    // on a direct-only built-in control tool. A Code Mode nested tool cannot
+    // emit the trusted lifecycle signal or invoke the native validator. Keep
+    // only these two metadata-authorized turns in direct mode; the per-turn
+    // dispatch allowlists still enforce read-only / no-source-edit policy.
+    // Ordinary, Implementation and terminalization turns keep their mode.
     let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
         turn_context.turn_metadata_state.as_ref(),
     );
     if turn_trigger.as_deref()
-        == Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+        == Some(codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+        || turn_trigger.as_deref()
+            == Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
     {
         return ToolMode::Direct;
     }
