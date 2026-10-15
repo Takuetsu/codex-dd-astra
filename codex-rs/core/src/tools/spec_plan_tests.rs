@@ -605,7 +605,7 @@ async fn codexdd_validation_runner_is_visible_only_during_mechanical_validation(
 }
 
 #[tokio::test]
-async fn codexdd_mechanical_turn_forces_direct_tools_without_widening_other_turns() {
+async fn codexdd_protected_turns_force_direct_tools_without_widening_other_turns() {
     let ordinary = probe(|turn| {
         set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
     })
@@ -622,9 +622,19 @@ async fn codexdd_mechanical_turn_forces_direct_tools_without_widening_other_turn
         );
     })
     .await;
-    assert_eq!(reconnaissance.tool_mode, ToolMode::CodeModeOnly);
-    reconnaissance.assert_visible_lacks(&["run_codexdd_validation"]);
+    assert_eq!(reconnaissance.tool_mode, ToolMode::Direct);
+    reconnaissance.assert_visible_contains(&["report_adaptive_signal"]);
+    reconnaissance.assert_registered_contains(&["report_adaptive_signal"]);
+    reconnaissance.assert_visible_lacks(&[
+        "run_codexdd_validation",
+        codex_code_mode::PUBLIC_TOOL_NAME,
+    ]);
     reconnaissance.assert_registered_lacks(&["run_codexdd_validation"]);
+    assert!(reconnaissance.code_mode_tool_names.is_empty());
+    assert_eq!(
+        reconnaissance.exposure("report_adaptive_signal"),
+        ToolExposure::DirectModelOnly
+    );
 
     let mechanical = probe(|turn| {
         set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
