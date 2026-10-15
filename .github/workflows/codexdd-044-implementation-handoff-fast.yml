@@ -75,7 +75,7 @@ jobs:
           if (-not $state.Contains('implementation_control_signal_required')) {
             throw 'Implementation binding/scope/phase gate missing'
           }
-          if (-not $spec.Contains('implementation.assert_visible_lacks')) {
+          if ($spec -notmatch 'implementation\s*\.assert_visible_lacks') {
             throw 'Missing test prohibiting early LVO exposure'
           }
           if (-not $signal.Contains('accepted_complexity_with_missing_phase_can_report_mechanical_validation')) {
