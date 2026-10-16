@@ -605,6 +605,89 @@ async fn codexdd_validation_runner_is_visible_only_during_mechanical_validation(
 }
 
 #[tokio::test]
+async fn codexdd_protected_turns_force_direct_tools_without_widening_other_turns() {
+    let ordinary = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+    })
+    .await;
+    assert_eq!(ordinary.tool_mode, ToolMode::CodeModeOnly);
+    ordinary.assert_visible_lacks(&["run_codexdd_validation"]);
+    ordinary.assert_registered_lacks(&["run_codexdd_validation"]);
+    ordinary.assert_visible_contains(&[codex_code_mode::PUBLIC_TOOL_NAME]);
+
+    let reconnaissance = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(reconnaissance.tool_mode, ToolMode::Direct);
+    reconnaissance.assert_visible_contains(&["report_adaptive_signal"]);
+    reconnaissance.assert_registered_contains(&["report_adaptive_signal"]);
+    reconnaissance
+        .assert_visible_lacks(&["run_codexdd_validation", codex_code_mode::PUBLIC_TOOL_NAME]);
+    reconnaissance.assert_registered_lacks(&["run_codexdd_validation"]);
+    assert!(reconnaissance.code_mode_tool_names.is_empty());
+    assert_eq!(
+        reconnaissance.exposure("report_adaptive_signal"),
+        ToolExposure::DirectModelOnly
+    );
+
+    // The post-complexity Implementation successor still needs to emit a
+    // trusted lifecycle signal. It must not see the native validator early.
+    let implementation = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(implementation.tool_mode, ToolMode::Direct);
+    implementation.assert_visible_contains(&["report_adaptive_signal"]);
+    implementation.assert_registered_contains(&["report_adaptive_signal"]);
+    implementation
+        .assert_visible_lacks(&["run_codexdd_validation", codex_code_mode::PUBLIC_TOOL_NAME]);
+    implementation.assert_registered_lacks(&["run_codexdd_validation"]);
+    assert!(implementation.code_mode_tool_names.is_empty());
+    assert_eq!(
+        implementation.exposure("report_adaptive_signal"),
+        ToolExposure::DirectModelOnly
+    );
+
+    let mechanical = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(mechanical.tool_mode, ToolMode::Direct);
+    mechanical.assert_visible_contains(&["run_codexdd_validation", "report_adaptive_signal"]);
+    mechanical.assert_registered_contains(&["run_codexdd_validation"]);
+    mechanical.assert_visible_lacks(&[
+        codex_code_mode::PUBLIC_TOOL_NAME,
+        codex_code_mode::WAIT_TOOL_NAME,
+    ]);
+    assert!(mechanical.code_mode_tool_names.is_empty());
+    assert_eq!(
+        mechanical.exposure("run_codexdd_validation"),
+        ToolExposure::DirectModelOnly
+    );
+
+    let terminalization = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_turn_trigger(
+            codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string(),
+        );
+    })
+    .await;
+    assert_eq!(terminalization.tool_mode, ToolMode::CodeModeOnly);
+    terminalization.assert_visible_lacks(&["run_codexdd_validation"]);
+    terminalization.assert_registered_lacks(&["run_codexdd_validation"]);
+}
+
+#[tokio::test]
 async fn reviewer_tool_policy_exclude_optional_core_tools() {
     let (mut session, mut turn) = make_session_and_context().await;
     session.tool_policy = Arc::new(codex_guardian_reviewer::reviewer_tool_policy());

@@ -87,6 +87,37 @@ fn admission_route(
 }
 
 #[tokio::test]
+async fn accepted_routine_complexity_successor_explains_how_to_expose_native_validator() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
+    chat.thread_id = Some(ThreadId::new());
+    let route = admission_route(AdaptiveFamily::Luna, AdaptiveEffort::Low);
+    configure_admission(&mut chat, AdaptivePendingDecision::ContinueSameRoute, route);
+    chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Routine);
+    chat.adaptive_effort.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+    synchronize_admission_route(&mut chat, route);
+
+    assert!(chat.maybe_submit_adaptive_successor());
+    let Op::UserTurn { items, .. } = next_submit_op(&mut op_rx) else {
+        panic!("expected runtime-authored continuation");
+    };
+    assert_matches!(
+        items.as_slice(),
+        [UserInput::Text { text, .. }]
+            if text.contains("ContinueSameRoute")
+                && text.contains("run_codexdd_validation is intentionally not exposed")
+                && text.contains("report_adaptive_signal with kind=mechanical_validation")
+                && text.contains("then END THIS TURN")
+    );
+    // A prompt does not grant validation authority. Only the trusted signal
+    // can move the controller to the next, tool-exposing validation turn.
+    assert_eq!(
+        chat.adaptive_effort.implementation_phase,
+        Some(AdaptiveImplementationPhase::Implementation)
+    );
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+}
+
+#[tokio::test]
 async fn adaptive_successor_submits_each_authorized_decision_once() {
     for (decision, route) in [
         (
@@ -2178,6 +2209,58 @@ async fn adaptive_status_surfaces_budget_mode() {
     let status = chat.adaptive_effort_status_text();
     assert!(status.contains("Implementation phase: Mechanical validation"));
     assert!(status.contains("Implementation floor: Luna Low"));
+}
+
+#[tokio::test]
+async fn first_reconnaissance_without_trusted_tool_receipt_does_not_wait_forever() {
+    let (mut chat, mut events, _ops) = make_chatwidget_manual(None).await;
+    chat.thread_id = Some(ThreadId::new());
+    chat.dispatch_command_with_args(SlashCommand::Adaptive, "astra".to_string(), Vec::new());
+    drain_events(&mut events);
+    chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("isolated native validation acceptance".to_string()),
+    };
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert_eq!(chat.adaptive_effort.attempt_number, 1);
+
+    handle_turn_started(&mut chat, "recon-prose-only");
+    // This completed turn contains no report_adaptive_signal output. The
+    // model's text must not be treated as a trusted complexity report.
+    handle_turn_completed(&mut chat, "recon-prose-only", Some(1));
+
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert!(!matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { .. })
+    ));
+    assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert_eq!(
+        chat.adaptive_effort
+            .last_processed_terminal_turn_id
+            .as_deref(),
+        Some("recon-prose-only")
+    );
+
+    // No trusted FunctionCallOutput: a later notification cannot reopen the
+    // completed turn or assign complexity to an unverified report.
+    let thread_id = chat.thread_id.expect("configured thread");
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread_id.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: "recon-prose-only".to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::Complexity,
+            evidence_refs: Vec::new(),
+            diagnostic_note: Some("architectural".to_string()),
+        },
+    });
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert!(!matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { .. } | AdaptivePendingSignal::Pending(_))
+    ));
 }
 
 #[tokio::test]

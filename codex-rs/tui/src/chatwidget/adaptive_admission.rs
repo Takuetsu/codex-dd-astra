@@ -1,6 +1,7 @@
 //! Exact-once admission state for a controller-authorized adaptive successor.
 
 use super::*;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
 use crate::adaptive_evidence::AdaptiveEvidenceOutcome;
 use crate::adaptive_policy::AdaptiveEffort;
 use crate::adaptive_policy::AdaptiveRoute;
@@ -107,6 +108,7 @@ impl ChatWidget {
         let message = UserMessage::from(adaptive_continuation_text(
             &permit,
             requires_complexity_recovery,
+            self.adaptive_effort.implementation_phase,
             &validation_success_refs,
             &validation_failure_refs,
             self.adaptive_effort.validation_targeted_retest_required,
@@ -286,6 +288,7 @@ impl ChatWidget {
 fn adaptive_continuation_text(
     permit: &AdaptiveSuccessorPermit,
     requires_complexity_recovery: bool,
+    implementation_phase: Option<AdaptiveImplementationPhase>,
     validation_success_refs: &[String],
     validation_failure_refs: &[String],
     validation_targeted_retest_required: bool,
@@ -348,13 +351,13 @@ fn adaptive_continuation_text(
         crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EnterMechanicalValidation => {
             if validation_targeted_retest_required {
                 format!(
-                    "[Adaptive continuation] A bounded source repair was completed. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Repair cycle {validation_repair_cycles_used}/{} is active for failure fingerprint {}. First call run_codexdd_validation with profile=targeted. If targeted fails, call report_adaptive_signal with kind=implementation_work and include that failed validation-runner evidence ref, then end the turn before editing. If targeted passes, call run_codexdd_validation with profile=work_packet. If work_packet fails, report kind=implementation_work with the failed work-packet evidence ref and end the turn before editing. Only when both targeted and work_packet pass may you call report_adaptive_signal with kind=ready_for_validation; include both successful validation-runner evidence refs. Do not edit source in this turn and do not recreate either profile with ad-hoc shell commands. Infrastructure/contract errors are blockers and do not authorize source edits.",
+                    "[Adaptive continuation] A bounded source repair was completed. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Repair cycle {validation_repair_cycles_used}/{} is active for failure fingerprint {}. First call the direct top-level built-in run_codexdd_validation tool with profile=targeted (never through code_mode exec or a nested tool call). If targeted fails, call report_adaptive_signal with kind=implementation_work and include that failed validation-runner evidence ref, then end the turn before editing. If targeted passes, call that same direct top-level run_codexdd_validation tool with profile=work_packet. If work_packet fails, report kind=implementation_work with the failed work-packet evidence ref and end the turn before editing. Only when both targeted and work_packet pass may you call report_adaptive_signal with kind=ready_for_validation; include both successful validation-runner evidence refs. Do not edit source in this turn and do not recreate either profile with ad-hoc shell commands. Infrastructure/contract errors are blockers and do not authorize source edits.",
                     crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
                     validation_repair_fingerprint.unwrap_or("unknown"),
                 )
             } else {
                 format!(
-                    "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Run the repository-owned CodexDD work-packet profile by calling run_codexdd_validation with profile=work_packet; do not manually recreate the profile with ad-hoc shell commands. Do not edit source in this turn. If the validation runner returns PASS, call report_adaptive_signal with kind=ready_for_validation and include the successful validation-runner evidence ref, then end the turn. If validation fails with a repairable product/test failure, call report_adaptive_signal with kind=implementation_work and include the failed validation-runner evidence ref, then end the turn before editing. If the profile is missing or the runner reports an infrastructure/contract error, stop and report the blocker rather than improvising a replacement validation sequence. Preserve the existing task, scope, worktree, and acceptance criteria."
+                    "[Adaptive continuation] Source-changing implementation is complete. Attempt {attempt} is authorized at {model} {effort} using {decision} for mechanical validation only. Invoke the repository-owned CodexDD work-packet profile through the direct top-level built-in run_codexdd_validation tool with profile=work_packet, NOT through code_mode exec or a nested tool call. This protected control tool is deliberately unavailable to code-mode nested tools; do not recreate the profile with exec_command or ad-hoc shell commands. Do not edit source in this turn. If the validation runner returns PASS, call report_adaptive_signal with kind=ready_for_validation and include the successful validation-runner evidence ref, then end the turn. If validation fails with a repairable product/test failure, call report_adaptive_signal with kind=implementation_work and include the failed validation-runner evidence ref, then end the turn before editing. If the profile is missing or the runner reports an infrastructure/contract error, stop and report the blocker rather than improvising a replacement validation sequence. Preserve the existing task, scope, worktree, and acceptance criteria."
                 )
             }
         }
@@ -363,6 +366,13 @@ fn adaptive_continuation_text(
                 "[Adaptive continuation] Mechanical validation found a repairable product/test failure. Attempt {attempt} is restored at {model} {effort} using {decision}; repair cycle {validation_repair_cycles_used}/{} is active for failure fingerprint {}. Continue only the bounded source-changing repair needed for that failure. Do not broaden scope. When the repair is complete, report kind=mechanical_validation and end the turn; the next mechanical-validation turn must run targeted first and then work_packet before READY_FOR_VALIDATION can be accepted.",
                 crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT,
                 validation_repair_fingerprint.unwrap_or("unknown"),
+            )
+        }
+        _ if permit.worker_context.role == AdaptiveWorkerRole::Implementation
+            && implementation_phase == Some(AdaptiveImplementationPhase::Implementation) =>
+        {
+            format!(
+                "[Adaptive continuation] Attempt {attempt} is authorized at {model} {effort} using {decision} in the Implementation phase, after the complexity gate was accepted. IMPORTANT: run_codexdd_validation is intentionally not exposed while the Worker remains in Implementation; repeatedly searching for it or asking for more model effort cannot expose it. If the assigned task is validation-only or all authorized source work is already complete, immediately call report_adaptive_signal with kind=mechanical_validation (no evidence_refs, complexity or diagnostic_note), then END THIS TURN. Only the controller-authorized NEXT turn enters Mechanical Validation and exposes run_codexdd_validation for profile=work_packet. If source changes are genuinely still required by the existing assignment, perform only those authorized changes, then report kind=mechanical_validation and end the turn when implementation is complete. Do not create an ad-hoc validation script, fabricate receipts, broaden the task or claim PASS. Preserve the existing task, scope, worktree and evidence."
             )
         }
         _ => format!(
@@ -389,6 +399,73 @@ mod tests {
     use codex_protocol::ThreadId;
 
     #[test]
+    fn accepted_complexity_implementation_prompts_validation_only_mechanical_handoff() {
+        for decision in [
+            crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute,
+            crate::chatwidget::adaptive_effort::AdaptivePendingDecision::EscalateEffort,
+            crate::chatwidget::adaptive_effort::AdaptivePendingDecision::RetrySameLevel,
+        ] {
+            let permit = AdaptiveSuccessorPermit {
+                thread_id: ThreadId::new(),
+                source_turn_id: "completed-complexity".to_string(),
+                decision,
+                route: AdaptiveRoute {
+                    family: AdaptiveFamily::Luna,
+                    effort: AdaptiveEffort::Low,
+                },
+                attempt_number: 2,
+                worker_context: AdaptiveWorkerContext {
+                    role: AdaptiveWorkerRole::Implementation,
+                    authorized_scope: Some(
+                        "CodexDD 0.4.4 configured Node native LVO acceptance".to_string(),
+                    ),
+                },
+            };
+            let text = adaptive_continuation_text(
+                &permit,
+                false,
+                Some(AdaptiveImplementationPhase::Implementation),
+                &[],
+                &[],
+                false,
+                0,
+                None,
+            );
+            assert!(text.contains("validation-only"));
+            assert!(text.contains("run_codexdd_validation is intentionally not exposed"));
+            assert!(text.contains("report_adaptive_signal with kind=mechanical_validation"));
+            assert!(text.contains("then END THIS TURN"));
+            assert!(text.contains("Only the controller-authorized NEXT turn"));
+            assert!(text.contains("profile=work_packet"));
+            assert!(text.contains("If source changes are genuinely still required"));
+            assert!(!text.contains("Continue the current assigned Worker task"));
+        }
+    }
+
+    #[test]
+    fn nonimplementation_continuation_does_not_gain_mechanical_validation_authority() {
+        let permit = AdaptiveSuccessorPermit {
+            thread_id: ThreadId::new(),
+            source_turn_id: "reviewer-turn".to_string(),
+            decision:
+                crate::chatwidget::adaptive_effort::AdaptivePendingDecision::ContinueSameRoute,
+            route: AdaptiveRoute {
+                family: AdaptiveFamily::Sol,
+                effort: AdaptiveEffort::Medium,
+            },
+            attempt_number: 3,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: Some("independent review".to_string()),
+            },
+        };
+        let text = adaptive_continuation_text(&permit, false, None, &[], &[], false, 0, None);
+        assert!(!text.contains("mechanical_validation"));
+        assert!(!text.contains("run_codexdd_validation"));
+        assert!(text.contains("Continue the current assigned Worker task"));
+    }
+
+    #[test]
     fn mechanical_validation_prompt_requires_work_packet_runner_and_receipt() {
         let permit = AdaptiveSuccessorPermit {
             thread_id: ThreadId::new(),
@@ -409,6 +486,7 @@ mod tests {
         let text = adaptive_continuation_text(
             &permit,
             /*requires_complexity_recovery*/ false,
+            Some(AdaptiveImplementationPhase::MechanicalValidation),
             &[],
             &[],
             false,
@@ -418,10 +496,13 @@ mod tests {
 
         assert!(text.contains("run_codexdd_validation"));
         assert!(text.contains("profile=work_packet"));
+        assert!(text.contains("direct top-level built-in"));
+        assert!(text.contains("NOT through code_mode exec or a nested tool call"));
         assert!(text.contains("kind=ready_for_validation"));
         assert!(text.contains("successful validation-runner evidence ref"));
         assert!(text.contains("kind=implementation_work"));
-        assert!(text.contains("do not manually recreate"));
+        assert!(text.contains("do not recreate the profile"));
+        assert!(text.contains("with exec_command or ad-hoc shell commands"));
     }
 
     #[test]
@@ -445,6 +526,7 @@ mod tests {
         let text = adaptive_continuation_text(
             &permit,
             /*requires_complexity_recovery*/ false,
+            Some(AdaptiveImplementationPhase::MechanicalValidation),
             &[],
             &[],
             true,
@@ -480,6 +562,7 @@ mod tests {
         let text = adaptive_continuation_text(
             &permit,
             /*requires_complexity_recovery*/ false,
+            Some(AdaptiveImplementationPhase::MechanicalValidation),
             &["green-proof".to_string()],
             &["failed-proof".to_string()],
             false,

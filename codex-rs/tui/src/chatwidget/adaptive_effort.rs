@@ -20,6 +20,9 @@ use crate::adaptive_worker::parse_adaptive_worker_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
+/// Consecutive unfinished Implementation turns without a completed native tool
+/// result indicate a stalled Worker, not evidence that more model effort helps.
+pub(crate) const CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT: u8 = 3;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingDecision {
@@ -117,6 +120,8 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) workflow_terminal: Option<AdaptiveWorkflowTerminal>,
     pub(crate) transient_retry_consumed: bool,
     pub(crate) unfinished_turn_pressure: u8,
+    /// Stops runaway no-tool continuations independently of alternating effort pressure.
+    pub(crate) consecutive_no_native_progress_turns: u8,
     pub(crate) last_processed_terminal_turn_id: Option<String>,
     pub(crate) pending_attempt: Option<AdaptivePendingAttempt>,
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
@@ -214,6 +219,29 @@ impl AdaptiveEffortState {
             && self.complexity_class.is_none()
     }
 
+    /// Bind the direct-only lifecycle signal tool to the trusted Implementation
+    /// turn. CodeModeOnly cannot call this control tool through its nested
+    /// executor, but ordinary non-Worker turns must retain their tool mode.
+    pub(crate) fn implementation_control_signal_required(&self) -> bool {
+        self.enabled
+            && !self.paused_by_user
+            && self.workflow_terminal.is_none()
+            && self.worker_context.role == AdaptiveWorkerRole::Implementation
+            && self
+                .worker_context
+                .authorized_scope
+                .as_deref()
+                .is_some_and(|scope| !scope.trim().is_empty())
+            && self.complexity_class.is_some()
+            // Legacy/inconsistent state with accepted complexity but no phase
+            // can request a trusted Mechanical Validation handoff. The phase
+            // is never inferred to be Mechanical Validation by this predicate.
+            && matches!(
+                self.implementation_phase,
+                None | Some(AdaptiveImplementationPhase::Implementation)
+            )
+    }
+
     pub(crate) fn implementation_mechanical_validation_active(&self) -> bool {
         self.enabled
             && !self.paused_by_user
@@ -268,6 +296,7 @@ impl AdaptiveEffortState {
         let evidence_registry = self.evidence_registry.clone();
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
+        let consecutive_no_native_progress_turns = self.consecutive_no_native_progress_turns;
         let validation_repair_fingerprint = self.validation_repair_fingerprint.clone();
         let validation_repair_cycles_used = self.validation_repair_cycles_used;
         let validation_targeted_retest_required = self.validation_targeted_retest_required;
@@ -291,6 +320,7 @@ impl AdaptiveEffortState {
             workflow_terminal,
             transient_retry_consumed: false,
             unfinished_turn_pressure: 0,
+            consecutive_no_native_progress_turns,
             last_processed_terminal_turn_id: None,
             pending_attempt: None,
             successor_admission: None,
@@ -392,6 +422,11 @@ impl ChatWidget {
     pub(crate) fn adaptive_implementation_reconnaissance_required(&self) -> bool {
         self.adaptive_effort
             .implementation_reconnaissance_required()
+    }
+
+    pub(crate) fn adaptive_implementation_control_signal_required(&self) -> bool {
+        self.adaptive_effort
+            .implementation_control_signal_required()
     }
 
     pub(crate) fn adaptive_implementation_mechanical_validation_active(&self) -> bool {
@@ -571,6 +606,7 @@ impl ChatWidget {
         if operation == codex_app_server_protocol::ThreadWorkflowStateOperation::Clear {
             self.adaptive_effort.workflow_terminal = None;
             self.adaptive_effort.unfinished_turn_pressure = 0;
+            self.adaptive_effort.consecutive_no_native_progress_turns = 0;
             self.adaptive_effort.pending_attempt = None;
             self.adaptive_effort.pending_signal = None;
             self.adaptive_effort.successor_admission = None;
@@ -1053,6 +1089,43 @@ mod tests {
         state.paused_by_user = false;
         state.worker_context.authorized_scope = Some("   ".to_string());
         assert!(!state.implementation_reconnaissance_required());
+    }
+
+    #[test]
+    fn implementation_control_signal_requires_bound_nonterminal_worker() {
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Luna),
+            current_effort: Some(AdaptiveEffort::Medium),
+            attempt_number: 2,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("isolated native acceptance".to_string()),
+            },
+            complexity_class: Some(AdaptiveComplexityClass::Standard),
+            implementation_phase: Some(AdaptiveImplementationPhase::Implementation),
+            ..Default::default()
+        };
+        assert!(state.implementation_control_signal_required());
+        state.implementation_phase = None;
+        assert!(state.implementation_control_signal_required());
+        assert!(!state.implementation_mechanical_validation_active());
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        assert!(!state.implementation_control_signal_required());
+        assert!(state.implementation_mechanical_validation_active());
+        state.complexity_class = None;
+        assert!(!state.implementation_control_signal_required());
+        state.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        state.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+        state.worker_context.role = AdaptiveWorkerRole::Validation;
+        assert!(!state.implementation_control_signal_required());
+        state.worker_context.role = AdaptiveWorkerRole::Implementation;
+        state.worker_context.authorized_scope = Some(" ".to_string());
+        assert!(!state.implementation_control_signal_required());
+        state.worker_context.authorized_scope = Some("isolated native acceptance".to_string());
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::Blocked);
+        assert!(!state.implementation_control_signal_required());
     }
 
     #[test]

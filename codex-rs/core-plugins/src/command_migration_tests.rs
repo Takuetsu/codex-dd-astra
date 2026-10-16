@@ -78,6 +78,18 @@ fn commands_with_provider_runtime_expansion_are_skipped() {
 }
 
 #[test]
+fn command_description_requires_a_string_yaml_key() {
+    assert_eq!(
+        parse_command_description("1: numeric key\ntrue: bool key\n"),
+        None
+    );
+    assert_eq!(
+        parse_command_description("1: numeric key\ndescription: Valid\n"),
+        Some("Valid".to_string())
+    );
+}
+
+#[test]
 fn commands_without_description_are_skipped() {
     let document = parse_command_content("Review the current change.\n");
 

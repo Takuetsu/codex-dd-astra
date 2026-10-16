@@ -25,6 +25,14 @@ pub use tool_name::ToolName;
 /// sandbox profile.
 pub const CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER: &str = "codexdd_adaptive_reconnaissance";
 
+/// Marks a bound Implementation Worker turn after its complexity gate was accepted.
+///
+/// Implementation may still perform its authorized source work, but it must also
+/// be able to call the direct-only `report_adaptive_signal` tool to request the
+/// Mechanical Validation successor. This marker changes only the model-visible
+/// tool mode; it does not grant early access to `run_codexdd_validation`.
+pub const CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER: &str = "codexdd_adaptive_implementation";
+
 /// Marks an Implementation turn that has entered the lower-cost mechanical validation phase.
 ///
 /// Core permits bounded test/check/build commands and inspection, but blocks source-editing tools.

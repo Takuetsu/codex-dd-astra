@@ -458,11 +458,12 @@ impl ChatWidget {
             }
             _ => false,
         });
-        let awaiting_initial_complexity = state.worker_context.role
-            == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
-            && state.complexity_class.is_none();
-
-        if !reported_adaptive_signal && !awaiting_initial_complexity {
+        // Prose claiming a complexity report is not a trusted tool receipt.
+        // Never enter an unbounded Awaiting state just because the first
+        // reconnaissance turn ended without an accepted complexity class.
+        // Only a recorded successful built-in call can justify waiting for
+        // its separately delivered notification.
+        if !reported_adaptive_signal {
             return false;
         }
 

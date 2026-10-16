@@ -193,9 +193,11 @@ fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> b
     }) else {
         return false;
     };
-    let program = program.trim_end_matches(".exe").to_ascii_lowercase();
-    match program.as_str() {
+    let program = adaptive_reconnaissance_executable_name(program);
+    let program = program.trim_end_matches(".exe");
+    match program {
         "cargo" => adaptive_mechanical_cargo_command_allowed(&command[1..]),
+        "npm" | "npm.cmd" => adaptive_mechanical_npm_command_allowed(&command[1..]),
         "dotnet" => command
             .get(1)
             .is_some_and(|subcommand| matches!(subcommand.as_str(), "test" | "build")),
@@ -211,6 +213,31 @@ fn adaptive_mechanical_validation_plain_command_allowed(command: &[String]) -> b
         "cmake" => command.get(1).is_some_and(|word| word == "--build"),
         _ => false,
     }
+}
+
+/// Allow narrowly named, repo-owned Node check scripts as supplementary
+/// mechanical diagnostics. Unlike the structured LVO profile, these commands
+/// do not generate native validation receipts and cannot complete handoff.
+///
+/// There is intentionally no arbitrary script selector, npm exec, flag pass-through
+/// or raw/unguarded BREAKWATER validation target. The repository's own scripts
+/// retain responsibility for validation throttling and non-destructive behavior.
+fn adaptive_mechanical_npm_command_allowed(args: &[String]) -> bool {
+    let [run, script] = args else {
+        return false;
+    };
+    run == "run"
+        && matches!(
+            script.as_str(),
+            "typecheck"
+                | "lint"
+                | "format:check"
+                | "format:check:changed"
+                | "build"
+                | "test"
+                | "validation:focused"
+                | "maps:check"
+        )
 }
 
 fn adaptive_mechanical_cargo_command_allowed(args: &[String]) -> bool {

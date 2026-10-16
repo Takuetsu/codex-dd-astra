@@ -19,6 +19,7 @@ use crate::adaptive_policy::classify_outcome;
 use crate::adaptive_policy::stronger_route;
 use crate::chatwidget::adaptive_effort::AdaptivePendingAttempt;
 use crate::chatwidget::adaptive_effort::AdaptivePendingDecision;
+use crate::chatwidget::adaptive_effort::CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT;
 
 impl ChatWidget {
     pub(super) fn apply_adaptive_complexity_floor(
@@ -57,6 +58,7 @@ impl ChatWidget {
         self.adaptive_effort.current_effort = Some(route.effort);
         self.adaptive_effort.attempt_number = next_attempt;
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.last_outcome = None;
         self.adaptive_effort.last_failure_kind = None;
@@ -124,6 +126,7 @@ impl ChatWidget {
         self.adaptive_effort.current_effort = Some(route.effort);
         self.adaptive_effort.attempt_number = next_attempt;
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.last_outcome = None;
         self.adaptive_effort.last_failure_kind = None;
@@ -166,6 +169,13 @@ impl ChatWidget {
         &mut self,
         source_turn_id: &str,
     ) -> bool {
+        // Missing profiles and contract/infrastructure errors are deterministic
+        // blockers. They must not become unfinished-turn retries or effort pressure.
+        if self.stop_for_nonrepairable_codexdd_profile_error(source_turn_id)
+            || self.stop_for_unhanded_codexdd_product_failure(source_turn_id)
+        {
+            return true;
+        }
         let state = &self.adaptive_effort;
         let bound_worker = matches!(
             state.worker_context.role,
@@ -255,6 +265,60 @@ impl ChatWidget {
                 return true;
             }
         }
+
+        // Unlike alternating unfinished-turn pressure, this streak cannot reset
+        // merely because the model escalated effort. A bound Implementation Worker
+        // returning prose without a native result or accepted lifecycle signal
+        // must not burn unlimited continuations while its required tool is absent.
+        // Normal implementation turns that produced native command/tool evidence
+        // reset the streak, preserving long-running productive development.
+        if self.adaptive_effort.worker_context.role
+            == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+            && self.adaptive_effort.complexity_class.is_some()
+        {
+            let native_progress = self.thread_id().is_some_and(|thread_id| {
+                let evidence = &self.adaptive_effort.evidence_registry;
+                if self.adaptive_effort.implementation_phase
+                    == Some(AdaptiveImplementationPhase::MechanicalValidation)
+                {
+                    evidence.has_codexdd_validation_run_for_turn(thread_id, source_turn_id)
+                } else {
+                    evidence.has_native_implementation_work_for_turn(thread_id, source_turn_id)
+                }
+            });
+            let streak = if native_progress {
+                0
+            } else {
+                self.adaptive_effort
+                    .consecutive_no_native_progress_turns
+                    .saturating_add(1)
+            };
+            self.adaptive_effort.consecutive_no_native_progress_turns = streak;
+            if streak >= CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT {
+                // Distinguish a missing trusted *phase transition* from a tool
+                // that is genuinely missing in an authorized validation turn.
+                let phase_guidance = if self.adaptive_effort.implementation_phase
+                    == Some(AdaptiveImplementationPhase::Implementation)
+                {
+                    "The Worker is still in Implementation. run_codexdd_validation is deliberately hidden until a trusted report_adaptive_signal(kind=mechanical_validation) ends this phase and the controller starts the NEXT turn. Check the missing handoff before investigating the native tool or profile."
+                } else {
+                    "The Worker already entered Mechanical Validation. Inspect the turn-triggered tool catalog and repository-owned profile; do not substitute ad-hoc shell validation."
+                };
+                self.apply_adaptive_terminal_classification(
+                    source_turn_id,
+                    AdaptiveOutcomeSignal::Failure(AdaptiveFailureKind::OwnerDecision),
+                    AdaptiveClassification::Blocked,
+                );
+                self.add_info_message(
+                    format!(
+                        "CodexDD stopped at BLOCKED: {CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT} consecutive Implementation turns ended without an accepted lifecycle signal or completed native validation/work result. {phase_guidance} More adaptive effort cannot make an unavailable tool visible. No source repair, model escalation, or PASS receipt is authorized."
+                    ),
+                    None,
+                );
+                return true;
+            }
+        }
+        let state = &self.adaptive_effort;
 
         let controller = AdaptiveControllerState {
             starting_family,
@@ -364,6 +428,7 @@ impl ChatWidget {
         };
         let reduction = reduce_adaptive_controller(controller, classification);
         self.adaptive_effort.unfinished_turn_pressure = 0;
+        self.adaptive_effort.consecutive_no_native_progress_turns = 0;
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.current_family = Some(reduction.state.current_route.family);
         self.adaptive_effort.current_effort = Some(reduction.state.current_route.effort);

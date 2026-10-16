@@ -5,3 +5,40 @@ pnpm-lock.yaml
 prompt.md
 *_prompt.md
 *_instructions.md
+
+# Historical 0.4.3 audit/workflow evidence has inherited format debt.
+# Exact bytes are guarded by check_codexdd_prettier_baseline.py; no blanket
+# Prettier waiver for future files. Rebaseline only in a reviewed cleanup PR.
+# BEGIN CODEXDD-043-FROZEN-PRETTIER-BASELINE
+.github/workflows/codexdd-043-core-version-smoke.yml
+.github/workflows/codexdd-043-tui-source-smoke.yml
+docs/codexdd-0.4.3-gate3-source-freeze-acceptance.md
+docs/codexdd-0.4.3-packet-3a1-integration-scaffold.md
+docs/codexdd-0.4.3-packet-3a2-reconciliation-contract.md
+docs/codexdd-0.4.3-packet-3a3-ownership-audit.md
+docs/codexdd-0.4.3-packet-3b1a-rollout-persistence.md
+docs/codexdd-0.4.3-packet-3b1b-config-reconciliation.md
+docs/codexdd-0.4.3-packet-3b2a-history-fork-revision.md
+docs/codexdd-0.4.3-packet-3b2b-state-and-replay.md
+docs/codexdd-0.4.3-packet-3b2c-lifecycle-and-tool-compatibility.md
+docs/codexdd-0.4.3-packet-3b3a-protocol-workflow-types.md
+docs/codexdd-0.4.3-packet-3b4-generated-schemas.md
+docs/codexdd-0.4.3-packet-3b5-test-source-reconciliation.md
+docs/codexdd-0.4.3-packet-3c1-windows-daemon-startup.md
+docs/codexdd-0.4.3-packet-3c2-session-state-checkpoint.md
+docs/codexdd-0.4.3-packet-3c3a-slash-dispatch.md
+docs/codexdd-0.4.3-packet-3c3b-chatwidget-source.md
+docs/codexdd-0.4.3-packet-3e2-build-evidence.md
+docs/codexdd-0.4.3-packet-3e3-version-provenance-preflight.md
+docs/codexdd-0.4.3-packet-3f-four-tree-audit.md
+docs/codexdd-0.4.3-packet-3f-import-workflow-authority.md
+docs/codexdd-0.4.3-packet-3f-postformat-source-delta.md
+docs/codexdd-0.4.3-packet-3f-posthardening-source-audit.md
+docs/codexdd-0.4.3-packet-3f-postmerge-discovery-review.md
+docs/codexdd-0.4.3-packet-3f-preflight.md
+docs/codexdd-0.4.3-packet-3f-semantic-owner-review.md
+docs/codexdd-0.4.3-packet-3f-sensitive-upstream-delta.md
+docs/codexdd-0.4.3-packet-3f-source-object-review.md
+docs/codexdd-0.4.3-packet-3f-technical-semantic-evidence.md
+docs/codexdd-0.4.3-packet-3f-uncategorized-risk-review.md
+# END CODEXDD-043-FROZEN-PRETTIER-BASELINE

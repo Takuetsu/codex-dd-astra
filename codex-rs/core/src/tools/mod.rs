@@ -85,6 +85,25 @@ pub(crate) fn requested_tool_mode(turn_context: &TurnContext, model_info: &Model
 }
 
 pub(crate) fn effective_tool_mode(turn_context: &TurnContext, model_info: &ModelInfo) -> ToolMode {
+    // The controller-authorized reconnaissance, Implementation and Mechanical
+    // Validation turns each need direct-only built-in lifecycle tools.
+    // Implementation must be able to report its mechanical_validation handoff
+    // even if Luna normally selects CodeModeOnly. The Implementation marker
+    // does not grant the native LVO runner, nor weaken the separately gated
+    // no-source-edit restrictions of reconnaissance and Mechanical Validation.
+    // Ordinary and terminalization turns keep their configured model mode.
+    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+        turn_context.turn_metadata_state.as_ref(),
+    );
+    if turn_trigger.as_deref() == Some(codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)
+        || turn_trigger.as_deref()
+            == Some(codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER)
+        || turn_trigger.as_deref()
+            == Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+    {
+        return ToolMode::Direct;
+    }
+
     let requested_tool_mode = requested_tool_mode(turn_context, model_info);
     if !turn_context.code_mode_available
         && requested_tool_mode == ToolMode::CodeMode

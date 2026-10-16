@@ -231,8 +231,8 @@ fn apply_persisted_adaptive_workflow_state(
             failure_fingerprint: status.failure_fingerprint,
             log_path: status.log_path,
         });
-    if let Some(status) = validation_status.as_ref() {
-        if status.profile.trim().is_empty()
+    if validation_status.as_ref().is_some_and(|status| {
+        status.profile.trim().is_empty()
             || status.run_id.trim().is_empty()
             || status.head_sha.trim().is_empty()
             || status.log_path.trim().is_empty()
@@ -242,11 +242,8 @@ fn apply_persisted_adaptive_workflow_state(
                 .is_some_and(|fingerprint| fingerprint.trim().is_empty())
             || (status.failure_fingerprint.is_some() && status.result != "fail")
             || !matches!(status.result.as_str(), "pass" | "fail" | "error")
-        {
-            return Err(
-                "persisted validation operator status is incomplete or invalid".to_string(),
-            );
-        }
+    }) {
+        return Err("persisted validation operator status is incomplete or invalid".to_string());
     }
     if validation_repair_cycles_used
         > crate::chatwidget::adaptive_effort::CODEXDD_VALIDATION_REPAIR_LIMIT
@@ -312,6 +309,9 @@ fn apply_persisted_adaptive_workflow_state(
         workflow_terminal,
         transient_retry_consumed: false,
         unfinished_turn_pressure: 0,
+        // Restored state has no trustworthy per-turn native evidence; restart
+        // the in-memory progress streak rather than inheriting a stale count.
+        consecutive_no_native_progress_turns: 0,
         last_processed_terminal_turn_id: workflow_terminal.and(source_turn_id),
         pending_attempt: None,
         successor_admission: None,
