@@ -38,6 +38,26 @@ jobs:
             throw 'Invalid PowerShell smoke-test syntax'
           }
 
+      - name: Validate 21-stage release PowerShell syntax
+        shell: powershell
+        run: |
+          foreach ($relative in @(
+            'scripts\codexdd-test-release.ps1',
+            'scripts\codexdd-test-app-server-release.ps1'
+          )) {
+            $source = Join-Path $env:GITHUB_WORKSPACE $relative
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($source, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Host $_.ToString() }
+              throw "Invalid release PowerShell syntax: $relative"
+            }
+          }
+          $release = Get-Content (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-release.ps1') -Raw
+          $stageCount = ([regex]::Matches($release, 'New-CodexDDValidationStage -Name')).Count
+          if ($stageCount -ne 21) { throw "Release profile must retain 21 stages; found $stageCount" }
+
       - name: Build codex-cli
         run: cargo build -p codex-cli
 
