@@ -43,7 +43,9 @@ jobs:
         run: |
           foreach ($relative in @(
             'scripts\codexdd-test-release.ps1',
-            'scripts\codexdd-test-app-server-release.ps1'
+            'scripts\codexdd-test-app-server-release.ps1',
+            'scripts\codexdd-prepare-rusty-v8.ps1',
+            'scripts\codexdd-test-cli-release.ps1'
           )) {
             $source = Join-Path $env:GITHUB_WORKSPACE $relative
             $tokens = $null

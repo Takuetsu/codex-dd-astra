@@ -34,7 +34,7 @@ $stages = @(
     (New-CodexDDValidationStage -Name "tui-detached-fork-test" -FilePath "cargo" -ArgumentList @("nextest", "run", "--no-fail-fast", "-p", "codex-tui", "--lib", "detached_fork_restores_persisted_adaptive_workflow_state") -WorkingDirectory $codexRsRoot),
     (New-CodexDDValidationStage -Name "tui-daemon-startup-tests" -FilePath "cargo" -ArgumentList @("nextest", "run", "--no-fail-fast", "-p", "codex-tui", "--lib", "daemon_startup_tests") -WorkingDirectory $codexRsRoot),
     (New-CodexDDValidationStage -Name "cli-daemon-startup-tests" -FilePath "cargo" -ArgumentList @("nextest", "run", "--no-fail-fast", "-p", "codex-cli", "--test", "daemon_startup") -WorkingDirectory $codexRsRoot),
-    (New-CodexDDValidationStage -Name "cli-release-build" -FilePath "cargo" -ArgumentList @("build", "-p", "codex-cli", "-p", "codex-code-mode-host", "--release", "--locked") -WorkingDirectory $codexRsRoot)
+    (New-CodexDDValidationStage -Name "cli-release-build" -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $PSScriptRoot "codexdd-test-cli-release.ps1")) -WorkingDirectory $codexRsRoot)
 )
 
 $exitCode = Invoke-CodexDDValidationProfile -Profile "release" -RepositoryRoot $repositoryRoot -Stages $stages
