@@ -998,7 +998,7 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
 async fn completed_recon_with_trusted_report_output_waits_for_late_complexity_signal() {
     let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
-    let turn_id = "late-complexity-without-report-output";
+    let turn_id = "late-complexity-with-trusted-report-output";
 
     chat.thread_id = Some(thread_id);
     chat.dispatch_adaptive_command("astra");

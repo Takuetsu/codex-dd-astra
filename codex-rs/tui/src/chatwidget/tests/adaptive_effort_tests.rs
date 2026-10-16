@@ -2245,8 +2245,9 @@ async fn first_reconnaissance_without_trusted_tool_receipt_does_not_wait_forever
 
     // No trusted FunctionCallOutput: a later notification cannot reopen the
     // completed turn or assign complexity to an unverified report.
+    let thread_id = chat.thread_id.expect("configured thread");
     chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
-        thread_id: chat.thread_id.expect("configured thread").to_string(),
+        thread_id: thread_id.to_string(),
         signal: AdaptiveRuntimeSignalEnvelope {
             source_turn_id: "recon-prose-only".to_string(),
             signal_kind: AdaptiveRuntimeSignalKind::Complexity,
