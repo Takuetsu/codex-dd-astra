@@ -1,48 +1,53 @@
-# CodexDD 0.4.4: Windows Rusty V8 release preflight
+# CodexDD 0.4.4 Windows Rusty V8 release preflight
 
-The Windows release profile has 21 stages. Stage 21 builds codex-cli and
-codex-code-mode-host in release mode. The code-mode host requires Rusty V8
-with pointer compression and the V8 sandbox enabled. The default denoland
-Rusty V8 GitHub release does not publish that flavor for Windows.
+The 21-stage Windows release profile builds `codex-cli` and
+`codex-code-mode-host` in Stage 21. The code-mode host requires Rusty V8
+with pointer compression and sandbox enabled. The default `denoland/rusty_v8`
+release does not publish that Windows combination.
 
-OpenAI Codex publishes the matching archive and Rust bindings in the GitHub
-release tagged rusty-v8-v<version>. The repository already pins the release
-manifest hashes at third_party/v8/rusty_v8_<version>_release_manifests.sha256.
-The Windows preflight follows the same checksum trust chain as the existing
-.github/actions/setup-rusty-v8 action.
+OpenAI Codex publishes the required archive and matching Rust bindings under
+the `rusty-v8-v<version>` GitHub release tag. This repository pins the
+release-manifest checksums in
+`third_party/v8/rusty_v8_<version>_release_manifests.sha256`.
+The preflight follows the same verification chain as
+`.github/actions/setup-rusty-v8`.
 
-## Before starting the detached Windows release task
+## Prepare before the detached Windows release run
 
-Run the following in interactive PowerShell on the Windows build machine.
-Use the release-candidate's clean, isolated worktree:
+Use an interactive PowerShell session on the Windows build machine, with the
+isolated validation checkout pinned to the release candidate:
 
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\codexdd\.worktrees\codexdd-044-final-release\scripts\codexdd-prepare-rusty-v8.ps1 -Prepare
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\codexdd\.worktrees\codexdd-044-final-release\scripts\codexdd-prepare-rusty-v8.ps1 -Prepare
+```
 
-The preflight reads the pinned V8 version from codex-rs/Cargo.toml, selects
-the host Windows target, downloads the V8 library archive and Rust bindings
-into the Cargo target directory's codexdd-v8-artifacts cache, and verifies:
+The preflight reads the pinned V8 version from `codex-rs/Cargo.toml` and
+selects the Windows target. It downloads the V8 archive, matching Rust
+bindings, and release checksums into a cache under Cargo's target directory.
 
-1. The release checksum manifest against the repository's trusted hash.
-2. The archive and matching binding against that verified manifest.
+1. Verify the downloaded checksum manifest against the repository's trusted hash.
+2. Verify both the archive and Rust bindings against that manifest.
 
-No Python installation is required. An unsuccessful or unverified download
-stops release validation; never substitute an upstream archive without the
-required sandbox/pointer-compression feature combination.
+Python is not required. If an asset is unavailable or fails verification,
+stop release validation. Do not substitute an upstream archive without the
+required sandbox and pointer-compression features.
 
-## Targeted Stage 21 test before a full release run
+## Validate Stage 21 only
 
-Execute only the repository-owned wrapper:
+Run the repository-owned Stage 21 wrapper before repeating the full suite:
 
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\codexdd\.worktrees\codexdd-044-final-release\scripts\codexdd-test-cli-release.ps1
-    Write-Host "Stage 21 exit code: $LASTEXITCODE"
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File E:\codexdd\.worktrees\codexdd-044-final-release\scripts\codexdd-test-cli-release.ps1
+Write-Host "Stage 21 exit code: $LASTEXITCODE"
+```
 
-The wrapper re-verifies the cached assets offline. Then it sets
-RUSTY_V8_ARCHIVE and RUSTY_V8_SRC_BINDING_PATH in its own process, and runs
-the original locked Cargo release build for both binaries. The detached S4U
-runner uses the same wrapper and requires no network connectivity.
+The wrapper re-verifies the cached assets offline, exports
+`RUSTY_V8_ARCHIVE` and `RUSTY_V8_SRC_BINDING_PATH` for its Cargo subprocess,
+and runs the unchanged locked release build. The detached S4U task does not
+need access to the GitHub release.
 
-Preserve prior failed run logs. A successful targeted Stage 21 result at a
-new commit does not by itself establish a passing 21/21 release on that exact
-commit. After exact-head GitHub CI and targeted Windows verification, execute
-one detached full release profile in a fresh unique run directory. Keep the
-PR draft and production installation unchanged until acceptance.
+Preserve logs from earlier failed runs. Passing Stage 21 separately does
+not establish an exact-head 21/21 release pass. After targeted validation
+and exact-head GitHub CI pass, run the entire detached 21-stage release
+profile with a fresh plan and log directory. Do not merge or install before
+release acceptance.
