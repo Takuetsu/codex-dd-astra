@@ -19,6 +19,7 @@ use codex_app_server_protocol::CommandExecutionSource;
 use codex_app_server_protocol::CommandExecutionStatus;
 use codex_app_server_protocol::ItemCompletedNotification;
 use codex_app_server_protocol::ThreadItem;
+use codex_protocol::models::FunctionCallOutputBody;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 use codex_utils_absolute_path::AbsolutePathBuf;
 
@@ -994,7 +995,7 @@ async fn completed_bound_worker_without_adaptive_report_keeps_normal_unfinished_
 }
 
 #[tokio::test]
-async fn completed_recon_without_report_output_waits_for_late_complexity_signal() {
+async fn completed_recon_with_trusted_report_output_waits_for_late_complexity_signal() {
     let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
     let turn_id = "late-complexity-without-report-output";
@@ -1007,15 +1008,22 @@ async fn completed_recon_without_report_output_waits_for_late_complexity_signal(
     chat.turn_lifecycle.agent_turn_running = true;
     chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
 
-    // Reproduce the live 0.3.2 soak: the Worker called report_adaptive_signal,
-    // but turn/completed did not expose its FunctionCallOutput in turn.items.
+    // A recorded built-in tool output proves report_adaptive_signal was emitted,
+    // so the separately delivered complexity notification may safely arrive late.
     chat.handle_turn_completed_notification(
         TurnCompletedNotification {
             thread_id: thread_id.to_string(),
             turn: AppServerTurn {
                 id: turn_id.to_string(),
                 root_turn_id: None,
-                items: Vec::new(),
+                items: vec![ThreadItem::FunctionCallOutput {
+                    id: "late-complexity-report".to_string(),
+                    name: "report_adaptive_signal".to_string(),
+                    namespace: None,
+                    output: FunctionCallOutputBody::Text(
+                        r#"{"status":"request_emitted"}"#.to_string(),
+                    ),
+                }],
                 items_view: codex_app_server_protocol::TurnItemsView::Full,
                 status: AppServerTurnStatus::Completed,
                 error: None,
@@ -1027,9 +1035,8 @@ async fn completed_recon_without_report_output_waits_for_late_complexity_signal(
         None,
     );
 
-    // First bound Implementation completion is reconnaissance. It must fail
-    // closed while waiting for the trusted complexity notification rather than
-    // being mistaken for ordinary unfinished implementation work.
+    // A verified tool output makes waiting for the trusted notification safe
+    // without mistaking ordinary unfinished implementation work for a report.
     assert!(matches!(
         chat.adaptive_effort.pending_signal,
         Some(AdaptivePendingSignal::Awaiting { ref source_turn_id })

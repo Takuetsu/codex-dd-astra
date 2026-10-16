@@ -2242,6 +2242,24 @@ async fn first_reconnaissance_without_trusted_tool_receipt_does_not_wait_forever
             .as_deref(),
         Some("recon-prose-only")
     );
+
+    // No trusted FunctionCallOutput: a later notification cannot reopen the
+    // completed turn or assign complexity to an unverified report.
+    chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+        thread_id: chat.thread_id.expect("configured thread").to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: "recon-prose-only".to_string(),
+            signal_kind: AdaptiveRuntimeSignalKind::Complexity,
+            evidence_refs: Vec::new(),
+            diagnostic_note: Some("architectural".to_string()),
+        },
+    });
+    assert_eq!(chat.adaptive_effort.complexity_class, None);
+    assert_eq!(chat.adaptive_effort.attempt_number, 2);
+    assert!(!matches!(
+        chat.adaptive_effort.pending_signal,
+        Some(AdaptivePendingSignal::Awaiting { .. } | AdaptivePendingSignal::Pending(_))
+    ));
 }
 
 #[tokio::test]
