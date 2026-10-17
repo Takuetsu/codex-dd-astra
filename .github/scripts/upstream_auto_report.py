@@ -277,8 +277,15 @@ def evaluate(
             _production_lockfile(repo, current_remote)
         ),
         candidate_packages=_packages(candidate_lockfile) if candidate_lockfile else None,
-        candidate_ref_exists=_remote_branch(repo, "refs/heads/" + branch) is not None,
-        active_candidate_pr_exists=_open_pr_exists(repo, branch),
+        # A known transplant conflict is terminal for auto-preparation;
+        # avoid letting unavailable PR APIs obscure that actionable result.
+        candidate_ref_exists=(
+            observed_transplant == "clean"
+            and _remote_branch(repo, "refs/heads/" + branch) is not None
+        ),
+        active_candidate_pr_exists=(
+            observed_transplant == "clean" and _open_pr_exists(repo, branch)
+        ),
         # Cannot prove absence of races until a later, isolated write-time recheck.
         competing_preparation_exists=False,
     )

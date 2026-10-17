@@ -161,6 +161,33 @@ class AutoReportTests(unittest.TestCase):
         )
         self.assertEqual(value["status"], "blocked_transplant_conflict")
 
+    def test_conflicted_discovery_does_not_depend_on_pr_metadata(self):
+        manifest = build_candidate_manifest(
+            **self.fixture_args, transplant_result="conflict"
+        )
+        def remote(_repo, ref):
+            if ref == report.PRODUCTION_REF:
+                return self.production
+            raise AssertionError("candidate ref should not be queried for conflicts")
+        with (
+            patch.object(report, "_remote_branch", side_effect=remote),
+            patch.object(report, "_official_oid", side_effect=lambda _r, tag: (
+                self.target_oid if tag == "rust-v0.163.0" else self.tracked_oid
+            )),
+            patch.object(report, "_open_pr_exists", side_effect=AssertionError(
+                "PR metadata is not needed to report a transplant conflict"
+            )),
+        ):
+            value = report.evaluate(
+                self.repo, candidate_manifest_json(manifest).encode("utf-8"),
+                pinned_target_oid=self.target_oid,
+                pinned_tracked_oid=self.tracked_oid,
+                observed_transplant="conflict",
+                conflicts=b"docs/overview.md\n",
+                candidate_lockfile=None,
+            )
+        self.assertEqual(value["status"], "blocked_transplant_conflict")
+
     def test_conflict_evidence_mismatch_fails_closed(self):
         m = build_candidate_manifest(**self.fixture_args, transplant_result="clean")
         with self.assertRaisesRegex(report.VerificationError, "transplant_state_mismatch"):

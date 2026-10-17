@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2A.3: canonical read-only automatic update reporting
 
 **Date:** 2026-10-17
-**Status:** source, workflow and 17 targeted regression tests checkpointed; **Daniel-CL Python validation pending**.
+**Status:** source, workflow and 18 targeted regression tests checkpointed; **Daniel-CL Python validation pending**.
 **Scope:** add a read-only report to the existing six-hour upstream discovery. Do not add any write token, candidate branch, PR, release or publishing schedule.
 
 ## What changed
@@ -14,7 +14,7 @@
 
 ## Test plan and gate
 
-17 new regression tests in `.github/scripts/test_upstream_auto_report.py` use actual temporary Git commits/tag/tree objects with mocked remote metadata and cover pinned identity, synthetic conflicts, stale production, moved tags, PR/branch duplicates, security lockfile downgrades, canonical/duplicate JSON, missing dependency evidence, origin spoofing, Markdown safety and workflow privileges.
+18 new regression tests in `.github/scripts/test_upstream_auto_report.py` use actual temporary Git commits/tag/tree objects with mocked remote metadata and cover pinned identity, synthetic conflicts, stale production, moved tags, PR/branch duplicates, security lockfile downgrades, canonical/duplicate JSON, missing dependency evidence, origin spoofing, Markdown safety and workflow privileges.
 
 Targeted Daniel-CL command after updating the existing isolated worktree to the checkpoint: `py -3 .github\scripts\test_upstream_auto_report.py`. Do not run the expensive 21-stage Windows suite or broad GitHub CI for this source packet.
 
