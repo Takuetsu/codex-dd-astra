@@ -1,5 +1,19 @@
 # CodexDD roadmap
 
+## Current development — CodexDD 0.4.5 (2026-10-17)
+
+**Status: ACTIVATED; Phase 1 reconnaissance complete, source implementation NOT YET AUTHORIZED by design alone.** GitHub production remains CodexDD `0.4.4` with official upstream `rust-v0.162.0`; last verified production SHA `b25550dcb2c6e84a84074b603086c9db6f32a63b`. This GitHub source identity does not by itself prove installed versions on every machine.
+
+**Release scope:** user-selected product `0.4.5` for upstream `rust-v0.163.0`, plus guarded automatic upstream-update improvements. Feature branch `dd/codexdd-v0.4.5-upstream-0.163.0-automation`; exact target peeled SHA `83086188ae0614bd882818ff1aa23f3194962012`. Do not silently retarget or change production provenance.
+
+- [1A.1 — discovery / original blocked conflict evidence](codexdd-0.4.5-packet-1a1-upstream-0.163.0-reconnaissance.md). The six-hour updater detects 0.163.0, but 15 conflicts block a clean synthetic transplant.
+- [1A.2 — complete 109-path overlap and security audit](codexdd-0.4.5-packet-1a2-overlap-security-and-automation-audit.md). Audited 15 conflicts, 97 classified-sensitive overlaps, 12 classifier gaps and seven 0.4.4-specific overlap regressions. Retain patched `rustls 0.23.46` and `noyalib-serde-yaml` security policy against upstream version drift.
+- [1A.3 — updater and reconciled-candidate architecture](codexdd-0.4.5-packet-1a3-automation-and-integration-contract.md). **Two lanes:** read-only discovery plus default-deny safe low-risk auto-preparation, separate from the owner-reviewed v2 reconciliation required for this conflict-heavy release. Reuse v2 tooling from 0.4.3 PR #50, but first eliminate hardcoded 0.162.0 identities without changing historical receipts. GitHub Actions PR creation was blocked during 0.4.3; honor repository policy and fall back to evidence-only reporting.
+
+**Phase 1 Gate 1 remains OPEN:** no upstream candidate, source-code integration, workflow privilege expansion, automatic PR, product-version bump, merge or installation is authorized by these documents. Next packet, after acceptance: **2A.1**, complete path sensitivity/default-deny auto-eligibility tests. Assistant owns GitHub source edits; Daniel-CL is needed only for meaningful cheap local validation and final explicit Windows release gate. Explicit owner controls remain for semantic risk, native release acceptance, merge, publishing and deployment.
+
+---
+
 ## Current DD-BL-006 priority — CodexDD 0.4.4 (2026-10-12)
 
 - **0.4.3 upstream integration:** PR #52 merged at `d8ad52cc223362a03f4dc5b40ec51695b3c48936` with tracked upstream `rust-v0.162.0` and product identity `0.4.3`. This GitHub merge does not itself prove a later production installation.
