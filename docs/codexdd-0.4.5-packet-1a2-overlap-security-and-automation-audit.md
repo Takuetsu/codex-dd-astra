@@ -49,6 +49,20 @@ The base-to-target upstream ancestry is diverged relative to this fork; the mani
 
 **Explicit binary clarification:** The 13 text-conflict files above and the two `.json.zst` files total 15. Generated TypeScript files are text, but are still **generator-owned**, not acceptable for manual patchwork as a final outcome.
 
+### Lockfile version evidence (three-way, checked before implementation)
+
+The tracked upstream 0.162.0 lockfile, CodexDD production 0.4.4 lockfile, and official upstream 0.163.0 lockfile were each read directly and compared. The critical version differences are:
+
+| Package / dependency | Tracked 0.162.0 | CodexDD 0.4.4 | Upstream 0.163.0 | Integration requirement |
+| --- | --- | --- | --- | --- |
+| `rustls` | `0.23.45` | **`0.23.46`** | `0.23.45` | **Do not downgrade** the fork's applied security update without a separate security review |
+| `hyper` | `1.8.1` | `1.8.1` | **`1.11.1`** | Carry new upstream HTTP behavior and verify network/proxy security fixes |
+| `rmcp` / `rmcp-macros` | `3.3.0` | `3.3.0` | **`3.5.1`** | Test MCP tool lifecycle, callback/elicitation and parallel-read behavior |
+| `quinn-proto` | `0.11.15` | `0.11.18` | `0.11.18` | Keep current resolved version after reproducible regeneration |
+| `noyalib-serde-yaml` | absent | **`0.0.57`** | absent | Preserve CodexDD 0.4.4 dependency replacement; never silently revert to legacy serde YAML |
+
+The generated lockfile also encodes **CodexDD product-version provenance** separately from upstream package versions. Cargo resolution, security advisory checks, Windows build evidence and the upstream 0.163.0 dependency changes must all be reviewed as one accepted dependency packet rather than taking either lockfile wholesale.
+
 ## Cross-release 0.4.4 regression gate
 
 The seven intersecting files actually modified in the merged 0.4.4 PR #53 are:
