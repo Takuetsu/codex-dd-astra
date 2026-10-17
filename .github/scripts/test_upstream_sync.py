@@ -1,3 +1,4 @@
+import hashlib
 import json
 import subprocess
 import sys
@@ -6,6 +7,8 @@ import unittest
 from pathlib import Path
 
 from upstream_sync import (
+    DeltaInventory,
+    auto_preparation_overlap_reasons,
     build_candidate_manifest,
     build_delta_inventory,
     candidate_branch,
@@ -341,6 +344,155 @@ checksum = "abc"
         self.assertIn("generated_protocol", classified)
         self.assertIn("version_provenance", classified)
         self.assertIn("build_release_ci", classified)
+
+    def test_045_classifier_covers_all_twelve_previously_unclassified_overlaps(self):
+        gaps = {
+            "codex-rs/BUILD.bazel": "build_release_ci",
+            "codex-rs/cli/BUILD.bazel": "cli_daemon",
+            "codex-rs/cli/src/main.rs": "cli_daemon",
+            "codex-rs/cli/tests/daemon_startup.rs": "cli_daemon",
+            "codex-rs/core/tests/suite/scenarios.rs": "core_runtime",
+            "codex-rs/core/tests/suite/unified_exec.rs": "core_runtime",
+            "codex-rs/external-agent-migration/src/sessions/append_tests.rs": "persistence_resume_fork",
+            "codex-rs/memories/write/src/phase1.rs": "persistence_resume_fork",
+            "codex-rs/memories/write/src/rollout_input.rs": "persistence_resume_fork",
+            "codex-rs/rollout-trace/src/protocol_event.rs": "persistence_resume_fork",
+            "sdk/python/src/openai_codex/generated/notification_registry.py": "generated_protocol",
+            "sdk/python/src/openai_codex/generated/v2_all.py": "generated_protocol",
+        }
+        classified = classify_sensitive_overlaps(gaps)
+        self.assertEqual(len(gaps), 12)
+        self.assertNotIn("unclassified_overlap", classified)
+        for path, category in gaps.items():
+            with self.subTest(path=path):
+                self.assertIn(path, classified[category])
+        self.assertEqual(
+            {path for paths in classified.values() for path in paths},
+            set(gaps),
+        )
+
+    def test_045_unknown_and_windows_style_paths_preserve_git_identity(self):
+        unknown = "opaque/unreviewed/runtime.flag"
+        windows_style = r"codex-rs\cli\src\main.rs"
+        categorized = classify_sensitive_overlaps([unknown, windows_style])
+        self.assertEqual(categorized["unclassified_overlap"], (unknown,))
+        self.assertIn(windows_style, categorized["cli_daemon"])
+        self.assertNotIn("codex-rs/cli/src/main.rs", categorized["cli_daemon"])
+
+    def test_045_auto_overlap_gate_denies_known_unknown_and_inconsistent_inputs(self):
+        tracked = {"opaque/change.bin": "100644 blob base"}
+        production = {"opaque/change.bin": "100644 blob customized"}
+        upstream = {"opaque/change.bin": "100644 blob upstream"}
+        inventory = build_delta_inventory(tracked, production, upstream)
+        self.assertEqual(inventory.overlap_paths, ("opaque/change.bin",))
+        self.assertEqual(
+            inventory.sensitive_overlap_categories["unclassified_overlap"],
+            ("opaque/change.bin",),
+        )
+        self.assertEqual(
+            auto_preparation_overlap_reasons(inventory),
+            ("overlap_requires_semantic_review", "unclassified_overlap"),
+        )
+
+        known = "codex-rs/core/src/session/session.rs"
+        recognized = build_delta_inventory(
+            {known: "base"}, {known: "fork"}, {known: "upstream"}
+        )
+        self.assertEqual(
+            auto_preparation_overlap_reasons(recognized),
+            ("overlap_requires_semantic_review",),
+        )
+
+        zero = build_delta_inventory(
+            {"fork.txt": "base", "upstream.txt": "base"},
+            {"fork.txt": "changed", "upstream.txt": "base"},
+            {"fork.txt": "base", "upstream.txt": "changed"},
+        )
+        self.assertEqual(zero.overlap_paths, ())
+        self.assertEqual(auto_preparation_overlap_reasons(zero), ())
+        # Zero overlap only passes this *one* gate; it is not write permission.
+
+        inconsistent = DeltaInventory(
+            customization_paths=("opaque/change.bin",),
+            upstream_change_paths=("opaque/change.bin",),
+            overlap_paths=("opaque/change.bin",),
+            sensitive_overlap_categories={"cli_daemon": ("wrong/path",)},
+        )
+        self.assertEqual(
+            auto_preparation_overlap_reasons(inconsistent),
+            (
+                "overlap_requires_semantic_review",
+                "unclassified_overlap",
+                "inconsistent_overlap_inventory",
+            ),
+        )
+
+    def test_045_git_tree_mode_rename_and_unknown_overlap_are_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            git(repo, "init", "-q")
+            git(repo, "config", "user.name", "sync-test")
+            git(repo, "config", "user.email", "sync-test@example.invalid")
+            # index --chmod works even when the host is Windows/NTFS.
+            git(repo, "config", "core.filemode", "false")
+            (repo / "opaque").mkdir()
+            (repo / "old-name.txt").write_text("old\n")
+            (repo / "opaque/mode.sh").write_text("unchanged\n")
+            (repo / "opaque/change.bin").write_text("base\n")
+            base = commit_all(repo, "tracked")
+
+            git(repo, "switch", "-q", "-c", "production", base)
+            git(repo, "mv", "old-name.txt", "new-name.txt")
+            git(repo, "update-index", "--chmod=+x", "opaque/mode.sh")
+            (repo / "opaque/change.bin").write_text("fork\n")
+            fork = commit_all(repo, "production")
+
+            git(repo, "switch", "-q", "-c", "upstream", base)
+            (repo / "old-name.txt").write_text("changed upstream\n")
+            git(repo, "update-index", "--chmod=+x", "opaque/mode.sh")
+            (repo / "opaque/change.bin").write_text("upstream\n")
+            upstream = commit_all(repo, "target")
+
+            tracked = git_tree_entries(repo, base)
+            production = git_tree_entries(repo, fork)
+            target = git_tree_entries(repo, upstream)
+            self.assertNotIn("old-name.txt", production)
+            self.assertIn("new-name.txt", production)
+            self.assertNotEqual(tracked["opaque/mode.sh"], production["opaque/mode.sh"])
+            self.assertEqual(production["opaque/mode.sh"], target["opaque/mode.sh"])
+
+            inventory = build_delta_inventory(tracked, production, target)
+            self.assertEqual(
+                inventory.overlap_paths,
+                ("old-name.txt", "opaque/change.bin", "opaque/mode.sh"),
+            )
+            self.assertEqual(
+                inventory.sensitive_overlap_categories["unclassified_overlap"],
+                ("old-name.txt", "opaque/change.bin", "opaque/mode.sh"),
+            )
+            self.assertEqual(
+                auto_preparation_overlap_reasons(inventory),
+                ("overlap_requires_semantic_review", "unclassified_overlap"),
+            )
+
+    def test_045_v1_manifest_contract_and_hash_remain_canonical(self):
+        kwargs = manifest_kwargs()
+        first = build_candidate_manifest(**kwargs, transplant_result="clean")
+        reordered = dict(kwargs)
+        for key in ("tracked_entries", "production_entries", "target_entries"):
+            reordered[key] = dict(reversed(list(kwargs[key].items())))
+        second = build_candidate_manifest(**reordered, transplant_result="clean")
+        original = candidate_manifest_json(first)
+        self.assertEqual(original, candidate_manifest_json(second))
+        self.assertEqual(
+            hashlib.sha256(original.encode("utf-8")).digest(),
+            hashlib.sha256(candidate_manifest_json(second).encode("utf-8")).digest(),
+        )
+        decoded = json.loads(original)
+        self.assertEqual(decoded["contract_version"], 1)
+        self.assertEqual(decoded["state"], "manual_semantic_review_required")
+        self.assertNotIn("auto_preparation_reasons", decoded)
+        self.assertNotIn("unclassified_overlap", decoded["sensitive_overlap_categories"])
 
     def test_candidate_state_distinguishes_textual_and_semantic_risk(self):
         self.assertEqual(candidate_state("not_run", 8), "discovered")
