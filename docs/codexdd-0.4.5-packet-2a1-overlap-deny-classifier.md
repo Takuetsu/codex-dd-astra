@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2A.1: conservative overlap classification
 
 **Date:** 2026-10-17  
-**Status:** source and regression tests checkpointed; **cheap native validation pending**.  
+**Status:** source and regression tests checkpointed; **Daniel-CL native Python validation PASS, 28 tests in 3.044s on checkpoint 0a93c71497e0fb456b722f908e51f4c62727f227 (owner-provided terminal result)**.  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-automation`.  
 **Scope:** overlap classification and the independent overlap-only denial gate. No scheduled writer, candidate ref, PR, production change, or 0.163.0 conflict reconciliation.
 
