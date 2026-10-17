@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2A.2: independent read-only eligibility planner
 
 **Date:** 2026-10-17
-**Status:** source and regression suite checkpointed; targeted Daniel-CL Python validation **pending**.
+**Status:** locally validated PASS on Daniel-CL, 17/17 tests in 0.005s at commit `ca42b19154d367ab77bfe6b68e885ba9c0cdde48` (operator terminal evidence).
 **Scope:** pure policy decisions only. NO scheduled writer, automatic PR, candidate publication, production changes, release-version edits, or Windows validation substitutions.
 
 ## Implementation and authority boundary
@@ -25,4 +25,4 @@ In the isolated validation worktree at the exact packet HEAD, run:
 py -3 .github\scripts\test_upstream_auto_eligibility.py
 ```
 
-No broad Rust build, 21-stage suite, GitHub CI or installation is needed for this source packet. The outcome remains pending until Daniel-CL runs these tests. The official `rust-v0.163.0` update still has 109 overlaps and 15 direct conflicts, so it cannot be auto-prepared. Manual owner-reviewed v2 reconciliation is a separate later phase.
+No broad Rust build, 21-stage suite, GitHub CI or installation is needed for this source packet. Daniel-CL returned `Ran 17 tests in 0.005s` and `OK` for this source packet. The official `rust-v0.163.0` update still has 109 overlaps and 15 direct conflicts, so it cannot be auto-prepared. Manual owner-reviewed v2 reconciliation is a separate later phase.

@@ -87,6 +87,12 @@ jobs:
             fi
           done
 
+          # Preserve both tag object identities from initial official resolution.
+          # The read-only reporter independently compares these against fresh
+          # official ls-remote refs and local fetched tag objects.
+          echo "tracked_tag_oid=$(git rev-parse "refs/tags/$current_tag")" >> "$GITHUB_OUTPUT"
+          echo "target_tag_oid=$(git rev-parse "refs/tags/$latest_tag")" >> "$GITHUB_OUTPUT"
+
           # The expected pinned SHA is the peeled commit, never a tag object.
           if [[ -n "$REQUESTED_TARGET_TAG" ]]; then
             selected_commit="$(git rev-parse "${latest_tag}^{commit}")"
@@ -206,6 +212,12 @@ jobs:
           if [[ "$transplant_status" -eq 0 ]]; then
             transplant_result="clean"
             : > "$conflict_path"
+            # The synthetic tree is untrusted: never execute its scripts.
+            # Copy only the lockfile bytes into runner scratch for a
+            # read-only dependency/security comparison; never publish them.
+            if [[ -f "$dry_run_dir/codex-rs/Cargo.lock" && ! -L "$dry_run_dir/codex-rs/Cargo.lock" ]]; then
+              cp -- "$dry_run_dir/codex-rs/Cargo.lock" "$RUNNER_TEMP/upstream-candidate-provisional-Cargo.lock"
+            fi
           else
             transplant_result="conflict"
             git -C "$dry_run_dir" diff --name-only --diff-filter=U |
@@ -331,7 +343,28 @@ jobs:
               output.write(
                   f"sensitive_overlap_count={manifest['sensitive_overlap_count']}\n"
               )
+              output.write(f"transplant_result={manifest['transplant_dry_run']}\n")
           PY
+
+      - name: Read-only automatic-update eligibility report
+        if: steps.release.outputs.needed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PINNED_TARGET_OID: ${{ steps.release.outputs.target_tag_oid }}
+          PINNED_TRACKED_OID: ${{ steps.release.outputs.tracked_tag_oid }}
+          OBSERVED_TRANSPLANT: ${{ steps.candidate.outputs.transplant_result }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/upstream_auto_report.py \
+            --manifest upstream-candidate/manifest.json \
+            --conflicts upstream-candidate/transplant-conflicts.txt \
+            --candidate-lockfile "$RUNNER_TEMP/upstream-candidate-provisional-Cargo.lock" \
+            --pinned-target-oid "$PINNED_TARGET_OID" \
+            --pinned-tracked-oid "$PINNED_TRACKED_OID" \
+            --observed-transplant "$OBSERVED_TRANSPLANT" \
+            --report upstream-candidate/eligibility-report.json \
+            --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Upload candidate evidence
         if: steps.release.outputs.needed == 'true'
