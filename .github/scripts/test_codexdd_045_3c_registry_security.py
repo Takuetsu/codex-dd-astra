@@ -53,7 +53,11 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
         self.assertEqual(git_blob(committed("HEAD", FILE)), MERGED_SHA)
 
     def test_original_codexdd_rust_policy_tests_unchanged(self):
-        self.assertEqual(git_blob(committed("HEAD", RUST_TESTS)), FORK_TEST_SHA)
+        original = committed(PRODUCTION, RUST_TESTS)
+        current = committed("HEAD", RUST_TESTS)
+        self.assertEqual(git_blob(original), FORK_TEST_SHA)
+        self.assertTrue(current.startswith(original))
+        self.assertIn(b"adaptive_reconnaissance_rejects_hook_rewritten_write_command", current)
 
     def test_seventeen_codexdd_policy_helpers_preserved_byte_for_byte(self):
         merged = helper_block(self.source)
