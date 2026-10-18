@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.5b: core session and trusted event replay reconciliation
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Seventeen exact official upstream session source/test files and five reviewed three-way session merges staged. Thirteen offline static tests added, **not yet run** on Daniel-CL. No native Rust compile, runtime test, generated schema or release receipt for this packet.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Seventeen exact official upstream session source/test files and five reviewed three-way session merges staged. Thirteen offline static tests **13/13 passed** on Daniel-CL at exact detached commit `c1a582730766302a1295ce6e9051bbaf20e56dbe` in **1.463s**, 2026-10-18 (operator screenshot). No native Rust compile, runtime test, generated schema or release receipt for this packet.  
 **Integration branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Source provenance and fork-specific event preservation
@@ -26,7 +26,7 @@ Production adaptive handler and the 3C.3 initial/post-hook restriction helpers r
 
 ## Validation and remaining gates
 
-Predecessor **3C.4 static validation is 33/33 green** at detached Daniel-CL `cae522cf20d1893d7537e713f234cba098798a59` (2026-10-18). Packet 3C.5a configuration static tests: 15 authored, unrun. Packet 3C.5b session static tests: 13 authored, unrun.
+Predecessor **3C.4 static validation is 33/33 green** at detached Daniel-CL `cae522cf20d1893d7537e713f234cba098798a59` (2026-10-18). Packet 3C.5a configuration static tests: **15/15 passed in 1.724s**. Packet 3C.5b session static tests: **13/13 passed in 1.463s**. 3C.5c Guardian/approvals static tests subsequently **11/11 passed in 1.213s** at the same detached head, for a **39/39 static** 3C.5 checkpoint.
 
 **Cargo.lock** remains the 0.4.4 graph. Native Rust session/turn/event tests, app-server replay behavior, core config/approval API compatibility, generated schema validation and Windows release suite remain outstanding. Other non-overlapping upstream changes and fork conflict sites must be reconciled before expensive testing. The product and upstream version markers remain 0.4.4/rust-v0.162.0.
 

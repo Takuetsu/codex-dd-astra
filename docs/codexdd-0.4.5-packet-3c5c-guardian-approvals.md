@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.5c: upstream Guardian and approval runtime staging
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Sixteen pinned 0.163.0 Guardian source/test changes plus the upstream `tools/approvals.rs` change were staged; eleven offline source checks added and **not yet run**. No native Rust authorization or Windows runtime test receipt exists for this packet.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Sixteen pinned 0.163.0 Guardian source/test changes plus the upstream `tools/approvals.rs` change were staged; eleven offline source checks **11/11 passed** on Daniel-CL at exact detached commit `c1a582730766302a1295ce6e9051bbaf20e56dbe` in **1.213s**, 2026-10-18 (operator screenshot). No native Rust authorization or Windows runtime test receipt exists for this packet.  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Provenance and boundaries
@@ -14,7 +14,7 @@ Existing `guardian/permissions.rs`, `guardian/request_budget.rs`, and `guardian/
 
 ## Validation and open gates
 
-**3C.4 static source tests: 33/33 passed** on Daniel-CL at exact detached commit `cae522cf20d1893d7537e713f234cba098798a59`, with screenshot supplied 2026-10-18. The new 3C.5a/b/c checks total **39 cases (15+13+11)** and have **not run yet**. GitHub source checks cannot demonstrate native Rust compilation, correct approval prompts, permission retention, post-hook authorization or end-to-end turn replay.
+**3C.4 static source tests: 33/33 passed** on Daniel-CL at exact detached commit `cae522cf20d1893d7537e713f234cba098798a59`, with screenshot supplied 2026-10-18. The new 3C.5a/b/c checks total **39 cases (15+13+11)**, **39/39 PASSED** (1.724s + 1.463s + 1.213s) on Daniel-CL. 3C.5a ran at `06a37488f`, and 3C.5b/c ran at `c1a582730` after the fixture-only Python fix. These source checks are not native behavior tests. GitHub source checks cannot demonstrate native Rust compilation, correct approval prompts, permission retention, post-hook authorization or end-to-end turn replay.
 
 **Cargo.lock** remains the baseline 0.4.4 graph. Many cross-crate model and core/tool caller changes are still staged/incomplete; additional fork overlap and app-server consumers, native Rust security tests, Windows 21-stage release validation, GitHub CI, generated schemas and final provenance receipt remain mandatory.
 

@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.5a: core and config-crate reconciliation
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Twenty-two exact official upstream 0.163.0 source/test files staged plus two reviewed three-way adaptive worker merges. Fifteen offline static checks added but **not yet run** on Daniel-CL. Native Rust compilation/security and release tests remain unrun.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Twenty-two exact official upstream 0.163.0 source/test files staged plus two reviewed three-way adaptive worker merges. Fifteen offline static checks **15/15 passed** on Daniel-CL at detached commit `06a37488fbb850e3be11f0fe2faf2e9bd7009828` in **1.724s**, 2026-10-18 (operator screenshot). Native Rust compilation/security and release tests remain unrun.  
 **Integration branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Provenance: three-way preservation
@@ -22,6 +22,6 @@ Official configuration additions for runtime refresh, permission profiles, manag
 
 The predecessor **3C.4 checkpoint passed 33/33 static tests** on exact detached Daniel-CL commit `cae522cf20d1893d7537e713f234cba098798a59`: 3C.4a 9/9 in 0.506s, 3C.4b 12/12 in 1.334s, 3C.4c 12/12 in 2.607s (operator screenshot dated 2026-10-18). This evidence does not cover the 3C.5a changed sources.
 
-3C.5a has **15 new offline static tests, not yet run**. No native Rust compilation or security/runtime behavior has been validated. Session/turn configuration consumers still have fork/upstream overlaps; approval/guardian modules and remaining app-server consumers must be reconciled. Generated schemas, the final source-wide build and **Cargo.lock** dependency resolution are intentionally pending. Do not run the 21-stage Windows release suite yet. Product/upstream markers remain CodexDD 0.4.4 and rust-v0.162.0.
+3C.5a **15/15 static tests passed in 1.724s** at detached commit `06a37488fbb850e3be11f0fe2faf2e9bd7009828`. No native Rust compilation or security/runtime behavior has been validated. Session/turn configuration consumers still have fork/upstream overlaps; approval/guardian modules and remaining app-server consumers must be reconciled. Generated schemas, the final source-wide build and **Cargo.lock** dependency resolution are intentionally pending. Do not run the 21-stage Windows release suite yet. Product/upstream markers remain CodexDD 0.4.4 and rust-v0.162.0.
 
 **Next:** 3C.5b session/turn and guardian/approvals reconciliation, preserving fork-specific changes. Group the next cheap Daniel-CL static checks after a meaningful stage; then native compilation when source-complete. Automatic upstream PR publishing, merging, and artifact distribution remain hard-disabled.
