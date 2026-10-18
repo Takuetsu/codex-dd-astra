@@ -13,11 +13,11 @@ ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 STAGED = {
     "codex-rs/core/src/session/async_compaction.rs": [
-        null,
+        None,
         "bb80f857fd2f72eaac83f3a4ae91d4acd95ebf2f"
     ],
     "codex-rs/core/src/session/async_compaction_tests.rs": [
-        null,
+        None,
         "e4a048124b83f15ab2c5d23c33e39cfff556d70e"
     ],
     "codex-rs/core/src/session/config_refresh.rs": [
