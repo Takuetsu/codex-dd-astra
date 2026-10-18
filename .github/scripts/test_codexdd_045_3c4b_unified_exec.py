@@ -112,6 +112,20 @@ def source(path: str) -> str:
 
 
 class UnifiedExecSandboxSourceTests(unittest.TestCase):
+
+    # Keep failing static marker diagnostics bounded: never dump a 70KB Rust file.
+    def assertIn(self, member, container, msg=None):
+        if isinstance(container, str) and len(container) > 2048:
+            self.assertTrue(member in container, msg or f"missing source marker: {member!r}")
+            return
+        super().assertIn(member, container, msg)
+
+    def assertNotIn(self, member, container, msg=None):
+        if isinstance(container, str) and len(container) > 2048:
+            self.assertFalse(member in container, msg or f"unexpected source marker: {member!r}")
+            return
+        super().assertNotIn(member, container, msg)
+
     def test_twenty_sources_exact_official_upstream_git_blobs(self):
         self.assertEqual(len(STAGED), 20)
         for path, (_, official_sha) in STAGED.items():

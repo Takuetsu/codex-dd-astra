@@ -252,6 +252,20 @@ def source(path: str) -> str:
 
 
 class SandboxIntegritySourceTests(unittest.TestCase):
+
+    # Keep failing static marker diagnostics bounded: never dump a 70KB Rust file.
+    def assertIn(self, member, container, msg=None):
+        if isinstance(container, str) and len(container) > 2048:
+            self.assertTrue(member in container, msg or f"missing source marker: {member!r}")
+            return
+        super().assertIn(member, container, msg)
+
+    def assertNotIn(self, member, container, msg=None):
+        if isinstance(container, str) and len(container) > 2048:
+            self.assertFalse(member in container, msg or f"unexpected source marker: {member!r}")
+            return
+        super().assertNotIn(member, container, msg)
+
     def test_fifty_five_exact_pinned_upstream_source_blobs(self):
         self.assertEqual(len(STAGED), 55)
         for path, (_, official_blob) in STAGED.items():
