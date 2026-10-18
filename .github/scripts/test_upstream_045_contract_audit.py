@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -159,10 +160,23 @@ class Upstream045ContractAuditTests(unittest.TestCase):
         self.assertNotIn("source_snapshot_tree_sha", parsed)
 
     def test_product_and_upstream_markers_remain_044_and_0162_before_integration(self):
-        product = (ROOT / "codex-rs/codexdd-version.txt").read_bytes()
-        upstream = (ROOT / "codex-rs/upstream-codex-release.txt").read_bytes()
-        self.assertEqual(product, b"0.4.4\n")
-        self.assertEqual(upstream, b"rust-v0.162.0\n")
+        # Git blobs use canonical LF bytes, but Windows autocrlf can check
+        # out those same marker files with CRLF. Verify both the canonical
+        # HEAD content and an exact LF/CRLF-only local representation.
+        for path, expected in (
+            ("codex-rs/codexdd-version.txt", b"0.4.4\n"),
+            ("codex-rs/upstream-codex-release.txt", b"rust-v0.162.0\n"),
+        ):
+            with self.subTest(path=path):
+                local = (ROOT / path).read_bytes()
+                self.assertIn(local, (expected, expected.replace(b"\n", b"\r\n")))
+                committed = subprocess.run(
+                    ["git", "show", "HEAD:" + path],
+                    cwd=ROOT,
+                    check=True,
+                    capture_output=True,
+                ).stdout
+                self.assertEqual(committed, expected)
 
     def test_shipped_policy_contains_no_reviewed_safe_paths_or_write_gate(self):
         self.assertFalse(policy.REVIEWED_SAFE_UPSTREAM_PATHS)

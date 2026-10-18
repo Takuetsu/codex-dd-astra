@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2B.3: legacy contracts, privilege and provenance audit
 
 **Date:** 2026-10-18
-**Status:** 15 Python contract/audit tests checkpointed; **cheap Daniel-CL validation pending**.
+**Status:** Initial Daniel-CL run: 14/15 passed; the only failure was a test-only LF versus CRLF checkout assumption in the version markers. The assertion now verifies canonical committed Git blob bytes plus exact permitted LF/CRLF working-tree bytes. **Targeted 2B.3 rerun pending**; no source/runtime or workflow changes.
 **Scope:** no runtime code, no policy gates opened, no GitHub Actions permissions changed and no new scheduled workflow.
 
 ## Boundaries audited
