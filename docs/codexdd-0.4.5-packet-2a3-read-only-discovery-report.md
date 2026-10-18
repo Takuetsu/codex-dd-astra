@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2A.3: canonical read-only automatic update reporting
 
 **Date:** 2026-10-17
-**Status:** source, workflow and 18 targeted regression tests checkpointed; **Daniel-CL Python validation pending**.
+**Status:** Daniel-CL targeted Python validation **PASS: 18/18 tests in 4.660s**, at source SHA `e9c8bb2d61c4049576bcc5256aba78454a70398a` (operator-provided terminal evidence).
 **Scope:** add a read-only report to the existing six-hour upstream discovery. Do not add any write token, candidate branch, PR, release or publishing schedule.
 
 ## What changed
