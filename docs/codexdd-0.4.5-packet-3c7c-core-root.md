@@ -9,7 +9,7 @@ Official 0.162.0 commit `c1382380de69521303b416720a52f42d51af6248` and productio
 
 The staged sources include `lib.rs`, CodeMode host, retained-output and remote compaction, hook lifecycle, execution policy, MCP tool attribution, shell snapshots, native event mapping, Windows sandbox and associated Rust tests.
 
-**Five fork-sensitive files deliberately excluded:** `client.rs`, `client_tests.rs`, `codex_thread.rs`, `thread_manager.rs` and `thread_manager_tests.rs`. These are still exactly the production 0.4.4 fork blobs and **have not yet been merged** with upstream 0.163.0. The Python source tests explicitly guard against overwriting them. Other cross-crate and module-level integration remains open.
+**Five fork-sensitive files deliberately excluded:** `client.rs`, `client_tests.rs`, `codex_thread.rs`, `thread_manager.rs` and `thread_manager_tests.rs`. These were untouched in the 48-file direct-copy packet, then independently reconciled with upstream 0.163.0 in 3C.7d using byte-exact restored fork patches. The static tests now pin both the original production and reviewed merged blobs; native behavior remains unverified. Other cross-crate and module-level integration remains open.
 
 ## Validation and release gates
 

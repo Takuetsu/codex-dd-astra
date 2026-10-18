@@ -201,12 +201,27 @@ STAGED={
     "2c2d1fdb366c9c587752762376427baaa6522339"
   ]
 }
-PENDING_FORK={
-  "codex-rs/core/src/client.rs": "a08e2386475b0c4e87d0d79aaccc27efeaff641d",
-  "codex-rs/core/src/client_tests.rs": "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
-  "codex-rs/core/src/codex_thread.rs": "24fc487a32cd930f39a3c8137c40790d37e60713",
-  "codex-rs/core/src/thread_manager.rs": "ff796b8c877f3e671252d6db885ac968b08e5893",
-  "codex-rs/core/src/thread_manager_tests.rs": "fe36ae0ae22feca5118d52d0dbee762b06b00c6d"
+MERGED_FORK={
+  "codex-rs/core/src/client.rs": [
+    "a08e2386475b0c4e87d0d79aaccc27efeaff641d",
+    "583447f35eaba564771771813bd4d897cb6b73de"
+  ],
+  "codex-rs/core/src/client_tests.rs": [
+    "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
+    "927ef6e51c248d7979e391272b188982c8a7d4b9"
+  ],
+  "codex-rs/core/src/codex_thread.rs": [
+    "24fc487a32cd930f39a3c8137c40790d37e60713",
+    "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9"
+  ],
+  "codex-rs/core/src/thread_manager.rs": [
+    "ff796b8c877f3e671252d6db885ac968b08e5893",
+    "88fa659a3c45839d9a3dce6b6a39e6e47795f103"
+  ],
+  "codex-rs/core/src/thread_manager_tests.rs": [
+    "fe36ae0ae22feca5118d52d0dbee762b06b00c6d",
+    "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25"
+  ]
 }
 def git_blob(ref,p):
     result=subprocess.run(["git","rev-parse","--verify",ref+":"+p],
@@ -252,12 +267,12 @@ class CoreRootSourceTests(unittest.TestCase):
         self.assertTrue("approval_required_when_read_only_false_and_destructive" in
                         source("codex-rs/core/src/mcp_tool_call_tests.rs"))
         self.assertTrue("fn " in source("codex-rs/core/src/event_mapping_tests.rs"))
-    def test_five_sensitive_fork_sources_remain_unmerged_and_unchanged(self):
-        self.assertEqual(len(PENDING_FORK),5)
-        for p,sha in PENDING_FORK.items():
+    def test_five_fork_sources_now_have_pinned_reviewed_merges(self):
+        self.assertEqual(len(MERGED_FORK),5)
+        for p,(old,merged) in MERGED_FORK.items():
             with self.subTest(path=p):
-                self.assertEqual(git_blob(PRODUCTION,p),sha)
-                self.assertEqual(git_blob("HEAD",p),sha)
+                self.assertEqual(git_blob(PRODUCTION,p),old)
+                self.assertEqual(git_blob("HEAD",p),merged)
     def test_registry_and_release_markers_unadvanced(self):
         self.assertEqual(git_blob("HEAD","codex-rs/core/src/tools/registry.rs"),
                          "fc75b3bbf91f1881bd32faaaca93356fbb598b5e")
