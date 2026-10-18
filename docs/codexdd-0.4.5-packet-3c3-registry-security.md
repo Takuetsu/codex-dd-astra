@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.3: tool registry security and cancellation reconciliation
 
 **Date:** 2026-10-18  
-**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Registry source merge checkpointed, with 16 cheap static source tests **pending Daniel-CL validation**. Native Rust compile, runtime tests, integration reviews, and release receipt remain outstanding.  
+**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Registry source merge checkpointed, with **16/16 cheap static source tests PASSED on Daniel-CL in 0.195s** at `aa99738c10db4503e7bcbf26c418340348b98b0b`, confirmed by operator screenshot (2026-10-18). Native Rust compile, runtime tests, integration reviews, and release receipt remain outstanding.  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`
 
 ## Three-way inputs and exact Git provenance

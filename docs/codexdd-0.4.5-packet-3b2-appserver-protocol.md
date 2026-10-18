@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3B.2: app-server RPC and workflow-state protocol reconciliation
 
 **Date:** 2026-10-18  
-**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Four reviewed protocol three-way merges and two exact upstream companion files checkpointed; **14 cheap source tests pending Daniel-CL validation**, and no native Rust compilation or schema regeneration has passed.  
+**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Four reviewed protocol three-way merges and two exact upstream companion files checkpointed; **14/14 targeted static source tests PASSED on Daniel-CL in 0.384s** at `aa99738c10db4503e7bcbf26c418340348b98b0b`, confirmed by operator screenshot (2026-10-18), and no native Rust compilation or schema regeneration has passed.  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Fixed source identities
