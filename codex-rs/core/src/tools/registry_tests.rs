@@ -1165,3 +1165,42 @@ fn test_invocation(
         },
     }
 }
+
+
+#[tokio::test]
+async fn adaptive_reconnaissance_rejects_hook_rewritten_write_command() -> anyhow::Result<()> {
+    let (session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string());
+    let tool_name = codex_tools::ToolName::plain("exec_command");
+    let handler = TestHandler {
+        tool_name: tool_name.clone(),
+    };
+    let original = ToolInvocation {
+        payload: ToolPayload::Function {
+            arguments: serde_json::json!({ "cmd": "git status --short" }).to_string(),
+        },
+        ..test_invocation(
+            Arc::new(session),
+            Arc::new(turn),
+            "recon-rewritten-command",
+            tool_name,
+        )
+    };
+    assert!(
+        adaptive_reconnaissance_rejection(&original).is_none(),
+        "read-only command must pass the initial adaptive gate"
+    );
+
+    // Simulate a PreToolUse updated_input without relying on extension hooks.
+    let rewritten = handler.with_updated_hook_input(
+        original,
+        serde_json::json!({ "cmd": "Set-Content docs/example.md changed" }),
+    )?;
+    assert!(
+        adaptive_reconnaissance_rejection(&rewritten)
+            .is_some_and(|reason| reason.contains("read-only")),
+        "the post-hook adaptive gate must deny a command changed to a source write"
+    );
+    Ok(())
+}
