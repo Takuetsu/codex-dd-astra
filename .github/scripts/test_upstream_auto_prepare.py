@@ -274,8 +274,17 @@ class GuardedPreparationTests(unittest.TestCase):
                 {"docs/Guide.md", "docs/guide.md"}
             )
         preparer._check_windows_collisions(
-            {"docs/Guide.md", "docs/other.md"}
+            {"docs/Guide.md", "docs/other.md", ".github/workflows/CI.yml",
+             ".gitattributes", "docs/with spaces.txt"}
         )
+        with self.assertRaisesRegex(
+            preparer.PreparationBlocked, "windows_path_unsafe"
+        ):
+            preparer._check_windows_collisions({"docs/CON.txt"})
+        with self.assertRaisesRegex(
+            preparer.PreparationBlocked, "windows_path_unsafe"
+        ):
+            preparer._check_windows_collisions({"docs/last. "})
 
     def test_interrupted_local_index_build_cannot_publish_branch(self):
         mocks = self._mocks()

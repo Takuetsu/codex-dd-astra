@@ -122,9 +122,21 @@ def _verified_blob_change(
 
 
 def _check_windows_collisions(paths: set[str]) -> None:
+    # An ordinary trusted source tree contains .github/.gitattributes and may
+    # have legitimate spaces; do NOT apply the much narrower NEW-path allowlist
+    # grammar to unchanged files. Check actual Windows hazards instead.
     seen: dict[str, str] = {}
     for path in paths:
-        _checked_path(path)
+        if not isinstance(path, str) or path.startswith("/") or "\\" in path:
+            raise PreparationBlocked("windows_path_unsafe")
+        for part in path.split("/"):
+            if (
+                not part or part in {".", ".."}
+                or part.lower() == ".git"
+                or part.endswith((".", " "))
+                or WINDOWS_DEVICE.fullmatch(part) is not None
+            ):
+                raise PreparationBlocked("windows_path_unsafe")
         folded = path.casefold()
         previous = seen.get(folded)
         if previous is not None and previous != path:
