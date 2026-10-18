@@ -868,7 +868,7 @@ def tree_blobs(ref: str) -> dict[str, str]:
     )
     out = {}
     for line in result.stdout.splitlines():
-        header, path = line.split("\\t", 1)
+        header, path = line.split("\t", 1)
         out[path] = header.split()[2]
     return out
 
