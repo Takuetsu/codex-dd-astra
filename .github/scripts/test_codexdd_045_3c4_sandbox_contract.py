@@ -103,7 +103,7 @@ class SandboxContractStagingTests(unittest.TestCase):
         tests = src("codex-rs/core/src/tools/sandboxing_tests.rs")
         self.assertIn("async fn windows_sandbox_env_preserves_denied_reads_or_rejects_unsupported_backend", tests)
         self.assertIn("ensure_native_sandbox(SandboxOverride::EscalatedSandboxWithRestrictions, SandboxType::None)", tests)
-        self.assertIn("sandbox_override: SandboxOverride::EscalatedSandboxWithRestrictions", tests)
+        self.assertIn("attempt.sandbox_override = SandboxOverride::EscalatedSandboxWithRestrictions", tests)
 
     def test_apply_patch_exec_server_retains_override(self):
         patch = src("codex-rs/core/src/tools/runtimes/apply_patch.rs")
