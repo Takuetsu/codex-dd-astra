@@ -108,7 +108,7 @@ class SandboxContractStagingTests(unittest.TestCase):
     def test_apply_patch_exec_server_retains_override(self):
         patch = src("codex-rs/core/src/tools/runtimes/apply_patch.rs")
         self.assertIn("sandbox_override: attempt.sandbox_override", patch)
-        self.assertIn("fn sandbox_context_for_attempt(", patch)
+        self.assertIn("fn file_system_sandbox_context_for_attempt(", patch)
 
     def test_release_and_lockfile_remain_unadvanced(self):
         self.assertEqual(committed("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")
