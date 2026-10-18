@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.4c: pinned exec-server and sandbox integrity integration
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Official 0.163.0 sandboxing/exec-server source reconciliation is staged but not accepted. Twelve new read-only Python static source tests were added and have not yet been run. No native Rust build/security test, final Windows suite, or release receipt has passed for this packet.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Official 0.163.0 sandboxing/exec-server source reconciliation is staged but not accepted. Twelve read-only Python static source tests **12/12 PASSED** on exact detached Daniel-CL commit `cae522cf20d1893d7537e713f234cba098798a59` in **2.607s** (operator screenshot, 2026-10-18). No native Rust build/security test, final Windows suite, or release receipt has passed for this packet.  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Exact-source provenance and scope
@@ -20,7 +20,7 @@ These source-level restrictions are not a substitute for native Rust tests, sand
 
 ## Validation status and next gates
 
-3C.4a: **9/9 static tests passed** at detached Daniel-CL commit `e224462b750698405d4e61587367d3fa9d732ab3`, taking 0.537s. 3C.4b: 12 static checks authored; **not yet run**. 3C.4c: 12 static checks authored; **not yet run**. A source-level GitHub blob/marker review can validate the staged identities but cannot replace either native Rust execution or the cheap detached-worktree tests.
+3C.4a: **9/9 static tests passed** at detached Daniel-CL commit `e224462b750698405d4e61587367d3fa9d732ab3`, taking 0.537s. 3C.4b: **12/12 static tests passed** in 1.334s. 3C.4c: **12/12 static tests passed** in 2.607s, both at the same exact detached Daniel-CL head `cae522cf`. A source-level GitHub blob/marker review can validate the staged identities but cannot replace either native Rust execution or the cheap detached-worktree tests.
 
 **Cargo.lock** remains the intentionally unreconciled 0.4.4 lockfile. Larger source overlaps in core session/config, upstream approval and tool callers, application server and generated schemas, and the original 109-overlap/15-conflict ledger are still open. Do not run the 21-stage Windows release suite or claim release acceptance until these are source-complete and focused native tests have passed. Keep the separate upstream publisher hard-disabled: no auto-PR, merge, release, or artifact distribution.
 
