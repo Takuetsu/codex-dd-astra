@@ -58,6 +58,7 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
         self.assertEqual(git_blob(original), FORK_TEST_SHA)
         self.assertTrue(current.startswith(original))
         self.assertIn(b"adaptive_reconnaissance_rejects_hook_rewritten_write_command", current)
+        self.assertIn(b"adaptive_reconnaissance_rejection_finishes_blocked_without_start", current)
 
     def test_seventeen_codexdd_policy_helpers_preserved_byte_for_byte(self):
         merged = helper_block(self.source)
@@ -161,6 +162,7 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
             "adaptive_mechanical_validation_shell_gate_allows_bounded_validation_commands",
             "adaptive_mechanical_validation_shell_gate_blocks_source_edit_capable_commands",
             "adaptive_reconnaissance_dispatch_blocks_non_read_tool",
+            "adaptive_reconnaissance_rejection_finishes_blocked_without_start",
             "adaptive_validation_terminalization_allows_only_trusted_signal_tool",
         ):
             self.assertIn("fn " + name + "(", self.tests)
