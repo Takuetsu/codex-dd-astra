@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3B.1: protocol data models and adaptive-signal reconciliation
 
 **Date:** 2026-10-18  
-**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Exact pinned upstream protocol model blobs and one three-way event-protocol merge are checkpointed. **Targeted Python source validation pending; native Rust integration untested.**  
+**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Exact pinned upstream protocol model blobs and one three-way event-protocol merge are checkpointed. **Targeted Daniel-CL source validation PASS: 12/12 tests in 0.436s** on integration source SHA `1b596ba7602de6536c1e27d1b4aaff15dd90cedf` (operator screenshot, 2026-10-18). **Native Rust integration remains untested.**  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Three-way source verification
