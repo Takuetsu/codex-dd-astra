@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3A.3: exact upstream crate manifest staging
 
 **Date:** 2026-10-18  
-**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Nine Cargo subcrate manifests staged from pinned official 0.163.0 source. The workspace is intentionally not yet buildable as a complete 0.163.0 integration. **Cheap Python validation pending.**  
+**Status:** INCOMPLETE / NOT A RELEASE CANDIDATE. Nine Cargo subcrate manifests staged from pinned official 0.163.0 source. The workspace is intentionally not yet buildable as a complete 0.163.0 integration. **Daniel-CL targeted Python verification PASS: 12/12 tests in 0.968s on `7f4db9fa8e02aadf203e30164829ec463c696252` (operator-provided screenshot, 2026-10-18).**  
 **Integration branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Verified three-way source contract
