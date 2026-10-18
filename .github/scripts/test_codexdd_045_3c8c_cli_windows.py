@@ -144,7 +144,7 @@ class CliSourceReconciliationTests(unittest.TestCase):
 
     def test_elevated_windows_embedded_mode_has_no_f2_warning_dependency(self):
         tests = source("codex-rs/cli/tests/daemon_startup.rs")
-        self.assertIn('steps.push_back(("GPT-5.6-Terra", b"/status\\\\r"));', tests)
+        self.assertIn('steps.push_back(("GPT-5.6-Terra", b"/status\\r"));', tests)
         self.assertIn('"Model:"', tests)
         self.assertIn('elevated_windows_implicit_startup_uses_embedded_without_f2_warning', tests)
 
@@ -156,7 +156,7 @@ class CliSourceReconciliationTests(unittest.TestCase):
     def test_restrictive_job_keeps_separate_warning_path(self):
         tests = source("codex-rs/cli/tests/daemon_startup.rs")
         self.assertIn('command == "restrictive-job"', tests)
-        self.assertIn('b"\\\\x14"', tests)
+        self.assertIn('b"\\x14"', tests)
 
     def test_new_cli_plugin_regressions_staged(self):
         self.assertIn("fn ", source("codex-rs/cli/src/plugin_cmd_tests.rs"))
