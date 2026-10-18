@@ -859,6 +859,11 @@ PRESERVED_FORK = {
     "codex-rs/tui/src/startup_orchestration.rs": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
     "codex-rs/tui/src/status/tests.rs": "a3091a07c8d8927f7fc8fbeba2ed44434487d1fd"
 }
+REVIEWED_FORK = {
+    "codex-rs/tui/src/cli.rs": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
+    "codex-rs/tui/src/slash_command.rs": "36e5def7042e71baeeb87945de4fa0b029cd177a"
+}
+
 
 
 def tree_blobs(ref: str) -> dict[str, str]:
@@ -910,12 +915,12 @@ class TuiUpstreamOwnedSourceTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.production.get(path), original or None)
 
-    def test_forty_four_adaptive_ui_fork_conflicts_unmodified(self):
+    def test_forty_four_adaptive_ui_fork_conflicts_are_preserved_or_reviewed(self):
         self.assertEqual(len(PRESERVED_FORK), 44)
         for path, original in PRESERVED_FORK.items():
             with self.subTest(path=path):
                 self.assertEqual(self.production.get(path), original)
-                self.assertEqual(self.head.get(path), original)
+                self.assertEqual(self.head.get(path), REVIEWED_FORK.get(path, original))
 
     def test_agents_overview_module_staged(self):
         agents = source("codex-rs/tui/src/app/agents_overview.rs")
