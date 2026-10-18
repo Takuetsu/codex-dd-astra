@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2B.1: isolated guarded preparer
 
 **Date:** 2026-10-17
-**Status:** source-only checkpoint, 14 new Python regression cases; **Daniel-CL validation pending**.
+**Status:** source-only checkpoint, 16 new Python regression cases; **Daniel-CL validation pending**.
 **Feature branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-automation`.
 
 ## Scope / consequence boundary
@@ -20,7 +20,7 @@ No GitHub Actions permission changes, scheduled writers, candidate branch, PR, m
 
 ## Validation
 
-`.github/scripts/test_upstream_auto_prepare.py` adds 14 actual-Git, no-network fixtures (reusing 2A.3 provenance samples) for closed gates, exact base/target overlay, deterministic commits, unchanged v1 manifest bytes, zero local refs, production-moved races, candidate branch races, unavailable PR queries, malformed manifests, conflicts, unsafe paths, interrupted temporary index operation and read-only workflow boundaries.
+`.github/scripts/test_upstream_auto_prepare.py` adds 16 actual-Git, no-network fixtures (reusing 2A.3 provenance samples) for closed gates, exact base/target overlay, deterministic commits, unchanged v1 manifest bytes, zero local refs, production-moved races, candidate branch races, unavailable PR queries, malformed manifests, conflicts, unsafe paths, Windows reserved names/case-fold collisions, mode transitions, interrupted temporary index operation and read-only workflow boundaries.
 
 After fetching the exact checkpoint to the existing worktree inside `E:\codexdd`, run:
 

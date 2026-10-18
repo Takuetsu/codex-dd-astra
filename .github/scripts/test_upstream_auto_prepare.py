@@ -241,11 +241,41 @@ class GuardedPreparationTests(unittest.TestCase):
         for path in (
             "../outside", "docs/../outside", "/absolute",
             "docs//double", "docs/back\\slash", "docs/with,comma",
-            "docs/./relative", ".",
+            "docs/./relative", ".", "docs/CON.txt", "docs/nul",
+            "docs/.git/config", "docs/trailing.",
         ):
             with self.subTest(path=path):
                 with self.assertRaises(preparer.PreparationBlocked):
                     preparer._checked_path(path)
+
+    def test_mode_changes_are_denied_even_if_new_target_is_regular(self):
+        path = "docs/overview.md"
+        tracked = {path: "100755 blob " + "a" * 40}
+        target = {path: "100644 blob " + "b" * 40}
+        with self.assertRaisesRegex(
+            preparer.PreparationBlocked, "upstream_mode_transition"
+        ):
+            preparer._verified_blob_change(path, tracked, target)
+        for mode in ("120000 blob", "160000 commit", "100755 blob"):
+            with self.subTest(mode=mode):
+                with self.assertRaisesRegex(
+                    preparer.PreparationBlocked, "upstream_nonregular_change"
+                ):
+                    preparer._verified_blob_change(
+                        path, {path: "100644 blob " + "a" * 40},
+                        {path: mode + " " + "b" * 40},
+                    )
+
+    def test_case_insensitive_windows_collisions_fail_closed(self):
+        with self.assertRaisesRegex(
+            preparer.PreparationBlocked, "windows_path_case_collision"
+        ):
+            preparer._check_windows_collisions(
+                {"docs/Guide.md", "docs/guide.md"}
+            )
+        preparer._check_windows_collisions(
+            {"docs/Guide.md", "docs/other.md"}
+        )
 
     def test_interrupted_local_index_build_cannot_publish_branch(self):
         mocks = self._mocks()

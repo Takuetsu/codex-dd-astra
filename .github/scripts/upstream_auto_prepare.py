@@ -19,6 +19,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Mapping
 
 import upstream_auto_report as report
 from upstream_sync import (
@@ -32,6 +33,7 @@ AUTO_PUBLISH_ENABLED = False
 PRODUCTION_BRANCH = "dd/astra-policy-v2"
 CANDIDATE_AREA = "docs/upstream-candidates/"
 SAFE_GIT_PATH = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+WINDOWS_DEVICE = re.compile(r"^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$", re.I)
 OID = re.compile(r"^[0-9a-f]{40}$")
 
 
@@ -87,10 +89,47 @@ def _checked_path(path: str) -> str:
         or path.startswith("/")
         or "\\" in path
         or "//" in path
-        or any(part in {"", ".", ".."} for part in path.split("/"))
+        or any(
+            part in {"", ".", ".."}
+            or part.lower() == ".git"
+            or part.endswith(".")
+            or WINDOWS_DEVICE.fullmatch(part) is not None
+            for part in path.split("/")
+        )
     ):
         raise PreparationBlocked("unsafe_git_path")
     return path
+
+
+def _verified_blob_change(
+    path: str, tracked: Mapping[str, str], target: Mapping[str, str]
+) -> str:
+    _checked_path(path)
+    old = tracked.get(path)
+    # Even a normal-looking target blob cannot make an executable/symlink/
+    # submodule mode transition safe on the Windows release platform.
+    if old is not None and old.split(" ")[:2] != ["100644", "blob"]:
+        raise PreparationBlocked("upstream_mode_transition")
+    new = target.get(path)
+    if new is None:
+        raise PreparationBlocked("upstream_deletion_not_reviewed")
+    parts = new.split(" ")
+    if len(parts) != 3 or parts[:2] != ["100644", "blob"]:
+        raise PreparationBlocked("upstream_nonregular_change")
+    if OID.fullmatch(parts[2]) is None:
+        raise PreparationBlocked("upstream_blob_invalid")
+    return parts[2]
+
+
+def _check_windows_collisions(paths: set[str]) -> None:
+    seen: dict[str, str] = {}
+    for path in paths:
+        _checked_path(path)
+        folded = path.casefold()
+        previous = seen.get(folded)
+        if previous is not None and previous != path:
+            raise PreparationBlocked("windows_path_case_collision")
+        seen[folded] = path
 
 
 def _manifest_path(tag: str, sha: str) -> str:
@@ -216,6 +255,9 @@ def build_isolated_candidate(
     marker = "codex-rs/upstream-codex-release.txt"
     if marker in delta.upstream_change_paths:
         raise PreparationBlocked("protected_release_marker_changed")
+    _check_windows_collisions(
+        set(production) | set(target) | {marker, manifest_file}
+    )
 
     # Only Git object/index plumbing; no checkouts, external merge drivers,
     # cherry-picks, shell interpolation, filters, hook execution or builds.
@@ -224,15 +266,9 @@ def build_isolated_candidate(
         _git(repo, "read-tree", manifest.production_tree, index=index)
         expected = dict(production)
         for path in delta.upstream_change_paths:
-            path = _checked_path(path)
-            entry = target.get(path)
-            if entry is None:
-                raise PreparationBlocked("upstream_deletion_not_reviewed")
-            parts = entry.split(" ")
-            if len(parts) != 3 or parts[:2] != ["100644", "blob"]:
-                raise PreparationBlocked("upstream_nonregular_change")
-            _index_blob(repo, index, path, parts[2])
-            expected[path] = entry
+            blob = _verified_blob_change(path, tracked, target)
+            _index_blob(repo, index, path, blob)
+            expected[path] = target[path]
 
         marker_sha = _add_bytes(
             repo, index, marker,
