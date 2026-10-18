@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 2B.1: isolated guarded preparer
 
 **Date:** 2026-10-17
-**Status:** source-only checkpoint, 16 new Python regression cases; **Daniel-CL validation pending**.
+**Status:** **Daniel-CL targeted validation PASS: 16/16 tests in 7.710 seconds** at source checkpoint `e68f5c3ba6c44f3f87888181430e78e335fba924` (operator terminal evidence). The guarded publisher remains hard-disabled.
 **Feature branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-automation`.
 
 ## Scope / consequence boundary
