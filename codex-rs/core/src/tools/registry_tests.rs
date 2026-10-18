@@ -1204,3 +1204,59 @@ async fn adaptive_reconnaissance_rejects_hook_rewritten_write_command() -> anyho
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn adaptive_reconnaissance_rejection_finishes_blocked_without_start() -> anyhow::Result<()> {
+    let (mut session, turn) = crate::session::tests::make_session_and_context().await;
+    turn.turn_metadata_state
+        .set_turn_trigger(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string());
+
+    let records = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let mut builder = codex_extension_api::ExtensionRegistryBuilder::<crate::config::Config>::new();
+    builder.tool_lifecycle_contributor(Arc::new(ToolLifecycleRecorder {
+        records: Arc::clone(&records),
+    }));
+    session.services.extensions = Arc::new(builder.build());
+
+    let tool_name = codex_tools::ToolName::plain("apply_patch");
+    let registry = ToolRegistry::from_tools([Arc::new(TestHandler {
+        tool_name: tool_name.clone(),
+    }) as Arc<dyn CoreToolRuntime>]);
+
+    let err = match registry
+        .dispatch_any_with_state(
+            test_invocation(
+                Arc::new(session),
+                Arc::new(turn),
+                "recon-blocked-lifecycle",
+                tool_name.clone(),
+            ),
+            /*call_state*/ None,
+        )
+        .await
+    {
+        Ok(_) => panic!("adaptive reconnaissance must block write-capable tools"),
+        Err(err) => err,
+    };
+    assert!(
+        err.to_string()
+            .contains("complexity reconnaissance is read-only")
+    );
+
+    // Rejection happens before notify_tool_start, but still closes the lifecycle
+    // exactly once. This is a native dispatch test, not a simulated hook run.
+    let actual = records
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .drain(..)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actual,
+        vec![RecordedToolLifecycle::Finish {
+            call_id: "recon-blocked-lifecycle".to_string(),
+            tool_name: tool_name.with_default_namespace(),
+            outcome: codex_extension_api::ToolCallOutcome::Blocked,
+        }]
+    );
+    Ok(())
+}
