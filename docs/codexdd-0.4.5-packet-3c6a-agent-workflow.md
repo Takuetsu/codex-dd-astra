@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.6a: child-agent workflow-state ownership
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Eleven pinned official upstream 0.163.0 agent sources and one three-way child-spawn merge staged. Eleven static Python tests authored but **not yet executed on Daniel-CL**. This is a **source-only** checkpoint, not native Rust validation or a release gate.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Eleven pinned official upstream 0.163.0 agent sources and one three-way child-spawn merge staged. Eleven static Python tests **11/11 PASSED** on Daniel-CL at the 3C.6a checkpoint (operator screenshot, 2026-10-18). This is a **source-only** checkpoint, not native Rust validation or a release gate.  
 **Branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Exact provenance
@@ -14,6 +14,6 @@ The production `agent/control/spawn.rs` added exactly two small independent `Rol
 
 The existing session replay `WorkflowState` match arms, CodexDD trusted adaptive signals, and 3C.3 pre/post-hook authorization constraints remain unchanged. Inheriting a workflow event does not grant child execution permission or allow editing before complexity-floor reconnaissance acceptance.
 
-The 3C.4 checkpoint passed 33/33 static tests; 3C.5 passed 39/39 static tests on Daniel-CL, per operator screenshots 2026-10-18. The new 3C.6a eleven static tests are not yet run. Rust compilation, native child-agent tests, permissions, generated schema validation, reconciled **Cargo.lock**, 21-stage Windows release suite, and GitHub CI acceptance remain pending; the upstream automation publisher is hard-disabled.
+The 3C.4 checkpoint passed 33/33 static tests; 3C.5 passed 39/39 static tests on Daniel-CL, per operator screenshots 2026-10-18. 3C.6a **11/11 static tests passed**; 3C.6b **11/11 passed in 0.964s** and 3C.6c **12/12 passed in 1.763s** on detached commit `0a545888884c1c7c6d27aa882494d30fd6ff9032`. Total 3C.6 static checkpoint **34/34 PASSED**. Rust compilation, native child-agent tests, permissions, generated schema validation, reconciled **Cargo.lock**, 21-stage Windows release suite, and GitHub CI acceptance remain pending; the upstream automation publisher is hard-disabled.
 
 **Next:** remaining core tool- and agent-consumer API changes and fork overlaps, then one cheap grouped static checkpoint. Do not publish, merge, bump versions or distribute artifacts at this stage.

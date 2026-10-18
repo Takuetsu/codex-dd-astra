@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.6b: context, retained history and session state
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Thirteen source/test files staged as exact upstream 0.163.0 Git blobs; eleven static checks added and not yet run on Daniel-CL. This is a **source-only** checkpoint, not native Rust validation.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE.** Thirteen source/test files staged as exact upstream 0.163.0 Git blobs; eleven static tests **11/11 PASSED** in 0.964s on Daniel-CL at detached commit `0a545888884c1c7c6d27aa882494d30fd6ff9032` (operator screenshot, 2026-10-18). This is a **source-only** checkpoint, not native Rust validation.  
 **Integration branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Source ownership
@@ -14,7 +14,7 @@ The two earlier three-way history conflicts, `context_manager/normalize.rs` and 
 
 ## Validation, security and remaining work
 
-3C.4 33/33 and 3C.5 39/39 cheap static source tests passed on Daniel-CL on 2026-10-18. The new 3C.6a/b static checks are unrun pending a grouped cheap checkpoint. These do not prove native Rust execution, runtime authorization, sandbox enforcement, context reconstruction, or native event replay.
+3C.4 33/33 and 3C.5 39/39 cheap static source tests passed on Daniel-CL on 2026-10-18. 3C.6a **11/11**, 3C.6b **11/11**, and 3C.6c **12/12** passed on Daniel-CL: **34/34 static checks green**. The 3C.6b/3C.6c local-history lookup harness was fixed in commit `0a545888` and rerun, with source blob pins unchanged. These do not prove native Rust execution, runtime authorization, sandbox enforcement, context reconstruction, or native event replay.
 
 The integrated source graph remains incomplete across core tool callers, thread manager, auxiliary crates and generated schemas. **Cargo.lock**, native Rust compilation and focused integration tests, Windows 21-stage release validation, GitHub CI, and final release provenance remain outstanding. Product/upstream version markers remain 0.4.4/rust-v0.162.0 and automated publishing remains hard-disabled.
 
