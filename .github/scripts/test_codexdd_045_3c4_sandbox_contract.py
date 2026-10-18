@@ -130,7 +130,7 @@ class SandboxContractStagingTests(unittest.TestCase):
             "unified_exec",
             "exec-server",
             "native Rust",
-            "not passed",
+            "9/9",
         ):
             self.assertIn(marker, note)
 

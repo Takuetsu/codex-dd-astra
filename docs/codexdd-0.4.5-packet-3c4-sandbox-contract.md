@@ -1,7 +1,7 @@
 # CodexDD 0.4.5 — Packet 3C.4a: sandbox override propagation source staging
 
 **Date:** 2026-10-18  
-**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE**. Six pinned upstream source/test blobs staged, without fork overlap. The nine read-only static checks are added but **not passed or run** at this checkpoint. No native Rust compilation or security runtime tests have passed for this packet.  
+**Status:** **INCOMPLETE / NOT A RELEASE CANDIDATE**. Six pinned upstream source/test blobs staged, without fork overlap. The nine read-only static checks **9/9 PASSED** on Daniel-CL in **0.537s** at exact detached commit `e224462b750698405d4e61587367d3fa9d732ab3` (operator screenshot, 2026-10-18). No native Rust compilation or security runtime tests have passed for this packet.  
 **Integration branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
 
 ## Provenance and source ownership
@@ -27,6 +27,6 @@ This is **source staging**, not proof these paths compile together on the unfini
 
 The connected `core/src/tools/runtimes/unified_exec.rs`, `core/src/tools/handlers/unified_exec.rs`, other async `env_for` callers, `exec-server` and file-system sandbox-context types, and upstream tool/schema consumers still require reviewed reconciliation. In particular, official 0.163.0 removes local zsh-fork routing; do not silently transplant that larger removal into fork behavior without its callers/tests. Resolve dependent API ownership before a native Rust compile receipt.
 
-`.github/scripts/test_codexdd_045_3c4_sandbox_contract.py` contains **nine** offline source/provenance checks, including exact Git blobs and preserved native-security test fixtures. They have **not passed** here. On the clean, exact detached integration head on Daniel-CL, run this small packet first; on failure repair the single affected section. Full Cargo.lock renewal, native Rust tests, generated schema validation, Windows release suite, CI acceptance, product/upstream markers and release publication remain blocked until the source graph is complete. The original 109 overlap / 15 conflict ledger still requires closure and evidence.
+`.github/scripts/test_codexdd_045_3c4_sandbox_contract.py` contains **nine** offline source/provenance checks, including exact Git blobs and preserved native-security test fixtures. They **passed 9/9** on Daniel-CL in 0.537s at the exact detached commit above. The native Rust compile and security runtime checks remain unrun. On the clean, exact detached integration head on Daniel-CL, run this small packet first; on failure repair the single affected section. Full Cargo.lock renewal, native Rust tests, generated schema validation, Windows release suite, CI acceptance, product/upstream markers and release publication remain blocked until the source graph is complete. The original 109 overlap / 15 conflict ledger still requires closure and evidence.
 
 The separate automatic upstream publication branch remains source hard-disabled. No PR, merge, release, elevation or artifact publication is authorized by this checkpoint.
