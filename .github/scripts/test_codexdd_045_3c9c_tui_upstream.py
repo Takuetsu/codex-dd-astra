@@ -861,7 +861,9 @@ PRESERVED_FORK = {
 }
 REVIEWED_FORK = {
     "codex-rs/tui/src/cli.rs": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
-    "codex-rs/tui/src/slash_command.rs": "36e5def7042e71baeeb87945de4fa0b029cd177a"
+    "codex-rs/tui/src/slash_command.rs": "36e5def7042e71baeeb87945de4fa0b029cd177a",
+    "codex-rs/tui/src/daemon_startup.rs": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
+    "codex-rs/tui/src/daemon_startup_tests.rs": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8"
 }
 
 
