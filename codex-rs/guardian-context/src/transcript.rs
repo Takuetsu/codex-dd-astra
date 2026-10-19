@@ -137,7 +137,7 @@ pub fn collect_transcript(
                 let text = content
                     .iter()
                     .filter_map(|item| match item {
-                        ContentItem::InputText { text } | ContentItem::OutputText { text }
+                        ContentItem::InputText { text } | ContentItem::OutputText { text, .. }
                             if !text.is_empty() =>
                         {
                             Some(text.as_str())
