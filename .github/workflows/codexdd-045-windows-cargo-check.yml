@@ -97,7 +97,9 @@ jobs:
           $log = Join-Path $env:RUNNER_TEMP 'codexdd045-windows-cargo-check.log'
           # Cargo.lock is being reconciled separately. This check intentionally
           # resolves dependencies in the ephemeral runner without --locked.
-          $cmd = 'cargo check -p codex-tui --lib > "' + $log + '" 2>&1'
+          # --keep-going compiles independent dependencies after an error so one
+          # diagnostic run exposes more upstream integration incompatibilities.
+          $cmd = 'cargo check --keep-going -p codex-tui --lib > "' + $log + '" 2>&1'
           & cmd.exe /d /c $cmd
           $rc = $LASTEXITCODE
           Write-Host "Cargo exit code: $rc"
