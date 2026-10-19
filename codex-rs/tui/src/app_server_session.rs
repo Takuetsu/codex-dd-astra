@@ -3,6 +3,7 @@
 //! This module owns the typed JSON-RPC calls needed by the TUI and keeps
 //! request/response plumbing out of `App` and `ChatWidget`.
 
+mod daybreak_api_key_compat;
 mod external_agent_config;
 pub(crate) mod fs;
 mod history;
@@ -339,6 +340,7 @@ pub(crate) struct AppServerSession {
     thread_settings_update_supported: bool,
     default_model: Option<String>,
     available_models: Vec<ModelPreset>,
+    daybreak_api_key_compat: Arc<tokio::sync::Semaphore>,
     managed_new_thread_defaults: Option<NewThreadModelDefaults>,
     external_agent_config_import_id: Mutex<Option<String>>,
     dynamic_tool_mcp: Option<Arc<DynamicToolMcpServer>>,
@@ -445,6 +447,7 @@ impl AppServerSession {
             thread_settings_update_supported: true,
             default_model: None,
             available_models: Vec::new(),
+            daybreak_api_key_compat: Arc::new(tokio::sync::Semaphore::new(/*permits*/ 1)),
             managed_new_thread_defaults: None,
             external_agent_config_import_id: Mutex::default(),
             dynamic_tool_mcp: None,
@@ -731,6 +734,16 @@ impl AppServerSession {
             &mut available_models,
             &requirements,
         );
+        if matches!(account.account, Some(Account::ApiKey {})) {
+            available_models = self
+                .constrain_api_key_models(
+                    config,
+                    /*thread_id*/ None,
+                    requirements.requirements.as_ref(),
+                    available_models,
+                )
+                .await;
+        }
         self.managed_new_thread_defaults = requirements
             .requirements
             .and_then(|requirements| requirements.models)

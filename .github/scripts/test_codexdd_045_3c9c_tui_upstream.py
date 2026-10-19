@@ -885,7 +885,10 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/app/tests.rs": "62dc30d2dc08bcd6ab24ff4b4fd61907ec0ef208",
     "codex-rs/tui/src/chatwidget/tests/history_replay.rs": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
     "codex-rs/tui/src/chatwidget/protocol.rs": "ad71108b91a0d7f1f079cab0482076237b138994",
-    "codex-rs/tui/src/chatwidget/input_submission.rs": "b371bd00a14167b0a6c693899277c845f39074df"
+    "codex-rs/tui/src/chatwidget/input_submission.rs": "b371bd00a14167b0a6c693899277c845f39074df",
+    "codex-rs/tui/src/chatwidget/interaction.rs": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67",
+    "codex-rs/tui/src/app/thread_routing.rs": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
+    "codex-rs/tui/src/app_server_session.rs": "c9ff4fb4294c894490e224590adfc411a7eff2fa"
 }
 
 
