@@ -156,7 +156,7 @@ fn model_messages(items: &[RolloutItem]) -> Vec<(MessageRole, &str)> {
                     ("user", [ContentItem::InputText { text }]) => {
                         Some((MessageRole::User, text.as_str()))
                     }
-                    ("assistant", [ContentItem::OutputText { text }]) => {
+                    ("assistant", [ContentItem::OutputText { text, .. }]) => {
                         Some((MessageRole::Assistant, text.as_str()))
                     }
                     _ => None,
