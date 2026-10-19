@@ -101,6 +101,8 @@ pub(crate) use codex_app_server_client::legacy_core;
 
 pub(crate) use worktree_startup::ManagedTuiWorktree;
 
+mod activation_key_guard;
+
 #[allow(dead_code)]
 mod adaptive_budget;
 #[allow(dead_code)]
@@ -185,6 +187,7 @@ mod inline_visualization;
 pub(crate) mod insert_history;
 mod managed_worktree_tool_specs;
 mod managed_worktree_tools;
+mod terminal_program_status;
 pub use insert_history::insert_history_lines;
 mod footer_hint;
 mod key_hint;
