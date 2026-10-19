@@ -864,7 +864,9 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/slash_command.rs": "36e5def7042e71baeeb87945de4fa0b029cd177a",
     "codex-rs/tui/src/daemon_startup.rs": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
     "codex-rs/tui/src/daemon_startup_tests.rs": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
-    "codex-rs/tui/src/startup_orchestration.rs": "06ea648374cbdcc3ae7276ba146f4dbe45da3118"
+    "codex-rs/tui/src/lib.rs": "a40147cca1333114d82e0335521279254f5c1f21",
+    "codex-rs/tui/src/app/startup.rs": "3dd4fd65185f407e01f41df7544a97f57f9048fa",
+    "codex-rs/tui/src/startup_orchestration.rs": "6b3bf4a9cf3d639107126b29992690b19bf4c932"
 }
 
 
