@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 PATH = "codex-rs/tui/src/startup_orchestration.rs"
 OLD_BLOB = "e03aa30b4723717cfc72935d118e074fbf4f2aae"
-NEW_BLOB = "06ea648374cbdcc3ae7276ba146f4dbe45da3118"
+NEW_BLOB = "6b3bf4a9cf3d639107126b29992690b19bf4c932"
 
 
 def git(*args: str) -> str:
@@ -41,7 +41,7 @@ class StartupOrchestrationMergeTests(unittest.TestCase):
         self.assertEqual(git("rev-parse", f"{PRODUCTION}:{PATH}"), OLD_BLOB)
         self.assertEqual(git("rev-parse", f"HEAD:{PATH}"), NEW_BLOB)
 
-    def test_entire_fork_preserved_except_three_reviewed_upstream_edits(self):
+    def test_entire_fork_preserved_except_reviewed_upstream_edits_and_handoff(self):
         expected = source(ref=PRODUCTION)
         expected = replace_once(
             expected,
@@ -68,6 +68,16 @@ class StartupOrchestrationMergeTests(unittest.TestCase):
             "            &cli_kv_overrides,\n"
             "            managed_daemon,\n"
             "        )",
+        )
+        expected = replace_once(
+            expected,
+            "        managed_worktree.clone(),\n"
+            "        daemon_startup_warning,\n"
+            "        launch_telemetry,\n",
+            "        managed_worktree.clone(),\n"
+            "        daemon_startup_warning,\n"
+            "        managed_daemon,\n"
+            "        launch_telemetry,\n",
         )
         self.assertEqual(source(), expected)
 
@@ -126,15 +136,16 @@ class StartupOrchestrationMergeTests(unittest.TestCase):
     def test_removed_override_field_not_reintroduced(self):
         self.assertNotIn("main_execve_wrapper_exe:", source())
 
-    def test_managed_handoff_deferred_until_protected_lib_merge(self):
+    def test_managed_handoff_forwarded_with_protected_lib_merge(self):
         src = source()
         self.assertIn(
-            "        daemon_startup_warning,\n        launch_telemetry,\n        startup_draft,",
+            "        daemon_startup_warning,\n        managed_daemon,\n        launch_telemetry,\n        startup_draft,",
             src,
         )
         lib = source("codex-rs/tui/src/lib.rs")
         self.assertIn(
             "    daemon_startup_warning: Option<String>,\n"
+            "    managed_daemon: bool,\n"
             "    launch_telemetry: daemon_telemetry::Launch",
             lib,
         )
