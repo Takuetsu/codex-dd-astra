@@ -871,7 +871,7 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/app/app_server_event_targets.rs": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
     "codex-rs/tui/src/chatwidget/session_flow.rs": "17500409f70dfda7fa1c489258fa19ab01bed747",
     "codex-rs/tui/src/app.rs": "ddc07bbae497c76c2758ee7556cd22a584d5854e",
-    "codex-rs/tui/src/chatwidget.rs": "5fe006396a11bab5f9cd048a7d14b817d7cf8c4a",
+    "codex-rs/tui/src/chatwidget.rs": "ba5c41d14133b6ff3cd332b38a60521a7fb0b6bf",
     "codex-rs/tui/src/chatwidget/constructor.rs": "81f0e3be96d118c8caef385bfcfba4c26bec914d",
     "codex-rs/tui/src/app_event.rs": "bb2aaa3b4d26e21ecac97b29add5a431d3fbd4ae",
     "codex-rs/tui/src/app/event_dispatch.rs": "13462648b9676938d99f94d4fd41e4182fd6a3aa",
@@ -883,7 +883,9 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/chatwidget/settings.rs": "578d7443bf8c95f346915caa6251c4a50292f8e7",
     "codex-rs/tui/src/app/test_support.rs": "254b7c955c953f4ab5fe12128f9dc53f380a5383",
     "codex-rs/tui/src/app/tests.rs": "62dc30d2dc08bcd6ab24ff4b4fd61907ec0ef208",
-    "codex-rs/tui/src/chatwidget/tests/history_replay.rs": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e"
+    "codex-rs/tui/src/chatwidget/tests/history_replay.rs": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
+    "codex-rs/tui/src/chatwidget/protocol.rs": "ad71108b91a0d7f1f079cab0482076237b138994",
+    "codex-rs/tui/src/chatwidget/input_submission.rs": "b371bd00a14167b0a6c693899277c845f39074df"
 }
 
 
