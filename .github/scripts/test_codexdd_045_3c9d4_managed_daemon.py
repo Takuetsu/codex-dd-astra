@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 AFTER_3C9D3 = "99c40e0650e811487eb4bc2cd22c21eecc3b225c"
+AFTER_3C9D4 = "1cf92eabd6bc9e7217c70a24c15182a58b5f9d28"
 START = "codex-rs/tui/src/startup_orchestration.rs"
 LIB = "codex-rs/tui/src/lib.rs"
 APP = "codex-rs/tui/src/app/startup.rs"
@@ -53,7 +54,7 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
         for path, old in ORIGINAL.items():
             with self.subTest(path=path):
                 self.assertEqual(git("rev-parse", PRODUCTION + ":" + path), old)
-                self.assertEqual(git("rev-parse", "HEAD:" + path), REVIEWED[path])
+                self.assertEqual(git("rev-parse", AFTER_3C9D4 + ":" + path), REVIEWED[path])
 
     def test_3c9d3_source_baseline_is_pinned(self):
         self.assertEqual(git("rev-parse", AFTER_3C9D3 + ":" + START), START_3C9D3_BLOB)
@@ -98,7 +99,7 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
             "        adaptive\n"
             "            .as_deref()",
         )
-        self.assertEqual(source(LIB), expected)
+        self.assertEqual(source(LIB, AFTER_3C9D4), expected)
 
     def test_protected_app_startup_only_adds_managed_handoff_and_status(self):
         baseline = source(APP, PRODUCTION)
@@ -128,7 +129,7 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
             "        }\n"
             "        let initial_server_version_notice =",
         )
-        self.assertEqual(source(APP), expected)
+        self.assertEqual(source(APP, AFTER_3C9D4), expected)
 
     def test_tui_call_chain_type_and_argument_alignment(self):
         startup = source(START)
@@ -212,7 +213,7 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
     def test_preserved_fork_inventory_pins_seven_reviewed_sources(self):
         guard = source(".github/scripts/test_codexdd_045_3c9c_tui_upstream.py")
         for path in (START, LIB, APP):
-            self.assertIn('"' + path + '": "' + REVIEWED[path] + '"', guard)
+            self.assertIn('"' + path + '": "' + git("rev-parse", "HEAD:" + path) + '"', guard)
         self.assertIn("self.assertEqual(len(PRESERVED_FORK), 44)", guard)
 
     def test_release_controls_unadvanced(self):

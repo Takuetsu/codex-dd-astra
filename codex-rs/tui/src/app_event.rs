@@ -1628,6 +1628,20 @@ pub(crate) enum AppEvent {
     /// Remember the Command Center grouping across launches.
     PersistAgentsOverviewGrouping(codex_config::types::AgentsOverviewGrouping),
 
+    /// Open an existing editor above the configuration panel.
+    OpenConfigEditor(crate::config_panel::ConfigEditorHandoff),
+
+    /// Schedule a notification preview with time to switch away from the terminal.
+    TestConfigNotification,
+
+    /// Send the matching scheduled preview regardless of the configured focus condition.
+    SendConfigTestNotification {
+        generation: u64,
+    },
+
+    /// Requests saving a local `/config` preference and refreshing its effective value.
+    SaveConfigPreference(crate::config_panel::ConfigPreference),
+
     /// Save the transcript renderer preference for the next launch only.
     FullscreenTranscriptSelected {
         enabled: bool,

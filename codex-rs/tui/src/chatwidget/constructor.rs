@@ -95,6 +95,7 @@ impl ChatWidget {
             app_event_tx.clone(),
             pet_http_client.clone(),
         );
+        let config_panel_tui = local_settings.tui.clone();
         let mut widget = Self {
             empty_state_animation: std::cell::RefCell::new(empty_state_animation),
             daybreak_enabled: false,
@@ -116,6 +117,7 @@ impl ChatWidget {
             raw_output_mode: local_settings.tui.raw_output_mode,
             config,
             local_settings,
+            config_panel_tui,
             effective_service_tier,
             skills_all: Vec::new(),
             skills_initial_state: None,

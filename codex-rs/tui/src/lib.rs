@@ -148,6 +148,7 @@ mod clipboard_paste;
 mod clock_format;
 mod collaboration_modes;
 mod color;
+mod config_panel;
 mod config_update;
 mod copy_input_guard;
 pub(crate) mod custom_terminal;

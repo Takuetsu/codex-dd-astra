@@ -263,6 +263,7 @@ mod adaptive_runtime_bridge;
 mod adaptive_signal_transport;
 mod adaptive_trusted_signal;
 mod command_lifecycle;
+mod config_panel;
 mod connector_mentions;
 mod connectors;
 mod constructor;
@@ -528,6 +529,7 @@ pub(crate) struct ChatWidget {
     transcript: TranscriptState,
     config: Config,
     pub(crate) local_settings: crate::local_settings::LocalSettings,
+    pub(crate) config_panel_tui: codex_config::types::Tui,
     raw_output_mode: bool,
     /// Runtime value resolved by core. `config.service_tier` remains the explicit user choice.
     effective_service_tier: Option<String>,

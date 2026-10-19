@@ -215,6 +215,7 @@ mod app_server_thread_ownership;
 mod backend_banner_fallback;
 mod background_requests;
 mod composer_hints;
+mod config_panel;
 mod config_persistence;
 mod connector_mentions;
 mod daemon_menu;
@@ -527,6 +528,8 @@ struct InitialHistoryReplayBuffer {
 
 pub(crate) struct App {
     feature_write_lock: Arc<tokio::sync::Mutex<()>>,
+    config_notification_test_generation: u64,
+    config_notification_test_pending: Option<u64>,
     model_catalog: Arc<ModelCatalog>,
     pub(crate) session_telemetry: SessionTelemetry,
     pub(crate) app_event_tx: AppEventSender,
@@ -908,8 +911,15 @@ impl App {
             self.handle_draw_pre_render(tui, screen_size)?;
         }
 
-        if matches!(&event, TuiEvent::Paste(_) | TuiEvent::FocusLost) {
+        if matches!(&event, TuiEvent::Paste(_) | TuiEvent::FocusLost)
+            || matches!(&event, TuiEvent::Mouse(mouse) if mouse.kind != crossterm::event::MouseEventKind::Moved)
+        {
             self.cancel_pending_key_chord();
+        }
+        if matches!(&event, TuiEvent::FocusLost)
+            || matches!(&event, TuiEvent::Mouse(mouse) if mouse.kind != crossterm::event::MouseEventKind::Moved)
+        {
+            self.chat_widget.interrupt_config_editor_transition();
         }
 
         if self.overlay.is_none()
