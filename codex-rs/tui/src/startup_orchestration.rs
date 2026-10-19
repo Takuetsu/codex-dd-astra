@@ -923,6 +923,7 @@ pub(super) async fn run_main_inner(
         embedded_network_policy,
         managed_worktree.clone(),
         daemon_startup_warning,
+        managed_daemon,
         launch_telemetry,
         startup_draft,
     ))
