@@ -7,7 +7,7 @@ PROD = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 SPEC = "codex-rs/core/src/tools/spec_plan.rs"
 TESTS = "codex-rs/core/src/tools/spec_plan_tests.rs"
 PINS = {SPEC: ("a7e9353da4e397bc49df84521793cc06ae3341de","422870dba8b5a3b36994a598380c93f58760ad1b"),
-        TESTS: ("d9abdf0072136154432d2f1672be56fbfcb36229","379eb8d44dfa672b70ed3b7d5408e882d8e803e3")}
+        TESTS: ("d9abdf0072136154432d2fbd080ddf3b2f1672be","379eb8d44dfa672b70ed3b7d5408e882d8e803e3")}
 FORK_TESTS = ("codexdd_validation_runner_is_visible_only_during_mechanical_validation",
               "codexdd_protected_turns_force_direct_tools_without_widening_other_turns",
               "adaptive_signal_tool_is_registered_with_runtime_bound_authority")
