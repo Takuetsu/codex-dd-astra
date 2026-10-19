@@ -102,8 +102,26 @@ jobs:
           $rc = $LASTEXITCODE
           Write-Host "Cargo exit code: $rc"
           if (-not (Test-Path -LiteralPath $log)) { throw 'Cargo log was not created' }
-          Get-Content -LiteralPath $log -Tail 180
-          if ($rc -ne 0) { throw "Native Windows TUI compile failed (exit $rc); inspect job log and artifact" }
+          if ($rc -ne 0) {
+            # The last 180 lines hid 26 of 36 errors in the previous run.
+            # Emit ALL error headings with source spans, without dumping noisy dependency output.
+            $clean = [regex]::Replace([IO.File]::ReadAllText($log), '\x1b\[[0-9;]*[A-Za-z]', '')
+            $sourceLines = $clean -split '\r?\n'
+            $report = Join-Path $env:RUNNER_TEMP 'codexdd045-compiler-diagnostics.txt'
+            $blocks = [System.Collections.Generic.List[string]]::new()
+            for ($idx = 0; $idx -lt $sourceLines.Length; $idx++) {
+              if ($sourceLines[$idx] -match '^\s*error(\[E[0-9]+\])?:') {
+                $stop = [Math]::Min($idx + 22, $sourceLines.Length - 1)
+                $blocks.Add((($sourceLines[$idx..$stop]) -join [Environment]::NewLine))
+              }
+            }
+            Write-Host "Rust error headings found: $($blocks.Count)"
+            $blocks -join ([Environment]::NewLine + [Environment]::NewLine) |
+              Set-Content -LiteralPath $report -Encoding utf8
+            Get-Content -LiteralPath $report
+            throw "Native Windows TUI compile failed (exit $rc); inspect the full diagnostic artifact"
+          }
+          Get-Content -LiteralPath $log -Tail 45
 
       - name: Capture resolved lockfile diff for separate review
         if: always()
@@ -119,6 +137,7 @@ jobs:
           name: codexdd045-windows-check-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/codexdd045-windows-cargo-check.log
+            ${{ runner.temp }}/codexdd045-compiler-diagnostics.txt
             ${{ runner.temp }}/codexdd045-lock-diff.txt
             codex-rs/Cargo.lock
           if-no-files-found: warn

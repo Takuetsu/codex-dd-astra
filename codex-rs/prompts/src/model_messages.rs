@@ -195,6 +195,18 @@ impl<'a> ResolvedModelMessages<'a> {
             .as_ref()
     }
 
+    /// Selects function-level description prefixes from the captured model catalog.
+    /// This is display guidance only; tool admission remains owned by the tool registry.
+    pub fn functions_namespace_functions_description_prefixes(
+        &self,
+    ) -> Option<&'a std::collections::BTreeMap<String, String>> {
+        self.catalog_messages?
+            .tools
+            .as_ref()?
+            .functions_namespace_functions_description_prefixes
+            .as_ref()
+    }
+
     /// Selects indirect tool guidance; tool rendering owns namespace mapping and normalization.
     pub fn indirect_description_prefixes(&self) -> Option<&'a IndirectDescriptionPrefixes> {
         self.catalog_messages?
