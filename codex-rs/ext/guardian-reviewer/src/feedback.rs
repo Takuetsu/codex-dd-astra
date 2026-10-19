@@ -78,6 +78,7 @@ impl<'a> FailedReviewFeedback<'a> {
             | GuardianReviewSessionOutcome::SessionFailed { .. } => ("failed", None),
             GuardianReviewSessionOutcome::TimedOut => ("timed_out", None),
             GuardianReviewSessionOutcome::Aborted => ("aborted", None),
+            GuardianReviewSessionOutcome::StaleAuthorization => ("stale_authorization", None),
         };
         Some(Self { status, decision })
     }
