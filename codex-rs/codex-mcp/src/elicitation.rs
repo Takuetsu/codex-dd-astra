@@ -460,10 +460,9 @@ impl ElicitationRequestManager {
                         return Ok(ElicitationResponse {
                             action: ElicitationAction::Cancel,
                             content: None,
-                            meta: Some(
-                                codex_rmcp_client::UserVerificationReason::ApprovalUnavailable
-                                    .into_meta(),
-                            ),
+                            // An unavailable verification route is cancelled without exposing
+                            // stale reason metadata from the pre-0.163 RMCP API.
+                            meta: None,
                         });
                     }
                     return user_verification_elicitation::route(
