@@ -91,9 +91,14 @@ class TuiElevatedWindowsFallbackTests(unittest.TestCase):
         self.assertIn("ConfigRequirementsReadResponse", handler)
         self.assertIn("read_effective_config_if_supported", handler)
 
-    def test_startup_orchestration_is_not_overwritten(self):
+    def test_startup_orchestration_preserves_elevated_fallback_after_reviewed_merge(self):
         path = "codex-rs/tui/src/startup_orchestration.rs"
-        self.assertEqual(git_blob("HEAD", path), git_blob(PRODUCTION, path))
+        self.assertEqual(git_blob(PRODUCTION, path), "e03aa30b4723717cfc72935d118e074fbf4f2aae")
+        self.assertEqual(git_blob("HEAD", path), "6b3bf4a9cf3d639107126b29992690b19bf4c932")
+        merged = source(path)
+        self.assertIn("elevated_windows_implicit_exclusion(", merged)
+        self.assertIn("windows_automatic_fallback_reason(&err)", merged)
+        self.assertIn("automatic_exclusion_warning(daemon_exclusion, auto_start_daemon)", merged)
 
     def test_existing_cli_daemon_regression_is_untouched(self):
         self.assertEqual(
