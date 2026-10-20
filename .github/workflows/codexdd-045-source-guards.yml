@@ -42,8 +42,12 @@ jobs:
         run: |
           set -uo pipefail
           log="$RUNNER_TEMP/codexdd045-source-guards.log"
+          # GitHub invokes bash with -e; disable it only around test execution so
+          # failures cannot suppress the diagnostic headings and full log artifact.
+          set +e
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_*.py' -v > "$log" 2>&1
           rc=$?
+          set -e
           echo "Static check exit code: $rc"
           echo "Failure headings and summary:"
           grep -E '^(FAIL:|ERROR:|Ran [0-9]+ tests|FAILED |OK$)' "$log" | tail -n 160 || true
