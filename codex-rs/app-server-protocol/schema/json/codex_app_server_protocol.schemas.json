@@ -4712,6 +4712,26 @@
           "properties": {
             "method": {
               "enum": [
+                "thread/readState/changed"
+              ],
+              "title": "Thread/readState/changedNotificationMethod",
+              "type": "string"
+            },
+            "params": {
+              "$ref": "#/definitions/v2/ThreadReadStateChangedNotification"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "title": "Thread/readState/changedNotification",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": [
                 "thread/archived"
               ],
               "title": "Thread/archivedNotificationMethod",
@@ -10829,6 +10849,20 @@
           },
           {
             "properties": {
+              "annotations": {
+                "items": true,
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "logprobs": {
+                "items": true,
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
               "text": {
                 "type": "string"
               },
@@ -18375,22 +18409,38 @@
           "alloy",
           "arbor",
           "ash",
+          "aube",
           "ballad",
           "breeze",
+          "bubbie",
           "cedar",
           "coral",
           "cove",
           "echo",
           "ember",
+          "haetsal",
+          "hanul",
+          "himari",
           "juniper",
+          "leher",
           "maple",
           "marin",
+          "miko",
+          "neer",
+          "porto",
+          "rindo",
+          "rio",
+          "rivage",
           "sage",
+          "selva",
           "shimmer",
           "sol",
+          "sonna",
           "spruce",
+          "tinta",
           "vale",
-          "verse"
+          "verse",
+          "viola"
         ],
         "type": "string"
       },
@@ -18409,6 +18459,13 @@
             "type": "array"
           },
           "v2": {
+            "items": {
+              "$ref": "#/definitions/v2/RealtimeVoice"
+            },
+            "type": "array"
+          },
+          "v3": {
+            "default": [],
             "items": {
               "$ref": "#/definitions/v2/RealtimeVoice"
             },
@@ -18905,6 +18962,12 @@
                 },
                 "type": "array"
               },
+              "encrypted_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "id": {
                 "type": [
                   "string",
@@ -18933,6 +18996,12 @@
               },
               "role": {
                 "type": "string"
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "type": {
                 "enum": [
@@ -19064,6 +19133,12 @@
                   "null"
                 ]
               },
+              "encrypted_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "id": {
                 "description": "Legacy id field retained for compatibility with older payloads.",
                 "type": [
@@ -19108,6 +19183,12 @@
               "call_id": {
                 "type": "string"
               },
+              "encrypted_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "encrypted_function_args": {
                 "items": {
                   "type": "string"
@@ -19142,6 +19223,12 @@
                   "null"
                 ]
               },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "type": {
                 "enum": [
                   "function_call"
@@ -19163,6 +19250,12 @@
             "properties": {
               "arguments": true,
               "call_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "encrypted_content": {
                 "type": [
                   "string",
                   "null"
@@ -19267,6 +19360,12 @@
             "properties": {
               "call_id": {
                 "type": "string"
+              },
+              "encrypted_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "id": {
                 "type": [
@@ -19428,6 +19527,12 @@
                   }
                 ]
               },
+              "encrypted_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "id": {
                 "type": [
                   "string",
@@ -19466,6 +19571,12 @@
           },
           {
             "properties": {
+              "encrypted_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "id": {
                 "type": [
                   "string",
@@ -23299,6 +23410,16 @@
             ],
             "description": "Optional cwd filter or filters; when set, only threads whose session cwd exactly matches one of these paths are returned."
           },
+          "excludedThreadIds": {
+            "description": "Thread IDs to exclude before applying the result limit. Up to 100 entries; invalid IDs or a larger list are rejected, never truncated. Send the same exclusions on each page. Omitted, null, or empty means no exclusions.",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "limit": {
             "description": "Optional page size; defaults to a reasonable server-side value.",
             "format": "uint32",
@@ -23673,6 +23794,81 @@
         ],
         "title": "ThreadReadResponse",
         "type": "object"
+      },
+      "ThreadReadState": {
+        "description": "The first unread position in a durable local thread. A null position means read. The opaque revision guards edits against activity or marks the caller has not seen.",
+        "properties": {
+          "firstUnread": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/v2/ThreadUnreadPosition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "type": "object"
+      },
+      "ThreadReadStateChangedNotification": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "properties": {
+          "readState": {
+            "$ref": "#/definitions/v2/ThreadReadState"
+          },
+          "threadId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "readState",
+          "threadId"
+        ],
+        "title": "ThreadReadStateChangedNotification",
+        "type": "object"
+      },
+      "ThreadReadStateOperation": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "read"
+                ],
+                "title": "ReadThreadReadStateOperationType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "ReadThreadReadStateOperation",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "unread"
+                ],
+                "title": "UnreadThreadReadStateOperationType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "UnreadThreadReadStateOperation",
+            "type": "object"
+          }
+        ]
       },
       "ThreadRealtimeAudioChunk": {
         "description": "EXPERIMENTAL - thread realtime audio chunk.",
@@ -25579,6 +25775,48 @@
         "title": "ThreadUnarchivedNotification",
         "type": "object"
       },
+      "ThreadUnreadPosition": {
+        "oneOf": [
+          {
+            "description": "Explicitly marked unread, including when the thread has no turns.",
+            "properties": {
+              "type": {
+                "enum": [
+                  "threadStart"
+                ],
+                "title": "ThreadStartThreadUnreadPositionType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "ThreadStartThreadUnreadPosition",
+            "type": "object"
+          },
+          {
+            "description": "The earliest completed result needing attention.",
+            "properties": {
+              "turnId": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "turn"
+                ],
+                "title": "TurnThreadUnreadPositionType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "turnId",
+              "type"
+            ],
+            "title": "TurnThreadUnreadPosition",
+            "type": "object"
+          }
+        ]
+      },
       "ThreadUnsubscribeParams": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "properties": {
@@ -26426,6 +26664,10 @@
           },
           "output": {
             "$ref": "#/definitions/v2/FunctionCallOutputBody"
+          },
+          "retain": {
+            "description": "Requests retention of this output in the thread's model history.",
+            "type": "boolean"
           }
         },
         "required": [
