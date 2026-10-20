@@ -1,0 +1,114 @@
+# One-shot, artifact-bound import of a Cargo-generated lockfile into Git objects.
+# No branch updates, checkout edits, installs, release markers, or deployments.
+name: CodexDD 0.4.5 ZIP 9 lock blob import (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-zip9-lock-blob-import.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  import-resolved-lock:
+    name: Import sealed ZIP 9 resolver Git blob only
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == '4e51b1033fd5be63db74c82f1b784e6bed6f0b4c'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout exact import workflow revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify branch ancestry, exact existing lock and nonrelease markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '4e51b1033fd5be63db74c82f1b784e6bed6f0b4c'
+          test "$(git hash-object codex-rs/Cargo.toml)" = '8ae5758c9baa6091b8ab5dda4e5b848365c0009d'
+          test "$(git hash-object codex-rs/Cargo.lock)" = '096939fcec32cb259bccc0cb36c5d4120701da57'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+
+      - name: Download exact prior green Windows resolver artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/zip9-resolver-12281749078.zip"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12281749078/zip" \
+            --output "$out"
+          echo "cf7e9883d128756a1081f39e5c78f47c682e709f3e7282b14a371b4129157d95  $out" | sha256sum --check -
+
+      - name: Validate archive exact bytes and create Git blob without changing branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import zipfile
+
+          root = Path(os.environ["RUNNER_TEMP"])
+          archive = root / "zip9-resolver-12281749078.zip"
+          with zipfile.ZipFile(archive) as z:
+              expected = {"Cargo.lock", "Cargo.toml", "cargo-update.log", "lock-git-blob.txt", "resolver-diff.patch", "source-commit.txt"}
+              assert set(z.namelist()) == expected, "Unexpected artifact members"
+              locked = z.read("Cargo.lock")
+              manifest = z.read("Cargo.toml")
+              assert z.read("source-commit.txt").strip() == b"4e51b1033fd5be63db74c82f1b784e6bed6f0b4c"
+              assert z.read("lock-git-blob.txt").strip() == b"48ae4fb45a83de4d72dee6200b83a770dbf8f760"
+
+          def blob_id(data):
+              return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
+
+          assert blob_id(locked) == "48ae4fb45a83de4d72dee6200b83a770dbf8f760", "Unreviewed lock bytes"
+          assert blob_id(manifest) == "e401338b7e91071eececa93635d05412f0184f43", "Unreviewed manifest"
+          baseline = Path("codex-rs/Cargo.toml").read_bytes()
+          needle = b'zip = "2.4.2"'
+          assert baseline.count(needle) == 1, "Unexpected ZIP workspace dependency baseline"
+          assert baseline.replace(needle, b'zip = "9.0.5"') == manifest, "Preview manifest differs from exact one-line edit"
+          text = locked.decode("utf-8")
+          for name, version in [
+              ("zip", "9.0.5"), ("rustls", "0.23.46"),
+              ("quinn-proto", "0.11.18"), ("noyalib-serde-yaml", "0.0.57"),
+          ]:
+              import re
+              pattern = r'\[\[package\]\]\nname = "' + re.escape(name) + r'"\nversion = "' + re.escape(version) + r'"'
+              assert re.search(pattern, text), f"Missing reviewed version of {name}"
+          payload = {"content": base64.b64encode(locked).decode("ascii"), "encoding": "base64"}
+          (root / "git-blob-request.json").write_text(json.dumps(payload))
+          PY
+          curl --fail --silent --show-error --location \
+            -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            --data-binary "@$RUNNER_TEMP/git-blob-request.json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs" \
+            > "$RUNNER_TEMP/blob-created.json"
+          created="$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "blob-created.json")))["sha"])')"
+          test "$created" = '48ae4fb45a83de4d72dee6200b83a770dbf8f760'
+          test -z "$(git status --porcelain)"
+          echo "PASS: sealed 0.4.5 ZIP 9 lock blob imported: $created; GitHub branch unchanged."
