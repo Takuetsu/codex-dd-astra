@@ -1,0 +1,116 @@
+# Read-only/disposable Windows resolver preview for the zip security migration.
+# This does not change source, lockfile or release markers in GitHub.
+name: CodexDD 0.4.5 ZIP 9 resolver preview (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-zip9-resolver-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-zip9-preview
+  cancel-in-progress: true
+
+jobs:
+  zip9-resolve:
+    name: ZIP 9.0.5 Windows resolver preview (read-only)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout exact reviewed branch, no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify SHA, source dependency identity and release markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected checkout SHA' }
+          if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne '8ae5758c9baa6091b8ab5dda4e5b848365c0009d') { throw 'Manifest changed; no preview' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'Resolver baseline changed; no preview' }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Product version advanced' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream release marker advanced' }
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths configuration failed' }
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Stage isolated preview without modifying committed source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path zip9-preview-artifact | Out-Null
+          $path = (Resolve-Path 'codex-rs/Cargo.toml').Path
+          $before = [System.IO.File]::ReadAllText($path)
+          $needle = 'zip = "2.4.2"'
+          if (($before.Split(@($needle), [System.StringSplitOptions]::None).Length - 1) -ne 1) {
+            throw 'Expected a single exact ZIP workspace version pin'
+          }
+          [System.IO.File]::WriteAllText($path, $before.Replace($needle, 'zip = "9.0.5"'))
+          if ((git diff --name-only).Trim() -ne 'codex-rs/Cargo.toml') { throw 'Unexpected pre-resolve checkout mutation' }
+
+      - name: Cargo-resolve ZIP 9.0.5 without committing changes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo update --manifest-path codex-rs/Cargo.toml -p zip --precise 9.0.5 *> zip9-preview-artifact/cargo-update.log
+          $code = $LASTEXITCODE
+          Get-Content zip9-preview-artifact/cargo-update.log -Tail 80
+          if ($code -ne 0) { throw "Cargo ZIP update failed ($code)" }
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'ZIP preview is not a locked resolver graph' }
+
+      - name: Verify preview dependency and source security floors
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lock = [System.IO.File]::ReadAllText((Resolve-Path codex-rs/Cargo.lock).Path)
+          foreach ($pair in @(
+            @('zip','9.0.5'), @('rustls','0.23.46'),
+            @('quinn-proto','0.11.18'), @('noyalib-serde-yaml','0.0.57')
+          )) {
+            $pattern = '(?m)^\[\[package\]\]\r?\nname = "' + [regex]::Escape($pair[0]) + '"\r?\nversion = "' + [regex]::Escape($pair[1]) + '"'
+            if (-not [regex]::IsMatch($lock, $pattern)) { throw "Missing reviewed dependency $($pair[0]) $($pair[1])" }
+          }
+          if ([regex]::IsMatch($lock, '(?m)^name = "zip"\r?\nversion = "2\.4\.2"')) { throw 'Vulnerable ZIP 2.4.2 still resolved' }
+          if ((git diff --name-only | Sort-Object) -join ',' -ne 'codex-rs/Cargo.lock,codex-rs/Cargo.toml') {
+            throw 'Resolver changed out-of-scope files'
+          }
+          git hash-object -- codex-rs/Cargo.lock | Set-Content zip9-preview-artifact/lock-git-blob.txt -Encoding ascii
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -eq '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'No resolved lockfile change' }
+          Write-Host 'PASS: ZIP 9.0.5 resolved, expected security versions retained, and only disposable Cargo files changed.'
+
+      - name: Capture exact preview artifact and lockfile diff
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path zip9-preview-artifact | Out-Null
+          git diff -- codex-rs/Cargo.toml codex-rs/Cargo.lock |
+            Out-File -FilePath zip9-preview-artifact/resolver-diff.patch -Encoding utf8
+          if (Test-Path codex-rs/Cargo.lock) {
+            Copy-Item codex-rs/Cargo.lock zip9-preview-artifact/Cargo.lock -Force
+          }
+          if (Test-Path codex-rs/Cargo.toml) {
+            Copy-Item codex-rs/Cargo.toml zip9-preview-artifact/Cargo.toml -Force
+          }
+          git rev-parse HEAD | Set-Content zip9-preview-artifact/source-commit.txt -Encoding ascii
+
+      - name: Upload resolver preview (not release artifacts)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-zip9-resolver-preview
+          path: zip9-preview-artifact/
+          if-no-files-found: warn
+          retention-days: 7
