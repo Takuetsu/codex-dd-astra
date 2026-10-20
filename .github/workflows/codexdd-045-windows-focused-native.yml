@@ -8,6 +8,7 @@ on:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
       - '.github/workflows/codexdd-045-windows-focused-native.yml'
+      - 'codex-rs/tui/src/app/tests.rs'
   workflow_dispatch:
 
 permissions:
@@ -122,10 +123,10 @@ jobs:
             & cmd.exe /d /c $command
             $exit = $LASTEXITCODE
             if (-not (Test-Path -LiteralPath $log)) { throw "Cargo produced no diagnostic log for $case" }
-            Get-Content -LiteralPath $log -Tail 55
-            $body = [IO.File]::ReadAllText($log)
+            $tail = (Get-Content -LiteralPath $log -Tail 80) -join "`n"
+            Write-Host $tail
             if ($exit -ne 0) { throw "Native focused test $case failed with exit $exit; see log artifact" }
-            if ($body -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
+            if ($tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
               throw "Focused test pattern $case did not run any tests; refusing false green"
             }
             $completed++

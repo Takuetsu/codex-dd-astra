@@ -631,8 +631,12 @@ async fn enqueue_primary_thread_session_replays_buffered_approval_after_attach()
     };
     *request_id = AppServerRequestId::Integer(2);
     params.thread_id = background_thread_id.to_string();
+    let buffered = super::app_server_requests::BufferedServerRequest::new(
+        background_request.clone(),
+        &app_server.request_handle(),
+    );
     app.pending_app_server_requests
-        .note_server_request(&background_request);
+        .note_buffered_request(&buffered);
     app.enqueue_thread_request(background_thread_id, background_request.clone())
         .await?;
 
@@ -656,8 +660,12 @@ async fn enqueue_primary_thread_session_replays_buffered_approval_after_attach()
         !app.pending_app_server_requests
             .contains_server_request(&background_request)
     );
+    let buffered = super::app_server_requests::BufferedServerRequest::new(
+        background_request.clone(),
+        &app_server.request_handle(),
+    );
     app.pending_app_server_requests
-        .note_server_request(&background_request);
+        .note_buffered_request(&buffered);
     app.enqueue_thread_request(background_thread_id, background_request)
         .await?;
 
