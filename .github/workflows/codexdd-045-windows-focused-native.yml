@@ -113,7 +113,14 @@ jobs:
             'completed_recon_with_trusted_report_output_waits_for_late_complexity_signal',
             'enqueue_primary_thread_session_replays_buffered_approval_after_attach',
             'resolved_buffered_approval_does_not_become_actionable_after_drain',
-            'agents_navigation_requires_local_daemon'
+            'agents_navigation_requires_local_daemon',
+            'elevated_windows_implicit_startup_uses_embedded_without_f2_warning',
+            'failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning',
+            'daemon_startup_falls_back_only_for_implicit_endpoints',
+            'windows_sandbox_setup_uses_observed_thread_host',
+            'fresh_startup_thread_drains_buffered_approval_before_draft_handoff',
+            'async_fresh_startup_applies_adaptive_preset_before_attachment',
+            'subagent_approval_respects_root_ownership'
           )
           $completed = 0
           foreach ($case in $cases) {
