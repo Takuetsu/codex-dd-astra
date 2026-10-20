@@ -1,0 +1,151 @@
+# One-shot, read-only classification of inherited advisory dependency *roles*.
+# This is NOT a cargo-deny waiver, vulnerability fix, or release check.
+name: CodexDD 0.4.5 advisory compile-time roles
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-dependency-role-recon.yml'
+permissions:
+  contents: read
+jobs:
+  roles:
+    name: Inspect Windows and Linux advisory host-macro boundaries (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == '2bceb2685fb501d0a355c71e5a9246d32a7411a1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout pinned source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Fail closed on source, lock, policy or release identity drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '2bceb2685fb501d0a355c71e5a9246d32a7411a1'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Compute target dependency and host proc-macro boundary report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p advisory-role-recon
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/windows-roles.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/linux-roles.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from collections import deque
+          from pathlib import Path
+
+          temp = Path(os.environ["RUNNER_TEMP"])
+          names = ("basic-toml", "i18n-config", "i18n-embed-fl", "age", "zbus", "zbus_names", "zvariant", "zvariant_derive")
+          report = {"source_commit": os.environ["GITHUB_SHA"], "audit_policy": "unchanged all-target cargo-deny; this report is not an exception"}
+          for platform in ("windows", "linux"):
+              meta = json.loads((temp / (platform + "-roles.json")).read_text(encoding="utf-8"))
+              packages = {p["id"]: p for p in meta["packages"]}
+              nodes = {n["id"]: n for n in meta["resolve"]["nodes"]}
+              macro_ids = {
+                  p["id"] for p in meta["packages"]
+                  if any("proc-macro" in t["kind"] for t in p["targets"])
+              }
+              all_roots = [p for p in meta["workspace_members"] if p in nodes]
+              runtime_roots = [p for p in all_roots if p not in macro_ids]
+
+              def walk(roots, skip_macro=False):
+                  previous = {p: None for p in roots}
+                  queue = deque(roots)
+                  while queue:
+                      parent = queue.popleft()
+                      for dep in nodes[parent].get("deps", []):
+                          child = dep["pkg"]
+                          if child not in nodes or child in previous:
+                              continue
+                          if skip_macro and child in macro_ids:
+                              continue
+                          previous[child] = parent
+                          queue.append(child)
+                  return previous
+
+              def path(previous, item):
+                  if item not in previous:
+                      return None
+                  ids = [item]
+                  while previous[ids[-1]] is not None:
+                      ids.append(previous[ids[-1]])
+                  return [
+                      packages[pid]["name"] + "@" + packages[pid]["version"] +
+                      (" [host proc-macro]" if pid in macro_ids else "")
+                      for pid in reversed(ids)
+                  ]
+
+              complete = walk(all_roots)
+              without_macro = walk(runtime_roots, skip_macro=True)
+              secrets_roots = [p for p in all_roots if packages[p]["name"] == "codex-secrets"]
+              secrets_paths = walk(secrets_roots)
+              packages_report = {}
+              for name in names:
+                  packages_report[name] = [
+                      {
+                          "version": pkg["version"],
+                          "workspace_path": path(complete, pid),
+                          "without_proc_macro_path": path(without_macro, pid),
+                          "codex_secrets_path": path(secrets_paths, pid),
+                          "is_host_proc_macro": pid in macro_ids,
+                      }
+                      for pid, pkg in sorted(packages.items())
+                      if pkg["name"] == name
+                  ]
+              basic = [
+                  x for x in packages_report["basic-toml"]
+                  if x["workspace_path"] is not None
+              ]
+              report[platform] = {
+                  "target": "x86_64-pc-windows-msvc" if platform == "windows" else "x86_64-unknown-linux-gnu",
+                  "workspace_members": len(all_roots),
+                  "proc_macro_packages": sorted({packages[p]["name"] for p in macro_ids if p in nodes}),
+                  "basic_toml_workspace_reachable": bool(basic),
+                  "basic_toml_only_via_proc_macro_in_dependency_graph": bool(basic) and all(
+                      p["without_proc_macro_path"] is None for p in basic
+                  ),
+                  "packages": packages_report,
+              }
+
+          output = Path("advisory-role-recon/dependency-roles.json")
+          output.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          for platform in ("windows", "linux"):
+              info = report[platform]
+              print(platform, "basic-toml present:", info["basic_toml_workspace_reachable"],
+                    "only via proc-macro:", info["basic_toml_only_via_proc_macro_in_dependency_graph"])
+              for name in names:
+                  for entry in info["packages"][name]:
+                      if entry["workspace_path"] is not None:
+                          print(" ", name, entry["version"],
+                                "workspace:", " -> ".join(entry["workspace_path"]),
+                                "without_macro:", entry["without_proc_macro_path"],
+                                "secrets:", entry["codex_secrets_path"])
+          PY
+          # Cargo metadata reads the reviewed lock; never accept modified source/policy.
+          git diff --exit-code -- codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml codex-rs/codexdd-version.txt codex-rs/upstream-codex-release.txt
+          git hash-object codex-rs/Cargo.lock > advisory-role-recon/locked-graph-blob.txt
+          git rev-parse HEAD > advisory-role-recon/source-commit.txt
+      - name: Upload review-only dependency role evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-dependency-roles
+          path: advisory-role-recon/
+          if-no-files-found: warn
+          retention-days: 7
