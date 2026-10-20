@@ -888,7 +888,14 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/chatwidget/input_submission.rs": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
     "codex-rs/tui/src/chatwidget/interaction.rs": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67",
     "codex-rs/tui/src/app/thread_routing.rs": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
-    "codex-rs/tui/src/app_server_session.rs": "c9ff4fb4294c894490e224590adfc411a7eff2fa"    "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": "994d54b631493b3d0784e836c544c57a275e9985",    "codex-rs/tui/src/app/tests/startup_defaults_tests.rs": "e60808df0448682d47af1a14b5bd8d5c52206397",    "codex-rs/tui/src/chatwidget/tests.rs": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",    "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs": "2354a8e517c49e1c25fceea4b849cb0b077bc366",    "codex-rs/tui/src/chatwidget/tests/slash_commands.rs": "ede40dcf9566a813004ac57614991f6eb1518ce4",    "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs": "23ea7ee8024deb95767f8322a42a1f330be715ff",    "codex-rs/tui/src/status/tests.rs": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
+    "codex-rs/tui/src/app_server_session.rs": "c9ff4fb4294c894490e224590adfc411a7eff2fa",
+    "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": "994d54b631493b3d0784e836c544c57a275e9985",
+    "codex-rs/tui/src/app/tests/startup_defaults_tests.rs": "e60808df0448682d47af1a14b5bd8d5c52206397",
+    "codex-rs/tui/src/chatwidget/tests.rs": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
+    "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
+    "codex-rs/tui/src/chatwidget/tests/slash_commands.rs": "ede40dcf9566a813004ac57614991f6eb1518ce4",
+    "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs": "23ea7ee8024deb95767f8322a42a1f330be715ff",
+    "codex-rs/tui/src/status/tests.rs": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
 }
 
 
