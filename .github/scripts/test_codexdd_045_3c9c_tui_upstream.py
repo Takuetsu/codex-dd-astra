@@ -896,6 +896,14 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/chatwidget/tests/slash_commands.rs": "ede40dcf9566a813004ac57614991f6eb1518ce4",
     "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs": "23ea7ee8024deb95767f8322a42a1f330be715ff",
     "codex-rs/tui/src/status/tests.rs": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "e090162290f82156213340967c76a398887ecf44",
+    "codex-rs/tui/src/app/owned_transcript_tests.rs": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273",
+    "codex-rs/tui/src/history_cell/tests.rs": "f1075c14620c0217e2433f1501c8f171bc59989d",
+    "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
+    "codex-rs/tui/src/chatwidget/tests/app_server.rs": "53ca9fdae79b07822e8551289b97f1732b5e3ab0",
+    "codex-rs/tui/src/app/tests/startup.rs": "a437116e81e54063a2df7e41752ac3e88a3d245d",
+    "codex-rs/tui/src/chatwidget/tests/composer_submission.rs": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c",
+    "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs": "d6447d22a0a1e943b1352b8c945cf7f6cf09734e",
 }
 
 
@@ -955,6 +963,39 @@ class TuiUpstreamOwnedSourceTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.production.get(path), original)
                 self.assertEqual(self.head.get(path), REVIEWED_FORK.get(path, original))
+
+    def test_upstream_0163_regression_sources_and_snapshots_reviewed(self):
+        # Source-provenance only: these fixtures still need a native Windows run.
+        self.assertEqual(len(PRESERVED_FORK), 44)
+        self.assertTrue(set(PRESERVED_FORK).issubset(REVIEWED_FORK))
+        upstream_tests = {
+            "codex-rs/tui/src/app/owned_transcript_tests.rs":
+                "footer_selection_defers_warning_clicks_and_preserves_the_draft",
+            "codex-rs/tui/src/app/tests/disconnect_tests.rs":
+                "disconnected_config_panel_keeps_input",
+            "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs":
+                "app.reconnect.presentation",
+            "codex-rs/tui/src/app/tests/startup.rs":
+                "unattended_modals_survive_unfinished_terminal_input",
+            "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs":
+                "TEST_STACK_SIZE_BYTES",
+            "codex-rs/tui/src/chatwidget/tests/app_server.rs":
+                "startup_config_warning_panel",
+            "codex-rs/tui/src/chatwidget/tests/composer_submission.rs":
+                "plugin_mention_does_not_suppress_same_name_skill",
+            "codex-rs/tui/src/history_cell/tests.rs":
+                "legacy_zsh_migration_notice_snapshot",
+        }
+        for path, marker in upstream_tests.items():
+            with self.subTest(path=path):
+                self.assertIn(marker, source(path))
+        for path in (
+            "codex-rs/tui/src/history_cell/snapshots/codex_tui__history_cell__tests__legacy_zsh_migration_notice_snapshot.snap",
+            "codex-rs/tui/src/app/snapshots/codex_tui__app__owned_transcript__tests__fullscreen_footer_selection.snap",
+            "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__app_server__startup_config_warning_panel.snap",
+        ):
+            with self.subTest(snapshot=path):
+                self.assertTrue(source(path).startswith("---\n"))
 
     def test_agents_overview_module_staged(self):
         agents = source("codex-rs/tui/src/app/agents_overview.rs")
