@@ -1,0 +1,138 @@
+# Branch-local native validation of CodexDD's fail-closed adaptive tool policy.
+# Never publish, package, deploy, merge, or advance CodexDD 0.4.4 product markers.
+name: CodexDD 0.4.5 Windows registry focused runtime
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-registry-focused.yml'
+      - 'codex-rs/core/src/tools/registry.rs'
+      - 'codex-rs/core/src/tools/registry_tests.rs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-registry-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  registry-native:
+    name: Windows adaptive registry safety smoke (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact integration SHA without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assert branch, pinned Cargo lock, no release marker promotion
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'Unreviewed Cargo.lock' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Production version changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Release upstream changed' }
+
+      - name: Configure native Windows scratch paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git long paths unavailable' }
+
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Reuse integration-only Cargo test artifact cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045/target
+          key: codexdd045-registry-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-native-focused-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-tests-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+
+      - name: Verify exact locked Cargo resolver
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo.lock drift' }
+
+      - name: Configure repository-pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Run four targeted adaptive registry authorization regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Native behavior, not source-marker matching. Stop on first failure.
+          $cases = @(
+            'adaptive_reconnaissance_rejects_hook_rewritten_write_command',
+            'adaptive_reconnaissance_rejection_finishes_blocked_without_start',
+            'adaptive_validation_terminalization_allows_only_trusted_signal_tool',
+            'adaptive_mechanical_validation_dispatch_allows_build_but_blocks_patch'
+          )
+          $index = 0
+          foreach ($case in $cases) {
+            $path = Join-Path $env:RUNNER_TEMP ("codexdd045-registry-{0:D2}.log" -f $index)
+            Write-Host "CASE $($index+1)/$($cases.Count): $case"
+            $command = 'cargo test --locked -p codex-core --lib ' + $case + ' -- --test-threads=1 > "' + $path + '" 2>&1'
+            & cmd.exe /d /c $command
+            $rc = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $path)) { throw "No log for $case" }
+            $tail = (Get-Content -LiteralPath $path -Tail 80) -join "`n"
+            Write-Host $tail
+            if ($rc -ne 0) { throw "Registry native test $case failed with exit $rc; see artifact" }
+            if ($tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
+              throw "No tests matched registry filter $case"
+            }
+            $index++
+          }
+          Write-Host "PASS: $index/$($cases.Count) native registry policy regressions."
+
+      - name: Upload native registry test logs without publishing
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-registry-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-registry-*.log
+          if-no-files-found: warn
+          retention-days: 7
