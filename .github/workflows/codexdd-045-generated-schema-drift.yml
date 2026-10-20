@@ -1,0 +1,173 @@
+# Read-only 0.163 protocol/config/Python SDK generator comparison.
+# Never accepts generated output, modifies branches, builds installers or publishes a release.
+name: CodexDD 0.4.5 generated schema drift audit
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-generated-schema-drift.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-generated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generator-audit:
+    name: Regenerate schema/SDK in isolated Linux runner (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact integration SHA without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check exact SHA, accepted resolver and unreleased product markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.lock)" = '096939fcec32cb259bccc0cb36c5d4120701da57'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+
+      - name: Configure pinned repository Linux CI environment
+        uses: ./.github/actions/setup-ci
+
+      - name: Pin supported Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install pinned uv for Python SDK generation
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        with:
+          version: 0.11.3
+
+      - name: Assert Cargo.lock matches the 0.163 workspace
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo metadata --locked --format-version 1 > /dev/null
+
+      - name: Generate stable protocol schemas and typed Python SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 codex-rs/app-server-protocol/scripts/write_schema_fixtures.py 2>&1 |
+            tee "$RUNNER_TEMP/codexdd045-schema-stable.log"
+
+      - name: Generate experimental compressed protocol exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 codex-rs/app-server-protocol/scripts/write_schema_fixtures.py --experimental 2>&1 |
+            tee "$RUNNER_TEMP/codexdd045-schema-experimental.log"
+
+      - name: Generate native core config schema
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo run --locked -p codex-config-schema --bin codex-write-config-schema 2>&1 |
+            tee "$RUNNER_TEMP/codexdd045-config-schema.log"
+
+      - name: Verify generated schemas and compressed protocol exports
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo test --locked -p codex-app-server-protocol --lib schema_fixtures_tests:: 2>&1 |
+            tee "$RUNNER_TEMP/codexdd045-schema-fixtures-tests.log"
+          cargo test --locked -p codex-app-server-protocol --lib precomputed_exports_tests:: 2>&1 |
+            tee "$RUNNER_TEMP/codexdd045-schema-exports-tests.log"
+
+      - name: Verify generated Python SDK contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --project sdk/python --frozen --only-group test python -m pytest sdk/python/tests/test_contract_generation.py -q 2>&1 |
+            tee "$RUNNER_TEMP/codexdd045-python-schema-tests.log"
+
+      - name: Inventory exact generator output and reject drift or unrelated writes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/codexdd045-generated-candidate"
+          mkdir -p "$output"
+          git diff --binary --             codex-rs/app-server-protocol/schema             codex-rs/core/config.schema.json             sdk/python/src/openai_codex/generated > "$output/reconciled-schema.patch"
+          python3 - "$output" <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import sys
+
+          destination = pathlib.Path(sys.argv[1])
+          def paths(*args):
+              data = subprocess.run(["git", "ls-files", "-z", *args],
+                                    check=True, capture_output=True).stdout
+              return sorted({x.decode("utf-8") for x in data.split(b"\0") if x})
+
+          changed = paths("--modified", "--others", "--exclude-standard")
+          deleted = paths("--deleted")
+          allowed = lambda path: (
+              path.startswith("codex-rs/app-server-protocol/schema/")
+              or path == "codex-rs/core/config.schema.json"
+              or path.startswith("sdk/python/src/openai_codex/generated/")
+          )
+          forbidden = sorted(set(path for path in changed + deleted if not allowed(path)))
+          for path in changed:
+              target = destination / path
+              target.parent.mkdir(parents=True, exist_ok=True)
+              if pathlib.Path(path).is_file():
+                  target.write_bytes(pathlib.Path(path).read_bytes())
+          status = {
+              "head_sha": subprocess.run(["git", "rev-parse", "HEAD"], check=True,
+                                         capture_output=True, text=True).stdout.strip(),
+              "changed": changed,
+              "deleted": deleted,
+              "forbidden": forbidden,
+              "cargo_lock_blob": subprocess.run(
+                  ["git", "hash-object", "codex-rs/Cargo.lock"], check=True,
+                  capture_output=True, text=True).stdout.strip(),
+          }
+          (destination / "manifest.json").write_text(json.dumps(status, indent=2) + "\n")
+          print(json.dumps(status, indent=2))
+          if forbidden:
+              raise SystemExit("BLOCKED: generator modified out-of-scope files")
+          if status["cargo_lock_blob"] != "096939fcec32cb259bccc0cb36c5d4120701da57":
+              raise SystemExit("BLOCKED: pinned Cargo.lock has drifted")
+          if changed or deleted:
+              raise SystemExit("BLOCKED: generated outputs differ from checkout; review artifact before any acceptance")
+          print("PASS: schema, config and Python SDK outputs are reproducible byte-for-byte")
+          PY
+
+      - name: Upload generator diagnostics and exact candidate bytes, never publish
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-schema-drift-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/codexdd045-schema-*.log
+            ${{ runner.temp }}/codexdd045-config-schema.log
+            ${{ runner.temp }}/codexdd045-python-schema-tests.log
+            ${{ runner.temp }}/codexdd045-generated-candidate/
+          if-no-files-found: warn
+          retention-days: 7
