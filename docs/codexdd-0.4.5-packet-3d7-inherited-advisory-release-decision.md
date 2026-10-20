@@ -43,7 +43,7 @@
 
 - On **Windows**, `basic-toml 0.1.10` is reachable from `codex-secrets 0.163.0 -> age 0.12.1 -> i18n-embed-fl 0.10.1 [host proc-macro] -> i18n-config 0.4.8 -> basic-toml`. Removing every procedural-macro dependency edge from the metadata graph eliminates all paths to `basic-toml` from ordinary workspace roots. **The observed dependency role is compile-time procedural-macro support, not a linked Windows runtime-library path.** This is stronger and narrower than the prior statement that it was simply "Windows reachable". Build-time tools still execute in the build environment, so this does *not* prove the crate harmless.
 - On **Linux**, the same `basic-toml` chain is also reachable only through a host proc-macro edge. The `zbus 4.4.0 -> zbus_names 3.0.0 / zvariant 4.2.0 -> zvariant_derive 4.2.0` chain is reachable from `codex-tui` and the Linux keyring/secret-service owners. `zvariant_derive` is itself a host procedural macro, but `zbus`, `zbus_names` and `zvariant` remain Linux library dependencies.
-- The isolated Windows secrets regression workflow [#39484688787](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39484688787) was launched separately at source `4c3e1c96c65720e30bdcaa059e003c94f89014a5`; **do not treat it as green until its native test summary and status pass**.
+- The isolated Windows secrets regression [#39484688787](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39484688787) **completed successfully: 9/9 native `codex-secrets --lib` tests passed** on source `4c3e1c96c65720e30bdcaa059e003c94f89014a5`, including local encrypted-store, OAuth cache and credential-failure behavior. This is behavioral evidence for the accepted `age` graph, not a resolution of the build-time `basic-toml` maintenance notice.
 - The four RustSec notices are classified **INFO / unmaintained**, not advisories documenting a demonstrated exploit of this release. They still constitute unresolved supply-chain maintenance risks, including build-time trust and future upstream drift. The all-target `cargo-deny` run remains RED; this role probe makes no policy exceptions.
 
 ### Bounded owner review packet — prepared, not accepted
@@ -57,6 +57,10 @@ If the owner elects Path B, the proposed scope is **only** `RUSTSEC-2026-0374`, 
 **Path B — explicitly reviewed, time-bounded inherited-risk disposition:** Record each specific advisory's severity, target reachability, transitive ownership, compensating controls, named reviewer, an expiry/review checkpoint, and an actionable removal trigger. Only after a distinct owner security acceptance may narrowly scoped policy exceptions be implemented and re-audited. Any such result must be labeled **accepted exceptions**, never **advisory-free**. Do not grandfather unknown or future advisories or change all-target policy implicitly.
 
 **Current state: neither path has been accepted.** No policy exceptions, release overrides, broad CI waiver, merge/install authorization, or auto-publication are in effect.
+
+## App-server Windows authorization gate (October 20, 2026)
+
+The [focused native Windows app-server admission/verification workflow #39487011633](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39487011633) is running from commit `50414da9c74be4356ea49bbf9e077e0d1bf617a4`. Its six individually filtered tests target turn admission during drain, ownership of user-verification requests, client disconnect races, and account-switch rejection. Every case must match a real native Rust test and pass; the first failure stops the job and uploads exact logs. **As of this packet update, this workflow has not produced a final success receipt.** Its scoped smoke is not a 21-stage Windows release substitute.
 
 ## Remaining 0.4.5 acceptance gates
 
