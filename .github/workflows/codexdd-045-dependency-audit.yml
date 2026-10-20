@@ -1,0 +1,30 @@
+# Nonrelease lockfile advisory/license/source audit for the reviewed 0.163.0 graph.
+# The reusable cargo-deny workflow has no source-write or release authority.
+name: CodexDD 0.4.5 dependency security audit
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-dependency-audit.yml'
+      - '.github/workflows/cargo-deny.yml'
+      - 'codex-rs/Cargo.lock'
+      - 'codex-rs/Cargo.toml'
+      - 'codex-rs/**/Cargo.toml'
+      - 'codex-rs/deny.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-dependency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deny:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    uses: ./.github/workflows/cargo-deny.yml
+    permissions:
+      contents: read
