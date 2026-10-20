@@ -882,7 +882,7 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/app/config_persistence.rs": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
     "codex-rs/tui/src/chatwidget/settings.rs": "578d7443bf8c95f346915caa6251c4a50292f8e7",
     "codex-rs/tui/src/app/test_support.rs": "b95971975610ff94ef823eff73e36a4691e7e29c",
-    "codex-rs/tui/src/app/tests.rs": "6ba6a1c8b563a50676acea26f89fb16d02c05a0a",
+    "codex-rs/tui/src/app/tests.rs": "f8156f722bd2dae8f2355788826ee9fdf1225933",
     "codex-rs/tui/src/chatwidget/tests/history_replay.rs": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
     "codex-rs/tui/src/chatwidget/protocol.rs": "ad71108b91a0d7f1f079cab0482076237b138994",
     "codex-rs/tui/src/chatwidget/input_submission.rs": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
