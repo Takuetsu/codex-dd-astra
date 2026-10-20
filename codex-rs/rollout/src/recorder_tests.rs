@@ -1445,6 +1445,42 @@ async fn list_threads_db_enabled_preserves_metadata_for_missing_rollout_paths()
 }
 
 #[tokio::test]
+async fn state_db_only_empty_cwd_filter_preserves_closed_db_error() -> std::io::Result<()> {
+    let home = TempDir::new().expect("temp dir");
+    let config = test_config(home.path());
+    let runtime = codex_state::StateRuntime::init(
+        codex_state::SqliteConfig::new_for_testing(home.path().abs()),
+        config.model_provider_id.clone(),
+    )
+    .await
+    .expect("state db should initialize");
+    runtime
+        .mark_backfill_complete(/*last_watermark*/ None)
+        .await
+        .expect("backfill should complete");
+    runtime.close().await;
+
+    let empty_cwds: [PathBuf; 0] = [];
+    let error = RolloutRecorder::list_threads_from_state_db(
+        Some(runtime),
+        &config,
+        /*page_size*/ 10,
+        /*cursor*/ None,
+        ThreadSortKey::CreatedAt,
+        SortDirection::Desc,
+        &[],
+        /*model_providers*/ None,
+        /*cwd_filters*/ Some(empty_cwds.as_slice()),
+        config.model_provider_id.as_str(),
+        /*search_term*/ None,
+    )
+    .await
+    .expect_err("an empty cwd filter must not hide a closed state database");
+    assert_eq!(error.kind(), std::io::ErrorKind::Other);
+    Ok(())
+}
+
+#[tokio::test]
 async fn list_threads_state_db_only_skips_jsonl_repair_scan() -> std::io::Result<()> {
     let home = TempDir::new().expect("temp dir");
     let config = test_config(home.path());
