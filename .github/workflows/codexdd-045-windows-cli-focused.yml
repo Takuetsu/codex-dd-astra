@@ -1,0 +1,141 @@
+# Small nonrelease Windows CLI startup integration gate on the reviewed 0.163 source.
+# No unattended release, installer, merge, update or publication authority.
+name: CodexDD 0.4.5 Windows CLI startup focused runtime
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-cli-focused.yml'
+      - 'codex-rs/cli/tests/daemon_startup.rs'
+      - 'codex-rs/cli/src/main.rs'
+      - 'codex-rs/tui/src/daemon_startup.rs'
+      - 'codex-rs/tui/src/daemon_startup_tests.rs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-cli-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-cli-native:
+    name: Windows CLI startup/F2 regressions (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact integration SHA, no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify SHA, dependency lock and unadvanced release markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected checkout SHA' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'Unreviewed Cargo.lock changed' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker advanced' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Tracked upstream marker advanced' }
+
+      - name: Set isolated Windows build paths and long Git paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git long paths unavailable' }
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Restore integration-only Cargo build cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045/target
+          key: codexdd045-cli-focused-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-tests-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+          save-always: true
+
+      - name: Verify locked resolver graph
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Locked resolver drift' }
+
+      - name: Configure pinned native Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Run three Windows CLI startup and restrictive-launcher regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Run only named tests. Do not infer a passing elevated-Windows test
+          # from an unelevated runner that skips its assertions.
+          $cases = @(
+            'restrictive_launcher_uses_embedded_if_daemon_cannot_start',
+            'daemon_exclusion_survives_resume_picker',
+            'daemon_exclusion_survives_fork_picker'
+          )
+          $completed = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ("codexdd045-cli-{0:D2}.log" -f $completed)
+            $command = 'cargo test --locked -p codex-cli --test daemon_startup ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1'
+            Write-Host "CASE $($completed + 1)/$($cases.Count): $case"
+            & cmd.exe /d /c $command
+            $rc = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "No CLI test log for $case" }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join "`n"
+            Write-Host $tail
+            if ($rc -ne 0) { throw "CLI startup test $case failed with exit $rc; see artifact" }
+            if ($tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
+              throw "CLI test filter $case did not execute any tests"
+            }
+            $completed++
+          }
+          Write-Host "PASS: $completed/$($cases.Count) native Windows CLI startup filters."
+
+      - name: Upload CLI startup logs (no release artifacts)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-cli-native-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-cli-*.log
+          if-no-files-found: warn
+          retention-days: 7
