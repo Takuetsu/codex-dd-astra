@@ -15,7 +15,7 @@ permissions:
 jobs:
   import-resolved-lock:
     name: Import sealed ZIP 9 resolver Git blob only
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == '4e51b1033fd5be63db74c82f1b784e6bed6f0b4c'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == 'ddad2b186f7dd3b19c241ded0a5432b74510edbc'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = '4e51b1033fd5be63db74c82f1b784e6bed6f0b4c'
+          test "$(git rev-parse HEAD^)" = 'ddad2b186f7dd3b19c241ded0a5432b74510edbc'
           test "$(git hash-object codex-rs/Cargo.toml)" = '8ae5758c9baa6091b8ab5dda4e5b848365c0009d'
           test "$(git hash-object codex-rs/Cargo.lock)" = '096939fcec32cb259bccc0cb36c5d4120701da57'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -87,7 +87,7 @@ jobs:
           baseline = Path("codex-rs/Cargo.toml").read_bytes()
           needle = b'zip = "2.4.2"'
           assert baseline.count(needle) == 1, "Unexpected ZIP workspace dependency baseline"
-          assert baseline.replace(needle, b'zip = "9.0.5"') == manifest, "Preview manifest differs from exact one-line edit"
+          assert baseline.replace(needle, b'zip = "9.0.5"') == manifest.replace(b"\r\n", b"\n"), "Preview manifest differs from exact one-line edit after normalizing CRLF"
           text = locked.decode("utf-8")
           for name, version in [
               ("zip", "9.0.5"), ("rustls", "0.23.46"),
