@@ -1429,7 +1429,10 @@ fn read_extracted_backup_archive_git_sha_rejects_path_traversal_ref() {
 fn curated_repo_zipball_with_unsupported_bzip2_member() -> Vec<u8> {
     let cursor = std::io::Cursor::new(Vec::new());
     let mut writer = ZipWriter::new(cursor);
-    let options = SimpleFileOptions::default();
+    // ZIP 9 defaults to Deflate (method 8). The fixture must start with
+    // Stored (method 0) before rewriting only the selected member to BZIP2.
+    let options = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Stored);
     writer
         .start_file(
             "openai-plugins-test/.agents/plugins/marketplace.json",
