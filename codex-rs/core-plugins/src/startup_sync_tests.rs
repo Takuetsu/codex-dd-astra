@@ -1232,6 +1232,48 @@ async fn sync_openai_plugins_repo_via_http_cleans_up_staged_dir_on_extract_failu
 }
 
 #[tokio::test]
+async fn sync_openai_plugins_repo_via_http_rejects_unsupported_bzip2_without_replacing_snapshot() {
+    let tmp = tempdir().expect("tempdir");
+    let repo_path = curated_plugins_repo_path(tmp.path());
+    write_openai_curated_marketplace(&repo_path, &["gmail"]);
+    write_curated_plugin_sha(tmp.path());
+    let original_manifest =
+        std::fs::read_to_string(repo_path.join(".agents/plugins/marketplace.json"))
+            .expect("original marketplace manifest");
+
+    let server = MockServer::start().await;
+    let remote_sha = "fedcba9876543210fedcba9876543210fedcba98";
+    mount_github_repo_and_ref(&server, remote_sha).await;
+    mount_github_zipball(
+        &server,
+        remote_sha,
+        curated_repo_zipball_with_unsupported_bzip2_member(),
+    )
+    .await;
+
+    let err = run_http_sync(tmp.path().to_path_buf(), server.uri())
+        .await
+        .expect_err("unsupported BZIP2 ZIP entry must fail closed");
+
+    assert!(
+        err.contains("curated plugins zip") || err.contains("curated plugins file"),
+        "{err}"
+    );
+    assert_curated_gmail_repo(&repo_path);
+    assert_eq!(
+        std::fs::read_to_string(repo_path.join(".agents/plugins/marketplace.json"))
+            .expect("marketplace manifest after failed sync"),
+        original_manifest
+    );
+    assert_eq!(
+        read_curated_plugins_sha(tmp.path()).as_deref(),
+        Some(TEST_CURATED_PLUGIN_SHA)
+    );
+    assert!(!repo_path.join("plugins/bzip2-only.bin").exists());
+    assert!(!has_plugins_clone_dirs(tmp.path()));
+}
+
+#[tokio::test]
 async fn sync_openai_plugins_repo_skips_archive_download_when_sha_matches() {
     let tmp = tempdir().expect("tempdir");
     let repo_path = curated_plugins_repo_path(tmp.path());
@@ -1379,6 +1421,46 @@ fn read_extracted_backup_archive_git_sha_rejects_path_traversal_ref() {
         .expect_err("path traversal ref should be rejected");
 
     assert!(err.contains("invalid path components"));
+}
+
+// Produce a valid stored ZIP, then mark its second entry as method 12 (BZIP2)
+// in both the local and central headers. This exercises an unsupported
+// compression method without restoring the disallowed BZIP2 dependency.
+fn curated_repo_zipball_with_unsupported_bzip2_member() -> Vec<u8> {
+    let cursor = std::io::Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+    let options = SimpleFileOptions::default();
+    writer
+        .start_file(
+            "openai-plugins-test/.agents/plugins/marketplace.json",
+            options,
+        )
+        .expect("start stored marketplace entry");
+    writer
+        .write_all(b"{\"name\":\"openai-curated\",\"plugins\":[]}")
+        .expect("write marketplace entry");
+    writer
+        .start_file("openai-plugins-test/plugins/bzip2-only.bin", options)
+        .expect("start stored payload entry");
+    writer.write_all(b"unsupported compression").expect("write payload");
+    let mut bytes = writer.finish().expect("finish stored ZIP").into_inner();
+
+    // ZIP local file header method at +8; central directory method at +10.
+    // Both must be updated, or the regression could pass due to malformed
+    // inconsistent metadata rather than intentionally disabled BZIP2.
+    for (signature, method_offset) in [
+        (&b"PK\x03\x04"[..], 8_usize),
+        (&b"PK\x01\x02"[..], 10_usize),
+    ] {
+        let start = bytes
+            .windows(signature.len())
+            .rposition(|window| window == signature)
+            .expect("ZIP entry header");
+        let method = start + method_offset;
+        assert_eq!(&bytes[method..method + 2], &0_u16.to_le_bytes());
+        bytes[method..method + 2].copy_from_slice(&12_u16.to_le_bytes());
+    }
+    bytes
 }
 
 #[test]

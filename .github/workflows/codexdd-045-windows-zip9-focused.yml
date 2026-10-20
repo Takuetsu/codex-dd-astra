@@ -102,7 +102,7 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
 
-      - name: Run five focused ZIP 9 extraction and fallback regressions
+      - name: Run six focused ZIP 9 extraction and fallback regressions
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -113,7 +113,8 @@ jobs:
             'curated_zip_extraction_rejects_paths_above_archive_root',
             'sync_openai_plugins_repo_uses_http_without_git_transport',
             'sync_openai_plugins_repo_falls_back_to_export_archive_when_no_snapshot_exists',
-            'sync_openai_plugins_repo_via_http_cleans_up_staged_dir_on_extract_failure'
+            'sync_openai_plugins_repo_via_http_cleans_up_staged_dir_on_extract_failure',
+            'sync_openai_plugins_repo_via_http_rejects_unsupported_bzip2_without_replacing_snapshot'
           )
           $index = 0
           foreach ($case in $cases) {
