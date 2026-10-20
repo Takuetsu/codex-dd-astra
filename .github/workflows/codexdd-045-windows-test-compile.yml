@@ -1,0 +1,138 @@
+# Read-only test-target compilation checkpoint for the unreleased CodexDD 0.4.5 integration.
+# No release, publish, installer, version advancement or production writes are authorized.
+name: CodexDD 0.4.5 Windows TUI test compile
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-test-compile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-test-compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tui-tests-native-compile:
+    name: Windows Cargo TUI tests compile (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact integration commit without saved credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assert nonrelease integration identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Production version marker advanced' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Tracked upstream marker advanced' }
+
+      - name: Configure isolated native Windows paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Could not enable long paths' }
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install DotSlash for Rust dependency tools
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Cache integration-only Cargo sources and artifacts
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045/target
+          key: codexdd045-tests-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+          save-always: true
+
+      - name: Verify repository-pinned Windows V8 binding
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Compile TUI test targets and capture all compiler errors
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd045-windows-test-compile.log'
+          # Cargo.lock is still being reconciled; do not claim a locked build.
+          # This only checks test-target compilation, not test execution.
+          $cmd = 'cargo check --keep-going -p codex-tui --tests > "' + $log + '" 2>&1'
+          & cmd.exe /d /c $cmd
+          $rc = $LASTEXITCODE
+          Write-Host "Cargo test-target check exit code: $rc"
+          if (-not (Test-Path -LiteralPath $log)) { throw 'Missing Cargo output' }
+          if ($rc -ne 0) {
+            $clean = [regex]::Replace([IO.File]::ReadAllText($log), '\x1b\[[0-9;]*[A-Za-z]', '')
+            $sourceLines = $clean -split '\r?\n'
+            $report = Join-Path $env:RUNNER_TEMP 'codexdd045-test-compile-errors.txt'
+            $blocks = [System.Collections.Generic.List[string]]::new()
+            for ($idx = 0; $idx -lt $sourceLines.Length; $idx++) {
+              if ($sourceLines[$idx] -match '^\s*error(\[E[0-9]+\])?:') {
+                $stop = [Math]::Min($idx + 20, $sourceLines.Length - 1)
+                $blocks.Add((($sourceLines[$idx..$stop]) -join [Environment]::NewLine))
+              }
+            }
+            Write-Host "Rust error headings found: $($blocks.Count)"
+            $blocks -join ([Environment]::NewLine + [Environment]::NewLine) |
+              Set-Content -LiteralPath $report -Encoding utf8
+            Get-Content -LiteralPath $report
+            throw "Windows TUI test target compilation failed (exit $rc); inspect attached diagnostics"
+          }
+          Get-Content -LiteralPath $log -Tail 45
+
+      - name: Capture nonaccepted lockfile diff
+        if: always()
+        shell: pwsh
+        run: |
+          git diff -- codex-rs/Cargo.lock |
+            Out-File -FilePath (Join-Path $env:RUNNER_TEMP 'codexdd045-test-lock-diff.txt') -Encoding utf8
+
+      - name: Upload test compile logs without publishing
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-windows-test-compile-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/codexdd045-windows-test-compile.log
+            ${{ runner.temp }}/codexdd045-test-compile-errors.txt
+            ${{ runner.temp }}/codexdd045-test-lock-diff.txt
+          if-no-files-found: warn
+          retention-days: 7
