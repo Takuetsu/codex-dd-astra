@@ -2514,7 +2514,7 @@ async fn copy_shortcut_can_be_remapped() {
         let paste = KeyEvent::new(KeyCode::Char('v'), modifiers);
         assert_matches!(
             chat.handle_key_event(paste),
-            crate::chatwidget::KeyEventAction::PasteImage
+            crate::chatwidget::KeyEventAction::PasteImage { .. }
         );
         chat.handle_key_event(KeyEvent {
             kind: KeyEventKind::Release,
@@ -2553,22 +2553,22 @@ async fn legacy_image_paste_ignores_buffered_press_until_other_input() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     let paste = KeyEvent::new(KeyCode::Char('v'), KeyModifiers::CONTROL);
 
-    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage);
+    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });
     assert_matches!(chat.handle_key_event(paste), KeyEventAction::None);
 
     chat.suppress_image_paste_until = Instant::now() - Duration::from_secs(/*secs*/ 1);
-    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage);
+    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });
 
     chat.suppress_image_paste_until = Instant::now() + Duration::from_secs(/*secs*/ 1);
     chat.handle_key_event(KeyEvent::from(KeyCode::Char('x')));
-    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage);
+    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });
 
     chat.suppress_image_paste_until = Instant::now() + Duration::from_secs(/*secs*/ 1);
     chat.handle_key_event(KeyEvent {
         kind: KeyEventKind::Release,
         ..paste
     });
-    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage);
+    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });
 }
 
 #[tokio::test]

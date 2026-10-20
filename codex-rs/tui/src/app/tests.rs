@@ -556,26 +556,33 @@ async fn external_editor_writable_directory_rejected_snapshot() -> Result<()> {
 #[tokio::test]
 async fn enqueue_primary_thread_session_replays_buffered_approval_after_attach() -> Result<()> {
     let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let thread_id = ThreadId::new();
-    let approval_request =
-        exec_approval_request(thread_id, "turn-1", "call-1", /*approval_id*/ None);
-
-    assert_eq!(
-        app.pending_app_server_requests
-            .note_server_request(&approval_request),
-        None
-    );
-    app.agents_overview
-        .dispatched_requests
-        .insert(thread_id, vec![approval_request.clone()]);
-    app.enqueue_primary_thread_request(approval_request.clone())
-        .await?;
     let (mut app_server, requests, proxy) = session_lifecycle_requests::start_recording_app_server(
         &app.config,
         /*blocked_thread_list*/ None,
         /*failed_thread_name*/ None,
     )
     .await?;
+    let thread_id = ThreadId::new();
+    let approval_request =
+        exec_approval_request(thread_id, "turn-1", "call-1", /*approval_id*/ None);
+
+    let buffered = super::app_server_requests::BufferedServerRequest::new(
+        approval_request.clone(),
+        &app_server.request_handle(),
+    );
+    assert_eq!(
+        app.pending_app_server_requests.note_buffered_request(&buffered),
+        None
+    );
+    app.agents_overview.dispatched_requests.insert(
+        thread_id,
+        vec![super::app_server_requests::BufferedServerRequest::new(
+            approval_request.clone(),
+            &app_server.request_handle(),
+        )],
+    );
+    app.enqueue_primary_thread_request(approval_request.clone())
+        .await?;
     app.handle_app_server_event(
         &app_server,
         codex_app_server_client::AppServerEvent::ServerNotification(Box::new(
@@ -711,7 +718,7 @@ async fn resolved_buffered_approval_does_not_become_actionable_after_drain() -> 
         .pending_app_server_requests
         .resolve_notification(&thread_id.to_string(), &AppServerRequestId::Integer(1))
         .expect("matching app-server request should resolve");
-    app.chat_widget.dismiss_app_server_request(&resolved);
+    app.chat_widget.dismiss_app_server_request(&resolved.request);
     while app_event_rx.try_recv().is_ok() {}
 
     let rx = app
@@ -6170,6 +6177,7 @@ async fn make_test_app() -> Box<App> {
         enhanced_keys_supported: false,
         keymap: crate::keymap::RuntimeKeymap::defaults(),
         key_chord_matcher: crate::keymap::KeyChordMatcher::default(),
+        routed_key_activation: None,
         commit_animation: None,
         status_line_invalid_items_warned: Arc::new(AtomicBool::new(false)),
         terminal_title_invalid_items_warned: Arc::new(AtomicBool::new(false)),
@@ -6191,6 +6199,7 @@ async fn make_test_app() -> Box<App> {
         },
         daemon_cli_executable: None,
         pending_update_action: None,
+        daemon_restart: None,
         pending_shutdown_exit_thread_id: None,
         windows_sandbox: WindowsSandboxState::default(),
         thread_event_channels: HashMap::new(),
@@ -6293,6 +6302,7 @@ pub(super) async fn make_test_app_with_channels() -> (
             enhanced_keys_supported: false,
             keymap: crate::keymap::RuntimeKeymap::defaults(),
             key_chord_matcher: crate::keymap::KeyChordMatcher::default(),
+            routed_key_activation: None,
             commit_animation: None,
             status_line_invalid_items_warned: Arc::new(AtomicBool::new(false)),
             terminal_title_invalid_items_warned: Arc::new(AtomicBool::new(false)),
@@ -6314,6 +6324,7 @@ pub(super) async fn make_test_app_with_channels() -> (
             },
             daemon_cli_executable: None,
             pending_update_action: None,
+            daemon_restart: None,
             pending_shutdown_exit_thread_id: None,
             windows_sandbox: WindowsSandboxState::default(),
             thread_event_channels: HashMap::new(),
