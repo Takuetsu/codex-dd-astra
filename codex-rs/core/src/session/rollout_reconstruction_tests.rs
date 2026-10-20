@@ -125,6 +125,7 @@ async fn recorded_questions_share_queued_input_order_across_resume() {
 async fn resumed_history_recovers_orphan_custom_tool_call_without_panicking() {
     let (session, turn) = make_session_and_context().await;
     let call = ResponseItem::CustomToolCall {
+        encrypted_content: None,
         id: None,
         status: None,
         call_id: "interrupted-custom-tool".to_string(),

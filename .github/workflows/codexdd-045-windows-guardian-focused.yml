@@ -8,6 +8,9 @@ on:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
       - '.github/workflows/codexdd-045-windows-guardian-focused.yml'
+      - 'codex-rs/ext/guardian-reviewer/src/**'
+      - 'codex-rs/feedback/src/**'
+      - 'codex-rs/core/src/guardian/**'
   workflow_dispatch:
 
 permissions:

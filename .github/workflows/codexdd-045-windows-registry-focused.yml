@@ -10,6 +10,8 @@ on:
       - '.github/workflows/codexdd-045-windows-registry-focused.yml'
       - 'codex-rs/core/src/tools/registry.rs'
       - 'codex-rs/core/src/tools/registry_tests.rs'
+      - 'codex-rs/core/src/client_tests.rs'
+      - 'codex-rs/core/src/session/rollout_reconstruction_tests.rs'
   workflow_dispatch:
 
 permissions:

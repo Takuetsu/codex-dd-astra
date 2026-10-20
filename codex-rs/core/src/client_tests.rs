@@ -503,6 +503,8 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
 
     let prompt_after_signal = Prompt {
         input: vec![ResponseItem::FunctionCall {
+            encrypted_content: None,
+            status: None,
             id: None,
             name: "report_adaptive_signal".to_string(),
             namespace: None,
