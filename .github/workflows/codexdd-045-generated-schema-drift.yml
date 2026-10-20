@@ -8,6 +8,9 @@ on:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
       - '.github/workflows/codexdd-045-generated-schema-drift.yml'
+      - 'codex-rs/app-server-protocol/schema/**'
+      - 'codex-rs/core/config.schema.json'
+      - 'sdk/python/src/openai_codex/generated/**'
   workflow_dispatch:
 
 permissions:
