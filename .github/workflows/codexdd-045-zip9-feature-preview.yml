@@ -1,0 +1,80 @@
+# Disposable, nonrelease ZIP9 feature resolver preview. Never modifies a GitHub branch.
+name: CodexDD 0.4.5 ZIP9 BZIP2-license preview
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-zip9-feature-preview.yml'
+permissions:
+  contents: read
+jobs:
+  preview:
+    name: Windows ZIP9 non-BZIP2 feature resolution (read-only)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Verify current reviewed resolver and release markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong SHA' }
+          if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne '43775319466241f34565fa2611172f2239b5bbdf') { throw 'Manifest changed' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '48ae4fb45a83de4d72dee6200b83a770dbf8f760') { throw 'Cargo lock changed' }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Version advanced' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker advanced' }
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths failed' }
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Trial ZIP9 feature selection excluding BZIP2 in disposable checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path zip9-preview | Out-Null
+          $path = (Resolve-Path codex-rs/Cargo.toml).Path
+          $text = [IO.File]::ReadAllText($path)
+          $needle = 'zip = "9.0.5"'
+          if (($text.Split(@($needle), [StringSplitOptions]::None).Length - 1) -ne 1) { throw 'ZIP pin not unique' }
+          $value = 'zip = { version = "9.0.5", default-features = false, features = ["aes-crypto", "deflate64", "deflate", "lzma", "ppmd", "time", "zstd", "xz"] }'
+          [IO.File]::WriteAllText($path, $text.Replace($needle, $value))
+          if ((git diff --name-only).Trim() -ne 'codex-rs/Cargo.toml') { throw 'Unexpected modified files' }
+      - name: Resolve ZIP9 features and capture Cargo output
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo update --manifest-path codex-rs/Cargo.toml -p zip --precise 9.0.5 *> zip9-preview/cargo-update.log
+          $rc = $LASTEXITCODE
+          Get-Content zip9-preview/cargo-update.log -Tail 50
+          if ($rc -ne 0) { throw "Cargo update failed with $rc" }
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Locked metadata failed' }
+          $lock = [IO.File]::ReadAllText((Resolve-Path codex-rs/Cargo.lock).Path)
+          if ($lock -match '(?m)^name = "libbz2-rs-sys"$') { throw 'Rejected BZIP2 license dependency remains' }
+          foreach ($pair in @(@('zip','9.0.5'),@('rustls','0.23.46'),@('quinn-proto','0.11.18'),@('noyalib-serde-yaml','0.0.57'))) {
+            $pattern = '(?m)^\[\[package\]\]\r?\nname = "' + [regex]::Escape($pair[0]) + '"\r?\nversion = "' + [regex]::Escape($pair[1]) + '"'
+            if (-not [regex]::IsMatch($lock,$pattern)) { throw "Missing security pin $($pair[0])" }
+          }
+          if ((git diff --name-only | Sort-Object) -join ',' -ne 'codex-rs/Cargo.lock,codex-rs/Cargo.toml') { throw 'Unexpected resolver writes' }
+          (git hash-object -- codex-rs/Cargo.lock).Trim() | Set-Content zip9-preview/lock-blob.txt -Encoding ascii
+      - name: Capture exact preview only, never publish
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path zip9-preview | Out-Null
+          Copy-Item codex-rs/Cargo.lock zip9-preview/Cargo.lock -Force
+          Copy-Item codex-rs/Cargo.toml zip9-preview/Cargo.toml -Force
+          git diff -- codex-rs/Cargo.lock codex-rs/Cargo.toml | Out-File zip9-preview/lock-diff.patch -Encoding utf8
+          git rev-parse HEAD | Set-Content zip9-preview/source-sha.txt -Encoding ascii
+      - name: Upload readonly preview
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-zip9-no-bzip2
+          path: zip9-preview/
+          if-no-files-found: warn
+          retention-days: 7
