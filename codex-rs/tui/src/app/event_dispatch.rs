@@ -155,6 +155,16 @@ impl App {
         };
         match event {
             AppEvent::OpenDaemonMenu => self.open_daemon_menu(),
+            AppEvent::ConfirmDaemonRestart => self.confirm_daemon_restart(),
+            AppEvent::RunDaemonRestart => {
+                if self.chat_widget.remote_connection.as_ref().is_some_and(|connection| connection.is_managed_daemon)
+                    && self.daemon_restart.is_none()
+                {
+                    self.daemon_restart = Some(tokio::spawn(codex_app_server_daemon::run(
+                        codex_app_server_daemon::LifecycleCommand::Restart,
+                    )));
+                }
+            }
             AppEvent::ConfirmDaemonUpdate(source) => self.confirm_daemon_update(source),
             AppEvent::RunDaemonUpdate(source) => {
                 self.pending_update_action = Some(UpdateAction::Daemon(source));
@@ -1178,12 +1188,12 @@ impl App {
                         let message = format!("Voice conversation failed: {err:#}");
                         if is_realtime_stop {
                             if chat_widget.thread_id() == realtime_stop_thread_id {
-                                chat_widget.record_realtime_failure();
+                                chat_widget.record_realtime_failure(crate::chatwidget::RealtimeFailureCause::AppServerRequest);
                                 chat_widget.reset_realtime_conversation();
                                 chat_widget.add_realtime_error(message);
                             }
                         } else {
-                            chat_widget.on_realtime_error(message);
+                            chat_widget.on_realtime_error(message, crate::chatwidget::RealtimeFailureCause::AppServerRequest);
                         }
                         tracing::error!(error = ?err, "realtime conversation request failed");
                     } else if handled {
@@ -1347,8 +1357,8 @@ impl App {
                     .handle_pet_selection_loaded(tui, request_id, pet_id, result)
                     .await;
             }
-            AppEvent::ConfiguredPetLoaded { pet_id, result } => {
-                self.handle_configured_pet_loaded(tui, pet_id, result);
+            AppEvent::ConfiguredPetLoaded { generation, pet_id, result } => {
+                self.handle_configured_pet_loaded(tui, generation, pet_id, result);
             }
             AppEvent::RefreshConnectors { force_refetch } => {
                 self.chat_widget.refresh_connectors(force_refetch);

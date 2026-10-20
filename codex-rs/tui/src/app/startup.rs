@@ -900,6 +900,7 @@ See the Codex keymap documentation for supported actions and examples."
             enhanced_keys_supported,
             keymap: runtime_keymap,
             key_chord_matcher: KeyChordMatcher::default(),
+            routed_key_activation: None,
             transcript_cells: Vec::new(),
             native_history: Default::default(),
             turn_tips: Default::default(),
@@ -935,6 +936,7 @@ See the Codex keymap documentation for supported actions and examples."
             },
             daemon_cli_executable,
             pending_update_action: None,
+            daemon_restart: None,
             pending_shutdown_exit_thread_id: None,
             windows_sandbox: WindowsSandboxState {
                 prompt_after_trust: should_prompt_windows_sandbox_nux_at_startup
@@ -1263,6 +1265,18 @@ See the Codex keymap documentation for supported actions and examples."
                     .rate_limit_refresh_interval()
                     .and_then(|interval| app.rate_limit_refresh_state.poll_deadline(interval));
                 let control = select! {
+                    result = async {
+                        match app.daemon_restart.as_mut() {
+                            Some(task) => task.await,
+                            None => std::future::pending().await,
+                        }
+                    }, if app.daemon_restart.is_some() => {
+                        app.daemon_restart = None;
+                        if let Err(err) = result.unwrap_or_else(|err| Err(err.into())) {
+                            app.chat_widget.add_error_message(format!("Could not restart the background server: {err:#}"));
+                        }
+                        AppRunControl::Continue
+                    }
                     Some(event) = app_event_rx.recv() => {
                         let is_initial_session_header = matches!(
                             &event,

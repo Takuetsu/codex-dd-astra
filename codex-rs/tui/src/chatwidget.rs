@@ -304,6 +304,7 @@ mod misalignment_policy;
 pub(crate) use misalignment_policy::MisalignmentReview;
 pub(crate) use misalignment_policy::MisalignmentTurnSource;
 mod pets;
+pub(crate) use self::pets::ConfiguredPetLoadGeneration;
 mod session_flow;
 mod session_header;
 use self::session_header::SessionHeader;
@@ -595,6 +596,7 @@ pub(crate) struct ChatWidget {
     // Remember the account's Reserve entry notice across chats and transient banner refreshes.
     luna_reserve_notice_account_id: Option<String>,
     pub(crate) warning_display_state: WarningDisplayState,
+    pub(crate) rendered_selection: std::cell::RefCell<crate::rendered_selection::RenderedSelection>,
     rate_limit_switch_prompt: RateLimitSwitchPromptState,
     add_credits_nudge_email_in_flight: Option<rate_limits::PendingCreditsNudge>,
     adaptive_chunking: AdaptiveChunkingPolicy,
@@ -666,6 +668,7 @@ pub(crate) struct ChatWidget {
     pub(crate) pet_http_client: codex_http_client::RouteAwareClientPool,
     // Ambient companion rendered over the transcript area, never inside the footer rows.
     ambient_pet: Option<crate::pets::AmbientPet>,
+    configured_pet_load_generation: ConfiguredPetLoadGeneration,
     pet_picker_preview_state: crate::pets::PetPickerPreviewState,
     pet_picker_preview_pet: Option<crate::pets::AmbientPet>,
     pet_picker_preview_request_id: u64,
@@ -705,7 +708,7 @@ pub(crate) struct ChatWidget {
     chat_keymap: ChatKeymap,
     permission_shortcut_pending: bool,
     // Pending notification to show when unfocused on next Draw
-    pending_notification: Option<Notification>,
+    pub(crate) pending_notification: Option<Notification>,
     /// When `Some`, the user has pressed a quit shortcut and the second press
     /// must occur before `quit_shortcut_expires_at`.
     quit_shortcut_expires_at: Option<Instant>,
@@ -1191,6 +1194,17 @@ impl ChatWidget {
         }
         self.refresh_status_line_if_workspace_headline_due();
         self.refresh_thread_usage_if_settlement_due();
+        self.refresh_terminal_program_status();
+    }
+
+    pub(crate) fn refresh_terminal_program_status(&self) {
+        let status = self.desired_program_status();
+        if let Err(err) = crate::terminal_program_status::set_terminal_program_status(
+            status,
+            self.iterm_session_detail(status),
+        ) {
+            tracing::debug!(error = %err, "failed to set terminal program status");
+        }
     }
 
     fn flush_active_cell(&mut self) {

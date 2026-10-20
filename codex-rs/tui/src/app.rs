@@ -52,6 +52,7 @@ use crate::history_cell::HistoryCell;
 #[cfg(not(debug_assertions))]
 use crate::history_cell::UpdateAvailableHistoryCell;
 use crate::hooks_rpc::HookTrustUpdate;
+use crate::key_hint::KeyBinding;
 use crate::key_hint::KeyBindingListExt;
 use crate::keymap::KeyChordMatcher;
 use crate::keymap::RuntimeKeymap;
@@ -238,6 +239,7 @@ mod new_session;
 mod turn_tips;
 pub(crate) use new_session::has_launch_setting;
 mod clipboard;
+mod footer_selection;
 mod native_history;
 mod owned_transcript;
 mod pending_interactive_replay;
@@ -255,6 +257,7 @@ mod replay_filter;
 mod resize_reflow;
 mod resume_config;
 mod right_click_paste;
+pub(crate) use right_click_paste::PasteEnvironment;
 mod safety_buffering;
 mod server_version_notice;
 mod session_lifecycle;
@@ -575,6 +578,7 @@ pub(crate) struct App {
     pub(crate) enhanced_keys_supported: bool,
     pub(crate) keymap: RuntimeKeymap,
     pub(crate) key_chord_matcher: KeyChordMatcher,
+    routed_key_activation: Option<KeyBinding>,
 
     /// The foreground loop owns stream pacing; stopped animations have no timer.
     pub(crate) commit_animation: Option<tokio::time::Interval>,
@@ -601,6 +605,8 @@ pub(crate) struct App {
     /// Set when the user confirms an update; propagated on exit.
     daemon_cli_executable: Option<AbsolutePathBuf>,
     pub(crate) pending_update_action: Option<UpdateAction>,
+    /// Retained until the managed daemon has completed its restart.
+    daemon_restart: Option<JoinHandle<anyhow::Result<codex_app_server_daemon::LifecycleOutput>>>,
 
     /// Tracks the thread we intentionally shut down while exiting the app.
     ///
@@ -1030,7 +1036,8 @@ impl App {
             {
                 self.open_agents_overview(app_server);
             } else if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {
-                self.chat_widget.handle_disconnected_view_key(*key);
+                let activation_key = self.routed_key_activation.take();
+                self.chat_widget.handle_disconnected_view_key(*key, activation_key);
                 if self
                     .chat_widget
                     .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)

@@ -56,6 +56,7 @@ use crate::bottom_pane::ApprovalRequest;
 use crate::bottom_pane::StatusLineItem;
 use crate::bottom_pane::TerminalTitleItem;
 use crate::chatwidget::AstraModelPickerAction;
+use crate::chatwidget::ConfiguredPetLoadGeneration;
 use crate::chatwidget::ConnectorScopeGeneration;
 use crate::chatwidget::ThreadUsageOutcome;
 use crate::chatwidget::UserMessage;
@@ -71,6 +72,12 @@ use codex_protocol::models::ActivePermissionProfile;
 use codex_realtime_webrtc::StartedRealtimeWebrtcSession;
 
 use crate::history_cell::HistoryCell;
+
+#[derive(Debug)]
+pub(crate) struct RealtimeWebrtcStartupFailure {
+    pub message: String,
+    pub cause: codex_realtime_webrtc::ConnectionError,
+}
 
 /// Global voice controls always apply to the one call's owner.
 #[derive(Clone, Copy, Debug)]
@@ -250,6 +257,7 @@ pub(crate) enum KeymapEditIntent {
 pub(crate) enum KeymapCaptureMode {
     SingleKey,
     Chord,
+    LeaderChord,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -302,6 +310,8 @@ pub(crate) enum AppEvent {
         notice: crate::security_setup::Notice,
     },
     OpenDaemonMenu,
+    ConfirmDaemonRestart,
+    RunDaemonRestart,
     ConfirmDaemonUpdate(crate::update_action::DaemonUpdateSource),
     RunDaemonUpdate(crate::update_action::DaemonUpdateSource),
     ReviewMisalignment(Arc<crate::chatwidget::MisalignmentReview>),
@@ -454,7 +464,7 @@ pub(crate) enum AppEvent {
         server_name: String,
         request_id: AppServerRequestId,
         attempt_id: Uuid,
-        result: Result<codex_app_server_protocol::UserVerificationProof, String>,
+        result: Result<codex_app_server_protocol::UserVerificationProof, crate::app_command::UserVerificationFailure>,
     },
 
     /// Interrupt, fork, and retry a safety-buffered turn with the server-selected model.
@@ -912,6 +922,7 @@ pub(crate) enum AppEvent {
 
     /// Result of restoring the configured ambient pet during startup.
     ConfiguredPetLoaded {
+        generation: ConfiguredPetLoadGeneration,
         pet_id: String,
         result: Result<Option<crate::pets::AmbientPet>, String>,
     },
@@ -1245,7 +1256,7 @@ pub(crate) enum AppEvent {
     RealtimeWebrtcOfferCreated {
         thread_id: ThreadId,
         attempt_id: u64,
-        result: Result<StartedRealtimeWebrtcSession, String>,
+        result: Result<StartedRealtimeWebrtcSession, RealtimeWebrtcStartupFailure>,
     },
 
     /// Result of establishing the WebRTC connection for an active voice attempt.

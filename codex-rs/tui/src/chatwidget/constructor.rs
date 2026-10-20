@@ -88,7 +88,7 @@ impl ChatWidget {
             config.http_client_factory(),
             codex_http_client::ClientRouteClass::Other,
         );
-        pets::start_configured_pet_load_if_needed(
+        let configured_pet_load_generation = pets::start_configured_pet_load_if_needed(
             &local_settings,
             /*ambient_pet_missing*/ true,
             frame_requester.clone(),
@@ -175,6 +175,7 @@ impl ChatWidget {
             backend_banner_notice_model: None,
             luna_reserve_notice_account_id: None,
             warning_display_state: WarningDisplayState::default(),
+            rendered_selection: Default::default(),
             rate_limit_switch_prompt: RateLimitSwitchPromptState::default(),
             add_credits_nudge_email_in_flight: None,
             adaptive_chunking: AdaptiveChunkingPolicy::default(),
@@ -222,6 +223,7 @@ impl ChatWidget {
             active_hook_cell: None,
             pet_http_client,
             ambient_pet: None,
+            configured_pet_load_generation,
             pet_picker_preview_state: crate::pets::PetPickerPreviewState::default(),
             pet_picker_preview_pet: None,
             pet_picker_preview_request_id: 0,
