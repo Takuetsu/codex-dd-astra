@@ -1,0 +1,138 @@
+# One-shot, nonrelease read-only target reachability and semver patch reconnaissance.
+# No released artifact, production, security policy, or branch lockfile mutation.
+name: CodexDD 0.4.5 inherited advisory reachability
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-inherited-advisory-recon.yml'
+permissions:
+  contents: read
+jobs:
+  advisory-recon:
+    name: Windows/Linux advisory reachability and spin patch trial (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == 'c6c65a7f603d651b35288310a2a220e30d79370f'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout exact source commit with no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify exact Cargo and advisory baseline, release markers, and ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = 'c6c65a7f603d651b35288310a2a220e30d79370f'
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Resolve exact Windows and Linux dependency edges read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p advisory-recon
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/windows.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/linux.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from collections import deque
+          from pathlib import Path
+          tmp = Path(os.environ["RUNNER_TEMP"])
+          wanted = ("basic-toml", "i18n-config", "zbus", "zbus_names", "zvariant", "zvariant_derive", "spin", "flume", "heapless")
+          out = {}
+          for platform in ("windows", "linux"):
+              data = json.loads((tmp / (platform + ".json")).read_text())
+              by_id = {p["id"]: p for p in data["packages"]}
+              nodes = {n["id"]: n for n in data["resolve"]["nodes"]}
+              roots = [p for p in data["workspace_members"] if p in nodes]
+              prev = {p: None for p in roots}
+              queue = deque(roots)
+              while queue:
+                  node = queue.popleft()
+                  for dep in nodes[node].get("deps", []):
+                      child = dep["pkg"]
+                      if child not in prev and child in nodes:
+                          prev[child] = node
+                          queue.append(child)
+              reports = {}
+              for name in wanted:
+                  matches = []
+                  for id_, pkg in by_id.items():
+                      if pkg["name"] != name:
+                          continue
+                      path = None
+                      if id_ in prev:
+                          ids = [id_]
+                          while prev[ids[-1]] is not None:
+                              ids.append(prev[ids[-1]])
+                          path = [by_id[x]["name"] + "@" + by_id[x]["version"] for x in reversed(ids)]
+                      matches.append({"version": pkg["version"], "workspace_reachable": path is not None, "path": path})
+                  reports[name] = matches
+              out[platform] = {"target": "x86_64-pc-windows-msvc" if platform == "windows" else "x86_64-unknown-linux-gnu", "workspace_member_count": len(roots), "reachable_package_count": len(prev), "packages": reports}
+          out["source_commit"] = os.environ["GITHUB_SHA"]
+          Path("advisory-recon/target-reachability.json").write_text(json.dumps(out, sort_keys=True, indent=2) + "\n")
+          for platform in ("windows", "linux"):
+              print(platform + " reachable advisory packages:")
+              for name, versions in out[platform]["packages"].items():
+                  for item in versions:
+                      if item["workspace_reachable"]:
+                          print("  " + name + " " + item["version"] + " <- " + " -> ".join(item["path"]))
+          PY
+          test -z "$(git status --porcelain)"
+      - name: Trial compatible non-yanked spin 0.9.9 in disposable checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          cargo update --manifest-path codex-rs/Cargo.toml -p spin@0.9.8 --precise 0.9.9 > advisory-recon/spin-update.log 2>&1
+          rc=$?
+          set -e
+          tail -n 50 advisory-recon/spin-update.log
+          if [ "$rc" -ne 0 ]; then
+            echo "spin update preview failed, no lock acceptance" >&2
+            exit "$rc"
+          fi
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > /dev/null
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          lock = tomllib.loads(Path("codex-rs/Cargo.lock").read_text())
+          pkgs = {(x["name"], x["version"]): x for x in lock["package"]}
+          for pair in [("spin", "0.9.9"), ("zip", "9.0.5"), ("rustls", "0.23.46"), ("quinn-proto", "0.11.18"), ("noyalib-serde-yaml", "0.0.57")]:
+              assert pair in pkgs, "Missing required pinned version: " + str(pair)
+          assert ("spin", "0.9.8") not in pkgs, "Yanked spin still resolved"
+          assert not any(x["name"] in ("bzip2", "libbz2-rs-sys") for x in lock["package"]), "Reintroduced disallowed BZIP2 chain"
+          PY
+          test "$(git diff --name-only)" = 'codex-rs/Cargo.lock'
+          git hash-object -- codex-rs/Cargo.lock > advisory-recon/spin-preview-lock-blob.txt
+          cp codex-rs/Cargo.lock advisory-recon/spin-preview-Cargo.lock
+          git diff -- codex-rs/Cargo.lock > advisory-recon/spin-preview.patch
+          echo "PASS: compatible spin patch resolved in uncommitted checkout"
+      - name: Record original source and unchanged release constraints
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p advisory-recon
+          git rev-parse HEAD > advisory-recon/source-commit.txt
+          git status --short > advisory-recon/disposable-checkout-status.txt
+      - name: Upload nonrelease review report only
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-inherited-advisory-recon
+          path: advisory-recon/
+          if-no-files-found: warn
+          retention-days: 7
