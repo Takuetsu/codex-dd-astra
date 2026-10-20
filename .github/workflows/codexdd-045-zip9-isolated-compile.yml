@@ -1,0 +1,93 @@
+# Read-only/disposable Windows resolver preview for the zip security migration.
+# This does not change source, lockfile or release markers in GitHub.
+name: CodexDD 0.4.5 ZIP 9 isolated Windows compile (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-045-zip9-security-migration
+    paths:
+      - '.github/workflows/codexdd-045-zip9-isolated-compile.yml'
+      - 'codex-rs/core-plugins/src/startup_sync.rs'
+      - 'codex-rs/Cargo.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-zip9-compile
+  cancel-in-progress: true
+
+jobs:
+  zip9-resolve:
+    name: ZIP 9.0.5 Windows focused compile (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-045-zip9-security-migration'
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout exact reviewed branch, no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify staging source identity and release markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected checkout SHA' }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Product version advanced' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream release marker advanced' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'Unreviewed resolver lockfile changed' }
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git long paths unavailable' }
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Configure pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Resolve ZIP 9 in disposable checkout and check plugin crate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path zip9-preview-artifact | Out-Null
+          cargo update --manifest-path codex-rs/Cargo.toml -p zip --precise 9.0.5 *> zip9-preview-artifact/cargo-update.log
+          if ($LASTEXITCODE -ne 0) { Get-Content zip9-preview-artifact/cargo-update.log -Tail 100; throw 'ZIP resolver failed' }
+          cargo check --manifest-path codex-rs/Cargo.toml --locked -p codex-core-plugins --lib *> zip9-preview-artifact/compile.log
+          $code = $LASTEXITCODE
+          Get-Content zip9-preview-artifact/compile.log -Tail 120
+          if ($code -ne 0) { throw "ZIP API compile failed (exit $code)" }
+          Write-Host 'PASS: isolated Windows core-plugins lib compile with ZIP 9.0.5.'
+
+      - name: Capture exact preview artifact and lockfile diff
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path zip9-preview-artifact | Out-Null
+          git diff -- codex-rs/Cargo.toml codex-rs/Cargo.lock |
+            Out-File -FilePath zip9-preview-artifact/resolver-diff.patch -Encoding utf8
+          if (Test-Path codex-rs/Cargo.lock) {
+            Copy-Item codex-rs/Cargo.lock zip9-preview-artifact/Cargo.lock -Force
+          }
+          if (Test-Path codex-rs/Cargo.toml) {
+            Copy-Item codex-rs/Cargo.toml zip9-preview-artifact/Cargo.toml -Force
+          }
+          git rev-parse HEAD | Set-Content zip9-preview-artifact/source-commit.txt -Encoding ascii
+
+      - name: Upload resolver preview (not release artifacts)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-zip9-resolver-preview
+          path: zip9-preview-artifact/
+          if-no-files-found: warn
+          retention-days: 7
