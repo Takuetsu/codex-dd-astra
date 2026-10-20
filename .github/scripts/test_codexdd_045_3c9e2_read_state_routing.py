@@ -111,7 +111,7 @@ class ThreadReadStateRoutingTests(unittest.TestCase):
             "INCOMPLETE / NOT A RELEASE CANDIDATE",
             "source-only",
             "35 unresolved",
-            "native Rust",
+            "Native Rust",
             "Cargo.lock",
         ):
             with self.subTest(marker=marker):

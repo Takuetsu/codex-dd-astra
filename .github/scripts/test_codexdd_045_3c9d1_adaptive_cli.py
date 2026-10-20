@@ -75,9 +75,16 @@ class TuiAdaptiveUiMergeTests(unittest.TestCase):
             "9379d52b41473f1a57cb49d07048af7c139ebcf9",
         )
 
-    def test_chatwidget_dispatch_still_requires_three_way_review(self):
+    def test_reviewed_chatwidget_dispatch_preserves_adaptive_command_and_scoped_worker(self):
+        # The original 3C.9d1 hold was superseded by the later reviewed 3C.9f
+        # /config dispatcher integration; preserve the exact newer fork blob.
         path = "codex-rs/tui/src/chatwidget/slash_dispatch.rs"
-        self.assertEqual(blob("HEAD", path), blob(PRODUCTION, path))
+        self.assertEqual(blob("HEAD", path), "57ed2741b86aae99d5ac6054990703c9eabdf845")
+        self.assertNotEqual(blob("HEAD", path), blob(PRODUCTION, path))
+        src = source(path)
+        for marker in ("SlashCommand::Adaptive", "self.dispatch_adaptive_command(",
+                       "crate::adaptive_worker::NewWorkerBinding"):
+            self.assertIn(marker, src)
 
     def test_adaptive_registry_policy_unchanged(self):
         self.assertEqual(

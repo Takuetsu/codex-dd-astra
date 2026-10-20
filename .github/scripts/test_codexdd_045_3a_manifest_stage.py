@@ -49,10 +49,21 @@ def cargo(path: str):
 
 
 class CargoManifestStagingTests(unittest.TestCase):
-    def test_nine_nonoverlapping_manifests_reproduce_pinned_upstream_git_blobs(self):
+    def test_eight_official_manifests_and_reviewed_fork_tools_manifest(self):
+        # Packet 3A.3 initially staged all nine official manifests. The later
+        # compile reconciliation restored two fork-owned tool dependencies;
+        # require that exact reviewed change rather than a stale official blob.
+        self.assertEqual(len(OFFICIAL_CARGO_BLOBS), 9)
         for path, expected in OFFICIAL_CARGO_BLOBS.items():
             with self.subTest(path=path):
-                self.assertEqual(git_blob_sha(git_bytes(path)), expected)
+                actual = git_blob_sha(git_bytes(path))
+                if path == "codex-rs/tools/Cargo.toml":
+                    self.assertEqual(actual, "f47815537ffdd381161130ac0c26bc8d1fd30868")
+                    tools = cargo(path)["dependencies"]
+                    self.assertEqual(tools["codex-utils-absolute-path"], {"workspace": True})
+                    self.assertEqual(tools["tracing"], {"workspace": True})
+                else:
+                    self.assertEqual(actual, expected)
 
     def test_all_staged_manifests_parse_as_toml(self):
         for path in ("codex-rs/Cargo.toml", *OFFICIAL_CARGO_BLOBS):

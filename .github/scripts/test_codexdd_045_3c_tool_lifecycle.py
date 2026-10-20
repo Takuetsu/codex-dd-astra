@@ -99,11 +99,20 @@ class CoreToolLifecycleIntegrationTests(unittest.TestCase):
         )
         self.assertIn("pub(crate) fn effective_tool_mode(", self.modes)
 
-    def test_large_fork_registry_is_untouched_until_later_semantic_review(self):
-        self.assertEqual(
-            blob_oid(git_bytes("codex-rs/core/src/tools/registry.rs")),
-            "5b67eb29406d04b021b0fd9a5e259eccdd7da3b2",
-        )
+    def test_reviewed_fork_registry_still_restricts_adaptive_permissions(self):
+        # Later 0.4.5 packets reconciled tool lifecycle without replacing
+        # fork-owned permission floors. Pin the reviewed new registry and its
+        # fail-closed intent, including terminalization's sole permitted tool.
+        registry = git_bytes("codex-rs/core/src/tools/registry.rs").decode("utf-8")
+        self.assertEqual(blob_oid(registry.encode()), "fc75b3bbf91f1881bd32faaaca93356fbb598b5e")
+        for marker in (
+            "CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER",
+            "CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER",
+            "CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER",
+            "fn adaptive_validation_terminalization_rejection(",
+            'invocation.tool_name.name == "report_adaptive_signal"',
+        ):
+            self.assertIn(marker, registry)
 
     def test_incomplete_integration_release_gates_remain_closed(self):
         self.assertEqual(git_bytes("codex-rs/codexdd-version.txt").strip(), b"0.4.4")

@@ -143,11 +143,22 @@ class ProtocolStagingChecks(unittest.TestCase):
             self.protocol,
         )
 
-    def test_fork_security_permissions_are_not_overwritten_in_this_packet(self):
+    def test_reviewed_0163_permissions_keep_deny_and_protected_metadata_policy(self):
+        # 3B.1 intentionally did not touch protected permissions; 3C.9b later
+        # reviewed and staged the official 0.163 source. Assert its exact blob
+        # and the security primitives instead of pinning an obsolete HEAD.
         self.assertEqual(
             blob_sha(committed("codex-rs/protocol/src/permissions.rs")),
-            FORK_PERMISSION_BLOB,
+            "bd6757543a56063ecbced6dd49e52241dffb4af8",
         )
+        permissions = contents("codex-rs/protocol/src/permissions.rs")
+        for marker in ("ReadDenyMatcher", "FileSystemSandboxPolicy", "forbidden_agent_metadata_write"):
+            self.assertIn(marker, permissions)
+        production = subprocess.run(
+            ["git", "rev-parse", "b25550dcb2c6e84a84074b603086c9db6f32a63b:codex-rs/protocol/src/permissions.rs"],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        self.assertEqual(production, FORK_PERMISSION_BLOB)
 
     def test_release_markers_and_pending_native_gate_are_unmodified(self):
         self.assertEqual(committed("codex-rs/codexdd-version.txt").strip(), b"0.4.4")
