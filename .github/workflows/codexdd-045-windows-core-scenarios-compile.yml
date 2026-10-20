@@ -1,0 +1,116 @@
+# Nonrelease compile-only checkpoint for reconciled upstream 0.163 core scenario tests.
+# No native test execution, 21-stage release suite, merge, packaging or publication.
+name: CodexDD 0.4.5 Windows core scenario compilation
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-core-scenarios-compile.yml'
+      - 'codex-rs/core/tests/suite/scenarios.rs'
+      - 'codex-rs/core/tests/suite/unified_exec.rs'
+      - 'codex-rs/core/tests/all.rs'
+      - 'codex-rs/Cargo.toml'
+      - 'codex-rs/Cargo.lock'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-core-scenarios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core-scenarios:
+    name: Windows core --test all compile-only (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout pinned nonrelease integration source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Verify reviewed resolver, advisory policy and release markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source SHA' }
+          if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4') { throw 'Unreviewed Cargo manifest' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc') { throw 'Unreviewed Cargo.lock' }
+          if ((git hash-object -- codex-rs/deny.toml).Trim() -ne 'ea7fdc149fc880c6b36d75c29851641034289a4e') { throw 'Security audit policy drift' }
+          if ((Get-Content -Raw codex-rs/codexdd-version.txt).Trim() -ne '0.4.4') { throw 'Product marker advanced' }
+          if ((Get-Content -Raw codex-rs/upstream-codex-release.txt).Trim() -ne 'rust-v0.162.0') { throw 'Upstream release marker advanced' }
+      - name: Set short Windows Cargo scratch paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target,$temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths setup failed' }
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Reuse approved integration Cargo caches
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045/target
+          key: codexdd045-core-scenarios-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-native-focused-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-tests-${{ runner.os }}-
+      - name: Verify locked Cargo workspace
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo resolver drift' }
+      - name: Configure pinned native Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile core integration tests without execution
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd045-core-scenarios-compile.log'
+          $cmd = 'cargo test --locked -p codex-core --test all --no-run > "' + $log + '" 2>&1'
+          & cmd.exe /d /c $cmd
+          $rc = $LASTEXITCODE
+          if (-not (Test-Path -LiteralPath $log)) { throw 'No native test compile log' }
+          $tail = Get-Content -LiteralPath $log -Tail 150
+          Write-Host ($tail -join [Environment]::NewLine)
+          if ($rc -ne 0) { throw "Core integration compilation failed: exit $rc" }
+          if (($tail -join ' ') -notmatch 'Finished.*test.*profile' -and ($tail -join ' ') -notmatch 'Executable.*tests[/\\]all') {
+            throw 'Missing native integration test compile receipt'
+          }
+          Write-Host 'PASS: core --test all compiled; tests not executed.'
+      - name: Upload bounded compile diagnostic log
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-core-scenarios-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-core-scenarios-compile.log
+          if-no-files-found: warn
+          retention-days: 7
