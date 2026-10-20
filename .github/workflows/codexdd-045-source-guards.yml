@@ -6,6 +6,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
+      - '.github/scripts/test_codexdd_045_*.py'
       - '.github/workflows/codexdd-045-source-guards.yml'
   workflow_dispatch:
 

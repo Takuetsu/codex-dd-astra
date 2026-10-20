@@ -7,6 +7,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
+      - 'codex-rs/**'
       - '.github/workflows/codexdd-045-windows-test-compile.yml'
   workflow_dispatch:
 
