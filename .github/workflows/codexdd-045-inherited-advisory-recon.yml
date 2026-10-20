@@ -12,7 +12,7 @@ permissions:
 jobs:
   advisory-recon:
     name: Windows/Linux advisory reachability and spin patch trial (nonrelease)
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == 'c6c65a7f603d651b35288310a2a220e30d79370f'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration' && github.event.before == '8f22b4083bbea8159d0c14eb6e7b9a132e4bf543'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = 'c6c65a7f603d651b35288310a2a220e30d79370f'
+          test "$(git rev-parse HEAD^)" = '8f22b4083bbea8159d0c14eb6e7b9a132e4bf543'
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
@@ -91,7 +91,8 @@ jobs:
                       if item["workspace_reachable"]:
                           print("  " + name + " " + item["version"] + " <- " + " -> ".join(item["path"]))
           PY
-          test -z "$(git status --porcelain)"
+          # The report directory is intentionally untracked; require no tracked source mutation.
+          test -z "$(git diff --name-only)"
       - name: Trial compatible non-yanked spin 0.9.9 in disposable checkout
         shell: bash
         run: |
