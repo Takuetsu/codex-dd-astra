@@ -13,7 +13,7 @@ MERGED={
   ],
   "codex-rs/core/src/client_tests.rs": [
     "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
-    "927ef6e51c248d7979e391272b188982c8a7d4b9"
+    "2e5525612379a29af24116dd738a6612dc4420e6"
   ],
   "codex-rs/core/src/codex_thread.rs": [
     "24fc487a32cd930f39a3c8137c40790d37e60713",

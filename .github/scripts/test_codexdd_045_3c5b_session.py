@@ -83,7 +83,7 @@ STAGED = {
 }
 MERGED = {
     "codex-rs/core/src/session/rollout_reconstruction.rs": "118907bac6f1f084c96b81e78c2d1b7fc923583d",
-    "codex-rs/core/src/session/rollout_reconstruction_tests.rs": "6286fb33b5d936da253abe9efdc090e494de0ac4",
+    "codex-rs/core/src/session/rollout_reconstruction_tests.rs": "106f07a29d8cde54784c516898472518736b9c37",
     "codex-rs/core/src/session/session.rs": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd",
     "codex-rs/core/src/session/tests.rs": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1",
     "codex-rs/core/src/session/turn.rs": "50f524a055a92f0d19be5e6bc2665fe18718e35b"
