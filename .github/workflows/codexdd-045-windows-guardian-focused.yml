@@ -1,0 +1,134 @@
+# Branch-local validation of new 0.163 Guardian privacy, state and reviewer contracts.
+# Never publish, package, deploy, merge, or advance CodexDD 0.4.4 product markers.
+name: CodexDD 0.4.5 Windows Guardian focused runtime
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-guardian-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-guardian-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guardian-native:
+    name: Windows guarded feedback/reviewer smoke (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact integration SHA without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assert branch, pinned Cargo lock, no release marker promotion
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'Unreviewed Cargo.lock' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Production version changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Release upstream changed' }
+
+      - name: Configure native Windows scratch paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git long paths unavailable' }
+
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Reuse integration-only Cargo test artifact cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045/target
+          key: codexdd045-guardian-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-native-focused-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-tests-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+
+      - name: Verify exact locked Cargo resolver
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo.lock drift' }
+
+      - name: Configure repository-pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Run three targeted Guardian/feedback runtime regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            @{ Package = 'codex-guardian-reviewer'; Filter = 'capture_honors_privacy_and_keeps_oversized_context_action_and_decision'; Description = 'Guardian feedback capture/privacy' }
+            @{ Package = 'codex-feedback'; Filter = 'busy_storage_retains_feedback_without_delaying_review_completion'; Description = 'Persist Guardian feedback despite busy storage' }
+            @{ Package = 'codex-core'; Filter = 'guardian_review_session_config_resolves_policy_and_template'; Description = 'Guardian review session permission policy' }
+          )
+          $index = 0
+          foreach ($case in $cases) {
+            $path = Join-Path $env:RUNNER_TEMP ("codexdd045-guardian-{0:D2}.log" -f $index)
+            Write-Host "CASE $($index+1)/$($cases.Count): $($case.Description)"
+            $command = 'cargo test --locked -p ' + $case.Package + ' --lib ' + $case.Filter + ' -- --test-threads=1 > "' + $path + '" 2>&1'
+            & cmd.exe /d /c $command
+            $rc = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $path)) { throw "No log for $($case.Filter)" }
+            Get-Content -LiteralPath $path -Tail 70
+            if ($rc -ne 0) { throw "Focused Guardian test $($case.Filter) failed with exit $rc" }
+            $report = Get-Content -LiteralPath $path -Raw
+            if ($report -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
+              throw "No tests matched the Guardian filter $($case.Filter)"
+            }
+            $index++
+          }
+          Write-Host "PASS: $index/$($cases.Count) isolated Guardian regression filters."
+
+      - name: Upload native Guardian test logs without publishing
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-guardian-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-guardian-*.log
+          if-no-files-found: warn
+          retention-days: 7
