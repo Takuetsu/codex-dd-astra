@@ -27,7 +27,7 @@ OFFICIAL_CARGO_BLOBS = {
     "codex-rs/tui/Cargo.toml": "ea0894b3e1d3777f4c598727b03199c1f69cbd05",
 }
 WORKSPACE_BLOB = "8ae5758c9baa6091b8ab5dda4e5b848365c0009d"
-BASELINE_LOCK_BLOB = "0c913b46674d3593ee84f1fee5508d16e33efae5"
+RESOLVED_LOCK_BLOB = "096939fcec32cb259bccc0cb36c5d4120701da57"
 BASELINE_SHELL_ESCALATION_BLOB = "92ae8b033f3c38edb1609e6347084be6dd9fdc47"
 
 
@@ -121,9 +121,9 @@ class CargoManifestStagingTests(unittest.TestCase):
             "codex-utils-process", cargo("codex-rs/codex-mcp/Cargo.toml")["dependencies"]
         )
 
-    def test_old_lockfile_is_intentionally_unchanged_until_full_graph_is_merged(self):
+    def test_resolver_produced_lockfile_is_pinned_for_0163_integration(self):
         self.assertEqual(
-            git_blob_sha(git_bytes("codex-rs/Cargo.lock")), BASELINE_LOCK_BLOB
+            git_blob_sha(git_bytes("codex-rs/Cargo.lock")), RESOLVED_LOCK_BLOB
         )
         lock = tomllib.loads(git_bytes("codex-rs/Cargo.lock").decode("utf-8"))
         self.assertEqual(lock["version"], 4)

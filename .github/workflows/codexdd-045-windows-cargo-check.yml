@@ -82,7 +82,16 @@ jobs:
           key: codexdd045-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             codexdd045-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-${{ runner.os }}-
           save-always: true
+
+      - name: Verify exact pinned Cargo resolver graph before native compilation
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Cargo.lock does not match the 0.163 manifests' }
 
       - name: Verify repository-pinned Windows V8 binding
         uses: ./.github/actions/setup-rusty-v8
@@ -95,11 +104,11 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $log = Join-Path $env:RUNNER_TEMP 'codexdd045-windows-cargo-check.log'
-          # Cargo.lock is being reconciled separately. This check intentionally
-          # resolves dependencies in the ephemeral runner without --locked.
+          # The 0.163 Windows-resolved dependency lockfile is committed and audited.
+          # --locked prevents Cargo from silently revising it in the runner.
           # --keep-going compiles independent dependencies after an error so one
           # diagnostic run exposes more upstream integration incompatibilities.
-          $cmd = 'cargo check --keep-going -p codex-tui --lib > "' + $log + '" 2>&1'
+          $cmd = 'cargo check --locked --keep-going -p codex-tui --lib > "' + $log + '" 2>&1'
           & cmd.exe /d /c $cmd
           $rc = $LASTEXITCODE
           Write-Host "Cargo exit code: $rc"

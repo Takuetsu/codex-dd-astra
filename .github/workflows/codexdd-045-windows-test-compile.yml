@@ -80,7 +80,16 @@ jobs:
           key: codexdd045-tests-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             codexdd045-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-${{ runner.os }}-
           save-always: true
+
+      - name: Verify exact pinned Cargo resolver graph before native compilation
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Cargo.lock does not match the 0.163 manifests' }
 
       - name: Verify repository-pinned Windows V8 binding
         uses: ./.github/actions/setup-rusty-v8
@@ -93,9 +102,9 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $log = Join-Path $env:RUNNER_TEMP 'codexdd045-windows-test-compile.log'
-          # Cargo.lock is still being reconciled; do not claim a locked build.
+          # The checked-in 0.163 lock is pinned to a native Windows resolver artifact.
           # This only checks test-target compilation, not test execution.
-          $cmd = 'cargo check --keep-going -p codex-tui --tests > "' + $log + '" 2>&1'
+          $cmd = 'cargo check --locked --keep-going -p codex-tui --tests > "' + $log + '" 2>&1'
           & cmd.exe /d /c $cmd
           $rc = $LASTEXITCODE
           Write-Host "Cargo test-target check exit code: $rc"

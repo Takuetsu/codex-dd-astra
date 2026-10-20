@@ -989,7 +989,7 @@ class TuiUpstreamOwnedSourceTests(unittest.TestCase):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
         self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"),
-                         "0c913b46674d3593ee84f1fee5508d16e33efae5")
+                         "096939fcec32cb259bccc0cb36c5d4120701da57")
 
     def test_protected_tui_merges_still_outstanding(self):
         note = (ROOT / "docs/codexdd-0.4.5-packet-3c9c-tui-upstream.md").read_text(

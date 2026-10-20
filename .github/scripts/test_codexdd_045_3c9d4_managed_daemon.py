@@ -223,7 +223,7 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
         )
         self.assertEqual(
             git("rev-parse", "HEAD:codex-rs/Cargo.lock"),
-            "0c913b46674d3593ee84f1fee5508d16e33efae5",
+            "096939fcec32cb259bccc0cb36c5d4120701da57",
         )
 
     def test_checkpoint_does_not_claim_native_or_release_acceptance(self):
