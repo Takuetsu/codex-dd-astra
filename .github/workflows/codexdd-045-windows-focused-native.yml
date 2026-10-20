@@ -1,0 +1,142 @@
+# Small nonrelease Windows runtime gate after the 0.163 locked compile checks went green.
+# No unattended release, installer, merge, update or publication authority.
+name: CodexDD 0.4.5 Windows focused TUI runtime
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-focused-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-focused-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-tui-native:
+    name: Windows focused TUI safety regressions (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact integration SHA, no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify SHA, dependency lock and unadvanced release markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected checkout SHA' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '096939fcec32cb259bccc0cb36c5d4120701da57') { throw 'Unreviewed Cargo.lock changed' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker advanced' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Tracked upstream marker advanced' }
+
+      - name: Set isolated Windows build paths and long Git paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git long paths unavailable' }
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Restore integration-only Cargo build cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045/target
+          key: codexdd045-native-focused-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-tests-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+            codexdd045-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.toml', 'codex-rs/Cargo.lock') }}-
+          save-always: true
+
+      - name: Verify locked resolver graph
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Locked resolver drift' }
+
+      - name: Configure pinned native Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Run exact bounded TUI safety regressions (stop on first failure)
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Deliberately use one exact unique substring at a time, not all TUI tests.
+          # Cargo compiles the test executable on the first case; later cases reuse it.
+          $cases = @(
+            'forks_inherit_stable_adaptive_state_but_never_pending_signal_authority',
+            'admission_rejects_stale_identity_and_worker_bindings',
+            'evidence_receipt_is_inert_and_cannot_mutate_worker_authority',
+            'trusted_handoff_resets_unfinished_pressure',
+            'completed_recon_with_trusted_report_output_waits_for_late_complexity_signal',
+            'enqueue_primary_thread_session_replays_buffered_approval_after_attach',
+            'resolved_buffered_approval_does_not_become_actionable_after_drain',
+            'agents_navigation_requires_local_daemon'
+          )
+          $completed = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ("codexdd045-focused-{0:D2}-{1}.log" -f $completed, $case)
+            $command = 'cargo test --locked -p codex-tui --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1'
+            Write-Host "Running focused case $($completed + 1)/$($cases.Count): $case"
+            & cmd.exe /d /c $command
+            $exit = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "Cargo produced no diagnostic log for $case" }
+            Get-Content -LiteralPath $log -Tail 55
+            $body = [IO.File]::ReadAllText($log)
+            if ($exit -ne 0) { throw "Native focused test $case failed with exit $exit; see log artifact" }
+            if ($body -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
+              throw "Focused test pattern $case did not run any tests; refusing false green"
+            }
+            $completed++
+          }
+          Write-Host "PASS: $completed/$($cases.Count) focused Windows test filters executed without failures."
+
+      - name: Upload focused logs (no release artifacts)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-native-focused-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-focused-*.log
+          if-no-files-found: warn
+          retention-days: 7
