@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/scripts/test_codexdd_045_*.py'
       - '.github/workflows/codexdd-045-source-guards.yml'
+      - 'codex-rs/**'
       - 'codex-rs/app-server-protocol/schema/**'
       - 'codex-rs/core/config.schema.json'
       - 'sdk/python/src/openai_codex/generated/**'
