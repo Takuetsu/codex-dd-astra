@@ -1244,7 +1244,9 @@ async fn adaptive_reconnaissance_rejection_finishes_blocked_without_start() -> a
     );
 
     // Rejection happens before notify_tool_start, but still closes the lifecycle
-    // exactly once. This is a native dispatch test, not a simulated hook run.
+    // exactly once. This direct invocation carries a plain tool name; lifecycle
+    // finish reports the originating name (rather than the registry lookup alias).
+    // This is a native dispatch test, not a simulated hook run.
     let actual = records
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -1254,7 +1256,7 @@ async fn adaptive_reconnaissance_rejection_finishes_blocked_without_start() -> a
         actual,
         vec![RecordedToolLifecycle::Finish {
             call_id: "recon-blocked-lifecycle".to_string(),
-            tool_name: tool_name.with_default_namespace(),
+            tool_name: tool_name.clone(),
             outcome: codex_extension_api::ToolCallOutcome::Blocked,
         }]
     );
