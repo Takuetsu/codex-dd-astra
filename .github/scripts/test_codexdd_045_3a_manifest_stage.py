@@ -26,8 +26,8 @@ OFFICIAL_CARGO_BLOBS = {
     "codex-rs/tools/Cargo.toml": "fc75ad22ce146ee5dd852ef2cad03b4bbcdffffb",
     "codex-rs/tui/Cargo.toml": "ea0894b3e1d3777f4c598727b03199c1f69cbd05",
 }
-WORKSPACE_BLOB = "43775319466241f34565fa2611172f2239b5bbdf"
-RESOLVED_LOCK_BLOB = "48ae4fb45a83de4d72dee6200b83a770dbf8f760"
+WORKSPACE_BLOB = "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4"
+RESOLVED_LOCK_BLOB = "a8eb8a076276cb3db5674b33c67d743b1c3d21fc"
 BASELINE_SHELL_ESCALATION_BLOB = "92ae8b033f3c38edb1609e6347084be6dd9fdc47"
 
 
@@ -93,7 +93,13 @@ class CargoManifestStagingTests(unittest.TestCase):
 
     def test_added_upstream_workspace_dependencies_are_retained(self):
         deps = cargo("codex-rs/Cargo.toml")["workspace"]["dependencies"]
-        self.assertEqual(deps["zip"], "9.0.5")
+        self.assertEqual(
+            deps["zip"],
+            {"version": "9.0.5", "default-features": False, "features": [
+                "aes-crypto", "deflate64", "deflate", "lzma",
+                "ppmd", "time", "zstd", "xz",
+            ]},
+        )
         self.assertEqual(deps["linkify"], "0.11")
         self.assertEqual(deps["hyper-util"]["version"], "0.1.20")
         self.assertEqual(deps["hyper-util"]["features"], ["tokio"])

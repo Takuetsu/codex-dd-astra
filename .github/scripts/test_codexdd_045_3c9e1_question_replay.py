@@ -113,7 +113,7 @@ class QuestionReplayMergeTests(unittest.TestCase):
         )
         self.assertEqual(
             git("rev-parse", "HEAD:codex-rs/Cargo.lock"),
-            "48ae4fb45a83de4d72dee6200b83a770dbf8f760",
+            "a8eb8a076276cb3db5674b33c67d743b1c3d21fc",
         )
         self.assertEqual(
             git("rev-parse", "HEAD:codex-rs/core/src/tools/registry.rs"),

@@ -208,7 +208,7 @@ class ToolCallRoutingIntegrationTests(unittest.TestCase):
     def test_version_markers_and_cargo_lock_remain_unadvanced(self):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
-        self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"), "48ae4fb45a83de4d72dee6200b83a770dbf8f760")
+        self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"), "a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
 
     def test_release_remains_explicitly_blocked(self):
         note = (ROOT / "docs/codexdd-0.4.5-packet-3c6c-tool-routing.md").read_text(encoding="utf-8")

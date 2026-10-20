@@ -161,7 +161,7 @@ class FeaturePluginSourceIntegrationTests(unittest.TestCase):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
         self.assertEqual(blob("HEAD", "codex-rs/Cargo.lock"),
-                         "48ae4fb45a83de4d72dee6200b83a770dbf8f760")
+                         "a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
 
     def test_source_checkpoint_does_not_release(self):
         note = (ROOT / "docs/codexdd-0.4.5-packet-3c8b-features-plugins.md").read_text(encoding="utf-8")

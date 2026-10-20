@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 BASELINE_LOCK = "0c913b46674d3593ee84f1fee5508d16e33efae5"
-WINDOWS_RESOLVED_LOCK = "48ae4fb45a83de4d72dee6200b83a770dbf8f760"
+WINDOWS_RESOLVED_LOCK = "a8eb8a076276cb3db5674b33c67d743b1c3d21fc"
 RMCP_REV = "4048ac40e958fb1a7d614617a2ae8d26666ee2fa"
 
 
@@ -79,7 +79,18 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
         self.assertIn(("zip", "9.0.5"), self.packages)
         self.assertFalse(any(name == "zip" and version != "9.0.5" for name, version in self.packages))
         manifest = tomllib.loads(git_file("HEAD", "codex-rs/Cargo.toml").decode())
-        self.assertEqual(manifest["workspace"]["dependencies"]["zip"], "9.0.5")
+        self.assertEqual(
+            manifest["workspace"]["dependencies"]["zip"],
+            {"version": "9.0.5", "default-features": False, "features": [
+                "aes-crypto", "deflate64", "deflate", "lzma",
+                "ppmd", "time", "zstd", "xz",
+            ]},
+        )
+        self.assertFalse(
+            any(name in ("bzip2", "libbz2-rs-sys") for name, _version in self.packages),
+            "Do not import unapproved BZIP2 license dependencies",
+        )
+        self.assertNotIn("bzip2", self.packages[("zip", "9.0.5")]["dependencies"])
 
     def test_release_markers_not_promoted_by_lock_acceptance(self):
         self.assertEqual(git_file("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")
