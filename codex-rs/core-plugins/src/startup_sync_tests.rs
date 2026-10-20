@@ -1381,6 +1381,60 @@ fn read_extracted_backup_archive_git_sha_rejects_path_traversal_ref() {
     assert!(err.contains("invalid path components"));
 }
 
+#[test]
+fn curated_zip_extraction_rejects_symlink_entries() {
+    let temp = tempdir().expect("create tempdir");
+    let cursor = std::io::Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+    writer
+        .add_symlink(
+            "openai-plugins-test/plugins/escape",
+            "../../outside",
+            SimpleFileOptions::default(),
+        )
+        .expect("add ZIP symlink");
+    let bytes = writer.finish().expect("finish archive").into_inner();
+
+    let err = extract_zipball_to_dir(&bytes, temp.path()).expect_err("reject ZIP symlink");
+    assert!(err.contains("symbolic link"), "{err}");
+    assert!(!temp.path().join("plugins/escape").exists());
+}
+
+#[test]
+fn curated_zip_extraction_rejects_paths_above_archive_root() {
+    let temp = tempdir().expect("create tempdir");
+    let cursor = std::io::Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+    writer
+        .start_file(
+            "openai-plugins-test/../../escape.txt",
+            SimpleFileOptions::default(),
+        )
+        .expect("add traversal test entry");
+    writer.write_all(b"untrusted").expect("write test entry");
+    let bytes = writer.finish().expect("finish archive").into_inner();
+
+    let err = extract_zipball_to_dir(&bytes, temp.path()).expect_err("reject traversal");
+    assert!(err.contains("escapes extraction root"), "{err}");
+    assert!(!temp.path().join("escape.txt").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn curated_zip_extraction_strips_privileged_mode_bits() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let temp = tempdir().expect("create tempdir");
+    let path = temp.path().join("plugin");
+    std::fs::write(&path, b"safe").expect("write plugin");
+    apply_zip_permissions(Some(0o104755), &path).expect("apply archive permissions");
+    let mode = std::fs::metadata(path)
+        .expect("stat plugin")
+        .permissions()
+        .mode();
+    assert_eq!(mode & 0o7777, 0o755, "privileged ZIP bits must be discarded");
+}
+
 fn curated_repo_zipball_bytes(sha: &str) -> Vec<u8> {
     let cursor = std::io::Cursor::new(Vec::new());
     let mut writer = ZipWriter::new(cursor);

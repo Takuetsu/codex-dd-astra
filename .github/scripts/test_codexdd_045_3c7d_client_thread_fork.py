@@ -73,7 +73,7 @@ class ClientThreadMergeTests(unittest.TestCase):
         self.assertEqual(src("codex-rs/codexdd-version.txt").strip(),"0.4.4")
         self.assertEqual(src("codex-rs/upstream-codex-release.txt").strip(),"rust-v0.162.0")
         self.assertEqual(blob("HEAD","codex-rs/Cargo.lock"),
-                         "096939fcec32cb259bccc0cb36c5d4120701da57")
+                         "48ae4fb45a83de4d72dee6200b83a770dbf8f760")
     def test_packet_not_release_candidate(self):
         s=(ROOT/"docs/codexdd-0.4.5-packet-3c7d-client-thread-fork.md").read_text(encoding="utf-8")
         for x in ("INCOMPLETE / NOT A RELEASE CANDIDATE","source-only","native Rust","Cargo.lock"):

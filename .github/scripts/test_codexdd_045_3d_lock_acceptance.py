@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 BASELINE_LOCK = "0c913b46674d3593ee84f1fee5508d16e33efae5"
-WINDOWS_RESOLVED_LOCK = "096939fcec32cb259bccc0cb36c5d4120701da57"
+WINDOWS_RESOLVED_LOCK = "48ae4fb45a83de4d72dee6200b83a770dbf8f760"
 RMCP_REV = "4048ac40e958fb1a7d614617a2ae8d26666ee2fa"
 
 
@@ -74,6 +74,12 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
             manifest["workspace"]["dependencies"]["rustls"]["version"],
             "0.23.46",
         )
+
+    def test_zip9_remediation_is_locked_without_replacing_other_security_floors(self):
+        self.assertIn(("zip", "9.0.5"), self.packages)
+        self.assertFalse(any(name == "zip" and version != "9.0.5" for name, version in self.packages))
+        manifest = tomllib.loads(git_file("HEAD", "codex-rs/Cargo.toml").decode())
+        self.assertEqual(manifest["workspace"]["dependencies"]["zip"], "9.0.5")
 
     def test_release_markers_not_promoted_by_lock_acceptance(self):
         self.assertEqual(git_file("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")

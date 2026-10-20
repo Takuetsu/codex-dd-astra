@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3D.6: ZIP 9 security migration reconnaissance (nonrelease)
 
-**Status: RECONNAISSANCE COMPLETE; resolver preview pending. NO DEPENDENCY ACCEPTANCE, RELEASE, OR PRODUCTION CHANGES.**
+**Status: GREEN LOCKED ZIP 9 RESOLVER PREVIEW; focused Windows native plugin regressions pending. NO RELEASE OR PRODUCTION CHANGES.**
 
 ## Exact scope and evidence
 
@@ -26,3 +26,12 @@ Expected production migration is limited to `startup_sync.rs`, its tests, worksp
 2. Inspect the actual resolver output for unrelated version shifts, Rust version compatibility and retained security pins (`rustls 0.23.46`, `quinn-proto 0.11.18`, `noyalib-serde-yaml 0.0.57`). Fail closed on drift or loss of those pins. Do not manually synthesize lockfile changes.
 3. After preview acceptance, stage minimal source/API migration and the exact resolver artifact atomically on an isolated candidate branch. Run targeted Windows locked core-plugins startup-sync tests and an unmodified cargo-deny audit before considering integration.
 4. Keep all remaining advisories and security migration conflicts visible. **A passing ZIP preview is not a successful security audit or release acceptance.** No release marker advancement, production merge, deployment, or 21-stage Windows validation is permitted at this checkpoint.
+
+## Reviewed ZIP 9 dependency acceptance (October 20, 2026)
+
+- [Green Windows resolver preview #39459826776](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39459826776) produced the sealed artifact `12281749078`, SHA-256 `cf7e9883d128756a1081f39e5c78f47c682e709f3e7282b14a371b4129157d95`.
+- The generated lockfile has Git blob `48ae4fb45a83de4d72dee6200b83a770dbf8f760`; its Windows CRLF-encoded manifest is blob `e401338b7e91071eececa93635d05412f0184f43`, or canonical Linux/Git LF blob `43775319466241f34565fa2611172f2239b5bbdf`. The ZIP version is the only manifest edit.
+- [Green read-only blob import #39462421319](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39462421319) checked the artifact archive and generated blob and wrote only an unreferenced Git object. Earlier import attempt #39462155864 failed closed on CRLF/LF byte comparison; no branch/source change was made by either job.
+- Cargo `zip 9.0.5` resolves without changing the fork's required `rustls 0.23.46`, `quinn-proto 0.11.18` or `noyalib-serde-yaml 0.0.57` pins. Supporting compression and crypto dependencies changed as recorded in the exact artifact lock diff, including `zstd-sys`.
+- The source migration keeps manual enclosed-name extraction, rejects symbolic-link ZIP entries before disk writes, masks Unix permissions to `0o777`, and adapts the ZIP 9 API. Dedicated native Windows filters cover both security cases and the HTTP/export fallback lifecycle. A separate Unix-only test asserts privileged bits are stripped.
+- Both the integration source edit and byte-identical generated `Cargo.lock` are reviewed together with hash-pinned source guards. This does not waive the remaining `basic-toml`, `zbus*`, `zvariant*` or yanked `spin` findings and does not authorize release promotion or the long 21-stage suite.

@@ -1049,9 +1049,20 @@ fn extract_zipball_to_dir(bytes: &[u8], destination: &Path) -> Result<(), String
         let Some(relative_path) = entry.enclosed_name() else {
             return Err(format!(
                 "curated plugins zip entry `{}` escapes extraction root",
-                entry.name()
+                String::from_utf8_lossy(entry.name_raw())
             ));
         };
+
+        // Never materialize a symlink from a downloaded plugin archive.
+        if entry
+            .unix_mode()
+            .is_some_and(|mode| (mode & 0o170000) == 0o120000)
+        {
+            return Err(format!(
+                "curated plugins zip entry `{}` is a symbolic link",
+                String::from_utf8_lossy(entry.name_raw()),
+            ));
+        }
 
         let mut components = relative_path.components();
         let Some(std::path::Component::Normal(_)) = components.next() else {
@@ -1099,20 +1110,22 @@ fn extract_zipball_to_dir(bytes: &[u8], destination: &Path) -> Result<(), String
                 output_path.display()
             )
         })?;
-        apply_zip_permissions(&entry, &output_path)?;
+        apply_zip_permissions(entry.unix_mode(), &output_path)?;
     }
 
     Ok(())
 }
 
 #[cfg(unix)]
-fn apply_zip_permissions(entry: &zip::read::ZipFile<'_>, output_path: &Path) -> Result<(), String> {
+fn apply_zip_permissions(unix_mode: Option<u32>, output_path: &Path) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
 
-    let Some(mode) = entry.unix_mode() else {
+    let Some(mode) = unix_mode else {
         return Ok(());
     };
-    std::fs::set_permissions(output_path, std::fs::Permissions::from_mode(mode)).map_err(|err| {
+    // Archive metadata must not grant SUID, SGID or sticky privileges.
+    let permissions = std::fs::Permissions::from_mode(mode & 0o777);
+    std::fs::set_permissions(output_path, permissions).map_err(|err| {
         format!(
             "failed to set permissions on curated plugins file {}: {err}",
             output_path.display()
@@ -1121,10 +1134,7 @@ fn apply_zip_permissions(entry: &zip::read::ZipFile<'_>, output_path: &Path) -> 
 }
 
 #[cfg(not(unix))]
-fn apply_zip_permissions(
-    _entry: &zip::read::ZipFile<'_>,
-    _output_path: &Path,
-) -> Result<(), String> {
+fn apply_zip_permissions(_unix_mode: Option<u32>, _output_path: &Path) -> Result<(), String> {
     Ok(())
 }
 

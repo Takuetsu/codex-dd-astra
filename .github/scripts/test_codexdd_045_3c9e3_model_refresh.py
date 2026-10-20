@@ -112,7 +112,7 @@ class SessionModelRefreshSourceTests(unittest.TestCase):
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
         self.assertEqual(
             git("rev-parse", "HEAD:codex-rs/Cargo.lock"),
-            "096939fcec32cb259bccc0cb36c5d4120701da57",
+            "48ae4fb45a83de4d72dee6200b83a770dbf8f760",
         )
 
     def test_checkpoint_explicitly_does_not_claim_runtime_acceptance(self):

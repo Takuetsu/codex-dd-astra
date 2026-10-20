@@ -26,8 +26,8 @@ OFFICIAL_CARGO_BLOBS = {
     "codex-rs/tools/Cargo.toml": "fc75ad22ce146ee5dd852ef2cad03b4bbcdffffb",
     "codex-rs/tui/Cargo.toml": "ea0894b3e1d3777f4c598727b03199c1f69cbd05",
 }
-WORKSPACE_BLOB = "8ae5758c9baa6091b8ab5dda4e5b848365c0009d"
-RESOLVED_LOCK_BLOB = "096939fcec32cb259bccc0cb36c5d4120701da57"
+WORKSPACE_BLOB = "43775319466241f34565fa2611172f2239b5bbdf"
+RESOLVED_LOCK_BLOB = "48ae4fb45a83de4d72dee6200b83a770dbf8f760"
 BASELINE_SHELL_ESCALATION_BLOB = "92ae8b033f3c38edb1609e6347084be6dd9fdc47"
 
 
@@ -93,6 +93,7 @@ class CargoManifestStagingTests(unittest.TestCase):
 
     def test_added_upstream_workspace_dependencies_are_retained(self):
         deps = cargo("codex-rs/Cargo.toml")["workspace"]["dependencies"]
+        self.assertEqual(deps["zip"], "9.0.5")
         self.assertEqual(deps["linkify"], "0.11")
         self.assertEqual(deps["hyper-util"]["version"], "0.1.20")
         self.assertEqual(deps["hyper-util"]["features"], ["tokio"])
