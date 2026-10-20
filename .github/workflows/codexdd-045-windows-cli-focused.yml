@@ -10,6 +10,7 @@ on:
       - '.github/workflows/codexdd-045-windows-cli-focused.yml'
       - 'codex-rs/cli/tests/daemon_startup.rs'
       - 'codex-rs/cli/src/main.rs'
+      - 'codex-rs/exec/src/lib.rs'
       - 'codex-rs/tui/src/daemon_startup.rs'
       - 'codex-rs/tui/src/daemon_startup_tests.rs'
   workflow_dispatch:
