@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3E.1: atomic Bazel 0.163 packaging and Windows-MSVC owner reconciliation
 
-**Status: SOURCE STAGED / TARGETED WINDOWS BAZEL VALIDATION PENDING. Not a release candidate.**
+**Status: LOCAL BAZEL TARGET QUERY VERIFIED ON DANIEL-CL; PACKAGE BUILD/RELEASE UNVALIDATED. Not a release candidate.**
 
 ## Scope and anchored provenance
 
@@ -29,7 +29,7 @@
 
 ## Packet 3E.1a — Bazel module dependency correction (2026-10-21)
 
-**Status: DECLARATION STAGED / DANIEL-CL GRAPH QUERY PENDING.**
+**Status: DECLARATION VERIFIED BY DANIEL-CL QUERY; FOLLOW-UP PROFILE VALIDATION IN 3E.2.**
 
 - The first Daniel-CL query on staged source `1c70e0448f0ef99f79ec02e28cf1c49cd2c5bc76` executed Bazelisk 1.29.0 / Bazel 9.2.0 successfully, then failed during package loading in `bazel/rules/runtime_package.bzl:5:6`: `No repository visible as '@rules_pkg' from main repository`.
 - The upstream `rust-v0.163.0` `MODULE.bazel` at Git blob `d946666bec0b47facc9c5eb07294919bf071226b` declares `bazel_dep(name = "rules_pkg", version = "1.0.1")`, while the original official `rust-v0.162.0` and fork production `MODULE.bazel` share blob `3fd011a3c08e065e7faad79858425d8fd02cb7d1` and do not. The new `runtime_package.bzl` has upstream blob `ba4cdad58f916f04602109c7b4d2512e83da5485`, which imports the missing module. Add **only that exact upstream dependency declaration**, adjacent to `rules_platform`, without changing fork-specific rules/patches.
@@ -37,3 +37,9 @@
 - Use read-only `bazelisk query --lockfile_mode=off '//codex-rs:runtime_package_combined'` for the next local preflight; the committed `MODULE.bazel.lock` remains the fork-owned old resolver lock **and is not accepted for release** until a separate deterministic Bazel lock regeneration/verification packet. Do not import upstream's unrelated lockfile wholesale or silently mutate the operator's working tree.
 - Official 0.163's other MODULE additions (release build-script patch and Windows CRT/toolchain flags), plus replacement of the fork's grouped build-script argument patch, require their own careful source+native validation packet and are **not** accepted by this missing-dependency fix.
 - Source guards and product markers remain unchanged; this does not trigger a GitHub release workflow, build, long suite, deployment, or merge.
+
+## 3E.1a local validation closeout (2026-10-21)
+
+- Daniel-CL checked out exact commit `f20d467917c638a938bb51533142140348c0c165`. A local `bazelisk query --lockfile_mode=off '//codex-rs:runtime_package_combined'` printed `//codex-rs:runtime_package_combined` without a Bazel ERROR. The earlier missing `@rules_pkg` package failure is closed by focused local graph-load evidence.
+- Version-resolution warnings for `platforms` and `rules_cc` remain warnings; no silent module version bumps were applied. The Bazel module lockfile is still unreviewed for this new graph; its regeneration is explicitly deferred.
+- The next source-bound `rules_rust` / static-CRT module packet is documented in [3E.2](codexdd-0.4.5-packet-3e2-bazel-rules-rust-profile.md); that future test must not be misreported as the already completed 3E.1a query.
