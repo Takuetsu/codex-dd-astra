@@ -249,9 +249,9 @@ jobs:
           fi
 
   test-windows-native-main:
-    # Native Windows Bazel tests are slower and run only for post-merge commits
-    # to main, outside the PR-critical path.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Native Windows Bazel tests run post-merge on main, or by explicit
+    # workflow_dispatch for toolchain validation; PR behavior stays unchanged.
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     timeout-minutes: 40
     runs-on:
       group: ${{ github.event.repository.name }}-runners
@@ -289,6 +289,7 @@ jobs:
 
           bazel_test_args=(
             test
+            --config=ci-windows-msvc
             --platforms=//:windows_x86_64_msvc
             --test_tag_filters=-argument-comment-lint
             --test_verbose_timeout_warnings
