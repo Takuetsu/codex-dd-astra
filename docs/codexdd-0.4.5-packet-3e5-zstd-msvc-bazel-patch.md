@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3E.5: Windows Bazel zstd-sys patch refresh
 
-**Status: NARROW SOURCE FIX STAGED; NATIVE WINDOWS RETEST PENDING. NONRELEASE.**
+**Status: WINDOWS MSVC RELEASE-GRAPH ANALYSIS GREEN; NATIVE COMPILATION OPEN. NONRELEASE.**
 
 ## Exact preceding native failure
 
@@ -13,3 +13,7 @@
 - The same existing Windows-2022 workflow checks the immutable new patch blob, existing locked module, MSVC `cli:release_files` and then combined runtime archive release-profile `cquery`; any failure stops there and uploads logs. No EULA acceptance, build, deployment or merge. If the patch bytes require a Bazel module-lock refresh, fail closed and review it separately before rerunning.
 
 The four inherited INFO/unmaintained RustSec advisories remain RED. A successful `cquery` would prove configuration analysis only, not binary creation, a full 21-stage Daniel-CL receipt or release authority.
+
+## Native Windows configured graph closeout — October 21, 2026
+
+[CI #39630905182](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39630905182) passed at exact source SHA ce1b8acf5ebbbf22d642d9f1494d46450afc279b: pinned source/security and production markers, strict Bazel lock, and Windows MSVC configured targets for CLI release files (1243 packages / 57185 targets) and combined runtime archive (41 packages / 14842 targets). [Source guard #39630905234](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39630905234) passed 442/442 static, 112/112 guarded updater, and 85/85 historical reconciliation checks (639 total). There was **no native compilation**, EULA acceptance, branch write or release. The next bounded packet compiles only the zstd-sys crate under hosted Windows MSVC. Four inherited INFO/unmaintained all-target cargo-deny findings remain RED, and the frozen release/21-stage Daniel-CL suite remains unapproved.
