@@ -9,6 +9,7 @@ on:
     paths:
       - '.github/workflows/codexdd-045-windows-history-compat.yml'
       - 'codex-rs/history/src/tests.rs'
+      - 'codex-rs/history/src/retained_context_tests.rs'
       - 'codex-rs/history/src/lib.rs'
       - 'codex-rs/Cargo.toml'
       - 'codex-rs/Cargo.lock'
