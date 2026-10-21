@@ -38,3 +38,8 @@
 ### Gate interpretation
 
 **Source integrity:** every original direct conflict is now pinned to a reviewed nonproduction integration blob; the underlying three-way replay and 109 overlap inventory are independently reproduced. **Semantic behavior:** still requires the per-path native evidence listed in the ledger, security approval, freeze and final SHA-bound Windows release suite. **All-target cargo-deny:** still RED for four inherited INFO/unmaintained advisories, no exemptions. **Version markers:** still 0.4.4 / rust-v0.162.0. Do not merge, package, release, install or auto-update from this receipt.
+
+## 3F.2a source-guard fixture correction
+
+- Initial read-only [source-guard run #39614440088](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39614440088) failed 1 of 432 checks **only** because the newly written source-strategy allowlist excluded its own intended `manual_security_merge` value for `core/src/tools/registry.rs`. All pinned blob-path/provenance tests passed; the registry source was not changed.
+- The test now explicitly admits `manual_security_merge` but asserts the registry's exact classification and still-**NOT_ACCEPTED** release gate, ensuring the correction does not falsely mark security behavior passed. No Cargo/Bazel/module/policy/runtime/marker changes in this follow-up.
