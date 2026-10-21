@@ -601,6 +601,13 @@ llvm = use_extension("@llvm//extensions:llvm.bzl", "llvm")
 use_repo(llvm, "llvm-project")
 
 crate.annotation(
+    # Disable SQLite intrinsics that can crash at startup on older x64 Windows CPUs.
+    build_script_env_select = {
+        "x86_64-pc-windows-msvc": '{"LIBSQLITE3_FLAGS": "SQLITE_DISABLE_INTRINSIC"}',
+    },
+    crate = "libsqlite3-sys",
+)
+crate.annotation(
     # Provide the hermetic SDK path so the build script doesn't try to invoke an unhermetic `xcrun --show-sdk-path`.
     build_script_data = [
         "@macos_sdk//sysroot",
