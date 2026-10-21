@@ -6,16 +6,17 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BazelCargoAliasContract(unittest.TestCase):
-    def test_generated_alias_mapping_applied_to_library_binaries_and_tests(self):
-        s = (ROOT / "defs.bzl").read_text(encoding="utf-8")
-        self.assertIn('load("@crates//:defs.bzl", "aliases", "all_crate_deps")', s)
-        self.assertEqual(s.count("aliases = aliases("), 7)
-        self.assertIn("lib_rule(\n            name = name,\n            crate_name = crate_name,\n            crate_features = crate_features,", s)
-        self.assertIn("aliases = aliases(),\n            deps = all_crate_deps()", s)
-        # rules_rs 0.0.96 generates aliases(package_name=None): no kind filters.
-        self.assertEqual(s.count("aliases = aliases()"), 7)
-        self.assertNotIn("aliases(normal =", s)
-        self.assertNotIn("aliases(normal_dev =", s)
+    def test_only_codex_skills_gets_pinned_yaml_alias(self):
+        defs = (ROOT / "defs.bzl").read_text(encoding="utf-8")
+        build = (ROOT / "codex-rs/skills/BUILD.bazel").read_text(encoding="utf-8")
+        self.assertIn("lib_aliases = None", defs)
+        self.assertIn("aliases = lib_aliases or {}", defs)
+        self.assertNotIn('load("@crates//:defs.bzl", "aliases"', defs)
+        self.assertNotIn("aliases = aliases(", defs)
+        self.assertIn('load("@crates//:defs.bzl", "aliases")', build)
+        self.assertIn('if local == "serde_yaml"', build)
+        self.assertIn('if len(_yaml_aliases) != 1:', build)
+        self.assertIn('lib_aliases = _yaml_aliases', build)
 
     def test_existing_pinned_yaml_replacement_and_parser_remain_unchanged(self):
         manifest = (ROOT / "codex-rs/skills/Cargo.toml").read_text(encoding="utf-8")
@@ -32,6 +33,7 @@ class BazelCargoAliasContract(unittest.TestCase):
         self.assertIn("runs-on: windows-2022", flow)
         self.assertIn("'//codex-rs/skills:skills'", flow)
         self.assertIn("'--lockfile_mode=error'", flow)
+        self.assertIn("codex-rs/skills/BUILD.bazel", flow)
         self.assertIn("Missing skills native compile success receipt", flow)
         self.assertNotIn("contents: write", flow)
         self.assertNotIn("git push", flow)

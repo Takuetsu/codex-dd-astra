@@ -1,7 +1,16 @@
+load("@crates//:defs.bzl", "aliases")
 load("//:defs.bzl", "codex_rust_crate")
+
+# A workspace Cargo package is pinned as noyalib-serde-yaml but imported
+# as serde_yaml. Limit the generated alias to this one package; passing every
+# generated alias to all workspace crates created a Bazel transition cycle.
+_yaml_aliases = {dep: local for dep, local in aliases().items() if local == "serde_yaml"}
+if len(_yaml_aliases) != 1:
+    fail("expected one pinned serde_yaml Cargo rename alias for codex-skills")
 
 codex_rust_crate(
     name = "skills",
+    lib_aliases = _yaml_aliases,
     compile_data = glob(
         include = ["**"],
         allow_empty = True,
