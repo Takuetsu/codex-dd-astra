@@ -1,4 +1,4 @@
-# One-shot upstream 0.163 Windows SQLite Bazel compatibility/lock validation.
+# One-shot upstream 0.163 Windows SQLite + CLI Bazel compatibility/lock validation.
 # Only the fork's 0.4.5 integration branch; never merge, release, or publish.
 name: CodexDD 0.4.5 Windows SQLite Bazel reconciliation
 
@@ -42,6 +42,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git merge-base --is-ancestor "$ANCHOR_PARENT" "$GITHUB_SHA"
           test "$(git hash-object MODULE.bazel)" = "$EXPECTED_MODULE_BLOB"
+          test "$(git hash-object defs.bzl)" = 'b2f384d0687cbb81d0c2e8a257cc3d0d6aa469a4'
+          grep -Fq '        build_script_env = {},' defs.bzl
+          grep -Fq '            build_script_env = build_script_env,' defs.bzl
           test "$(git hash-object MODULE.bazel.lock)" = "$INITIAL_LOCK_BLOB"
           test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
@@ -58,7 +61,8 @@ jobs:
         with:
           bazelisk-version: 1.28.1
 
-      - name: Regenerate/verify lock and load package dependencies
+      - name: Regenerate/verify lock and load packaging closure (retry after CLI macro fix)
+
         shell: bash
         run: |
           set -euo pipefail
