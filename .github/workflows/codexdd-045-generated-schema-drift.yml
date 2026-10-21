@@ -8,6 +8,17 @@ on:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
       - '.github/workflows/codexdd-045-generated-schema-drift.yml'
+      # Producer inputs and locked graphs must trigger regeneration, even before outputs change.
+      - 'codex-rs/Cargo.toml'
+      - 'codex-rs/Cargo.lock'
+      - 'codex-rs/app-server-protocol/Cargo.toml'
+      - 'codex-rs/app-server-protocol/src/**'
+      - 'codex-rs/app-server-protocol/scripts/**'
+      - 'codex-rs/core/src/config/**'
+      - 'codex-rs/config-schema/**'
+      - 'sdk/python/scripts/**'
+      - 'sdk/python/pyproject.toml'
+      - 'sdk/python/uv.lock'
       - 'codex-rs/app-server-protocol/schema/**'
       - 'codex-rs/core/config.schema.json'
       - 'sdk/python/src/openai_codex/generated/**'
