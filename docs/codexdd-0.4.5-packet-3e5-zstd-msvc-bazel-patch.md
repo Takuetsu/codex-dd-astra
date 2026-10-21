@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3E.5: Windows Bazel zstd-sys patch refresh
 
-**Status: WINDOWS MSVC RELEASE-GRAPH ANALYSIS GREEN; NATIVE COMPILATION OPEN. NONRELEASE.**
+**Status: WINDOWS MSVC GRAPH AND ZSTD NATIVE COMPILATION GREEN; CLI BUILD PENDING. NONRELEASE.**
 
 ## Exact preceding native failure
 
@@ -21,3 +21,11 @@ The four inherited INFO/unmaintained RustSec advisories remain RED. A successful
 ## Native leaf invocation correction — October 21, 2026
 
 [GitHub leaf #39634258804](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39634258804) failed before loading or compiling the dependency because Bazel 9.2.0 rejects the legacy `--local_ram_resources=4096` option. Source pins and the hosted MSVC setup passed. This is a workflow invocation mistake, not evidence about the crate or the old patch. The immediate retry removes **only** that unrecognized option, retains `--jobs=2`, the same exact zstd-sys target, strict lock, source pins, read-only permissions and uploaded diagnostics. The previous attempt is RED and provides no compile receipt.
+
+## Windows native zstd-sys compilation closeout — October 21, 2026
+
+[GitHub Windows MSVC run #39634516553](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39634516553) **SUCCEEDED** on exact branch source SHA `1d34f4f069ff2279adefa7ed3a9f8ebb635adb3b`. The native Bazel 9.2.0 `@@rules_rs++crate+crates//:zstd-sys-2.1.2+zstd.1.5.7` target emitted `bazel-bin/external/rules_rs++crate+crates__zstd-sys-2.1.2-zstd.1.5.7/libzstd_sys-3172340026.rlib`, completed **278 build actions** (18 local; 260 internal), and returned explicit `Build completed successfully` and no source mutation. Unlike earlier `cquery`, this is actual Rust/C native compiler evidence. The same exact HEAD passed **641/641** source-only/updater/v2 contract checks in [run #39634516675](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39634516675).
+
+The failed earlier [run #39634258804](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39634258804) was only an unsupported Bazel flag: `--local_ram_resources`; the successful retry removed the flag and changed no Rust source or dependency/security policy.
+
+**Follow-on 3E.7:** isolate `//codex-rs/cli:release_files` as a nonrelease, bounded **debug-smoke-profile** build on GitHub Windows MSVC, not the optimized shipping build. Keep strict dependency locks, the same fixed zstd patch blob, exact source refs, at most two local Bazel jobs, and raw logs; fail first on real compiler or toolchain errors. Do not run the detached 21-stage Daniel-CL suite, package, publish or install from this checkpoint. Four inherited INFO/unmaintained cargo-deny notices remain **unresolved**.
