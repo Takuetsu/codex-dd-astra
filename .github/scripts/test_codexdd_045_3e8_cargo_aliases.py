@@ -15,7 +15,10 @@ class BazelCargoAliasContract(unittest.TestCase):
         self.assertNotIn("aliases = aliases(", defs)
         self.assertIn('load("@crates//:defs.bzl", "aliases")', build)
         self.assertIn('if local == "serde_yaml"', build)
-        self.assertIn('if len(_yaml_aliases) != 1:', build)
+        # A top-level if is invalid Bazel BUILD Starlark. Keep the narrowly
+        # filtered alias and reject any reintroduction of an illegal statement.
+        self.assertNotRegex(build, r"(?m)^if[ \\t]+")
+        self.assertEqual(build.count('if local == "serde_yaml"'), 1)
         self.assertIn('lib_aliases = _yaml_aliases', build)
 
     def test_existing_pinned_yaml_replacement_and_parser_remain_unchanged(self):
