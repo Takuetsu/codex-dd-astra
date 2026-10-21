@@ -125,6 +125,8 @@ def main() -> int:
     parser.add_argument("--approved-manifest-sha256", required=True)
     parser.add_argument("--approved-conflicts-sha256", required=True)
     parser.add_argument("--mode", required=True, choices=("native", "promotion"))
+    # Retain 0.4.3 historical default; later approved workflows must name their ref.
+    parser.add_argument("--source-ref", default="refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration")
     args = parser.parse_args()
 
     try:
@@ -139,6 +141,7 @@ def main() -> int:
             approved_manifest_sha256=args.approved_manifest_sha256,
             approved_conflicts_sha256=args.approved_conflicts_sha256,
             promotion=args.mode == "promotion",
+            source_ref=args.source_ref,
         )
     except (ValueError, OSError, UnicodeError, KeyError, TypeError) as error:
         print(f"CODEXDD_RECONCILIATION_V2_PREFLIGHT_FAIL {error}", file=sys.stderr)

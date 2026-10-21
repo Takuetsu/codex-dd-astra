@@ -18,6 +18,7 @@ from upstream_reconciliation import (
     require_sha,
 )
 from upstream_sync import stable_release_version
+from upstream_reconciliation_release_targets import reviewed_reconciliation_target
 
 _PRODUCTION_REF = frozenset(
     {"refs/remotes/origin/dd/astra-policy-v2", "refs/heads/dd/astra-policy-v2"}
@@ -26,6 +27,8 @@ _SOURCE_REF = frozenset(
     {
         "refs/remotes/origin/dd/codexdd-v0.4.3-upstream-0.162.0-integration",
         "refs/heads/dd/codexdd-v0.4.3-upstream-0.162.0-integration",
+        "refs/remotes/origin/dd/codexdd-v0.4.5-upstream-0.163.0-integration",
+        "refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration",
     }
 )
 _OFFICIAL_URLS = frozenset(
@@ -94,6 +97,12 @@ def verify_source_snapshot_git(
     """
     if production_ref not in _PRODUCTION_REF or source_ref not in _SOURCE_REF:
         raise ValueError("untrusted release verification Git ref")
+    policy = reviewed_reconciliation_target(manifest.get("target_upstream_tag"))
+    if source_ref not in {
+        f"refs/remotes/origin/{policy.source_branch}",
+        f"refs/heads/{policy.source_branch}",
+    }:
+        raise ValueError("source ref is for another release")
     production = manifest["production_sha"]
     snapshot = manifest["source_snapshot_commit_sha"]
     _commit_and_tree(repo, production, manifest["production_tree"], "production")

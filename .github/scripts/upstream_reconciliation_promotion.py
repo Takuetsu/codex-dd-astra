@@ -18,6 +18,7 @@ from upstream_reconciliation import (
 from upstream_reconciliation_receipt import validate_v2_release_receipt
 from upstream_reconciliation_v2 import _url
 from upstream_sync import candidate_branch
+from upstream_reconciliation_release_targets import reviewed_reconciliation_target
 
 
 def normalize_console_or_file_receipt_json(text: str) -> bytes:
@@ -61,12 +62,13 @@ def validate_v2_owner_review_and_receipt(
     )
     target = manifest.get("target_upstream_tag")
     target_sha = manifest.get("target_upstream_sha")
-    if target != "rust-v0.162.0" or target_sha != (
-        "c1382380de69521303b416720a52f42d51af6248"
-    ):
+    policy = reviewed_reconciliation_target(target)
+    if target_sha != policy.target_sha:
         raise ValueError(
             "owner review cannot silently change the pinned upstream target"
         )
+    if manifest.get("codexdd_product_version") != policy.product_version:
+        raise ValueError("owner review cannot change the pinned product version")
     expected_candidate_branch = candidate_branch(target, target_sha)
     if observed_candidate_branch != expected_candidate_branch or (
         manifest.get("candidate_branch") != expected_candidate_branch
@@ -89,7 +91,9 @@ def validate_v2_owner_review_and_receipt(
     ):
         raise ValueError("owner review must identify the frozen source or accepted PR")
 
-    expected_acceptance = "ACCEPT_CODEXDD_0.4.3_RECONCILED_" + source_sha
+    expected_acceptance = (
+        f"ACCEPT_CODEXDD_{policy.product_version}_RECONCILED_" + source_sha
+    )
     if owner_source_acceptance != expected_acceptance:
         raise ValueError("missing exact owner acceptance of frozen source snapshot")
 

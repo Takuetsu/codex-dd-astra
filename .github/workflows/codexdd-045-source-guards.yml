@@ -12,6 +12,8 @@ on:
       - '.github/scripts/test_upstream_045_contract_audit.py'
       - '.github/scripts/test_upstream_sync.py'
       - '.github/scripts/upstream_sync.py'
+      - '.github/scripts/upstream_reconciliation_*.py'
+      - '.github/scripts/test_upstream_reconciliation*.py'
       - '.github/workflows/upstream-sync.yml'
       - '.github/workflows/codexdd-045-source-guards.yml'
       - 'codex-rs/**'
@@ -94,6 +96,29 @@ jobs:
           done
           echo "PASS: $i/3 updater test suites, each nonempty and error-free."
 
+      - name: Check historical reconciled v2 contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          patterns=('test_upstream_reconciliation.py' 'test_upstream_reconciliation_*.py')
+          i=0
+          for pattern in "${patterns[@]}"; do
+            log="$RUNNER_TEMP/codexdd045-v2-$i.log"
+            echo "Checking historical reconciliation tests: $pattern"
+            if ! python3 -m unittest discover -s .github/scripts -p "$pattern" -v > "$log" 2>&1; then
+              grep -E '^(FAIL:|ERROR:|Ran [0-9]+ tests|FAILED |OK$)' "$log" | tail -n 100 || true
+              tail -n 100 "$log"
+              exit 1
+            fi
+            if ! grep -Eq '^Ran [1-9][0-9]* tests?' "$log"; then
+              echo "No reconciliation tests discovered: $pattern"
+              exit 1
+            fi
+            grep -E '^(Ran [0-9]+ tests|OK$)' "$log" | tail -n 5
+            i=$((i+1))
+          done
+          echo "PASS: $i/2 historical reconciliation suites."
+
       - name: Upload source check diagnostic log
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -102,5 +127,6 @@ jobs:
           path: |
             ${{ runner.temp }}/codexdd045-source-guards.log
             ${{ runner.temp }}/codexdd045-updater-*.log
+            ${{ runner.temp }}/codexdd045-v2-*.log
           if-no-files-found: warn
           retention-days: 7

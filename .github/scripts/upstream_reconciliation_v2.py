@@ -20,6 +20,7 @@ from upstream_reconciliation import (
     verify_blocked_v1_discovery,
 )
 from upstream_sync import candidate_branch, candidate_key, stable_release_version
+from upstream_reconciliation_release_targets import reviewed_reconciliation_target
 
 _MANIFEST = frozenset(
     {
@@ -397,7 +398,8 @@ def validate_reconciled_v2_documents(
             f"{which} tag object",
         )
     snapshot = _fields(sidecar["source_snapshot"], _SNAPSHOT, "source snapshot")
-    if snapshot["branch"] != "dd/codexdd-v0.4.3-upstream-0.162.0-integration":
+    policy = reviewed_reconciliation_target(manifest["target_upstream_tag"])
+    if snapshot["branch"] != policy.source_branch:
         raise ValueError("unexpected source-development branch")
     _same(snapshot["commit_sha"], expected_source_snapshot_sha, "source commit")
     _same(snapshot["tree_sha"], expected_source_snapshot_tree, "source tree")
