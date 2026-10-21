@@ -54,6 +54,9 @@ jobs:
           if ((git hash-object -- codex-rs/deny.toml).Trim() -ne 'ea7fdc149fc880c6b36d75c29851641034289a4e') { throw 'Unreviewed advisory policy' }
           if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Production version changed' }
           if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Release upstream changed' }
+          if ((git hash-object -- codex-rs/core/src/context_manager/history_tests.rs).Trim() -ne '4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d') { throw 'Unreviewed inherited history conflict' }
+          if ((git hash-object -- codex-rs/core/src/context_manager/normalize.rs).Trim() -ne '4ca88c6a668e9896df06ca81940a0e41e357898d') { throw 'Unreviewed history-normalization conflict' }
+          if ((git hash-object -- codex-rs/core/src/tools/registry.rs).Trim() -ne 'fc75b3bbf91f1881bd32faaaca93356fbb598b5e') { throw 'Unreviewed protected tool-registry conflict' }
 
       - name: Configure native Windows scratch paths
         shell: pwsh
@@ -105,7 +108,7 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
 
-      - name: Run nine native core authority and replay regressions
+      - name: Run 15 focused native core authority and original-conflict regressions
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -120,7 +123,13 @@ jobs:
             'delayed_activation_does_not_retarget_a_task',
             'reviewer_only_activation_enforces_managed_authority',
             'activation_must_match_the_retained_turn_authority',
-            'guardian_v2_classification_settings_match_the_admitted_authority'
+            'guardian_v2_classification_settings_match_the_admitted_authority',
+            'delivered_assistant_context_invalidates_reviews_without_changing_authorization',
+            'checkpoint_replayed_messages_keep_legacy_review_when_the_source_survives',
+            'legacy_inter_agent_assistant_messages_are_not_turn_boundaries',
+            'adaptive_reconnaissance_rejects_hook_rewritten_write_command',
+            'adaptive_reconnaissance_rejection_finishes_blocked_without_start',
+            'adaptive_validation_terminalization_allows_only_trusted_signal_tool'
           )
           $index = 0
           foreach ($case in $cases) {
@@ -138,7 +147,7 @@ jobs:
             }
             $index++
           }
-          Write-Host "PASS: $index/$($cases.Count) native core authority and replay regressions."
+          Write-Host "PASS: $index/$($cases.Count) native core authority and original-conflict regressions."
 
       - name: Upload native core authority logs without publishing
         if: always()
