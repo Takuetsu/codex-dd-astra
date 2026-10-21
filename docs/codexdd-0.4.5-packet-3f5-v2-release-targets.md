@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3F.5: v2 reconciled release-target compatibility
 
-**Status: SOURCE HELPER CHECKPOINT; GITHUB CI PENDING. NOT A RELEASE CANDIDATE.**
+**Status: EXACT-SOURCE GITHUB NONRELEASE CHECKS GREEN; NOT A RELEASE CANDIDATE.**
 
 ## Scope
 
@@ -13,3 +13,9 @@ Seven new synthetic positive/fail-closed 0.4.5 tests exercise identity binding, 
 ## Hard boundaries
 
 No version-marker advance, no automatic release or PR writer, no change to the two existing historical 0.4.3 owner-dispatch publication/promotion workflows, no original discovery byte changes, no Rust/Cargo/Bazel policy waiver or runtime source edits. Release packaging, the four inherited INFO/unmaintained advisories, candidate evidence and manual publication, the complete detached 21-stage Windows release run, CI review and production installation remain independent gates.
+
+## GitHub contract closeout (October 21, 2026)
+
+[Read-only source-guard run #39626573120](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39626573120) **PASSED** at integration commit `8e8ff2df11268326453a6fde3265aa9beea9849d`. Raw job logs confirm three separately checked totals: **439/439** source/provenance checks (including all seven new synthetic v2 target tests); **112/112** guarded updater and historical discovery tests; and **85/85** historical manually reconciled v2 suite tests. **636/636** combined. No gate was waived or test skipped by empty filters.
+
+Acceptance is limited to helper source compatibility and synthetic fixture behavior; the new release-specific publication/promotion workflows, authentic 0.163 discovery evidence and 109 overlap semantic review, all-target RustSec remediation/decision, native Bazel release package, candidate source/receipt freeze and 21-stage Daniel-CL native release gate are not complete. The historically owner-dispatched 0.4.3 workflows remain intact. No product markers or production state changed.
