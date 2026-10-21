@@ -1,0 +1,987 @@
+{
+  "contract_version": 1,
+  "receipt_kind": "codexdd_045_source_provenance_only",
+  "acceptance": "source-identity-audit-only; no 0.163 semantic, runtime, dependency-security or release acceptance",
+  "refs": {
+    "baseline_official_162": "c1382380de69521303b416720a52f42d51af6248",
+    "target_official_163": "83086188ae0614bd882818ff1aa23f3194962012",
+    "production_codexdd_044": "b25550dcb2c6e84a84074b603086c9db6f32a63b",
+    "integration_snapshot": "f6fb89c098da28626c7c072a40d5e9b7306c8866"
+  },
+  "upstream_changed_paths": 1314,
+  "upstream_fork_overlap_paths": 109,
+  "overlap_group_counts": {
+    ".github": 1,
+    "codex-rs": 106,
+    "sdk": 2
+  },
+  "stale_production_overlap_paths": 0,
+  "legacy_043_blocked_paths": 22,
+  "legacy_paths_changed_in_upstream_163": 13,
+  "legacy_paths_unchanged_in_upstream_163": 9,
+  "overlaps": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "official_162_blob": "ede5a7f070322ed101e0f29d55d8c87236926005",
+      "official_163_blob": "2f4b09deb1c0af682dd77bcd3370a67f662d959e",
+      "production_044_blob": "716fcca85a3cd03f44647ffab051aed34bd9c95f",
+      "reviewed_045_blob": "0595de4220a15c98d6f3862368d7df0288012ccc"
+    },
+    {
+      "path": "codex-rs/BUILD.bazel",
+      "official_162_blob": "1e03df292e6d6040d6e1271bcdad521331f47aec",
+      "official_163_blob": "e1698941536ac5020adeceb5801055bf39f2a16a",
+      "production_044_blob": "2c92e0d3723460d245538c67c8fa1bc8cce57e3c",
+      "reviewed_045_blob": "843e9fe095e0982df2043bb17c7da8e6e1c95025"
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "official_162_blob": "1cee1174c2e937758713df47683521233a36b4f7",
+      "official_163_blob": "72658b908782ad8f90ba70260fba20a395999f0b",
+      "production_044_blob": "0c913b46674d3593ee84f1fee5508d16e33efae5",
+      "reviewed_045_blob": "a8eb8a076276cb3db5674b33c67d743b1c3d21fc"
+    },
+    {
+      "path": "codex-rs/Cargo.toml",
+      "official_162_blob": "382b9b91fc8a14ebafebf2abcfea52c8098e1e76",
+      "official_163_blob": "e84b9776a1a7b161a522773686888e10e248756c",
+      "production_044_blob": "72f91ace86ea1e5335bb789b0886d4d9c81bffb4",
+      "reviewed_045_blob": "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "official_162_blob": "00752e35cdf8bcd1bf9c69ef879bae483576dd82",
+      "official_163_blob": "4e9211b36a4128bce7c000a84679788e99e743cf",
+      "production_044_blob": "ade3dbd6fa3698be5c6f54b070c74be093e517dc",
+      "reviewed_045_blob": "443297aa65e890a4601d5bdcc9ef831a33a5b477"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "official_162_blob": "51707eddfd19f1cde58e193e8f2d818832a0c444",
+      "official_163_blob": "ed40f2f769c02f2874df9209f51384254feef54f",
+      "production_044_blob": "d1cc19b7cfcb16d3684589eec2cf4870e21aa78c",
+      "reviewed_045_blob": "98ce23d7be0ad5d0c2db67bb3cb4855fd9429f85"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "official_162_blob": "c105c371955a9785e65ce735b5a341ec985d2e9a",
+      "official_163_blob": "b96da225040e5648d8232cadbc8c560b293c4a14",
+      "production_044_blob": "775354e0ae6e0d81aad038625f16c7e1675ce10f",
+      "reviewed_045_blob": "3c46fd551b2ebdedcb2f0483ff104276f56dfe52"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "official_162_blob": "1a38e4fe91b7e1fa7f8450f422dbdad98b7f64cf",
+      "official_163_blob": "6d7bfd893788632926754fb2a39828609fb11fb8",
+      "production_044_blob": "e123a5131aecd33e574b1fcd87763176ae4af5ec",
+      "reviewed_045_blob": "ec3c7b7bc2c61e89d4b39b17827edc6cb0cb3691"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "official_162_blob": "eef430182091bfc6f120c98dda3a3246771de8d1",
+      "official_163_blob": "b18386f9681398e48984e807c1b00b72b0a27453",
+      "production_044_blob": "94bf97c4c9ec45371794d37d49864542967be50d",
+      "reviewed_045_blob": "10fdcbeb1ffc7e6b4bf08bca3af08e7429a95810"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "official_162_blob": "eb2ee812b34f4418a3ceb5590289f6d3974482f5",
+      "official_163_blob": "64de0f45ca5f443292b36ed2da21d434ca6e7ad0",
+      "production_044_blob": "6b29934a6fa191e695c8c580a25fac34b92edcc5",
+      "reviewed_045_blob": "d13a46abe6ab7224612abcbd4cf82951c7b0aab8"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "official_162_blob": "50cc33acf3c58e9eda2f471d2a3fb93d0b8ad3c8",
+      "official_163_blob": "4af7a4307ada139592b325f0aa1da2301deed861",
+      "production_044_blob": "c239fc7bfa81f75d4725237dcd967d5484a6f8f2",
+      "reviewed_045_blob": "39931bea900f12b97c0c876d2708ad64844f649f"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "official_162_blob": "f3c6d2c2e6a75b6408b24060b8580166f8547f0c",
+      "official_163_blob": "a5b07d304d2095bb69864400a1c83f255ed04f83",
+      "production_044_blob": "2c34825523a52c69be6093c7f90e3c1923f6e581",
+      "reviewed_045_blob": "7edad7f0219258e2fe65b9f97e095940ba78c675"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "official_162_blob": "a90d0548a3662085a676875d36a4c9e4f7f7ba35",
+      "official_163_blob": "40723453437c27dd37397fde205ed5b2d4638418",
+      "production_044_blob": "786f961364a86a74347ab8806e3301d4e09d7135",
+      "reviewed_045_blob": "d34e0eeb106b8cbd90438933fccdc05199abca0d"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "official_162_blob": "3e73b44fffe5a83843727dd500a0baefd0993653",
+      "official_163_blob": "b710f18f14e711a748318ee980bcdc4168a7d843",
+      "production_044_blob": "82f047ec52f9762e607a8f73db71357ddb3d1ad4",
+      "reviewed_045_blob": "6cb1a33ea48ed0de73f420ff6c179d9629fec45a"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "official_162_blob": "18b87d9ce485f585a6640f6d9fd49e227b7d351f",
+      "official_163_blob": "53817bb9e50e87ad8a85f39c6a27037bc87d5081",
+      "production_044_blob": "6941ecc90dc3c364b8029eb420aeb35d413da97f",
+      "reviewed_045_blob": "82c980c427501b594389fed439e105c2f696b9a5"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "official_162_blob": "c7f22e2930c39746531798617d2f4595b826078d",
+      "official_163_blob": "1746ceb7bcf4ed50ceca643170ffc65dada37f41",
+      "production_044_blob": "a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2",
+      "reviewed_045_blob": "4180b91565e1a47b38c4f40114716e55b2973d3f"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "official_162_blob": "6b784ada66f5116594ec13224728069c9fca78b0",
+      "official_163_blob": "b09a191289349a68e6602a30ec9d887664dab73f",
+      "production_044_blob": "5b646bcb09da65e9752b5f318c9e48aab9b27b36",
+      "reviewed_045_blob": "04f38d2535ba46da2bc22358589aeb1bd2840499"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "official_162_blob": "f632857401ead872c492b887416db98395e8646f",
+      "official_163_blob": "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa",
+      "production_044_blob": "65824b0da966df860bcc901d681017545de0227e",
+      "reviewed_045_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "official_162_blob": "6b705c55565ebe3d58c117b38268aea37d05bcd7",
+      "official_163_blob": "c9858cd9d513c69a917f6505410ee89b16bdd955",
+      "production_044_blob": "c4011790aa019b25978cc86fad98d59c4206d88c",
+      "reviewed_045_blob": "d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a"
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "official_162_blob": "4223ea796d2882be95a5153f43212e5356d0fa8d",
+      "official_163_blob": "a1572cbaf7b9026f789c96ce9d027e0a7cc4b1be",
+      "production_044_blob": "05256bae425f635997229a3b29b26c5f1e8eee19",
+      "reviewed_045_blob": "c93967717664145a72390384749747212fd5c63a"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "official_162_blob": "3d3a1df9886edbafcb7f9bb787f4924f68e2bdeb",
+      "official_163_blob": "a40486e0d512af66aeef1c1307696b2740053500",
+      "production_044_blob": "da10d7c0781e81034b872292a280cf31b5a5b9c8",
+      "reviewed_045_blob": "5c4633ab48ea77692e28193ea6e128ec58067a37"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "official_162_blob": "67946c8ebcb0b5f84b9fde7a7f77ad87e2ac38fa",
+      "official_163_blob": "1b9a253becc97a7a2c1b0de9e92def7c192691c2",
+      "production_044_blob": "8b0825017d7a05793184b98134474a0f03c7c5de",
+      "reviewed_045_blob": "1186f0a181704d8ea45243a850f971f1057cb080"
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "official_162_blob": "a19c41b19ff8aea40842771f261f195661b33ec5",
+      "official_163_blob": "6dfe969ab3adfc5d703184ee2ee61a1b6335f282",
+      "production_044_blob": "79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7",
+      "reviewed_045_blob": "42b434e017c527a8785fbaedf43292a83e1af09d"
+    },
+    {
+      "path": "codex-rs/cli/BUILD.bazel",
+      "official_162_blob": "41fbbb78ba3aeac02701c7a54b2c8d00ec57c817",
+      "official_163_blob": "d9673f989f062b5ea2e3f4bba124295bf010f7da",
+      "production_044_blob": "5da93d14962eb0a19f5c14542e62d2d0d68f6ee0",
+      "reviewed_045_blob": "5dd2b8b9629275fb2c392c59134ea95a3ce317d5"
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "official_162_blob": "8d062a23979eb6df4725af30b93269210229c240",
+      "official_163_blob": "9d540c3124ee692250d345719d122aa1884ba12f",
+      "production_044_blob": "173d95554ec555bd4ea5e04408a95d350f209015",
+      "reviewed_045_blob": "9379d52b41473f1a57cb49d07048af7c139ebcf9"
+    },
+    {
+      "path": "codex-rs/cli/tests/daemon_startup.rs",
+      "official_162_blob": "e55abb91643cc93e0e401e0db851ac8777bc7f9b",
+      "official_163_blob": "f50758363578497af6e1139e8a1410858706e38c",
+      "production_044_blob": "a530450d73cb88cea034b2792ae19cb83400d6f6",
+      "reviewed_045_blob": "e1c6d330f602f3c4cebf9d7163ecdcd2adb9100f"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "official_162_blob": "3e5cc07e6ca62ffa13e2a104a5f815a0d4fa40f0",
+      "official_163_blob": "8c8c66ea1dc45669a3f52e3e0d3f10e633267167",
+      "production_044_blob": "72f0ad4756d6f4a523bd2ed886be3757343677eb",
+      "reviewed_045_blob": "a07f08c8831dd011d4950a52088c7233722620d8"
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "official_162_blob": "5864a5df77c600b6dfc9884d971040074fb6b644",
+      "official_163_blob": "4aba1bab6cd2cbcc179a5de802731f2775c6bc88",
+      "production_044_blob": "7945ce6b8c9d4b7fea174092ff90c4a7a466321b",
+      "reviewed_045_blob": "1da7a45f8c2cbffe0a7e30ce9f4564663b37b779"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "official_162_blob": "20e28a8bfed7d5862ae3013207040386a1ac9f78",
+      "official_163_blob": "70cf8b7ef07e6ffaab9cfa32435bf6d7408137e3",
+      "production_044_blob": "cd6bf20ea4259d72926835b08dc502fbdf289ff7",
+      "reviewed_045_blob": "dca46d848c2035457001f07c191d201b1b8db380"
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "official_162_blob": "24f2964ffe566faa7a9de34636e11a528123c6c1",
+      "official_163_blob": "9ef4c0591931e00e9b195f0b47f51b850088c75f",
+      "production_044_blob": "a08e2386475b0c4e87d0d79aaccc27efeaff641d",
+      "reviewed_045_blob": "583447f35eaba564771771813bd4d897cb6b73de"
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "official_162_blob": "779a40ca2be8f8687ca067f6e922d53be852c51c",
+      "official_163_blob": "46ac8953074e2871eebd74e66242111732a0e2ee",
+      "production_044_blob": "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
+      "reviewed_045_blob": "2e5525612379a29af24116dd738a6612dc4420e6"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "official_162_blob": "8d2cd8351a74a7185369ab8fefcc101070e27c4b",
+      "official_163_blob": "a63dc8f4d231e215513606e7e534a4900203718f",
+      "production_044_blob": "24fc487a32cd930f39a3c8137c40790d37e60713",
+      "reviewed_045_blob": "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "official_162_blob": "1eb2cdf83fe8dd52cb06ca9de494b194a1bc0179",
+      "official_163_blob": "c5ab36546e189781c8b1f957cf56d8d31ad3d7fe",
+      "production_044_blob": "95327c51bc04000d8eb72fe41c6d3a4da632dff7",
+      "reviewed_045_blob": "17680eeef69718965df66cc12466985c84bdcd63"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/history_tests.rs",
+      "official_162_blob": "c5551b632048455dfda3263d48f498832c52f334",
+      "official_163_blob": "8f22910ed2086c07edbd41f84a1327705f4700f3",
+      "production_044_blob": "c2268ac3c142b8a788afa375f3b832b4c393464a",
+      "reviewed_045_blob": "4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/normalize.rs",
+      "official_162_blob": "7fc45ba217a3b7b733ee6225132f7c5eac99ed8c",
+      "official_163_blob": "532cfdfb34a74f774c41a9a1914347a2492997de",
+      "production_044_blob": "0f60bdc82016c45ff035667778d20aba0ee298f3",
+      "reviewed_045_blob": "4ca88c6a668e9896df06ca81940a0e41e357898d"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "official_162_blob": "4ca5ce14981f4207e336ed7c7bfed27990cdb43f",
+      "official_163_blob": "7c8ae88b5dd59674df284c49c13cc4d99b614b54",
+      "production_044_blob": "61ae6cecd6573c4d51e2fcad94239e9fda226964",
+      "reviewed_045_blob": "118907bac6f1f084c96b81e78c2d1b7fc923583d"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "official_162_blob": "879115d3d08a709b5a6384c5601954cb3759b5e6",
+      "official_163_blob": "21463d873c7e87fcf1ca8357d451bfec676dfe44",
+      "production_044_blob": "58afefe47716a4dce344685974db69b46a6d4d35",
+      "reviewed_045_blob": "106f07a29d8cde54784c516898472518736b9c37"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "official_162_blob": "263f08f2f1ea43b283406c0200bcbccfa5e022a1",
+      "official_163_blob": "a617d9367bc34a265c60c540ef8cd7b3d954c888",
+      "production_044_blob": "294d0a4e30e6db5a6a5415ded47305469c9a3af7",
+      "reviewed_045_blob": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "official_162_blob": "496114a113a6d8474343c887b9d244dad4b5b1be",
+      "official_163_blob": "2cde3795393f3da412d7d9c4e516033e5896901d",
+      "production_044_blob": "b1df117534bae52bd4e6dd1ecdbfc75350042f15",
+      "reviewed_045_blob": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "official_162_blob": "64e8786a15b48e68a4ad60e95790069c90b7d3a1",
+      "official_163_blob": "d1d43621210c979e2a98e2c2bc49698e825d71c1",
+      "production_044_blob": "190e23137e6e4d4b097bea98b6b1814adec14720",
+      "reviewed_045_blob": "50f524a055a92f0d19be5e6bc2665fe18718e35b"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "official_162_blob": "ea4dee313edd2bdeb17aad8fb763719f7b6861c9",
+      "official_163_blob": "2fb6da8d71570d48f9218ec8015cd3d6d3e12e3a",
+      "production_044_blob": "ff796b8c877f3e671252d6db885ac968b08e5893",
+      "reviewed_045_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "official_162_blob": "c9c6fdea1b7edbbb51896472281f74bf11f6ae02",
+      "official_163_blob": "df585fa7d98b6e325796f16bab970c952fa036ec",
+      "production_044_blob": "fe36ae0ae22feca5118d52d0dbee762b06b00c6d",
+      "reviewed_045_blob": "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "official_162_blob": "f658d6742b158fbc5abbf6a8e1a78dba890466e1",
+      "official_163_blob": "9e78325058546a3924b12fa8c9de938d6421fbcf",
+      "production_044_blob": "4f039ad37bf9dbd49c585dd5a98e859777fbb1c6",
+      "reviewed_045_blob": "05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1"
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "official_162_blob": "41ed0189b8bfd80d938a16073b2af5c40b18d2f9",
+      "official_163_blob": "501ce5fe4eb8395ae84f8b7a1b7f14b530a22e5e",
+      "production_044_blob": "4ddea6c560bbc0ff39c47abe2b4535169a4813ba",
+      "reviewed_045_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279"
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "official_162_blob": "e0acae262e8216748c162264d59e98c831302076",
+      "official_163_blob": "ebde5a7bdc449a11dc9c1fc1d8475c8e4432010f",
+      "production_044_blob": "5b67eb29406d04b021b0fd9a5e259eccdd7da3b2",
+      "reviewed_045_blob": "fc75b3bbf91f1881bd32faaaca93356fbb598b5e"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "official_162_blob": "7e2213456dcb0e5b2784f848c0fca061e7c2e677",
+      "official_163_blob": "fd5b5e14eeeb57b5be78af53d3f855702167dcc7",
+      "production_044_blob": "a7e9353da4e397bc49df84521793cc06ae3341de",
+      "reviewed_045_blob": "422870dba8b5a3b36994a598380c93f58760ad1b"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "official_162_blob": "395cc95e5d936d30fc6e96ecd4fe56fbfcb36229",
+      "official_163_blob": "1a8a0661878c6e847b5ed61c80c328c1444afc29",
+      "production_044_blob": "d9abdf0072136154432d2fbd080ddf3b2f1672be",
+      "reviewed_045_blob": "379eb8d44dfa672b70ed3b7d5408e882d8e803e3"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "official_162_blob": "53369836b0603b38e84dbe6e6deda6d46f1b231e",
+      "official_163_blob": "cfad8149ad70f43482453d59e7128ac975bbca03",
+      "production_044_blob": "6021db64243290630dc436c120d26cf428e9294f",
+      "reviewed_045_blob": "842ae7aeae97f6912e364f972ff8044061f176aa"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "official_162_blob": "a6e5161e96c306afb91836fb3055c44af9ff9f0e",
+      "official_163_blob": "acdb81445f12fc13779650ae1d71757795f5143a",
+      "production_044_blob": "02ae9e4f864ad69514f87a8ce3eab35ac6ed0df7",
+      "reviewed_045_blob": "0d53c5aebc2c2543f2f1190e46ed95db93992288"
+    },
+    {
+      "path": "codex-rs/external-agent-migration/src/sessions/append_tests.rs",
+      "official_162_blob": "81f3973f799c563715f088145123a1c4a1a5267d",
+      "official_163_blob": "cbe3ae6a7c1509d582a959af38839eb082f1ab55",
+      "production_044_blob": "3c4d1f4a86582aab173eef6c3ff2e286953f28f0",
+      "reviewed_045_blob": "72d8fc5d5cf9c388f179247330a354bd88d4c8f8"
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "official_162_blob": "41b99f95a047534ffc61030bf09f0afbf853bd19",
+      "official_163_blob": "826669cc3335dc23102e6a5bdbf2d62c1cb22fa4",
+      "production_044_blob": "6822fa4b7bb5f7c7c2e658e694de4967cc9d7267",
+      "reviewed_045_blob": "a54a5733e029fe3728a46adb3f50c68dae4d0eb2"
+    },
+    {
+      "path": "codex-rs/history/src/rollout_payload.rs",
+      "official_162_blob": "d740430a190e5a67c7b06333d95d96e89a0bbdb7",
+      "official_163_blob": "9ab89363df8a895ee4cfb28c4f38acb8a9d35250",
+      "production_044_blob": "5ab29ed9ac0ce83d3162a13f2193c7ce6796b0a0",
+      "reviewed_045_blob": "180b889e87cf3b0c13d1e43cfef0f21bb88c7c1c"
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "official_162_blob": "d021d687bbc336d241b05fdc2682873485042ce8",
+      "official_163_blob": "32a6110d3b53ee1dac0a7ac5ed12ede35a012812",
+      "production_044_blob": "a7eb71676d45219a8689790684e3012a93ed85cf",
+      "reviewed_045_blob": "a0a99cddd94064b6245e174cc74818ea3b5a3df2"
+    },
+    {
+      "path": "codex-rs/memories/write/src/phase1.rs",
+      "official_162_blob": "1fa128c2f5d2eb96730553092992949079c2e725",
+      "official_163_blob": "aa11ce276a51b197b9f9ba3e58d66eb16401b066",
+      "production_044_blob": "04fc09475f2ac50790500975e0cfb0fd7f6c88e2",
+      "reviewed_045_blob": "a036229bb256483f3a6e96ef6ceed86e4d12f3af"
+    },
+    {
+      "path": "codex-rs/memories/write/src/rollout_input.rs",
+      "official_162_blob": "7a1d1d94c3e0c7efde98993dd128722dde2bf627",
+      "official_163_blob": "2d45c7b63bdcda64ff2d37eccb112556e10a2f4e",
+      "production_044_blob": "9a26400db5a1a26318507524cb6c1ffdff064169",
+      "reviewed_045_blob": "3c54f1884b409a7060f54dd90739fa897ef7e604"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "official_162_blob": "841c794d4d46bb5f9da771b88c05fe09c13826bb",
+      "official_163_blob": "146209407b78b71c461c854c5d9d1e4d7816b873",
+      "production_044_blob": "5a19125a22aa3ebccc83a91b20996687cdeb76f9",
+      "reviewed_045_blob": "9ff46a4e1331e15f35f95b8e17ba41dfc931a5cf"
+    },
+    {
+      "path": "codex-rs/rollout-trace/src/protocol_event.rs",
+      "official_162_blob": "b5e23153d599ba0ed5643fd73d0d008918700e6c",
+      "official_163_blob": "f4d66320352ca0266ca7f8c1cc823d4c054adcd3",
+      "production_044_blob": "c7d7a51775430045e358d89f7c4ef61f9d7addf2",
+      "reviewed_045_blob": "4d16022f93841cb5d92eca00c76ec8cd84dd5bfd"
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "official_162_blob": "a6507682316c7275fccdd77cc1c73e083922bbea",
+      "official_163_blob": "eb13ec553ef546f8c982dd46deef9d0880a24555",
+      "production_044_blob": "84818a2e6dbd70ac46f2a96b34488b5e1a1a1155",
+      "reviewed_045_blob": "294ce2a11eacf8aca837a828a0012cb1301f3e4d"
+    },
+    {
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "official_162_blob": "f99f2c5a89e84accce2962058a86792878116fc3",
+      "official_163_blob": "765d83ccc7df4b136c04774930f4ac65af15bbd5",
+      "production_044_blob": "5a334771fc6d42a2fd96c6904ebd6c05d66db068",
+      "reviewed_045_blob": "6e70783e7c2e93e9a705a2ce32f7317545ea9228"
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "official_162_blob": "b0f1a68f87aa999d60d56d43fd84d11a32ad7ae6",
+      "official_163_blob": "77206404e1acd9f120240d41c155e4aa9b503cb5",
+      "production_044_blob": "cd928a6a977acbaa4a5be666c6a795ad164f3b33",
+      "reviewed_045_blob": "0fb86514d778776b2b6e76cb9eda07134757778c"
+    },
+    {
+      "path": "codex-rs/state/src/extract.rs",
+      "official_162_blob": "a6109bb3072b2463d57eeb27dc250fcadf028c38",
+      "official_163_blob": "f079ebc4ee8c09213df53b234e20d8c94800adf8",
+      "production_044_blob": "3bb6348621bcaeb460301b0453626b9c0735d8eb",
+      "reviewed_045_blob": "f9792c339f184ea66f58db9463ba8b85a1cbe4d9"
+    },
+    {
+      "path": "codex-rs/state/src/runtime/threads.rs",
+      "official_162_blob": "228a7cd6db06f09f8f85662dad3382b8c28b9667",
+      "official_163_blob": "1179126f6241be8a8d39cefcbd5ded38660d8cb9",
+      "production_044_blob": "4e36e954a700d1d472cd6cab1a2a555fa4f9e9f9",
+      "reviewed_045_blob": "5a0edb6a4f5c4968df7586b5d7adae7c1653c301"
+    },
+    {
+      "path": "codex-rs/thread-store/src/types.rs",
+      "official_162_blob": "1dd5b4e760ac453d046dda140dd9c6ceaf660863",
+      "official_163_blob": "5b3dea35516301a35d47c70b83e548dc060b8c9c",
+      "production_044_blob": "9a6696b209aebceee3d3976afb7f650bcf31f0ad",
+      "reviewed_045_blob": "315498be3dcdd650fa147ca6d3c69abd9c089e2c"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "official_162_blob": "5dfc3ad7b2cd6bee546988be91bd9b5710d70fa2",
+      "official_163_blob": "1b07e9826dd10fae888b903d75bdf0187a768e82",
+      "production_044_blob": "b76ee1107fabcc98625fc663c7967e0dc6e906a5",
+      "reviewed_045_blob": "f7e48ee454899a5fb01d84ca201b163622dedf9f"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "official_162_blob": "9e5b60bd83e7e9a6241b8baeb90659592c4ecf24",
+      "official_163_blob": "13d30c273f472d1c4271216ee3fbeaa5c350894f",
+      "production_044_blob": "521afcee6d57e0adfdb6ffdf89aad77f6bc7c11e",
+      "reviewed_045_blob": "16d6b02da4469a7f1ef2d82916a48d04719124d5"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "official_162_blob": "5e8bf63ef3d9c1aef4f2b08acc0c98860ec6022b",
+      "official_163_blob": "76d0111f4adb859fa49a4effe180fe36d5026d26",
+      "production_044_blob": "a4a84eb699475a4042a3e7b038d2cc323e079c48",
+      "reviewed_045_blob": "aece952c906a2f73f87d1d34b3f9583a36f3c722"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "official_162_blob": "2979e0a9ab462f5366db64ce7357adc3acfcfba5",
+      "official_163_blob": "a7f7f1e827818386b7417f27ab9a829f34fe1fa7",
+      "production_044_blob": "86f62f5f80ea9691d96c62ba1151cd87f0c57c1e",
+      "reviewed_045_blob": "81df877569e0c205e2a4dec5e9e790f7c7993b93"
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "official_162_blob": "026fe11eac523ce2cf87c911a061796352fe11f4",
+      "official_163_blob": "ff6e0201bb827516090eb84b7a1b12f342c8844d",
+      "production_044_blob": "28dbe32a743e3608225af6cfeb6ae036b30d74bf",
+      "reviewed_045_blob": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "official_162_blob": "61550ab90b368ab9fa651323a65951ae211142aa",
+      "official_163_blob": "a4fff209ab7c630ecb8f7465f24b65cc9c4328e9",
+      "production_044_blob": "3954842d391ae36715e335aba3ff9117fb630ae1",
+      "reviewed_045_blob": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf"
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "official_162_blob": "69a4ff5f3ee2fe6a3ffb8dc993c675ae29dba738",
+      "official_163_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
+      "production_044_blob": "86f1afec7ce715799c9fa62859e53f312918d067",
+      "reviewed_045_blob": "29065c6c0c90c010a53bf065c95278312712a90e"
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "official_162_blob": "8b5901c606fba350b3dfe43b7852608b93164246",
+      "official_163_blob": "9394604dd2c6cb01c34ef6c907b2a6d3e6a0befe",
+      "production_044_blob": "3007b910d9f155d68faf9f4c2e19346ef1dc848e",
+      "reviewed_045_blob": "b95971975610ff94ef823eff73e36a4691e7e29c"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "official_162_blob": "73bc892cc5c69c3cd775a24d884f1db9493cb8b6",
+      "official_163_blob": "40c30df9239f3ac5a5680953dfc4ccc64867af8a",
+      "production_044_blob": "1a1d42c2cb3586e19aa22ec71f8d264d97ef2909",
+      "reviewed_045_blob": "f8156f722bd2dae8f2355788826ee9fdf1225933"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "official_162_blob": "2daf07b457d9faf7c60b7e1fcf2f70e323991f08",
+      "official_163_blob": "7828068a5bd915501576bc09d792c7b43d287ef1",
+      "production_044_blob": "e8506446b855b07a5ae44453c0a730bec627fc5d",
+      "reviewed_045_blob": "662967de32dc64517b250dc180baafd1da4dd36a"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
+      "official_162_blob": "398a9c1dfa1250b76a98322fab9bc32ad5f88db7",
+      "official_163_blob": "918e7a73a6beae18be001943d3e63cab6b0fc7cd",
+      "production_044_blob": "6d23894a630247d8e9ea9be436ecf9a10b733d32",
+      "reviewed_045_blob": "e090162290f82156213340967c76a398887ecf44"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "official_162_blob": "b40809456fc2139235d2b59a0020d1b9a985ea40",
+      "official_163_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
+      "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
+      "reviewed_045_blob": "994d54b631493b3d0784e836c544c57a275e9985"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "official_162_blob": "c4c0fee68e71a8700a680b83ef25b532f40d0b27",
+      "official_163_blob": "196ff1ab16337f607aa1b305ad389fe6f590267d",
+      "production_044_blob": "2202f6cc661d54d6950e517e8f50adc4edb50a88",
+      "reviewed_045_blob": "a437116e81e54063a2df7e41752ac3e88a3d245d"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "official_162_blob": "6f0fd8bdb4bc9f15b0fa9050ac233d14190bcee9",
+      "official_163_blob": "86e0da6fd4e0550050cc1a704186a9a07038278b",
+      "production_044_blob": "0ac1ba8cd4878e9cb61d412c4e0cb88d629b0398",
+      "reviewed_045_blob": "e60808df0448682d47af1a14b5bd8d5c52206397"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "official_162_blob": "9a6adc013db4b283bbadcc300bcb3e5ecc88e83a",
+      "official_163_blob": "c8d16dc9c6712a01640553f9b5b680faf535f2f9",
+      "production_044_blob": "46584906c9c228bf20c7a1c1b676b2940b8f707c",
+      "reviewed_045_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "official_162_blob": "4c6ede335f45c3ad7a69a6cdc5364325a47bb49c",
+      "official_163_blob": "a20193149e57e60f75e89fbd4b4aa819d511b2e5",
+      "production_044_blob": "44cd4adbcc90db4f55500d9f10b3bd8e3220364c",
+      "reviewed_045_blob": "804a723f0939ca0b3b71e52afc25ac9903144446"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "official_162_blob": "6d15c852f7705a91503421915aa8b3245bdf48ae",
+      "official_163_blob": "837fcb13c2a2d9543b89257fa8cab26af8bab8d9",
+      "production_044_blob": "c95f1d080836e934d83296ebab20b01abf1af5be",
+      "reviewed_045_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
+      "official_162_blob": "ed23a46982abd658d63e3d4839b3764b71a704b3",
+      "official_163_blob": "525eed5ece8b9c0110b3b296b68fb6c727d6d096",
+      "production_044_blob": "d0e8abc5667e513b233d87f9ad7449ca1cc11fc5",
+      "reviewed_045_blob": "d6447d22a0a1e943b1352b8c945cf7f6cf09734e"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "official_162_blob": "7dbb54bb8576429ecaeba483a07095b194cba6a3",
+      "official_163_blob": "2f74f843d59d8578fe32a195de0c664bf049e4fe",
+      "production_044_blob": "e1a042122e0df76b990d4b2f6668de666fe3beab",
+      "reviewed_045_blob": "76ae0ab2d341188a6deed0c4347b489fa93f29e4"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "official_162_blob": "dc5adf7b73980db446fd6e749120e50c63db2721",
+      "official_163_blob": "05dde949edeadc4c4ef2c510d13c19f195a9b43a",
+      "production_044_blob": "ab181ba6d60317df316bd2fcf70ab2385ef1db16",
+      "reviewed_045_blob": "a584d5513ea40321e920d795bbb93b8d96e8f03b"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "official_162_blob": "6ee018ed4c2a28f82625cf565187f481d8fdbd69",
+      "official_163_blob": "5b44cac1b0a97e94a786705c490dd80e5a7a8888",
+      "production_044_blob": "a0a393269cf36201c43a901f778bf48823d34d9a",
+      "reviewed_045_blob": "e463da2af9440b3dc8382464a5d0b98ee6758404"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "official_162_blob": "e20aaa3a70ce39ddc2c5e1a4d49ee03062ca85e1",
+      "official_163_blob": "9998e77583d40fe12e0026c7028332c109c4c8ea",
+      "production_044_blob": "c7e06368cf7336bfee8ceaf1ab9ee1913790639a",
+      "reviewed_045_blob": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/interaction.rs",
+      "official_162_blob": "ddabe0e3e283b5aa3386fc682dce075c52444e55",
+      "official_163_blob": "8657de2e8373e4a07fd4e97eb7ca5b1ca6048a54",
+      "production_044_blob": "f8ec1053365881baae512dc9b1575032bec99ac6",
+      "reviewed_045_blob": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "official_162_blob": "85ea551334db60d948a9b215e5026679a4fc723f",
+      "official_163_blob": "0065ef473b7c65562620edde50bea4a21a1b9c3f",
+      "production_044_blob": "26e2c0f1500ef11f401c4fd3c92f228a19f9f85b",
+      "reviewed_045_blob": "ad71108b91a0d7f1f079cab0482076237b138994"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "official_162_blob": "1907577c5647ef4df7a856a4b88bf77a1fdb2384",
+      "official_163_blob": "1ebff8fcb314d5c8c2a867c18def36b1b2f7ea60",
+      "production_044_blob": "8b079cdb3863f0d613ec1f9eb702c142c6445133",
+      "reviewed_045_blob": "d17ff1c77f63c8c57e0a847c58377999fda78480"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "official_162_blob": "97c7de5be321add6c92c50345fc19dea8c04dcb0",
+      "official_163_blob": "6077a0f9ef11faec6a95b69ddf9d50616c00a6c4",
+      "production_044_blob": "73d7f75b26e5de276be3357a5fda836c24b4090b",
+      "reviewed_045_blob": "17500409f70dfda7fa1c489258fa19ab01bed747"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "official_162_blob": "a5ddae21604eb8a72965aab53199f08b552b7baf",
+      "official_163_blob": "b0b9674c6ae5849dabb63bf873ec5ea082da6dbe",
+      "production_044_blob": "3779d5e6c557e3108f32a2ae329fb6a1e684bb10",
+      "reviewed_045_blob": "578d7443bf8c95f346915caa6251c4a50292f8e7"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "official_162_blob": "182a696b240500922178cc8cedb711d02b7f4903",
+      "official_163_blob": "5327f805cf5d3e78d283cd558be3a40e8c569966",
+      "production_044_blob": "63d8b4b41cc237167a6c32ace5eb60cb193e4c46",
+      "reviewed_045_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/status_controls.rs",
+      "official_162_blob": "6dc0ab9077d95c4c3b4df05065a509f7be34c54b",
+      "official_163_blob": "692eba105a92c446fd4ffb8a3440c08b7b88134c",
+      "production_044_blob": "b815e819fb0742d339d074a2dce2f98577c7c5a4",
+      "reviewed_045_blob": "c3973a6a72da8533b47951b0d529adf839398b1d"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "official_162_blob": "fd24d3260b850dff11aac8cae1d690f42d3ca1fc",
+      "official_163_blob": "8534d753f6c92a7a0fdc8254d970bb260a4b4faa",
+      "production_044_blob": "28a23fc322abc198ee684f6132e7384e672538d2",
+      "reviewed_045_blob": "2b2404e0db36ace3260ecfca0c423cd146b8c95b"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "official_162_blob": "8eeb1d24ce21d3375e4b2c590a5ea70d041144d1",
+      "official_163_blob": "8e83ad083ae63717492fe3d7d60bf29f7cf19e8e",
+      "production_044_blob": "8c419bc8d3b1ae418b46a9db1dc3cba640cc8e3a",
+      "reviewed_045_blob": "53ca9fdae79b07822e8551289b97f1732b5e3ab0"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "official_162_blob": "6bc5164c3bbf950277c12e2e9e03aafba8b5b54a",
+      "official_163_blob": "6ef2db01fb53431a6bf79562780057f340477f42",
+      "production_044_blob": "80a1b2d3022ea6d989b1b25122dfb786106b3c2f",
+      "reviewed_045_blob": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "official_162_blob": "23c08f2271cac358a8136d9f436150807ab3eeca",
+      "official_163_blob": "93662ffac475697d4f5a41c918b80de85e47b7b3",
+      "production_044_blob": "f9d994657238fca820e1062e239bb23c51cd2dbe",
+      "reviewed_045_blob": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "official_162_blob": "a5aa8b9d830c3f517e6a46a863fd3b6166267ab8",
+      "official_163_blob": "7e136521f585c25e4c59d371df7fa13183f0a584",
+      "production_044_blob": "70cd5dfffc22f6f7ae1bdb66643a21a61c5cdc44",
+      "reviewed_045_blob": "2354a8e517c49e1c25fceea4b849cb0b077bc366"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "official_162_blob": "fbf476c9ab84f4ffd8ceca80cecd23b1238bde53",
+      "official_163_blob": "f867a24d5c917091dca60f0102700e989970aef7",
+      "production_044_blob": "d5405150df0ed218cb347010c9a9d817ba1ff3fc",
+      "reviewed_045_blob": "ede40dcf9566a813004ac57614991f6eb1518ce4"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "official_162_blob": "307e1f5128c68d47088bf0e2c784f62d29fd7755",
+      "official_163_blob": "301b55c2cc7bd0b1c94d137322b9951c04e49e46",
+      "production_044_blob": "0d1f1f28923ca09382c0cb2afc9bcf3b2248dbe9",
+      "reviewed_045_blob": "23ea7ee8024deb95767f8322a42a1f330be715ff"
+    },
+    {
+      "path": "codex-rs/tui/src/cli.rs",
+      "official_162_blob": "cfa2d862332b2f03a90280cb993100e5dac291a4",
+      "official_163_blob": "29469b295e97de8a2a5f9b1f1e1c0c79d4b445d8",
+      "production_044_blob": "841e9e282941bc856c8c7acf62f094c03c274b58",
+      "reviewed_045_blob": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "official_162_blob": "6476c94c7bc6d62b431a6df8ef1b91a58799c13f",
+      "official_163_blob": "91c38d78373e4215282549f9f4dbc1af997c77d3",
+      "production_044_blob": "2a4c1190086bee4b16f86252ab802bf06e4a0361",
+      "reviewed_045_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "official_162_blob": "93f169f037a90782b07f480d87689da7b2f3e9d1",
+      "official_163_blob": "2a6a2eaf1f5d601a72b6ea09669091e676f1ff4f",
+      "production_044_blob": "f103b69a4629f9d019cd2a39c3823ae29dc646bf",
+      "reviewed_045_blob": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "official_162_blob": "ea59afbbe784ceb4ecb7a8bad3d8bb1c7d2b27ba",
+      "official_163_blob": "f3b62e10dd713d32bd1330f7c6548cda6313d47f",
+      "production_044_blob": "c09c80cbfcea36a41d839822fe15ea9abb3514b5",
+      "reviewed_045_blob": "f1075c14620c0217e2433f1501c8f171bc59989d"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "official_162_blob": "dc0fbd0547e3655a42f33d7559763c0da6e1b44d",
+      "official_163_blob": "a3fb5447b06d48d3a2924eb25dae4174243cb844",
+      "production_044_blob": "83ad7124e531be410477bd097cde8950bca40ed2",
+      "reviewed_045_blob": "7b0746fe66b55537d3c445bfac194cbdb005b2b2"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "official_162_blob": "d9ba053eb5cee42ad3a644f506d705fe44d89e09",
+      "official_163_blob": "afb372bb7b9bc4e6f32ee82d6f86c32b4c40b97d",
+      "production_044_blob": "edd98b26ffdfba98d095ca6631830f2571928fe7",
+      "reviewed_045_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "official_162_blob": "87c1c42f54d99c2844a9f5939659206948edc7ce",
+      "official_163_blob": "c29d464adcb2f52a7a6dc38329e19319217cc3ad",
+      "production_044_blob": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
+      "reviewed_045_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "official_162_blob": "c6e33d8fc89072d0a3a293e070da0194d4fbc527",
+      "official_163_blob": "d84b3d373f8d496810fd0ab86fdf1de9de9e676f",
+      "production_044_blob": "a3091a07c8d8927f7fc8fbeba2ed44434487d1fd",
+      "reviewed_045_blob": "e067b499977a4e0dcb81d04f2e0178bf10e1793d"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "official_162_blob": "af2d3590abe7b1563fd82dc9a51330efa2c5a71f",
+      "official_163_blob": "2c1212bd8a8c67705105d3c0eb22b9b8c40343eb",
+      "production_044_blob": "b527068e804a5e7bbe697464c331b21424cdafa6",
+      "reviewed_045_blob": "69f4e77ea9098353315f874e90f5495649bb1905"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/v2_all.py",
+      "official_162_blob": "5bbd86342bebe6eb35257df146e28fb66cea15c4",
+      "official_163_blob": "0faaa9e074c4de86f9087d4e355bd1ebee42c2b9",
+      "production_044_blob": "79e2b3a2e3b7620102ab12252efc7fd0a3d2bf81",
+      "reviewed_045_blob": "7eba3aa28d900113f9efd85230719b50942849d0"
+    }
+  ],
+  "legacy_043_conflicts": [
+    {
+      "path": "codex-rs/app-server-daemon/src/backend/windows.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "0c2022fd59aaa61d6e1dc350d45877680f530071",
+      "official_163_blob": "0c2022fd59aaa61d6e1dc350d45877680f530071",
+      "production_044_blob": "1cc1889712a5daa85642739bc9d17869967f8ac5",
+      "reviewed_045_blob": "1cc1889712a5daa85642739bc9d17869967f8ac5"
+    },
+    {
+      "path": "codex-rs/app-server-daemon/src/lib.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "0fd3ed9c27652a502a665c2d82297451df2530ee",
+      "official_163_blob": "0fd3ed9c27652a502a665c2d82297451df2530ee",
+      "production_044_blob": "bc3cf057bc8b39dfec1e67dfd4fb0a736f41a61f",
+      "reviewed_045_blob": "bc3cf057bc8b39dfec1e67dfd4fb0a736f41a61f"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "eef430182091bfc6f120c98dda3a3246771de8d1",
+      "official_163_blob": "b18386f9681398e48984e807c1b00b72b0a27453",
+      "production_044_blob": "94bf97c4c9ec45371794d37d49864542967be50d",
+      "reviewed_045_blob": "10fdcbeb1ffc7e6b4bf08bca3af08e7429a95810"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "eb2ee812b34f4418a3ceb5590289f6d3974482f5",
+      "official_163_blob": "64de0f45ca5f443292b36ed2da21d434ca6e7ad0",
+      "production_044_blob": "6b29934a6fa191e695c8c580a25fac34b92edcc5",
+      "reviewed_045_blob": "d13a46abe6ab7224612abcbd4cf82951c7b0aab8"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ClientRequest.ts",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "73a495e24045a0dbdcf92050ca94a1b2fa11099d",
+      "official_163_blob": "73a495e24045a0dbdcf92050ca94a1b2fa11099d",
+      "production_044_blob": "d396d4096bfa66dda6aa0cbdab1099ebd6763d23",
+      "reviewed_045_blob": "d396d4096bfa66dda6aa0cbdab1099ebd6763d23"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "50cc33acf3c58e9eda2f471d2a3fb93d0b8ad3c8",
+      "official_163_blob": "4af7a4307ada139592b325f0aa1da2301deed861",
+      "production_044_blob": "c239fc7bfa81f75d4725237dcd967d5484a6f8f2",
+      "reviewed_045_blob": "39931bea900f12b97c0c876d2708ad64844f649f"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "f3c6d2c2e6a75b6408b24060b8580166f8547f0c",
+      "official_163_blob": "a5b07d304d2095bb69864400a1c83f255ed04f83",
+      "production_044_blob": "2c34825523a52c69be6093c7f90e3c1923f6e581",
+      "reviewed_045_blob": "7edad7f0219258e2fe65b9f97e095940ba78c675"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "3e5cc07e6ca62ffa13e2a104a5f815a0d4fa40f0",
+      "official_163_blob": "8c8c66ea1dc45669a3f52e3e0d3f10e633267167",
+      "production_044_blob": "72f0ad4756d6f4a523bd2ed886be3757343677eb",
+      "reviewed_045_blob": "a07f08c8831dd011d4950a52088c7233722620d8"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "1eb2cdf83fe8dd52cb06ca9de494b194a1bc0179",
+      "official_163_blob": "c5ab36546e189781c8b1f957cf56d8d31ad3d7fe",
+      "production_044_blob": "95327c51bc04000d8eb72fe41c6d3a4da632dff7",
+      "reviewed_045_blob": "17680eeef69718965df66cc12466985c84bdcd63"
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "a6507682316c7275fccdd77cc1c73e083922bbea",
+      "official_163_blob": "eb13ec553ef546f8c982dd46deef9d0880a24555",
+      "production_044_blob": "84818a2e6dbd70ac46f2a96b34488b5e1a1a1155",
+      "reviewed_045_blob": "294ce2a11eacf8aca837a828a0012cb1301f3e4d"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/permission_selection_tests.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "d24946fa30baa9aff93c838b697cfec776e794b0",
+      "official_163_blob": "d24946fa30baa9aff93c838b697cfec776e794b0",
+      "production_044_blob": "d24946fa30baa9aff93c838b697cfec776e794b0",
+      "reviewed_045_blob": "d24946fa30baa9aff93c838b697cfec776e794b0"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "9a6adc013db4b283bbadcc300bcb3e5ecc88e83a",
+      "official_163_blob": "c8d16dc9c6712a01640553f9b5b680faf535f2f9",
+      "production_044_blob": "46584906c9c228bf20c7a1c1b676b2940b8f707c",
+      "reviewed_045_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_session_state.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "b5596528f2e1dea9327d3ea3d8673d4166bfb553",
+      "official_163_blob": "b5596528f2e1dea9327d3ea3d8673d4166bfb553",
+      "production_044_blob": "15ccd2028149d135695927cecbe1eeea6790f0c3",
+      "reviewed_045_blob": "15ccd2028149d135695927cecbe1eeea6790f0c3"
+    },
+    {
+      "path": "codex-rs/tui/src/app/working_directory.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "db28e72c92b6566d5b1f05e91efc44733422541b",
+      "official_163_blob": "db28e72c92b6566d5b1f05e91efc44733422541b",
+      "production_044_blob": "9754938a063bd903216c8089b0abaf7817d6636f",
+      "reviewed_045_blob": "9754938a063bd903216c8089b0abaf7817d6636f"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "6d15c852f7705a91503421915aa8b3245bdf48ae",
+      "official_163_blob": "837fcb13c2a2d9543b89257fa8cab26af8bab8d9",
+      "production_044_blob": "c95f1d080836e934d83296ebab20b01abf1af5be",
+      "reviewed_045_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "d5fdc6b518363ef168019302ead60c9dea1a5712",
+      "official_163_blob": "d5fdc6b518363ef168019302ead60c9dea1a5712",
+      "production_044_blob": "22e9183f76ed8ea5545836f207b0496315f60509",
+      "reviewed_045_blob": "22e9183f76ed8ea5545836f207b0496315f60509"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "cfe0499592a2ee2f47e681107c3118164a62071f",
+      "official_163_blob": "cfe0499592a2ee2f47e681107c3118164a62071f",
+      "production_044_blob": "037a97a658dc2187d390f049dca96f84c85a3348",
+      "reviewed_045_blob": "037a97a658dc2187d390f049dca96f84c85a3348"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "182a696b240500922178cc8cedb711d02b7f4903",
+      "official_163_blob": "5327f805cf5d3e78d283cd558be3a40e8c569966",
+      "production_044_blob": "63d8b4b41cc237167a6c32ace5eb60cb193e4c46",
+      "reviewed_045_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "6476c94c7bc6d62b431a6df8ef1b91a58799c13f",
+      "official_163_blob": "91c38d78373e4215282549f9f4dbc1af997c77d3",
+      "production_044_blob": "2a4c1190086bee4b16f86252ab802bf06e4a0361",
+      "reviewed_045_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d"
+    },
+    {
+      "path": "codex-rs/tui/src/session_start.rs",
+      "upstream_changed": false,
+      "production_changed": false,
+      "official_162_blob": "08a6fc82205b0f2f7baa23f13fef890ad43db838",
+      "official_163_blob": "08a6fc82205b0f2f7baa23f13fef890ad43db838",
+      "production_044_blob": "7ecd2bd03e94180067d5a8869dd8dbee783f7ec4",
+      "reviewed_045_blob": "7ecd2bd03e94180067d5a8869dd8dbee783f7ec4"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "d9ba053eb5cee42ad3a644f506d705fe44d89e09",
+      "official_163_blob": "afb372bb7b9bc4e6f32ee82d6f86c32b4c40b97d",
+      "production_044_blob": "edd98b26ffdfba98d095ca6631830f2571928fe7",
+      "reviewed_045_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "upstream_changed": true,
+      "production_changed": true,
+      "official_162_blob": "87c1c42f54d99c2844a9f5939659206948edc7ce",
+      "official_163_blob": "c29d464adcb2f52a7a6dc38329e19319217cc3ad",
+      "production_044_blob": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
+      "reviewed_045_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932"
+    }
+  ]
+}
