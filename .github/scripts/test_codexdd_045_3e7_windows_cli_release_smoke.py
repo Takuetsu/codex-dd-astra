@@ -50,6 +50,27 @@ class CliReleaseSmokeContract(unittest.TestCase):
         self.assertNotIn("contents: write", s)
         self.assertNotIn("git push", s)
 
+    def test_all_four_reviewed_yaml_consumers_are_pinned(self):
+        s = self.flow
+        expected = {
+            "codex-rs/skills": ("9f4e136ec76fc298e32ccb94fd0800b1f5656c76", "7342975aaea0e3ecc61da41f145674cd154a12c9"),
+            "codex-rs/core-plugins": ("16dc432cd2f9b6e16de5b4f367a64654a2e492e6", "668da25d6c4db37e737b3401e78333290bf1f2f8"),
+            "codex-rs/ext/skills": ("e013d31eb8837cc3a7296e216c941427cf1cb084", "80bcfba8cb37de4c62d0f80d3c54a8290fdb084d"),
+            "codex-rs/external-agent-migration": ("1ae14ac88a1a765328a26026e65a3bd0328e8f17", "3f49a1ae00cc48720b766d9e76bc050e954cf0fa"),
+        }
+        self.assertEqual(len(expected), 4)
+        for dirname, (build_blob, cargo_blob) in expected.items():
+            with self.subTest(package=dirname):
+                self.assertIn(f"'{dirname}/BUILD.bazel' = '{build_blob}'", s)
+                self.assertIn(f"'{dirname}/Cargo.toml' = '{cargo_blob}'", s)
+                self.assertIn(f"      - '{dirname}/BUILD.bazel'", s)
+                self.assertIn(f"      - '{dirname}/Cargo.toml'", s)
+                self.assertIn(f"{dirname}/BUILD.bazel {dirname}/Cargo.toml", s)
+        self.assertEqual(s.count("'//codex-rs/cli:release_files'"), 1)
+        self.assertNotIn("runtime_package_combined", s)
+        self.assertNotIn("'--config=release'", s)
+        self.assertNotIn("contents: write", s)
+
     def test_compiler_fail_fast_and_authentic_success_receipt(self):
         s = self.flow
         self.assertIn("BLOCKED: CLI release-files debug smoke", s)

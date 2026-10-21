@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3E.9: core-plugins Cargo rename scoped alias
 
-**Status: FOCUSED SOURCE FIX AND WINDOWS MSVC BUILD STAGED; NONRELEASE.**
+**Status: EXACT-SOURCE FOCUSED CORE-PLUGINS WINDOWS MSVC BUILD PASSED. NONRELEASE.**
 
 ## Exact first failure
 
@@ -19,3 +19,7 @@ The corrected full CLI debug smoke at [run #39663703563](https://github.com/Taku
 ## Proactive next-consumer audit — October 21, 2026
 
 The complete 161-manifest tree scan discovered two more legitimate runtime consumers with the same pinned dependency rename: `codex-rs/ext/skills` and `codex-rs/external-agent-migration`. They are covered separately by [3E.10](codexdd-0.4.5-packet-3e10-renamed-yaml-consumer-inventory.md); do not infer they compiled from the separate pending core-plugins CI run. No global aliases, release authorization, security exception, or Cargo mutation has been introduced.
+
+## Focused native MSVC closeout — October 21, 2026
+
+[GitHub Windows core-plugins build #39669345757](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39669345757) **PASSED** on SHA `8ee64f46d8f9ef95100006e26e5039d29e06e6ff` with 2,479 Bazel actions and an actual compiled Rust library. The three earlier `serde_yaml` diagnostics were not reproduced. All remaining direct YAML consumers are separately green under [3E.10](codexdd-0.4.5-packet-3e10-renamed-yaml-consumer-inventory.md); this is not a successful CLI release receipt.

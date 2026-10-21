@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3E.10: exhaustive renamed serde_yaml consumer inventory
 
-**Status: FOUR DIRECT CARGO CONSUMERS REVIEWED; TWO MORE NARROW BUILD FIXES STAGED. NONRELEASE.**
+**Status: EXACT-SOURCE FOUR DIRECT CARGO CONSUMERS VERIFIED AND ALL FOUR FOCUSED WINDOWS BUILDS GREEN. NONRELEASE.**
 
 ## Why this is necessary before another long CLI build
 
@@ -15,3 +15,13 @@ Preserve the accepted `codex_rust_crate(lib_aliases = None)` opt-in API and the 
 Add source-guard tests that exhaustively rescan all Cargo manifests for renamed dependencies and reject any new, unreviewed direct consumer lacking an explicit alias. Separately, on GitHub-hosted Windows-2022/MSVC with Bazel 9.2.0, compile **only** `//codex-rs/ext/skills:skills` and `//codex-rs/external-agent-migration:external-agent-migration` with strict module locking, `--jobs=2`, exact Git-blob pins and read-only permissions. Upload diagnostics only. Stop on first compilation failure; successful target analysis alone is not a release receipt.
 
 **Exit criteria:** Exact-source nonempty source guards + green native core-plugins leaf + green two-target remaining-consumer leaf, before considering a new full CLI debug smoke. No optimized release build or detached Daniel-CL 21-stage suite, and no action on unresolved four inherited RustSec INFO/unmaintained all-target findings.
+
+## Exact Windows acceptance — October 21, 2026
+
+At the end of Packet 3E.10, all **four** exhaustively inventoried YAML rename direct consumers are now individually evidenced by native Windows builds with the original Cargo dependency/security pins intact:
+
+- `codex-rs/skills`: [run #39660443013](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39660443013), **SUCCESS**, 1,281 Bazel actions.
+- `codex-rs/core-plugins`: [run #39669345757](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39669345757), **SUCCESS**, 2,479 actions.
+- `codex-rs/ext/skills` and `codex-rs/external-agent-migration`: [run #39670983390](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39670983390), **SUCCESS**, 2,538 actions in a single two-target focused build at SHA `d5e9c5a5d974f7177d4b98733bbdb062bd24d23b`.
+
+The same final SHA passed [source guards #39670983116](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39670983116) with **455/455 static, 112/112 updater and 85/85 historical v2** tests, 652 total, plus the Windows TUI/compile checkpoints #39670982987 and #39670983161. These receipts justify one **read-only Windows CLI debug release-files smoke** with all four exact BUILD and Cargo pins and no broader Bazel alias propagation. A green CLI build is not an optimized release, packaging approval, security waiver or installation permission.

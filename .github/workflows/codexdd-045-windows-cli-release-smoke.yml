@@ -11,6 +11,13 @@ on:
       - 'patches/zstd-sys_windows_msvc_include_dirs.patch'
       - 'defs.bzl'
       - 'codex-rs/skills/BUILD.bazel'
+      - 'codex-rs/core-plugins/BUILD.bazel'
+      - 'codex-rs/ext/skills/BUILD.bazel'
+      - 'codex-rs/external-agent-migration/BUILD.bazel'
+      - 'codex-rs/skills/Cargo.toml'
+      - 'codex-rs/core-plugins/Cargo.toml'
+      - 'codex-rs/ext/skills/Cargo.toml'
+      - 'codex-rs/external-agent-migration/Cargo.toml'
 
 permissions:
   contents: read
@@ -44,6 +51,13 @@ jobs:
             'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
             'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'
             'codex-rs/skills/BUILD.bazel' = '9f4e136ec76fc298e32ccb94fd0800b1f5656c76'
+            'codex-rs/skills/Cargo.toml' = '7342975aaea0e3ecc61da41f145674cd154a12c9'
+            'codex-rs/core-plugins/BUILD.bazel' = '16dc432cd2f9b6e16de5b4f367a64654a2e492e6'
+            'codex-rs/core-plugins/Cargo.toml' = '668da25d6c4db37e737b3401e78333290bf1f2f8'
+            'codex-rs/ext/skills/BUILD.bazel' = 'e013d31eb8837cc3a7296e216c941427cf1cb084'
+            'codex-rs/ext/skills/Cargo.toml' = '80bcfba8cb37de4c62d0f80d3c54a8290fdb084d'
+            'codex-rs/external-agent-migration/BUILD.bazel' = '1ae14ac88a1a765328a26026e65a3bd0328e8f17'
+            'codex-rs/external-agent-migration/Cargo.toml' = '3f49a1ae00cc48720b766d9e76bc050e954cf0fa'
             'codex-rs/Cargo.toml' = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
             'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
             'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
@@ -59,7 +73,7 @@ jobs:
           if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') {
             throw 'Upstream release marker advanced before acceptance'
           }
-          git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/skills/BUILD.bazel codex-rs/skills/Cargo.toml codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml
+          git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/skills/BUILD.bazel codex-rs/skills/Cargo.toml codex-rs/core-plugins/BUILD.bazel codex-rs/core-plugins/Cargo.toml codex-rs/ext/skills/BUILD.bazel codex-rs/ext/skills/Cargo.toml codex-rs/external-agent-migration/BUILD.bazel codex-rs/external-agent-migration/Cargo.toml codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml
           if ($LASTEXITCODE -ne 0) { throw 'Protected working tree is modified' }
           if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) {
             throw 'Unexpected external MSVC runtime license override'
