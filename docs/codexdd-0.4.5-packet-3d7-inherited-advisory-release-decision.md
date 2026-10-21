@@ -60,7 +60,7 @@ If the owner elects Path B, the proposed scope is **only** `RUSTSEC-2026-0374`, 
 
 ## App-server Windows authorization gate (October 20, 2026)
 
-The [focused native Windows app-server admission/verification workflow #39487011633](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39487011633) is running from commit `50414da9c74be4356ea49bbf9e077e0d1bf617a4`. Its six individually filtered tests target turn admission during drain, ownership of user-verification requests, client disconnect races, and account-switch rejection. Every case must match a real native Rust test and pass; the first failure stops the job and uploads exact logs. **As of this packet update, this workflow has not produced a final success receipt.** Its scoped smoke is not a 21-stage Windows release substitute.
+The [focused native Windows app-server admission/verification workflow #39487011633](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39487011633) **completed successfully** at source SHA `50414da9c74be4356ea49bbf9e077e0d1bf617a4`. All **six individually filtered** tests completed under the locked Windows resolver and pinned Rust toolchain, checking turn admission during drain, ownership of user-verification requests, client disconnect races, and account-switch rejection. The run uploaded logs without publishing. This is focused admission evidence, **not** a 21-stage Windows release substitute; the inherited all-target security advisory gate remains RED.
 
 ## Remaining 0.4.5 acceptance gates
 

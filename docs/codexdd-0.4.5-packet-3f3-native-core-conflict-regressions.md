@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3F.3: focused native Windows core conflict behavior
 
-**Status: EXACT-BRANCH READ-ONLY WINDOWS RUNTIME TESTS STAGED; CI PENDING. NOT A RELEASE CANDIDATE.**
+**Status: EXACT-SOURCE READ-ONLY WINDOWS CORE RUNTIME 15/15 PASSED; NOT A RELEASE CANDIDATE.**
 
 ## Rationale and minimal target
 
@@ -19,3 +19,7 @@
 ## What completion would and would not prove
 
 A green Windows native job would specifically improve the **core history/registry original conflict** behavioral evidence, including a malicious PreToolUse hook rewrite which must be rejected *after* the hook; it does not assert that the protected TUI, package build, or all-target security gate is release green. The four inherited INFO/unmaintained RustSec advisories still require remediation or explicit owner-reviewed expiry before 0.4.5 release acceptance. Do not weaken `deny.toml`, auto-publish, edit product markers or invoke the long native release suite in this packet.
+
+## Focused native Windows closeout — October 21, 2026
+
+[Windows core authority run #39615406741](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39615406741) **passed all fifteen individually matched tests** on exact SHA `ac7064492a580f52efd724f8b19ab2eaf6d15e49`, including three context history/replay cases and three post-hook registry policy/cancellation cases directly targeting the original 0.163 core conflicts. [TUI run #39618752181](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39618752181) independently passed its **25/25** selectors, covering six original TUI-conflict files. Thus all nine Rust-file direct-conflict areas have focused native behavior evidence. These remain bounded, nonrelease CI receipts: they cannot replace complete source-overlap signoff, the native Bazel package gate, unresolved inherited cargo-deny advisories, or a frozen candidate's detached 21-stage Windows release suite.

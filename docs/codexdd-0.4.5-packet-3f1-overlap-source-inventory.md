@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3F.1: reproducible four-way source-overlap receipt
 
-**Status: SOURCE EVIDENCE STAGED; GITHUB STATIC CI PENDING; SEMANTIC ACCEPTANCE STILL OPEN. NOT A RELEASE CANDIDATE.**
+**Status: 109-PATH SOURCE EVIDENCE VERIFIED BY GITHUB STATIC CI; SEMANTIC ACCEPTANCE OPEN. NOT A RELEASE CANDIDATE.**
 
 ## Exact pinned inputs and scope
 
@@ -38,3 +38,7 @@ Upstream 0.162/0.163 blob IDs were captured directly from pinned official GitHub
 - Full detached 21-stage Windows release suite, version promotion, production merge, packaging, installation and automatic upstream updates remain forbidden until separate acceptance.
 
 **No Daniel-CL work requested for this source-only packet.**
+
+## Source-fixture CI closeout — October 21, 2026
+
+[CodexDD source-guard run #39626573120](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39626573120) **passed 439/439 static cases** at exact SHA `8e8ff2df11268326453a6fde3265aa9beea9849d`. This includes the pinned 109-overlap blob fixture, the 15 original conflict ledger guard, and seven additional reconciled-v2 identity cases; its separate 112 updater and 85 historical reconciliation tests were also green. Later branch changes through `7384da0b29e57c48e763b3794ec69ed67d41053f` only added documentation and the nonrelease Bazel analysis workflow; no reconciled Rust source or original 109 overlap blobs changed. This static receipt does not claim semantic acceptance of all overlaps or complete native release validation.
