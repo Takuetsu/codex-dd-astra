@@ -1,6 +1,12 @@
+load("@crates//:defs.bzl", "aliases")
 load("//:defs.bzl", "codex_rust_crate")
 
+# Only import the reviewed noyalib-serde-yaml rename under its Rust serde_yaml name.
+# The full generated alias map is not safe for the pinned Windows transition graph.
+_yaml_aliases = {dep: local for dep, local in aliases().items() if local == "serde_yaml"}
+
 codex_rust_crate(
+    lib_aliases = _yaml_aliases,
     name = "external-agent-migration",
     crate_name = "codex_external_agent_migration",
 )

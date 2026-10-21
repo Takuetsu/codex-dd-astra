@@ -15,3 +15,7 @@ The corrected full CLI debug smoke at [run #39663703563](https://github.com/Taku
 - Run **only** `//codex-rs/core-plugins:core-plugins` under Windows-2022 / hosted MSVC / Bazel 9.2.0 / strict module lock / maximum 2 jobs. Read-only token; no EULA override, release artifact or PR. The focused job must report a genuine native build success and upload only diagnostics.
 
 **Next after green:** checkpoint the exact build receipt, update the full CLI debug-smoke pinned `core-plugins/BUILD.bazel` SHA and retry that build separately. Do not run the expensive full CLI test while the core-plugins leaf remains red. Four inherited INFO/unmaintained all-target advisories remain unaccepted and blocking.
+
+## Proactive next-consumer audit — October 21, 2026
+
+The complete 161-manifest tree scan discovered two more legitimate runtime consumers with the same pinned dependency rename: `codex-rs/ext/skills` and `codex-rs/external-agent-migration`. They are covered separately by [3E.10](codexdd-0.4.5-packet-3e10-renamed-yaml-consumer-inventory.md); do not infer they compiled from the separate pending core-plugins CI run. No global aliases, release authorization, security exception, or Cargo mutation has been introduced.
