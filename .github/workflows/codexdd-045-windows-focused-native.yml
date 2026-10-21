@@ -9,6 +9,12 @@ on:
     paths:
       - '.github/workflows/codexdd-045-windows-focused-native.yml'
       - 'codex-rs/tui/src/app/tests.rs'
+      - 'codex-rs/tui/src/app/startup.rs'
+      - 'codex-rs/tui/src/app/tests/session_lifecycle_requests.rs'
+      - 'codex-rs/tui/src/app/tests/startup_defaults_tests.rs'
+      - 'codex-rs/tui/src/app_server_session/workspace_roots_tests.rs'
+      - 'codex-rs/tui/src/chatwidget/interaction.rs'
+      - 'codex-rs/tui/src/lib.rs'
   workflow_dispatch:
 
 permissions:
@@ -47,6 +53,12 @@ jobs:
           if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc') { throw 'Unreviewed Cargo.lock changed' }
           if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker advanced' }
           if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Tracked upstream marker advanced' }
+          if ((git hash-object -- codex-rs/tui/src/app/startup.rs).Trim() -ne '29065c6c0c90c010a53bf065c95278312712a90e') { throw 'Unreviewed protected app startup conflict' }
+          if ((git hash-object -- codex-rs/tui/src/app/tests/session_lifecycle_requests.rs).Trim() -ne '994d54b631493b3d0784e836c544c57a275e9985') { throw 'Unreviewed protected session lifecycle conflict' }
+          if ((git hash-object -- codex-rs/tui/src/app/tests/startup_defaults_tests.rs).Trim() -ne 'e60808df0448682d47af1a14b5bd8d5c52206397') { throw 'Unreviewed protected startup defaults conflict' }
+          if ((git hash-object -- codex-rs/tui/src/app_server_session/workspace_roots_tests.rs).Trim() -ne 'd6447d22a0a1e943b1352b8c945cf7f6cf09734e') { throw 'Unreviewed protected workspace roots conflict' }
+          if ((git hash-object -- codex-rs/tui/src/chatwidget/interaction.rs).Trim() -ne 'e83bc3d1860a8f2f04a14bc136c4b6468785eb67') { throw 'Unreviewed protected chat interaction conflict' }
+          if ((git hash-object -- codex-rs/tui/src/lib.rs).Trim() -ne '7b0746fe66b55537d3c445bfac194cbdb005b2b2') { throw 'Unreviewed protected TUI entrypoint conflict' }
 
       - name: Set isolated Windows build paths and long Git paths
         shell: pwsh
@@ -103,6 +115,7 @@ jobs:
         working-directory: codex-rs
         run: |
           $ErrorActionPreference = 'Stop'
+          # Review the original six TUI direct conflicts with exact bounded native selectors.
           # Deliberately use one exact unique substring at a time, not all TUI tests.
           # Cargo compiles the test executable on the first case; later cases reuse it.
           $cases = @(
@@ -120,7 +133,17 @@ jobs:
             'windows_sandbox_setup_uses_observed_thread_host',
             'fresh_startup_thread_drains_buffered_approval_before_draft_handoff',
             'async_fresh_startup_applies_adaptive_preset_before_attachment',
-            'subagent_approval_respects_root_ownership'
+            'subagent_approval_respects_root_ownership',
+            'fresh_startup_uses_server_defaults_with_explicit_and_managed_precedence',
+            'startup_read_failure_exits_before_thread_creation',
+            'fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty',
+            'new_session_worker_binding_resets_dirty_adaptive_state',
+            'external_writer_escape_preserves_snapshot_and_explicit_quits',
+            'remote_workspace_roots_survive_start_turn_resume_and_fork',
+            'embedded_lifecycle_requests_preserve_explicit_workspace_roots',
+            'default_daemon_auto_connect_probes_socket_only',
+            'app_server_target_for_launch_uses_local_daemon_for_default_socket',
+            'startup_remote_current_cwd_without_override_is_rejected'
           )
           $completed = 0
           foreach ($case in $cases) {
