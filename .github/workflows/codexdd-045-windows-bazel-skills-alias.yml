@@ -43,7 +43,7 @@ jobs:
             'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
             'MODULE.bazel.lock' = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
             'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
-            'defs.bzl' = '3effdaed66a26db17eb2ccfb9a534e3868544cbf'
+            'defs.bzl' = '1f40e89328038aab9ca80f6d34f8fde0b79c3755'
             'codex-rs/skills/Cargo.toml' = '7342975aaea0e3ecc61da41f145674cd154a12c9'
             'codex-rs/skills/BUILD.bazel' = 'd4c5ad2675eadce4bbe40e2917b259c5f3f62f65'
             'codex-rs/Cargo.toml' = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
