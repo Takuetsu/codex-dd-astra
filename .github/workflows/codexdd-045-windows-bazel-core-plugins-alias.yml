@@ -1,0 +1,148 @@
+# Test one scoped Cargo->Bazel rename in the failing core-plugins Rust library; nonrelease.
+# No Microsoft SDK/EULA acceptance, package build, install, PR or ref writes.
+name: CodexDD 0.4.5 Windows core-plugins alias smoke
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-windows-bazel-core-plugins-alias.yml'
+      - 'patches/zstd-sys_windows_msvc_include_dirs.patch'
+      - 'defs.bzl'
+      - 'codex-rs/core-plugins/BUILD.bazel'
+      - 'codex-rs/core-plugins/Cargo.toml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-bazel-core-plugins-alias
+  cancel-in-progress: true
+
+jobs:
+  core-plugins-alias-native:
+    name: Windows MSVC core-plugins Cargo alias build (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - name: Checkout immutable integration SHA without saved credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Require exact nonrelease branch, source graph and unchanged security floor
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected HEAD' }
+          $expected = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
+            'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
+            'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'
+            'codex-rs/skills/Cargo.toml' = '7342975aaea0e3ecc61da41f145674cd154a12c9'
+            'codex-rs/core-plugins/Cargo.toml' = '668da25d6c4db37e737b3401e78333290bf1f2f8'
+            'codex-rs/core-plugins/BUILD.bazel' = '16dc432cd2f9b6e16de5b4f367a64654a2e492e6'
+            'codex-rs/skills/BUILD.bazel' = '9f4e136ec76fc298e32ccb94fd0800b1f5656c76'
+            'codex-rs/Cargo.toml' = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+            'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+            'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          }
+          foreach ($path in $expected.Keys) {
+            if ((git rev-parse ("HEAD:" + $path)).Trim() -ne $expected[$path]) {
+              throw "Unreviewed source identity: $path"
+            }
+          }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') {
+            throw 'Version marker advanced before acceptance'
+          }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') {
+            throw 'Upstream release marker advanced before acceptance'
+          }
+          git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Protected working tree is modified' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) {
+            throw 'Unexpected external MSVC runtime license override'
+          }
+          Write-Host 'PASS: pinned source, lock and no-release identity'
+
+      - name: Install pinned Bazelisk and repository Bazel 9.2.0
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+
+      - name: Expose preinstalled GitHub-hosted MSVC developer environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $vswhere)) { throw 'Hosted VS discovery missing' }
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Hosted MSVC C++ toolchain missing' }
+          $vsDevCmd = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path -LiteralPath $vsDevCmd)) { throw 'VsDevCmd missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $values = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $vsDevCmd)
+          if ($LASTEXITCODE -ne 0) { throw 'Could not initialize preinstalled MSVC environment' }
+          foreach ($line in $values) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+          Write-Host 'PASS: preinstalled MSVC environment resolved; no EULA acceptance or SDK download performed'
+
+      - name: Compile only codex-core-plugins Rust library with scoped Cargo alias
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-core-plugins-alias-smoke'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $log = Join-Path $dir 'core-plugins-rust-build.log'
+          $v = & bazel --version
+          if ($LASTEXITCODE -ne 0 -or $v -notmatch 'bazel 9\.2\.0') { throw "Unreviewed Bazel version: $v" }
+          $args = @(
+            '--noexperimental_remote_repo_contents_cache',
+            'build',
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--jobs=2',
+            '--verbose_failures',
+            '//codex-rs/core-plugins:core-plugins'
+          )
+          $ErrorActionPreference = 'Continue'
+          & bazel @args *> $log
+          $rc = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path -LiteralPath $log)) { throw 'No core-plugins compiler log created' }
+          if ($rc -ne 0) {
+            $rows = Get-Content -LiteralPath $log
+            $errors = @($rows | Select-String -Pattern 'ERROR:|FAILED:|error(\[E[0-9]+\])?:|could not|fatal|Analysis failed' | Select-Object -Last 55)
+            foreach ($line in $errors) { Write-Host $line.Line }
+            Get-Content -LiteralPath $log -Tail 85
+            throw "BLOCKED: core-plugins alias native compile exit=$rc"
+          }
+          if (-not (Select-String -LiteralPath $log -Pattern 'INFO: Build completed successfully|Build completed successfully' -Quiet)) {
+            Get-Content -LiteralPath $log -Tail 85
+            throw 'Missing core-plugins native compile success receipt'
+          }
+          if (-not (Select-String -LiteralPath $log -Pattern 'Target //codex-rs/core-plugins:core-plugins up-to-date|//codex-rs/core-plugins:core-plugins' -Quiet)) {
+            throw 'Missing exact core-plugins library target receipt'
+          }
+          Get-Content -LiteralPath $log -Tail 35
+          if (git status --porcelain --untracked-files=no) { throw 'Source or lock changed during build' }
+          Write-Host 'PASS: codex-core-plugins Bazel native compile with scoped Cargo alias (NOT CLI release)'
+
+      - name: Upload only core-plugins compiler diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-core-plugins-alias-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-core-plugins-alias-smoke/*.log
+          if-no-files-found: warn
+          retention-days: 7

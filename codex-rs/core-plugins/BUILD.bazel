@@ -1,7 +1,13 @@
+load("@crates//:defs.bzl", "aliases")
 load("//:defs.bzl", "codex_rust_crate")
+
+# Only this crate's Cargo rename from noyalib-serde-yaml is needed.
+# An unrestricted generated alias map creates unrelated Bazel transition cycles.
+_yaml_aliases = {dep: local for dep, local in aliases().items() if local == "serde_yaml"}
 
 codex_rust_crate(
     name = "core-plugins",
+    lib_aliases = _yaml_aliases,
     compile_data = glob(
         include = ["**"],
         allow_empty = True,
