@@ -363,7 +363,7 @@ def codex_rust_crate(
             name = unit_test_binary,
             crate = name,
             crate_features = crate_features,
-            aliases = aliases(normal = True, normal_dev = True),
+            aliases = aliases(),
             deps = all_crate_deps(normal = True, normal_dev = True) + maybe_deps + deps_extra,
             # Unit tests also compile to standalone Windows executables, so
             # keep their stack reserve aligned with binaries and integration
@@ -449,7 +449,7 @@ def codex_rust_crate(
             name = binary_unit_test_binary,
             crate = ":" + binary,
             crate_features = crate_features,
-            aliases = aliases(normal_dev = True),
+            aliases = aliases(),
             deps = all_crate_deps(normal_dev = True),
             rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
                 "--remap-path-prefix=../codex-rs=",
@@ -579,7 +579,7 @@ def codex_rust_crate(
                 srcs = [test],
                 data = integration_test_files + integration_test_binaries + integration_test_data_extra,
                 compile_data = integration_test_files + integration_compile_data_extra,
-                aliases = aliases(normal = True, normal_dev = True),
+                aliases = aliases(),
                 deps = all_crate_deps(normal = True, normal_dev = True) + maybe_deps + deps_extra,
                 # Bazel has emitted both `codex-rs/<crate>/...` and
                 # `../codex-rs/<crate>/...` paths for `file!()`. Strip either
@@ -621,7 +621,7 @@ def codex_rust_crate(
                 srcs = [test],
                 data = integration_test_files + integration_test_binaries + integration_test_data_extra,
                 compile_data = integration_test_files + integration_compile_data_extra,
-                aliases = aliases(normal = True, normal_dev = True),
+                aliases = aliases(),
                 deps = all_crate_deps(normal = True, normal_dev = True) + maybe_deps + deps_extra,
                 # Bazel has emitted both `codex-rs/<crate>/...` and
                 # `../codex-rs/<crate>/...` paths for `file!()`. Strip either
@@ -698,7 +698,7 @@ def codex_rust_crate(
             srcs = [test],
             data = integration_test_files + integration_test_binaries + integration_test_data_extra,
             compile_data = integration_test_files + integration_compile_data_extra,
-            aliases = aliases(normal = True, normal_dev = True),
+            aliases = aliases(),
             deps = all_crate_deps(normal = True, normal_dev = True) + maybe_deps + deps_extra,
             rustc_flags = rustc_flags_extra + WINDOWS_RUSTC_LINK_FLAGS + [
                 "--remap-path-prefix=../codex-rs=",

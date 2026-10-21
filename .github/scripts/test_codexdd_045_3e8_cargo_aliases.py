@@ -12,8 +12,10 @@ class BazelCargoAliasContract(unittest.TestCase):
         self.assertEqual(s.count("aliases = aliases("), 7)
         self.assertIn("lib_rule(\n            name = name,\n            crate_name = crate_name,\n            crate_features = crate_features,", s)
         self.assertIn("aliases = aliases(),\n            deps = all_crate_deps()", s)
-        self.assertIn("aliases = aliases(normal = True, normal_dev = True)", s)
-        self.assertIn("aliases = aliases(normal_dev = True)", s)
+        # rules_rs 0.0.96 generates aliases(package_name=None): no kind filters.
+        self.assertEqual(s.count("aliases = aliases()"), 7)
+        self.assertNotIn("aliases(normal =", s)
+        self.assertNotIn("aliases(normal_dev =", s)
 
     def test_existing_pinned_yaml_replacement_and_parser_remain_unchanged(self):
         manifest = (ROOT / "codex-rs/skills/Cargo.toml").read_text(encoding="utf-8")
