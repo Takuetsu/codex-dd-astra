@@ -9,6 +9,8 @@ on:
     paths:
       - '.github/workflows/codexdd-045-windows-cli-release-smoke.yml'
       - 'patches/zstd-sys_windows_msvc_include_dirs.patch'
+      - 'defs.bzl'
+      - 'codex-rs/skills/BUILD.bazel'
 
 permissions:
   contents: read
@@ -40,7 +42,8 @@ jobs:
             'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
             'MODULE.bazel.lock' = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
             'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
-            'defs.bzl' = 'b2f384d0687cbb81d0c2e8a257cc3d0d6aa469a4'
+            'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'
+            'codex-rs/skills/BUILD.bazel' = '9f4e136ec76fc298e32ccb94fd0800b1f5656c76'
             'codex-rs/Cargo.toml' = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
             'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
             'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
@@ -56,7 +59,7 @@ jobs:
           if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') {
             throw 'Upstream release marker advanced before acceptance'
           }
-          git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml
+          git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/skills/BUILD.bazel codex-rs/skills/Cargo.toml codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml
           if ($LASTEXITCODE -ne 0) { throw 'Protected working tree is modified' }
           if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) {
             throw 'Unexpected external MSVC runtime license override'

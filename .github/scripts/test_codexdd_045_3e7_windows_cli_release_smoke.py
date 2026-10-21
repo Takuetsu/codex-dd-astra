@@ -35,6 +35,21 @@ class CliReleaseSmokeContract(unittest.TestCase):
         self.assertNotIn("git push", s)
         self.assertNotIn("BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1", s)
 
+    def test_resume_uses_the_exact_green_skills_alias_source(self):
+        s = self.flow
+        self.assertIn("'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'", s)
+        self.assertIn(
+            "'codex-rs/skills/BUILD.bazel' = '9f4e136ec76fc298e32ccb94fd0800b1f5656c76'", s
+        )
+        self.assertNotIn("'defs.bzl' = 'b2f384d0687cbb81d0c2e8a257cc3d0d6aa469a4'", s)
+        self.assertIn("      - 'defs.bzl'", s)
+        self.assertIn("      - 'codex-rs/skills/BUILD.bazel'", s)
+        self.assertIn(
+            "git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/skills/BUILD.bazel", s
+        )
+        self.assertNotIn("contents: write", s)
+        self.assertNotIn("git push", s)
+
     def test_compiler_fail_fast_and_authentic_success_receipt(self):
         s = self.flow
         self.assertIn("BLOCKED: CLI release-files debug smoke", s)
