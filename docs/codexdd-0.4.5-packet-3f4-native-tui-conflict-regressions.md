@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3F.4: original TUI-conflict native behavior
 
-**Status: FOCUSED WINDOWS CI REQUESTED; RESULT NOT YET ACCEPTED. NONRELEASE.**
+**Status: EXACT-SOURCE WINDOWS 25/25 FOCUSED TUI REGRESSIONS PASSED; NOT RELEASE ACCEPTANCE.**
 
 ## Why this packet exists
 
@@ -36,3 +36,9 @@ Extend existing `.github/workflows/codexdd-045-windows-focused-native.yml` inste
 ## What this packet does not authorize
 
 No Rust source edits, Cargo/deny policy changes, version marker promotion, installer, merge, auto-update or publication. This targeted job cannot substitute for exact candidate-wide native Windows validation, Bazel release-profile packaging or the all-target `cargo deny` remediation decision for four inherited INFO/unmaintained advisories. Log genuine failures and fix only the failing scope before considering another native test. Daniel-CL remains untouched until final validation/install.
+
+## Focused native closeout — October 21, 2026
+
+- [Windows GitHub Actions #39618752181](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39618752181) completed **successfully** at exact integration SHA `5e6db71d7c7a4dd0f9bec01c9da7bc5c68af251c`. All **25/25** individually filtered native TUI tests ran, including the ten original-conflict selectors. Pinned source, Cargo resolver and six conflicting-file identities passed, and logs were uploaded without publishing.
+- [Core authority #39615406741](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39615406741) completed **15/15** bounded native filters at SHA `ac7064492a580f52efd724f8b19ab2eaf6d15e49`.
+- These receipts are targeted semantic evidence only. They do not authorize release, waive four inherited security advisories, replace Bazel release-profile packaging or claim final 21-stage Windows acceptance.

@@ -7,6 +7,12 @@ on:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
       - '.github/scripts/test_codexdd_045_*.py'
+      - '.github/scripts/upstream_auto_*.py'
+      - '.github/scripts/test_upstream_auto_*.py'
+      - '.github/scripts/test_upstream_045_contract_audit.py'
+      - '.github/scripts/test_upstream_sync.py'
+      - '.github/scripts/upstream_sync.py'
+      - '.github/workflows/upstream-sync.yml'
       - '.github/workflows/codexdd-045-source-guards.yml'
       - 'codex-rs/**'
       - 'codex-rs/app-server-protocol/schema/**'
@@ -60,11 +66,41 @@ jobs:
           tail -n 120 "$log"
           exit "$rc"
 
+      - name: Verify guarded updater and prior read-only discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          patterns=(
+            'test_upstream_sync.py'
+            'test_upstream_auto_*.py'
+            'test_upstream_045_contract_audit.py'
+          )
+          i=0
+          for pattern in "${patterns[@]}"; do
+            log="$RUNNER_TEMP/codexdd045-updater-$i.log"
+            echo "Checking updater test pattern: $pattern"
+            if ! python3 -m unittest discover -s .github/scripts -p "$pattern" -v > "$log" 2>&1; then
+              grep -E '^(FAIL:|ERROR:|Ran [0-9]+ tests|FAILED |OK$)' "$log" | tail -n 100 || true
+              tail -n 100 "$log"
+              exit 1
+            fi
+            if ! grep -Eq '^Ran [1-9][0-9]* tests?' "$log"; then
+              echo "No tests discovered for $pattern"
+              tail -n 70 "$log"
+              exit 1
+            fi
+            grep -E '^(Ran [0-9]+ tests|OK$)' "$log" | tail -n 5
+            i=$((i+1))
+          done
+          echo "PASS: $i/3 updater test suites, each nonempty and error-free."
+
       - name: Upload source check diagnostic log
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: codexdd045-source-guards-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/codexdd045-source-guards.log
+          path: |
+            ${{ runner.temp }}/codexdd045-source-guards.log
+            ${{ runner.temp }}/codexdd045-updater-*.log
           if-no-files-found: warn
           retention-days: 7

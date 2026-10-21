@@ -1,5 +1,15 @@
 # CodexDD roadmap
 
+## Active development — CodexDD 0.4.5 (2026-10-21)
+
+CodexDD 0.4.5 integrates the owner-selected OpenAI Codex `rust-v0.163.0` with guarded upstream-discovery improvements. GitHub production remains 0.4.4 / `rust-v0.162.0`, and all current work is nonrelease on `dd/codexdd-v0.4.5-upstream-0.163.0-integration`.
+
+- **Native semantics:** exact 15-path upstream conflict ledger in [3F.2](codexdd-0.4.5-packet-3f2-upstream-conflict-replay.md); 109 overlapped paths under audit; **15/15** Windows core filters green in run 39615406741; **25/25** Windows TUI filters green in run 39618752181 ([3F.4](codexdd-0.4.5-packet-3f4-native-tui-conflict-regressions.md)).
+- **Updater integration:** import Phase 2 read-only discovery, default-deny eligibility and disabled candidate/draft-PR adapters from `dd/codexdd-v0.4.5-upstream-0.163.0-automation` at `7495858766cf628d480fbac3d6323329884092f3`. Those original six packets passed 112/112 targeted Daniel-CL Python tests; a new integrated GitHub test receipt is required. Existing scheduled discovery remains **read-only**. Automatic candidate branch/PR publishing stays **hard-disabled** with an empty safe-path allowlist. See [2B.3](codexdd-0.4.5-packet-2b3-contract-audit.md) and [1A.3](codexdd-0.4.5-packet-1a3-automation-and-integration-contract.md).
+- **Outstanding release decisions:** the four inherited INFO/unmaintained RustSec notices remain unresolved in the all-target cargo-deny gate ([3D.7](codexdd-0.4.5-packet-3d7-inherited-advisory-release-decision.md)). Native Bazel release-profile packaging, exact frozen candidate and detached 21-stage Daniel-CL acceptance, manual merge and installation are separate gates. Do not advance version markers or deploy yet.
+
+---
+
 ## Current DD-BL-006 priority — CodexDD 0.4.4 (2026-10-12)
 
 - **0.4.3 upstream integration:** PR #52 merged at `d8ad52cc223362a03f4dc5b40ec51695b3c48936` with tracked upstream `rust-v0.162.0` and product identity `0.4.3`. This GitHub merge does not itself prove a later production installation.

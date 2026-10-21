@@ -220,13 +220,19 @@ def git_tree_entries(repo: Path, treeish: str) -> dict[str, str]:
 def classify_sensitive_overlaps(
     paths: Iterable[str],
 ) -> dict[str, tuple[str, ...]]:
-    """Classify overlap paths that require semantic CodexDD review."""
+    """Classify overlaps conservatively, preserving exact Git path identities.
+
+    An unfamiliar path is explicitly classified as unclassified_overlap,
+    rather than being omitted from sensitive_overlap_count. This retains
+    the v1 manifest contract but closes its historical false-negative gap.
+    """
 
     categories: dict[str, set[str]] = {
         "adaptive_routing": set(),
         "tui_runtime": set(),
         "core_runtime": set(),
         "app_server_runtime": set(),
+        "cli_daemon": set(),
         "configuration": set(),
         "worker_lifecycle": set(),
         "persistence_resume_fork": set(),
@@ -235,6 +241,7 @@ def classify_sensitive_overlaps(
         "generated_protocol": set(),
         "version_provenance": set(),
         "build_release_ci": set(),
+        "unclassified_overlap": set(),
     }
 
     for path in paths:
@@ -247,15 +254,16 @@ def classify_sensitive_overlaps(
             or "model_catalog" in lower
             or "model/catalog" in lower
         ):
-            categories["adaptive_routing"].add(normalized)
+            categories["adaptive_routing"].add(path)
 
         # A non-overlap with a named adaptive module is not sufficient proof
         # that an upstream API or its CodexDD caller remains compatible.
         if lower.startswith("codex-rs/tui/src/"):
-            categories["tui_runtime"].add(normalized)
+            categories["tui_runtime"].add(path)
         if lower.startswith(
             (
                 "codex-rs/core/src/",
+                "codex-rs/core/tests/",
                 "codex-rs/protocol/src/",
                 "codex-rs/rollout/src/",
                 "codex-rs/history/src/",
@@ -263,20 +271,23 @@ def classify_sensitive_overlaps(
                 "codex-rs/thread-store/src/",
             )
         ):
-            categories["core_runtime"].add(normalized)
+            categories["core_runtime"].add(path)
         if lower.startswith(
             (
                 "codex-rs/app-server/src/",
                 "codex-rs/app-server-protocol/src/",
             )
         ):
-            categories["app_server_runtime"].add(normalized)
+            categories["app_server_runtime"].add(path)
+        if lower.startswith("codex-rs/cli/"):
+            categories["cli_daemon"].add(path)
+
         if (
             lower.startswith("codex-rs/config/")
             or lower.endswith("/config.schema.json")
             or "/config_persistence" in lower
         ):
-            categories["configuration"].add(normalized)
+            categories["configuration"].add(path)
 
         if (
             "agent/control" in lower
@@ -287,10 +298,17 @@ def classify_sensitive_overlaps(
             or "startup_orchestration" in lower
             or "worker" in lower
         ):
-            categories["worker_lifecycle"].add(normalized)
+            categories["worker_lifecycle"].add(path)
 
         if (
-            "/history/" in lower
+            lower.startswith(
+                (
+                    "codex-rs/external-agent-migration/",
+                    "codex-rs/memories/",
+                    "codex-rs/rollout-trace/",
+                )
+            )
+            or "/history/" in lower
             or "/rollout/" in lower
             or "/thread-store/" in lower
             or "workflow_state" in lower
@@ -299,7 +317,7 @@ def classify_sensitive_overlaps(
             or "resume" in lower
             or "fork" in lower
         ):
-            categories["persistence_resume_fork"].add(normalized)
+            categories["persistence_resume_fork"].add(path)
 
         if (
             "run_codexdd_validation" in lower
@@ -308,22 +326,24 @@ def classify_sensitive_overlaps(
             or "codexdd-test-" in lower
             or "adaptive_validation" in lower
         ):
-            categories["local_validation_orchestrator"].add(normalized)
+            categories["local_validation_orchestrator"].add(path)
 
         if (
             "/tui/src/status/" in lower
             or "status_and_layout" in lower
             or "/status/snapshots/" in lower
         ):
-            categories["status_rendering"].add(normalized)
+            categories["status_rendering"].add(path)
 
         if (
-            "/app-server-protocol/schema/" in lower
-            or "/sdk/python/src/openai_codex/generated/" in lower
-            or "generated" in lower
-            and ("protocol" in lower or "schema" in lower)
+            lower.startswith("codex-rs/app-server-protocol/schema/")
+            or lower.startswith("sdk/python/src/openai_codex/generated/")
+            or (
+                "generated" in lower
+                and ("protocol" in lower or "schema" in lower)
+            )
         ):
-            categories["generated_protocol"].add(normalized)
+            categories["generated_protocol"].add(path)
 
         if (
             "codexdd-version.txt" in lower
@@ -331,17 +351,25 @@ def classify_sensitive_overlaps(
             or "version_reporting" in lower
             or "provenance" in lower
         ):
-            categories["version_provenance"].add(normalized)
+            categories["version_provenance"].add(path)
 
         if (
             lower.startswith(".github/")
             or lower.endswith("/cargo.lock")
             or lower.endswith("/cargo.toml")
             or lower == "defs.bzl"
+            or lower.endswith(".bzl")
+            or lower == "build.bazel"
+            or lower.endswith("/build.bazel")
             or lower.startswith("bazel/")
             or lower.startswith("module.bazel")
         ):
-            categories["build_release_ci"].add(normalized)
+            categories["build_release_ci"].add(path)
+
+        # Preserve exact Git path spelling in receipts (including backslashes).
+        # Unknown paths are SEMANTIC REVIEW REQUIRED, not implicitly safe.
+        if not any(path in assigned for assigned in categories.values()):
+            categories["unclassified_overlap"].add(path)
 
     return {
         category: tuple(sorted(category_paths))
@@ -367,6 +395,30 @@ def build_delta_inventory(
         overlap_paths=overlap_paths,
         sensitive_overlap_categories=classify_sensitive_overlaps(overlap_paths),
     )
+
+
+def auto_preparation_overlap_reasons(inventory: DeltaInventory) -> tuple[str, ...]:
+    """Return blockers for the overlap-only part of future auto admission.
+
+    Every overlap needs human semantic review, whether it is recognized by
+    the classifier or not. This is a separate guard from the historical v1
+    candidate_state/preparation_ready contract. A zero-overlap result is NOT
+    permission to auto-publish: the independent policy planner must also
+    recheck canonical Git identities, protected upstream deltas, security,
+    dependencies, and candidate publication races.
+    """
+    overlaps = set(inventory.overlap_paths)
+    classified = set(inventory.sensitive_overlap_paths)
+    reasons: list[str] = []
+    if overlaps:
+        reasons.append("overlap_requires_semantic_review")
+    if overlaps - classified or inventory.sensitive_overlap_categories.get(
+        "unclassified_overlap"
+    ):
+        reasons.append("unclassified_overlap")
+    if classified - overlaps:
+        reasons.append("inconsistent_overlap_inventory")
+    return tuple(reasons)
 
 
 def candidate_state(transplant_result: str, sensitive_overlap_count: int) -> str:
