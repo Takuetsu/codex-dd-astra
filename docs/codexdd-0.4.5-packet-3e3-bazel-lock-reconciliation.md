@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3E.3: branch-bound Bazel module lock reconciliation
 
-**Status: GITHUB ORACLE STAGED; RESOLVER AND LOCK ACCEPTANCE PENDING. NOT A RELEASE CANDIDATE.**
+**Status: GITHUB BAZEL LOCK RECONCILIATION PASS / ONE-SHOT WORKFLOW RETIRED. NOT A RELEASE CANDIDATE.**
 
 ## Source and reason for GitHub-only execution
 
@@ -26,3 +26,12 @@
 - After lock acceptance, separately perform exact candidate/source audits, targeted native/release-profile tests and all remaining release security/conflict decisions. Only then consider a 21-stage Windows release test and installation.
 
 _Operator action required now: none._
+
+## Accepted GitHub oracle result and cleanup — 2026-10-21
+
+- Exact job [#39607465589](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39607465589) completed **successfully** on the pinned integration source `3b4a0ca5d173994d7f373ba62c145b436e38602a`. The job first verified source/Cargo/deny markers, then executed `bazel --noexperimental_remote_repo_contents_cache mod deps --lockfile_mode=update` and a second `bazel --noexperimental_remote_repo_contents_cache mod deps --lockfile_mode=error`, both with zero exit status.
+- The job created immutable [lock commit `8a3cf1be6fd78c261fe9204a696c75413b18a1ba`](https://github.com/Takuetsu/codex-dd-astra/commit/8a3cf1be6fd78c261fe9204a696c75413b18a1ba), with **one changed path** `MODULE.bazel.lock`. Its new Git blob is `40c46197d71c93d3ea7fbdea1930c9bf394ae6df`; the original fork lock was `e5c69a07a0f5987c3cff38ff35e5ed5be3b91f1b`. The generated lock is **1,640,066 bytes**; JSON lockfile format remained unchanged, and the only changed top-level key was `facts`.
+- The exact job logs show `PASS: Bazel lockfile regenerated and verified at current source` and `PASS: committed verified lock blob 40c46197d71c93d3ea7fbdea1930c9bf394ae6df on integration branch`. The commit parent is the source checkpoint and includes only that lockfile, as independently confirmed through GitHub.
+- This closeout commit **removes the one-shot write-authorized workflow** `.github/workflows/codexdd-045-bazel-lock-reconcile.yml` from the live development branch after success. Its historical Git source remains retrievable from `3b4a0ca5`. A future upstream candidate must regenerate its own lock with a new explicit source-bound packet; do not keep an unattended writer active.
+- The successful graph lock audit does **not** clear the known inherited RustSec maintenance advisories, original upstream direct conflicts, native Windows behavioral/release-profile tests, candidate SHA freeze, final detached 21-stage validation, or production merge/install.
+- No operator intervention was needed. No release marker, Cargo resolver, secret, runtime code, or production branch was modified in this packet.
