@@ -15,6 +15,7 @@ class ZstdMsvcCompileSmoke(unittest.TestCase):
         self.assertIn("866a458a2df4dd0d565f8066deadf73e2fdf8176", s)
         self.assertIn("'--lockfile_mode=error'", s)
         self.assertIn("'--jobs=2'", s)
+        self.assertNotIn('--local_ram_resources', s)
         self.assertNotIn("cquery", s)
         self.assertNotIn("runtime_package_combined", s)
         self.assertNotIn("cli:release_files", s)

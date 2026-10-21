@@ -105,7 +105,6 @@ jobs:
             '--platforms=//:windows_x86_64_msvc',
             '--host_platform=//:local_windows_msvc',
             '--jobs=2',
-            '--local_ram_resources=4096',
             '--verbose_failures',
             '@@rules_rs++crate+crates//:zstd-sys-2.1.2+zstd.1.5.7'
           )
