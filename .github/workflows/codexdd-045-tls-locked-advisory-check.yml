@@ -8,6 +8,7 @@ on:
       - dd/codexdd-v0.4.5-tls-root-security-remediation
     paths:
       - '.github/workflows/codexdd-045-tls-locked-advisory-check.yml'
+      - 'codex-rs/Cargo.lock'
 
 permissions:
   contents: read
