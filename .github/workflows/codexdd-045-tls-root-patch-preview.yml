@@ -1,0 +1,155 @@
+# One-shot read-only RustSec 2026-0381/0382/0383 Cargo.lock remediation.
+# Never push lock bytes, change manifest/audit policy or declare release acceptance.
+name: CodexDD 0.4.5 patched TLS certificate roots preview
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-tls-root-patch-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  locked-tls-root-patch:
+    name: Preview only three security crate updates on reviewed Cargo graph
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout pinned nonrelease source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assert source identity, current vulnerable lock and unchanged security policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+
+      - name: Setup repository Linux CI environment
+        uses: ./.github/actions/setup-ci
+
+      - name: Use pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Resolve only the three patched TLS root versions using Cargo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/codexdd045-tls-security"
+          cargo update --manifest-path codex-rs/Cargo.toml --package rustls-webpki@0.103.15 --precise 0.103.16
+          cargo update --manifest-path codex-rs/Cargo.toml --package webpki-roots@1.0.5 --precise 1.0.10
+          cargo update --manifest-path codex-rs/Cargo.toml --package webpki-root-certs@1.0.5 --precise 1.0.10
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > /dev/null
+          echo 'PASS: Cargo resolves patched versions with --locked'
+
+      - name: Verify exact three-package diff with no changed dependencies or security pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import tomllib
+
+          original = tomllib.loads(
+              subprocess.run(
+                  ["git", "show", "HEAD:codex-rs/Cargo.lock"],
+                  check=True, capture_output=True, text=True,
+              ).stdout
+          )
+          changed = tomllib.loads(pathlib.Path("codex-rs/Cargo.lock").read_text(encoding="utf-8"))
+          target = {
+              "rustls-webpki": ("0.103.15", "0.103.16"),
+              "webpki-roots": ("1.0.5", "1.0.10"),
+              "webpki-root-certs": ("1.0.5", "1.0.10"),
+          }
+          def without_vulnerable(packages, stage):
+              removed = {}
+              kept = []
+              for p in packages:
+                  name = p["name"]
+                  if name in target and p["version"] == target[name][stage]:
+                      if name in removed:
+                          raise SystemExit("BLOCKED: duplicate target crate " + name)
+                      removed[name] = p
+                  else:
+                      kept.append(p)
+              if set(removed) != set(target):
+                  raise SystemExit("BLOCKED: expected exact three target versions, got " + str(removed))
+              return removed, kept
+
+          before, untouched_before = without_vulnerable(original["package"], 0)
+          after, untouched_after = without_vulnerable(changed["package"], 1)
+          if original.keys() != changed.keys() or untouched_before != untouched_after:
+              raise SystemExit("BLOCKED: non-target Cargo.lock package or top-level keys changed")
+          for key in original:
+              if key != "package" and original[key] != changed[key]:
+                  raise SystemExit("BLOCKED: top-level Cargo.lock field changed: " + key)
+          for name in target:
+              old = {k:v for k,v in before[name].items() if k not in ("version", "checksum")}
+              new = {k:v for k,v in after[name].items() if k not in ("version", "checksum")}
+              if old != new:
+                  raise SystemExit("BLOCKED: patched crate changed dependency/source metadata: " + name)
+              if before[name].get("checksum") == after[name].get("checksum"):
+                  raise SystemExit("BLOCKED: patched crate checksum did not change: " + name)
+          for name, minimum in (
+              ("rustls", "0.23.46"),
+              ("quinn-proto", "0.11.18"),
+              ("noyalib-serde-yaml", "0.0.57"),
+              ("zip", "9.0.5"),
+          ):
+              if not any(p["name"] == name and p["version"] == minimum for p in changed["package"]):
+                  raise SystemExit("BLOCKED: accepted security pin lost: " + name)
+          if any(p["name"] == "serde_yaml" for p in changed["package"]):
+              raise SystemExit("BLOCKED: original serde_yaml package unexpectedly restored")
+          if subprocess.run(["git", "diff", "--quiet", "--", "codex-rs/Cargo.toml", "codex-rs/deny.toml"]).returncode:
+              raise SystemExit("BLOCKED: manifest or audit policy drift")
+          status = subprocess.run(
+              ["git", "status", "--porcelain", "--untracked-files=all"],
+              check=True, capture_output=True, text=True,
+          ).stdout.splitlines()
+          if status != [" M codex-rs/Cargo.lock"]:
+              raise SystemExit("BLOCKED: unexpected changed files: " + str(status))
+          sha = subprocess.run(["git", "hash-object", "codex-rs/Cargo.lock"], check=True,
+                               capture_output=True, text=True).stdout.strip()
+          report = {
+              "parent_sha": os.environ["GITHUB_SHA"],
+              "original_lock_blob": "a8eb8a076276cb3db5674b33c67d743b1c3d21fc",
+              "candidate_lock_blob": sha,
+              "changed_crates": {name: {"from": versions[0], "to": versions[1]}
+                                 for name, versions in target.items()},
+              "policy_modified": False,
+              "candidate_only": True,
+          }
+          dst = pathlib.Path(os.environ["RUNNER_TEMP"]) / "codexdd045-tls-security"
+          dst.mkdir(parents=True, exist_ok=True)
+          (dst / "manifest.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(report, indent=2))
+          PY
+          git diff --unified=3 -- codex-rs/Cargo.lock | tee "$RUNNER_TEMP/codexdd045-tls-security/cargo-lock.patch"
+          cp codex-rs/Cargo.lock "$RUNNER_TEMP/codexdd045-tls-security/Cargo.lock"
+          echo "PASS: exactly three Cargo-generated crate versions changed; source and policy unchanged"
+
+      - name: Upload candidate-only exact Cargo lock bytes and diff for review
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-tls-roots-nonrelease-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-tls-security/
+          if-no-files-found: warn
+          retention-days: 7
