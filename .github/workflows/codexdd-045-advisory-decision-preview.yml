@@ -1,0 +1,113 @@
+# Read-only preview of precisely four inherited RustSec maintenance exceptions.
+# A green PREVIEW is NOT a release waiver: the unmodified cargo-deny policy still governs.
+name: CodexDD 0.4.5 inherited advisory scope preview
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-upstream-0.163.0-integration
+    paths:
+      - '.github/workflows/codexdd-045-advisory-decision-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-advisory-preview:
+    name: Temporary all-target advisory disposition probe (NONRELEASE)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Read exact source without persisting credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assert accepted lock, unchanged all-target policy and unreleased markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test ! -e codex-rs/deny-preview.toml
+          test -z "$(git status --porcelain)"
+          echo 'PASS: approved lock and actual deny.toml unchanged'
+
+      - name: Unmodified all-target baseline (may remain RED)
+        id: baseline
+        continue-on-error: true
+        uses: EmbarkStudios/cargo-deny-action@82eb9f621fbc699dd0918f3ea06864c14cc84246 # v2
+        with:
+          rust-version: 1.95.0
+          manifest-path: ./codex-rs/Cargo.toml
+
+      - name: Construct scratch-only four-ID preview with strict TOML invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import subprocess
+          import tomllib
+
+          source = pathlib.Path("codex-rs/deny.toml")
+          preview = pathlib.Path("codex-rs/deny-preview.toml")
+          raw = source.read_text(encoding="utf-8")
+          baseline = tomllib.loads(raw)
+          ids = (
+              "RUSTSEC-2026-0374",
+              "RUSTSEC-2026-0371",
+              "RUSTSEC-2026-0370",
+              "RUSTSEC-2026-0372",
+          )
+          existing = [row["id"] for row in baseline["advisories"]["ignore"]]
+          if len(set(existing)) != len(existing) or any(a in existing for a in ids):
+              raise SystemExit("BLOCKED: unexpected existing advisory ignore IDs")
+          start = raw.index("ignore = [", raw.index("[advisories]"))
+          end = raw.index("\n]", start)
+          added = "".join(
+              f'\n    {{ id = "{advisory}", reason = "NONRELEASE PREVIEW ONLY; owner security acceptance and expiry pending" }},'
+              for advisory in ids
+          )
+          trial = raw[:end] + added + raw[end:]
+          parsed = tomllib.loads(trial)
+          actual = [row["id"] for row in parsed["advisories"]["ignore"]]
+          if actual != existing + list(ids):
+              raise SystemExit("BLOCKED: preview ignore scope differs from exactly four IDs")
+          for section in ("graph", "output", "licenses", "bans", "sources"):
+              if parsed.get(section) != baseline.get(section):
+                  raise SystemExit("BLOCKED: changed non-advisory policy " + section)
+          for key in baseline["advisories"]:
+              if key != "ignore" and parsed["advisories"].get(key) != baseline["advisories"].get(key):
+                  raise SystemExit("BLOCKED: changed extra advisory policy option")
+          preview.write_text(trial, encoding="utf-8")
+          if subprocess.run(["git", "diff", "--quiet", "--", str(source)]).returncode:
+              raise SystemExit("BLOCKED: actual deny.toml mutated")
+          print("PASS: scratch policy adds only four INFO/unmaintained advisory IDs")
+          PY
+
+      - name: Preview all-target audit against scratch policy only
+        id: preview
+        uses: EmbarkStudios/cargo-deny-action@82eb9f621fbc699dd0918f3ea06864c14cc84246 # v2
+        with:
+          rust-version: 1.95.0
+          manifest-path: ./codex-rs/Cargo.toml
+          arguments: --all-features --config ./codex-rs/deny-preview.toml
+
+      - name: Delete scratch policy and prove repository clean
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f codex-rs/deny-preview.toml
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+          test -z "$(git status --porcelain)"
+          echo "Original all-target audit: ${{ steps.baseline.outcome }}"
+          echo "Temporary four-ID preview: ${{ steps.preview.outcome }}"
+          echo "No waiver, release acceptance, production edit, or publication authorized."
