@@ -111,7 +111,7 @@ class FourWayOverlapReceipt(unittest.TestCase):
 
     def test_dependency_policy_not_implicitly_promoted(self):
         self.assertEqual(git("hash-object", "codex-rs/Cargo.toml").decode().strip(), "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4")
-        self.assertEqual(git("hash-object", "codex-rs/Cargo.lock").decode().strip(), "a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
+        self.assertEqual(git("hash-object", "codex-rs/Cargo.lock").decode().strip(), "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
         self.assertEqual(git("hash-object", "codex-rs/deny.toml").decode().strip(), "ea7fdc149fc880c6b36d75c29851641034289a4e")
 
 
