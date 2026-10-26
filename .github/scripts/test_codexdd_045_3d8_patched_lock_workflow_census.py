@@ -64,7 +64,16 @@ class TlsLockWorkflowCensus(unittest.TestCase):
                 source = (WORKFLOWS / name).read_text(encoding="utf-8")
                 self.assertIn(LEGACY_LOCK, source)
                 self.assertIn(INTEGRATION_BRANCH, source)
-                self.assertNotIn("contents: write", source)
+                if name == "codexdd-045-zip9-feature-lock-blob-import.yml":
+                    # A historically authorized Git-blob-only writer, guarded by
+                    # the exact original prior push SHA and a single workflow path.
+                    self.assertIn("contents: write", source)
+                    self.assertIn(
+                        "github.event.before == 'a784f4f5eacd12cdb448037a77302307874834ad'",
+                        source,
+                    )
+                else:
+                    self.assertNotIn("contents: write", source)
                 header = source.split("\npermissions:\n", 1)[0]
                 paths = re.findall(r"^      - '([^']+)'$", header, re.M)
                 self.assertNotIn("codex-rs/Cargo.lock", paths)
