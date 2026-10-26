@@ -48,7 +48,7 @@ jobs:
           if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration') { throw 'Wrong branch' }
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
           if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4') { throw 'Unreviewed ZIP manifest' }
-          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc') { throw 'Unreviewed Cargo.lock' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb') { throw 'Unreviewed Cargo.lock' }
           if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Production version changed' }
           if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Release upstream changed' }
 
