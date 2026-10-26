@@ -28,7 +28,7 @@ class CliReleaseSmokeContract(unittest.TestCase):
         self.assertIn("runs-on: windows-2022", s)
         self.assertIn("timeout-minutes: 45", s)
         self.assertIn("866a458a2df4dd0d565f8066deadf73e2fdf8176", s)
-        self.assertIn("a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb", s)
+        self.assertIn("a8eb8a076276cb3db5674b33c67d743b1c3d21fc", s)
         self.assertIn("codexdd045-cli-release-smoke/*.log", s)
         self.assertIn("if: always()", s)
         self.assertNotIn("contents: write", s)

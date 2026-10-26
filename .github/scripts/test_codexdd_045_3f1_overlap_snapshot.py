@@ -18,6 +18,8 @@ PINNED_BASE = "c1382380de69521303b416720a52f42d51af6248"
 PINNED_UPSTREAM = "83086188ae0614bd882818ff1aa23f3194962012"
 PINNED_PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 PINNED_SNAPSHOT = "f6fb89c098da28626c7c072a40d5e9b7306c8866"
+PRE_TLS_INTEGRATION = "e35cf007be31d2fd5f6aa98c1360b297e5b9325a"
+PATCHED_TLS_LOCK = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
 
 
 def git(*args: str) -> bytes:
@@ -43,6 +45,7 @@ class FourWayOverlapReceipt(unittest.TestCase):
         cls.receipt = json.loads(MANIFEST.read_text(encoding="utf-8"))
         cls.production = objects_at(PINNED_PRODUCTION)
         cls.integration = objects_at("HEAD")
+        cls.historical_integration = objects_at(PRE_TLS_INTEGRATION)
 
     def test_pinned_refs_and_no_release_claim(self):
         record = self.receipt
@@ -90,7 +93,13 @@ class FourWayOverlapReceipt(unittest.TestCase):
                 self.assertNotEqual(base, production)
                 self.assertNotEqual(production, reviewed)
                 self.assertEqual(self.production.get(path), production)
-                self.assertEqual(self.integration.get(path), reviewed)
+                if path == "codex-rs/Cargo.lock":
+                    # The frozen four-way receipt must retain its original SHA.
+                    # Only the separately verified three-crate TLS lock supersedes it.
+                    self.assertEqual(self.historical_integration.get(path), reviewed)
+                    self.assertEqual(self.integration.get(path), PATCHED_TLS_LOCK)
+                else:
+                    self.assertEqual(self.integration.get(path), reviewed)
 
     def test_legacy_043_conflicts_are_not_mislabeled_163_conflicts(self):
         r = self.receipt

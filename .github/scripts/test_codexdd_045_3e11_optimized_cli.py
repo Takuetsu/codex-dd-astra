@@ -37,7 +37,7 @@ class OptimizedCliSafety(unittest.TestCase):
         s = self.source
         self.assertIn("Optimized CLI EXE or PDB missing", s)
         self.assertIn("Missing optimized CLI build success receipt", s)
-        self.assertIn("'codex-rs/Cargo.lock' = 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb'", s)
+        self.assertIn("'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'", s)
         self.assertIn("'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'", s)
         for p in ("codex-rs/skills", "codex-rs/core-plugins", "codex-rs/ext/skills", "codex-rs/external-agent-migration"):
             with self.subTest(p=p):
