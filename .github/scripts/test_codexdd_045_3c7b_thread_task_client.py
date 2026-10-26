@@ -82,7 +82,7 @@ class ThreadTaskClientTests(unittest.TestCase):
     def test_release_versions_and_lockfile_unadvanced(self):
         self.assertEqual(src("codex-rs/codexdd-version.txt").strip(),"0.4.4")
         self.assertEqual(src("codex-rs/upstream-codex-release.txt").strip(),"rust-v0.162.0")
-        self.assertEqual(blob("HEAD","codex-rs/Cargo.lock"),"a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
+        self.assertEqual(blob("HEAD","codex-rs/Cargo.lock"),"a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
     def test_packet_source_only(self):
         s=(ROOT/"docs/codexdd-0.4.5-packet-3c7b-thread-task-client.md").read_text(encoding="utf-8")
         for label in ("INCOMPLETE / NOT A RELEASE CANDIDATE","native Rust","Cargo.lock","source-only"):
