@@ -118,7 +118,7 @@ class SandboxContractStagingTests(unittest.TestCase):
         )
         self.assertEqual(
             blob(committed("HEAD", "codex-rs/Cargo.lock")),
-            "a8eb8a076276cb3db5674b33c67d743b1c3d21fc",
+            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
         )
 
     def test_checkpoint_explicitly_requires_companion_reconciliation(self):

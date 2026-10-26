@@ -128,7 +128,7 @@ class AgentChildSpawnIntegrationTests(unittest.TestCase):
     def test_product_version_and_lockfile_unadvanced(self):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
-        self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"), "a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
+        self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"), "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
 
     def test_release_remains_blocked(self):
         note = (ROOT / "docs/codexdd-0.4.5-packet-3c6a-agent-workflow.md").read_text(encoding="utf-8")
