@@ -1,0 +1,124 @@
+# Scratch migration of two independent cryptographic KEM parents to stable ml-kem 0.3.
+# No changes to product marker, deny.toml, encryption format, or production branch.
+name: CodexDD 0.4.5 age and clatter KEM compatibility (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-age-clatter-crypto-recon]
+    paths: ['.github/workflows/codexdd-045-age-clatter-crypto-recon.yml']
+permissions:
+  contents: read
+jobs:
+  age-clatter:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Fetch immutable candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Require exact source and security policy baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/age-clatter"
+          git hash-object codex-rs/deny.toml > "$RUNNER_TEMP/age-clatter/policy-blob.txt"
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Change only KEM parents to reviewed immutable source revisions, scratch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("codex-rs/Cargo.toml")
+          s = p.read_text(encoding="utf-8")
+          old = 'clatter = { version = "2.2.0", default-features = false, features = ['
+          assert s.count(old) == 1
+          s = s.replace(old, old.replace("2.2.0", "3.0.0"))
+          mark = "[patch.crates-io]\n"
+          assert s.count(mark) == 1
+          rage_rev = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f"
+          clatter_rev = "9a8d15c4f80d5911ca0403aa22e0de99ea59df08"
+          extra = (
+              f'age = {{ git = "https://github.com/str4d/rage", rev = "{rage_rev}" }}\n'
+              f'age-core = {{ git = "https://github.com/str4d/rage", rev = "{rage_rev}" }}\n'
+              f'clatter = {{ git = "https://github.com/jmlepisto/clatter", rev = "{clatter_rev}" }}\n'
+          )
+          p.write_text(s.replace(mark, mark + extra), encoding="utf-8")
+          print("SCRATCH: rage age/age-core P-256 0.14+HPKE 0.14, clatter 3.0 ML-KEM 0.3")
+          PY
+          test "$(git diff --name-only)" = 'codex-rs/Cargo.toml'
+          git diff --check
+      - name: Resolve locked Windows and Linux candidate graph without weak patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 \
+            --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/age-clatter/windows.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 \
+            --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/age-clatter/linux.json"
+          python3 - <<'PY'
+          import tomllib, json, os
+          from pathlib import Path
+          packages = tomllib.loads(Path("codex-rs/Cargo.lock").read_text())["package"]
+          versions = {}
+          for p in packages:
+              versions.setdefault(p["name"], set()).add(p["version"])
+          for n in ("crypto-bigint", "p256", "age", "age-core", "hpke", "clatter", "kem",
+                    "ml-kem", "rtc", "aws-config", "ctutils", "zstd"):
+              print("LOCK", n, sorted(versions.get(n, ())))
+          assert versions.get("zstd") == {"0.14.3"}, "Zstd security fix lost"
+          assert versions.get("ctutils") == {"0.4.6"}, "ctutils security patch lost"
+          assert "0.3.0" in versions.get("kem", set()), "stable kem 0.3 missing"
+          assert "0.3.0-pre.0" not in versions.get("kem", set()), "vulnerable old KEM parent remains"
+          assert "0.14.0" in versions.get("hpke", set()) or "0.14.1" in versions.get("hpke", set()), "HPKE 0.14 not selected"
+          assert "3.0.0" in versions.get("clatter", set()), "clatter secure KEM parent missing"
+          for target in ("windows", "linux"):
+              meta = json.loads((Path(os.environ["RUNNER_TEMP"]) / "age-clatter" / (target + ".json")).read_text())
+              ids = {n["id"] for n in meta["resolve"]["nodes"]}
+              by_id = {p["id"]: p for p in meta["packages"]}
+              print(target, "resolved P-256/KEM path:", sorted({
+                  (by_id[x]["name"], by_id[x]["version"]) for x in ids
+                  if by_id[x]["name"] in ("age","hpke","clatter","ml-kem","kem","p256","crypto-bigint")
+              }))
+          print("RESOLVED: still a nonrelease graph, crypto-bigint 0.5.5 unwaived elsewhere")
+          PY
+          git hash-object codex-rs/Cargo.lock > "$RUNNER_TEMP/age-clatter/lock-blob.txt"
+          cp codex-rs/Cargo.lock "$RUNNER_TEMP/age-clatter/generated-Cargo.lock"
+          git diff -- codex-rs/Cargo.lock > "$RUNNER_TEMP/age-clatter/lock.patch"
+          git diff -- codex-rs/Cargo.toml > "$RUNNER_TEMP/age-clatter/manifest.patch"
+          test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/age-clatter/policy-blob.txt")"
+          git diff --check
+      - name: Focused secrets and exec-server crypto integration (no full suite)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path codex-rs/Cargo.toml --locked -p codex-secrets --lib
+          cargo check --manifest-path codex-rs/Cargo.toml --locked -p codex-exec-server --lib
+          echo 'FOCUSED COMPILE/TEST PASS only — Windows native encrypted-format fixtures still required'
+      - name: Preserve proof regardless of result
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/age-clatter"
+          git rev-parse HEAD > "$RUNNER_TEMP/age-clatter/source.txt"
+          git diff --stat > "$RUNNER_TEMP/age-clatter/diff.txt"
+          git status --short > "$RUNNER_TEMP/age-clatter/status.txt"
+      - name: Upload no-release artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-age-clatter-kem-scratch
+          path: ${{ runner.temp }}/age-clatter/
+          if-no-files-found: warn
+          retention-days: 5
