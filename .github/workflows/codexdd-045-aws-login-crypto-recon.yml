@@ -1,0 +1,155 @@
+# Disposable, checksum-verified upstream aws-config 1.13.0 patch trial.
+# Preserve credentials-login DPoP, no feature removal, advisory waiver, or production change.
+name: CodexDD 0.4.5 AWS DPoP P-256 0.14 compatibility (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-aws-login-crypto-recon]
+    paths: ['.github/workflows/codexdd-045-aws-login-crypto-recon.yml']
+permissions:
+  contents: read
+jobs:
+  dpop:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout SHA-verified CodexDD candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Enforce original Cargo, policy and version identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/aws-dpop"
+          git hash-object codex-rs/deny.toml > "$RUNNER_TEMP/aws-dpop/policy-blob.txt"
+      - name: Install original pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Resolve released upstream AWS 1.13.0 and verify published crate checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo update --manifest-path codex-rs/Cargo.toml -p aws-config --precise 1.13.0
+          curl --proto '=https' --tlsv1.2 -fsSL \
+            https://static.crates.io/crates/aws-config/aws-config-1.13.0.crate \
+            -o "$RUNNER_TEMP/aws-dpop/aws-config-1.13.0.crate"
+          python3 - <<'PY'
+          import tomllib, hashlib, os, pathlib
+          root=pathlib.Path(os.environ["RUNNER_TEMP"]) / "aws-dpop"
+          lock=tomllib.loads(pathlib.Path("codex-rs/Cargo.lock").read_text())
+          aws=[p for p in lock["package"] if p["name"]=="aws-config"]
+          assert len(aws)==1 and aws[0]["version"]=="1.13.0", "unreviewed AWS source version"
+          expected=aws[0]["checksum"]
+          actual=hashlib.sha256((root/"aws-config-1.13.0.crate").read_bytes()).hexdigest()
+          assert expected==actual, "published checksum mismatch"
+          (root/"source-sha256.txt").write_text(actual+"\n")
+          print("PASS: checksum-verified released aws-config 1.13.0", actual)
+          PY
+          mkdir -p codex-rs/vendor/aws-config-1.13.0
+          tar -xzf "$RUNNER_TEMP/aws-dpop/aws-config-1.13.0.crate" \
+            -C codex-rs/vendor/aws-config-1.13.0 --strip-components=1
+      - name: Apply smallest possible DPoP migration in scratch vendor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, tomllib
+          root=Path("codex-rs/vendor/aws-config-1.13.0")
+          cargo=root/"Cargo.toml"
+          s=cargo.read_text(encoding="utf-8")
+          for dep, old, new in (("p256","0.13.2","0.14.0"),("rand","0.8.5","0.10.2")):
+              m=re.search(r'(?m)^\[dependencies\.'+dep+r'\]\n[\s\S]*?(?=^\[|\Z)',s)
+              assert m, f"missing {dep} dependency"
+              block=m.group(0)
+              ver=re.search(r'(?m)^version = "([^"]+)"$', block)
+              assert ver and ver.group(1).startswith(old.split(".")[0]+"."), f"{dep} unexpected pin: {block}"
+              block2=block.replace(ver.group(0), 'version = "'+new+'"',1)
+              s=s[:m.start()]+block2+s[m.end():]
+          cargo.write_text(s,encoding="utf-8")
+          dpop=root/"src/login/dpop.rs"
+          text=dpop.read_text(encoding="utf-8")
+          for old,new in (
+              ("use p256::elliptic_curve::sec1::ToEncodedPoint;\n",""),
+              (".to_encoded_point(false)",".to_sec1_point(false)"),
+              ("use rand::SeedableRng;\n",""),
+              ("let mut rng = rand::rngs::StdRng::from_entropy();","let mut rng = rand::rng();")
+          ):
+              assert text.count(old)==1, f"unreviewed AWS DPoP source: {old}"
+              text=text.replace(old,new)
+          dpop.write_text(text,encoding="utf-8")
+          # The upstream crate is vendored without changing its AWS auth wire format.
+          p=Path("codex-rs/Cargo.toml")
+          s=p.read_text(encoding="utf-8")
+          head="[patch.crates-io]\n"
+          assert s.count(head)==1
+          p.write_text(s.replace(head,head+'aws-config = { path = "vendor/aws-config-1.13.0" }\n'),encoding="utf-8")
+          print("SCRATCH: p256 0.14, rand 0.10, DPoP SEC1 point, identical protected AWS login feature")
+          PY
+          git diff --check
+      - name: Resolve exact Windows and Linux graphs; require AWS new P256 crypto
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 \
+            --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/aws-dpop/windows.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 \
+            --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/aws-dpop/linux.json"
+          python3 - <<'PY'
+          import tomllib, pathlib, os
+          lock=tomllib.loads(pathlib.Path("codex-rs/Cargo.lock").read_text())["package"]
+          aws=[x for x in lock if x["name"]=="aws-config"]
+          assert len(aws)==1 and aws[0]["version"]=="1.13.0"
+          assert "p256 0.14.0" in aws[0]["dependencies"],"AWS DPoP is still using vulnerable P256"
+          assert "p256 0.13.2" not in aws[0]["dependencies"],"AWS DPoP old P256 reachable"
+          packages={}
+          for p in lock:
+              packages.setdefault(p["name"],set()).add(p["version"])
+          assert packages["zstd"]=={"0.14.3"}
+          assert packages["ctutils"]=={"0.4.6"}
+          print("AWS CONFIG SECURE P256:", aws[0]["dependencies"])
+          print("CRYPTO-BIGINT OVERALL:", sorted(packages["crypto-bigint"]))
+          print("NONRELEASE: other age and RTC owners remain on 0.5.5")
+          PY
+          git hash-object codex-rs/Cargo.lock > "$RUNNER_TEMP/aws-dpop/lock-blob.txt"
+          cp codex-rs/Cargo.lock "$RUNNER_TEMP/aws-dpop/Cargo.lock"
+          git diff -- codex-rs/Cargo.lock codex-rs/Cargo.toml > "$RUNNER_TEMP/aws-dpop/reconciliation.patch"
+          test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/aws-dpop/policy-blob.txt")"
+          git diff --check
+      - name: Focused AWS login DPoP tests with maintained cryptography
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path codex-rs/Cargo.toml --locked \
+            -p aws-config --features credentials-login --lib login::dpop
+          echo 'AWS DPoP TEST PASS ONLY. Server login and AWS auth integration still need native validation.'
+      - name: Record exact patch and source identity on any exit
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/aws-dpop"
+          git rev-parse HEAD > "$RUNNER_TEMP/aws-dpop/source.txt"
+          git diff --stat > "$RUNNER_TEMP/aws-dpop/git-diff-stat.txt"
+          git status --short > "$RUNNER_TEMP/aws-dpop/status.txt"
+          if [ -d codex-rs/vendor/aws-config-1.13.0 ]; then
+            diff -ruN /dev/null codex-rs/vendor/aws-config-1.13.0/src/login/dpop.rs \
+              > "$RUNNER_TEMP/aws-dpop/review-dpop-source.patch" || true
+            cp codex-rs/vendor/aws-config-1.13.0/Cargo.toml "$RUNNER_TEMP/aws-dpop/candidate-AWS-Cargo.toml"
+          fi
+      - name: Upload nonrelease proof
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-aws-dpop-scratch
+          path: ${{ runner.temp }}/aws-dpop/
+          if-no-files-found: warn
+          retention-days: 5
