@@ -9,11 +9,11 @@ permissions:
   contents: write
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f06208a7dd8aa4d66bbb42875c65bb167d3ab1b6'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '28d90b10a88cb6795f1aa65fd0fb1bacbef7f4ad'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'f06208a7dd8aa4d66bbb42875c65bb167d3ab1b6'
+      EXPECTED_PARENT: '28d90b10a88cb6795f1aa65fd0fb1bacbef7f4ad'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -62,6 +62,11 @@ jobs:
             exit 1
           }
           tail -n 16 "$RUNNER_TEMP/codexdd045-prettier-fix.log"
+      - name: Diagnose Markdown formatting semantic differences
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --unified=3 -- docs/codexdd-0.4.5-packet-1a2-overlap-security-and-automation-audit.md | head -n 200
       - name: Diagnose first Markdown-only formatter escape change
         shell: bash
         run: |
