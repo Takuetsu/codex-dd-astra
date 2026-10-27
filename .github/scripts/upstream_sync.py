@@ -338,10 +338,7 @@ def classify_sensitive_overlaps(
         if (
             lower.startswith("codex-rs/app-server-protocol/schema/")
             or lower.startswith("sdk/python/src/openai_codex/generated/")
-            or (
-                "generated" in lower
-                and ("protocol" in lower or "schema" in lower)
-            )
+            or ("generated" in lower and ("protocol" in lower or "schema" in lower))
         ):
             categories["generated_protocol"].add(path)
 

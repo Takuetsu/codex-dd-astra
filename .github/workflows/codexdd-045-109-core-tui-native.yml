@@ -1,0 +1,176 @@
+# One-shot, read-only native Windows 0.4.5 semantic owner regression gate.
+# Exact 109-overlap review candidate; no release, upload of credentials, or production change.
+name: CodexDD 0.4.5 109 overlap core TUI exact crypto native (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: ['.github/workflows/codexdd-045-109-core-tui-native.yml']
+permissions:
+  contents: read
+jobs:
+  protected-owners:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '00184c384f4a0ff55fd4b277d6814ed57a63accf'
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact reviewed source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify reviewed source identity and security constraints
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD^).Trim() -ne '00184c384f4a0ff55fd4b277d6814ed57a63accf') { throw 'Unexpected workflow-only parent' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.lock').Trim() -ne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Reviewed Cargo.lock changed' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.toml').Trim() -ne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Reviewed Cargo.toml changed' }
+          if ((git rev-parse 'HEAD:codex-rs/deny.toml').Trim() -ne 'f282c7c55d05201e308e60804f85754c8522d462') { throw 'Unreviewed advisory policy' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker unexpectedly changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker unexpectedly changed' }
+          if ((git rev-parse "HEAD:codex-rs/core/src/context_manager/history_tests.rs").Trim() -ne '4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d') { throw 'Source identity differs: codex-rs/core/src/context_manager/history_tests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/core/src/context_manager/normalize.rs").Trim() -ne '4ca88c6a668e9896df06ca81940a0e41e357898d') { throw 'Source identity differs: codex-rs/core/src/context_manager/normalize.rs' }
+          if ((git rev-parse "HEAD:codex-rs/core/src/tools/registry.rs").Trim() -ne 'fc75b3bbf91f1881bd32faaaca93356fbb598b5e') { throw 'Source identity differs: codex-rs/core/src/tools/registry.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/startup.rs").Trim() -ne '3b111def463e2f52b4786b7a6db8c6e3aa7954f7') { throw 'Source identity differs: codex-rs/tui/src/app/startup.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/tests/session_lifecycle_requests.rs").Trim() -ne '994d54b631493b3d0784e836c544c57a275e9985') { throw 'Source identity differs: codex-rs/tui/src/app/tests/session_lifecycle_requests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/tests/startup_defaults_tests.rs").Trim() -ne 'e60808df0448682d47af1a14b5bd8d5c52206397') { throw 'Source identity differs: codex-rs/tui/src/app/tests/startup_defaults_tests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app_server_session/workspace_roots_tests.rs").Trim() -ne 'd6447d22a0a1e943b1352b8c945cf7f6cf09734e') { throw 'Source identity differs: codex-rs/tui/src/app_server_session/workspace_roots_tests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/chatwidget/interaction.rs").Trim() -ne 'e83bc3d1860a8f2f04a14bc136c4b6468785eb67') { throw 'Source identity differs: codex-rs/tui/src/chatwidget/interaction.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/lib.rs").Trim() -ne '7b0746fe66b55537d3c445bfac194cbdb005b2b2') { throw 'Source identity differs: codex-rs/tui/src/lib.rs' }
+          python scripts/codexdd-045-inherited-risk-guard.py
+          if ($LASTEXITCODE -ne 0) { throw 'Immutable crypto/provenance guard failed' }
+          python scripts/codexdd-045-dependency-security-check.py --mode staging
+          if ($LASTEXITCODE -ne 0) { throw 'Protected dependency graph changed' }
+      - name: Configure isolated Windows scratch paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path $env:RUNNER_TEMP 'codexdd045-109-native'
+          $target = Join-Path $base 'target'
+          $temp = Join-Path $base 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CI_BUILD_ROOT=$base"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Cache Cargo source downloads only
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f12-source-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-crypto-msvc-
+      - name: Verify Windows locked resolver
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Windows locked Cargo resolver failed' }
+      - name: Configure repository-pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run 15 original-conflict core authority tests on secure graph
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            'validation_terminalization_requests_required_tool_choice',
+            'reasoning_effort_for_requests_uses_multi_agent_override_for_ultra',
+            'reasoning_effort_for_requests_falls_back_for_missing_or_invalid_override',
+            'resumed_history_recovers_orphan_custom_tool_call_without_panicking',
+            'record_initial_history_ignores_security_risk_scores',
+            'delayed_activation_does_not_retarget_a_task',
+            'reviewer_only_activation_enforces_managed_authority',
+            'activation_must_match_the_retained_turn_authority',
+            'guardian_v2_classification_settings_match_the_admitted_authority',
+            'delivered_assistant_context_invalidates_reviews_without_changing_authorization',
+            'checkpoint_replayed_messages_keep_legacy_review_when_the_source_survives',
+            'legacy_inter_agent_assistant_messages_are_not_turn_boundaries',
+            'adaptive_reconnaissance_rejects_hook_rewritten_write_command',
+            'adaptive_reconnaissance_rejection_finishes_blocked_without_start',
+            'adaptive_validation_terminalization_allows_only_trusted_signal_tool'
+          )
+          $index = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ('codexdd045-protected-core-{0:D2}.log' -f $index)
+            & cmd.exe /d /c ('cargo test --locked -p codex-core --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1')
+            $code = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "Missing log for $case" }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join "`n"
+            Write-Host "Core $($index+1)/$($cases.Count): $case`n$tail"
+            if ($code -ne 0 -or $tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') { throw "Core regression failed or did not run: $case (exit $code)" }
+            $index++
+          }
+          Write-Host "PASS: $index/15 core authority behavior regressions"
+      - name: Run 25 original-conflict TUI behavioral tests on secure graph
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            'forks_inherit_stable_adaptive_state_but_never_pending_signal_authority',
+            'admission_rejects_stale_identity_and_worker_bindings',
+            'evidence_receipt_is_inert_and_cannot_mutate_worker_authority',
+            'trusted_handoff_resets_unfinished_pressure',
+            'completed_recon_with_trusted_report_output_waits_for_late_complexity_signal',
+            'enqueue_primary_thread_session_replays_buffered_approval_after_attach',
+            'resolved_buffered_approval_does_not_become_actionable_after_drain',
+            'agents_navigation_requires_local_daemon',
+            'elevated_windows_implicit_startup_uses_embedded_without_f2_warning',
+            'failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning',
+            'daemon_startup_falls_back_only_for_implicit_endpoints',
+            'windows_sandbox_setup_uses_observed_thread_host',
+            'fresh_startup_thread_drains_buffered_approval_before_draft_handoff',
+            'async_fresh_startup_applies_adaptive_preset_before_attachment',
+            'subagent_approval_respects_root_ownership',
+            'fresh_startup_uses_server_defaults_with_explicit_and_managed_precedence',
+            'startup_read_failure_exits_before_thread_creation',
+            'fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty',
+            'new_session_worker_binding_resets_dirty_adaptive_state',
+            'external_writer_escape_preserves_snapshot_and_explicit_quits',
+            'remote_workspace_roots_survive_start_turn_resume_and_fork',
+            'embedded_lifecycle_requests_preserve_explicit_workspace_roots',
+            'default_daemon_auto_connect_probes_socket_only',
+            'app_server_target_for_launch_uses_local_daemon_for_default_socket',
+            'startup_remote_current_cwd_without_override_is_rejected'
+          )
+          $index = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ('codexdd045-protected-tui-{0:D2}.log' -f $index)
+            & cmd.exe /d /c ('cargo test --locked -p codex-tui --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1')
+            $code = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "Missing log for $case" }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join "`n"
+            Write-Host "TUI $($index+1)/$($cases.Count): $case`n$tail"
+            if ($code -ne 0 -or $tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') { throw "TUI regression failed or did not run: $case (exit $code)" }
+            $index++
+          }
+          Write-Host "PASS: $index/25 protected TUI behavior regressions"
+      - name: Retain narrow nonrelease test evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-109-protected-windows-regressions
+          path: ${{ runner.temp }}/codexdd045-protected-*.log
+          if-no-files-found: warn
+          retention-days: 5

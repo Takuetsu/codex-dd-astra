@@ -19,18 +19,25 @@ class BazelReleaseWiring(unittest.TestCase):
         cli = source("codex-rs/cli/BUILD.bazel")
         build_rs = source("codex-rs/cli/build.rs")
         self.assertIn('build_script_data = ["//codex-rs:codexdd-version.txt"]', cli)
-        self.assertIn('"CODEXDD_VERSION_FILE": "$(execpath //codex-rs:codexdd-version.txt)"', cli)
+        self.assertIn(
+            '"CODEXDD_VERSION_FILE": "$(execpath //codex-rs:codexdd-version.txt)"', cli
+        )
         self.assertIn('env::var_os("CODEXDD_VERSION_FILE")', build_rs)
-        self.assertIn('cargo:rustc-env=CODEXDD_VERSION={version}', build_rs)
-        self.assertIn('cargo:rustc-env=CARGO_PKG_VERSION={command_version}', build_rs)
+        self.assertIn("cargo:rustc-env=CODEXDD_VERSION={version}", build_rs)
+        self.assertIn("cargo:rustc-env=CARGO_PKG_VERSION={command_version}", build_rs)
 
     def test_crate_macro_admits_and_forwards_build_script_env(self):
         defs = source("defs.bzl")
-        macro = defs[defs.index("def codex_rust_crate("):]
-        signature, rest = macro.split('    test_env = {', 1)
+        macro = defs[defs.index("def codex_rust_crate(") :]
+        signature, rest = macro.split("    test_env = {", 1)
         self.assertIn("        build_script_env = {},", signature)
-        self.assertIn('load("@rules_rust//cargo/private:cargo_build_script_wrapper.bzl", "cargo_build_script")', defs)
-        build_section = rest.split("        cargo_build_script(", 1)[1].split("        maybe_deps +=", 1)[0]
+        self.assertIn(
+            'load("@rules_rust//cargo/private:cargo_build_script_wrapper.bzl", "cargo_build_script")',
+            defs,
+        )
+        build_section = rest.split("        cargo_build_script(", 1)[1].split(
+            "        maybe_deps +=", 1
+        )[0]
         self.assertIn("data = build_script_data,", build_section)
         self.assertIn("build_script_env = build_script_env,", build_section)
 
@@ -44,15 +51,22 @@ class BazelReleaseWiring(unittest.TestCase):
 
     def test_windows_sqlite_intrinsic_guard_remains_scoped(self):
         module = source("MODULE.bazel")
-        self.assertEqual(module.count('"LIBSQLITE3_FLAGS": "SQLITE_DISABLE_INTRINSIC"'), 1)
-        self.assertIn('"x86_64-pc-windows-msvc": \'{"LIBSQLITE3_FLAGS": "SQLITE_DISABLE_INTRINSIC"}\'', module)
+        self.assertEqual(
+            module.count('"LIBSQLITE3_FLAGS": "SQLITE_DISABLE_INTRINSIC"'), 1
+        )
+        self.assertIn(
+            '"x86_64-pc-windows-msvc": \'{"LIBSQLITE3_FLAGS": "SQLITE_DISABLE_INTRINSIC"}\'',
+            module,
+        )
         self.assertIn('crate = "libsqlite3-sys"', module)
         self.assertIn('bazel_dep(name = "rules_pkg", version = "1.0.1")', module)
-        self.assertIn('extra_exec_rustc_flags = MSVC_RUSTC_FLAGS,', module)
-        self.assertIn('extra_rustc_flags = MSVC_RUSTC_FLAGS,', module)
+        self.assertIn("extra_exec_rustc_flags = MSVC_RUSTC_FLAGS,", module)
+        self.assertIn("extra_rustc_flags = MSVC_RUSTC_FLAGS,", module)
 
     def test_temporary_bazel_write_oracle_retired(self):
-        self.assertFalse((ROOT / ".github/workflows/codexdd-045-bazel-sqlite-reconcile.yml").exists())
+        self.assertFalse(
+            (ROOT / ".github/workflows/codexdd-045-bazel-sqlite-reconcile.yml").exists()
+        )
 
 
 if __name__ == "__main__":

@@ -9,7 +9,6 @@ _yaml_aliases = {dep: local for dep, local in aliases().items() if local == "ser
 
 codex_rust_crate(
     name = "skills",
-    lib_aliases = _yaml_aliases,
     compile_data = glob(
         include = ["**"],
         allow_empty = True,
@@ -20,4 +19,5 @@ codex_rust_crate(
         ],
     ),
     crate_name = "codex_skills",
+    lib_aliases = _yaml_aliases,
 )

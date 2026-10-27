@@ -26,10 +26,12 @@ from upstream_sync import (
 )
 
 UPSTREAM_URL = "https://github.com/openai/codex.git"
-ORIGIN_URLS = frozenset({
-    "https://github.com/Takuetsu/codex-dd-astra.git",
-    "https://github.com/Takuetsu/codex-dd-astra",
-})
+ORIGIN_URLS = frozenset(
+    {
+        "https://github.com/Takuetsu/codex-dd-astra.git",
+        "https://github.com/Takuetsu/codex-dd-astra",
+    }
+)
 PRODUCTION_REF = "refs/heads/dd/astra-policy-v2"
 OID = re.compile(r"^[0-9a-f]{40}$")
 SAFE_REASON = re.compile(r"^[a-z_]+$")
@@ -78,8 +80,14 @@ def _official_oid(repo: Path, tag: str) -> str:
         raise VerificationError("blocked_identity", "invalid_official_tag")
     ref = "refs/tags/" + tag
     result = _command(
-        repo, "git", "ls-remote", "--exit-code", "--tags", "--refs",
-        UPSTREAM_URL, ref,
+        repo,
+        "git",
+        "ls-remote",
+        "--exit-code",
+        "--tags",
+        "--refs",
+        UPSTREAM_URL,
+        ref,
     ).splitlines()
     if len(result) != 1:
         raise VerificationError("blocked_identity", "ambiguous_official_tag")
@@ -140,7 +148,9 @@ def _production_lockfile(repo: Path, sha: str) -> bytes:
     # Preserve exact Git blob bytes: stripping text would change the SHA-256.
     return subprocess.run(
         ["git", "show", _oid(sha) + ":codex-rs/Cargo.lock"],
-        cwd=repo, check=True, capture_output=True,
+        cwd=repo,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -166,10 +176,22 @@ def _packages(raw: bytes) -> dict[str, str]:
 def _open_pr_exists(repo: Path, branch: str) -> bool:
     if not os.environ.get("GH_TOKEN"):
         raise VerificationError("blocked_incomplete", "pr_read_unavailable")
-    results = json.loads(_command(
-        repo, "gh", "pr", "list", "--repo", "Takuetsu/codex-dd-astra",
-        "--state", "open", "--limit", "1000", "--json", "headRefName",
-    ))
+    results = json.loads(
+        _command(
+            repo,
+            "gh",
+            "pr",
+            "list",
+            "--repo",
+            "Takuetsu/codex-dd-astra",
+            "--state",
+            "open",
+            "--limit",
+            "1000",
+            "--json",
+            "headRefName",
+        )
+    )
     if not isinstance(results, list) or any(
         not isinstance(row, dict) or not isinstance(row.get("headRefName"), str)
         for row in results
@@ -182,18 +204,30 @@ def _open_pr_exists(repo: Path, branch: str) -> bool:
 
 def _blocked(state: str, reason: str, digest: str) -> dict[str, object]:
     return dict(
-        contract_version=1, report_only=True, may_publish=False,
-        windows_validated=False, status=state, reasons=[reason],
-        manifest_sha256=digest, candidate_key=None, candidate_branch=None,
-        production_sha=None, target_upstream_sha=None,
-        pinned_tag_oid=None, observed_tag_oid=None,
+        contract_version=1,
+        report_only=True,
+        may_publish=False,
+        windows_validated=False,
+        status=state,
+        reasons=[reason],
+        manifest_sha256=digest,
+        candidate_key=None,
+        candidate_branch=None,
+        production_sha=None,
+        target_upstream_sha=None,
+        pinned_tag_oid=None,
+        observed_tag_oid=None,
     )
 
 
 def evaluate(
-    repo: Path, raw: bytes, *,
-    pinned_target_oid: str, pinned_tracked_oid: str,
-    observed_transplant: str, conflicts: bytes,
+    repo: Path,
+    raw: bytes,
+    *,
+    pinned_target_oid: str,
+    pinned_tracked_oid: str,
+    observed_transplant: str,
+    conflicts: bytes,
     candidate_lockfile: bytes | None,
 ) -> dict[str, object]:
     digest = hashlib.sha256(raw).hexdigest()
@@ -201,9 +235,12 @@ def evaluate(
     if manifest.production_branch != "dd/astra-policy-v2":
         raise VerificationError("blocked_identity", "unexpected_production_branch")
     for sha in (
-        manifest.production_sha, manifest.production_tree,
-        manifest.tracked_upstream_sha, manifest.tracked_upstream_tree,
-        manifest.target_upstream_sha, manifest.target_upstream_tree,
+        manifest.production_sha,
+        manifest.production_tree,
+        manifest.tracked_upstream_sha,
+        manifest.tracked_upstream_tree,
+        manifest.target_upstream_sha,
+        manifest.target_upstream_tree,
     ):
         _oid(sha)
     if _git(repo, "rev-parse", "HEAD") != manifest.production_sha:
@@ -216,7 +253,10 @@ def evaluate(
 
     tracked_ref = "refs/tags/" + manifest.tracked_upstream_tag
     target_ref = "refs/tags/" + manifest.target_upstream_tag
-    pinned_target_oid, pinned_tracked_oid = _oid(pinned_target_oid), _oid(pinned_tracked_oid)
+    pinned_target_oid, pinned_tracked_oid = (
+        _oid(pinned_target_oid),
+        _oid(pinned_tracked_oid),
+    )
     tracked_oid = _official_oid(repo, manifest.tracked_upstream_tag)
     observed_target_oid = _official_oid(repo, manifest.target_upstream_tag)
     if pinned_tracked_oid != tracked_oid or pinned_target_oid != observed_target_oid:
@@ -254,7 +294,9 @@ def evaluate(
     if observed_transplant == "clean" and conflicts.strip():
         raise VerificationError("blocked_incomplete", "conflicts_in_clean_transplant")
 
-    branch = candidate_branch(manifest.target_upstream_tag, manifest.target_upstream_sha)
+    branch = candidate_branch(
+        manifest.target_upstream_tag, manifest.target_upstream_sha
+    )
     snapshot = CanonicalSnapshot(
         upstream_repository="openai/codex",
         production_branch="dd/astra-policy-v2",
@@ -273,10 +315,10 @@ def evaluate(
         production_entries=git_tree_entries(repo, current_remote),
         target_entries=git_tree_entries(repo, target_sha),
         transplant_result=observed_transplant,
-        production_packages=_packages(
-            _production_lockfile(repo, current_remote)
-        ),
-        candidate_packages=_packages(candidate_lockfile) if candidate_lockfile else None,
+        production_packages=_packages(_production_lockfile(repo, current_remote)),
+        candidate_packages=_packages(candidate_lockfile)
+        if candidate_lockfile
+        else None,
         # A known transplant conflict is terminal for auto-preparation;
         # avoid letting unavailable PR APIs obscure that actionable result.
         candidate_ref_exists=(
@@ -293,13 +335,19 @@ def evaluate(
         manifest, pinned_manifest_sha256=digest, snapshot=snapshot
     )
     return dict(
-        contract_version=1, report_only=True, may_publish=False,
-        windows_validated=False, status=decision.status,
-        reasons=list(decision.reasons), manifest_sha256=digest,
+        contract_version=1,
+        report_only=True,
+        may_publish=False,
+        windows_validated=False,
+        status=decision.status,
+        reasons=list(decision.reasons),
+        manifest_sha256=digest,
         candidate_key=decision.candidate_key,
         candidate_branch=decision.candidate_branch,
-        production_sha=current_remote, target_upstream_sha=target_sha,
-        pinned_tag_oid=pinned_target_oid, observed_tag_oid=observed_target_oid,
+        production_sha=current_remote,
+        target_upstream_sha=target_sha,
+        pinned_tag_oid=pinned_target_oid,
+        observed_tag_oid=observed_target_oid,
     )
 
 
@@ -310,15 +358,27 @@ def summary_text(report: dict[str, object]) -> str:
         raise VerificationError("blocked_incomplete", "unsafe_report_reason")
     quoted = chr(96)
     reason_text = ", ".join(quoted + r + quoted for r in reasons) or "none"
+
     def code(value: object) -> str:
         return quoted + str(value or "unverified") + quoted
+
     return (
         "## CodexDD auto-update eligibility (read-only report)\n\n"
-        + "- State: " + code(report["status"]) + "\n"
-        + "- Reasons: " + reason_text + "\n"
-        + "- Candidate key: " + code(report["candidate_key"]) + "\n"
-        + "- Production SHA: " + code(report["production_sha"]) + "\n"
-        + "- Manifest SHA-256: " + code(report["manifest_sha256"]) + "\n\n"
+        + "- State: "
+        + code(report["status"])
+        + "\n"
+        + "- Reasons: "
+        + reason_text
+        + "\n"
+        + "- Candidate key: "
+        + code(report["candidate_key"])
+        + "\n"
+        + "- Production SHA: "
+        + code(report["production_sha"])
+        + "\n"
+        + "- Manifest SHA-256: "
+        + code(report["manifest_sha256"])
+        + "\n\n"
         + "No branch, PR, release, merge, version bump or deployment is authorized. "
         + "Windows validation and owner gates remain mandatory.\n"
     )
@@ -342,19 +402,28 @@ def main() -> int:
     digest = hashlib.sha256(raw).hexdigest()
     try:
         report = evaluate(
-            Path(".").resolve(), raw,
+            Path(".").resolve(),
+            raw,
             pinned_target_oid=args.pinned_target_oid,
             pinned_tracked_oid=args.pinned_tracked_oid,
             observed_transplant=args.observed_transplant,
             conflicts=args.conflicts.read_bytes(),
             candidate_lockfile=(
                 args.candidate_lockfile.read_bytes()
-                if args.candidate_lockfile.is_file() else None
+                if args.candidate_lockfile.is_file()
+                else None
             ),
         )
     except VerificationError as error:
         report = _blocked(error.state, error.reason, digest)
-    except (OSError, UnicodeError, ValueError, TypeError, KeyError, subprocess.SubprocessError):
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        subprocess.SubprocessError,
+    ):
         report = _blocked("blocked_incomplete", "git_evidence_unavailable", digest)
     args.report.write_text(
         json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n",

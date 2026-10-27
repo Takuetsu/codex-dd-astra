@@ -26,8 +26,10 @@ PATHS = {
 
 def git_bytes(ref: str, path: str) -> bytes:
     return subprocess.run(
-        ["git", "show", ref + ":" + path], cwd=ROOT,
-        check=True, capture_output=True,
+        ["git", "show", ref + ":" + path],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -58,7 +60,7 @@ class AppServerProtocolIntegrationTests(unittest.TestCase):
         needle = 'ThreadWorkflowStateUpdate => "thread/workflowState/update"'
         self.assertEqual(self.common.count(needle), 1)
         beginning = self.common.index(needle)
-        body = self.common[beginning:self.common.index("\n    },", beginning)]
+        body = self.common[beginning : self.common.index("\n    },", beginning)]
         self.assertIn("v2::ThreadWorkflowStateUpdateParams", body)
         self.assertIn("serialization: thread_id(params.thread_id)", body)
         self.assertIn("v2::ThreadWorkflowStateUpdateResponse", body)
@@ -98,9 +100,7 @@ class AppServerProtocolIntegrationTests(unittest.TestCase):
 
     def test_upstream_turn_output_retention_field_survives(self):
         self.assertIn("pub retain: bool,", self.turn)
-        self.assertIn(
-            'skip_serializing_if = "std::ops::Not::not"', self.turn
-        )
+        self.assertIn('skip_serializing_if = "std::ops::Not::not"', self.turn)
 
     def test_workflow_state_structs_and_terminal_operations_preserved(self):
         for marker in (
@@ -119,9 +119,9 @@ class AppServerProtocolIntegrationTests(unittest.TestCase):
         section_start = self.thread.index("pub enum ThreadWorkflowStateOperation")
         self.assertIn(
             '#[serde(rename_all = "camelCase")]',
-            self.thread[section_start - 150:section_start],
+            self.thread[section_start - 150 : section_start],
         )
-        self.assertIn("#[ts(export_to = \"v2/\")]", self.thread)
+        self.assertIn('#[ts(export_to = "v2/")]', self.thread)
 
     def test_upstream_prediction_read_state_and_item_reads_retained(self):
         for name in (
@@ -137,7 +137,7 @@ class AppServerProtocolIntegrationTests(unittest.TestCase):
 
     def test_workflow_definitions_equal_original_fork_type_block(self):
         after = "pub struct ThreadInjectItemsResponse {}\n\n"
-        before = 'pub struct ThreadTurnsListParams'
+        before = "pub struct ThreadTurnsListParams"
         old = source("protocol/v2/thread.rs", FORK)
         old_start = old.index(after) + len(after)
         old_end = old.rfind("#[derive(", 0, old.index(before))
@@ -146,19 +146,25 @@ class AppServerProtocolIntegrationTests(unittest.TestCase):
 
     def test_fork_adaptive_notification_definitions_match_original(self):
         old = source("protocol/v2/turn.rs", FORK)
-        begin = old.rfind("#[derive(", 0, old.index("pub struct AdaptiveRuntimeSignalEnvelope"))
-        end = old.rfind("#[derive(", 0, old.index("pub struct TurnDiffUpdatedNotification"))
+        begin = old.rfind(
+            "#[derive(", 0, old.index("pub struct AdaptiveRuntimeSignalEnvelope")
+        )
+        end = old.rfind(
+            "#[derive(", 0, old.index("pub struct TurnDiffUpdatedNotification")
+        )
         self.assertIn(old[begin:end], self.turn)
 
     def test_release_markers_and_native_validation_still_pending(self):
-        self.assertEqual(git_bytes("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")
+        self.assertEqual(
+            git_bytes("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4"
+        )
         self.assertEqual(
             git_bytes("HEAD", "codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",
         )
-        doc = (
-            ROOT / "docs/codexdd-0.4.5-packet-3b2-appserver-protocol.md"
-        ).read_text(encoding="utf-8")
+        doc = (ROOT / "docs/codexdd-0.4.5-packet-3b2-appserver-protocol.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("INCOMPLETE / NOT A RELEASE CANDIDATE", doc)
         self.assertIn("native Rust", doc)
         self.assertIn("schema regeneration", doc)

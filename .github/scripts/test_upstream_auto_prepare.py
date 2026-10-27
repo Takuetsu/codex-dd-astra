@@ -14,7 +14,11 @@ import test_upstream_auto_report as fixture
 import upstream_auto_eligibility as planner
 import upstream_auto_prepare as preparer
 import upstream_auto_report as report
-from upstream_sync import build_candidate_manifest, candidate_manifest_json, git_tree_entries
+from upstream_sync import (
+    build_candidate_manifest,
+    candidate_manifest_json,
+    git_tree_entries,
+)
 
 
 class GuardedPreparationTests(unittest.TestCase):
@@ -73,7 +77,9 @@ class GuardedPreparationTests(unittest.TestCase):
         )
         result = subprocess.run(
             ["git", "show-ref", "--verify", "--quiet", "refs/heads/" + branch],
-            cwd=self.fx.repo, check=False, capture_output=True,
+            cwd=self.fx.repo,
+            check=False,
+            capture_output=True,
         )
         return result.returncode == 0
 
@@ -94,9 +100,7 @@ class GuardedPreparationTests(unittest.TestCase):
 
     def test_exact_tree_overlay_retains_both_sources_and_manifest_bytes(self):
         mocks = self._mocks()
-        status_before = preparer._git(
-            self.fx.repo, "status", "--porcelain"
-        )
+        status_before = preparer._git(self.fx.repo, "status", "--porcelain")
         with mocks[0], mocks[1], mocks[2], mocks[3]:
             built = self._build()
         self.assertEqual(built.production_sha, self.fx.production)
@@ -122,7 +126,8 @@ class GuardedPreparationTests(unittest.TestCase):
         )
         self.assertEqual(
             preparer._git_blob(
-                self.fx.repo, built.prepared_tree_sha,
+                self.fx.repo,
+                built.prepared_tree_sha,
                 "codex-rs/upstream-codex-release.txt",
             ),
             b"rust-v0.163.0\n",
@@ -165,14 +170,20 @@ class GuardedPreparationTests(unittest.TestCase):
             manifest_path="docs/upstream-candidates/placeholder.json",
             manifest_sha256="a" * 64,
         )
-        with patch.object(preparer, "_git", side_effect=AssertionError(
-            "Git must not run under a closed publication gate"
-        )):
+        with patch.object(
+            preparer,
+            "_git",
+            side_effect=AssertionError(
+                "Git must not run under a closed publication gate"
+            ),
+        ):
             with self.assertRaisesRegex(
                 preparer.PreparationBlocked, "owner_publication_gate_closed"
             ):
                 preparer.publish_isolated_candidate(
-                    self.fx.repo, dummy, b"irrelevant",
+                    self.fx.repo,
+                    dummy,
+                    b"irrelevant",
                     pinned_target_oid="8" * 40,
                     pinned_tracked_oid="9" * 40,
                 )
@@ -200,9 +211,13 @@ class GuardedPreparationTests(unittest.TestCase):
         with (
             mocks[0],
             mocks[1],
-            patch.object(report, "_open_pr_exists", side_effect=report.VerificationError(
-                "blocked_incomplete", "pr_read_unavailable"
-            )),
+            patch.object(
+                report,
+                "_open_pr_exists",
+                side_effect=report.VerificationError(
+                    "blocked_incomplete", "pr_read_unavailable"
+                ),
+            ),
             mocks[3],
         ):
             with self.assertRaisesRegex(
@@ -239,10 +254,18 @@ class GuardedPreparationTests(unittest.TestCase):
 
     def test_path_injection_is_rejected(self):
         for path in (
-            "../outside", "docs/../outside", "/absolute",
-            "docs//double", "docs/back\\slash", "docs/with,comma",
-            "docs/./relative", ".", "docs/CON.txt", "docs/nul",
-            "docs/.git/config", "docs/trailing.",
+            "../outside",
+            "docs/../outside",
+            "/absolute",
+            "docs//double",
+            "docs/back\\slash",
+            "docs/with,comma",
+            "docs/./relative",
+            ".",
+            "docs/CON.txt",
+            "docs/nul",
+            "docs/.git/config",
+            "docs/trailing.",
         ):
             with self.subTest(path=path):
                 with self.assertRaises(preparer.PreparationBlocked):
@@ -262,7 +285,8 @@ class GuardedPreparationTests(unittest.TestCase):
                     preparer.PreparationBlocked, "upstream_nonregular_change"
                 ):
                     preparer._verified_blob_change(
-                        path, {path: "100644 blob " + "a" * 40},
+                        path,
+                        {path: "100644 blob " + "a" * 40},
                         {path: mode + " " + "b" * 40},
                     )
 
@@ -270,29 +294,28 @@ class GuardedPreparationTests(unittest.TestCase):
         with self.assertRaisesRegex(
             preparer.PreparationBlocked, "windows_path_case_collision"
         ):
-            preparer._check_windows_collisions(
-                {"docs/Guide.md", "docs/guide.md"}
-            )
+            preparer._check_windows_collisions({"docs/Guide.md", "docs/guide.md"})
         preparer._check_windows_collisions(
-            {"docs/Guide.md", "docs/other.md", ".github/workflows/CI.yml",
-             ".gitattributes", "docs/with spaces.txt"}
+            {
+                "docs/Guide.md",
+                "docs/other.md",
+                ".github/workflows/CI.yml",
+                ".gitattributes",
+                "docs/with spaces.txt",
+            }
         )
-        with self.assertRaisesRegex(
-            preparer.PreparationBlocked, "windows_path_unsafe"
-        ):
+        with self.assertRaisesRegex(preparer.PreparationBlocked, "windows_path_unsafe"):
             preparer._check_windows_collisions({"docs/CON.txt"})
-        with self.assertRaisesRegex(
-            preparer.PreparationBlocked, "windows_path_unsafe"
-        ):
+        with self.assertRaisesRegex(preparer.PreparationBlocked, "windows_path_unsafe"):
             preparer._check_windows_collisions({"docs/last. "})
 
     def test_interrupted_local_index_build_cannot_publish_branch(self):
         mocks = self._mocks()
         with mocks[0], mocks[1], mocks[2], mocks[3]:
             with patch.object(
-                preparer, "_index_blob", side_effect=preparer.PreparationBlocked(
-                    "incomplete_local_stage"
-                )
+                preparer,
+                "_index_blob",
+                side_effect=preparer.PreparationBlocked("incomplete_local_stage"),
             ):
                 with self.assertRaisesRegex(
                     preparer.PreparationBlocked, "incomplete_local_stage"
@@ -302,8 +325,7 @@ class GuardedPreparationTests(unittest.TestCase):
 
     def test_workflow_remains_read_only_and_never_invokes_preparer(self):
         workflow = (
-            Path(__file__).resolve().parents[1]
-            / "workflows/upstream-sync.yml"
+            Path(__file__).resolve().parents[1] / "workflows/upstream-sync.yml"
         ).read_text(encoding="utf-8")
         self.assertIn("permissions:\n  contents: read", workflow)
         self.assertIn("upstream_auto_report.py", workflow)

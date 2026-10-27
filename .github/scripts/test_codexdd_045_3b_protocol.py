@@ -33,7 +33,9 @@ FORK_PERMISSION_BLOB = "140090f5ef1649ed9e4717643dc85773be93da5f"
 def committed(path: str) -> bytes:
     return subprocess.run(
         ["git", "show", "HEAD:" + path],
-        cwd=ROOT, check=True, capture_output=True,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -90,9 +92,13 @@ class ProtocolStagingChecks(unittest.TestCase):
         end = self.protocol.index("\n}", start)
         block = self.protocol[start:end]
         for kind in (
-            "Complexity", "Capability", "MechanicalValidation",
-            "ImplementationWork", "ReadyForValidation",
-            "RepairRequired", "ReadyForOwnerQa",
+            "Complexity",
+            "Capability",
+            "MechanicalValidation",
+            "ImplementationWork",
+            "ReadyForValidation",
+            "RepairRequired",
+            "ReadyForOwnerQa",
         ):
             self.assertIn(kind + ",", block)
 
@@ -106,7 +112,8 @@ class ProtocolStagingChecks(unittest.TestCase):
 
     def test_official_elicitation_abandonment_event_and_definition_survive(self):
         self.assertIn(
-            "ElicitationAbandoned(ElicitationAbandonedEvent)", self.protocol,
+            "ElicitationAbandoned(ElicitationAbandonedEvent)",
+            self.protocol,
         )
         self.assertIn(
             "pub struct ElicitationAbandonedEvent {",
@@ -152,11 +159,22 @@ class ProtocolStagingChecks(unittest.TestCase):
             "bd6757543a56063ecbced6dd49e52241dffb4af8",
         )
         permissions = contents("codex-rs/protocol/src/permissions.rs")
-        for marker in ("ReadDenyMatcher", "FileSystemSandboxPolicy", "forbidden_agent_metadata_write"):
+        for marker in (
+            "ReadDenyMatcher",
+            "FileSystemSandboxPolicy",
+            "forbidden_agent_metadata_write",
+        ):
             self.assertIn(marker, permissions)
         production = subprocess.run(
-            ["git", "rev-parse", "b25550dcb2c6e84a84074b603086c9db6f32a63b:codex-rs/protocol/src/permissions.rs"],
-            cwd=ROOT, check=True, capture_output=True, text=True,
+            [
+                "git",
+                "rev-parse",
+                "b25550dcb2c6e84a84074b603086c9db6f32a63b:codex-rs/protocol/src/permissions.rs",
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         self.assertEqual(production, FORK_PERMISSION_BLOB)
 

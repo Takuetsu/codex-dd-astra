@@ -21,7 +21,9 @@ HISTORY_TEST_SHA = "4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d"
 def committed(path: str) -> bytes:
     return subprocess.run(
         ["git", "show", "HEAD:" + path],
-        cwd=ROOT, check=True, capture_output=True,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -52,19 +54,19 @@ class CoreHistoryIntegrationChecks(unittest.TestCase):
             'synthetic_output_id("ctco", id.as_deref())',
             'synthetic_output_id("fco", id.as_deref())',
             'FunctionCallOutputPayload::from_text("aborted".to_string())',
-            'ResponseItem::CustomToolCallOutput {',
-            'ResponseItem::FunctionCallOutput {',
+            "ResponseItem::CustomToolCallOutput {",
+            "ResponseItem::FunctionCallOutput {",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, self.normalization)
-        self.assertEqual(
-            self.normalization.count("synthesizing aborted output"), 2
-        )
+        self.assertEqual(self.normalization.count("synthesizing aborted output"), 2)
 
     def test_upstream_inherited_metadata_guard_retained_for_both_tool_families(self):
-        guard = '.is_some_and(|metadata| metadata.inherited_user_message)'
+        guard = ".is_some_and(|metadata| metadata.inherited_user_message)"
         self.assertEqual(self.normalization.count(guard), 2)
-        self.assertIn("Preserved-prefix forks mark copied calls as inherited", self.normalization)
+        self.assertIn(
+            "Preserved-prefix forks mark copied calls as inherited", self.normalization
+        )
 
     def test_interrupted_local_call_never_errors_or_panics_in_debug(self):
         for family in (
@@ -82,13 +84,11 @@ class CoreHistoryIntegrationChecks(unittest.TestCase):
                 )
 
     def test_upstream_testcases_execute_both_local_and_inherited_for_debug(self):
-        self.assertEqual(
-            self.tests.count('#[test_case::test_case(false; "local")]'), 2
-        )
+        self.assertEqual(self.tests.count('#[test_case::test_case(false; "local")]'), 2)
         self.assertEqual(
             self.tests.count('#[test_case::test_case(true; "inherited")]'), 2
         )
-        self.assertEqual(self.tests.count('inherited_user_message = inherited;'), 2)
+        self.assertEqual(self.tests.count("inherited_user_message = inherited;"), 2)
         self.assertNotIn("cfg_attr(not(debug_assertions), test_case::", self.tests)
 
     def test_only_obsolete_missing_output_debug_panics_are_removed(self):
@@ -110,9 +110,7 @@ class CoreHistoryIntegrationChecks(unittest.TestCase):
         )
 
     def test_snapshot_intent_preserves_existing_product_release_markers(self):
-        self.assertEqual(
-            committed("codex-rs/codexdd-version.txt").strip(), b"0.4.4"
-        )
+        self.assertEqual(committed("codex-rs/codexdd-version.txt").strip(), b"0.4.4")
         self.assertEqual(
             committed("codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",

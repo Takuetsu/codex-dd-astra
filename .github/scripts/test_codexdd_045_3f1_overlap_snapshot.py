@@ -4,6 +4,7 @@ Official 0.162 and 0.163 SHA columns were obtained from pinned GitHub trees.
 CI verifies historical production and current integration Git object identities;
 it does not re-fetch external upstream trees or prove semantic correctness.
 """
+
 from __future__ import annotations
 
 import json
@@ -13,7 +14,10 @@ from pathlib import Path
 from codexdd_045_format_provenance import current_blob
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
+MANIFEST = (
+    ROOT
+    / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
+)
 LEGACY = ROOT / "docs/upstream-candidates/original-blocked-conflicts.txt"
 PINNED_BASE = "c1382380de69521303b416720a52f42d51af6248"
 PINNED_UPSTREAM = "83086188ae0614bd882818ff1aa23f3194962012"
@@ -53,25 +57,36 @@ class FourWayOverlapReceipt(unittest.TestCase):
         self.assertEqual(record["contract_version"], 1)
         self.assertEqual(record["receipt_kind"], "codexdd_045_source_provenance_only")
         self.assertIn("no 0.163 semantic", record["acceptance"])
-        self.assertEqual(record["refs"], {
-            "baseline_official_162": PINNED_BASE,
-            "target_official_163": PINNED_UPSTREAM,
-            "production_codexdd_044": PINNED_PRODUCTION,
-            "integration_snapshot": PINNED_SNAPSHOT,
-        })
+        self.assertEqual(
+            record["refs"],
+            {
+                "baseline_official_162": PINNED_BASE,
+                "target_official_163": PINNED_UPSTREAM,
+                "production_codexdd_044": PINNED_PRODUCTION,
+                "integration_snapshot": PINNED_SNAPSHOT,
+            },
+        )
         subprocess.run(
             ["git", "merge-base", "--is-ancestor", PINNED_SNAPSHOT, "HEAD"],
-            cwd=ROOT, check=True,
+            cwd=ROOT,
+            check=True,
         )
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
+        self.assertEqual(
+            (ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(),
+            "rust-v0.162.0",
+        )
 
     def test_exact_109_source_overlap_accounting(self):
         r = self.receipt
         self.assertEqual(r["upstream_changed_paths"], 1314)
         self.assertEqual(r["upstream_fork_overlap_paths"], 109)
         self.assertEqual(r["stale_production_overlap_paths"], 0)
-        self.assertEqual(r["overlap_group_counts"], {".github": 1, "codex-rs": 106, "sdk": 2})
+        self.assertEqual(
+            r["overlap_group_counts"], {".github": 1, "codex-rs": 106, "sdk": 2}
+        )
         rows = r["overlaps"]
         self.assertEqual(len(rows), 109)
         names = [p["path"] for p in rows]
@@ -101,7 +116,9 @@ class FourWayOverlapReceipt(unittest.TestCase):
                     self.assertEqual(self.integration.get(path), PATCHED_TLS_LOCK)
                 else:
                     self.assertEqual(self.historical_integration.get(path), reviewed)
-                    self.assertEqual(self.integration.get(path), current_blob(path, reviewed))
+                    self.assertEqual(
+                        self.integration.get(path), current_blob(path, reviewed)
+                    )
 
     def test_legacy_043_conflicts_are_not_mislabeled_163_conflicts(self):
         r = self.receipt
@@ -115,16 +132,39 @@ class FourWayOverlapReceipt(unittest.TestCase):
         self.assertEqual(sum(row["upstream_changed"] for row in rows), 13)
         for row in rows:
             with self.subTest(path=row["path"]):
-                self.assertEqual(row["upstream_changed"], row["official_162_blob"] != row["official_163_blob"])
-                self.assertEqual(row["production_changed"], row["production_044_blob"] != row["reviewed_045_blob"])
-                self.assertEqual(self.production.get(row["path"]), row["production_044_blob"])
-                self.assertEqual(self.historical_integration.get(row["path"]), row["reviewed_045_blob"])
-                self.assertEqual(self.integration.get(row["path"]), current_blob(row["path"], row["reviewed_045_blob"]))
+                self.assertEqual(
+                    row["upstream_changed"],
+                    row["official_162_blob"] != row["official_163_blob"],
+                )
+                self.assertEqual(
+                    row["production_changed"],
+                    row["production_044_blob"] != row["reviewed_045_blob"],
+                )
+                self.assertEqual(
+                    self.production.get(row["path"]), row["production_044_blob"]
+                )
+                self.assertEqual(
+                    self.historical_integration.get(row["path"]),
+                    row["reviewed_045_blob"],
+                )
+                self.assertEqual(
+                    self.integration.get(row["path"]),
+                    current_blob(row["path"], row["reviewed_045_blob"]),
+                )
 
     def test_dependency_policy_not_implicitly_promoted(self):
-        self.assertEqual(git("hash-object", "codex-rs/Cargo.toml").decode().strip(), "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4")
-        self.assertEqual(git("hash-object", "codex-rs/Cargo.lock").decode().strip(), "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
-        self.assertEqual(git("hash-object", "codex-rs/deny.toml").decode().strip(), "ea7fdc149fc880c6b36d75c29851641034289a4e")
+        self.assertEqual(
+            git("hash-object", "codex-rs/Cargo.toml").decode().strip(),
+            "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4",
+        )
+        self.assertEqual(
+            git("hash-object", "codex-rs/Cargo.lock").decode().strip(),
+            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
+        )
+        self.assertEqual(
+            git("hash-object", "codex-rs/deny.toml").decode().strip(),
+            "ea7fdc149fc880c6b36d75c29851641034289a4e",
+        )
 
 
 if __name__ == "__main__":

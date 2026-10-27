@@ -1,4 +1,5 @@
 """Guard all declared serde_yaml rename consumers without reintroducing Bazel cycles."""
+
 from pathlib import Path
 import re
 import unittest
@@ -47,10 +48,15 @@ class AllDeclaredYamlAliases(unittest.TestCase):
                 self.assertNotRegex(b, r"(?m)^if[ \t]+")
                 self.assertNotIn("aliases = aliases(", b)
         workspace = (ROOT / "codex-rs/Cargo.toml").read_text(encoding="utf-8")
-        self.assertIn('serde_yaml = { package = "noyalib-serde-yaml", version = "=0.0.57" }', workspace)
+        self.assertIn(
+            'serde_yaml = { package = "noyalib-serde-yaml", version = "=0.0.57" }',
+            workspace,
+        )
 
     def test_remaining_two_windows_smoke_is_read_only_frozen_and_exact(self):
-        f = (ROOT / ".github/workflows/codexdd-045-windows-remaining-yaml-aliases.yml").read_text(encoding="utf-8")
+        f = (
+            ROOT / ".github/workflows/codexdd-045-windows-remaining-yaml-aliases.yml"
+        ).read_text(encoding="utf-8")
         self.assertIn("permissions:\n  contents: read", f)
         self.assertIn("persist-credentials: false", f)
         self.assertIn("runs-on: windows-2022", f)
@@ -58,8 +64,12 @@ class AllDeclaredYamlAliases(unittest.TestCase):
         self.assertIn("'--lockfile_mode=error'", f)
         self.assertIn("'--jobs=2'", f)
         self.assertIn("'//codex-rs/ext/skills:skills'", f)
-        self.assertIn("'//codex-rs/external-agent-migration:external-agent-migration'", f)
-        self.assertIn("Missing remaining YAML consumer native compile success receipt", f)
+        self.assertIn(
+            "'//codex-rs/external-agent-migration:external-agent-migration'", f
+        )
+        self.assertIn(
+            "Missing remaining YAML consumer native compile success receipt", f
+        )
         for dirname, sha in BUILD_BLOBS.items():
             self.assertIn("'" + dirname + "/BUILD.bazel' = '" + sha + "'", f)
         self.assertNotIn("'//codex-rs/cli:release_files'", f)

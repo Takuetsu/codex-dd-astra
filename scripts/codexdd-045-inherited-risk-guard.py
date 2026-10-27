@@ -4,6 +4,7 @@
 A PASS here is not a green security audit or release authorization:
 cargo-deny must still run all-target with every other advisory enforced.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -77,7 +78,9 @@ def validate_offline() -> None:
         "next upstream integration requires new owner security review",
     )
     product = (CARGO / "codexdd-version.txt").read_text(encoding="utf-8").strip()
-    upstream = (CARGO / "upstream-codex-release.txt").read_text(encoding="utf-8").strip()
+    upstream = (
+        (CARGO / "upstream-codex-release.txt").read_text(encoding="utf-8").strip()
+    )
     require(
         (product, upstream) in (("0.4.4", "rust-v0.162.0"), ("0.4.5", "rust-v0.163.0")),
         "new product/upstream marker requires a new acceptance record",
@@ -93,56 +96,95 @@ def validate_offline() -> None:
         ("age-core", PINNED_RAGE_URL, PINNED_RAGE_REV),
         ("clatter", PINNED_CLATTER_URL, PINNED_CLATTER_REV),
     ):
-        require(patches.get(crate) == {"git": url, "rev": rev},
-                "unreviewed cryptographic source: " + crate)
-    require(patches.get("aws-config") == {"path": "vendor/aws-config-1.13.0"},
-            "AWS DPoP patch path differs from reviewed vendor source")
-    require(manifest["workspace"]["dependencies"]["clatter"]["version"] == "3.0.0",
-            "stable clatter 3.0.0 KEM owner missing")
+        require(
+            patches.get(crate) == {"git": url, "rev": rev},
+            "unreviewed cryptographic source: " + crate,
+        )
+    require(
+        patches.get("aws-config") == {"path": "vendor/aws-config-1.13.0"},
+        "AWS DPoP patch path differs from reviewed vendor source",
+    )
+    require(
+        manifest["workspace"]["dependencies"]["clatter"]["version"] == "3.0.0",
+        "stable clatter 3.0.0 KEM owner missing",
+    )
     vendor = CARGO / "vendor" / "aws-config-1.13.0"
-    require(vendor.is_dir() and all(not p.is_symlink() for p in vendor.rglob("*")),
-            "missing AWS vendor or unexpected symlink")
+    require(
+        vendor.is_dir() and all(not p.is_symlink() for p in vendor.rglob("*")),
+        "missing AWS vendor or unexpected symlink",
+    )
     aws = read_toml(vendor / "Cargo.toml")
-    require(aws["package"]["name"] == "aws-config" and aws["package"]["version"] == "1.13.0",
-            "unreviewed AWS source")
-    require(aws["dependencies"]["p256"]["version"] == "0.14.0"
-            and aws["dependencies"]["rand"]["version"] == "0.10.1"
-            and aws["dependencies"]["rand"]["features"] == ["std", "std_rng", "sys_rng"],
-            "secure DPoP signer RNG or P256 API modified")
+    require(
+        aws["package"]["name"] == "aws-config"
+        and aws["package"]["version"] == "1.13.0",
+        "unreviewed AWS source",
+    )
+    require(
+        aws["dependencies"]["p256"]["version"] == "0.14.0"
+        and aws["dependencies"]["rand"]["version"] == "0.10.1"
+        and aws["dependencies"]["rand"]["features"] == ["std", "std_rng", "sys_rng"],
+        "secure DPoP signer RNG or P256 API modified",
+    )
     # Explicit POSIX/case-sensitive ordering: Windows Path sorts case-insensitively.
-    files = sorted((p for p in vendor.rglob("*") if p.is_file()),
-                   key=lambda p: p.relative_to(vendor).as_posix())
+    files = sorted(
+        (p for p in vendor.rglob("*") if p.is_file()),
+        key=lambda p: p.relative_to(vendor).as_posix(),
+    )
     require(len(files) == 74, "reviewed AWS vendor file inventory changed")
     expected_paths = {p.relative_to(ROOT).as_posix() for p in files}
     tracked = subprocess.run(
-        ["git", "-C", str(ROOT), "ls-files", "-z", "--", "codex-rs/vendor/aws-config-1.13.0"],
-        capture_output=True, check=False,
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "ls-files",
+            "-z",
+            "--",
+            "codex-rs/vendor/aws-config-1.13.0",
+        ],
+        capture_output=True,
+        check=False,
     )
     actual_paths = [p.decode("utf-8") for p in tracked.stdout.split(bytes([0])) if p]
     require(
-        tracked.returncode == 0 and len(actual_paths) == len(expected_paths)
+        tracked.returncode == 0
+        and len(actual_paths) == len(expected_paths)
         and set(actual_paths) == expected_paths,
         "AWS vendor tracked path set differs: missing="
         + repr(sorted(expected_paths - set(actual_paths))[:5])
-        + ", extra=" + repr(sorted(set(actual_paths) - expected_paths)[:5]),
+        + ", extra="
+        + repr(sorted(set(actual_paths) - expected_paths)[:5]),
     )
     # Git tree identity covers exact file names, modes and canonical blob bytes.
     # Unlike checkout bytes, this is invariant under Windows CRLF normalization.
     tree = subprocess.run(
-        ["git", "-C", str(ROOT), "rev-parse",
-         "HEAD:codex-rs/vendor/aws-config-1.13.0"],
-        capture_output=True, text=True, check=False,
+        ["git", "-C", str(ROOT), "rev-parse", "HEAD:codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
-    require(tree.returncode == 0
-            and tree.stdout.strip() == PINNED_AWS_VENDOR_GIT_TREE,
-            "AWS source Git tree does not match reviewed 74-file vendor revision")
+    require(
+        tree.returncode == 0 and tree.stdout.strip() == PINNED_AWS_VENDOR_GIT_TREE,
+        "AWS source Git tree does not match reviewed 74-file vendor revision",
+    )
     worktree = subprocess.run(
-        ["git", "-C", str(ROOT), "diff", "--exit-code", "--quiet", "--",
-         "codex-rs/vendor/aws-config-1.13.0"],
-        capture_output=True, check=False,
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "diff",
+            "--exit-code",
+            "--quiet",
+            "--",
+            "codex-rs/vendor/aws-config-1.13.0",
+        ],
+        capture_output=True,
+        check=False,
     )
-    require(worktree.returncode == 0,
-            "AWS vendor working tree differs from immutable committed source")
+    require(
+        worktree.returncode == 0,
+        "AWS vendor working tree differs from immutable committed source",
+    )
     require(
         manifest["workspace"]["dependencies"].get("zstd") == "0.14",
         "Zstd security fix missing or changed",
@@ -152,22 +194,38 @@ def validate_offline() -> None:
     wanted = list(BASELINE) + [row[0] for row in ACCEPTED]
     entries = policy["advisories"]["ignore"]
     ids = [entry["id"] for entry in entries]
-    require(ids == wanted and len(set(ids)) == len(ids), "cargo-deny exception list changed")
-    require(audit["advisories"]["ignore"] == wanted, "cargo-audit and cargo-deny exception scope differ")
-    for entry, (advisory_id, crate, _) in zip(entries[len(BASELINE):], ACCEPTED):
+    require(
+        ids == wanted and len(set(ids)) == len(ids), "cargo-deny exception list changed"
+    )
+    require(
+        audit["advisories"]["ignore"] == wanted,
+        "cargo-audit and cargo-deny exception scope differ",
+    )
+    for entry, (advisory_id, crate, _) in zip(entries[len(BASELINE) :], ACCEPTED):
         reason = entry["reason"]
         require(advisory_id == entry["id"], "incorrect advisory accepted")
         require(
-            all(item in reason for item in ("INFO/unmaintained", "Linux-only", "2026-11-20", crate)),
+            all(
+                item in reason
+                for item in ("INFO/unmaintained", "Linux-only", "2026-11-20", crate)
+            ),
             "missing explicit severity, target, crate or expiry in " + advisory_id,
         )
     require(policy["graph"]["targets"] == [], "all-target audit was narrowed")
-    require(policy["sources"]["unknown-git"] == "deny", "Git source enforcement weakened")
-    require(policy["sources"]["unknown-registry"] == "deny", "registry enforcement weakened")
-    require(policy["sources"]["required-git-spec"] == "rev", "immutable Git requirement weakened")
+    require(
+        policy["sources"]["unknown-git"] == "deny", "Git source enforcement weakened"
+    )
+    require(
+        policy["sources"]["unknown-registry"] == "deny", "registry enforcement weakened"
+    )
+    require(
+        policy["sources"]["required-git-spec"] == "rev",
+        "immutable Git requirement weakened",
+    )
     allowed_sources = policy["sources"]["allow-git"]
     require(
-        allowed_sources == list(BASE_GIT_URLS) + [PINNED_I18N_URL, PINNED_RAGE_URL, PINNED_CLATTER_URL],
+        allowed_sources
+        == list(BASE_GIT_URLS) + [PINNED_I18N_URL, PINNED_RAGE_URL, PINNED_CLATTER_URL],
         "Git source allowlist differs from reviewed exact entries",
     )
     lock = read_toml(CARGO / "Cargo.lock")
@@ -185,14 +243,20 @@ def validate_offline() -> None:
         pkgs.setdefault(name, set()).add(item["version"])
         if name in expected_git:
             url, revision = expected_git[name]
-            require(source == f"git+{url}?rev={revision}#{revision}",
-                    "unpinned or unexpected Git source for " + name)
+            require(
+                source == f"git+{url}?rev={revision}#{revision}",
+                "unpinned or unexpected Git source for " + name,
+            )
             source_counts[name] += 1
-        elif any(source.startswith("git+" + url) for url in
-                 (PINNED_I18N_URL, PINNED_RAGE_URL, PINNED_CLATTER_URL)):
+        elif any(
+            source.startswith("git+" + url)
+            for url in (PINNED_I18N_URL, PINNED_RAGE_URL, PINNED_CLATTER_URL)
+        ):
             require(False, "extra, unreviewed crate from pinned Git source: " + name)
-    require(source_counts == {name: 1 for name in expected_git},
-            "reviewed pinned Git crate omitted or duplicated")
+    require(
+        source_counts == {name: 1 for name in expected_git},
+        "reviewed pinned Git crate omitted or duplicated",
+    )
     require("basic-toml" not in pkgs, "basic-toml has reentered the candidate lock")
     require(pkgs.get("i18n-config") == {"0.4.8"}, "unexpected i18n-config version")
     for crate, version in {
@@ -222,11 +286,15 @@ def validate_offline() -> None:
         "zip": "9.0.5",
     }.items():
         require(pkgs.get(crate) == {version}, f"protected {crate} version changed")
-    print("PASS: exactly three approved INFO exceptions, in both cargo-deny and cargo-audit")
+    print(
+        "PASS: exactly three approved INFO exceptions, in both cargo-deny and cargo-audit"
+    )
     print("PASS: all-target policy, Git source pin and dependency versions unchanged")
     print("PASS: 2026-11-20 expiry and upstream-integration review gate still valid")
     if pkgs.get("crypto-bigint") == {"0.5.5"}:
-        print("RELEASE BLOCKED: crypto-bigint 0.5.5 RUSTSEC-2026-0387 remains unexcepted")
+        print(
+            "RELEASE BLOCKED: crypto-bigint 0.5.5 RUSTSEC-2026-0387 remains unexcepted"
+        )
 
 
 def validate_reachability(windows: Path, linux: Path) -> None:
@@ -255,7 +323,9 @@ def validate_reachability(windows: Path, linux: Path) -> None:
     lin = roots_and_reachable(linux)
     for _, crate, version in ACCEPTED:
         require(crate not in win, f"{crate} has a new Windows dependency path")
-        require(lin.get(crate) == {version}, f"{crate} Linux reachability/version changed")
+        require(
+            lin.get(crate) == {version}, f"{crate} Linux reachability/version changed"
+        )
     require(lin.get("zbus") == {"4.4.0"}, "Linux zbus dependency chain changed")
     print("PASS: all three risk-accepted packages Linux-reachable, absent on Windows")
 
@@ -266,11 +336,17 @@ def validate_rustsec_database() -> None:
             "https://raw.githubusercontent.com/RustSec/advisory-db/main/"
             f"crates/{crate}/{advisory_id}.md"
         )
-        request = Request(url, headers={"User-Agent": "codexdd-045-accepted-risk-guard"})
+        request = Request(
+            url, headers={"User-Agent": "codexdd-045-accepted-risk-guard"}
+        )
         with urlopen(request, timeout=20) as response:
             body = response.read(80_000).decode("utf-8")
         ticks = chr(96) * 3
-        match = re.match(r"^" + re.escape(ticks) + r"toml\r?\n(.*?)\r?\n" + re.escape(ticks), body, re.DOTALL)
+        match = re.match(
+            r"^" + re.escape(ticks) + r"toml\r?\n(.*?)\r?\n" + re.escape(ticks),
+            body,
+            re.DOTALL,
+        )
         require(match is not None, "cannot verify RustSec metadata: " + advisory_id)
         info = tomllib.loads(match.group(1))
         advisory = info["advisory"]
@@ -303,7 +379,9 @@ def main() -> int:
             validate_reachability(args.windows_metadata, args.linux_metadata)
         if args.check_db:
             validate_rustsec_database()
-        print("ACCEPTED-RISK GUARD PASS ONLY: crypto-bigint, cargo-deny and release checks remain mandatory")
+        print(
+            "ACCEPTED-RISK GUARD PASS ONLY: crypto-bigint, cargo-deny and release checks remain mandatory"
+        )
         return 0
     except (KeyError, ValueError, OSError, RuntimeError) as error:
         print("BLOCKED:", error, file=sys.stderr)

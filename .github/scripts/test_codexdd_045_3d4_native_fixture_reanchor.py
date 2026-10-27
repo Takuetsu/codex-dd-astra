@@ -5,6 +5,7 @@ checkpoints. These checks independently prove that the only subsequent changes
 to the two fork-preserved test files add required optional 0.163 fields.
 They do not waive source guard failures or authorize release promotion.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -26,8 +27,8 @@ LINEAGE = (
         "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
         "6286fb33b5d936da253abe9efdc090e494de0ac4",
         "106f07a29d8cde54784c516898472518736b9c37",
-        b'    let call = ResponseItem::CustomToolCall {\n        id: None,\n        status: None,\n        call_id:',
-        b'    let call = ResponseItem::CustomToolCall {\n        encrypted_content: None,\n        id: None,\n        status: None,\n        call_id:',
+        b"    let call = ResponseItem::CustomToolCall {\n        id: None,\n        status: None,\n        call_id:",
+        b"    let call = ResponseItem::CustomToolCall {\n        encrypted_content: None,\n        id: None,\n        status: None,\n        call_id:",
     ),
 )
 
@@ -59,7 +60,9 @@ class ReviewedNativeFixtureReanchor(unittest.TestCase):
                 self.assertEqual(oid(current), accepted)
 
     def test_release_markers_still_frozen(self):
-        self.assertEqual(git_bytes("show", "HEAD:codex-rs/codexdd-version.txt").strip(), b"0.4.4")
+        self.assertEqual(
+            git_bytes("show", "HEAD:codex-rs/codexdd-version.txt").strip(), b"0.4.4"
+        )
         self.assertEqual(
             git_bytes("show", "HEAD:codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",

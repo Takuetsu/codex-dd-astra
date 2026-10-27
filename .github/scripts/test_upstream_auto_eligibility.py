@@ -22,7 +22,8 @@ def entries(path: str = "docs/changelog/overview.md"):
 
 
 def baseline(
-    path: str = "docs/changelog/overview.md", *,
+    path: str = "docs/changelog/overview.md",
+    *,
     transplant: str = "clean",
     modify_snapshot: bool = False,
 ):
@@ -47,7 +48,11 @@ def baseline(
         transplant_result=transplant,
     )
     manifest = build_candidate_manifest(**p)
-    packages = {"rustls": "0.23.46", "quinn-proto": "0.11.18", "noyalib-serde-yaml": "0.0.57"}
+    packages = {
+        "rustls": "0.23.46",
+        "quinn-proto": "0.11.18",
+        "noyalib-serde-yaml": "0.0.57",
+    }
     snapshot = CanonicalSnapshot(
         upstream_repository="openai/codex",
         production_branch=p["production_branch"],
@@ -74,7 +79,9 @@ def baseline(
 
 
 def check(manifest, snapshot, digest):
-    return assess_eligibility(manifest, pinned_manifest_sha256=digest, snapshot=snapshot)
+    return assess_eligibility(
+        manifest, pinned_manifest_sha256=digest, snapshot=snapshot
+    )
 
 
 class UpstreamAutoEligibilityTests(unittest.TestCase):
@@ -190,9 +197,16 @@ class UpstreamAutoEligibilityTests(unittest.TestCase):
 
     def test_valid_lightweight_tag_pins_peeled_commit(self):
         m, s, h = baseline()
-        lightweight = replace(s, tag_kind="lightweight", pinned_tag_oid="5" * 40, observed_tag_oid="5" * 40)
+        lightweight = replace(
+            s,
+            tag_kind="lightweight",
+            pinned_tag_oid="5" * 40,
+            observed_tag_oid="5" * 40,
+        )
         with patch.object(
-            planner, "REVIEWED_SAFE_UPSTREAM_PATHS", frozenset({"docs/changelog/overview.md"})
+            planner,
+            "REVIEWED_SAFE_UPSTREAM_PATHS",
+            frozenset({"docs/changelog/overview.md"}),
         ):
             self.assertEqual(check(m, lightweight, h).status, "auto_preparation_ready")
         self.assertEqual(
@@ -213,14 +227,28 @@ class UpstreamAutoEligibilityTests(unittest.TestCase):
         m, s, h = baseline()
         modified = replace(m, discovery_timestamp="mutated timestamp")
         self.assertEqual(check(modified, s, h).status, "blocked_identity")
-        rehashed = hashlib.sha256(candidate_manifest_json(modified).encode()).hexdigest()
-        self.assertEqual(check(replace(modified, overlap_path_count=2), s, rehashed).status, "blocked_identity")
-        rehashed = hashlib.sha256(candidate_manifest_json(replace(m, candidate_key="wrong")).encode()).hexdigest()
-        self.assertEqual(check(replace(m, candidate_key="wrong"), s, rehashed).status, "blocked_identity")
+        rehashed = hashlib.sha256(
+            candidate_manifest_json(modified).encode()
+        ).hexdigest()
+        self.assertEqual(
+            check(replace(modified, overlap_path_count=2), s, rehashed).status,
+            "blocked_identity",
+        )
+        rehashed = hashlib.sha256(
+            candidate_manifest_json(replace(m, candidate_key="wrong")).encode()
+        ).hexdigest()
+        self.assertEqual(
+            check(replace(m, candidate_key="wrong"), s, rehashed).status,
+            "blocked_identity",
+        )
 
     def test_candidate_branch_pr_and_concurrent_publisher_are_duplicate(self):
         m, s, h = baseline()
-        for flag in ("candidate_ref_exists", "active_candidate_pr_exists", "competing_preparation_exists"):
+        for flag in (
+            "candidate_ref_exists",
+            "active_candidate_pr_exists",
+            "competing_preparation_exists",
+        ):
             with self.subTest(flag=flag):
                 self.assertEqual(
                     check(m, replace(s, **{flag: True}), h).status,
@@ -236,8 +264,11 @@ class UpstreamAutoEligibilityTests(unittest.TestCase):
             "docs/AGENTS.md",
         ):
             m, s, h = baseline(path)
-            with self.subTest(path=path), patch.object(
-                planner, "REVIEWED_SAFE_UPSTREAM_PATHS", frozenset({path})
+            with (
+                self.subTest(path=path),
+                patch.object(
+                    planner, "REVIEWED_SAFE_UPSTREAM_PATHS", frozenset({path})
+                ),
             ):
                 decision = check(m, s, h)
                 self.assertEqual(decision.status, "manual_semantic_review_required")
@@ -269,9 +300,14 @@ class UpstreamAutoEligibilityTests(unittest.TestCase):
                 target_entries=changed,
                 transplant_result="clean",
             )
-            digest = hashlib.sha256(candidate_manifest_json(updated).encode()).hexdigest()
-            with self.subTest(mode=mode), patch.object(
-                planner, "REVIEWED_SAFE_UPSTREAM_PATHS", frozenset({path})
+            digest = hashlib.sha256(
+                candidate_manifest_json(updated).encode()
+            ).hexdigest()
+            with (
+                self.subTest(mode=mode),
+                patch.object(
+                    planner, "REVIEWED_SAFE_UPSTREAM_PATHS", frozenset({path})
+                ),
             ):
                 decision = check(updated, replace(s, target_entries=changed), digest)
                 self.assertEqual(decision.status, "manual_semantic_review_required")
@@ -282,12 +318,17 @@ class UpstreamAutoEligibilityTests(unittest.TestCase):
         mutations = (
             ({"rustls": "0.23.45"}, "security_dependency_downgrade"),
             ({"quinn-proto": "0.11.15"}, "security_dependency_downgrade"),
-            ({"noyalib-serde-yaml": "0.0.58"}, "security_dependency_replacement_changed"),
+            (
+                {"noyalib-serde-yaml": "0.0.58"},
+                "security_dependency_replacement_changed",
+            ),
             ({"serde_yaml": "0.9.34"}, "legacy_yaml_dependency_restored"),
             ({"hyper": "1.11.1"}, "dependency_graph_changed"),
         )
         with patch.object(
-            planner, "REVIEWED_SAFE_UPSTREAM_PATHS", frozenset({"docs/changelog/overview.md"})
+            planner,
+            "REVIEWED_SAFE_UPSTREAM_PATHS",
+            frozenset({"docs/changelog/overview.md"}),
         ):
             for changed, expected in mutations:
                 with self.subTest(changed=changed):
@@ -319,7 +360,9 @@ class UpstreamAutoEligibilityTests(unittest.TestCase):
             "blocked_identity",
         )
         changed_manifest = replace(m, sensitive_overlap_count=2)
-        digest = hashlib.sha256(candidate_manifest_json(changed_manifest).encode()).hexdigest()
+        digest = hashlib.sha256(
+            candidate_manifest_json(changed_manifest).encode()
+        ).hexdigest()
         self.assertEqual(check(changed_manifest, s, digest).status, "blocked_identity")
 
     def test_no_changed_upstream_paths_cannot_fake_candidate(self):

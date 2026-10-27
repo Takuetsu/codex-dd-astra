@@ -23,8 +23,10 @@ EXPECTED = {
 
 def git_bytes(path: str) -> bytes:
     return subprocess.run(
-        ["git", "show", "HEAD:" + path], cwd=ROOT,
-        check=True, capture_output=True,
+        ["git", "show", "HEAD:" + path],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -69,9 +71,7 @@ class CoreToolLifecycleIntegrationTests(unittest.TestCase):
         self.assertIn(".or_cancel(&cancellation_token)", self.dynamic)
 
     def test_upstream_dynamic_tool_finishes_on_cancellation(self):
-        self.assertIn(
-            "fn finishes_on_cancellation(&self) -> bool {", self.dynamic
-        )
+        self.assertIn("fn finishes_on_cancellation(&self) -> bool {", self.dynamic)
         self.assertIn("        true\n    }", self.dynamic)
         self.assertIn("if cancellation_token.is_cancelled()", self.dynamic)
 
@@ -94,9 +94,7 @@ class CoreToolLifecycleIntegrationTests(unittest.TestCase):
         self.assertIn("return ToolMode::Direct;", self.modes)
 
     def test_removed_upstream_shell_type_helper_is_not_reintroduced(self):
-        self.assertNotIn(
-            "pub(crate) fn tool_user_shell_type(", self.modes
-        )
+        self.assertNotIn("pub(crate) fn tool_user_shell_type(", self.modes)
         self.assertIn("pub(crate) fn effective_tool_mode(", self.modes)
 
     def test_reviewed_fork_registry_still_restricts_adaptive_permissions(self):
@@ -104,7 +102,9 @@ class CoreToolLifecycleIntegrationTests(unittest.TestCase):
         # fork-owned permission floors. Pin the reviewed new registry and its
         # fail-closed intent, including terminalization's sole permitted tool.
         registry = git_bytes("codex-rs/core/src/tools/registry.rs").decode("utf-8")
-        self.assertEqual(blob_oid(registry.encode()), "fc75b3bbf91f1881bd32faaaca93356fbb598b5e")
+        self.assertEqual(
+            blob_oid(registry.encode()), "fc75b3bbf91f1881bd32faaaca93356fbb598b5e"
+        )
         for marker in (
             "CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER",
             "CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER",
@@ -120,9 +120,9 @@ class CoreToolLifecycleIntegrationTests(unittest.TestCase):
             git_bytes("codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",
         )
-        doc = (
-            ROOT / "docs/codexdd-0.4.5-packet-3c2-tool-lifecycle.md"
-        ).read_text(encoding="utf-8")
+        doc = (ROOT / "docs/codexdd-0.4.5-packet-3c2-tool-lifecycle.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("INCOMPLETE / NOT A RELEASE CANDIDATE", doc)
         self.assertIn("native Rust", doc)
         self.assertIn("registry.rs", doc)

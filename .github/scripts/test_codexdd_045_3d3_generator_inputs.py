@@ -1,4 +1,5 @@
 """Read-only 0.4.5 schema drift workflow must observe producer and resolver edits."""
+
 from pathlib import Path
 import re
 import unittest
@@ -38,7 +39,10 @@ class GeneratorInputTriggers(unittest.TestCase):
         self.assertIn("permissions:\n  contents: read\n", s)
         self.assertIn("persist-credentials: false", s)
         self.assertIn("runs-on: ubuntu-24.04", s)
-        self.assertIn("github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'", s)
+        self.assertIn(
+            "github.ref == 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'",
+            s,
+        )
         self.assertNotIn("contents: write", s)
         self.assertNotIn("git push", s)
 
@@ -52,7 +56,9 @@ class GeneratorInputTriggers(unittest.TestCase):
         self.assertIn("test_contract_generation.py", s)
         self.assertIn("if changed or deleted:", s)
         self.assertIn("if forbidden:", s)
-        self.assertIn("raise SystemExit(\"BLOCKED: generated outputs differ from checkout;", s)
+        self.assertIn(
+            'raise SystemExit("BLOCKED: generated outputs differ from checkout;', s
+        )
         self.assertIn("retention-days: 7", s)
 
 

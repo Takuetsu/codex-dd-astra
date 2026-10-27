@@ -1,4 +1,5 @@
 """Verify 0.4.5 nonrelease TLS+advisory preview cannot waive vulnerabilities."""
+
 import re
 import unittest
 from pathlib import Path
@@ -28,19 +29,27 @@ class AdvisoryTrialSafety(unittest.TestCase):
     def test_exactly_four_inherited_maintenance_preview_ids(self):
         s = self.source
         ids = re.findall(r'^\s+"(RUSTSEC-2026-\d+)",\s*$', s, re.M)
-        self.assertEqual(ids, [
-            "RUSTSEC-2026-0374", "RUSTSEC-2026-0371",
-            "RUSTSEC-2026-0370", "RUSTSEC-2026-0372",
-        ])
+        self.assertEqual(
+            ids,
+            [
+                "RUSTSEC-2026-0374",
+                "RUSTSEC-2026-0371",
+                "RUSTSEC-2026-0370",
+                "RUSTSEC-2026-0372",
+            ],
+        )
         self.assertIn("if actual != existing + list(ids):", s)
         self.assertIn("if parsed.get(section) != baseline.get(section):", s)
-        self.assertNotIn("RUSTSEC-2026-0381\",", s)
-        self.assertNotIn("RUSTSEC-2026-0382\",", s)
-        self.assertNotIn("RUSTSEC-2026-0383\",", s)
+        self.assertNotIn('RUSTSEC-2026-0381",', s)
+        self.assertNotIn('RUSTSEC-2026-0382",', s)
+        self.assertNotIn('RUSTSEC-2026-0383",', s)
 
     def test_correct_cargo_deny_argument_boundary_and_restore(self):
         s = self.source
-        self.assertIn("arguments: --all-features\n          command-arguments: --config ./codex-rs/deny-preview.toml", s)
+        self.assertIn(
+            "arguments: --all-features\n          command-arguments: --config ./codex-rs/deny-preview.toml",
+            s,
+        )
         self.assertNotIn("arguments: --all-features --config", s)
         self.assertIn("continue-on-error: true", s)
         self.assertIn("git restore --source=HEAD -- codex-rs/Cargo.lock", s)
@@ -50,6 +59,7 @@ class AdvisoryTrialSafety(unittest.TestCase):
         self.assertIn("permissions:\n  contents: read\n", s)
         self.assertNotIn("contents: write", s)
         self.assertNotIn("git push", s)
+
 
 if __name__ == "__main__":
     unittest.main()

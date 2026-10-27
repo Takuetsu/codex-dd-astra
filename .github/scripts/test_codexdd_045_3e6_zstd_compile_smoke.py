@@ -1,13 +1,17 @@
 """Single-leaf Windows Bazel compiler job must retain read-only, exact-source limits."""
+
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+
 class ZstdMsvcCompileSmoke(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.workflow = (ROOT / ".github/workflows/codexdd-045-windows-bazel-zstd-smoke.yml").read_text(encoding="utf-8")
+        cls.workflow = (
+            ROOT / ".github/workflows/codexdd-045-windows-bazel-zstd-smoke.yml"
+        ).read_text(encoding="utf-8")
 
     def test_target_is_only_zstd_syss_native_dependency(self):
         s = self.workflow
@@ -15,7 +19,7 @@ class ZstdMsvcCompileSmoke(unittest.TestCase):
         self.assertIn("866a458a2df4dd0d565f8066deadf73e2fdf8176", s)
         self.assertIn("'--lockfile_mode=error'", s)
         self.assertIn("'--jobs=2'", s)
-        self.assertNotIn('--local_ram_resources', s)
+        self.assertNotIn("--local_ram_resources", s)
         self.assertNotIn("cquery", s)
         self.assertNotIn("runtime_package_combined", s)
         self.assertNotIn("cli:release_files", s)
@@ -31,6 +35,7 @@ class ZstdMsvcCompileSmoke(unittest.TestCase):
         self.assertNotIn("contents: write", s)
         self.assertNotIn("BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA=1", s)
         self.assertNotIn("git push", s)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,7 @@
 Static source-provenance checks only, not native Rust, Windows runtime,
 interactive keyboard-chord safety acceptance or release authorization.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -26,15 +27,23 @@ NEW = (
 
 def git(*args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=ROOT, text=True, encoding="utf-8",
-        capture_output=True, check=True,
+        ["git", *args],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        check=True,
     ).stdout.strip()
 
 
 def source(path: str, ref: str = "HEAD") -> str:
     return subprocess.run(
-        ["git", "show", ref + ":" + path], cwd=ROOT,
-        text=True, encoding="utf-8", capture_output=True, check=True,
+        ["git", "show", ref + ":" + path],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        check=True,
     ).stdout
 
 
@@ -121,9 +130,9 @@ class QuestionReplayMergeTests(unittest.TestCase):
         )
 
     def test_checkpoint_documents_partial_status_and_config_panel_blocker(self):
-        note = (
-            ROOT / "docs/codexdd-0.4.5-packet-3c9e1-question-replay.md"
-        ).read_text(encoding="utf-8")
+        note = (ROOT / "docs/codexdd-0.4.5-packet-3c9e1-question-replay.md").read_text(
+            encoding="utf-8"
+        )
         for marker in (
             "INCOMPLETE / NOT A RELEASE CANDIDATE",
             "source-only",
