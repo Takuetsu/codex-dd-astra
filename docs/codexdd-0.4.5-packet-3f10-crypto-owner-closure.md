@@ -1,6 +1,6 @@
 # CodexDD 0.4.5 — Packet 3F.10: coordinated crypto-bigint security closure
 
-**Status: FOCUSED SECURITY RESOLUTION AND VOICE BEHAVIOR GREEN; NATIVE WINDOWS CRYPTO REGRESSION RUN PENDING. NOT A RELEASE CANDIDATE.**
+**Status: #1 CRYPTO-BIGINT FOCUSED SECURITY REMEDIATION COMPLETE. ALL ACCEPTANCE CHECKS GREEN. NOT A 0.4.5 RELEASE CANDIDATE.**
 
 ## Accepted source and security boundaries
 
@@ -21,10 +21,12 @@
 | [AWS DPoP crypto-owner compile and tests #40565258093](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40565258093) | PASS | Actual CodexDD AWS auth code compiles; DPoP tests, not a live login |
 | [Original all-target cargo-deny #40577886527](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40577886527) | PASS | Real bans, licenses, advisories and Git source controls with existing three Linux INFO owner-accepted exceptions |
 | [Exact combined voice WebRTC 0.21.1 #40578510589](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40578510589) | PASS | Native-free Linux musl voice host: **14 passed, zero failed, one intentionally ignored subprocess fixture**; UDP/TCP, ICE limits, network loss, suppression, privacy and teardown |
-| [Exact combined Windows native crypto #40579717552](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40579717552) | PENDING | Source/lock gate passed; native secrets/verification/AWS tests running |
+| [Exact combined Windows native crypto #40579717552](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40579717552) | **PASS** | Windows 2022: **9/9 secrets** library tests, **13/13 ECDSA/user-verification** tests, native `codex-aws-auth --lib` compilation; no live AWS server login |
+
+| [Final exact-source all-target cargo-deny #40581389379](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40581389379) | **PASS** | Latest cross-platform canonical Git vendor tree guard, precise INFO expiry checks and unchanged actual all-target security audit |
 
 ## Safety and status
 
-**DO NOT** mark Packet #1 fully accepted until focused native Windows checks finish successfully. Do not claim real AWS cloud login, customer ciphertext recovery, production installation, 0.4.5 product promotion, or the full detached 21-stage Windows release suite have passed. The remaining broad 0.4.5 release work (109 overlapping upstream/fork files, native Bazel release package, final fixed-source suite, installation) remains separate.
+**Packet #1 crypto-bigint focused remediation is COMPLETE**: all four owner migrations staged in an exact checked-in lock; both targets eliminate vulnerable crypto-bigint 0.5.x, native Windows secrets/signatures and AWS owner compile pass, Linux WebRTC real negotiation/privacy/outage regressions pass, and authentic all-target security policy is green. **This is deliberately not a complete 0.4.5 release**. Do not claim real AWS cloud login, customer ciphertext recovery, final Bazel packaging, version promotion, production installation or the full detached 21-stage Windows release suite have passed. The remaining broad 0.4.5 release work (109 overlapping upstream/fork files, native Bazel release package, final fixed-source suite, installation) remains separate.
 
-After Windows focused acceptance, close **#1 crypto-bigint remediation** as **focused security/behavior remediation complete** (not complete 0.4.5 release), then begin **#2 109-overlap semantic review** using the exact 15-original-conflict ledger and the 109-path source identity receipt. Historical protected core 15/15 and TUI 25/25 checks are bounded earlier evidence, not final frozen-source acceptance.
+**#2 109-overlap semantic review has started** on isolated branch `dd/codexdd-v0.4.5-109-overlap-semantic-review`: source inventory [#40580764913](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40580764913) passed (109/109 present, 100 same frozen identities and 9 subsequent changes); see `docs/codexdd-0.4.5-packet-3f11-current-109-semantic-review.md` on that branch. The 15 direct conflicts and full 109 semantic owners still need review. Historical protected core 15/15 and TUI 25/25 are bounded earlier evidence, not final frozen-source release acceptance.
