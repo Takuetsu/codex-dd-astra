@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 from collections import deque
 from datetime import datetime, timezone
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -28,7 +27,7 @@ PINNED_RAGE_URL = "https://github.com/str4d/rage"
 PINNED_RAGE_REV = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f"
 PINNED_CLATTER_URL = "https://github.com/jmlepisto/clatter"
 PINNED_CLATTER_REV = "9a8d15c4f80d5911ca0403aa22e0de99ea59df08"
-PINNED_AWS_VENDOR_TREE_SHA256 = "0bc974a6b452f6b68d3e1506ee096290f45e8bd129584f6288634cf58032c24a"
+PINNED_AWS_VENDOR_GIT_TREE = "5b1db93de9e14ab5c060794d23a567d907b66f21"
 ACCEPTED = (
     ("RUSTSEC-2026-0371", "zbus_names", "3.0.0"),
     ("RUSTSEC-2026-0370", "zvariant", "4.2.0"),
@@ -127,20 +126,23 @@ def validate_offline() -> None:
         + repr(sorted(expected_paths - set(actual_paths))[:5])
         + ", extra=" + repr(sorted(set(actual_paths) - expected_paths)[:5]),
     )
-    digest = hashlib.sha256()
-    for p in files:
-        path = p.relative_to(ROOT).as_posix()
-        source = subprocess.run(
-            ["git", "-C", str(ROOT), "show", "HEAD:" + path],
-            capture_output=True, check=False,
-        )
-        require(source.returncode == 0, "missing immutable Git AWS source blob: " + path)
-        digest.update(p.relative_to(vendor).as_posix().encode("utf-8"))
-        digest.update(bytes([0]))
-        # Hash canonical committed blobs, not CRLF-converted checkout bytes on Windows.
-        digest.update(hashlib.sha256(source.stdout).digest())
-    require(digest.hexdigest() == PINNED_AWS_VENDOR_TREE_SHA256,
-            "AWS canonical committed source fingerprint differs from verified crate patch")
+    # Git tree identity covers exact file names, modes and canonical blob bytes.
+    # Unlike checkout bytes, this is invariant under Windows CRLF normalization.
+    tree = subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse",
+         "HEAD:codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, text=True, check=False,
+    )
+    require(tree.returncode == 0
+            and tree.stdout.strip() == PINNED_AWS_VENDOR_GIT_TREE,
+            "AWS source Git tree does not match reviewed 74-file vendor revision")
+    worktree = subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--exit-code", "--quiet", "--",
+         "codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, check=False,
+    )
+    require(worktree.returncode == 0,
+            "AWS vendor working tree differs from immutable committed source")
     require(
         manifest["workspace"]["dependencies"].get("zstd") == "0.14",
         "Zstd security fix missing or changed",
