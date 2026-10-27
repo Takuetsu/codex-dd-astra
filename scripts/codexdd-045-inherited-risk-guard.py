@@ -112,13 +112,19 @@ def validate_offline() -> None:
             "secure DPoP signer RNG or P256 API modified")
     files = sorted(p for p in vendor.rglob("*") if p.is_file())
     require(len(files) == 74, "reviewed AWS vendor file inventory changed")
-    expected_paths = [p.relative_to(ROOT).as_posix() for p in files]
+    expected_paths = {p.relative_to(ROOT).as_posix() for p in files}
     tracked = subprocess.run(
-        ["git", "-C", str(ROOT), "ls-files", "--", "codex-rs/vendor/aws-config-1.13.0"],
-        capture_output=True, text=True, check=False,
+        ["git", "-C", str(ROOT), "ls-files", "-z", "--", "codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, check=False,
     )
-    require(tracked.returncode == 0 and tracked.stdout.splitlines() == expected_paths,
-            "AWS vendor is missing Git-tracked files or contains unexpected local files")
+    actual_paths = [p.decode("utf-8") for p in tracked.stdout.split(bytes([0])) if p]
+    require(
+        tracked.returncode == 0 and len(actual_paths) == len(expected_paths)
+        and set(actual_paths) == expected_paths,
+        "AWS vendor tracked path set differs: missing="
+        + repr(sorted(expected_paths - set(actual_paths))[:5])
+        + ", extra=" + repr(sorted(set(actual_paths) - expected_paths)[:5]),
+    )
     digest = hashlib.sha256()
     for p in files:
         path = p.relative_to(ROOT).as_posix()
