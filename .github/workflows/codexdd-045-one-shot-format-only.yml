@@ -1,0 +1,150 @@
+# One-shot formatter reconciliation for exact 0.4.5 CI-reported files.
+# Isolated staging branch only. Python AST and Starlark AST must remain identical.
+# No release, product version, Cargo graph, vendor source, or production write.
+name: CodexDD 0.4.5 72-path audited format-only repair (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-format-only-72]
+    paths: ['.github/workflows/codexdd-045-one-shot-format-only.yml']
+permissions:
+  contents: write
+jobs:
+  format-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0888904572991a5a7e231491f8f42b4a157f630a'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EXPECTED_PARENT: '0888904572991a5a7e231491f8f42b4a157f630a'
+      EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-format-only-72'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout exact isolated branch with commit credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: true
+      - name: Pin exact parent, security graph, vendor, release markers and no source drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/$EXPECTED_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git ls-remote origin "refs/heads/$EXPECTED_BRANCH" | cut -f1)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = cfebd9b784ef9ff027b274aa9f7101c9c2496613
+          test "$(git hash-object codex-rs/Cargo.lock)" = 13bc15ff844e93dfaf7777c73bb7313b35bb3b81
+          test "$(git hash-object codex-rs/deny.toml)" = f282c7c55d05201e308e60804f85754c8522d462
+          test "$(git rev-parse HEAD:codex-rs/vendor/aws-config-1.13.0)" = 5b1db93de9e14ab5c060794d23a567d907b66f21
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = 0.4.4
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = rust-v0.162.0
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Pin uv formatter version
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: '0.11.3'
+      - name: Install DotSlash for pinned Buildifier
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Apply only repository-defined Python and four Buildifier formatting passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --frozen --project scripts ruff format . | tee "$RUNNER_TEMP/codexdd045-python-format.log"
+          dotslash tools/buildifier -mode=fix -lint=off \
+            codex-rs/core-plugins/BUILD.bazel \
+            codex-rs/ext/skills/BUILD.bazel \
+            codex-rs/external-agent-migration/BUILD.bazel \
+            codex-rs/skills/BUILD.bazel | tee "$RUNNER_TEMP/codexdd045-buildifier-format.log"
+      - name: Reject any path or Python/Bazel AST change outside formatter-only contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ast
+          import json
+          import pathlib
+          import subprocess
+          expected = set([".github/scripts/codexdd_045_format_provenance.py",".github/scripts/test_codexdd_045_3a_manifest_stage.py",".github/scripts/test_codexdd_045_3b_adaptive_events.py",".github/scripts/test_codexdd_045_3b_appserver_protocol.py",".github/scripts/test_codexdd_045_3b_protocol.py",".github/scripts/test_codexdd_045_3b_rpc_routing.py",".github/scripts/test_codexdd_045_3c4_sandbox_contract.py",".github/scripts/test_codexdd_045_3c4b_unified_exec.py",".github/scripts/test_codexdd_045_3c4c_exec_server_integrity.py",".github/scripts/test_codexdd_045_3c5a_config.py",".github/scripts/test_codexdd_045_3c5b_session.py",".github/scripts/test_codexdd_045_3c5c_guardian.py",".github/scripts/test_codexdd_045_3c6a_agent_workflow.py",".github/scripts/test_codexdd_045_3c6b_context_state.py",".github/scripts/test_codexdd_045_3c6c_tool_routing.py",".github/scripts/test_codexdd_045_3c7a_tool_plan.py",".github/scripts/test_codexdd_045_3c7b_thread_task_client.py",".github/scripts/test_codexdd_045_3c7c_core_root.py",".github/scripts/test_codexdd_045_3c7d_client_thread_fork.py",".github/scripts/test_codexdd_045_3c7e_core_closure.py",".github/scripts/test_codexdd_045_3c8a_api_wire.py",".github/scripts/test_codexdd_045_3c8b_features_plugins.py",".github/scripts/test_codexdd_045_3c8c_cli_windows.py",".github/scripts/test_codexdd_045_3c9a_app_server.py",".github/scripts/test_codexdd_045_3c9b_protocol.py",".github/scripts/test_codexdd_045_3c9c_tui_upstream.py",".github/scripts/test_codexdd_045_3c9d1_adaptive_cli.py",".github/scripts/test_codexdd_045_3c9d2_elevated_startup.py",".github/scripts/test_codexdd_045_3c9d3_startup_orchestration.py",".github/scripts/test_codexdd_045_3c9d4_managed_daemon.py",".github/scripts/test_codexdd_045_3c9e1_question_replay.py",".github/scripts/test_codexdd_045_3c9e2_read_state_routing.py",".github/scripts/test_codexdd_045_3c9e3_model_refresh.py",".github/scripts/test_codexdd_045_3c_history.py",".github/scripts/test_codexdd_045_3c_registry_security.py",".github/scripts/test_codexdd_045_3c_tool_lifecycle.py",".github/scripts/test_codexdd_045_3d3_generator_inputs.py",".github/scripts/test_codexdd_045_3d4_native_fixture_reanchor.py",".github/scripts/test_codexdd_045_3d8_patched_lock_workflow_census.py",".github/scripts/test_codexdd_045_3d8_tls_advisory_preview.py",".github/scripts/test_codexdd_045_3d_lock_acceptance.py",".github/scripts/test_codexdd_045_3e10_renamed_yaml_consumers.py",".github/scripts/test_codexdd_045_3e11_optimized_cli.py",".github/scripts/test_codexdd_045_3e4_bazel_provenance.py",".github/scripts/test_codexdd_045_3e5_zstd_bazel_patch.py",".github/scripts/test_codexdd_045_3e6_zstd_compile_smoke.py",".github/scripts/test_codexdd_045_3e7_windows_cli_release_smoke.py",".github/scripts/test_codexdd_045_3e8_cargo_aliases.py",".github/scripts/test_codexdd_045_3f1_overlap_snapshot.py",".github/scripts/test_codexdd_045_3f2_direct_conflicts.py",".github/scripts/test_codexdd_045_3f6_format_provenance.py",".github/scripts/test_codexdd_045_v2_targets.py",".github/scripts/test_codexdd_045_vendor_manifest_policy.py",".github/scripts/test_upstream_045_contract_audit.py",".github/scripts/test_upstream_auto_eligibility.py",".github/scripts/test_upstream_auto_pr.py",".github/scripts/test_upstream_auto_prepare.py",".github/scripts/test_upstream_auto_report.py",".github/scripts/test_upstream_sync.py",".github/scripts/upstream_auto_eligibility.py",".github/scripts/upstream_auto_pr.py",".github/scripts/upstream_auto_prepare.py",".github/scripts/upstream_auto_report.py",".github/scripts/upstream_reconciliation_cli.py",".github/scripts/upstream_sync.py",".github/scripts/verify_cargo_workspace_manifests.py","codex-rs/core-plugins/BUILD.bazel","codex-rs/ext/skills/BUILD.bazel","codex-rs/external-agent-migration/BUILD.bazel","codex-rs/skills/BUILD.bazel","scripts/codexdd-045-dependency-security-check.py","scripts/codexdd-045-inherited-risk-guard.py"])
+          changed = set(subprocess.check_output(
+              ["git", "diff", "--name-only", "--diff-filter=ACMRT", "-z"]
+          ).decode().strip("\0").split("\0"))
+          missing = sorted(expected - changed)
+          extra = sorted(changed - expected)
+          if missing or extra:
+              raise SystemExit(f"Unexpected format diff roster; missing={missing}, extra={extra}")
+          dirty = subprocess.check_output(
+              ["git", "status", "--porcelain", "--untracked-files=all"], text=True
+          ).splitlines()
+          # No untracked build outputs or deleted files are allowed.
+          if len(dirty) != len(expected) or any(line[:2].strip() != "M" for line in dirty):
+              raise SystemExit(f"Unexpected worktree state: {dirty}")
+          for path in sorted(expected):
+              before = subprocess.check_output(["git", "show", "HEAD:" + path]).decode("utf-8")
+              after = pathlib.Path(path).read_text(encoding="utf-8")
+              original = ast.dump(ast.parse(before, filename=path), include_attributes=False)
+              formatted = ast.dump(ast.parse(after, filename=path), include_attributes=False)
+              if original != formatted:
+                  raise SystemExit(f"AST change forbidden: {path}")
+          protected = {
+              "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+              "codex-rs/Cargo.lock": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+              "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462",
+          }
+          for path, expected_blob in protected.items():
+              actual = subprocess.check_output(["git", "hash-object", path], text=True).strip()
+              if actual != expected_blob:
+                  raise SystemExit(f"Protected file differs: {path}")
+          data = {"expected_source_sha": subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True).strip(),
+              "python_files": 68, "bazel_files": 4,
+              "all_72_ast_unchanged": True, "changed_paths": sorted(changed)}
+          pathlib.Path("/tmp/codexdd045-formatted-source-receipt.json").write_text(
+              json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          print("PASS: exactly 68 Python + 4 Bazel formatting-only AST-preserving changes")
+          PY
+          git diff --check
+      - name: Confirm full Python/Bazel formatter idempotence
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --frozen --project scripts ruff format --check . | tee "$RUNNER_TEMP/codexdd045-python-recheck.log"
+          dotslash tools/buildifier -mode=check -lint=off \
+            codex-rs/core-plugins/BUILD.bazel \
+            codex-rs/ext/skills/BUILD.bazel \
+            codex-rs/external-agent-migration/BUILD.bazel \
+            codex-rs/skills/BUILD.bazel | tee "$RUNNER_TEMP/codexdd045-buildifier-recheck.log"
+      - name: Run pinned security-manifest and 0.4.5 static regression guards before commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/verify_cargo_workspace_manifests.py
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_*.py' -q > "$RUNNER_TEMP/codexdd045-static-tests.log" 2>&1 || {
+            tail -n 110 "$RUNNER_TEMP/codexdd045-static-tests.log"
+            exit 1
+          }
+          tail -n 8 "$RUNNER_TEMP/codexdd045-static-tests.log"
+          git diff --check
+      - name: Commit exact formatting-only changes to isolated staging branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin "refs/heads/$EXPECTED_BRANCH" | cut -f1)" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '.github/scripts/codexdd_045_format_provenance.py' '.github/scripts/test_codexdd_045_3a_manifest_stage.py' '.github/scripts/test_codexdd_045_3b_adaptive_events.py' '.github/scripts/test_codexdd_045_3b_appserver_protocol.py' '.github/scripts/test_codexdd_045_3b_protocol.py' '.github/scripts/test_codexdd_045_3b_rpc_routing.py' '.github/scripts/test_codexdd_045_3c4_sandbox_contract.py' '.github/scripts/test_codexdd_045_3c4b_unified_exec.py' '.github/scripts/test_codexdd_045_3c4c_exec_server_integrity.py' '.github/scripts/test_codexdd_045_3c5a_config.py' '.github/scripts/test_codexdd_045_3c5b_session.py' '.github/scripts/test_codexdd_045_3c5c_guardian.py' '.github/scripts/test_codexdd_045_3c6a_agent_workflow.py' '.github/scripts/test_codexdd_045_3c6b_context_state.py' '.github/scripts/test_codexdd_045_3c6c_tool_routing.py' '.github/scripts/test_codexdd_045_3c7a_tool_plan.py' '.github/scripts/test_codexdd_045_3c7b_thread_task_client.py' '.github/scripts/test_codexdd_045_3c7c_core_root.py' '.github/scripts/test_codexdd_045_3c7d_client_thread_fork.py' '.github/scripts/test_codexdd_045_3c7e_core_closure.py' '.github/scripts/test_codexdd_045_3c8a_api_wire.py' '.github/scripts/test_codexdd_045_3c8b_features_plugins.py' '.github/scripts/test_codexdd_045_3c8c_cli_windows.py' '.github/scripts/test_codexdd_045_3c9a_app_server.py' '.github/scripts/test_codexdd_045_3c9b_protocol.py' '.github/scripts/test_codexdd_045_3c9c_tui_upstream.py' '.github/scripts/test_codexdd_045_3c9d1_adaptive_cli.py' '.github/scripts/test_codexdd_045_3c9d2_elevated_startup.py' '.github/scripts/test_codexdd_045_3c9d3_startup_orchestration.py' '.github/scripts/test_codexdd_045_3c9d4_managed_daemon.py' '.github/scripts/test_codexdd_045_3c9e1_question_replay.py' '.github/scripts/test_codexdd_045_3c9e2_read_state_routing.py' '.github/scripts/test_codexdd_045_3c9e3_model_refresh.py' '.github/scripts/test_codexdd_045_3c_history.py' '.github/scripts/test_codexdd_045_3c_registry_security.py' '.github/scripts/test_codexdd_045_3c_tool_lifecycle.py' '.github/scripts/test_codexdd_045_3d3_generator_inputs.py' '.github/scripts/test_codexdd_045_3d4_native_fixture_reanchor.py' '.github/scripts/test_codexdd_045_3d8_patched_lock_workflow_census.py' '.github/scripts/test_codexdd_045_3d8_tls_advisory_preview.py' '.github/scripts/test_codexdd_045_3d_lock_acceptance.py' '.github/scripts/test_codexdd_045_3e10_renamed_yaml_consumers.py' '.github/scripts/test_codexdd_045_3e11_optimized_cli.py' '.github/scripts/test_codexdd_045_3e4_bazel_provenance.py' '.github/scripts/test_codexdd_045_3e5_zstd_bazel_patch.py' '.github/scripts/test_codexdd_045_3e6_zstd_compile_smoke.py' '.github/scripts/test_codexdd_045_3e7_windows_cli_release_smoke.py' '.github/scripts/test_codexdd_045_3e8_cargo_aliases.py' '.github/scripts/test_codexdd_045_3f1_overlap_snapshot.py' '.github/scripts/test_codexdd_045_3f2_direct_conflicts.py' '.github/scripts/test_codexdd_045_3f6_format_provenance.py' '.github/scripts/test_codexdd_045_v2_targets.py' '.github/scripts/test_codexdd_045_vendor_manifest_policy.py' '.github/scripts/test_upstream_045_contract_audit.py' '.github/scripts/test_upstream_auto_eligibility.py' '.github/scripts/test_upstream_auto_pr.py' '.github/scripts/test_upstream_auto_prepare.py' '.github/scripts/test_upstream_auto_report.py' '.github/scripts/test_upstream_sync.py' '.github/scripts/upstream_auto_eligibility.py' '.github/scripts/upstream_auto_pr.py' '.github/scripts/upstream_auto_prepare.py' '.github/scripts/upstream_auto_report.py' '.github/scripts/upstream_reconciliation_cli.py' '.github/scripts/upstream_sync.py' '.github/scripts/verify_cargo_workspace_manifests.py' 'codex-rs/core-plugins/BUILD.bazel' 'codex-rs/ext/skills/BUILD.bazel' 'codex-rs/external-agent-migration/BUILD.bazel' 'codex-rs/skills/BUILD.bazel' 'scripts/codexdd-045-dependency-security-check.py' 'scripts/codexdd-045-inherited-risk-guard.py'
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 72
+          git diff --cached --check
+          git commit -m 'style(codexdd 0.4.5): apply 72 verified formatting-only reconciliations'
+          git push origin "HEAD:refs/heads/$EXPECTED_BRANCH"
+          echo "PASS: exact formatter reconciliation staged; no production or release changes"
+      - name: Upload nonrelease audit log and exact path receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-format-only-reconciliation
+          path: |
+            ${{ runner.temp }}/codexdd045-*-format.log
+            ${{ runner.temp }}/codexdd045-*-recheck.log
+            ${{ runner.temp }}/codexdd045-static-tests.log
+            /tmp/codexdd045-formatted-source-receipt.json
+          if-no-files-found: warn
+          retention-days: 7
