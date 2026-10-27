@@ -1,0 +1,20 @@
+# One-shot all-target security audit of the accepted three-ID maintenance disposition.
+# Deliberately retains crypto-bigint and all other unexcepted advisory failures.
+name: CodexDD 0.4.5 accepted INFO all-target cargo-deny (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-linux-info-risk-accepted
+    paths:
+      - '.github/workflows/codexdd-045-accepted-info-cargo-deny.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-linux-info-risk-accepted'
+    uses: ./.github/workflows/cargo-deny.yml
+    permissions:
+      contents: read
