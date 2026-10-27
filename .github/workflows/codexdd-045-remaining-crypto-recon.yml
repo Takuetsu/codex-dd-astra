@@ -1,0 +1,136 @@
+# All mutations are disposable Cargo resolver trials; no promotion or policy relaxation.
+name: CodexDD 0.4.5 remaining crypto owner resolver recon (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-remaining-crypto-owners-recon]
+    paths: ['.github/workflows/codexdd-045-remaining-crypto-recon.yml']
+permissions:
+  contents: read
+jobs:
+  owner-graph:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+    strategy:
+      fail-fast: false
+      matrix:
+        owner: [rtc, age, aws-login]
+    name: Resolve ${{ matrix.owner }} without editing released source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify unchanged reviewed parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/owner-recon"
+          git hash-object codex-rs/deny.toml > "$RUNNER_TEMP/owner-recon/deny-blob.txt"
+      - name: Pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Make exactly one owner's proposed change in disposable checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          owner = "${{ matrix.owner }}"
+          if owner == "rtc":
+              path = Path("codex-rs/voice-host/Cargo.toml")
+              s = path.read_text()
+              for name in ("rtc", "webrtc"):
+                  old = f'{name} = "=0.20.3"'
+                  assert s.count(old) == 1
+                  s = s.replace(old, f'{name} = "=0.21.1"')
+              path.write_text(s)
+              print("SCRATCH: coordinated rtc/webrtc 0.21.1")
+          elif owner == "age":
+              path = Path("codex-rs/Cargo.toml")
+              s = path.read_text()
+              marker = "[patch.crates-io]\n"
+              assert s.count(marker) == 1
+              rev = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f"
+              patch = (f'age = {{ git = "https://github.com/str4d/rage", rev = "{rev}" }}\n'
+                       f'age-core = {{ git = "https://github.com/str4d/rage", rev = "{rev}" }}\n')
+              path.write_text(s.replace(marker, marker + patch))
+              print("SCRATCH: exact upstream rage commit, no crypto format substitution")
+          elif owner == "aws-login":
+              print("SCRATCH: published aws-config 1.13.0, preserving credentials-login")
+          else:
+              raise RuntimeError("unknown owner")
+          PY
+          if [ '${{ matrix.owner }}' = 'aws-login' ]; then
+            cargo update --manifest-path codex-rs/Cargo.toml --package aws-config --precise 1.13.0
+          fi
+          git diff --check
+      - name: Re-resolve both platforms and enumerate remaining vulnerable owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 \
+            --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/owner-recon/windows.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 \
+            --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/owner-recon/linux.json"
+          python3 - <<'PY'
+          import json, os, tomllib
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "owner-recon"
+          lock = tomllib.loads(Path("codex-rs/Cargo.lock").read_text(encoding="utf-8"))
+          versions = {}
+          for p in lock["package"]:
+              versions.setdefault(p["name"], set()).add(p["version"])
+          for name in ("crypto-bigint", "elliptic-curve", "p256", "p384", "age", "age-core",
+                       "hpke", "aws-config", "rtc", "webrtc", "rtc-dtls", "rtc-shared", "ctutils", "zstd"):
+              print("LOCK", name, sorted(versions.get(name, ())))
+          assert versions.get("zstd") == {"0.14.3"}, "security pin changed"
+          for target in ("windows", "linux"):
+              data = json.loads((root / (target + ".json")).read_text())
+              by_id = {p["id"]: p for p in data["packages"]}
+              nodes = {p["id"]: p for p in data["resolve"]["nodes"]}
+              parents = {}
+              for parent, node in nodes.items():
+                  for edge in node.get("deps", []):
+                      parents.setdefault(edge["pkg"], set()).add(parent)
+              old = [pid for pid in nodes if by_id[pid]["name"] == "crypto-bigint"
+                     and by_id[pid]["version"] == "0.5.5"]
+              for pid in old:
+                  print(target, "OLD BIGINT direct reverse edges:",
+                        sorted({by_id[x]["name"] + "@" + by_id[x]["version"] for x in parents.get(pid, set())}))
+              wanted = ("crypto-bigint", "p256", "p384", "age", "hpke", "rtc", "rtc-dtls", "rtc-shared", "aws-config")
+              print(target, "resolved relevant packages:",
+                    sorted({(by_id[x]["name"], by_id[x]["version"]) for x in nodes
+                            if by_id[x]["name"] in wanted}))
+          print("RECON FINISHED, NOT A RELEASE OR CARGO-DENY PASS")
+          PY
+          git hash-object codex-rs/Cargo.lock > "$RUNNER_TEMP/owner-recon/lock-blob.txt"
+          cp codex-rs/Cargo.lock "$RUNNER_TEMP/owner-recon/resolved-Cargo.lock"
+          git diff -- codex-rs/Cargo.lock > "$RUNNER_TEMP/owner-recon/lock.patch"
+          git diff -- codex-rs/Cargo.toml codex-rs/voice-host/Cargo.toml > "$RUNNER_TEMP/owner-recon/manifests.patch"
+          test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/owner-recon/deny-blob.txt")"
+          git diff --check
+      - name: Capture proof even when resolver fails
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/owner-recon"
+          git rev-parse HEAD > "$RUNNER_TEMP/owner-recon/source.txt"
+          git diff --stat > "$RUNNER_TEMP/owner-recon/diff.txt"
+          git status --short > "$RUNNER_TEMP/owner-recon/status.txt"
+      - name: Upload disposable graph artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: crypto-owner-${{ matrix.owner }}-scratch
+          path: ${{ runner.temp }}/owner-recon/
+          retention-days: 5
+          if-no-files-found: warn
