@@ -63,28 +63,31 @@ jobs:
           raw = raw.replace(table, table + addition, 1)
           p.write_text(raw, encoding="utf-8")
           PY
-          # Cargo's current lock can retain the registry copy when the pinned Git
-          # patch has the same semver version. Remove only that one existing
-          # package entry in the disposable lock, then let Cargo resolve it.
+          # Same-version registry preference can strand a valid git patch.
+          # Temporarily re-anchor only i18n-config's package source identity.
+          # Cargo metadata then reconciles its full dependency edges/checksums.
           python3 - <<'PY'
           import pathlib, re, tomllib
           p = pathlib.Path("codex-rs/Cargo.lock")
           raw = p.read_text(encoding="utf-8")
           chunks = re.split(r'(?=^\[\[package\]\]\n)', raw, flags=re.MULTILINE)
-          removed = 0
-          keep = []
-          for chunk in chunks:
-              if chunk.startswith("[[package]]"):
-                  package = tomllib.loads(chunk)["package"][0]
+          updated = 0
+          out = []
+          rev = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4"
+          source = f'git+https://github.com/kellpossible/cargo-i18n?rev={rev}#{rev}'
+          for block in chunks:
+              if block.startswith("[[package]]"):
+                  package = tomllib.loads(block)["package"][0]
                   if package["name"] == "i18n-config" and package["version"] == "0.4.8":
                       if not package.get("source", "").startswith("registry+"):
-                          raise SystemExit("BLOCKED: unexpected i18n-config lock source")
-                      removed += 1
-                      continue
-              keep.append(chunk)
-          if removed != 1:
-              raise SystemExit("BLOCKED: expected exactly one old i18n-config lock entry")
-          p.write_text("".join(keep), encoding="utf-8")
+                          raise SystemExit("BLOCKED: unexpected i18n-config baseline source")
+                      block = re.sub(r'^source = "[^"]+"$', f'source = "{source}"', block, count=1, flags=re.MULTILINE)
+                      block = re.sub(r'^checksum = "[^"]+"\n', '', block, count=1, flags=re.MULTILINE)
+                      updated += 1
+              out.append(block)
+          if updated != 1:
+              raise SystemExit("BLOCKED: expected exactly one baseline i18n-config entry")
+          p.write_text("".join(out), encoding="utf-8")
           PY
           cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 > /dev/null
           cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/codexdd-i18n-win.json"
