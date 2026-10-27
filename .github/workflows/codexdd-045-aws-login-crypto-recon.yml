@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   dpop:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '555ba9200b05a208578a6b73d57a921ae3077829'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '391c200b7cf84f4363c13b5e8449b54229658152'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '555ba9200b05a208578a6b73d57a921ae3077829'
+          test "$(git rev-parse HEAD^)" = '391c200b7cf84f4363c13b5e8449b54229658152'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -125,13 +125,22 @@ jobs:
           git diff -- codex-rs/Cargo.lock codex-rs/Cargo.toml > "$RUNNER_TEMP/aws-dpop/reconciliation.patch"
           test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/aws-dpop/policy-blob.txt")"
           git diff --check
-      - name: Focused AWS login DPoP tests with maintained cryptography
+      - name: Compile CodexDD's real AWS credential-login owner with patched P-256
         shell: bash
         run: |
           set -euo pipefail
-          cargo test --manifest-path codex-rs/Cargo.toml --locked \
-            -p aws-config --lib login::dpop
-          echo 'AWS DPoP TEST PASS ONLY. Server login and AWS auth integration still need native validation.'
+          cargo check --manifest-path codex-rs/Cargo.toml --locked -p codex-aws-auth --lib
+          echo 'AWS CREDENTIAL LOGIN COMPILES; no server identity integration receipt yet.'
+      - name: Direct published-crate DPoP regression tests in an isolated fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Non-workspace patched crates cannot run their own dev-dependency tests via
+          # a parent workspace. Make the temporary vendor root its own isolated crate.
+          printf '\n[workspace]\n' >> codex-rs/vendor/aws-config-1.13.0/Cargo.toml
+          cargo test --manifest-path codex-rs/vendor/aws-config-1.13.0/Cargo.toml \
+            --features credentials-login --lib login::dpop
+          echo 'AWS DPoP FIXTURE TEST PASS only, not native AWS server authentication.'
       - name: Record exact patch and source identity on any exit
         if: always()
         shell: bash
