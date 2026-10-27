@@ -1,0 +1,32 @@
+# One-shot read-only, original all-target audit of exact staged crypto source and portable guard.
+name: CodexDD 0.4.5 final focused crypto original security audit (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-crypto-integrated-staging]
+    paths: ['.github/workflows/codexdd-045-crypto-final-candidate-audit.yml']
+permissions:
+  contents: read
+jobs:
+  source-check:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a10030c7265481167162e0e566aa852132e146a0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact one-shot source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Recheck source fingerprints and expiry without policy modification
+        run: |
+          set -euo pipefail
+          test "$(git hash-object codex-rs/Cargo.lock)" = "13bc15ff844e93dfaf7777c73bb7313b35bb3b81"
+          test "$(git hash-object codex-rs/Cargo.toml)" = "cfebd9b784ef9ff027b274aa9f7101c9c2496613"
+          test "$(git rev-parse HEAD:codex-rs/vendor/aws-config-1.13.0)" = "5b1db93de9e14ab5c060794d23a567d907b66f21"
+          python3 scripts/codexdd-045-inherited-risk-guard.py
+          python3 scripts/codexdd-045-dependency-security-check.py --mode staging
+          test -z "$(git status --porcelain)"
+          echo 'SOURCE ACCEPTED FOR FOCUSED AUDIT ONLY; no product release'
+  unchanged-all-target-security:
+    needs: source-check
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    uses: ./.github/workflows/cargo-deny.yml
