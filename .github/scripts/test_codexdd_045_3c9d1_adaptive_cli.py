@@ -3,6 +3,7 @@
 Offline static provenance only. These additions must not enable untrusted
 adaptive signals, grant permissions, or authorize release.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -14,26 +15,33 @@ PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 RECONCILED = {
     "codex-rs/tui/src/cli.rs": [
         "841e9e282941bc856c8c7acf62f094c03c274b58",
-        "da5c0e4f1ba02b7ff68811323945b0fd4d26f697"
+        "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
     ],
     "codex-rs/tui/src/slash_command.rs": [
         "edd98b26ffdfba98d095ca6631830f2571928fe7",
-        "36e5def7042e71baeeb87945de4fa0b029cd177a"
-    ]
+        "36e5def7042e71baeeb87945de4fa0b029cd177a",
+    ],
 }
 
 
 def blob(ref: str, path: str) -> str:
     return subprocess.run(
         ["git", "rev-parse", "--verify", ref + ":" + path],
-        cwd=ROOT, check=True, capture_output=True, text=True,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
 def source(path: str) -> str:
     return subprocess.run(
         ["git", "show", "HEAD:" + path],
-        cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf-8",
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     ).stdout
 
 
@@ -75,15 +83,20 @@ class TuiAdaptiveUiMergeTests(unittest.TestCase):
             "9379d52b41473f1a57cb49d07048af7c139ebcf9",
         )
 
-    def test_reviewed_chatwidget_dispatch_preserves_adaptive_command_and_scoped_worker(self):
+    def test_reviewed_chatwidget_dispatch_preserves_adaptive_command_and_scoped_worker(
+        self,
+    ):
         # The original 3C.9d1 hold was superseded by the later reviewed 3C.9f
         # /config dispatcher integration; preserve the exact newer fork blob.
         path = "codex-rs/tui/src/chatwidget/slash_dispatch.rs"
         self.assertEqual(blob("HEAD", path), "57ed2741b86aae99d5ac6054990703c9eabdf845")
         self.assertNotEqual(blob("HEAD", path), blob(PRODUCTION, path))
         src = source(path)
-        for marker in ("SlashCommand::Adaptive", "self.dispatch_adaptive_command(",
-                       "crate::adaptive_worker::NewWorkerBinding"):
+        for marker in (
+            "SlashCommand::Adaptive",
+            "self.dispatch_adaptive_command(",
+            "crate::adaptive_worker::NewWorkerBinding",
+        ):
             self.assertIn(marker, src)
 
     def test_adaptive_registry_policy_unchanged(self):
@@ -94,14 +107,25 @@ class TuiAdaptiveUiMergeTests(unittest.TestCase):
 
     def test_product_versions_and_cargo_lock_not_advanced(self):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
-        self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
-        self.assertEqual(blob("HEAD", "codex-rs/Cargo.lock"),
-                         "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
+        self.assertEqual(
+            source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0"
+        )
+        self.assertEqual(
+            blob("HEAD", "codex-rs/Cargo.lock"),
+            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
+        )
 
     def test_packet_still_incomplete(self):
-        doc = (ROOT / "docs/codexdd-0.4.5-packet-3c9d1-adaptive-cli.md").read_text(encoding="utf-8")
-        for marker in ("INCOMPLETE / NOT A RELEASE CANDIDATE",
-                       "source-only", "native Rust", "Cargo.lock", "42"):
+        doc = (ROOT / "docs/codexdd-0.4.5-packet-3c9d1-adaptive-cli.md").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "INCOMPLETE / NOT A RELEASE CANDIDATE",
+            "source-only",
+            "native Rust",
+            "Cargo.lock",
+            "42",
+        ):
             self.assertIn(marker, doc)
 
 

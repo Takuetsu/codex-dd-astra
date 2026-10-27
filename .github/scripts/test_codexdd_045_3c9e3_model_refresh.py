@@ -3,6 +3,7 @@
 Provenance and structural checks only, not native Rust compilation,
 runtime model-fetch acceptance, or release authorization.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -32,15 +33,23 @@ NEW = (
 
 def git(*args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=ROOT, text=True, encoding="utf-8",
-        check=True, capture_output=True,
+        ["git", *args],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        capture_output=True,
     ).stdout.strip()
 
 
 def source(path: str, ref: str = "HEAD") -> str:
     return subprocess.run(
-        ["git", "show", ref + ":" + path], cwd=ROOT,
-        text=True, encoding="utf-8", check=True, capture_output=True,
+        ["git", "show", ref + ":" + path],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -86,7 +95,9 @@ class SessionModelRefreshSourceTests(unittest.TestCase):
         self.assertIn("fn refresh_account_scoped_models(&mut self) {", helper)
         self.assertIn("Some(StatusAccountDisplay::ApiKey)", helper)
         self.assertIn("model.available_access_programs = None;", helper)
-        self.assertIn("self.app_event_tx.send(AppEvent::FetchModels { request_id });", helper)
+        self.assertIn(
+            "self.app_event_tx.send(AppEvent::FetchModels { request_id });", helper
+        )
 
     def test_protected_worker_adaptive_session_restore_retained(self):
         merged = source(PATH)
@@ -109,16 +120,18 @@ class SessionModelRefreshSourceTests(unittest.TestCase):
 
     def test_release_markers_and_lockfile_not_advanced(self):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
-        self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
+        self.assertEqual(
+            source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0"
+        )
         self.assertEqual(
             git("rev-parse", "HEAD:codex-rs/Cargo.lock"),
             "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
         )
 
     def test_checkpoint_explicitly_does_not_claim_runtime_acceptance(self):
-        note = (
-            ROOT / "docs/codexdd-0.4.5-packet-3c9e3-model-refresh.md"
-        ).read_text(encoding="utf-8")
+        note = (ROOT / "docs/codexdd-0.4.5-packet-3c9e3-model-refresh.md").read_text(
+            encoding="utf-8"
+        )
         for marker in (
             "INCOMPLETE / NOT A RELEASE CANDIDATE",
             "source-only",

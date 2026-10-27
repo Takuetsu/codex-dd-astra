@@ -3,6 +3,7 @@
 Read-only Git provenance checks. Source and dependency acceptance do NOT
 authorize release publication or substitute for running the Windows tests.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -21,7 +22,9 @@ RMCP_REV = "4048ac40e958fb1a7d614617a2ae8d26666ee2fa"
 def git_file(ref: str, path: str) -> bytes:
     return subprocess.run(
         ["git", "show", ref + ":" + path],
-        cwd=ROOT, capture_output=True, check=True,
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
     ).stdout
 
 
@@ -36,13 +39,14 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
         cls.lock_bytes = git_file("HEAD", "codex-rs/Cargo.lock")
         cls.lock = tomllib.loads(cls.lock_bytes.decode("utf-8"))
         cls.packages = {
-            (item["name"], item["version"]): item
-            for item in cls.lock["package"]
+            (item["name"], item["version"]): item for item in cls.lock["package"]
         }
 
     def test_exact_resolver_produced_lock_and_historical_production(self):
         self.assertEqual(oid(self.lock_bytes), WINDOWS_RESOLVED_LOCK)
-        self.assertEqual(oid(git_file(PRODUCTION, "codex-rs/Cargo.lock")), BASELINE_LOCK)
+        self.assertEqual(
+            oid(git_file(PRODUCTION, "codex-rs/Cargo.lock")), BASELINE_LOCK
+        )
         self.assertEqual(self.lock["version"], 4)
 
     def test_upstream_0163_workspace_versions_and_rmcp_revision(self):
@@ -53,7 +57,9 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
             package = self.packages[(crate, "3.5.1")]
             self.assertIn("?rev=" + RMCP_REV + "#" + RMCP_REV, package["source"])
         self.assertIn(("linkify", "0.11.0"), self.packages)
-        self.assertFalse(any(name == "codex-shell-escalation" for name, _ in self.packages))
+        self.assertFalse(
+            any(name == "codex-shell-escalation" for name, _ in self.packages)
+        )
 
     def test_reviewed_security_versions_and_yaml_alias_persist(self):
         for name, version in (
@@ -64,7 +70,9 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
         ):
             with self.subTest(package=name):
                 self.assertIn((name, version), self.packages)
-        self.assertFalse(any(name in ("serde_yaml", "unsafe-libyaml") for name, _ in self.packages))
+        self.assertFalse(
+            any(name in ("serde_yaml", "unsafe-libyaml") for name, _ in self.packages)
+        )
         manifest = tomllib.loads(git_file("HEAD", "codex-rs/Cargo.toml").decode())
         self.assertEqual(
             manifest["workspace"]["dependencies"]["serde_yaml"],
@@ -77,14 +85,26 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
 
     def test_zip9_remediation_is_locked_without_replacing_other_security_floors(self):
         self.assertIn(("zip", "9.0.5"), self.packages)
-        self.assertFalse(any(name == "zip" and version != "9.0.5" for name, version in self.packages))
+        self.assertFalse(
+            any(name == "zip" and version != "9.0.5" for name, version in self.packages)
+        )
         manifest = tomllib.loads(git_file("HEAD", "codex-rs/Cargo.toml").decode())
         self.assertEqual(
             manifest["workspace"]["dependencies"]["zip"],
-            {"version": "9.0.5", "default-features": False, "features": [
-                "aes-crypto", "deflate64", "deflate", "lzma",
-                "ppmd", "time", "zstd", "xz",
-            ]},
+            {
+                "version": "9.0.5",
+                "default-features": False,
+                "features": [
+                    "aes-crypto",
+                    "deflate64",
+                    "deflate",
+                    "lzma",
+                    "ppmd",
+                    "time",
+                    "zstd",
+                    "xz",
+                ],
+            },
         )
         self.assertFalse(
             any(name in ("bzip2", "libbz2-rs-sys") for name, _version in self.packages),
@@ -93,7 +113,9 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
         self.assertNotIn("bzip2", self.packages[("zip", "9.0.5")]["dependencies"])
 
     def test_release_markers_not_promoted_by_lock_acceptance(self):
-        self.assertEqual(git_file("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")
+        self.assertEqual(
+            git_file("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4"
+        )
         self.assertEqual(
             git_file("HEAD", "codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",

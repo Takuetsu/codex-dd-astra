@@ -62,20 +62,32 @@ def _git(
     preserve_output: bool = False,
 ) -> bytes:
     env = dict(os.environ)
-    env.update({
-        "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CONFIG_GLOBAL": os.devnull,
-        "GIT_NO_REPLACE_OBJECTS": "1",
-        "GIT_TERMINAL_PROMPT": "0",
-    })
+    env.update(
+        {
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+    )
     if index is not None:
         env["GIT_INDEX_FILE"] = str(index)
     if metadata:
         env.update(metadata)
     completed = subprocess.run(
-        ["git", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=" + os.devnull,
-         *args],
-        cwd=repo, env=env, input=data, check=True, capture_output=True,
+        [
+            "git",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "core.hooksPath=" + os.devnull,
+            *args,
+        ],
+        cwd=repo,
+        env=env,
+        input=data,
+        check=True,
+        capture_output=True,
     )
     return completed.stdout if preserve_output else completed.stdout.strip()
 
@@ -131,7 +143,8 @@ def _check_windows_collisions(paths: set[str]) -> None:
             raise PreparationBlocked("windows_path_unsafe")
         for part in path.split("/"):
             if (
-                not part or part in {".", ".."}
+                not part
+                or part in {".", ".."}
                 or part.lower() == ".git"
                 or part.endswith((".", " "))
                 or WINDOWS_DEVICE.fullmatch(part) is not None
@@ -154,8 +167,16 @@ def _index_blob(repo: Path, index: Path, path: str, blob_sha: str) -> None:
     _checked_path(path)
     if OID.fullmatch(blob_sha) is None:
         raise PreparationBlocked("invalid_blob_sha")
-    _git(repo, "update-index", "--add", "--cacheinfo", "100644", blob_sha, path,
-         index=index)
+    _git(
+        repo,
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "100644",
+        blob_sha,
+        path,
+        index=index,
+    )
 
 
 def _add_bytes(repo: Path, index: Path, path: str, contents: bytes) -> str:
@@ -185,7 +206,8 @@ def _readiness(
     # canonical tag, production, tree and candidate/PR checks are repeated
     # against live Git state, including after the local tree has been built.
     decision = report.evaluate(
-        repo, manifest_bytes,
+        repo,
+        manifest_bytes,
         pinned_target_oid=pinned_target_oid,
         pinned_tracked_oid=pinned_tracked_oid,
         observed_transplant="clean",
@@ -197,9 +219,7 @@ def _readiness(
         or decision["may_publish"] is not False
         or decision["report_only"] is not True
     ):
-        raise PreparationBlocked(
-            "eligibility_" + str(decision["status"])
-        )
+        raise PreparationBlocked("eligibility_" + str(decision["status"]))
     return decision
 
 
@@ -243,11 +263,10 @@ def build_isolated_candidate(
     manifest_file = _manifest_path(
         manifest.target_upstream_tag, manifest.target_upstream_sha
     )
-    production_lock = _git_blob(
-        repo, manifest.production_sha, "codex-rs/Cargo.lock"
-    )
+    production_lock = _git_blob(repo, manifest.production_sha, "codex-rs/Cargo.lock")
     first = _readiness(
-        repo, manifest_bytes,
+        repo,
+        manifest_bytes,
         pinned_target_oid=pinned_target_oid,
         pinned_tracked_oid=pinned_tracked_oid,
         candidate_lock=production_lock,
@@ -267,9 +286,7 @@ def build_isolated_candidate(
     marker = "codex-rs/upstream-codex-release.txt"
     if marker in delta.upstream_change_paths:
         raise PreparationBlocked("protected_release_marker_changed")
-    _check_windows_collisions(
-        set(production) | set(target) | {marker, manifest_file}
-    )
+    _check_windows_collisions(set(production) | set(target) | {marker, manifest_file})
 
     # Only Git object/index plumbing; no checkouts, external merge drivers,
     # cherry-picks, shell interpolation, filters, hook execution or builds.
@@ -283,8 +300,7 @@ def build_isolated_candidate(
             expected[path] = target[path]
 
         marker_sha = _add_bytes(
-            repo, index, marker,
-            (manifest.target_upstream_tag + "\n").encode("ascii")
+            repo, index, marker, (manifest.target_upstream_tag + "\n").encode("ascii")
         )
         manifest_sha = _add_bytes(repo, index, manifest_file, manifest_bytes)
         expected[marker] = "100644 blob " + marker_sha
@@ -299,7 +315,8 @@ def build_isolated_candidate(
     # not an assertion based on the earlier scratch/dry-run artifact.
     staged_lock = _git_blob(repo, staged_tree, "codex-rs/Cargo.lock")
     second = _readiness(
-        repo, manifest_bytes,
+        repo,
+        manifest_bytes,
         pinned_target_oid=pinned_target_oid,
         pinned_tracked_oid=pinned_tracked_oid,
         candidate_lock=staged_lock,
@@ -307,14 +324,26 @@ def build_isolated_candidate(
     if second != first:
         raise PreparationBlocked("recheck_identity_changed")
     message = (
-        "CodexDD: prepare " + manifest.target_upstream_tag + " isolated candidate\n\n"
-        + "Original-Manifest-SHA256: " + expected_digest + "\n"
-        + "Target-Commit: " + manifest.target_upstream_sha + "\n"
-        + "Production-Commit: " + manifest.production_sha + "\n"
+        "CodexDD: prepare "
+        + manifest.target_upstream_tag
+        + " isolated candidate\n\n"
+        + "Original-Manifest-SHA256: "
+        + expected_digest
+        + "\n"
+        + "Target-Commit: "
+        + manifest.target_upstream_sha
+        + "\n"
+        + "Production-Commit: "
+        + manifest.production_sha
+        + "\n"
         + "Requires-Windows-And-Owner-Review: true\n"
     )
     commit = _git(
-        repo, "commit-tree", staged_tree, "-p", manifest.production_sha,
+        repo,
+        "commit-tree",
+        staged_tree,
+        "-p",
+        manifest.production_sha,
         data=message.encode("utf-8"),
         metadata=_commit_metadata(manifest.discovery_timestamp),
     ).decode("ascii")
@@ -360,32 +389,45 @@ def publish_isolated_candidate(
         prepared.manifest_sha256 != hashlib.sha256(manifest_bytes).hexdigest()
         or prepared.production_sha != manifest.production_sha
         or prepared.target_sha != manifest.target_upstream_sha
-        or prepared.candidate_branch != candidate_branch(
-            manifest.target_upstream_tag, manifest.target_upstream_sha
-        )
-        or prepared.manifest_path != _manifest_path(
-            manifest.target_upstream_tag, manifest.target_upstream_sha
-        )
+        or prepared.candidate_branch
+        != candidate_branch(manifest.target_upstream_tag, manifest.target_upstream_sha)
+        or prepared.manifest_path
+        != _manifest_path(manifest.target_upstream_tag, manifest.target_upstream_sha)
     ):
         raise PreparationBlocked("prepared_identity_mismatch")
     repo = Path(repo).resolve()
-    if _git(repo, "rev-parse", prepared.prepared_commit_sha + "^{tree}").decode() != prepared.prepared_tree_sha:
+    if (
+        _git(repo, "rev-parse", prepared.prepared_commit_sha + "^{tree}").decode()
+        != prepared.prepared_tree_sha
+    ):
         raise PreparationBlocked("prepared_commit_tree_mismatch")
-    if _git_blob(repo, prepared.prepared_tree_sha, prepared.manifest_path) != manifest_bytes:
+    if (
+        _git_blob(repo, prepared.prepared_tree_sha, prepared.manifest_path)
+        != manifest_bytes
+    ):
         raise PreparationBlocked("prepared_manifest_mismatch")
-    parents = _git(repo, "rev-list", "--parents", "-n", "1",
-                   prepared.prepared_commit_sha).decode().split()
+    parents = (
+        _git(repo, "rev-list", "--parents", "-n", "1", prepared.prepared_commit_sha)
+        .decode()
+        .split()
+    )
     if parents != [prepared.prepared_commit_sha, prepared.production_sha]:
         raise PreparationBlocked("prepared_commit_parent_mismatch")
     actual_lock = _git_blob(repo, prepared.prepared_tree_sha, "codex-rs/Cargo.lock")
     _readiness(
-        repo, manifest_bytes, pinned_target_oid=pinned_target_oid,
-        pinned_tracked_oid=pinned_tracked_oid, candidate_lock=actual_lock
+        repo,
+        manifest_bytes,
+        pinned_target_oid=pinned_target_oid,
+        pinned_tracked_oid=pinned_tracked_oid,
+        candidate_lock=actual_lock,
     )
     ref = "refs/heads/" + prepared.candidate_branch
     # An absent-ref lease is mandatory: no candidate rewrite under any race.
     _git(
-        repo, "push", "--force-with-lease=" + ref + ":", "origin",
+        repo,
+        "push",
+        "--force-with-lease=" + ref + ":",
+        "origin",
         prepared.prepared_commit_sha + ":" + ref,
     )
     return prepared.prepared_commit_sha

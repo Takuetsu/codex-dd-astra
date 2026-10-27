@@ -21,8 +21,11 @@ from upstream_sync import (
 
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=repo, check=True,
-        capture_output=True, text=True,
+        ["git", *args],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
@@ -52,7 +55,13 @@ class AutoReportTests(unittest.TestCase):
         git(repo, "config", "user.name", "auto-report-test")
         git(repo, "config", "user.email", "auto-report-test@example.invalid")
         git(repo, "config", "core.autocrlf", "false")
-        git(repo, "remote", "add", "origin", "https://github.com/Takuetsu/codex-dd-astra.git")
+        git(
+            repo,
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/Takuetsu/codex-dd-astra.git",
+        )
         (repo / "codex-rs").mkdir()
         (repo / "docs").mkdir()
         (repo / "codex-rs/Cargo.lock").write_text(LOCKFILE, encoding="utf-8")
@@ -105,30 +114,44 @@ class AutoReportTests(unittest.TestCase):
         cls.temp.cleanup()
 
     def run_policy(
-        self, *, manifest=None, observed="clean", conflicts=b"",
-        lockfile=None, prod_remote=None, candidate_remote=None,
-        target_oid=None, tracked_oid=None, pr_exists=False,
+        self,
+        *,
+        manifest=None,
+        observed="clean",
+        conflicts=b"",
+        lockfile=None,
+        prod_remote=None,
+        candidate_remote=None,
+        target_oid=None,
+        tracked_oid=None,
+        pr_exists=False,
     ):
         if manifest is None:
-            manifest = build_candidate_manifest(**self.fixture_args, transplant_result=observed)
+            manifest = build_candidate_manifest(
+                **self.fixture_args, transplant_result=observed
+            )
         raw = candidate_manifest_json(manifest).encode("utf-8")
+
         def remote(_repo, ref):
             if ref == report.PRODUCTION_REF:
                 return self.production if prod_remote is None else prod_remote
             return candidate_remote
+
         def official(_repo, tag):
             return (
                 (self.target_oid if target_oid is None else target_oid)
                 if tag == "rust-v0.163.0"
                 else (self.tracked_oid if tracked_oid is None else tracked_oid)
             )
+
         with (
             patch.object(report, "_remote_branch", side_effect=remote),
             patch.object(report, "_official_oid", side_effect=official),
             patch.object(report, "_open_pr_exists", return_value=pr_exists),
         ):
             return report.evaluate(
-                self.repo, raw,
+                self.repo,
+                raw,
                 pinned_target_oid=self.target_oid,
                 pinned_tracked_oid=self.tracked_oid,
                 observed_transplant=observed,
@@ -149,14 +172,13 @@ class AutoReportTests(unittest.TestCase):
 
     def test_both_tag_and_production_oid_are_bound_to_report(self):
         value = self.run_policy()
-        self.assertEqual(
-            value["candidate_key"], "rust-v0.163.0@" + self.target
-        )
+        self.assertEqual(value["candidate_key"], "rust-v0.163.0@" + self.target)
         self.assertRegex(value["manifest_sha256"], r"^[0-9a-f]{64}$")
 
     def test_original_conflict_not_relabelled_clean(self):
         value = self.run_policy(
-            observed="conflict", conflicts=b"docs/overview.md\n",
+            observed="conflict",
+            conflicts=b"docs/overview.md\n",
             lockfile=b"",
         )
         self.assertEqual(value["status"], "blocked_transplant_conflict")
@@ -165,21 +187,32 @@ class AutoReportTests(unittest.TestCase):
         manifest = build_candidate_manifest(
             **self.fixture_args, transplant_result="conflict"
         )
+
         def remote(_repo, ref):
             if ref == report.PRODUCTION_REF:
                 return self.production
             raise AssertionError("candidate ref should not be queried for conflicts")
+
         with (
             patch.object(report, "_remote_branch", side_effect=remote),
-            patch.object(report, "_official_oid", side_effect=lambda _r, tag: (
-                self.target_oid if tag == "rust-v0.163.0" else self.tracked_oid
-            )),
-            patch.object(report, "_open_pr_exists", side_effect=AssertionError(
-                "PR metadata is not needed to report a transplant conflict"
-            )),
+            patch.object(
+                report,
+                "_official_oid",
+                side_effect=lambda _r, tag: (
+                    self.target_oid if tag == "rust-v0.163.0" else self.tracked_oid
+                ),
+            ),
+            patch.object(
+                report,
+                "_open_pr_exists",
+                side_effect=AssertionError(
+                    "PR metadata is not needed to report a transplant conflict"
+                ),
+            ),
         ):
             value = report.evaluate(
-                self.repo, candidate_manifest_json(manifest).encode("utf-8"),
+                self.repo,
+                candidate_manifest_json(manifest).encode("utf-8"),
                 pinned_target_oid=self.target_oid,
                 pinned_tracked_oid=self.tracked_oid,
                 observed_transplant="conflict",
@@ -190,9 +223,13 @@ class AutoReportTests(unittest.TestCase):
 
     def test_conflict_evidence_mismatch_fails_closed(self):
         m = build_candidate_manifest(**self.fixture_args, transplant_result="clean")
-        with self.assertRaisesRegex(report.VerificationError, "transplant_state_mismatch"):
+        with self.assertRaisesRegex(
+            report.VerificationError, "transplant_state_mismatch"
+        ):
             self.run_policy(manifest=m, observed="conflict")
-        with self.assertRaisesRegex(report.VerificationError, "conflicts_in_clean_transplant"):
+        with self.assertRaisesRegex(
+            report.VerificationError, "conflicts_in_clean_transplant"
+        ):
             self.run_policy(manifest=m, observed="clean", conflicts=b"unmerged\n")
 
     def test_stale_remote_production_is_blocked(self):
@@ -220,19 +257,30 @@ class AutoReportTests(unittest.TestCase):
 
     def test_missing_candidate_lockfile_for_clean_source_blocks(self):
         # Directly invoke with missing evidence instead of run_policy's default.
-        manifest = build_candidate_manifest(**self.fixture_args, transplant_result="clean")
+        manifest = build_candidate_manifest(
+            **self.fixture_args, transplant_result="clean"
+        )
         raw = candidate_manifest_json(manifest).encode()
         with (
-            patch.object(report, "_remote_branch", side_effect=lambda _r, ref: (
-                self.production if ref == report.PRODUCTION_REF else None
-            )),
-            patch.object(report, "_official_oid", side_effect=lambda _r, tag: (
-                self.target_oid if tag == "rust-v0.163.0" else self.tracked_oid
-            )),
+            patch.object(
+                report,
+                "_remote_branch",
+                side_effect=lambda _r, ref: (
+                    self.production if ref == report.PRODUCTION_REF else None
+                ),
+            ),
+            patch.object(
+                report,
+                "_official_oid",
+                side_effect=lambda _r, tag: (
+                    self.target_oid if tag == "rust-v0.163.0" else self.tracked_oid
+                ),
+            ),
             patch.object(report, "_open_pr_exists", return_value=False),
         ):
             value = report.evaluate(
-                self.repo, raw,
+                self.repo,
+                raw,
                 pinned_target_oid=self.target_oid,
                 pinned_tracked_oid=self.tracked_oid,
                 observed_transplant="clean",
@@ -247,13 +295,19 @@ class AutoReportTests(unittest.TestCase):
         with self.assertRaisesRegex(report.VerificationError, "noncanonical_manifest"):
             report._manifest(b" " + raw)
         with self.assertRaisesRegex(report.VerificationError, "duplicate_json_key"):
-            report._manifest(raw.replace(b'"candidate_key":', b'"candidate_key":"x","candidate_key":', 1))
+            report._manifest(
+                raw.replace(
+                    b'"candidate_key":', b'"candidate_key":"x","candidate_key":', 1
+                )
+            )
 
     def test_manifest_extra_field_or_bad_types_are_rejected(self):
         m = build_candidate_manifest(**self.fixture_args, transplant_result="clean")
         payload = json.loads(candidate_manifest_json(m))
         payload["untrusted_field"] = "ignored?"
-        with self.assertRaisesRegex(report.VerificationError, "invalid_manifest_fields"):
+        with self.assertRaisesRegex(
+            report.VerificationError, "invalid_manifest_fields"
+        ):
             report._manifest(json.dumps(payload).encode())
         del payload["untrusted_field"]
         payload["overlap_paths"] = "not a list"
@@ -269,21 +323,37 @@ class AutoReportTests(unittest.TestCase):
 
     def test_lockfile_hash_captures_graph_only_drift(self):
         original = report._packages(self.pinned_lock)
-        changed = report._packages(self.pinned_lock + b"\n# changed dependency graph metadata\n")
+        changed = report._packages(
+            self.pinned_lock + b"\n# changed dependency graph metadata\n"
+        )
         self.assertEqual(original["rustls"], changed["rustls"])
         self.assertNotEqual(original["$lockfile_sha256"], changed["$lockfile_sha256"])
 
     def test_untrusted_origin_remote_refused_without_network(self):
-        git(self.repo, "remote", "set-url", "origin", "https://github.com/other/codex.git")
+        git(
+            self.repo,
+            "remote",
+            "set-url",
+            "origin",
+            "https://github.com/other/codex.git",
+        )
         try:
             with self.assertRaisesRegex(report.VerificationError, "untrusted_origin"):
                 report._remote_branch(self.repo, report.PRODUCTION_REF)
         finally:
-            git(self.repo, "remote", "set-url", "origin", "https://github.com/Takuetsu/codex-dd-astra.git")
+            git(
+                self.repo,
+                "remote",
+                "set-url",
+                "origin",
+                "https://github.com/Takuetsu/codex-dd-astra.git",
+            )
 
     def test_pr_lookup_unavailable_blocks_not_assumes_absent(self):
         with patch.dict("os.environ", {"GH_TOKEN": ""}):
-            with self.assertRaisesRegex(report.VerificationError, "pr_read_unavailable"):
+            with self.assertRaisesRegex(
+                report.VerificationError, "pr_read_unavailable"
+            ):
                 report._open_pr_exists(self.repo, "automation/test")
 
     def test_summary_contains_only_policy_codes_not_upstream_text(self):

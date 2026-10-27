@@ -1,4 +1,5 @@
 """Read-only Windows optimized CLI build boundaries for CodexDD 0.4.5."""
+
 import unittest
 from pathlib import Path
 
@@ -8,7 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 class OptimizedCliSafety(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.source = (ROOT / ".github/workflows/codexdd-045-windows-cli-optimized-preflight.yml").read_text(encoding="utf-8")
+        cls.source = (
+            ROOT / ".github/workflows/codexdd-045-windows-cli-optimized-preflight.yml"
+        ).read_text(encoding="utf-8")
 
     def test_read_only_source_pinned_platform(self):
         s = self.source
@@ -37,9 +40,18 @@ class OptimizedCliSafety(unittest.TestCase):
         s = self.source
         self.assertIn("Optimized CLI EXE or PDB missing", s)
         self.assertIn("Missing optimized CLI build success receipt", s)
-        self.assertIn("'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'", s)
-        self.assertIn("'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'", s)
-        for p in ("codex-rs/skills", "codex-rs/core-plugins", "codex-rs/ext/skills", "codex-rs/external-agent-migration"):
+        self.assertIn(
+            "'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'", s
+        )
+        self.assertIn(
+            "'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'", s
+        )
+        for p in (
+            "codex-rs/skills",
+            "codex-rs/core-plugins",
+            "codex-rs/ext/skills",
+            "codex-rs/external-agent-migration",
+        ):
             with self.subTest(p=p):
                 self.assertIn(f"'{p}/BUILD.bazel' =", s)
                 self.assertIn(f"'{p}/Cargo.toml' =", s)

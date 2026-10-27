@@ -27,7 +27,9 @@ START_TOOL = "if tool.mcp_server_name().is_none() {"
 def committed(ref: str, path: str) -> bytes:
     return subprocess.run(
         ["git", "show", ref + ":" + path],
-        cwd=ROOT, check=True, capture_output=True,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -39,7 +41,7 @@ def git_blob(raw: bytes) -> str:
 
 def helper_block(src: str) -> str:
     i = src.index(START_HELPERS)
-    return src[i:src.index(END_HELPERS, i)]
+    return src[i : src.index(END_HELPERS, i)]
 
 
 class RegistrySecurityIntegrationTests(unittest.TestCase):
@@ -57,8 +59,12 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
         current = committed("HEAD", RUST_TESTS)
         self.assertEqual(git_blob(original), FORK_TEST_SHA)
         self.assertTrue(current.startswith(original))
-        self.assertIn(b"adaptive_reconnaissance_rejects_hook_rewritten_write_command", current)
-        self.assertIn(b"adaptive_reconnaissance_rejection_finishes_blocked_without_start", current)
+        self.assertIn(
+            b"adaptive_reconnaissance_rejects_hook_rewritten_write_command", current
+        )
+        self.assertIn(
+            b"adaptive_reconnaissance_rejection_finishes_blocked_without_start", current
+        )
 
     def test_seventeen_codexdd_policy_helpers_preserved_byte_for_byte(self):
         merged = helper_block(self.source)
@@ -80,11 +86,15 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
         self.assertIn('"report_adaptive_signal" | "update_plan"', self.source)
         self.assertIn('| "run_codexdd_validation"', self.source)
         self.assertIn("fn adaptive_reconnaissance_shell_command_allowed", self.source)
-        self.assertIn("fn adaptive_mechanical_validation_shell_command_allowed", self.source)
+        self.assertIn(
+            "fn adaptive_mechanical_validation_shell_command_allowed", self.source
+        )
 
     def test_terminalization_authorizes_only_trusted_signal_tool(self):
         first = self.source.index("fn adaptive_validation_terminalization_rejection(")
-        last = self.source.index("\nfn adaptive_reconnaissance_shell_command_allowed(", first)
+        last = self.source.index(
+            "\nfn adaptive_reconnaissance_shell_command_allowed(", first
+        )
         body = self.source[first:last]
         self.assertIn('invocation.tool_name.name == "report_adaptive_signal"', body)
         self.assertNotIn("exec_command", body)
@@ -93,8 +103,10 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
     def test_command_redirect_and_dynamic_expansion_fail_closed(self):
         helpers = helper_block(self.source)
         for token in (
-            "command.contains('>')", "command.contains('<')",
-            "command.contains('&')", 'command.contains("$(")',
+            "command.contains('>')",
+            "command.contains('<')",
+            "command.contains('&')",
+            'command.contains("$(")',
             "command.contains('" + chr(96) + "')",
         ):
             self.assertIn(token, helpers)
@@ -106,7 +118,10 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
             "if command.contains(';')",
             "adaptive_reconnaissance_has_unsafe_pipeline_stage",
             "parse_shell_script(command)",
-            '"--output"', '"--output="', '"--ext-diff"', '"--textconv"',
+            '"--output"',
+            '"--output="',
+            '"--ext-diff"',
+            '"--textconv"',
         ):
             self.assertIn(marker, helpers)
 
@@ -168,15 +183,18 @@ class RegistrySecurityIntegrationTests(unittest.TestCase):
             self.assertIn("fn " + name + "(", self.tests)
 
     def test_production_markers_still_unchanged(self):
-        self.assertEqual(committed("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")
         self.assertEqual(
-            committed("HEAD", "codex-rs/upstream-codex-release.txt").strip(), b"rust-v0.162.0"
+            committed("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4"
+        )
+        self.assertEqual(
+            committed("HEAD", "codex-rs/upstream-codex-release.txt").strip(),
+            b"rust-v0.162.0",
         )
 
     def test_packet_remains_documented_as_incomplete(self):
-        notes = (
-            ROOT / "docs/codexdd-0.4.5-packet-3c3-registry-security.md"
-        ).read_text(encoding="utf-8")
+        notes = (ROOT / "docs/codexdd-0.4.5-packet-3c3-registry-security.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("INCOMPLETE / NOT A RELEASE CANDIDATE", notes)
         self.assertIn("native Rust", notes)
         self.assertIn("109", notes)

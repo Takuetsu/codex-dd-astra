@@ -6,7 +6,7 @@ load("//:defs.bzl", "codex_rust_crate")
 _yaml_aliases = {dep: local for dep, local in aliases().items() if local == "serde_yaml"}
 
 codex_rust_crate(
-    lib_aliases = _yaml_aliases,
     name = "skills",
     crate_name = "codex_skills_extension",
+    lib_aliases = _yaml_aliases,
 )

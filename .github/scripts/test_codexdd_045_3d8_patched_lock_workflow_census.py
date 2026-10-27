@@ -4,6 +4,7 @@ Historical one-shot probes remain on their ORIGINAL lock and must not silently
 be repurposed for the patched candidate. Active integration gates must verify
 the new exact lock rather than disable safety checks.
 """
+
 from pathlib import Path
 import re
 import unittest
@@ -80,21 +81,29 @@ class TlsLockWorkflowCensus(unittest.TestCase):
                 self.assertNotIn("codex-rs/**", paths)
                 self.assertTrue(paths)
                 # Changing the verified lock alone must not restart legacy probes.
-                self.assertFalse(any(
-                    p == "codex-rs/Cargo.lock" or p.startswith("codex-rs/**")
-                    for p in paths
-                ))
+                self.assertFalse(
+                    any(
+                        p == "codex-rs/Cargo.lock" or p.startswith("codex-rs/**")
+                        for p in paths
+                    )
+                )
 
     def test_stale_hash_cannot_hide_in_another_045_workflow(self):
         with_legacy = {
-            p.name for p in WORKFLOWS.glob("codexdd-045-*.yml")
+            p.name
+            for p in WORKFLOWS.glob("codexdd-045-*.yml")
             if LEGACY_LOCK in p.read_text(encoding="utf-8")
         }
         self.assertEqual(with_legacy, set(HISTORICAL))
 
     def test_release_markers_remain_unpromoted(self):
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
+        self.assertEqual(
+            (ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(),
+            "rust-v0.162.0",
+        )
         self.assertFalse((ROOT / "codex-rs/deny-preview.toml").exists())
 
 

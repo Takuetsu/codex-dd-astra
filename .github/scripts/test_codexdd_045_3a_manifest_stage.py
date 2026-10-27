@@ -34,7 +34,9 @@ BASELINE_SHELL_ESCALATION_BLOB = "92ae8b033f3c38edb1609e6347084be6dd9fdc47"
 def git_bytes(path: str) -> bytes:
     result = subprocess.run(
         ["git", "show", "HEAD:" + path],
-        cwd=ROOT, capture_output=True, check=True,
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
     )
     return result.stdout
 
@@ -60,7 +62,9 @@ class CargoManifestStagingTests(unittest.TestCase):
                 if path == "codex-rs/tools/Cargo.toml":
                     self.assertEqual(actual, "f47815537ffdd381161130ac0c26bc8d1fd30868")
                     tools = cargo(path)["dependencies"]
-                    self.assertEqual(tools["codex-utils-absolute-path"], {"workspace": True})
+                    self.assertEqual(
+                        tools["codex-utils-absolute-path"], {"workspace": True}
+                    )
                     self.assertEqual(tools["tracing"], {"workspace": True})
                 else:
                     self.assertEqual(actual, expected)
@@ -71,9 +75,7 @@ class CargoManifestStagingTests(unittest.TestCase):
                 self.assertIsInstance(cargo(path), dict)
 
     def test_reconciled_workspace_manifest_remains_exact_reviewed_blob(self):
-        self.assertEqual(
-            git_blob_sha(git_bytes("codex-rs/Cargo.toml")), WORKSPACE_BLOB
-        )
+        self.assertEqual(git_blob_sha(git_bytes("codex-rs/Cargo.toml")), WORKSPACE_BLOB)
 
     def test_security_yaml_alias_is_pinned_to_fork_replacement(self):
         dependencies = cargo("codex-rs/Cargo.toml")["workspace"]["dependencies"]
@@ -81,7 +83,9 @@ class CargoManifestStagingTests(unittest.TestCase):
             dependencies["serde_yaml"],
             {"package": "noyalib-serde-yaml", "version": "=0.0.57"},
         )
-        self.assertNotIn('serde_yaml = "0.9"', git_bytes("codex-rs/Cargo.toml").decode())
+        self.assertNotIn(
+            'serde_yaml = "0.9"', git_bytes("codex-rs/Cargo.toml").decode()
+        )
 
     def test_rustls_minimum_and_rmcp_revisions_are_preserved(self):
         dependencies = cargo("codex-rs/Cargo.toml")["workspace"]["dependencies"]
@@ -95,10 +99,20 @@ class CargoManifestStagingTests(unittest.TestCase):
         deps = cargo("codex-rs/Cargo.toml")["workspace"]["dependencies"]
         self.assertEqual(
             deps["zip"],
-            {"version": "9.0.5", "default-features": False, "features": [
-                "aes-crypto", "deflate64", "deflate", "lzma",
-                "ppmd", "time", "zstd", "xz",
-            ]},
+            {
+                "version": "9.0.5",
+                "default-features": False,
+                "features": [
+                    "aes-crypto",
+                    "deflate64",
+                    "deflate",
+                    "lzma",
+                    "ppmd",
+                    "time",
+                    "zstd",
+                    "xz",
+                ],
+            },
         )
         self.assertEqual(deps["linkify"], "0.11")
         self.assertEqual(deps["hyper-util"]["version"], "0.1.20")
@@ -119,13 +133,16 @@ class CargoManifestStagingTests(unittest.TestCase):
             "codex-shell-escalation", cargo("codex-rs/arg0/Cargo.toml")["dependencies"]
         )
         self.assertEqual(
-            cargo("codex-rs/external-agent-migration/Cargo.toml")["dependencies"]["linkify"],
+            cargo("codex-rs/external-agent-migration/Cargo.toml")["dependencies"][
+                "linkify"
+            ],
             {"workspace": True},
         )
         self.assertIn("rand", cargo("codex-rs/code-mode/Cargo.toml")["dependencies"])
         self.assertIn("insta", cargo("codex-rs/exec/Cargo.toml")["dev-dependencies"])
         self.assertIn(
-            "codex-utils-process", cargo("codex-rs/codex-mcp/Cargo.toml")["dependencies"]
+            "codex-utils-process",
+            cargo("codex-rs/codex-mcp/Cargo.toml")["dependencies"],
         )
 
     def test_resolver_produced_lockfile_is_pinned_for_0163_integration(self):

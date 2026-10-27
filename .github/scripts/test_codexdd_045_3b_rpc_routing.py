@@ -18,15 +18,16 @@ FILES = {
     "request_processors.rs": "5c4633ab48ea77692e28193ea6e128ec58067a37",
     "request_processors/turn_processor.rs": "1186f0a181704d8ea45243a850f971f1057cb080",
     "request_processors/thread_read_state.rs": "a64c31b55e7075cf13d8ac8e29e11f4c188096f3",
-    "message_processor_workspace_routing_tests.rs":
-        "db478a99602807fd436b121d4c6c46610e365832",
+    "message_processor_workspace_routing_tests.rs": "db478a99602807fd436b121d4c6c46610e365832",
 }
 
 
 def git_bytes(path: str) -> bytes:
     return subprocess.run(
-        ["git", "show", "HEAD:" + path], cwd=ROOT,
-        check=True, capture_output=True,
+        ["git", "show", "HEAD:" + path],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -55,17 +56,24 @@ class AppServerRpcRoutingIntegrationTests(unittest.TestCase):
 
     def test_workflow_state_rpc_routes_to_persistence_handler_once(self):
         self.assertEqual(
-            self.processor.count("ClientRequest::ThreadWorkflowStateUpdate { params, .. }"), 1
+            self.processor.count(
+                "ClientRequest::ThreadWorkflowStateUpdate { params, .. }"
+            ),
+            1,
         )
         self.assertIn(".thread_workflow_state_update(params)", self.processor)
 
     def test_workflow_rpc_remains_separate_from_user_turn_steering(self):
-        workflow = self.processor.index("ClientRequest::ThreadWorkflowStateUpdate { params, .. }")
+        workflow = self.processor.index(
+            "ClientRequest::ThreadWorkflowStateUpdate { params, .. }"
+        )
         steering = self.processor.index("ClientRequest::TurnSteer { params, .. }")
         self.assertLess(workflow, steering)
 
     def test_upstream_read_state_route_retained(self):
-        self.assertIn("ClientRequest::ThreadReadStateUpdate { params, .. }", self.processor)
+        self.assertIn(
+            "ClientRequest::ThreadReadStateUpdate { params, .. }", self.processor
+        )
         self.assertIn(".thread_read_state_update(params)", self.processor)
 
     def test_upstream_thread_items_read_route_retained(self):
@@ -111,9 +119,7 @@ class AppServerRpcRoutingIntegrationTests(unittest.TestCase):
         )
 
     def test_missing_adaptive_state_fails_explicitly(self):
-        self.assertIn(
-            "setAdaptiveState requires adaptiveState", self.turn
-        )
+        self.assertIn("setAdaptiveState requires adaptiveState", self.turn)
         self.assertIn("return Err(invalid_request(", self.turn)
 
     def test_adaptive_validation_receipt_and_owner_scope_mapping_retained(self):
@@ -152,16 +158,14 @@ class AppServerRpcRoutingIntegrationTests(unittest.TestCase):
         self.assertIn("fn ", rust)
 
     def test_product_markers_and_native_test_gate_unchanged(self):
-        self.assertEqual(
-            git_bytes("codex-rs/codexdd-version.txt").strip(), b"0.4.4"
-        )
+        self.assertEqual(git_bytes("codex-rs/codexdd-version.txt").strip(), b"0.4.4")
         self.assertEqual(
             git_bytes("codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",
         )
-        doc = (
-            ROOT / "docs/codexdd-0.4.5-packet-3b4-rpc-routing.md"
-        ).read_text(encoding="utf-8")
+        doc = (ROOT / "docs/codexdd-0.4.5-packet-3b4-rpc-routing.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("INCOMPLETE / NOT A RELEASE CANDIDATE", doc)
         self.assertIn("native Rust", doc)
         self.assertIn("109", doc)

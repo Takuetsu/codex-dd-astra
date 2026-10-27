@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Pin the CodexDD 0.4.5 AWS login exception to reviewed source only."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -27,10 +28,14 @@ class ReviewedAwsManifestContractTests(TestCase):
         self.assertEqual(verifier.OPTIONAL_DEPENDENCY_EXCEPTIONS, set())
 
     def test_only_required_aws_login_feature_is_allowed(self):
-        self.assertEqual(verifier.INTERNAL_DEPENDENCY_FEATURE_EXCEPTIONS, {
-            ("codex-rs/aws-auth/Cargo.toml", "dependencies", "aws-config"):
-                ("credentials-login",),
-        })
+        self.assertEqual(
+            verifier.INTERNAL_DEPENDENCY_FEATURE_EXCEPTIONS,
+            {
+                ("codex-rs/aws-auth/Cargo.toml", "dependencies", "aws-config"): (
+                    "credentials-login",
+                ),
+            },
+        )
         manifest = verifier.load_manifest(ROOT / "codex-rs/aws-auth/Cargo.toml")
         self.assertEqual(
             manifest["dependencies"]["aws-config"]["features"],

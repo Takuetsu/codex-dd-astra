@@ -47,7 +47,9 @@ STAGED = {
 def committed(ref: str, path: str) -> bytes:
     return subprocess.run(
         ["git", "show", ref + ":" + path],
-        cwd=ROOT, check=True, capture_output=True,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
     ).stdout
 
 
@@ -77,14 +79,18 @@ class SandboxContractStagingTests(unittest.TestCase):
         sandbox = src("codex-rs/core/src/tools/sandboxing.rs")
         self.assertIn("pub enum SandboxOverride", protocol)
         self.assertIn("EscalatedSandboxWithRestrictions", protocol)
-        self.assertIn("pub(crate) use codex_protocol::sandbox::SandboxOverride;", sandbox)
+        self.assertIn(
+            "pub(crate) use codex_protocol::sandbox::SandboxOverride;", sandbox
+        )
         self.assertIn("pub(crate) fn ensure_native_sandbox(", sandbox)
         self.assertIn("sandbox == SandboxType::None", sandbox)
         self.assertIn("requires an available filesystem sandbox", sandbox)
 
     def test_first_retry_and_network_approval_attempts_retain_override(self):
         orchestrator = src("codex-rs/core/src/tools/orchestrator.rs")
-        self.assertIn("ensure_native_sandbox(sandbox_override, initial_sandbox)?;", orchestrator)
+        self.assertIn(
+            "ensure_native_sandbox(sandbox_override, initial_sandbox)?;", orchestrator
+        )
         self.assertEqual(orchestrator.count("SandboxAttempt {"), 3)
         self.assertGreaterEqual(orchestrator.count("sandbox_override,"), 3)
         self.assertIn("sandbox_override: attempt.sandbox_override", orchestrator)
@@ -94,16 +100,27 @@ class SandboxContractStagingTests(unittest.TestCase):
         core = src("codex-rs/core/src/sandboxing/mod.rs")
         self.assertIn("pub async fn env_for(", sandbox)
         self.assertIn("pub async fn env_for_exec_server(", sandbox)
-        self.assertEqual(sandbox.count("request.sandbox_override = self.sandbox_override;"), 2)
+        self.assertEqual(
+            sandbox.count("request.sandbox_override = self.sandbox_override;"), 2
+        )
         self.assertIn("sandbox_override: self.sandbox_override", sandbox)
         self.assertIn("pub(crate) async fn from_sandbox_exec_request(", core)
         self.assertIn("codex_exec_server::run_integrity_checks(&request).await;", core)
 
     def test_windows_denied_reads_regression_kept_async(self):
         tests = src("codex-rs/core/src/tools/sandboxing_tests.rs")
-        self.assertIn("async fn windows_sandbox_env_preserves_denied_reads_or_rejects_unsupported_backend", tests)
-        self.assertIn("ensure_native_sandbox(SandboxOverride::EscalatedSandboxWithRestrictions, SandboxType::None)", tests)
-        self.assertIn("attempt.sandbox_override = SandboxOverride::EscalatedSandboxWithRestrictions", tests)
+        self.assertIn(
+            "async fn windows_sandbox_env_preserves_denied_reads_or_rejects_unsupported_backend",
+            tests,
+        )
+        self.assertIn(
+            "ensure_native_sandbox(SandboxOverride::EscalatedSandboxWithRestrictions, SandboxType::None)",
+            tests,
+        )
+        self.assertIn(
+            "attempt.sandbox_override = SandboxOverride::EscalatedSandboxWithRestrictions",
+            tests,
+        )
 
     def test_apply_patch_exec_server_retains_override(self):
         patch = src("codex-rs/core/src/tools/runtimes/apply_patch.rs")
@@ -111,7 +128,9 @@ class SandboxContractStagingTests(unittest.TestCase):
         self.assertIn("fn file_system_sandbox_context_for_attempt(", patch)
 
     def test_release_and_lockfile_remain_unadvanced(self):
-        self.assertEqual(committed("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4")
+        self.assertEqual(
+            committed("HEAD", "codex-rs/codexdd-version.txt").strip(), b"0.4.4"
+        )
         self.assertEqual(
             committed("HEAD", "codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",

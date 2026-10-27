@@ -3,6 +3,7 @@
 This is not native Rust validation, a live app-server test, Windows release
 acceptance, or authorization for upstream auto-publishing.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -27,15 +28,23 @@ NEW = (
 
 def git(*args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=ROOT, check=True,
-        text=True, encoding="utf-8", capture_output=True,
+        ["git", *args],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
     ).stdout.strip()
 
 
 def source(path: str, ref: str = "HEAD") -> str:
     return subprocess.run(
-        ["git", "show", ref + ":" + path], cwd=ROOT, check=True,
-        text=True, encoding="utf-8", capture_output=True,
+        ["git", "show", ref + ":" + path],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
     ).stdout
 
 
@@ -50,9 +59,9 @@ class ThreadReadStateRoutingTests(unittest.TestCase):
         self.assertEqual(source(PATH), original.replace(OLD, NEW, 1))
 
     def test_one_read_state_arm_and_no_accidental_duplicate(self):
-        self.assertEqual(source(PATH).count(
-            "ServerNotification::ThreadReadStateChanged(_)"
-        ), 1)
+        self.assertEqual(
+            source(PATH).count("ServerNotification::ThreadReadStateChanged(_)"), 1
+        )
 
     def test_read_state_is_broadcast_global_not_retargeted_to_thread(self):
         value = source(PATH)
@@ -72,7 +81,10 @@ class ThreadReadStateRoutingTests(unittest.TestCase):
     def test_existing_thread_id_and_invalid_id_handling_preserved(self):
         value = source(PATH)
         self.assertIn("ServerNotificationThreadTarget::InvalidThreadId(", value)
-        self.assertIn("ServerNotification::Warning(notification) => notification.thread_id.as_deref()", value)
+        self.assertIn(
+            "ServerNotification::Warning(notification) => notification.thread_id.as_deref()",
+            value,
+        )
 
     def test_protocol_has_the_new_notification_variant(self):
         proto = source("codex-rs/app-server-protocol/src/protocol/common.rs")

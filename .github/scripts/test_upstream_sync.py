@@ -492,7 +492,9 @@ checksum = "abc"
         self.assertEqual(decoded["contract_version"], 1)
         self.assertEqual(decoded["state"], "manual_semantic_review_required")
         self.assertNotIn("auto_preparation_reasons", decoded)
-        self.assertNotIn("unclassified_overlap", decoded["sensitive_overlap_categories"])
+        self.assertNotIn(
+            "unclassified_overlap", decoded["sensitive_overlap_categories"]
+        )
 
     def test_candidate_state_distinguishes_textual_and_semantic_risk(self):
         self.assertEqual(candidate_state("not_run", 8), "discovered")

@@ -3,6 +3,7 @@
 Offline static provenance only; no Rust runtime, permission proof,
 generated schema acceptance, or authorization to publish.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -14,31 +15,40 @@ PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 STAGED = {
     "codex-rs/protocol/src/error.rs": [
         "9e44430d6f911c284ee418b1c11ca0e0b3ad38c5",
-        "8dfe556d94c8300dd10e6f93b10421eb1674567c"
+        "8dfe556d94c8300dd10e6f93b10421eb1674567c",
     ],
     "codex-rs/protocol/src/permissions.rs": [
         "140090f5ef1649ed9e4717643dc85773be93da5f",
-        "bd6757543a56063ecbced6dd49e52241dffb4af8"
+        "bd6757543a56063ecbced6dd49e52241dffb4af8",
     ],
     "codex-rs/protocol/src/shell_environment_tests.rs": [
         "c987f631db816339182d33d0e4083c773e325bce",
-        "8167a2afa146f0c48ecfed711412039624ea491e"
-    ]
+        "8167a2afa146f0c48ecfed711412039624ea491e",
+    ],
 }
 MERGED_PROTOCOL = "9ff46a4e1331e15f35f95b8e17ba41dfc931a5cf"
 TOOL_CALL_ENV = "0c6c515c416d3829122e8037a3b9c49c1a581608"
 
 
 def git_blob(ref: str, path: str) -> str | None:
-    result = subprocess.run(["git", "rev-parse", "--verify", ref + ":" + path],
-                            cwd=ROOT, capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", ref + ":" + path],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
     return result.stdout.strip() if result.returncode == 0 else None
 
 
 def source(path: str) -> str:
-    return subprocess.run(["git", "show", "HEAD:" + path], cwd=ROOT,
-                          check=True, capture_output=True, text=True,
-                          encoding="utf-8").stdout
+    return subprocess.run(
+        ["git", "show", "HEAD:" + path],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout
 
 
 class ProtocolErrorPermissionsIntegrationTests(unittest.TestCase):
@@ -60,10 +70,15 @@ class ProtocolErrorPermissionsIntegrationTests(unittest.TestCase):
                 self.assertEqual(git_blob(PRODUCTION, path), original)
 
     def test_codexdd_protocol_custom_merge_not_overwritten(self):
-        self.assertEqual(git_blob("HEAD", "codex-rs/protocol/src/protocol.rs"), MERGED_PROTOCOL)
+        self.assertEqual(
+            git_blob("HEAD", "codex-rs/protocol/src/protocol.rs"), MERGED_PROTOCOL
+        )
 
     def test_canonical_tool_call_environment_source_is_staged(self):
-        self.assertEqual(git_blob("HEAD", "codex-rs/protocol/src/shell_environment.rs"), TOOL_CALL_ENV)
+        self.assertEqual(
+            git_blob("HEAD", "codex-rs/protocol/src/shell_environment.rs"),
+            TOOL_CALL_ENV,
+        )
 
     def test_protocol_error_conversion_remains_defined(self):
         errors = source("codex-rs/protocol/src/error.rs")
@@ -73,8 +88,11 @@ class ProtocolErrorPermissionsIntegrationTests(unittest.TestCase):
 
     def test_permission_source_retains_read_deny_and_protected_metadata(self):
         permissions = source("codex-rs/protocol/src/permissions.rs")
-        for marker in ("ReadDenyMatcher", "FileSystemSandboxPolicy",
-                       "forbidden_agent_metadata_write"):
+        for marker in (
+            "ReadDenyMatcher",
+            "FileSystemSandboxPolicy",
+            "forbidden_agent_metadata_write",
+        ):
             self.assertIn(marker, permissions)
 
     def test_windows_tool_call_id_case_fold_test_is_staged(self):
@@ -83,19 +101,31 @@ class ProtocolErrorPermissionsIntegrationTests(unittest.TestCase):
         self.assertIn("CODEX_TOOL_CALL_ID", tests)
 
     def test_adaptive_policy_is_unchanged(self):
-        self.assertEqual(git_blob("HEAD", "codex-rs/core/src/tools/registry.rs"),
-                         "fc75b3bbf91f1881bd32faaaca93356fbb598b5e")
+        self.assertEqual(
+            git_blob("HEAD", "codex-rs/core/src/tools/registry.rs"),
+            "fc75b3bbf91f1881bd32faaaca93356fbb598b5e",
+        )
 
     def test_release_versions_and_original_lockfile_remain(self):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
-        self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
-        self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"),
-                         "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
+        self.assertEqual(
+            source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0"
+        )
+        self.assertEqual(
+            git_blob("HEAD", "codex-rs/Cargo.lock"),
+            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
+        )
 
     def test_protocol_packet_is_not_a_release_gate(self):
-        doc = (ROOT / "docs/codexdd-0.4.5-packet-3c9b-protocol.md").read_text(encoding="utf-8")
-        for marker in ("INCOMPLETE / NOT A RELEASE CANDIDATE",
-                       "native Rust", "Cargo.lock", "source-only"):
+        doc = (ROOT / "docs/codexdd-0.4.5-packet-3c9b-protocol.md").read_text(
+            encoding="utf-8"
+        )
+        for marker in (
+            "INCOMPLETE / NOT A RELEASE CANDIDATE",
+            "native Rust",
+            "Cargo.lock",
+            "source-only",
+        ):
             self.assertIn(marker, doc)
 
 

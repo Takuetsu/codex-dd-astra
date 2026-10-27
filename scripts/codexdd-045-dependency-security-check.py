@@ -47,7 +47,9 @@ INHERITED_MAINTENANCE = {
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", required=True, choices=("staging", "release"),
+        "--mode",
+        required=True,
+        choices=("staging", "release"),
         help="staging verifies only remediated packages; release fails closed on known open advisories",
     )
     parser.add_argument("--windows-metadata", type=Path)
@@ -66,7 +68,9 @@ def main() -> int:
     for name, version in REQUIRED.items():
         versions = packages.get(name, set())
         if versions != {version}:
-            problems.append(f"{name}: expected only {version}, found {sorted(versions)!r}")
+            problems.append(
+                f"{name}: expected only {version}, found {sorted(versions)!r}"
+            )
         else:
             print(f"STAGED PATCH: {name} {version}")
 
@@ -80,29 +84,43 @@ def main() -> int:
     ):
         observed = (ROOT / "codex-rs" / filename).read_text(encoding="utf-8").strip()
         if observed != expected:
-            problems.append(f"nonrelease marker {filename}: {observed!r} != {expected!r}")
+            problems.append(
+                f"nonrelease marker {filename}: {observed!r} != {expected!r}"
+            )
 
     bigint = packages.get("crypto-bigint", set())
     if not bigint:
         print("CRYPTO-BIGINT: not present in this resolved lock")
     elif bigint == {"0.7.10"}:
-        print("CRYPTO-BIGINT: secure 0.7.10, still subject to exact all-target cargo-deny and native behavior tests")
+        print(
+            "CRYPTO-BIGINT: secure 0.7.10, still subject to exact all-target cargo-deny and native behavior tests"
+        )
     else:
-        print(f"CRYPTO-BIGINT BLOCKED: {sorted(bigint)!r}; RUSTSEC-2026-0387 patched >=0.7.6")
+        print(
+            f"CRYPTO-BIGINT BLOCKED: {sorted(bigint)!r}; RUSTSEC-2026-0387 patched >=0.7.6"
+        )
         if opts.mode == "release":
-            problems.append("RUSTSEC-2026-0387 crypto-bigint remains in the all-target graph")
+            problems.append(
+                "RUSTSEC-2026-0387 crypto-bigint remains in the all-target graph"
+            )
 
     # Release precheck may use only these three accepted INFO exceptions,
     # and only after live RustSec + dual-target reachability checks pass.
     guard_passed = False
     if opts.mode == "release":
         if not opts.windows_metadata or not opts.linux_metadata:
-            problems.append("release precheck needs both Windows and Linux locked Cargo metadata files")
+            problems.append(
+                "release precheck needs both Windows and Linux locked Cargo metadata files"
+            )
         else:
             cmd = [
-                sys.executable, str(ROOT / "scripts" / "codexdd-045-inherited-risk-guard.py"),
-                "--windows-metadata", str(opts.windows_metadata),
-                "--linux-metadata", str(opts.linux_metadata), "--check-db",
+                sys.executable,
+                str(ROOT / "scripts" / "codexdd-045-inherited-risk-guard.py"),
+                "--windows-metadata",
+                str(opts.windows_metadata),
+                "--linux-metadata",
+                str(opts.linux_metadata),
+                "--check-db",
             ]
             guard_passed = subprocess.run(cmd, check=False).returncode == 0
             if not guard_passed:
@@ -111,10 +129,14 @@ def main() -> int:
     for name, advisory in INHERITED_MAINTENANCE.items():
         if name in packages:
             if name in ACCEPTED_LINUX_INFO:
-                print(f"ACCEPTED INFO ONLY (NOT ADVISORY-FREE): {advisory} {name} {sorted(packages[name])!r}")
+                print(
+                    f"ACCEPTED INFO ONLY (NOT ADVISORY-FREE): {advisory} {name} {sorted(packages[name])!r}"
+                )
                 # The release-mode guard failure is recorded above.
             else:
-                print(f"INHERITED MAINTENANCE OPEN: {advisory} {name} {sorted(packages[name])!r}")
+                print(
+                    f"INHERITED MAINTENANCE OPEN: {advisory} {name} {sorted(packages[name])!r}"
+                )
                 if opts.mode == "release":
                     problems.append(f"{advisory} {name} is still present")
 
@@ -123,9 +145,13 @@ def main() -> int:
             print("BLOCKED:", problem, file=sys.stderr)
         return 2
     if opts.mode == "staging":
-        print("STAGING CHECK PASS ONLY: accepted INFO scope does not clear cargo-deny or crypto-bigint")
+        print(
+            "STAGING CHECK PASS ONLY: accepted INFO scope does not clear cargo-deny or crypto-bigint"
+        )
     else:
-        print("KNOWN-ISSUE PRECHECK PASS ONLY: unmodified cargo-deny and native release gates still required")
+        print(
+            "KNOWN-ISSUE PRECHECK PASS ONLY: unmodified cargo-deny and native release gates still required"
+        )
     return 0
 
 

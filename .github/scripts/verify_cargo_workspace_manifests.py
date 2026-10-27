@@ -43,8 +43,9 @@ PINNED_EXTERNAL_VENDOR = {
 OPTIONAL_DEPENDENCY_EXCEPTIONS = set()
 # credentials-login is essential to AWS authentication; no blanket exceptions.
 INTERNAL_DEPENDENCY_FEATURE_EXCEPTIONS = {
-    ("codex-rs/aws-auth/Cargo.toml", "dependencies", "aws-config"):
-        ("credentials-login",),
+    ("codex-rs/aws-auth/Cargo.toml", "dependencies", "aws-config"): (
+        "credentials-login",
+    ),
 }
 
 
@@ -127,15 +128,29 @@ def immutable_vendor_errors(path_key: str) -> list[str]:
     vendor_path, expected_tree = PINNED_EXTERNAL_VENDOR[path_key]
     tree = subprocess.run(
         ["git", "-C", str(ROOT), "rev-parse", f"HEAD:{vendor_path}"],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     status = subprocess.run(
-        ["git", "-C", str(ROOT), "status", "--porcelain",
-         "--untracked-files=all", "--", vendor_path],
-        capture_output=True, text=True, check=False,
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            vendor_path,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if tree.returncode != 0 or tree.stdout.strip() != expected_tree:
-        return ["reviewed AWS vendor Git tree differs; renew owner review before changing source"]
+        return [
+            "reviewed AWS vendor Git tree differs; renew owner review before changing source"
+        ]
     if status.returncode != 0 or status.stdout.strip():
         return ["reviewed AWS vendor contains modified or untracked files"]
     return []

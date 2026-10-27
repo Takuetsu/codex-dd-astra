@@ -3,6 +3,7 @@
 Exact provenance and source invariants only; NOT a native Rust compile,
 Windows elevation/runtime proof, broader TUI upstream acceptance or a release gate.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -31,15 +32,23 @@ START_3C9D3_BLOB = "06ea648374cbdcc3ae7276ba146f4dbe45da3118"
 
 def git(*args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=ROOT, check=True, capture_output=True,
-        text=True, encoding="utf-8",
+        ["git", *args],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     ).stdout.strip()
 
 
 def source(path: str, ref: str = "HEAD") -> str:
     return subprocess.run(
-        ["git", "show", ref + ":" + path], cwd=ROOT, check=True,
-        capture_output=True, text=True, encoding="utf-8",
+        ["git", "show", ref + ":" + path],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     ).stdout
 
 
@@ -54,7 +63,9 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
         for path, old in ORIGINAL.items():
             with self.subTest(path=path):
                 self.assertEqual(git("rev-parse", PRODUCTION + ":" + path), old)
-                self.assertEqual(git("rev-parse", AFTER_3C9D4 + ":" + path), REVIEWED[path])
+                self.assertEqual(
+                    git("rev-parse", AFTER_3C9D4 + ":" + path), REVIEWED[path]
+                )
 
     def test_3c9d3_source_baseline_is_pinned(self):
         self.assertEqual(git("rev-parse", AFTER_3C9D3 + ":" + START), START_3C9D3_BLOB)
@@ -213,7 +224,9 @@ class ManagedDaemonHandoffSourceTests(unittest.TestCase):
     def test_preserved_fork_inventory_pins_seven_reviewed_sources(self):
         guard = source(".github/scripts/test_codexdd_045_3c9c_tui_upstream.py")
         for path in (START, LIB, APP):
-            self.assertIn('"' + path + '": "' + git("rev-parse", "HEAD:" + path) + '"', guard)
+            self.assertIn(
+                '"' + path + '": "' + git("rev-parse", "HEAD:" + path) + '"', guard
+            )
         self.assertIn("self.assertEqual(len(PRESERVED_FORK), 44)", guard)
 
     def test_release_controls_unadvanced(self):

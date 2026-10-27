@@ -151,7 +151,9 @@ class Upstream045ContractAuditTests(unittest.TestCase):
             validate_v2_release_receipt(**bad)
 
     def test_original_blocked_v1_discovery_is_not_a_v2_accepted_receipt(self):
-        original = (ROOT / "docs/upstream-candidates/original-blocked-v1-manifest.json").read_bytes()
+        original = (
+            ROOT / "docs/upstream-candidates/original-blocked-v1-manifest.json"
+        ).read_bytes()
         parsed = json.loads(original)
         self.assertEqual(parsed["contract_version"], 1)
         self.assertEqual(parsed["state"], "blocked_transplant_conflict")
@@ -217,8 +219,12 @@ class Upstream045ContractAuditTests(unittest.TestCase):
         self.assertNotIn("git push", promote)
 
     def test_original_v2_workflows_still_require_owner_and_lease(self):
-        publish = (WORKFLOWS / "upstream-reconcile-publish.yml").read_text(encoding="utf-8")
-        promote = (WORKFLOWS / "upstream-reconcile-promote.yml").read_text(encoding="utf-8")
+        publish = (WORKFLOWS / "upstream-reconcile-publish.yml").read_text(
+            encoding="utf-8"
+        )
+        promote = (WORKFLOWS / "upstream-reconcile-promote.yml").read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn("schedule:\n", publish)
         self.assertNotIn("schedule:\n", promote)
         self.assertIn("contents: write", publish)
@@ -234,8 +240,12 @@ class Upstream045ContractAuditTests(unittest.TestCase):
         self.assertNotIn("git push", promote)
 
     def test_windows_validation_scripts_still_emit_native_candidate_receipts(self):
-        v1 = (SCRIPTS / "codexdd-validate-upstream-candidate.ps1").read_text(encoding="utf-8")
-        v2 = (SCRIPTS / "codexdd-validate-upstream-candidate-v2.ps1").read_text(encoding="utf-8")
+        v1 = (SCRIPTS / "codexdd-validate-upstream-candidate.ps1").read_text(
+            encoding="utf-8"
+        )
+        v2 = (SCRIPTS / "codexdd-validate-upstream-candidate-v2.ps1").read_text(
+            encoding="utf-8"
+        )
         for version, script in (("v1", v1), ("v2", v2)):
             with self.subTest(version=version):
                 self.assertIn("CODEXDD_UPSTREAM_VALIDATION_RECEIPT", script)

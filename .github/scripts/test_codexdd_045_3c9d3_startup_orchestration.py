@@ -3,6 +3,7 @@
 Static git/source checks only. NOT native Rust compilation, elevation/runtime
 verification, complete 0.163.0 TUI integration, or release acceptance.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -18,15 +19,23 @@ NEW_BLOB = "6b3bf4a9cf3d639107126b29992690b19bf4c932"
 
 def git(*args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=ROOT, check=True,
-        text=True, encoding="utf-8", capture_output=True,
+        ["git", *args],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
     ).stdout.strip()
 
 
 def source(path: str = PATH, ref: str = "HEAD") -> str:
     return subprocess.run(
-        ["git", "show", f"{ref}:{path}"], cwd=ROOT, check=True,
-        text=True, encoding="utf-8", capture_output=True,
+        ["git", "show", f"{ref}:{path}"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
     ).stdout
 
 
@@ -86,12 +95,20 @@ class StartupOrchestrationMergeTests(unittest.TestCase):
         self.assertIn("is_current_process_elevated().map_err(|err|", src)
         self.assertIn("Windows elevation probe failed; using embedded mode", src)
         self.assertIn("elevated_windows_implicit_exclusion(", src)
-        self.assertIn("let reuse_implicit_local_daemon = daemon_exclusion.is_none();", src)
+        self.assertIn(
+            "let reuse_implicit_local_daemon = daemon_exclusion.is_none();", src
+        )
 
     def test_explicit_remote_and_agents_overview_retained(self):
         src = source()
-        self.assertIn("&& !cli.agents_overview\n        && explicit_remote_endpoint.is_none()", src)
-        self.assertIn("        cli.agents_overview,\n        explicit_remote_endpoint.is_some(),", src)
+        self.assertIn(
+            "&& !cli.agents_overview\n        && explicit_remote_endpoint.is_none()",
+            src,
+        )
+        self.assertIn(
+            "        cli.agents_overview,\n        explicit_remote_endpoint.is_some(),",
+            src,
+        )
 
     def test_legacy_elevated_warning_and_no_daemon_mutation_not_reintroduced(self):
         src = source()
@@ -130,8 +147,10 @@ class StartupOrchestrationMergeTests(unittest.TestCase):
             "            &config,\n            &cli_kv_overrides,\n            managed_daemon,",
             src,
         )
-        self.assertIn("    cli_kv_overrides: &[(String, toml::Value)],\n    managed_daemon: bool,",
-                      source("codex-rs/tui/src/daemon_recovery.rs"))
+        self.assertIn(
+            "    cli_kv_overrides: &[(String, toml::Value)],\n    managed_daemon: bool,",
+            source("codex-rs/tui/src/daemon_recovery.rs"),
+        )
 
     def test_removed_override_field_not_reintroduced(self):
         self.assertNotIn("main_execve_wrapper_exe:", source())

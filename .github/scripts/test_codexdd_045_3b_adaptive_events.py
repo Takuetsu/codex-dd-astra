@@ -22,8 +22,10 @@ FILES = {
 
 def committed(path: str) -> bytes:
     return subprocess.run(
-        ["git", "show", "HEAD:" + path], cwd=ROOT,
-        capture_output=True, check=True,
+        ["git", "show", "HEAD:" + path],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
     ).stdout
 
 
@@ -57,7 +59,9 @@ class AdaptiveEventIntegrationTests(unittest.TestCase):
 
     def test_session_owned_notification_contains_core_source_turn_id(self):
         start = self.handler.index("async fn handle_adaptive_runtime_signal(")
-        end = self.handler.index("pub(crate) async fn apply_bespoke_event_handling(", start)
+        end = self.handler.index(
+            "pub(crate) async fn apply_bespoke_event_handling(", start
+        )
         body = self.handler[start:end]
         for marker in (
             "source_turn_id,",
@@ -70,18 +74,24 @@ class AdaptiveEventIntegrationTests(unittest.TestCase):
 
     def test_live_signal_is_saved_to_thread_turn_summary(self):
         start = self.handler.index("async fn handle_adaptive_runtime_signal(")
-        end = self.handler.index("pub(crate) async fn apply_bespoke_event_handling(", start)
+        end = self.handler.index(
+            "pub(crate) async fn apply_bespoke_event_handling(", start
+        )
         body = self.handler[start:end]
         self.assertIn(".adaptive_runtime_signals", body)
         self.assertIn(".push(signal.clone());", body)
-        self.assertIn("send_server_notification(ServerNotification::AdaptiveRuntimeSignal(", body)
+        self.assertIn(
+            "send_server_notification(ServerNotification::AdaptiveRuntimeSignal(", body
+        )
 
     def test_thread_state_has_turn_scoped_adaptive_signal_buffer(self):
         self.assertIn(
             "pub(crate) adaptive_runtime_signals: Vec<AdaptiveRuntimeSignalEnvelope>",
             self.state,
         )
-        self.assertIn("use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;", self.state)
+        self.assertIn(
+            "use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;", self.state
+        )
         self.assertIn("#[derive(Default)]", self.state)
 
     def test_turn_completion_replays_trusted_signal_only_if_successful(self):
@@ -105,7 +115,9 @@ class AdaptiveEventIntegrationTests(unittest.TestCase):
     def test_failed_or_interrupted_turn_does_not_terminally_replay(self):
         start = self.handler.index("async fn handle_turn_interrupted(")
         end = self.handler.index("async fn respond_to_pending_interrupts(", start)
-        self.assertNotIn("for signal in adaptive_runtime_signals", self.handler[start:end])
+        self.assertNotIn(
+            "for signal in adaptive_runtime_signals", self.handler[start:end]
+        )
         self.assertIn("TurnStatus::Interrupted", self.handler[start:end])
 
     def test_fork_native_rust_test_preserves_order_and_identity(self):
@@ -127,18 +139,12 @@ class AdaptiveEventIntegrationTests(unittest.TestCase):
         self.assertNotIn("RealtimeEvent::SessionUpdated { .. } => {}", self.handler)
 
     def test_official_listener_replacement_cleanup_retained(self):
-        self.assertIn(
-            "pub(crate) type PendingThreadUnloads =", self.state
-        )
-        self.assertIn(
-            "pub(crate) async fn remove_unsubscribed_listener(", self.state
-        )
+        self.assertIn("pub(crate) type PendingThreadUnloads =", self.state)
+        self.assertIn("pub(crate) async fn remove_unsubscribed_listener(", self.state)
         self.assertIn("listener_generation", self.state)
 
     def test_official_read_state_change_media_passthrough_retained(self):
-        self.assertIn(
-            "ServerNotification::ThreadReadStateChanged(_)", self.media
-        )
+        self.assertIn("ServerNotification::ThreadReadStateChanged(_)", self.media)
         self.assertIn(
             "ServerNotification::AdaptiveRuntimeSignal(_) => notification",
             self.media,
@@ -151,9 +157,7 @@ class AdaptiveEventIntegrationTests(unittest.TestCase):
         self.assertNotIn("without_thread_item_media(notification.signal", self.media)
 
     def test_product_markers_and_validation_boundary_unmodified(self):
-        self.assertEqual(
-            committed("codex-rs/codexdd-version.txt").strip(), b"0.4.4"
-        )
+        self.assertEqual(committed("codex-rs/codexdd-version.txt").strip(), b"0.4.4")
         self.assertEqual(
             committed("codex-rs/upstream-codex-release.txt").strip(),
             b"rust-v0.162.0",

@@ -30,7 +30,9 @@ from upstream_sync import (
 DRAFT_PR_WRITES_ENABLED = False
 REPOSITORY = "Takuetsu/codex-dd-astra"
 BASE_BRANCH = "dd/astra-policy-v2"
-GITHUB_ACTIONS_FORBIDDEN = "github actions is not permitted to create or approve pull requests"
+GITHUB_ACTIONS_FORBIDDEN = (
+    "github actions is not permitted to create or approve pull requests"
+)
 PR_URL = re.compile(r"^https://github\.com/Takuetsu/codex-dd-astra/pull/[1-9][0-9]*$")
 SAFE_OID = re.compile(r"^[0-9a-f]{40}$")
 SAFE_DIGEST = re.compile(r"^[0-9a-f]{64}$")
@@ -67,11 +69,15 @@ class DraftPRResult:
         return json.dumps(asdict(self), sort_keys=True, separators=(",", ":")) + "\n"
 
 
-def _result(plan: DraftPRPlan, status: str, reason: str, url: str | None = None) -> DraftPRResult:
+def _result(
+    plan: DraftPRPlan, status: str, reason: str, url: str | None = None
+) -> DraftPRResult:
     return DraftPRResult(
-        status=status, reason=reason,
+        status=status,
+        reason=reason,
         candidate_branch=plan.candidate_branch,
-        candidate_sha=plan.candidate_sha, pr_url=url,
+        candidate_sha=plan.candidate_sha,
+        pr_url=url,
     )
 
 
@@ -116,13 +122,29 @@ def draft_plan(
         "This draft is **not** a release, source approval, native validation "
         "receipt or authorization to merge.\n\n"
         "### Exact candidate identity\n\n"
-        + "- Candidate branch: \x60" + prepared.candidate_branch + "\x60\n"
-        + "- Candidate HEAD: \x60" + prepared.prepared_commit_sha + "\x60\n"
-        + "- Candidate tree: \x60" + prepared.prepared_tree_sha + "\x60\n"
-        + "- Production base: \x60" + prepared.production_sha + "\x60\n"
-        + "- Official upstream target: \x60" + tag + "@" + target + "\x60\n"
-        + "- Immutable v1 manifest: \x60" + prepared.manifest_path + "\x60\n"
-        + "- Manifest SHA-256: \x60" + prepared.manifest_sha256 + "\x60\n\n"
+        + "- Candidate branch: \x60"
+        + prepared.candidate_branch
+        + "\x60\n"
+        + "- Candidate HEAD: \x60"
+        + prepared.prepared_commit_sha
+        + "\x60\n"
+        + "- Candidate tree: \x60"
+        + prepared.prepared_tree_sha
+        + "\x60\n"
+        + "- Production base: \x60"
+        + prepared.production_sha
+        + "\x60\n"
+        + "- Official upstream target: \x60"
+        + tag
+        + "@"
+        + target
+        + "\x60\n"
+        + "- Immutable v1 manifest: \x60"
+        + prepared.manifest_path
+        + "\x60\n"
+        + "- Manifest SHA-256: \x60"
+        + prepared.manifest_sha256
+        + "\x60\n\n"
         "### Outstanding mandatory gates\n\n"
         "- [ ] Native Daniel-CL Windows tests and exact candidate release receipt\n"
         "- [ ] Reviewed source/semantic/security/permission impact\n"
@@ -137,10 +159,12 @@ def draft_plan(
         candidate_branch=prepared.candidate_branch,
         candidate_sha=prepared.prepared_commit_sha,
         production_sha=prepared.production_sha,
-        target_sha=target, target_tag=tag,
+        target_sha=target,
+        target_tag=tag,
         manifest_path=prepared.manifest_path,
         manifest_sha256=prepared.manifest_sha256,
-        title=title, body=body,
+        title=title,
+        body=body,
     )
 
 
@@ -175,8 +199,18 @@ def verify_published_source(
 
     manifest_tag = manifest.tracked_upstream_tag
     for tag, pinned, sha, tree in (
-        (manifest_tag, pinned_tracked_oid, manifest.tracked_upstream_sha, manifest.tracked_upstream_tree),
-        (plan.target_tag, pinned_target_oid, plan.target_sha, manifest.target_upstream_tree),
+        (
+            manifest_tag,
+            pinned_tracked_oid,
+            manifest.tracked_upstream_sha,
+            manifest.tracked_upstream_tree,
+        ),
+        (
+            plan.target_tag,
+            pinned_target_oid,
+            plan.target_sha,
+            manifest.target_upstream_tree,
+        ),
     ):
         if SAFE_OID.fullmatch(pinned) is None:
             raise DraftPRBlocked("invalid_pinned_official_tag")
@@ -191,16 +225,24 @@ def verify_published_source(
             raise DraftPRBlocked("peeled_upstream_tree_moved")
     if _git(repo, "rev-parse", production + "^{tree}") != manifest.production_tree:
         raise DraftPRBlocked("production_tree_moved")
-    if _git(repo, "rev-parse", plan.candidate_sha + "^{tree}") != prepared.prepared_tree_sha:
+    if (
+        _git(repo, "rev-parse", plan.candidate_sha + "^{tree}")
+        != prepared.prepared_tree_sha
+    ):
         raise DraftPRBlocked("candidate_tree_moved")
     parents = _git(repo, "rev-list", "--parents", "-n", "1", plan.candidate_sha).split()
     if parents != [plan.candidate_sha, production]:
         raise DraftPRBlocked("candidate_parent_mismatch")
 
-    if preparer._git_blob(repo, prepared.prepared_tree_sha, plan.manifest_path) != manifest_bytes:
+    if (
+        preparer._git_blob(repo, prepared.prepared_tree_sha, plan.manifest_path)
+        != manifest_bytes
+    ):
         raise DraftPRBlocked("manifest_blob_mismatch")
     marker = "codex-rs/upstream-codex-release.txt"
-    if preparer._git_blob(repo, prepared.prepared_tree_sha, marker) != (plan.target_tag + "\n").encode("ascii"):
+    if preparer._git_blob(repo, prepared.prepared_tree_sha, marker) != (
+        plan.target_tag + "\n"
+    ).encode("ascii"):
         raise DraftPRBlocked("candidate_upstream_marker_mismatch")
     product = "codex-rs/codexdd-version.txt"
     if preparer._git_blob(repo, production, product) != preparer._git_blob(
@@ -216,14 +258,17 @@ def verify_published_source(
     tracked_entries = git_tree_entries(repo, manifest.tracked_upstream_sha)
     production_entries = git_tree_entries(repo, production)
     target_entries = git_tree_entries(repo, plan.target_sha)
-    inventory = build_delta_inventory(tracked_entries, production_entries, target_entries)
+    inventory = build_delta_inventory(
+        tracked_entries, production_entries, target_entries
+    )
     if (
         inventory.overlap_paths
         or manifest.overlap_path_count != len(inventory.overlap_paths)
         or manifest.upstream_change_path_count != len(inventory.upstream_change_paths)
         or manifest.customization_path_count != len(inventory.customization_paths)
         or any(
-            path not in policy.REVIEWED_SAFE_UPSTREAM_PATHS or policy._is_protected(path)
+            path not in policy.REVIEWED_SAFE_UPSTREAM_PATHS
+            or policy._is_protected(path)
             for path in inventory.upstream_change_paths
         )
     ):
@@ -244,17 +289,31 @@ def verify_published_source(
 
 def _gh(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["gh", *args], cwd=repo, text=True, capture_output=True,
-        check=False, timeout=30,
+        ["gh", *args],
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=30,
     )
 
 
 def _any_existing_pr(repo: Path, branch: str) -> bool:
     """All PR states count as duplicates. An incomplete query is NOT 'none'."""
     result = _gh(
-        repo, "pr", "list", "--repo", REPOSITORY, "--head", branch,
-        "--state", "all", "--limit", "1000",
-        "--json", "number,headRefName",
+        repo,
+        "pr",
+        "list",
+        "--repo",
+        REPOSITORY,
+        "--head",
+        branch,
+        "--state",
+        "all",
+        "--limit",
+        "1000",
+        "--json",
+        "number,headRefName",
     )
     if result.returncode != 0:
         raise DraftPRBlocked("pr_query_unavailable")
@@ -287,7 +346,10 @@ def _preflight(
     pinned_tracked_oid: str,
 ) -> None:
     verify_published_source(
-        repo, plan, prepared, manifest_bytes,
+        repo,
+        plan,
+        prepared,
+        manifest_bytes,
         pinned_target_oid=pinned_target_oid,
         pinned_tracked_oid=pinned_tracked_oid,
     )
@@ -315,20 +377,38 @@ def attempt_draft_pr(
         return _result(plan, "blocked_incomplete", "no_authorized_gh_token")
     try:
         _preflight(
-            repo, plan, prepared, manifest_bytes,
-            pinned_target_oid=pinned_target_oid, pinned_tracked_oid=pinned_tracked_oid,
+            repo,
+            plan,
+            prepared,
+            manifest_bytes,
+            pinned_target_oid=pinned_target_oid,
+            pinned_tracked_oid=pinned_tracked_oid,
         )
         # The second recheck reduces race window. GitHub has no CAS create-PR
         # operation; no duplicate/denied attempt may be silently retried.
         _preflight(
-            repo, plan, prepared, manifest_bytes,
-            pinned_target_oid=pinned_target_oid, pinned_tracked_oid=pinned_tracked_oid,
+            repo,
+            plan,
+            prepared,
+            manifest_bytes,
+            pinned_target_oid=pinned_target_oid,
+            pinned_tracked_oid=pinned_tracked_oid,
         )
     except DraftPRBlocked as exc:
-        return _result(plan, "blocked_duplicate" if str(exc) == "candidate_pr_already_exists"
-                       else "blocked_incomplete", str(exc))
-    except (OSError, subprocess.SubprocessError, report.VerificationError,
-            preparer.PreparationBlocked, ValueError):
+        return _result(
+            plan,
+            "blocked_duplicate"
+            if str(exc) == "candidate_pr_already_exists"
+            else "blocked_incomplete",
+            str(exc),
+        )
+    except (
+        OSError,
+        subprocess.SubprocessError,
+        report.VerificationError,
+        preparer.PreparationBlocked,
+        ValueError,
+    ):
         return _result(plan, "blocked_incomplete", "exact_identity_unavailable")
 
     with tempfile.TemporaryDirectory(prefix="codexdd-unvalidated-pr-") as directory:
@@ -336,9 +416,20 @@ def attempt_draft_pr(
         body_file.write_text(plan.body, encoding="utf-8")
         try:
             created = _gh(
-                repo, "pr", "create", "--draft", "--repo", REPOSITORY,
-                "--base", BASE_BRANCH, "--head", plan.candidate_branch,
-                "--title", plan.title, "--body-file", str(body_file),
+                repo,
+                "pr",
+                "create",
+                "--draft",
+                "--repo",
+                REPOSITORY,
+                "--base",
+                BASE_BRANCH,
+                "--head",
+                plan.candidate_branch,
+                "--title",
+                plan.title,
+                "--body-file",
+                str(body_file),
             )
         except (OSError, subprocess.SubprocessError):
             return _result(plan, "blocked_incomplete", "pr_create_unavailable")
@@ -346,15 +437,23 @@ def attempt_draft_pr(
     if created.returncode != 0:
         denied = GITHUB_ACTIONS_FORBIDDEN in (created.stderr or "").lower()
         if denied:
-            return _result(plan, "owner_action_required", "github_actions_pr_creation_forbidden")
+            return _result(
+                plan, "owner_action_required", "github_actions_pr_creation_forbidden"
+            )
         return _result(plan, "blocked_incomplete", "pr_create_failed_no_retry")
     url = created.stdout.strip()
     if PR_URL.fullmatch(url) is None:
         return _result(plan, "blocked_incomplete", "created_pr_url_not_verified")
     try:
         checked = _gh(
-            repo, "pr", "view", url, "--repo", REPOSITORY,
-            "--json", "url,isDraft,headRefName,headRefOid,baseRefName",
+            repo,
+            "pr",
+            "view",
+            url,
+            "--repo",
+            REPOSITORY,
+            "--json",
+            "url,isDraft,headRefName,headRefOid,baseRefName",
         )
         info = json.loads(checked.stdout) if checked.returncode == 0 else None
         valid = isinstance(info, dict) and (
@@ -368,12 +467,17 @@ def attempt_draft_pr(
         valid = False
     if not valid:
         return _result(plan, "blocked_incomplete", "created_pr_identity_unverified")
-    return _result(plan, "draft_created_unvalidated", "needs_windows_and_owner_review", url)
+    return _result(
+        plan, "draft_created_unvalidated", "needs_windows_and_owner_review", url
+    )
 
 
 def owner_handoff(plan: DraftPRPlan, result: DraftPRResult) -> str:
     """Text-only fallback; caller retains exact evidence, not a forged PR."""
-    if result.candidate_sha != plan.candidate_sha or result.candidate_branch != plan.candidate_branch:
+    if (
+        result.candidate_sha != plan.candidate_sha
+        or result.candidate_branch != plan.candidate_branch
+    ):
         raise DraftPRBlocked("handoff_candidate_mismatch")
     for value in (result.status, result.reason):
         if not isinstance(value, str) or re.fullmatch(r"[a-z_]+", value) is None:
@@ -382,12 +486,24 @@ def owner_handoff(plan: DraftPRPlan, result: DraftPRResult) -> str:
         raise DraftPRBlocked("unsafe_handoff_pr_url")
     return (
         "UNVALIDATED / NEEDS_WINDOWS_AND_OWNER_REVIEW\n"
-        + "Status: " + result.status + "\n"
-        + "Reason: " + result.reason + "\n"
-        + "Candidate branch: " + plan.candidate_branch + "\n"
-        + "Expected candidate SHA: " + plan.candidate_sha + "\n"
-        + "Manifest SHA-256: " + plan.manifest_sha256 + "\n"
-        + "Draft PR title: " + plan.title + "\n"
+        + "Status: "
+        + result.status
+        + "\n"
+        + "Reason: "
+        + result.reason
+        + "\n"
+        + "Candidate branch: "
+        + plan.candidate_branch
+        + "\n"
+        + "Expected candidate SHA: "
+        + plan.candidate_sha
+        + "\n"
+        + "Manifest SHA-256: "
+        + plan.manifest_sha256
+        + "\n"
+        + "Draft PR title: "
+        + plan.title
+        + "\n"
         + "Owner may use a separately approved GitHub credential/route after "
         "independent source and branch review. Never alter Actions settings "
         "or claim the candidate is Windows validated.\n"
