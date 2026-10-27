@@ -9,11 +9,11 @@ permissions:
   contents: write
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b614c032c50bc6306fa75f830158570eb8a706e8'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f06208a7dd8aa4d66bbb42875c65bb167d3ab1b6'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'b614c032c50bc6306fa75f830158570eb8a706e8'
+      EXPECTED_PARENT: 'f06208a7dd8aa4d66bbb42875c65bb167d3ab1b6'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -106,8 +106,17 @@ jobs:
                   def outside_fences(text: str) -> str:
                       return fence.sub("[IMMUTABLE_CODE]", text)
                   # Preserves all nonwhitespace prose, links, symbols and table cells.
-                  original = re.sub(r"\s+", "", outside_fences(before))
-                  updated = re.sub(r"\s+", "", outside_fences(after))
+                  def normalized(text):
+                      lines = []
+                      for line in outside_fences(text).splitlines():
+                          cols = [x.strip() for x in line.strip().strip("|").split("|")]
+                          if len(cols) > 1 and all(re.fullmatch(r":?-{3,}:?", x) for x in cols):
+                              lines.append("|".join((":" if x.startswith(":") else "") + "---" + (":" if x.endswith(":") else "") for x in cols))
+                          else:
+                              lines.append(line)
+                      return re.sub(r"\s+", "", "\n".join(lines))
+                  original = normalized(before)
+                  updated = normalized(after)
                   if original != updated:
                       raise SystemExit("Markdown nonwhitespace content changed: " + p)
           for p, blob in {
