@@ -89,6 +89,10 @@ jobs:
               raise SystemExit("BLOCKED: expected exactly one baseline i18n-config entry")
           p.write_text("".join(out), encoding="utf-8")
           PY
+          # The upstream parser now needs toml ^1.1.6; another unrelated
+          # system-deps owner has its older, compatible ^1.0.6 version locked.
+          # Allow Cargo to minimally reconcile this same-major dependency.
+          cargo update --manifest-path codex-rs/Cargo.toml -p 'toml@1.0.6+spec-1.1.0' --precise '1.1.8+spec-1.1.0'
           cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 > /dev/null
           cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/codexdd-i18n-win.json"
           cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/codexdd-i18n-linux.json"
