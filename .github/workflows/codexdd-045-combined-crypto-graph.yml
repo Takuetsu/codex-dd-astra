@@ -9,9 +9,9 @@ permissions:
   contents: read
 jobs:
   combined:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a4f08fba139949b49cfd5028607e1795d82ae5f6'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '779c7b602018cf429b5bb02231a65fddda23d7e9'
     runs-on: ubuntu-24.04
-    timeout-minutes: 22
+    timeout-minutes: 30
     env:
       CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
     steps:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'a4f08fba139949b49cfd5028607e1795d82ae5f6'
+          test "$(git rev-parse HEAD^)" = '779c7b602018cf429b5bb02231a65fddda23d7e9'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -153,6 +153,26 @@ jobs:
           test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/combined-crypto/original-security-policy-blob.txt")"
           git diff --check
           echo 'No source allowlist acceptance, no advisory waiver, no production merge, no release.'
+      - name: Test secure combined secrets owner without production data
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path codex-rs/Cargo.toml --locked -p codex-secrets --lib
+          test "$(git hash-object codex-rs/Cargo.lock)" = "$(cat "$RUNNER_TEMP/combined-crypto/lock-blob.txt")"
+          echo 'COMBINED SECRETS LIB GREEN only — historical Windows ciphertext recovery still required'
+      - name: Test secure combined user verification and ECDSA behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path codex-rs/Cargo.toml --locked -p codex-user-verification --lib
+          echo 'COMBINED FIRST-PARTY P256 GREEN only — native signing regression still required'
+      - name: Compile secure combined AWS credentials-login owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path codex-rs/Cargo.toml --locked -p codex-aws-auth --lib
+          test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/combined-crypto/original-security-policy-blob.txt")"
+          echo 'COMBINED AWS DPOP COMPILE GREEN only — live authentication still required'
       - name: Save exact disposable experiment evidence even on failure
         if: always()
         shell: bash
