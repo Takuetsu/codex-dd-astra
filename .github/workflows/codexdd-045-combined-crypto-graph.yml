@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   combined:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '97b160cf2dde7011e72c9429c7cc473386ed57f3'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a2eea3c8bdb3912346bcda833b13b790f862c5e4'
     runs-on: ubuntu-24.04
     timeout-minutes: 22
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '97b160cf2dde7011e72c9429c7cc473386ed57f3'
+          test "$(git rev-parse HEAD^)" = 'a2eea3c8bdb3912346bcda833b13b790f862c5e4'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -90,8 +90,9 @@ jobs:
               assert oldv and oldv.group(1) in (("0.13.2" if name=="p256" else "0.8.5"),)
               s=s[:m.start()]+part.replace(oldv.group(0),'version = "'+new+'"',1)+s[m.end():]
           rand_def=re.search(r'(?m)^\[dependencies\.rand\]\n[\s\S]*?(?=^\[|\Z)',s)
-          assert rand_def and 'features = ["std", "std_rng"]' in rand_def.group(0)
-          s=s.replace('features = ["std", "std_rng"]','features = ["std", "std_rng", "sys_rng"]',1)
+          assert rand_def and '"std_rng",' in rand_def.group(0), "unexpected AWS RNG feature block"
+          new_rand = rand_def.group(0).replace('"std_rng",', '"std_rng",\n    "sys_rng",', 1)
+          s = s[:rand_def.start()] + new_rand + s[rand_def.end():]
           p.write_text(s)
           p=root/"src/login/dpop.rs"
           s=p.read_text()
