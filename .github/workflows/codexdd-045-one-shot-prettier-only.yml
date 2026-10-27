@@ -9,11 +9,11 @@ permissions:
   contents: write
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b64602e8a8a2e03f80e53e6f1b38a3322a9d4f95'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '9d68798c61105b655bcc20a759feaebec1a4e36d'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'b64602e8a8a2e03f80e53e6f1b38a3322a9d4f95'
+      EXPECTED_PARENT: '9d68798c61105b655bcc20a759feaebec1a4e36d'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -89,10 +89,8 @@ jobs:
               after=normalized(Path(path).read_text(encoding="utf-8"))
               if before!=after:
                   mismatches.append(path)
-                  op=next((o for o in difflib.SequenceMatcher(None,before,after,autojunk=False).get_opcodes() if o[0]!="equal"),None)
-                  if op:
-                      _,a,b,c,d=op
-                      print("MISMATCH",path,"old",repr(before[max(0,a-50):b+65]),"new",repr(after[max(0,c-50):d+65]))
+                  idx=next((i for i,(x,y) in enumerate(zip(before,after)) if x!=y), min(len(before),len(after)))
+                  print("MISMATCH",path,"offset",idx,"old",repr(before[max(0,idx-60):idx+100]),"new",repr(after[max(0,idx-60):idx+100]))
           print("TOTAL_MISMATCHES",len(mismatches),"OF",len(paths))
           PY
       - name: Diagnose first Markdown-only formatter escape change
