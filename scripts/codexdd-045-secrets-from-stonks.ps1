@@ -9,6 +9,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# This script is the Stonks-side log collector; launching it from an SSH session
+# on Daniel-CL otherwise attempts Daniel-CL -> Daniel-CL and fails publickey.
+$launcherHost = [Environment]::MachineName
+if ($launcherHost -ine 'Daniel-Stonks') {
+    throw "Run this launcher on DANIEL-STONKS, not $launcherHost. If inside an SSH session on DANIEL-CL, exit that session first. No native validation was started."
+}
 if ($CandidateSha -notmatch '^[0-9a-f]{40}$') {
     throw 'CandidateSha must be an exact 40-character commit SHA'
 }
@@ -69,7 +75,7 @@ exit $exitCode
 $remoteScript = $remoteScript.Replace('__REPO_B64__', $repoB64).Replace('__CANDIDATE_SHA__', $CandidateSha)
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($remoteScript))
 
-Write-Output "STonks log: $log"
+Write-Output "Stonks log: $log"
 Write-Output "Running focused native secrets validation on $SshHost at $CandidateSha"
 # Windows PowerShell 5.1 may promote redirected SSH stderr to error records.
 $previousPreference = $ErrorActionPreference
