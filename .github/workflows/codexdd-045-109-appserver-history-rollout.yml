@@ -1,0 +1,168 @@
+# Exact-source read-only semantics for app-server, history, rollout under 0.4.5 crypto graph.
+name: CodexDD 0.4.5 109 overlap appserver history rollout native (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-secure-owner-behavior]
+    paths: ['.github/workflows/codexdd-045-109-appserver-history-rollout.yml']
+permissions:
+  contents: read
+jobs:
+  overlap-owners:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0888904572991a5a7e231491f8f42b4a157f630a'
+    runs-on: windows-2022
+    timeout-minutes: 105
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - name: Checkout exact source without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Check immutable source and secure graph
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD^).Trim() -ne '0888904572991a5a7e231491f8f42b4a157f630a') { throw 'Wrong source parent' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.lock').Trim() -ne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Unreviewed lock' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.toml').Trim() -ne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Unreviewed manifest' }
+          if ((git rev-parse 'HEAD:codex-rs/vendor/aws-config-1.13.0').Trim() -ne '5b1db93de9e14ab5c060794d23a567d907b66f21') { throw 'Unreviewed AWS vendor' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product version marker changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream release marker changed' }
+          if ((git rev-parse 'HEAD:codex-rs/app-server/src/bespoke_event_handling.rs').Trim() -ne '1c4a913d2373a614a2dfe73c10e6f65c64a727a1') { throw 'Changed protected overlap: codex-rs/app-server/src/bespoke_event_handling.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/app-server/src/message_processor.rs').Trim() -ne 'd9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a') { throw 'Changed protected overlap: codex-rs/app-server/src/message_processor.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/app-server/src/notification_media.rs').Trim() -ne 'c93967717664145a72390384749747212fd5c63a') { throw 'Changed protected overlap: codex-rs/app-server/src/notification_media.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/app-server/src/request_processors.rs').Trim() -ne '5c4633ab48ea77692e28193ea6e128ec58067a37') { throw 'Changed protected overlap: codex-rs/app-server/src/request_processors.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/app-server/src/request_processors/turn_processor.rs').Trim() -ne '1186f0a181704d8ea45243a850f971f1057cb080') { throw 'Changed protected overlap: codex-rs/app-server/src/request_processors/turn_processor.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/app-server/src/thread_state.rs').Trim() -ne '42b434e017c527a8785fbaedf43292a83e1af09d') { throw 'Changed protected overlap: codex-rs/app-server/src/thread_state.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/history/src/tests.rs').Trim() -ne 'a0a99cddd94064b6245e174cc74818ea3b5a3df2') { throw 'Changed protected overlap: codex-rs/history/src/tests.rs' }
+          if ((git rev-parse 'HEAD:codex-rs/rollout/src/recorder.rs').Trim() -ne '6e70783e7c2e93e9a705a2ce32f7317545ea9228') { throw 'Changed protected overlap: codex-rs/rollout/src/recorder.rs' }
+          python scripts/codexdd-045-inherited-risk-guard.py
+          if ($LASTEXITCODE -ne 0) { throw 'Crypto provenance guard failed' }
+          python scripts/codexdd-045-dependency-security-check.py --mode staging
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency security check failed' }
+      - name: Configure isolated native Windows target and temp
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045-109-owner'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CI_BUILD_ROOT=$root"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Cache only Cargo source downloads
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-109-owner-088890457299
+          restore-keys: |
+            codexdd045-crypto-msvc-
+      - name: Locked Windows Cargo resolver
+        shell: pwsh
+        run: |
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo locked resolver failed' }
+      - name: Configure repo-pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run 4 focused rollout semantic tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            'state_db_only_empty_cwd_filter_preserves_closed_db_error',
+            'list_threads_state_db_only_skips_jsonl_repair_scan',
+            'list_threads_default_filter_returns_filesystem_scan_results',
+            'list_threads_metadata_filter_overlays_state_db_list_metadata'
+          )
+          $idx = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ('codexdd045-owner-rollout-{0:D2}.log' -f $idx)
+            & cmd.exe /d /c ('cargo test --locked -p codex-rollout --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1')
+            $rc = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "Missing log for $case" }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join [Environment]::NewLine
+            Write-Host ("rollout {0}/{1}: {2}" -f ($idx + 1), $cases.Count, $case)
+            Write-Host $tail
+            if ($rc -ne 0 -or $tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') { throw "Native regression failed or no match: $case ($rc)" }
+            $idx++
+          }
+          Write-Host "PASS: $idx/4 rollout native regressions"
+      - name: Run 4 focused history semantic tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            'workflow_state_rollout_records_round_trip_without_thread_identity',
+            'response_item_envelope_accessors_preserve_item',
+            'delivered_assistant_rollout_survives_an_earlier_read_and_rewrite',
+            'compacted_metadata_remains_compatible_with_legacy_response_item_readers'
+          )
+          $idx = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ('codexdd045-owner-history-{0:D2}.log' -f $idx)
+            & cmd.exe /d /c ('cargo test --locked -p codex-history --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1')
+            $rc = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "Missing log for $case" }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join [Environment]::NewLine
+            Write-Host ("history {0}/{1}: {2}" -f ($idx + 1), $cases.Count, $case)
+            Write-Host $tail
+            if ($rc -ne 0 -or $tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') { throw "Native regression failed or no match: $case ($rc)" }
+            $idx++
+          }
+          Write-Host "PASS: $idx/4 history native regressions"
+      - name: Run 6 focused appserver semantic tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            'drain_rejects_new_work_without_waiting_for_admitted_work',
+            'verification_is_delivered_to_one_owner_and_other_connections_cannot_resolve_it',
+            'verification_cancels_when_its_owner_disconnects',
+            'verification_disconnect_during_registration_leaves_no_callback_or_request',
+            'verification_without_a_connected_app_has_no_pending_callback',
+            'account_switch_back_rejects_proof_before_the_auth_watcher_runs'
+          )
+          $idx = 0
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ('codexdd045-owner-appserver-{0:D2}.log' -f $idx)
+            & cmd.exe /d /c ('cargo test --locked -p codex-app-server --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1')
+            $rc = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) { throw "Missing log for $case" }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join [Environment]::NewLine
+            Write-Host ("appserver {0}/{1}: {2}" -f ($idx + 1), $cases.Count, $case)
+            Write-Host $tail
+            if ($rc -ne 0 -or $tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') { throw "Native regression failed or no match: $case ($rc)" }
+            $idx++
+          }
+          Write-Host "PASS: $idx/6 appserver native regressions"
+      - name: Upload narrow nonrelease diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-109-appserver-history-rollout
+          path: ${{ runner.temp }}/codexdd045-owner-*.log
+          if-no-files-found: warn
+          retention-days: 5
