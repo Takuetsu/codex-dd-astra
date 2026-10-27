@@ -51,21 +51,24 @@ impl AudioTrack {
                 RtpCodecKind::Audio,
             )
             .map_err(|_| "failed to register voice codec")?;
-        let track = TrackLocalStaticSample::new(Instant::now(), MediaStreamTrack::new(
-            "realtime".into(),
-            format!("audio-{ssrc}"),
-            "microphone".into(),
-            RtpCodecKind::Audio,
-            vec![RTCRtpEncodingParameters {
-                rtp_coding_parameters: RTCRtpCodingParameters {
-                    ssrc: Some(ssrc),
+        let track = TrackLocalStaticSample::new(
+            Instant::now(),
+            MediaStreamTrack::new(
+                "realtime".into(),
+                format!("audio-{ssrc}"),
+                "microphone".into(),
+                RtpCodecKind::Audio,
+                vec![RTCRtpEncodingParameters {
+                    rtp_coding_parameters: RTCRtpCodingParameters {
+                        ssrc: Some(ssrc),
+                        ..Default::default()
+                    },
+                    codec,
+                    active: true,
                     ..Default::default()
-                },
-                codec,
-                active: true,
-                ..Default::default()
-            }],
-        ))
+                }],
+            ),
+        )
         .map_err(|_| "failed to create voice track")?;
         Ok((
             media,

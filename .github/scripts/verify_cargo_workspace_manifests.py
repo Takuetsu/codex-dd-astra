@@ -11,6 +11,7 @@ Checks:
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -28,8 +29,23 @@ UTILITY_NAME_EXCEPTIONS = {
 MANIFEST_FEATURE_EXCEPTIONS = {
     "codex-rs/v8-poc/Cargo.toml": {"sandbox": ("v8/v8_enable_sandbox",)},
 }
+# One exact, time-bounded migration: CodexDD's reviewed AWS vendor retains its
+# upstream feature model (including optional credentials-login dependencies).
+# Never rewrite its manifest to mimic first-party workspace policy: that would
+# silently change the security-reviewed AWS DPoP source and dependency semantics.
+# Pin the complete reviewed Git subtree and reject *any* worktree changes.
+PINNED_EXTERNAL_VENDOR = {
+    "codex-rs/vendor/aws-config-1.13.0/Cargo.toml": (
+        "codex-rs/vendor/aws-config-1.13.0",
+        "5b1db93de9e14ab5c060794d23a567d907b66f21",
+    ),
+}
 OPTIONAL_DEPENDENCY_EXCEPTIONS = set()
-INTERNAL_DEPENDENCY_FEATURE_EXCEPTIONS = {}
+# credentials-login is essential to AWS authentication; no blanket exceptions.
+INTERNAL_DEPENDENCY_FEATURE_EXCEPTIONS = {
+    ("codex-rs/aws-auth/Cargo.toml", "dependencies", "aws-config"):
+        ("credentials-login",),
+}
 
 
 def main() -> int:
@@ -40,14 +56,19 @@ def main() -> int:
     failures_by_path: dict[str, list[str]] = {}
 
     for path in manifests_to_verify():
-        if errors := manifest_errors(
-            path,
-            internal_package_names,
-            used_manifest_feature_exceptions,
-            used_optional_dependency_exceptions,
-            used_internal_dependency_feature_exceptions,
-        ):
-            failures_by_path[manifest_key(path)] = errors
+        path_key = manifest_key(path)
+        if path_key in PINNED_EXTERNAL_VENDOR:
+            errors = immutable_vendor_errors(path_key)
+        else:
+            errors = manifest_errors(
+                path,
+                internal_package_names,
+                used_manifest_feature_exceptions,
+                used_optional_dependency_exceptions,
+                used_internal_dependency_feature_exceptions,
+            )
+        if errors:
+            failures_by_path[path_key] = errors
 
     add_unused_exception_errors(
         failures_by_path,
@@ -99,6 +120,25 @@ def main() -> int:
             print(f"  - {error}")
 
     return 1
+
+
+def immutable_vendor_errors(path_key: str) -> list[str]:
+    """Exclude only the exact reviewed third-party source, never other crates."""
+    vendor_path, expected_tree = PINNED_EXTERNAL_VENDOR[path_key]
+    tree = subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse", f"HEAD:{vendor_path}"],
+        capture_output=True, text=True, check=False,
+    )
+    status = subprocess.run(
+        ["git", "-C", str(ROOT), "status", "--porcelain",
+         "--untracked-files=all", "--", vendor_path],
+        capture_output=True, text=True, check=False,
+    )
+    if tree.returncode != 0 or tree.stdout.strip() != expected_tree:
+        return ["reviewed AWS vendor Git tree differs; renew owner review before changing source"]
+    if status.returncode != 0 or status.stdout.strip():
+        return ["reviewed AWS vendor contains modified or untracked files"]
+    return []
 
 
 def manifest_errors(
