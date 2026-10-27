@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   owner-graph:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '35a86fd842e66509f7dd1c6c7e187985eaa8d5af'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd6d8896ea9c25fabe48dc11eba5ba0a932404d7f'
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '35a86fd842e66509f7dd1c6c7e187985eaa8d5af'
+          test "$(git rev-parse HEAD^)" = 'd6d8896ea9c25fabe48dc11eba5ba0a932404d7f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -118,6 +118,15 @@ jobs:
           git diff -- codex-rs/Cargo.toml codex-rs/voice-host/Cargo.toml > "$RUNNER_TEMP/owner-recon/manifests.patch"
           test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/owner-recon/deny-blob.txt")"
           git diff --check
+      - name: Compile non-native voice transport and RTC APIs (no GStreamer, no full suite)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup target add x86_64-unknown-linux-musl
+          cargo check --manifest-path codex-rs/Cargo.toml --locked \
+            --target x86_64-unknown-linux-musl -p codex-voice-host --bin codex-voice-host
+          git diff --check
+          echo 'FOCUSED VOICE COMPILE PASS ONLY. No Windows runtime/protocol acceptance.'
       - name: Capture proof even when resolver fails
         if: always()
         shell: bash
