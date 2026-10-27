@@ -8,11 +8,11 @@ permissions:
   contents: read
 jobs:
   owner-graph:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '35a86fd842e66509f7dd1c6c7e187985eaa8d5af'
     strategy:
       fail-fast: false
       matrix:
-        owner: [rtc, age, aws-login]
+        owner: [rtc]
     name: Resolve ${{ matrix.owner }} without editing released source
     runs-on: ubuntu-24.04
     timeout-minutes: 18
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+          test "$(git rev-parse HEAD^)" = '35a86fd842e66509f7dd1c6c7e187985eaa8d5af'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -49,9 +49,9 @@ jobs:
               path = Path("codex-rs/voice-host/Cargo.toml")
               s = path.read_text()
               for name in ("rtc", "webrtc"):
-                  old = f'{name} = "=0.20.3"'
+                  old = f'\n{name} = "=0.20.3"'
                   assert s.count(old) == 1
-                  s = s.replace(old, f'{name} = "=0.21.1"')
+                  s = s.replace(old, f'\n{name} = "=0.21.1"')
               path.write_text(s)
               print("SCRATCH: coordinated rtc/webrtc 0.21.1")
           elif owner == "age":
