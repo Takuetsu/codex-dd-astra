@@ -70,7 +70,7 @@ jobs:
           import pathlib, re, tomllib
           p = pathlib.Path("codex-rs/Cargo.lock")
           raw = p.read_text(encoding="utf-8")
-          chunks = re.split(r'(?=^\\[\\[package\\]\\]\\n)', raw, flags=re.MULTILINE)
+          chunks = re.split(r'(?=^\[\[package\]\]\n)', raw, flags=re.MULTILINE)
           removed = 0
           keep = []
           for chunk in chunks:
