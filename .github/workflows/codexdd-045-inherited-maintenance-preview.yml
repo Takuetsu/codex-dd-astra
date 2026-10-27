@@ -1,0 +1,122 @@
+# Disposable 0.4.5 feasibility test for upstream unmaintained basic-toml.
+# No trusted release files, production references, policy exceptions or lock commits are changed.
+name: CodexDD 0.4.5 i18n-config TOML maintenance feasibility (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-inherited-maintenance-preview
+    paths:
+      - '.github/workflows/codexdd-045-inherited-maintenance-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  i18n-toml:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-inherited-maintenance-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 17
+    name: Pinned upstream i18n-config TOML parser trial (not release)
+    steps:
+      - name: Exact source with checkout credentials disabled
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Fail-closed source and marker baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = '0eb50f54cfbc192e149bd90960878c27bf211a42'
+          test "$(git hash-object codex-rs/Cargo.lock)" = '8be43898f94d59f403f8e03d9d4b5361e492f086'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+
+      - name: Toolchain for pinned upstream trial
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Scratch-only exact Git revision replacing deprecated basic-toml
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, tomllib
+          p = pathlib.Path("codex-rs/Cargo.toml")
+          raw = p.read_text(encoding="utf-8")
+          data = tomllib.loads(raw)
+          if "patch" in data or raw.count("[workspace]") != 1:
+              raise SystemExit("BLOCKED: unexpected Cargo patch or workspace structure")
+          revision = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4"
+          raw += (
+              "\n# NONRELEASE trial only: pinned upstream commit before next crates.io publication.\n"
+              "[patch.crates-io]\n"
+              f'i18n-config = {{ git = "https://github.com/kellpossible/cargo-i18n", rev = "{revision}" }}\n'
+          )
+          p.write_text(raw, encoding="utf-8")
+          PY
+          cargo update --manifest-path codex-rs/Cargo.toml -p i18n-config
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/codexdd-i18n-win.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/codexdd-i18n-linux.json"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, os, subprocess, tomllib
+          old = tomllib.loads(subprocess.check_output(["git", "show", "HEAD:codex-rs/Cargo.lock"], text=True))
+          new = tomllib.loads(Path("codex-rs/Cargo.lock").read_text(encoding="utf-8"))
+          origin = {p["name"]: p for p in old["package"] if p["name"] in ("i18n-config", "basic-toml")}
+          versions = {}
+          for p in new["package"]:
+              versions.setdefault(p["name"], set()).add(p["version"])
+          expected = {"zstd":"0.14.3", "zstd-safe":"8.2.0", "ctutils":"0.4.4", "rustls":"0.23.46",
+                      "quinn-proto":"0.11.18", "noyalib-serde-yaml":"0.0.57", "zip":"9.0.5",
+                      "rustls-webpki":"0.103.16", "webpki-roots":"1.0.10",
+                      "webpki-root-certs":"1.0.10"}
+          for name, value in expected.items():
+              if versions.get(name) != {value}: raise SystemExit(f"BLOCKED: protected {name} drift {versions.get(name)}")
+          if "basic-toml" in versions: raise SystemExit("BLOCKED: unmaintained basic-toml still in lock")
+          patches = [p for p in new["package"] if p["name"] == "i18n-config"]
+          rev = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4"
+          if len(patches) != 1 or patches[0]["version"] != "0.4.8" or not patches[0].get("source","").endswith("#"+rev):
+              raise SystemExit("BLOCKED: missing exact pinned i18n-config source "+repr(patches))
+          if "toml" not in [e.split(" ")[0] for e in patches[0].get("dependencies", [])]:
+              raise SystemExit("BLOCKED: i18n-config did not adopt maintained TOML")
+          for suffix in ("win", "linux"):
+              path = Path(os.environ["RUNNER_TEMP"]) / ("codexdd-i18n-"+suffix+".json")
+              meta = json.loads(path.read_text(encoding="utf-8"))
+              names = {p["id"]: p["name"] for p in meta["packages"]}
+              resolved = {node["id"] for node in meta["resolve"]["nodes"]}
+              if "basic-toml" in {names[pid] for pid in resolved}:
+                  raise SystemExit("BLOCKED: basic-toml still reachable in "+suffix)
+              print("PASS:", suffix, "locked target graph has no basic-toml")
+          print("SOURCE PIN:", patches[0]["source"])
+          removed = sorted({(p["name"],p["version"]) for p in old["package"]}-
+                           {(p["name"],p["version"]) for p in new["package"]})
+          added = sorted({(p["name"],p["version"]) for p in new["package"]}-
+                         {(p["name"],p["version"]) for p in old["package"]})
+          print("REMOVED PACKAGE VERSIONS:", removed)
+          print("ADDED PACKAGE VERSIONS:", added)
+          print("PREVIEW MANIFEST BLOB:", subprocess.check_output(["git","hash-object","codex-rs/Cargo.toml"],text=True).strip())
+          print("PREVIEW LOCK BLOB:", subprocess.check_output(["git","hash-object","codex-rs/Cargo.lock"],text=True).strip())
+          print("NONRELEASE: other inherited D-Bus and crypto-bigint findings still block release")
+          PY
+
+      - name: Compile only the modified third-party config crate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path codex-rs/Cargo.toml -p i18n-config --lib --locked
+
+      - name: Restore unchanged source and verify no release/policy changes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --source=HEAD -- codex-rs/Cargo.toml codex-rs/Cargo.lock
+          test "$(git hash-object codex-rs/Cargo.toml)" = '0eb50f54cfbc192e149bd90960878c27bf211a42'
+          test "$(git hash-object codex-rs/Cargo.lock)" = '8be43898f94d59f403f8e03d9d4b5361e492f086'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test -z "$(git status --porcelain)"
+          echo 'No production patch, no deny.toml exception, no integration or release promotion.'
