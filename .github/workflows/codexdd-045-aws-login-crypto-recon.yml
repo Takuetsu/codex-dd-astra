@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   dpop:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '17d85b5b706c7c5ee107d3e0b8748c8f6fa50a0f'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'eb2550441de7afa9df3aa1b8492286fca27e8ae7'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '17d85b5b706c7c5ee107d3e0b8748c8f6fa50a0f'
+          test "$(git rev-parse HEAD^)" = 'eb2550441de7afa9df3aa1b8492286fca27e8ae7'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -76,8 +76,9 @@ jobs:
               block2=block.replace(ver.group(0), 'version = "'+new+'"',1)
               s=s[:m.start()]+block2+s[m.end():]
           block = re.search(r"(?m)^\[dependencies\.rand\]\n[\s\S]*?(?=^\[|\Z)",s)
-          assert block and 'features = ["std", "std_rng"]' in block.group(0), "unreviewed AWS RNG features"
-          s = s.replace('features = ["std", "std_rng"]', 'features = ["std", "std_rng", "sys_rng"]', 1)
+          assert block and '"std_rng",' in block.group(0), "unreviewed AWS RNG features"
+          new_block = block.group(0).replace('"std_rng",', '"std_rng",\n    "sys_rng",', 1)
+          s = s[:block.start()] + new_block + s[block.end():]
           cargo.write_text(s,encoding="utf-8")
           dpop=root/"src/login/dpop.rs"
           text=dpop.read_text(encoding="utf-8")
