@@ -13,6 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tomllib
 from urllib.request import Request, urlopen
@@ -111,13 +112,27 @@ def validate_offline() -> None:
             "secure DPoP signer RNG or P256 API modified")
     files = sorted(p for p in vendor.rglob("*") if p.is_file())
     require(len(files) == 74, "reviewed AWS vendor file inventory changed")
+    expected_paths = [p.relative_to(ROOT).as_posix() for p in files]
+    tracked = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "--", "codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, text=True, check=False,
+    )
+    require(tracked.returncode == 0 and tracked.stdout.splitlines() == expected_paths,
+            "AWS vendor is missing Git-tracked files or contains unexpected local files")
     digest = hashlib.sha256()
     for p in files:
+        path = p.relative_to(ROOT).as_posix()
+        source = subprocess.run(
+            ["git", "-C", str(ROOT), "show", "HEAD:" + path],
+            capture_output=True, check=False,
+        )
+        require(source.returncode == 0, "missing immutable Git AWS source blob: " + path)
         digest.update(p.relative_to(vendor).as_posix().encode("utf-8"))
         digest.update(bytes([0]))
-        digest.update(hashlib.sha256(p.read_bytes()).digest())
+        # Hash canonical committed blobs, not CRLF-converted checkout bytes on Windows.
+        digest.update(hashlib.sha256(source.stdout).digest())
     require(digest.hexdigest() == PINNED_AWS_VENDOR_TREE_SHA256,
-            "AWS vendor byte fingerprint does not match tested published crate patch")
+            "AWS canonical committed source fingerprint differs from verified crate patch")
     require(
         manifest["workspace"]["dependencies"].get("zstd") == "0.14",
         "Zstd security fix missing or changed",
