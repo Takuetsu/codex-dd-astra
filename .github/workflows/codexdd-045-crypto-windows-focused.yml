@@ -1,0 +1,109 @@
+# Focused Windows-native cryptographic compatibility on exact combined 0.4.5 graph.
+# No secrets, deployment, broad suite or product-marker change.
+name: CodexDD 0.4.5 combined crypto native Windows focused (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-crypto-integrated-staging]
+    paths: ['.github/workflows/codexdd-045-crypto-windows-focused.yml']
+permissions:
+  contents: read
+jobs:
+  win-crypto:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0057405b7867150ce82c6797726fea2e651640d0'
+    runs-on: windows-2022
+    timeout-minutes: 65
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout exact audited source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify exact reviewed source and secure lock
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD^).Trim() -ne '0057405b7867150ce82c6797726fea2e651640d0') { throw 'Unexpected one-shot parent' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Cargo.lock changed' }
+          if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Cargo manifest changed' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker changed' }
+          python scripts/codexdd-045-inherited-risk-guard.py
+          if ($LASTEXITCODE -ne 0) { throw 'Strict immutable crypto source guard failed' }
+      - name: Configure isolated Windows native build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path $env:RUNNER_TEMP 'codexdd045-native-crypto'
+          $target = Join-Path $base 'target'
+          $tmp = Join-Path $base 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $tmp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$tmp"
+            "TMP=$tmp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - name: Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Cache only Cargo source downloads
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-crypto-msvc-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-crypto-msvc-
+      - name: Require locked Windows Cargo resolution
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Windows Cargo resolver failed' }
+      - name: Native Windows secret encryption and recovery regressions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd045-crypto-secrets.log'
+          & cargo test --manifest-path codex-rs/Cargo.toml --locked -p codex-secrets --lib -- --test-threads=1 *> $log
+          $rc = $LASTEXITCODE
+          Get-Content -LiteralPath $log -Tail 90
+          if ($rc -ne 0) { throw "Native secrets tests failed with $rc" }
+          Write-Host "PASS: exact secure graph native Windows secrets library"
+      - name: Native Windows P-256 ECDSA identity regressions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd045-crypto-ecdsa.log'
+          & cargo test --manifest-path codex-rs/Cargo.toml --locked -p codex-user-verification --lib -- --test-threads=1 *> $log
+          $rc = $LASTEXITCODE
+          Get-Content -LiteralPath $log -Tail 90
+          if ($rc -ne 0) { throw "Native ECDSA tests failed with $rc" }
+          Write-Host "PASS: exact secure graph native Windows user verification"
+      - name: Native Windows AWS credentials-login owner compilation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd045-crypto-aws.log'
+          & cargo check --manifest-path codex-rs/Cargo.toml --locked -p codex-aws-auth --lib *> $log
+          $rc = $LASTEXITCODE
+          Get-Content -LiteralPath $log -Tail 90
+          if ($rc -ne 0) { throw "Native AWS authentication compile failed with $rc" }
+          Write-Host "PASS: AWS credentials-login code compiles natively; live server login not exercised"
+      - name: Preserve narrowly scoped evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-secure-crypto-windows-focused
+          path: |
+            ${{ runner.temp }}/codexdd045-crypto-secrets.log
+            ${{ runner.temp }}/codexdd045-crypto-ecdsa.log
+            ${{ runner.temp }}/codexdd045-crypto-aws.log
+          if-no-files-found: warn
+          retention-days: 5
