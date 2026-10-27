@@ -8,6 +8,7 @@ $manifestBlob = "d46347640b6ca6e43e96a12ee14eec894178af4f"
 $lockBlob = "f19b0086eac09c6830c887be83db5ae4ae11587e"
 $timer = [System.Diagnostics.Stopwatch]::StartNew()
 $head = ""
+$resultCode = 0
 try {
     $head = (& git -C $repoRoot rev-parse HEAD | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or -not $head) { throw "Cannot identify detached test commit" }
@@ -29,13 +30,13 @@ try {
     & rustup run 1.95.0 cargo test --manifest-path $manifestPath --locked -p codex-secrets --lib
     if ($LASTEXITCODE -ne 0) { throw "Focused codex-secrets native test failed with exit $LASTEXITCODE" }
     Write-Output "CODEXDD_045_SECRETS_NATIVE: GREEN"
-    exit 0
 } catch {
     Write-Output "CODEXDD_045_SECRETS_NATIVE: RED - $($_.Exception.Message)"
-    exit 1
+    $resultCode = 1
 } finally {
     $timer.Stop()
     Write-Output ("ELAPSED_SECONDS: {0:N1}" -f $timer.Elapsed.TotalSeconds)
     Write-Output "COMMIT: $head"
     Write-Output ("FINISHED_UTC: " + [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))
 }
+exit $resultCode
