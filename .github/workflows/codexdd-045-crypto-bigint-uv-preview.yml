@@ -1,0 +1,111 @@
+# One-shot scratch experiment; DOES NOT COMMIT modified Cargo files or promote a release.
+name: CodexDD 0.4.5 P-256 user-verification migration preview (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-crypto-bigint-uv-recon
+    paths:
+      - '.github/workflows/codexdd-045-crypto-bigint-uv-preview.yml'
+permissions:
+  contents: read
+jobs:
+  uv-p256-preview:
+    name: Resolver and focused P-256 0.14 test, nonrelease
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f957370607a31a43fa9ad68a522e8badb25e18e4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout without persisting credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify reviewed parent and patch one first-party owner in scratch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/crypto-uv-recon"
+          test "$(git rev-parse HEAD^)" = 'f957370607a31a43fa9ad68a522e8badb25e18e4'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'f19b0086eac09c6830c887be83db5ae4ae11587e'
+          test "$(git hash-object codex-rs/user-verification/Cargo.toml)" = 'fe4d5298f0484de68d9e417e47206f5be74fc729'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("codex-rs/user-verification/Cargo.toml")
+          text = path.read_text(encoding="utf-8")
+          a = 'p256 = { version = "0.13", default-features = false, features = ["arithmetic", "pkcs8", "std"] }'
+          b = a.replace('version = "0.13"', 'version = "0.14"')
+          c = 'p256 = { version = "0.13", features = ["ecdsa"] }'
+          d = 'p256 = { version = "0.14", features = ["ecdsa"] }'
+          assert text.count(a) == text.count(c) == 1, "Owner manifest differs from accepted baseline"
+          path.write_text(text.replace(a, b).replace(c, d), encoding="utf-8")
+          print("SCRATCH ONLY: migrated two user-verification p256 edges to 0.14")
+          PY
+          test "$(git diff --name-only)" = 'codex-rs/user-verification/Cargo.toml'
+          git diff -- codex-rs/user-verification/Cargo.toml > "$RUNNER_TEMP/crypto-uv-recon/owner-manifest.patch"
+      - name: Install pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Resolve scratch lock, inventory old and new crypto-bigint (NOT release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/crypto-uv-recon/windows.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/crypto-uv-recon/linux.json"
+          python3 - <<'PY'
+          import json, os, tomllib
+          from pathlib import Path
+          tmp = Path(os.environ["RUNNER_TEMP"]) / "crypto-uv-recon"
+          lock = tomllib.loads(Path("codex-rs/Cargo.lock").read_text())
+          packages = {}
+          for pkg in lock["package"]:
+              packages.setdefault(pkg["name"], set()).add(pkg["version"])
+          assert "0.14.0" in packages.get("p256", set()), "p256 0.14 did not resolve"
+          assert "0.7.6" in packages.get("crypto-bigint", set()), "fixed bigint 0.7.6 did not resolve"
+          assert "0.5.5" in packages.get("crypto-bigint", set()), "other owners unexpectedly removed"
+          for name, version in {
+              "zstd": "0.14.3", "zstd-safe": "8.2.0", "ctutils": "0.4.4",
+              "rustls": "0.23.46", "quinn-proto": "0.11.18", "zip": "9.0.5",
+              "rustls-webpki": "0.103.16"
+          }.items():
+              assert version in packages.get(name, set()), f"security pin changed: {name}"
+          for target in ("windows", "linux"):
+              meta = json.loads((tmp / (target + ".json")).read_text())
+              ids = {node["id"] for node in meta["resolve"]["nodes"]}
+              found = sorted({(pkg["name"], pkg["version"]) for pkg in meta["packages"]
+                              if pkg["id"] in ids and pkg["name"] in ("p256", "crypto-bigint")})
+              print(target, "reachable candidate versions:", found)
+          print("SCRATCH RESOLVER PASS: first-party P-256 0.14 added, crypto-bigint 0.5.5 STILL BLOCKED")
+          PY
+          git hash-object codex-rs/user-verification/Cargo.toml > "$RUNNER_TEMP/crypto-uv-recon/candidate-manifest-blob.txt"
+          git hash-object codex-rs/Cargo.lock > "$RUNNER_TEMP/crypto-uv-recon/candidate-lock-blob.txt"
+          git diff -- codex-rs/Cargo.lock > "$RUNNER_TEMP/crypto-uv-recon/generated-Cargo-lock.patch"
+          cp codex-rs/Cargo.lock "$RUNNER_TEMP/crypto-uv-recon/generated-Cargo.lock"
+          echo "Cargo-generated candidate lock blob $(cat "$RUNNER_TEMP/crypto-uv-recon/candidate-lock-blob.txt")"
+      - name: Targeted first-party P-256 signing and verification tests only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path codex-rs/Cargo.toml --locked -p codex-user-verification --lib
+          test "$(git diff --name-only | sort)" = "$(printf 'codex-rs/Cargo.lock\ncodex-rs/user-verification/Cargo.toml')"
+          echo 'FOCUSED OWNER TEST PASS only; age/AWS/RTC and overall crypto-bigint still BLOCKED'
+      - name: Collect scratch receipts, including failures
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/crypto-uv-recon"
+          git rev-parse HEAD > "$RUNNER_TEMP/crypto-uv-recon/source-commit.txt"
+          git diff --stat > "$RUNNER_TEMP/crypto-uv-recon/diff-stat.txt"
+          git status --short > "$RUNNER_TEMP/crypto-uv-recon/status.txt"
+      - name: Upload scratch-only artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-p256-uv-nonrelease
+          path: ${{ runner.temp }}/crypto-uv-recon/
+          if-no-files-found: warn
+          retention-days: 5
