@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   voice:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '85055a2010ea836b12a37a416514a0fe4716b1db'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '8053cc45201f1c96ee5f4fb88f192845cad97687'
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '85055a2010ea836b12a37a416514a0fe4716b1db'
+          test "$(git rev-parse HEAD^)" = '8053cc45201f1c96ee5f4fb88f192845cad97687'
           test "$(git hash-object codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -79,7 +79,7 @@ jobs:
           set -e
           tail -n 90 "$RUNNER_TEMP/codexdd045-voice-test.log"
           if [ "$rc" -ne 0 ]; then echo "BLOCKED: voice regression exit $rc"; exit "$rc"; fi
-          grep -Eq '^test result: ok\\. [1-9][0-9]* passed; 0 failed;' "$RUNNER_TEMP/codexdd045-voice-test.log"
+          grep -Eq '^test result: ok[.] 14 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out;' "$RUNNER_TEMP/codexdd045-voice-test.log"
           echo 'PASS: voice regression set; native Windows audio remains separate'
       - name: Upload focused source-only diagnostics
         if: always()
