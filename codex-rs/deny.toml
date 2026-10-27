@@ -329,6 +329,11 @@ allow-git = [
     # scripts/codexdd-045-inherited-risk-guard.py verifies this source is used only
     # for i18n-config at the pinned revision. No organization-wide trust.
     "https://github.com/kellpossible/cargo-i18n",
+    # Source is a reviewed, immutable Git revision; scripts/codexdd-045-inherited-risk-guard.py
+    # additionally permits ONLY age and age-core at the exact 0.4.5 migration rev.
+    "https://github.com/str4d/rage",
+    # Reviewed secure ML-KEM migration; guard enforces ONLY clatter 3.0.0 at exact Git rev.
+    "https://github.com/jmlepisto/clatter",
 ]
 
 [sources.allow-org]
