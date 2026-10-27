@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tomllib
 from urllib.request import Request, urlopen
@@ -22,6 +23,11 @@ CUTOFF = datetime(2026, 11, 20, 0, 0, tzinfo=timezone.utc)
 TARGET_UPSTREAM = "0.163.0"
 PINNED_I18N_REV = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4"
 PINNED_I18N_URL = "https://github.com/kellpossible/cargo-i18n"
+PINNED_RAGE_URL = "https://github.com/str4d/rage"
+PINNED_RAGE_REV = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f"
+PINNED_CLATTER_URL = "https://github.com/jmlepisto/clatter"
+PINNED_CLATTER_REV = "9a8d15c4f80d5911ca0403aa22e0de99ea59df08"
+PINNED_AWS_VENDOR_GIT_TREE = "5b1db93de9e14ab5c060794d23a567d907b66f21"
 ACCEPTED = (
     ("RUSTSEC-2026-0371", "zbus_names", "3.0.0"),
     ("RUSTSEC-2026-0370", "zvariant", "4.2.0"),
@@ -81,6 +87,62 @@ def validate_offline() -> None:
         patch == {"git": PINNED_I18N_URL, "rev": PINNED_I18N_REV},
         "unreviewed i18n-config source or changed immutable Git revision",
     )
+    patches = manifest.get("patch", {}).get("crates-io", {})
+    for crate, url, rev in (
+        ("age", PINNED_RAGE_URL, PINNED_RAGE_REV),
+        ("age-core", PINNED_RAGE_URL, PINNED_RAGE_REV),
+        ("clatter", PINNED_CLATTER_URL, PINNED_CLATTER_REV),
+    ):
+        require(patches.get(crate) == {"git": url, "rev": rev},
+                "unreviewed cryptographic source: " + crate)
+    require(patches.get("aws-config") == {"path": "vendor/aws-config-1.13.0"},
+            "AWS DPoP patch path differs from reviewed vendor source")
+    require(manifest["workspace"]["dependencies"]["clatter"]["version"] == "3.0.0",
+            "stable clatter 3.0.0 KEM owner missing")
+    vendor = CARGO / "vendor" / "aws-config-1.13.0"
+    require(vendor.is_dir() and all(not p.is_symlink() for p in vendor.rglob("*")),
+            "missing AWS vendor or unexpected symlink")
+    aws = read_toml(vendor / "Cargo.toml")
+    require(aws["package"]["name"] == "aws-config" and aws["package"]["version"] == "1.13.0",
+            "unreviewed AWS source")
+    require(aws["dependencies"]["p256"]["version"] == "0.14.0"
+            and aws["dependencies"]["rand"]["version"] == "0.10.1"
+            and aws["dependencies"]["rand"]["features"] == ["std", "std_rng", "sys_rng"],
+            "secure DPoP signer RNG or P256 API modified")
+    # Explicit POSIX/case-sensitive ordering: Windows Path sorts case-insensitively.
+    files = sorted((p for p in vendor.rglob("*") if p.is_file()),
+                   key=lambda p: p.relative_to(vendor).as_posix())
+    require(len(files) == 74, "reviewed AWS vendor file inventory changed")
+    expected_paths = {p.relative_to(ROOT).as_posix() for p in files}
+    tracked = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "-z", "--", "codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, check=False,
+    )
+    actual_paths = [p.decode("utf-8") for p in tracked.stdout.split(bytes([0])) if p]
+    require(
+        tracked.returncode == 0 and len(actual_paths) == len(expected_paths)
+        and set(actual_paths) == expected_paths,
+        "AWS vendor tracked path set differs: missing="
+        + repr(sorted(expected_paths - set(actual_paths))[:5])
+        + ", extra=" + repr(sorted(set(actual_paths) - expected_paths)[:5]),
+    )
+    # Git tree identity covers exact file names, modes and canonical blob bytes.
+    # Unlike checkout bytes, this is invariant under Windows CRLF normalization.
+    tree = subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse",
+         "HEAD:codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, text=True, check=False,
+    )
+    require(tree.returncode == 0
+            and tree.stdout.strip() == PINNED_AWS_VENDOR_GIT_TREE,
+            "AWS source Git tree does not match reviewed 74-file vendor revision")
+    worktree = subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--exit-code", "--quiet", "--",
+         "codex-rs/vendor/aws-config-1.13.0"],
+        capture_output=True, check=False,
+    )
+    require(worktree.returncode == 0,
+            "AWS vendor working tree differs from immutable committed source")
     require(
         manifest["workspace"]["dependencies"].get("zstd") == "0.14",
         "Zstd security fix missing or changed",
@@ -105,22 +167,48 @@ def validate_offline() -> None:
     require(policy["sources"]["required-git-spec"] == "rev", "immutable Git requirement weakened")
     allowed_sources = policy["sources"]["allow-git"]
     require(
-        allowed_sources == list(BASE_GIT_URLS) + [PINNED_I18N_URL],
+        allowed_sources == list(BASE_GIT_URLS) + [PINNED_I18N_URL, PINNED_RAGE_URL, PINNED_CLATTER_URL],
         "Git source allowlist differs from reviewed exact entries",
     )
     lock = read_toml(CARGO / "Cargo.lock")
     pkgs: dict[str, set[str]] = {}
-    source_count = 0
+    expected_git = {
+        "i18n-config": (PINNED_I18N_URL, PINNED_I18N_REV),
+        "age": (PINNED_RAGE_URL, PINNED_RAGE_REV),
+        "age-core": (PINNED_RAGE_URL, PINNED_RAGE_REV),
+        "clatter": (PINNED_CLATTER_URL, PINNED_CLATTER_REV),
+    }
+    source_counts = {name: 0 for name in expected_git}
     for item in lock["package"]:
-        pkgs.setdefault(item["name"], set()).add(item["version"])
-        if item.get("source", "").startswith("git+" + PINNED_I18N_URL):
-            require(item["name"] == "i18n-config", "new unreviewed crate from pinned i18n Git source")
-            expected_src = f"git+{PINNED_I18N_URL}?rev={PINNED_I18N_REV}#{PINNED_I18N_REV}"
-            require(item["source"] == expected_src, "unpinned i18n-config lock source")
-            source_count += 1
-    require(source_count == 1, "i18n-config source pin absent or duplicated")
+        name = item["name"]
+        source = item.get("source", "")
+        pkgs.setdefault(name, set()).add(item["version"])
+        if name in expected_git:
+            url, revision = expected_git[name]
+            require(source == f"git+{url}?rev={revision}#{revision}",
+                    "unpinned or unexpected Git source for " + name)
+            source_counts[name] += 1
+        elif any(source.startswith("git+" + url) for url in
+                 (PINNED_I18N_URL, PINNED_RAGE_URL, PINNED_CLATTER_URL)):
+            require(False, "extra, unreviewed crate from pinned Git source: " + name)
+    require(source_counts == {name: 1 for name in expected_git},
+            "reviewed pinned Git crate omitted or duplicated")
     require("basic-toml" not in pkgs, "basic-toml has reentered the candidate lock")
     require(pkgs.get("i18n-config") == {"0.4.8"}, "unexpected i18n-config version")
+    for crate, version in {
+        "crypto-bigint": "0.7.10",
+        "p256": "0.14.0",
+        "p384": "0.14.0",
+        "hpke": "0.14.1",
+        "age": "0.12.1",
+        "age-core": "0.12.0",
+        "aws-config": "1.13.0",
+        "clatter": "3.0.0",
+        "rtc": "0.21.1",
+        "webrtc": "0.21.1",
+    }.items():
+        require(pkgs.get(crate) == {version}, "secure crypto owner changed: " + crate)
+    print("PASS: exact modern crypto-bigint, P256/P384, age, HPKE, AWS and RTC sources")
     for _, crate, version in ACCEPTED:
         require(pkgs.get(crate) == {version}, f"{crate} dependency versions changed")
     for crate, version in {

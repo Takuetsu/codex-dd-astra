@@ -25,6 +25,15 @@ REQUIRED = {
     "rustls-webpki": "0.103.16",
     "webpki-roots": "1.0.10",
     "webpki-root-certs": "1.0.10",
+    # Every cryptographic owner in the accepted 0.4.5 migration is pinned.
+    "crypto-bigint": "0.7.10",
+    "p256": "0.14.0",
+    "p384": "0.14.0",
+    "hpke": "0.14.1",
+    "rtc": "0.21.1",
+    "webrtc": "0.21.1",
+    "clatter": "3.0.0",
+    "aws-config": "1.13.0",
 }
 ACCEPTED_LINUX_INFO = {"zbus_names", "zvariant", "zvariant_derive"}
 INHERITED_MAINTENANCE = {
@@ -76,8 +85,8 @@ def main() -> int:
     bigint = packages.get("crypto-bigint", set())
     if not bigint:
         print("CRYPTO-BIGINT: not present in this resolved lock")
-    elif bigint == {"0.7.6"}:
-        print("CRYPTO-BIGINT: patched 0.7.6, follow up with cargo-deny and native crypto tests")
+    elif bigint == {"0.7.10"}:
+        print("CRYPTO-BIGINT: secure 0.7.10, still subject to exact all-target cargo-deny and native behavior tests")
     else:
         print(f"CRYPTO-BIGINT BLOCKED: {sorted(bigint)!r}; RUSTSEC-2026-0387 patched >=0.7.6")
         if opts.mode == "release":

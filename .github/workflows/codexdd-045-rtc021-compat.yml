@@ -1,0 +1,95 @@
+# Focused source-level proof of the reviewed 0.21.1 voice transport migration.
+# NO branch write, production merge, source policy exception, or release promotion.
+name: CodexDD 0.4.5 WebRTC 0.21 voice compatibility (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-rtc021-owner-compat]
+    paths: ['.github/workflows/codexdd-045-rtc021-compat.yml']
+permissions:
+  contents: read
+jobs:
+  transport:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a667ef71857994321400c3540b1abb6de12f1579'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Check out exact tested source candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Prove immutable parent, nonrelease markers and unchanged security policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = 'a667ef71857994321400c3540b1abb6de12f1579'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/rtc021-compat"
+          git hash-object codex-rs/deny.toml > "$RUNNER_TEMP/rtc021-compat/policy-blob.txt"
+          git diff --check
+      - name: Install Rust and target-specific C toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Resolve exact Windows/Linux graph, without waiving crypto-bigint
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --manifest-path codex-rs/Cargo.toml --format-version 1 \
+            --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/rtc021-compat/windows.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 \
+            --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/rtc021-compat/linux.json"
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          lock=tomllib.loads(Path("codex-rs/Cargo.lock").read_text(encoding="utf-8"))
+          packages={}
+          for pkg in lock["package"]:
+              packages.setdefault(pkg["name"],set()).add(pkg["version"])
+          for crate in ("rtc","webrtc","rtc-dtls","rtc-shared"):
+              assert packages.get(crate)=={"0.21.1"},f"unreviewed {crate}: {packages.get(crate)}"
+          assert "p384" not in packages,"old RTC P384 chain still present"
+          assert packages.get("zstd")=={"0.14.3"}
+          assert packages.get("ctutils")=={"0.4.6"}
+          print("PASS: RTC/WebRTC 0.21.1 graph; crypto-bigint 0.5.5 still UNWAIVED",packages.get("crypto-bigint"))
+          PY
+          git hash-object codex-rs/Cargo.lock > "$RUNNER_TEMP/rtc021-compat/lock-blob.txt"
+          cp codex-rs/Cargo.lock "$RUNNER_TEMP/rtc021-compat/Cargo.lock"
+          git diff -- codex-rs/Cargo.lock > "$RUNNER_TEMP/rtc021-compat/Cargo-lock.patch"
+          test "$(git hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/rtc021-compat/policy-blob.txt")"
+      - name: Compile v0.21 voice transport with no native audio driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq musl-tools
+          rustup target add x86_64-unknown-linux-musl
+          cargo check --manifest-path codex-rs/Cargo.toml --locked \
+            --target x86_64-unknown-linux-musl -p codex-voice-host --bin codex-voice-host
+          echo 'VOICE COMPILE GREEN: Linux/musl only, Windows remains to validate.'
+      - name: Run focused network/privacy/ICE voice host regressions on musl target
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path codex-rs/Cargo.toml --locked \
+            --target x86_64-unknown-linux-musl -p codex-voice-host --bin codex-voice-host
+          echo 'VOICE TESTS GREEN only — still not a native Windows or release pass'
+      - name: Save exact lock and checkout receipt even if red
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/rtc021-compat"
+          git rev-parse HEAD > "$RUNNER_TEMP/rtc021-compat/source.txt"
+          git diff --stat > "$RUNNER_TEMP/rtc021-compat/diff.txt"
+          git status --short > "$RUNNER_TEMP/rtc021-compat/status.txt"
+      - name: Upload focused receipts only
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-rtc021-compat
+          path: ${{ runner.temp }}/rtc021-compat/
+          if-no-files-found: warn
+          retention-days: 5
