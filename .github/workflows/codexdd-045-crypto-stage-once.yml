@@ -9,7 +9,7 @@ permissions:
   contents: write
 jobs:
   combined:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '8d9bb76080ec9193f317e7533189ca315136b429'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b6e07951c090ad989e8f84db2e656ccaf978f852'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '8d9bb76080ec9193f317e7533189ca315136b429'
+          test "$(git rev-parse HEAD^)" = 'b6e07951c090ad989e8f84db2e656ccaf978f852'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -176,11 +176,11 @@ jobs:
       - name: Stage only exact secured upstream sources on isolated branch
         shell: bash
         env:
-          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = "refs/heads/dd/codexdd-v0.4.5-crypto-integrated-staging"
-          test "$(git rev-parse HEAD^)" = "8d9bb76080ec9193f317e7533189ca315136b429"
+          test "$(git rev-parse HEAD^)" = "b6e07951c090ad989e8f84db2e656ccaf978f852"
           test "$(git hash-object codex-rs/Cargo.lock)" = "13bc15ff844e93dfaf7777c73bb7313b35bb3b81"
           test "$(git hash-object codex-rs/Cargo.toml)" = "cfebd9b784ef9ff027b274aa9f7101c9c2496613"
           test "$(git hash-object codex-rs/vendor/aws-config-1.13.0/Cargo.toml)" = "ddd2af3628379e4edc2d205972f7eb145df2de84"
@@ -203,8 +203,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "fix(codexdd 0.4.5): stage exact secure crypto graph and reviewed AWS DPoP source [skip ci]"
+          test "${#GH_TOKEN}" -gt 30
           auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
+          git -c "http.extraheader=AUTHORIZATION: basic $auth" \
             push origin HEAD:refs/heads/dd/codexdd-v0.4.5-crypto-integrated-staging
           unset auth GH_TOKEN
           echo 'STAGED EXACT CARGO+VENDOR SOURCES ONLY; no product release, no policy waiver'
