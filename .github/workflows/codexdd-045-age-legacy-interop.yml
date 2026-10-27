@@ -1,0 +1,143 @@
+# Cross-version legacy secrets-file format verification; disposable temporary crates.
+# Both directions must work. No production, cryptography override, or security waiver.
+name: CodexDD 0.4.5 legacy-age scrypt file compatibility (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-age-clatter-crypto-recon]
+    paths: ['.github/workflows/codexdd-045-age-legacy-interop.yml']
+permissions:
+  contents: read
+jobs:
+  cross-version:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b388701b2f3a8b4cc04b33088519b148d0207a13'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Read-only pinned source checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Freeze original sources and unchanged production markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = 'b388701b2f3a8b4cc04b33088519b148d0207a13'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test -z "$(git status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/age-interop"
+          git hash-object codex-rs/deny.toml > "$RUNNER_TEMP/age-interop/policy-blob.txt"
+      - name: Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Build both original published age and candidate Git-pinned age as separate executables
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/age-interop"
+          mkdir -p "$out/legacy/src" "$out/candidate/src"
+          cat > "$out/legacy/Cargo.toml" <<'EOF'
+          [package]
+          name = "codexdd-legacy-age-file-interoperability"
+          version = "0.1.0"
+          edition = "2021"
+          [dependencies]
+          age = "=0.12.1"
+          EOF
+          cat > "$out/candidate/Cargo.toml" <<'EOF'
+          [package]
+          name = "codexdd-candidate-age-file-interoperability"
+          version = "0.1.0"
+          edition = "2021"
+          [dependencies]
+          age = "=0.12.1"
+          [patch.crates-io]
+          age = { git = "https://github.com/str4d/rage", rev = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f" }
+          age-core = { git = "https://github.com/str4d/rage", rev = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f" }
+          EOF
+          cat > "$out/legacy/src/main.rs" <<'EOF'
+          use std::io::{Read, Write};
+          use age::scrypt::{Identity, Recipient};
+          use age::secrecy::SecretString;
+          fn main() -> Result<(), Box<dyn std::error::Error>> {
+              let mode = std::env::args().nth(1).ok_or("missing mode")?;
+              let pass = SecretString::new("codexdd-045-frozen-nonsecret-test-passphrase".into());
+              let mut input = Vec::new();
+              std::io::stdin().read_to_end(&mut input)?;
+              let output = match mode.as_str() {
+                  "encrypt" => age::encrypt(&Recipient::new(pass), &input)?,
+                  "decrypt" => age::decrypt(&Identity::new(pass), &input)?,
+                  _ => return Err("invalid mode".into()),
+              };
+              std::io::stdout().write_all(&output)?;
+              Ok(())
+          }
+          EOF
+          cp "$out/legacy/src/main.rs" "$out/candidate/src/main.rs"
+          cargo build --manifest-path "$out/legacy/Cargo.toml" --locked 2>"$out/legacy-build.log" || {
+            tail -n 75 "$out/legacy-build.log"; exit 1;
+          }
+          cargo build --manifest-path "$out/candidate/Cargo.toml" 2>"$out/candidate-build.log" || {
+            tail -n 75 "$out/candidate-build.log"; exit 1;
+          }
+          python3 - <<'PY'
+          import os,tomllib
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])/"age-interop"
+          for version in ("legacy","candidate"):
+              lock=tomllib.loads((root/version/"Cargo.lock").read_text())
+              age=[p for p in lock["package"] if p["name"]=="age"]
+              assert len(age)==1 and age[0]["version"]=="0.12.1"
+              source=age[0]["source"]
+              if version=="legacy":
+                  assert source=="registry+https://github.com/rust-lang/crates.io-index"
+              else:
+                  rev="b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f"
+                  assert source=="git+https://github.com/str4d/rage?rev="+rev+"#"+rev
+              print("PASS: exact",version,"age 0.12.1 source identity:",source)
+          PY
+      - name: Require byte-identical OLD-encrypt-NEW-decrypt and NEW-encrypt-OLD-decrypt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/age-interop"
+          printf '%s\n' 'CodexDD 0.4.4 legacy secret-file representative JSON (synthetic)' \
+            '{"version":1,"credentials":{"test":"no-real-credentials"}}' > plain
+          ./legacy/target/debug/codexdd-legacy-age-file-interoperability encrypt < plain > original-ciphertext
+          ./candidate/target/debug/codexdd-candidate-age-file-interoperability decrypt \
+            < original-ciphertext > candidate-recovered
+          cmp plain candidate-recovered
+          echo 'PASS: original published age v0.12.1 scrypt encrypted file decrypted by new pinned age'
+          ./candidate/target/debug/codexdd-candidate-age-file-interoperability encrypt < plain > candidate-ciphertext
+          ./legacy/target/debug/codexdd-legacy-age-file-interoperability decrypt \
+            < candidate-ciphertext > legacy-recovered
+          cmp plain legacy-recovered
+          echo 'PASS: new pinned age scrypt encrypted file decrypted by original published age'
+          if ./candidate/target/debug/codexdd-candidate-age-file-interoperability decrypt \
+            < plain > unwanted 2>corrupt-ciphertext.log; then
+            echo 'BLOCKED: invalid plaintext decrypted as ciphertext'; exit 1
+          fi
+          if ./legacy/target/debug/codexdd-legacy-age-file-interoperability decrypt \
+            < plain > unwanted 2>corrupt-legacy.log; then
+            echo 'BLOCKED: invalid plaintext decrypted under old implementation'; exit 1
+          fi
+          test -s original-ciphertext && test -s candidate-ciphertext
+          echo 'PASS: invalid ciphertext rejected by both age implementations'
+          git -C "$GITHUB_WORKSPACE" diff --exit-code
+          test "$(git -C "$GITHUB_WORKSPACE" hash-object codex-rs/deny.toml)" = "$(cat "$RUNNER_TEMP/age-interop/policy-blob.txt")"
+          echo 'NONRELEASE: no actual customer secrets, no default configuration, no advisory exceptions'
+      - name: Upload ONLY non-sensitive proof; no ciphertext or passphrases
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-age-format-interop-receipt
+          path: |
+            ${{ runner.temp }}/age-interop/legacy/Cargo.lock
+            ${{ runner.temp }}/age-interop/candidate/Cargo.lock
+            ${{ runner.temp }}/age-interop/legacy-build.log
+            ${{ runner.temp }}/age-interop/candidate-build.log
+          if-no-files-found: warn
+          retention-days: 5
