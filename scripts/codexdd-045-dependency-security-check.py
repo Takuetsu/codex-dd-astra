@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -25,6 +26,7 @@ REQUIRED = {
     "webpki-roots": "1.0.10",
     "webpki-root-certs": "1.0.10",
 }
+ACCEPTED_LINUX_INFO = {"zbus_names", "zvariant", "zvariant_derive"}
 INHERITED_MAINTENANCE = {
     "basic-toml": "RUSTSEC-2026-0374",
     "zbus_names": "RUSTSEC-2026-0371",
@@ -39,6 +41,8 @@ def main() -> int:
         "--mode", required=True, choices=("staging", "release"),
         help="staging verifies only remediated packages; release fails closed on known open advisories",
     )
+    parser.add_argument("--windows-metadata", type=Path)
+    parser.add_argument("--linux-metadata", type=Path)
     opts = parser.parse_args()
     with LOCK.open("rb") as fh:
         locked = tomllib.load(fh)
@@ -79,18 +83,38 @@ def main() -> int:
         if opts.mode == "release":
             problems.append("RUSTSEC-2026-0387 crypto-bigint remains in the all-target graph")
 
+    # Release precheck may use only these three accepted INFO exceptions,
+    # and only after live RustSec + dual-target reachability checks pass.
+    guard_passed = False
+    if opts.mode == "release":
+        if not opts.windows_metadata or not opts.linux_metadata:
+            problems.append("release precheck needs both Windows and Linux locked Cargo metadata files")
+        else:
+            cmd = [
+                sys.executable, str(ROOT / "scripts" / "codexdd-045-inherited-risk-guard.py"),
+                "--windows-metadata", str(opts.windows_metadata),
+                "--linux-metadata", str(opts.linux_metadata), "--check-db",
+            ]
+            guard_passed = subprocess.run(cmd, check=False).returncode == 0
+            if not guard_passed:
+                problems.append("owner-approved INFO risk guard is expired or failed")
+
     for name, advisory in INHERITED_MAINTENANCE.items():
         if name in packages:
-            print(f"INHERITED MAINTENANCE OPEN: {advisory} {name} {sorted(packages[name])!r}")
-            if opts.mode == "release":
-                problems.append(f"{advisory} {name} is still present")
+            if name in ACCEPTED_LINUX_INFO:
+                print(f"ACCEPTED INFO ONLY (NOT ADVISORY-FREE): {advisory} {name} {sorted(packages[name])!r}")
+                # The release-mode guard failure is recorded above.
+            else:
+                print(f"INHERITED MAINTENANCE OPEN: {advisory} {name} {sorted(packages[name])!r}")
+                if opts.mode == "release":
+                    problems.append(f"{advisory} {name} is still present")
 
     if problems:
         for problem in problems:
             print("BLOCKED:", problem, file=sys.stderr)
         return 2
     if opts.mode == "staging":
-        print("STAGING CHECK PASS ONLY: no cargo-deny acceptance, crypto-bigint closure or release approval")
+        print("STAGING CHECK PASS ONLY: accepted INFO scope does not clear cargo-deny or crypto-bigint")
     else:
         print("KNOWN-ISSUE PRECHECK PASS ONLY: unmodified cargo-deny and native release gates still required")
     return 0

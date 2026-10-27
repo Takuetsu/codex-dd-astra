@@ -72,6 +72,8 @@ feature-depth = 1
 ignore = [
     # Reviewed 2026-07-02. Keep this list in sync with .cargo/audit.toml.
     # Each exception must identify the dependency path and removal condition.
+    # 2026-10-27: exactly three Linux-only INFO notices accepted by project owner;
+    # enforced expiry and changes-of-scope gate lives in the reusable cargo-deny CI.
     { id = "RUSTSEC-2024-0388", reason = "derivative is unmaintained; pulled in via starlark/starlark_syntax v0.14.2 used by execpolicy/cli/core; no fixed starlark release yet" },
     { id = "RUSTSEC-2025-0057", reason = "fxhash is unmaintained; pulled in via starlark_map under starlark v0.14.2 used by execpolicy/cli/core and bm25 used by core; remove when upstream dependencies drop fxhash" },
     { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained; pulled in via starlark/v8 used by execpolicy/code-mode; no fixed release yet" },
@@ -83,6 +85,9 @@ ignore = [
     { id = "RUSTSEC-2026-0119", reason = "hickory-proto v0.25.2 is pulled in via rama-dns/rama-tcp used by codex-network-proxy; no fixed rama release is available yet; remove when rama updates to hickory 0.26.1 or hickory-net" },
     { id = "RUSTSEC-2026-0194", reason = "quick-xml v0.39.4 remains via plist/syntect and wayland-scanner; plist does not exercise the affected APIs and wayland-scanner parses trusted build-time XML; remove when rust-plist#191 and wayland-rs#938 are released" },
     { id = "RUSTSEC-2026-0195", reason = "quick-xml v0.39.4 remains via plist/syntect and wayland-scanner; plist does not exercise the affected APIs and wayland-scanner parses trusted build-time XML; remove when rust-plist#191 and wayland-rs#938 are released" },
+    { id = "RUSTSEC-2026-0371", reason = "CodexDD owner accepted 2026-10-27: INFO/unmaintained zbus_names 3.0.0; Linux-only through zbus 4.4.0 via TUI/keyring; no Windows runtime path; expires 2026-11-20 or next upstream integration. Remove on zbus 6 migration, changed reachability/severity or supported replacement." },
+    { id = "RUSTSEC-2026-0370", reason = "CodexDD owner accepted 2026-10-27: INFO/unmaintained zvariant 4.2.0; Linux-only through zbus 4.4.0 via TUI/keyring; no Windows runtime path; expires 2026-11-20 or next upstream integration. Remove on zbus 6 migration, changed reachability/severity or supported replacement." },
+    { id = "RUSTSEC-2026-0372", reason = "CodexDD owner accepted 2026-10-27: INFO/unmaintained zvariant_derive 4.2.0; Linux-only compile-time derive through zvariant 4.2.0; no Windows runtime path; expires 2026-11-20 or next upstream integration. Remove on zbus 6 migration, changed reachability/severity or supported replacement." },
 ]
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
 # If this is false, then it uses a built-in git library.
@@ -320,6 +325,10 @@ allow-git = [
     "https://github.com/openai-oss-forks/crossterm",
     "https://github.com/openai-oss-forks/tokio-tungstenite",
     "https://github.com/openai-oss-forks/tungstenite-rs",
+    # Reviewed exact upstream i18n-config TOML parser Git rev 2ce7b1df;
+    # scripts/codexdd-045-inherited-risk-guard.py verifies this source is used only
+    # for i18n-config at the pinned revision. No organization-wide trust.
+    "https://github.com/kellpossible/cargo-i18n",
 ]
 
 [sources.allow-org]

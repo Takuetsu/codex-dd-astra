@@ -1,5 +1,8 @@
 # CodexDD 0.4.5 — Packet 3F.8: inherited maintenance closure and decision review
 
+> **Current 2026-10-27 disposition:** The owner approved the *three Linux-only* INFO risk exceptions (0371, 0370, 0372) recorded in Packet 3F.9; this document's earlier Path B pending language is historical. The basic-toml 0374 finding is being removed via the pinned parser candidate and is NOT excepted. crypto-bigint remains a release blocker.
+
+
 **2026-10-27. NONRELEASE; no risk exception is authorized.**
 
 This packet follows the staged Zstd/ctutils exact-lock changes on `dd/codexdd-v0.4.5-dependency-security-remediation`, commit `928d3ac296f75c0651e7bf25c1669cd18210e630`. Reviewed lock blob: `8be43898f94d59f403f8e03d9d4b5361e492f086`; workspace manifest: `0eb50f54cfbc192e149bd90960878c27bf211a42`; unchanged `deny.toml`: `ea7fdc149fc880c6b36d75c29851641034289a4e`. Production remains 0.4.4 / rust-v0.162.0; 0.4.5 remains unreleased and draft PR #54 must remain draft.
