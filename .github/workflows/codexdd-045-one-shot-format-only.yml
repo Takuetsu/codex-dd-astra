@@ -10,11 +10,11 @@ permissions:
   contents: write
 jobs:
   format-only:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0888904572991a5a7e231491f8f42b4a157f630a'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'cd042118b3c060fb57c1a0075a6fd16524a2d4ab'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: '0888904572991a5a7e231491f8f42b4a157f630a'
+      EXPECTED_PARENT: 'cd042118b3c060fb57c1a0075a6fd16524a2d4ab'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-format-only-72'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -54,6 +54,15 @@ jobs:
             codex-rs/ext/skills/BUILD.bazel \
             codex-rs/external-agent-migration/BUILD.bazel \
             codex-rs/skills/BUILD.bazel | tee "$RUNNER_TEMP/codexdd045-buildifier-format.log"
+      - name: Inspect exact Buildifier textual changes before AST equivalence gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --unified=3 -- \
+            codex-rs/core-plugins/BUILD.bazel \
+            codex-rs/ext/skills/BUILD.bazel \
+            codex-rs/external-agent-migration/BUILD.bazel \
+            codex-rs/skills/BUILD.bazel
       - name: Reject any path or Python/Bazel AST change outside formatter-only contract
         shell: bash
         run: |
