@@ -10,11 +10,11 @@ permissions:
   contents: write
 jobs:
   format-only:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'cd042118b3c060fb57c1a0075a6fd16524a2d4ab'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '62c37f3159d92f5caffc07784eefde43302732d7'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'cd042118b3c060fb57c1a0075a6fd16524a2d4ab'
+      EXPECTED_PARENT: '62c37f3159d92f5caffc07784eefde43302732d7'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-format-only-72'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -69,6 +69,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import ast
+          import collections
           import json
           import pathlib
           import subprocess
@@ -86,11 +87,32 @@ jobs:
           # No untracked build outputs or deleted files are allowed.
           if len(dirty) != len(expected) or any(line[:2].strip() != "M" for line in dirty):
               raise SystemExit(f"Unexpected worktree state: {dirty}")
+          class StableCrateKeywordOrder(ast.NodeTransformer):
+              def visit_Call(self, node):
+                  self.generic_visit(node)
+                  if isinstance(node.func, ast.Name) and node.func.id == "codex_rust_crate":
+                      # The four reported BUILD files only move one named argument:
+                      # no expression, field, dependency, load or value can change.
+                      names = [kw.arg for kw in node.keywords]
+                      if names.count("lib_aliases") != 1:
+                          raise SystemExit("Expected precisely one crate lib_aliases keyword")
+                      node.keywords = sorted(node.keywords, key=lambda kw: kw.arg or "")
+                  return node
+
           for path in sorted(expected):
               before = subprocess.check_output(["git", "show", "HEAD:" + path]).decode("utf-8")
               after = pathlib.Path(path).read_text(encoding="utf-8")
-              original = ast.dump(ast.parse(before, filename=path), include_attributes=False)
-              formatted = ast.dump(ast.parse(after, filename=path), include_attributes=False)
+              btree = ast.parse(before, filename=path)
+              atree = ast.parse(after, filename=path)
+              if path.endswith("/BUILD.bazel"):
+                  if before.count("lib_aliases = _yaml_aliases,") != 1 or after.count("lib_aliases = _yaml_aliases,") != 1:
+                      raise SystemExit(f"Expected exactly one unchanged YAML alias in {path}")
+                  if collections.Counter(before.splitlines(keepends=True)) != collections.Counter(after.splitlines(keepends=True)):
+                      raise SystemExit(f"Buildifier changed lines beyond keyword reordering: {path}")
+                  btree = StableCrateKeywordOrder().visit(btree)
+                  atree = StableCrateKeywordOrder().visit(atree)
+              original = ast.dump(btree, include_attributes=False)
+              formatted = ast.dump(atree, include_attributes=False)
               if original != formatted:
                   raise SystemExit(f"AST change forbidden: {path}")
           protected = {
@@ -105,10 +127,10 @@ jobs:
           data = {"expected_source_sha": subprocess.check_output(
               ["git", "rev-parse", "HEAD"], text=True).strip(),
               "python_files": 68, "bazel_files": 4,
-              "all_72_ast_unchanged": True, "changed_paths": sorted(changed)}
+              "all_68_python_ast_unchanged": True, "4_bazel_calls_same_arguments_only_reordered": True, "changed_paths": sorted(changed)}
           pathlib.Path("/tmp/codexdd045-formatted-source-receipt.json").write_text(
               json.dumps(data, indent=2) + "\n", encoding="utf-8")
-          print("PASS: exactly 68 Python + 4 Bazel formatting-only AST-preserving changes")
+          print("PASS: 68 exact Python ASTs and four Bazel crate keyword maps unchanged")
           PY
           git diff --check
       - name: Confirm full Python/Bazel formatter idempotence
