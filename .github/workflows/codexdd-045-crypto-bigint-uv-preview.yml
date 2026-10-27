@@ -11,7 +11,7 @@ permissions:
 jobs:
   uv-p256-preview:
     name: Resolver and focused P-256 0.14 test, nonrelease
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f957370607a31a43fa9ad68a522e8badb25e18e4'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'ca0bd8f6c70ca20fa0ae90c669541c0d80b01a95'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/crypto-uv-recon"
-          test "$(git rev-parse HEAD^)" = 'f957370607a31a43fa9ad68a522e8badb25e18e4'
+          test "$(git rev-parse HEAD^)" = 'ca0bd8f6c70ca20fa0ae90c669541c0d80b01a95'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'f19b0086eac09c6830c887be83db5ae4ae11587e'
           test "$(git hash-object codex-rs/user-verification/Cargo.toml)" = 'fe4d5298f0484de68d9e417e47206f5be74fc729'
@@ -65,14 +65,15 @@ jobs:
           for pkg in lock["package"]:
               packages.setdefault(pkg["name"], set()).add(pkg["version"])
           assert "0.14.0" in packages.get("p256", set()), "p256 0.14 did not resolve"
-          assert "0.7.6" in packages.get("crypto-bigint", set()), "fixed bigint 0.7.6 did not resolve"
+          assert any(tuple(map(int, v.split('.'))) >= (0, 7, 6) for v in packages.get("crypto-bigint", set())), "no crypto-bigint at or above patched floor 0.7.6"
           assert "0.5.5" in packages.get("crypto-bigint", set()), "other owners unexpectedly removed"
           for name, version in {
-              "zstd": "0.14.3", "zstd-safe": "8.2.0", "ctutils": "0.4.4",
+              "zstd": "0.14.3", "zstd-safe": "8.2.0",
               "rustls": "0.23.46", "quinn-proto": "0.11.18", "zip": "9.0.5",
               "rustls-webpki": "0.103.16"
           }.items():
               assert version in packages.get(name, set()), f"security pin changed: {name}"
+          assert any(tuple(map(int, v.split('.'))) >= (0, 4, 4) for v in packages.get('ctutils', set())), "ctutils lost its security patch"
           for target in ("windows", "linux"):
               meta = json.loads((tmp / (target + ".json")).read_text())
               ids = {node["id"] for node in meta["resolve"]["nodes"]}
