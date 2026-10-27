@@ -56,3 +56,13 @@ The [actual 109-overlap inventory artifact #40580764913](https://github.com/Taku
 - Final release acceptance still requires frozen-source Windows native security and behavioral checks, schema drift, Bazel packaging, detached Daniel-CL 21-stage suite, release CI and explicit approval. No auto-publish or installed change here.
 
 **Next #2 packet:** prioritize the nine direct-conflict core/TUI source contracts with their existing focused historical receipts and map the remaining overlapping app-server/protocol/rollout and Bazel owners to their exact native test selectors. Keep any correction small and targeted, preserving source/authorization invariants.
+
+## 3F.12/3F.13 current secure-graph native semantic receipts — October 27, 2026
+
+- [Exact Windows core/TUI owner run #40583499451](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40583499451) **PASS 40/40**: 15 core authorization/context/history tests and 25 TUI adaptive, startup/F2, managed-daemon, approval, workspace and key-interaction tests; secure `crypto-bigint 0.7.10` resolver pinned.
+- [Exact Windows app-server/history/rollout run #40598678934](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40598678934) **PASS 14/14**: six app-server verification/admission, four history serialization/fork-state, and four rollout StateDbOnly/filter regressions, on the same reviewed secure Cargo graph.
+- [Stable and experimental schema + Python SDK generation #40598386099](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40598386099) **PASS**: exact audited graph regenerated protocol/config artifacts and SDK with no drift.
+- The original **nine core/TUI Rust conflicts** now have secure-graph focused native evidence; four generated-protocol original conflicts have source-bound Linux generation evidence. The secure `Cargo.lock` has a focused all-target cargo-deny and native runtime receipt. The **Bazel workflow/release-package original conflict remains not accepted** until optimized Windows packaging and release-profile verification.
+- [Audited formatter-only run #40603996779](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40603996779) reconciled 68 Python and four Bazel layout changes without touching the 109 original-overlap source blobs, Cargo/deny/vendor, or version markers. The one-shot write-capable workflow was deleted after use.
+
+These receipts substantially advance behavior-class review; they **do not establish full 109/109 semantic acceptance**, a live cloud authentication session, a native Windows shipping archive, a final frozen-source 21-stage release suite, or production promotion. Historical 0.163 static fixtures still pin older source/Cargo identities and require an explicit reanchor rather than quiet test bypass.
