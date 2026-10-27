@@ -1,0 +1,96 @@
+# Disposable, security-focused zstd 0.13 -> 0.14.3 compatibility trial.
+# Never changes production source, lock policy, or release state.
+name: CodexDD 0.4.5 zstd security compatibility preview (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-zstd-security-recon
+    paths:
+      - '.github/workflows/codexdd-045-zstd-security-recon.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  zstd-compat:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-zstd-security-recon'
+    name: Disposable zstd version and lock-graph feasibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Exact source, no saved credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify original lock, policy and shipped markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+
+      - name: Install resolver toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Trial exact manifest upgrade and minimal Cargo dependency resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          file = pathlib.Path("codex-rs/Cargo.toml")
+          raw = file.read_text(encoding="utf-8")
+          old = 'zstd = "0.13"'
+          if raw.count(old) != 1 or 'zstd = "0.14"' in raw:
+              raise SystemExit("BLOCKED: unexpected baseline workspace zstd")
+          file.write_text(raw.replace(old, 'zstd = "0.14"'), encoding="utf-8")
+          PY
+          cargo update --manifest-path codex-rs/Cargo.toml -p zstd@0.13.3 --precise 0.14.3
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > /dev/null
+          python3 - <<'PY'
+          import pathlib, subprocess, tomllib
+          def old_file(path):
+              return subprocess.check_output(["git","show","HEAD:"+path],text=True)
+          old = tomllib.loads(old_file("codex-rs/Cargo.lock"))
+          new = tomllib.loads(pathlib.Path("codex-rs/Cargo.lock").read_text(encoding="utf-8"))
+          if any(old.get(k) != new.get(k) for k in old.keys() | new.keys() if k != "package"):
+              raise SystemExit("BLOCKED: changed Cargo lock metadata")
+          def by_identity(source):
+              return {(p["name"],p["version"]):p for p in source["package"]}
+          a, b = by_identity(old), by_identity(new)
+          removed, added = set(a)-set(b), set(b)-set(a)
+          allowed_removed={("zstd","0.13.3"),("zstd-safe","7.2.4")}
+          if removed != allowed_removed or added:
+              raise SystemExit("REVIEW REQUIRED: unanticipated dependency changes; removed="+repr(sorted(removed))+" added="+repr(sorted(added)))
+          for p in set(a)&set(b):
+              if a[p] != b[p]:
+                  raise SystemExit("BLOCKED: changed unrelated dependency or checksum: "+repr(p))
+          pins={("zstd","0.14.3"),("zstd-safe","8.2.0"),("rustls","0.23.46"),("quinn-proto","0.11.18"),("noyalib-serde-yaml","0.0.57"),("zip","9.0.5"),("rustls-webpki","0.103.16"),("webpki-roots","1.0.10"),("webpki-root-certs","1.0.10"),("ctutils","0.4.2"),("crypto-bigint","0.5.5")}
+          if not pins <= set(b): raise SystemExit("BLOCKED: unrelated protected version drift")
+          if subprocess.check_output(["git","diff","--name-only"],text=True).splitlines()!=["codex-rs/Cargo.lock","codex-rs/Cargo.toml"]:
+              raise SystemExit("BLOCKED: modified outside scratch manifest and Cargo.lock")
+          print("PASS: disposable Zstd upgrade removes only vulnerable 0.13.3 and zstd-safe 7.2.4")
+          print("NONRELEASE: native compile, new crypto vulnerabilities and inherited advisories remain open")
+          print("Candidate manifest diff:")
+          subprocess.run(["git","diff","--","codex-rs/Cargo.toml"],check=True)
+          print("Candidate lock Git blob:",subprocess.check_output(["git","hash-object","codex-rs/Cargo.lock"],text=True).strip())
+          PY
+
+      - name: Restore original manifest and lock, regardless of trial outcome
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --source=HEAD -- codex-rs/Cargo.toml codex-rs/Cargo.lock
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test -z "$(git status --porcelain)"
+          echo 'No branch dependency update, no audit waiver, no release approval.'
