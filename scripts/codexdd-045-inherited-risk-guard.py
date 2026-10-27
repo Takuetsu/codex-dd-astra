@@ -127,7 +127,7 @@ def validate_offline() -> None:
         "zbus": "4.4.0",
         "zstd": "0.14.3",
         "zstd-safe": "8.2.0",
-        "ctutils": "0.4.4",
+        "ctutils": "0.4.6",
         "rustls": "0.23.46",
         "quinn-proto": "0.11.18",
         "noyalib-serde-yaml": "0.0.57",
