@@ -50,3 +50,12 @@ Cargo-deny source enforcement is explicitly updated to allow only this repositor
 - Draft PR #54 remains draft. This packet does not authorize the 21-stage Daniel-CL release suite, product version promotion, CI waiver, release merging or installation.
 
 **Required audit language:** "Three owner-approved time-bounded Linux-only INFO maintenance exceptions; all-target cargo-deny is still mandatory, crypto-bigint remains a separate vulnerability blocker." Never label a test of this exception guard "advisory-free" or a production release PASS.
+
+
+## Completed acceptance audit receipts — 2026-10-27
+
+1. [Focused guard workflow #40537766373](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40537766373) **PASS**, exact source commit c44f8f4a355a47515beaa4ebf272706498afe968: policy scope, immutable Git source, review deadline, protected locked versions, Windows/Linux target reachability and all three current RustSec INFO/unmaintained metadata checks.
+2. [Full, unmodified all-target cargo-deny workflow #40538049035](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40538049035) on commit b1fe0a2ad1694fa83399bec9a3656992ff42807a: scope guard **PASS**, bans **ok**, licenses **ok**, sources **ok**, advisories **FAILED on exactly one error** — RUSTSEC-2026-0387 for Windows-reachable crypto-bigint 0.5.5. There are duplicate-version and yanked-crate warnings, but no other advisory *errors*. The clean-worktree check also passed.
+3. No cargo-deny errors appeared for the three specifically accepted Linux INFO advisories, and the removed basic-toml finding did not recur. This supports closure of the three agreed maintenance exceptions and resolver-level basic-toml remediation. It **does not** accept crypto-bigint, validate native secrets behavior, or make the full security gate green.
+
+**Next gate requiring local validation:** focused Windows codex-secrets --lib tests on exact candidate branch and lock, followed by crypto-bigint major-line remediation. Keep full 21-stage release suite and production promotion on hold.
