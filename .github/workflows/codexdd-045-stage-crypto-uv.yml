@@ -14,7 +14,7 @@ permissions:
 jobs:
   stage-exact-uv:
     name: Import SHA-verified scratch lock into isolated branch only
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f957370607a31a43fa9ad68a522e8badb25e18e4'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '71a906e979839c860fc224c89048ee0f77d8f65f'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -31,15 +31,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = 'f957370607a31a43fa9ad68a522e8badb25e18e4'
+          test "$(git rev-parse HEAD^)" = '71a906e979839c860fc224c89048ee0f77d8f65f'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'f19b0086eac09c6830c887be83db5ae4ae11587e'
           test "$(git hash-object codex-rs/user-verification/Cargo.toml)" = 'fe4d5298f0484de68d9e417e47206f5be74fc729'
-          test "$(git hash-object codex-rs/deny.toml)" = 'da1b9cadab34e0d8e9ce0b70742b72b462852ee6' || {
-            # The inherited INFO risk review may have a different policy SHA;
-            # exact list and allowlist are verified by the Python guard below.
-            echo 'INFO: current policy SHA differs from first-pass optional checkpoint; safety guard remains mandatory.'
-          }
+          test "$(git hash-object codex-rs/deny.toml)" = '630b9026d283705411d98eb90e0813fd25390bce'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
           test -z "$(git status --porcelain)"
@@ -70,7 +66,7 @@ jobs:
               '"ctutils": "0.4.4",', '"ctutils": "0.4.6",')
           PY
           test "$(git hash-object codex-rs/user-verification/Cargo.toml)" = '067af0bb9175d828c7292670e6e4acdbbaad08ff'
-          test "$(git hash-object codex-rs/user-verification/src/credential_tests.rs)" = '2126046d8c0b648d5f7b5e713644b4ba31b60ac9'
+          test "$(git hash-object codex-rs/user-verification/src/credential_tests.rs)" = '21260463809584b64dec74dc5cd3d70389b86a58'
           git diff --check
 
       - name: Install same pinned Rust 1.95.0 used by green scratch test
