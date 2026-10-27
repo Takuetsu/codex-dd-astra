@@ -10,11 +10,11 @@ permissions:
   contents: write
 jobs:
   format-only:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '62c37f3159d92f5caffc07784eefde43302732d7'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e1a780b534f35a4d592dcb49ae4be814710ac3a1'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: '62c37f3159d92f5caffc07784eefde43302732d7'
+      EXPECTED_PARENT: 'e1a780b534f35a4d592dcb49ae4be814710ac3a1'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-format-only-72'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -143,16 +143,22 @@ jobs:
             codex-rs/ext/skills/BUILD.bazel \
             codex-rs/external-agent-migration/BUILD.bazel \
             codex-rs/skills/BUILD.bazel | tee "$RUNNER_TEMP/codexdd045-buildifier-recheck.log"
-      - name: Run pinned security-manifest and 0.4.5 static regression guards before commit
+      - name: Verify current crypto security and formatter-specific unit regressions
         shell: bash
         run: |
           set -euo pipefail
           python3 .github/scripts/verify_cargo_workspace_manifests.py
-          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_*.py' -q > "$RUNNER_TEMP/codexdd045-static-tests.log" 2>&1 || {
+          python3 scripts/codexdd-045-inherited-risk-guard.py
+          python3 scripts/codexdd-045-dependency-security-check.py --mode staging
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_vendor_manifest_policy.py' -v > "$RUNNER_TEMP/codexdd045-static-tests.log" 2>&1 || {
             tail -n 110 "$RUNNER_TEMP/codexdd045-static-tests.log"
             exit 1
           }
-          tail -n 8 "$RUNNER_TEMP/codexdd045-static-tests.log"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f6_format_provenance.py' -v >> "$RUNNER_TEMP/codexdd045-static-tests.log" 2>&1 || {
+            tail -n 110 "$RUNNER_TEMP/codexdd045-static-tests.log"
+            exit 1
+          }
+          tail -n 22 "$RUNNER_TEMP/codexdd045-static-tests.log"
           git diff --check
       - name: Commit exact formatting-only changes to isolated staging branch
         shell: bash
