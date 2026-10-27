@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   owner-graph:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd6d8896ea9c25fabe48dc11eba5ba0a932404d7f'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '5e5ee4df4696ee4c23ff620ac3a71c68b3737451'
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'd6d8896ea9c25fabe48dc11eba5ba0a932404d7f'
+          test "$(git rev-parse HEAD^)" = '5e5ee4df4696ee4c23ff620ac3a71c68b3737451'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -122,6 +122,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq musl-tools
+          command -v x86_64-linux-musl-gcc
           rustup target add x86_64-unknown-linux-musl
           cargo check --manifest-path codex-rs/Cargo.toml --locked \
             --target x86_64-unknown-linux-musl -p codex-voice-host --bin codex-voice-host
