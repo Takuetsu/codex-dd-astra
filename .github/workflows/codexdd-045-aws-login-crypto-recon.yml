@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   dpop:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '1551617bdd92fb474379df3556397cccd02d2868'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '6a87f74a0e5bc4e3651221d99f4f6c097fa4a735'
+          test "$(git rev-parse HEAD^)" = '1551617bdd92fb474379df3556397cccd02d2868'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -67,7 +67,7 @@ jobs:
           root=Path("codex-rs/vendor/aws-config-1.13.0")
           cargo=root/"Cargo.toml"
           s=cargo.read_text(encoding="utf-8")
-          for dep, old, new in (("p256","0.13.2","0.14.0"),("rand","0.8.5","0.10.2")):
+          for dep, old, new in (("p256","0.13.2","0.14.0"),("rand","0.8.5","0.10.1")):
               m=re.search(r'(?m)^\[dependencies\.'+dep+r'\]\n[\s\S]*?(?=^\[|\Z)',s)
               assert m, f"missing {dep} dependency"
               block=m.group(0)
