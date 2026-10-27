@@ -138,6 +138,8 @@ impl Transport {
                     DataChannelEvent::OnMessage(_)
                     | DataChannelEvent::OnBufferedAmountLow
                     | DataChannelEvent::OnBufferedAmountHigh => {}
+                    // New upstream events must not be treated as an authenticated/open channel.
+                    _ => break,
                 }
             }
             sender.send_replace(false);
