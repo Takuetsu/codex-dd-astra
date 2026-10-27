@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   cross-version:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b388701b2f3a8b4cc04b33088519b148d0207a13'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'cfdfd71730fd201f3fe9652aa9b3da4f06faae4b'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'b388701b2f3a8b4cc04b33088519b148d0207a13'
+          test "$(git rev-parse HEAD^)" = 'cfdfd71730fd201f3fe9652aa9b3da4f06faae4b'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -77,7 +77,7 @@ jobs:
           }
           EOF
           cp "$out/legacy/src/main.rs" "$out/candidate/src/main.rs"
-          cargo build --manifest-path "$out/legacy/Cargo.toml" --locked 2>"$out/legacy-build.log" || {
+          cargo build --manifest-path "$out/legacy/Cargo.toml" 2>"$out/legacy-build.log" || {
             tail -n 75 "$out/legacy-build.log"; exit 1;
           }
           cargo build --manifest-path "$out/candidate/Cargo.toml" 2>"$out/candidate-build.log" || {
