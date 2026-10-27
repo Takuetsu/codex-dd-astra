@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   transport:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '4f6586c27aec9248d28343a854cc6b6d8aea808d'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a667ef71857994321400c3540b1abb6de12f1579'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '4f6586c27aec9248d28343a854cc6b6d8aea808d'
+          test "$(git rev-parse HEAD^)" = 'a667ef71857994321400c3540b1abb6de12f1579'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
