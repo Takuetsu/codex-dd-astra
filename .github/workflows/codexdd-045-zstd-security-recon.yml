@@ -69,9 +69,29 @@ jobs:
           allowed_removed={("zstd","0.13.3"),("zstd-safe","7.2.4")}
           if removed != allowed_removed or added:
               raise SystemExit("REVIEW REQUIRED: unanticipated dependency changes; removed="+repr(sorted(removed))+" added="+repr(sorted(added)))
+          # Once the superseded Zstd and Zstd-safe versions disappear, Cargo
+          # removes disambiguating version suffixes from their surviving edges.
+          # Accept only this exact normalization, not unrelated package changes.
+          edge_updates = {
+              "zstd 0.13.3": "zstd",
+              "zstd 0.14.3": "zstd",
+              "zstd-safe 8.2.0": "zstd-safe",
+          }
+          normalized = 0
           for p in set(a)&set(b):
-              if a[p] != b[p]:
-                  raise SystemExit("BLOCKED: changed unrelated dependency or checksum: "+repr(p))
+              if a[p] == b[p]:
+                  continue
+              expected = dict(a[p])
+              original = expected.get("dependencies", [])
+              expected["dependencies"] = [edge_updates.get(dep, dep) for dep in original]
+              if original == expected["dependencies"] or expected != b[p]:
+                  raise SystemExit("BLOCKED: unexpected dependency, checksum or metadata change: "+repr(p))
+              if len(set(expected["dependencies"])) != len(expected["dependencies"]):
+                  raise SystemExit("BLOCKED: normalization duplicated dependency edges: "+repr(p))
+              normalized += 1
+          if normalized == 0:
+              raise SystemExit("BLOCKED: expected Zstd dependency re-anchoring was absent")
+          print("PASS: exact dependency-edge normalization in", normalized, "packages")
           pins={("zstd","0.14.3"),("zstd-safe","8.2.0"),("rustls","0.23.46"),("quinn-proto","0.11.18"),("noyalib-serde-yaml","0.0.57"),("zip","9.0.5"),("rustls-webpki","0.103.16"),("webpki-roots","1.0.10"),("webpki-root-certs","1.0.10"),("ctutils","0.4.2"),("crypto-bigint","0.5.5")}
           if not pins <= set(b): raise SystemExit("BLOCKED: unrelated protected version drift")
           if subprocess.check_output(["git","diff","--name-only"],text=True).splitlines()!=["codex-rs/Cargo.lock","codex-rs/Cargo.toml"]:
