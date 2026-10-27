@@ -38,6 +38,16 @@ Source for exact old/new transformation receipts: `docs/upstream-candidates/code
 4. **One Bazel workflow**: must preserve CodexDD 90-minute CI bounds and reconcile upstream Windows MSVC release packaging atomically with Bazel dependencies; native release-package acceptance is a separate gate.
 5. **One Cargo lockfile**: crypto/security-owner #1 remediation must remain locked and all-target audited across exact final candidate; no dependency waiver is allowed.
 
+## All 15 original direct-conflict source deltas accounted for on the current branch
+
+The [actual 109-overlap inventory artifact #40580764913](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40580764913) includes exact Git IDs for all 15 authentic 0.163 direct-conflict paths. Comparing each current blob to the separate frozen direct-conflict receipt gives the following **source-only** disposition:
+
+- **13/15** are byte-identical to their original reviewed `f6fb89c...` source: Bazel workflow, the four generated schema/TypeScript artifacts, all three core Rust conflicts, and five of six TUI Rust conflict files. No post-receipt source change in these 13.
+- **1/15 TUI startup source** (`codex-rs/tui/src/app/startup.rs`) changed only from recorded formatter blob `29065c6c0c90c010a53bf065c95278312712a90e` to `3b111def463e2f52b4786b7a6db8c6e3aa7954f7`; that unique source edit was reconstructed exactly from the 3F.6 formatter receipt, with no other byte changes.
+- **1/15 dependency lock** (`codex-rs/Cargo.lock`) changed to the secure, Cargo-generated `13bc15ff844e93dfaf7777c73bb7313b35bb3b81` as part of completed focused crypto remediation; the unchanged original cargo-deny and exact Windows native tests are green. This is intentional functional dependency migration, **not** a format-only edit.
+
+**Therefore: 15/15 original direct conflicts have current source provenance reconciled.** This resolves *source drift accounting only*, not path-by-path semantic acceptance or native Bazel/schema/release signoff. No historical `NOT_ACCEPTED` release gate has been removed or bypassed.
+
 ## Remaining semantic review contract for 109 paths
 
 - 100 unchanged historical reviewed identities still need explicit *owner behavior* classification, not another blob identity acceptance claim. Prior targeted source/runtime tests can be cited only within their historical SHA and precise behavior boundaries.
