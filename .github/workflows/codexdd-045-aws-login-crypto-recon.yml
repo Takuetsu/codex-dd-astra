@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   dpop:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '1551617bdd92fb474379df3556397cccd02d2868'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '555ba9200b05a208578a6b73d57a921ae3077829'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '1551617bdd92fb474379df3556397cccd02d2868'
+          test "$(git rev-parse HEAD^)" = '555ba9200b05a208578a6b73d57a921ae3077829'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -130,7 +130,7 @@ jobs:
         run: |
           set -euo pipefail
           cargo test --manifest-path codex-rs/Cargo.toml --locked \
-            -p aws-config --features credentials-login --lib login::dpop
+            -p aws-config --lib login::dpop
           echo 'AWS DPoP TEST PASS ONLY. Server login and AWS auth integration still need native validation.'
       - name: Record exact patch and source identity on any exit
         if: always()
