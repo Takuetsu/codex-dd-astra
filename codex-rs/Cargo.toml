@@ -350,7 +350,7 @@ chardetng = "0.1.17"
 chrono = "0.4.43"
 clap = "4"
 clap_complete = "4"
-clatter = { version = "2.2.0", default-features = false, features = [
+clatter = { version = "3.0.0", default-features = false, features = [
     "alloc",
     "getrandom",
     "use-25519",
@@ -639,6 +639,10 @@ inherits = "test"
 opt-level = 0
 
 [patch.crates-io]
+age = { git = "https://github.com/str4d/rage", rev = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f" }
+age-core = { git = "https://github.com/str4d/rage", rev = "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f" }
+clatter = { git = "https://github.com/jmlepisto/clatter", rev = "9a8d15c4f80d5911ca0403aa22e0de99ea59df08" }
+aws-config = { path = "vendor/aws-config-1.13.0" }
 # NONRELEASE trial only: pinned upstream i18n-config before next publication.
 i18n-config = { git = "https://github.com/kellpossible/cargo-i18n", rev = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4" }
 # Uncomment to debug local changes.
