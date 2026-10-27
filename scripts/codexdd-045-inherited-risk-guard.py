@@ -110,7 +110,9 @@ def validate_offline() -> None:
             and aws["dependencies"]["rand"]["version"] == "0.10.1"
             and aws["dependencies"]["rand"]["features"] == ["std", "std_rng", "sys_rng"],
             "secure DPoP signer RNG or P256 API modified")
-    files = sorted(p for p in vendor.rglob("*") if p.is_file())
+    # Explicit POSIX/case-sensitive ordering: Windows Path sorts case-insensitively.
+    files = sorted((p for p in vendor.rglob("*") if p.is_file()),
+                   key=lambda p: p.relative_to(vendor).as_posix())
     require(len(files) == 74, "reviewed AWS vendor file inventory changed")
     expected_paths = {p.relative_to(ROOT).as_posix() for p in files}
     tracked = subprocess.run(
