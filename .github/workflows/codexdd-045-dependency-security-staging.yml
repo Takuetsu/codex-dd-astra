@@ -1,0 +1,68 @@
+# Isolated graph-only proof. This workflow cannot promote a release or waive advisories.
+name: CodexDD 0.4.5 Zstd/ctutils staging only (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-dependency-security-remediation
+    paths:
+      - '.github/workflows/codexdd-045-dependency-security-staging.yml'
+      - 'scripts/codexdd-045-dependency-security-check.py'
+      - 'codex-rs/Cargo.toml'
+      - 'codex-rs/Cargo.lock'
+
+permissions:
+  contents: read
+
+jobs:
+  staging-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-dependency-security-remediation'
+    name: Exact-lock metadata and known-advisory inventory (NOT release)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout without persisting tokens
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify unchanged security policy, candidate lock, and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = '0eb50f54cfbc192e149bd90960878c27bf211a42'
+          test "$(git hash-object codex-rs/Cargo.lock)" = '8be43898f94d59f403f8e03d9d4b5361e492f086'
+          test "$(git hash-object codex-rs/deny.toml)" = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
+          test -z "$(git status --porcelain)"
+          python3 scripts/codexdd-045-dependency-security-check.py --mode staging
+
+      - name: Install reproducible Cargo resolver
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Resolve exact locked Windows target graph, without compiling or modifying it
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$RUNNER_TEMP/codexdd-045-windows-metadata.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"]) / "codexdd-045-windows-metadata.json"
+          meta = json.loads(p.read_text(encoding="utf-8"))
+          names = {}
+          for item in meta["packages"]:
+              names[item["id"]] = (item["name"], item["version"])
+          nodes = {item["id"]: item for item in meta["resolve"]["nodes"]}
+          present = {pid for pid in nodes}
+          for package in ("zstd", "zstd-safe", "ctutils", "crypto-bigint"):
+              got = sorted({names[pid][1] for pid in present if names[pid][0] == package})
+              print("WINDOWS LOCKED:", package, got or "not reachable")
+          assert any(names[pid] == ("zstd", "0.14.3") for pid in present)
+          assert not any(names[pid] == ("zstd", "0.13.3") for pid in present)
+          assert not any(names[pid] == ("zstd-safe", "7.2.4") for pid in present)
+          assert not any(names[pid] == ("ctutils", "0.4.2") for pid in present)
+          print("LOCKED WINDOWS METADATA PASS: not a native test or all-target cargo-deny acceptance")
+          PY
+          test -z "$(git status --porcelain)"
+          echo 'No cargo-deny waiver, runtime compile, integration merge or production release.'
