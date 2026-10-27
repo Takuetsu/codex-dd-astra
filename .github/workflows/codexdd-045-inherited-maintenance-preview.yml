@@ -138,11 +138,41 @@ jobs:
           print("NONRELEASE: other inherited D-Bus and crypto-bigint findings still block release")
           PY
 
-      - name: Compile only the modified third-party config crate
+      - name: Capture exact disposable manifest/lock provenance for a reviewed follow-up
         shell: bash
         run: |
           set -euo pipefail
-          cargo check --manifest-path codex-rs/Cargo.toml -p i18n-config --lib --locked
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          for name, path in (("manifest", Path("codex-rs/Cargo.toml")), ("lock", Path("codex-rs/Cargo.lock"))):
+              raw = base64.b64encode(path.read_bytes()).decode("ascii")
+              print("CODEXDD_BEGIN", name, len(raw))
+              for i in range(0, len(raw), 2048):
+                  print("CODEXDD_B64", name, i // 2048, raw[i:i + 2048])
+              print("CODEXDD_END", name)
+          PY
+
+      - name: Compile the pinned upstream parser in a tiny standalone fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/i18n-config-smoke/src"
+          cat > "$RUNNER_TEMP/i18n-config-smoke/Cargo.toml" <<'TOML'
+          [package]
+          name = "codexdd-045-i18n-config-smoke"
+          version = "0.0.0"
+          edition = "2024"
+          [dependencies]
+          i18n-config = { git = "https://github.com/kellpossible/cargo-i18n", rev = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4" }
+          TOML
+          cat > "$RUNNER_TEMP/i18n-config-smoke/src/main.rs" <<'RS'
+          fn main() {
+              let _ = std::any::type_name::<i18n_config::I18nConfig>();
+          }
+          RS
+          cargo check --manifest-path "$RUNNER_TEMP/i18n-config-smoke/Cargo.toml"
+          echo 'PASS: standalone pinned i18n-config parser compiles; full CodexDD/native behavior is not yet validated.'
 
       - name: Restore unchanged source and verify no release/policy changes
         if: always()
