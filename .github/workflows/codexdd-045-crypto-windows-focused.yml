@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   win-crypto:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'eed62cb1604791de229a848eb627a8159568fa69'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'ff26e41768cd2e0061738d2e7bb11b247af7fe33'
     runs-on: windows-2022
     timeout-minutes: 65
     env:
@@ -28,7 +28,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          if ((git rev-parse HEAD^).Trim() -ne 'eed62cb1604791de229a848eb627a8159568fa69') { throw 'Unexpected one-shot parent' }
+          if ((git rev-parse HEAD^).Trim() -ne 'ff26e41768cd2e0061738d2e7bb11b247af7fe33') { throw 'Unexpected one-shot parent' }
           if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Cargo.lock changed' }
           if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Cargo manifest changed' }
           if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker changed' }
