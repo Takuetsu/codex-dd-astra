@@ -48,14 +48,19 @@ jobs:
           p = pathlib.Path("codex-rs/Cargo.toml")
           raw = p.read_text(encoding="utf-8")
           data = tomllib.loads(raw)
-          if "patch" in data or raw.count("[workspace]") != 1:
-              raise SystemExit("BLOCKED: unexpected Cargo patch or workspace structure")
+          # The upstream workspace already has three exact Cargo patches.
+          # Add just one pinned new entry inside the existing crates-io table.
+          table = "[patch.crates-io]\\n"
+          if raw.count("[workspace]") != 1 or raw.count(table) != 1:
+              raise SystemExit("BLOCKED: unexpected Cargo workspace/patch structure")
+          if "i18n-config" in data.get("patch", {}).get("crates-io", {}):
+              raise SystemExit("BLOCKED: an i18n-config patch already exists")
           revision = "2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4"
-          raw += (
-              "\n# NONRELEASE trial only: pinned upstream commit before next crates.io publication.\n"
-              "[patch.crates-io]\n"
-              f'i18n-config = {{ git = "https://github.com/kellpossible/cargo-i18n", rev = "{revision}" }}\n'
+          addition = (
+              "# NONRELEASE trial only: pinned upstream i18n-config before next publication.\\n"
+              f'i18n-config = {{ git = "https://github.com/kellpossible/cargo-i18n", rev = "{revision}" }}\\n'
           )
+          raw = raw.replace(table, table + addition, 1)
           p.write_text(raw, encoding="utf-8")
           PY
           cargo update --manifest-path codex-rs/Cargo.toml -p i18n-config
