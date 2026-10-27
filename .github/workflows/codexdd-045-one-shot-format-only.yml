@@ -10,18 +10,18 @@ permissions:
   contents: write
 jobs:
   format-only:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e1a780b534f35a4d592dcb49ae4be814710ac3a1'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f0e309296251c7be8b74f82736dd2d451db95792'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'e1a780b534f35a4d592dcb49ae4be814710ac3a1'
+      EXPECTED_PARENT: 'f0e309296251c7be8b74f82736dd2d451db95792'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-format-only-72'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - name: Checkout exact isolated branch with commit credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: true
       - name: Pin exact parent, security graph, vendor, release markers and no source drift
         shell: bash
