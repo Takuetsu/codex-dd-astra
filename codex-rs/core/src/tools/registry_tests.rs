@@ -1166,7 +1166,6 @@ fn test_invocation(
     }
 }
 
-
 #[tokio::test]
 async fn adaptive_reconnaissance_rejects_hook_rewritten_write_command() -> anyhow::Result<()> {
     let (session, turn) = crate::session::tests::make_session_and_context().await;

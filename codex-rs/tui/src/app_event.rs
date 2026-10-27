@@ -464,7 +464,10 @@ pub(crate) enum AppEvent {
         server_name: String,
         request_id: AppServerRequestId,
         attempt_id: Uuid,
-        result: Result<codex_app_server_protocol::UserVerificationProof, crate::app_command::UserVerificationFailure>,
+        result: Result<
+            codex_app_server_protocol::UserVerificationProof,
+            crate::app_command::UserVerificationFailure,
+        >,
     },
 
     /// Interrupt, fork, and retry a safety-buffered turn with the server-selected model.

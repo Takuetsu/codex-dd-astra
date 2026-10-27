@@ -571,7 +571,8 @@ async fn enqueue_primary_thread_session_replays_buffered_approval_after_attach()
         &app_server.request_handle(),
     );
     assert_eq!(
-        app.pending_app_server_requests.note_buffered_request(&buffered),
+        app.pending_app_server_requests
+            .note_buffered_request(&buffered),
         None
     );
     app.agents_overview.dispatched_requests.insert(
@@ -726,7 +727,8 @@ async fn resolved_buffered_approval_does_not_become_actionable_after_drain() -> 
         .pending_app_server_requests
         .resolve_notification(&thread_id.to_string(), &AppServerRequestId::Integer(1))
         .expect("matching app-server request should resolve");
-    app.chat_widget.dismiss_app_server_request(&resolved.request);
+    app.chat_widget
+        .dismiss_app_server_request(&resolved.request);
     while app_event_rx.try_recv().is_ok() {}
 
     let rx = app

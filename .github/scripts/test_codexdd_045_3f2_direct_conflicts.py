@@ -6,6 +6,7 @@ import re
 import subprocess
 import unittest
 from pathlib import Path
+from codexdd_045_format_provenance import current_blob
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
@@ -59,7 +60,7 @@ class OriginalDirectConflictReceipt(unittest.TestCase):
                     )
                     self.assertEqual(git("rev-parse", "HEAD:" + r["path"]), PATCHED_TLS_LOCK)
                 else:
-                    self.assertEqual(git("rev-parse", "HEAD:" + r["path"]), r["integration_reviewed_blob"])
+                    self.assertEqual(git("rev-parse", "HEAD:" + r["path"]), current_blob(r["path"], r["integration_reviewed_blob"]))
                 self.assertEqual(git("rev-parse", PRODUCTION + ":" + r["path"]), r["production_044_blob"])
 
     def test_no_false_semantic_or_security_acceptance(self):

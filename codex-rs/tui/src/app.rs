@@ -1037,7 +1037,8 @@ impl App {
                 self.open_agents_overview(app_server);
             } else if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {
                 let activation_key = self.routed_key_activation.take();
-                self.chat_widget.handle_disconnected_view_key(*key, activation_key);
+                self.chat_widget
+                    .handle_disconnected_view_key(*key, activation_key);
                 if self
                     .chat_widget
                     .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)

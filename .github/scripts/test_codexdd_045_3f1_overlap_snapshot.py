@@ -10,6 +10,7 @@ import json
 import subprocess
 import unittest
 from pathlib import Path
+from codexdd_045_format_provenance import current_blob
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
@@ -99,7 +100,8 @@ class FourWayOverlapReceipt(unittest.TestCase):
                     self.assertEqual(self.historical_integration.get(path), reviewed)
                     self.assertEqual(self.integration.get(path), PATCHED_TLS_LOCK)
                 else:
-                    self.assertEqual(self.integration.get(path), reviewed)
+                    self.assertEqual(self.historical_integration.get(path), reviewed)
+                    self.assertEqual(self.integration.get(path), current_blob(path, reviewed))
 
     def test_legacy_043_conflicts_are_not_mislabeled_163_conflicts(self):
         r = self.receipt
@@ -116,7 +118,8 @@ class FourWayOverlapReceipt(unittest.TestCase):
                 self.assertEqual(row["upstream_changed"], row["official_162_blob"] != row["official_163_blob"])
                 self.assertEqual(row["production_changed"], row["production_044_blob"] != row["reviewed_045_blob"])
                 self.assertEqual(self.production.get(row["path"]), row["production_044_blob"])
-                self.assertEqual(self.integration.get(row["path"]), row["reviewed_045_blob"])
+                self.assertEqual(self.historical_integration.get(row["path"]), row["reviewed_045_blob"])
+                self.assertEqual(self.integration.get(row["path"]), current_blob(row["path"], row["reviewed_045_blob"]))
 
     def test_dependency_policy_not_implicitly_promoted(self):
         self.assertEqual(git("hash-object", "codex-rs/Cargo.toml").decode().strip(), "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4")

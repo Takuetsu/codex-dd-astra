@@ -374,10 +374,11 @@ impl App {
         }
         let mut model = startup_model(&config, &bootstrap, startup_defaults.server_defaults_read);
         let available_models = bootstrap.available_models;
-        let mut remote_connection = crate::status::remote_connection::remote_connection_status_value(
-            &app_server_target,
-            app_server.server_version(),
-        );
+        let mut remote_connection =
+            crate::status::remote_connection::remote_connection_status_value(
+                &app_server_target,
+                app_server.server_version(),
+            );
         if let Some(connection) = &mut remote_connection {
             connection.is_managed_daemon = connection.is_local_daemon && managed_daemon;
         }

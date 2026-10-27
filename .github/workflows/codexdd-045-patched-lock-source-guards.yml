@@ -7,6 +7,8 @@ on:
       - dd/codexdd-v0.4.5-patched-lock-integration
     paths:
       - '.github/scripts/test_codexdd_045_*.py'
+      - '.github/scripts/codexdd_045_format_provenance.py'
+      - 'docs/upstream-candidates/codexdd-045-format-followup.json'
       - '.github/scripts/upstream_auto_*.py'
       - '.github/scripts/test_upstream_auto_*.py'
       - '.github/scripts/test_upstream_045_contract_audit.py'
