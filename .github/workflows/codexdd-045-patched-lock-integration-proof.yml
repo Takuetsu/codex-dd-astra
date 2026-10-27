@@ -1,0 +1,126 @@
+# One-shot exact-source bridge from the 0.163 integration head to the patched
+# TLS trust-root lock. This is evidence only, never security-risk acceptance.
+name: CodexDD 0.4.5 patched TLS lock integration proof (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-patched-lock-integration
+    paths:
+      - 'codex-rs/Cargo.lock'
+      - '.github/workflows/codexdd-045-patched-lock-integration-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lock-identity:
+    name: Exact three-crate TLS lock/source integrity (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-patched-lock-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate without retained credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Prove full lock diff, protected pins and nonrelease policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import subprocess
+          import tomllib
+
+          base = "e35cf007be31d2fd5f6aa98c1360b297e5b9325a"
+          expected_lock = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
+          def git(*args):
+              return subprocess.check_output(["git", *args], text=True).strip()
+          def file_blob(path):
+              return git("hash-object", path)
+
+          if git("rev-parse", "HEAD") != os.environ["GITHUB_SHA"]:
+              raise SystemExit("BLOCKED: wrong checkout SHA")
+          if git("rev-parse", "HEAD^") != base:
+              raise SystemExit("BLOCKED: unexpected integration parent")
+          changed = set(git("diff", "--name-only", "HEAD^", "HEAD").splitlines())
+          expected = {
+              "codex-rs/Cargo.lock",
+              ".github/workflows/codexdd-045-patched-lock-integration-proof.yml",
+          }
+          if changed != expected:
+              raise SystemExit("BLOCKED: unrelated source changes: " + repr(changed))
+          for path, blob in (
+              ("codex-rs/Cargo.toml", "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4"),
+              ("codex-rs/Cargo.lock", expected_lock),
+              ("codex-rs/deny.toml", "ea7fdc149fc880c6b36d75c29851641034289a4e"),
+          ):
+              if file_blob(path) != blob:
+                  raise SystemExit("BLOCKED: changed protected source " + path)
+          if pathlib.Path("codex-rs/codexdd-version.txt").read_text().strip() != "0.4.4":
+              raise SystemExit("BLOCKED: production marker advanced")
+          if pathlib.Path("codex-rs/upstream-codex-release.txt").read_text().strip() != "rust-v0.162.0":
+              raise SystemExit("BLOCKED: official upstream marker advanced")
+          if pathlib.Path("codex-rs/deny-preview.toml").exists():
+              raise SystemExit("BLOCKED: scratch advisory policy leaked")
+
+          old = tomllib.loads(subprocess.check_output(
+              ["git", "show", "HEAD^:codex-rs/Cargo.lock"], text=True))
+          new = tomllib.loads(pathlib.Path("codex-rs/Cargo.lock").read_text())
+          if old.keys() != new.keys():
+              raise SystemExit("BLOCKED: Cargo.lock top-level keys changed")
+          for key in old:
+              if key != "package" and old[key] != new[key]:
+                  raise SystemExit("BLOCKED: non-package Cargo.lock data changed: " + key)
+          if len(old["package"]) != len(new["package"]):
+              raise SystemExit("BLOCKED: Cargo.lock package count changed")
+          patches = {
+              "rustls-webpki": ("0.103.15", "0.103.16"),
+              "webpki-roots": ("1.0.5", "1.0.10"),
+              "webpki-root-certs": ("1.0.5", "1.0.10"),
+          }
+          found = set()
+          for before, after in zip(old["package"], new["package"]):
+              name = before["name"]
+              if name != after["name"]:
+                  raise SystemExit("BLOCKED: package order changed")
+              if name not in patches:
+                  if before != after:
+                      raise SystemExit("BLOCKED: unrelated package changed: " + name)
+                  continue
+              if name in found or (before["version"], after["version"]) != patches[name]:
+                  raise SystemExit("BLOCKED: wrong TLS patch: " + name)
+              found.add(name)
+              for key in before.keys() | after.keys():
+                  if key not in ("version", "checksum") and before.get(key) != after.get(key):
+                      raise SystemExit("BLOCKED: TLS dependency edges changed: " + name)
+          if found != patches.keys():
+              raise SystemExit("BLOCKED: missing TLS patch: " + repr(set(patches) - found))
+          lock_names = {(p["name"], p["version"]) for p in new["package"]}
+          for protected in (
+              ("rustls", "0.23.46"),
+              ("quinn-proto", "0.11.18"),
+              ("noyalib-serde-yaml", "0.0.57"),
+              ("zip", "9.0.5"),
+          ):
+              if protected not in lock_names:
+                  raise SystemExit("BLOCKED: protected dependency changed: " + str(protected))
+          deny = tomllib.loads(pathlib.Path("codex-rs/deny.toml").read_text())
+          ignores = {entry["id"] for entry in deny["advisories"].get("ignore", [])}
+          disallowed = {
+              "RUSTSEC-2026-0381", "RUSTSEC-2026-0382", "RUSTSEC-2026-0383",
+              "RUSTSEC-2026-0374", "RUSTSEC-2026-0371",
+              "RUSTSEC-2026-0370", "RUSTSEC-2026-0372",
+          }
+          if ignores & disallowed:
+              raise SystemExit("BLOCKED: advisory exception introduced")
+          if git("status", "--porcelain"):
+              raise SystemExit("BLOCKED: changed tracked or untracked source")
+          print("PASS: three TLS patches only; all protected pins retained")
+          print("PASS: source, deny policy and shipped markers unchanged")
+          print("NONRELEASE: four inherited maintenance notices still require owner disposition")
+          PY

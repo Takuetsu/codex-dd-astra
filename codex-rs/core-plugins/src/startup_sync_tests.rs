@@ -1431,8 +1431,7 @@ fn curated_repo_zipball_with_unsupported_bzip2_member() -> Vec<u8> {
     let mut writer = ZipWriter::new(cursor);
     // ZIP 9 defaults to Deflate (method 8). The fixture must start with
     // Stored (method 0) before rewriting only the selected member to BZIP2.
-    let options = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     writer
         .start_file(
             "openai-plugins-test/.agents/plugins/marketplace.json",
@@ -1445,7 +1444,9 @@ fn curated_repo_zipball_with_unsupported_bzip2_member() -> Vec<u8> {
     writer
         .start_file("openai-plugins-test/plugins/bzip2-only.bin", options)
         .expect("start stored payload entry");
-    writer.write_all(b"unsupported compression").expect("write payload");
+    writer
+        .write_all(b"unsupported compression")
+        .expect("write payload");
     let mut bytes = writer.finish().expect("finish stored ZIP").into_inner();
 
     // ZIP local file header method at +8; central directory method at +10.
@@ -1517,7 +1518,11 @@ fn curated_zip_extraction_strips_privileged_mode_bits() {
         .expect("stat plugin")
         .permissions()
         .mode();
-    assert_eq!(mode & 0o7777, 0o755, "privileged ZIP bits must be discarded");
+    assert_eq!(
+        mode & 0o7777,
+        0o755,
+        "privileged ZIP bits must be discarded"
+    );
 }
 
 fn curated_repo_zipball_bytes(sha: &str) -> Vec<u8> {

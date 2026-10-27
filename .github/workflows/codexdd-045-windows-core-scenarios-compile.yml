@@ -42,7 +42,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source SHA' }
           if ((git hash-object -- codex-rs/Cargo.toml).Trim() -ne 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4') { throw 'Unreviewed Cargo manifest' }
-          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc') { throw 'Unreviewed Cargo.lock' }
+          if ((git hash-object -- codex-rs/Cargo.lock).Trim() -ne 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb') { throw 'Unreviewed Cargo.lock' }
           if ((git hash-object -- codex-rs/deny.toml).Trim() -ne 'ea7fdc149fc880c6b36d75c29851641034289a4e') { throw 'Security audit policy drift' }
           if ((Get-Content -Raw codex-rs/codexdd-version.txt).Trim() -ne '0.4.4') { throw 'Product marker advanced' }
           if ((Get-Content -Raw codex-rs/upstream-codex-release.txt).Trim() -ne 'rust-v0.162.0') { throw 'Upstream release marker advanced' }

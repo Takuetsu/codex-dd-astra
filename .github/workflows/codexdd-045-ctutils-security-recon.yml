@@ -1,0 +1,99 @@
+# Read-only, strictly scoped trial for new RUSTSEC-2026-0385.
+# A green probe does not amend the branch lock or authorize any release.
+name: CodexDD 0.4.5 ctutils security patch feasibility (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-patched-lock-integration
+    paths:
+      - '.github/workflows/codexdd-045-ctutils-security-recon.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-ctutils-recon:
+    name: Disposable same-series ctutils patch and lock graph check
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-patched-lock-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact revision, no saved credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Check baseline TLS lock, original policy and markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object codex-rs/Cargo.toml)" = c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4
+          test "$(git hash-object codex-rs/Cargo.lock)" = a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb
+          test "$(git hash-object codex-rs/deny.toml)" = ea7fdc149fc880c6b36d75c29851641034289a4e
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = 0.4.4
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = rust-v0.162.0
+          test -z "$(git status --porcelain)"
+
+      - name: Install reviewed resolver toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Preview strictly ctutils 0.4.2 to 0.4.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo update --manifest-path codex-rs/Cargo.toml --package ctutils@0.4.2 --precise 0.4.4
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > /dev/null
+          python3 - <<'PY'
+          import pathlib, subprocess, tomllib
+          original = tomllib.loads(subprocess.check_output(["git", "show", "HEAD:codex-rs/Cargo.lock"], text=True))
+          updated = tomllib.loads(pathlib.Path("codex-rs/Cargo.lock").read_text(encoding="utf-8"))
+          if original.keys() != updated.keys():
+              raise SystemExit("BLOCKED: Cargo.lock top-level keys changed")
+          if any(original[key] != updated[key] for key in original if key != "package"):
+              raise SystemExit("BLOCKED: Cargo.lock top-level data changed")
+          a, b = original["package"], updated["package"]
+          if len(a) != len(b):
+              raise SystemExit("BLOCKED: package count drift")
+          changed = []
+          for before, after in zip(a,b):
+              if before["name"] != after["name"]:
+                  raise SystemExit("BLOCKED: dependency order drift")
+              if before != after:
+                  changed.append(before["name"])
+                  if before["name"] != "ctutils":
+                      raise SystemExit("BLOCKED: unrelated package drift: " + before["name"])
+                  if (before["version"],after["version"]) != ("0.4.2", "0.4.4"):
+                      raise SystemExit("BLOCKED: unexpected ctutils versions")
+                  if any(before.get(k) != after.get(k) for k in before.keys() | after.keys() if k not in ("version","checksum")):
+                      raise SystemExit("BLOCKED: ctutils dependency edges changed")
+          if changed != ["ctutils"]:
+              raise SystemExit("BLOCKED: expected one ctutils update, got " + repr(changed))
+          pinned = {(p["name"],p["version"]) for p in b}
+          for name,version in (
+              ("rustls", "0.23.46"), ("quinn-proto","0.11.18"),
+              ("noyalib-serde-yaml","0.0.57"), ("zip","9.0.5"),
+              ("rustls-webpki","0.103.16"), ("webpki-roots","1.0.10"),
+              ("webpki-root-certs","1.0.10"),
+              ("crypto-bigint","0.5.5"), ("zstd","0.13.3"),
+          ):
+              if (name,version) not in pinned:
+                  raise SystemExit("BLOCKED: unrelated security/dependency pin drift: " + name)
+          print("PASS: a disposable ctutils 0.4.4 lock candidate changes only the verified package")
+          print("NONRELEASE: crypto-bigint and zstd vulnerabilities and four inherited advisories still require resolution")
+          PY
+          test "$(git diff --name-only)" = codex-rs/Cargo.lock
+          test "$(git hash-object codex-rs/deny.toml)" = ea7fdc149fc880c6b36d75c29851641034289a4e
+          echo "Disposable candidate Git blob: $(git hash-object codex-rs/Cargo.lock)"
+
+      - name: Restore source and prove no policy or lock promotion
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --source=HEAD -- codex-rs/Cargo.lock
+          test "$(git hash-object codex-rs/Cargo.lock)" = a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb
+          test "$(git hash-object codex-rs/deny.toml)" = ea7fdc149fc880c6b36d75c29851641034289a4e
+          test -z "$(git status --porcelain)"
+          echo "No committed dependency update, no advisory waiver, no release authorization."

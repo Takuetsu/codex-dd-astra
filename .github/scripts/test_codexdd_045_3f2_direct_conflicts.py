@@ -6,12 +6,15 @@ import re
 import subprocess
 import unittest
 from pathlib import Path
+from codexdd_045_format_provenance import current_blob
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
 OVERLAPS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 REPLAY = "77bd55e2360a3c35f94ee1608c8b7eed49247365"
+PRE_TLS_INTEGRATION = "e35cf007be31d2fd5f6aa98c1360b297e5b9325a"
+PATCHED_TLS_LOCK = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
 
 def git(*args: str) -> str:
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
@@ -49,7 +52,15 @@ class OriginalDirectConflictReceipt(unittest.TestCase):
                 self.assertEqual(r["production_044_blob"], o["production_044_blob"])
                 self.assertEqual(r["integration_reviewed_blob"], o["reviewed_045_blob"])
                 self.assertNotEqual(r["integration_reviewed_blob"], r["production_044_blob"])
-                self.assertEqual(git("rev-parse", "HEAD:" + r["path"]), r["integration_reviewed_blob"])
+                if r["path"] == "codex-rs/Cargo.lock":
+                    # Historical direct-conflict receipts are immutable evidence.
+                    self.assertEqual(
+                        git("rev-parse", PRE_TLS_INTEGRATION + ":" + r["path"]),
+                        r["integration_reviewed_blob"],
+                    )
+                    self.assertEqual(git("rev-parse", "HEAD:" + r["path"]), PATCHED_TLS_LOCK)
+                else:
+                    self.assertEqual(git("rev-parse", "HEAD:" + r["path"]), current_blob(r["path"], r["integration_reviewed_blob"]))
                 self.assertEqual(git("rev-parse", PRODUCTION + ":" + r["path"]), r["production_044_blob"])
 
     def test_no_false_semantic_or_security_acceptance(self):

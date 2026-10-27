@@ -49,7 +49,7 @@ jobs:
             'codex-rs/core-plugins/BUILD.bazel' = '16dc432cd2f9b6e16de5b4f367a64654a2e492e6'
             'codex-rs/skills/BUILD.bazel' = '9f4e136ec76fc298e32ccb94fd0800b1f5656c76'
             'codex-rs/Cargo.toml' = 'c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4'
-            'codex-rs/Cargo.lock' = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+            'codex-rs/Cargo.lock' = 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb'
             'codex-rs/deny.toml' = 'ea7fdc149fc880c6b36d75c29851641034289a4e'
           }
           foreach ($path in $expected.Keys) {

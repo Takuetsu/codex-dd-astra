@@ -1,0 +1,133 @@
+# Read-only source provenance and security regression inventory, not a release gate.
+name: CodexDD 0.4.5 patched TLS source guard audit (nonrelease)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-patched-lock-integration
+    paths:
+      - '.github/scripts/test_codexdd_045_*.py'
+      - '.github/scripts/codexdd_045_format_provenance.py'
+      - 'docs/upstream-candidates/codexdd-045-format-followup.json'
+      - '.github/scripts/upstream_auto_*.py'
+      - '.github/scripts/test_upstream_auto_*.py'
+      - '.github/scripts/test_upstream_045_contract_audit.py'
+      - '.github/scripts/test_upstream_sync.py'
+      - '.github/scripts/upstream_sync.py'
+      - '.github/scripts/upstream_reconciliation_*.py'
+      - '.github/scripts/test_upstream_reconciliation*.py'
+      - '.github/workflows/upstream-sync.yml'
+      - '.github/workflows/codexdd-045-patched-lock-source-guards.yml'
+      - 'codex-rs/**'
+      - 'codex-rs/app-server-protocol/schema/**'
+      - 'codex-rs/core/config.schema.json'
+      - 'sdk/python/src/openai_codex/generated/**'
+
+permissions:
+  contents: read
+
+jobs:
+  source-checkpoint:
+    name: Source provenance checks (nonrelease)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-patched-lock-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout exact integration revision with history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Confirm nonrelease source identity and baseline availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-patched-lock-integration'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git cat-file -e b25550dcb2c6e84a84074b603086c9db6f32a63b^{commit}
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+
+      - name: Run all staged 0.4.5 static unit checks without masking failures
+        shell: bash
+        run: |
+          set -uo pipefail
+          log="$RUNNER_TEMP/codexdd045-source-guards.log"
+          # GitHub invokes bash with -e; disable it only around test execution so
+          # failures cannot suppress the diagnostic headings and full log artifact.
+          set +e
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_*.py' -v > "$log" 2>&1
+          rc=$?
+          set -e
+          echo "Static check exit code: $rc"
+          echo "Failure headings and summary:"
+          grep -E '^(FAIL:|ERROR:|Ran [0-9]+ tests|FAILED |OK$)' "$log" | tail -n 160 || true
+          echo "Final diagnostic tail:"
+          tail -n 120 "$log"
+          exit "$rc"
+
+      - name: Verify guarded updater and prior read-only discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          patterns=(
+            'test_upstream_sync.py'
+            'test_upstream_auto_*.py'
+            'test_upstream_045_contract_audit.py'
+          )
+          i=0
+          for pattern in "${patterns[@]}"; do
+            log="$RUNNER_TEMP/codexdd045-updater-$i.log"
+            echo "Checking updater test pattern: $pattern"
+            if ! python3 -m unittest discover -s .github/scripts -p "$pattern" -v > "$log" 2>&1; then
+              grep -E '^(FAIL:|ERROR:|Ran [0-9]+ tests|FAILED |OK$)' "$log" | tail -n 100 || true
+              tail -n 100 "$log"
+              exit 1
+            fi
+            if ! grep -Eq '^Ran [1-9][0-9]* tests?' "$log"; then
+              echo "No tests discovered for $pattern"
+              tail -n 70 "$log"
+              exit 1
+            fi
+            grep -E '^(Ran [0-9]+ tests|OK$)' "$log" | tail -n 5
+            i=$((i+1))
+          done
+          echo "PASS: $i/3 updater test suites, each nonempty and error-free."
+
+      - name: Check historical reconciled v2 contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          patterns=('test_upstream_reconciliation.py' 'test_upstream_reconciliation_*.py')
+          i=0
+          for pattern in "${patterns[@]}"; do
+            log="$RUNNER_TEMP/codexdd045-v2-$i.log"
+            echo "Checking historical reconciliation tests: $pattern"
+            if ! python3 -m unittest discover -s .github/scripts -p "$pattern" -v > "$log" 2>&1; then
+              grep -E '^(FAIL:|ERROR:|Ran [0-9]+ tests|FAILED |OK$)' "$log" | tail -n 100 || true
+              tail -n 100 "$log"
+              exit 1
+            fi
+            if ! grep -Eq '^Ran [1-9][0-9]* tests?' "$log"; then
+              echo "No reconciliation tests discovered: $pattern"
+              exit 1
+            fi
+            grep -E '^(Ran [0-9]+ tests|OK$)' "$log" | tail -n 5
+            i=$((i+1))
+          done
+          echo "PASS: $i/2 historical reconciliation suites."
+
+      - name: Upload source check diagnostic log
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-patched-source-guards-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/codexdd045-source-guards.log
+            ${{ runner.temp }}/codexdd045-updater-*.log
+            ${{ runner.temp }}/codexdd045-v2-*.log
+          if-no-files-found: warn
+          retention-days: 7

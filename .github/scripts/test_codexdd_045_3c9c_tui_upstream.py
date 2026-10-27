@@ -865,24 +865,24 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/daemon_startup.rs": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
     "codex-rs/tui/src/daemon_startup_tests.rs": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
     "codex-rs/tui/src/lib.rs": "7b0746fe66b55537d3c445bfac194cbdb005b2b2",
-    "codex-rs/tui/src/app/startup.rs": "29065c6c0c90c010a53bf065c95278312712a90e",
+    "codex-rs/tui/src/app/startup.rs": "3b111def463e2f52b4786b7a6db8c6e3aa7954f7",
     "codex-rs/tui/src/startup_orchestration.rs": "6b3bf4a9cf3d639107126b29992690b19bf4c932",
     "codex-rs/tui/src/chatwidget/replay.rs": "d17ff1c77f63c8c57e0a847c58377999fda78480",
     "codex-rs/tui/src/app/app_server_event_targets.rs": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
     "codex-rs/tui/src/chatwidget/session_flow.rs": "17500409f70dfda7fa1c489258fa19ab01bed747",
-    "codex-rs/tui/src/app.rs": "f7e48ee454899a5fb01d84ca201b163622dedf9f",
+    "codex-rs/tui/src/app.rs": "7d9da0b198cfac44c0c06933c622b7c1515a613b",
     "codex-rs/tui/src/chatwidget.rs": "76ae0ab2d341188a6deed0c4347b489fa93f29e4",
     "codex-rs/tui/src/chatwidget/constructor.rs": "a584d5513ea40321e920d795bbb93b8d96e8f03b",
-    "codex-rs/tui/src/app_event.rs": "804a723f0939ca0b3b71e52afc25ac9903144446",
+    "codex-rs/tui/src/app_event.rs": "5f43579e23f87a94786ae9803df8dba40060a84e",
     "codex-rs/tui/src/app/event_dispatch.rs": "81df877569e0c205e2a4dec5e9e790f7c7993b93",
     "codex-rs/tui/src/app/session_lifecycle.rs": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf",
     "codex-rs/tui/src/chatwidget/slash_dispatch.rs": "57ed2741b86aae99d5ac6054990703c9eabdf845",
     "codex-rs/tui/src/chatwidget/input_flow.rs": "e463da2af9440b3dc8382464a5d0b98ee6758404",
     "codex-rs/tui/src/chatwidget/status_controls.rs": "c3973a6a72da8533b47951b0d529adf839398b1d",
     "codex-rs/tui/src/app/config_persistence.rs": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
-    "codex-rs/tui/src/chatwidget/settings.rs": "578d7443bf8c95f346915caa6251c4a50292f8e7",
+    "codex-rs/tui/src/chatwidget/settings.rs": "bb747507416e7712fe4ff5832446783c0127994e",
     "codex-rs/tui/src/app/test_support.rs": "b95971975610ff94ef823eff73e36a4691e7e29c",
-    "codex-rs/tui/src/app/tests.rs": "f8156f722bd2dae8f2355788826ee9fdf1225933",
+    "codex-rs/tui/src/app/tests.rs": "03febfb8e58c93e975f1f240195576a0f1080e08",
     "codex-rs/tui/src/chatwidget/tests/history_replay.rs": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
     "codex-rs/tui/src/chatwidget/protocol.rs": "ad71108b91a0d7f1f079cab0482076237b138994",
     "codex-rs/tui/src/chatwidget/input_submission.rs": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
@@ -893,7 +893,7 @@ REVIEWED_FORK = {
     "codex-rs/tui/src/app/tests/startup_defaults_tests.rs": "e60808df0448682d47af1a14b5bd8d5c52206397",
     "codex-rs/tui/src/chatwidget/tests.rs": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
     "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
-    "codex-rs/tui/src/chatwidget/tests/slash_commands.rs": "ede40dcf9566a813004ac57614991f6eb1518ce4",
+    "codex-rs/tui/src/chatwidget/tests/slash_commands.rs": "bec8d92caae4cdff17b7f06923bd4cd9ee358a52",
     "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs": "23ea7ee8024deb95767f8322a42a1f330be715ff",
     "codex-rs/tui/src/status/tests.rs": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
     "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "e090162290f82156213340967c76a398887ecf44",
@@ -1037,7 +1037,7 @@ class TuiUpstreamOwnedSourceTests(unittest.TestCase):
         self.assertEqual(source("codex-rs/codexdd-version.txt").strip(), "0.4.4")
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
         self.assertEqual(git_blob("HEAD", "codex-rs/Cargo.lock"),
-                         "a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
+                         "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
 
     def test_protected_tui_merges_still_outstanding(self):
         note = (ROOT / "docs/codexdd-0.4.5-packet-3c9c-tui-upstream.md").read_text(

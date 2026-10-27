@@ -58,7 +58,7 @@ jobs:
           test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-upstream-0.163.0-integration'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git hash-object codex-rs/Cargo.lock)" = 'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'
+          test "$(git hash-object codex-rs/Cargo.lock)" = 'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
 
@@ -166,7 +166,7 @@ jobs:
           print(json.dumps(status, indent=2))
           if forbidden:
               raise SystemExit("BLOCKED: generator modified out-of-scope files")
-          if status["cargo_lock_blob"] != "a8eb8a076276cb3db5674b33c67d743b1c3d21fc":
+          if status["cargo_lock_blob"] != "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb":
               raise SystemExit("BLOCKED: pinned Cargo.lock has drifted")
           if changed or deleted:
               raise SystemExit("BLOCKED: generated outputs differ from checkout; review artifact before any acceptance")

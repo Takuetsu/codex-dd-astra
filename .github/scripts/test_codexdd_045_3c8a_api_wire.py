@@ -161,7 +161,7 @@ class ApiWireConsumerSourceTests(unittest.TestCase):
         self.assertEqual(source("codex-rs/upstream-codex-release.txt").strip(), "rust-v0.162.0")
         self.assertEqual(
             blob("HEAD", "codex-rs/Cargo.lock"),
-            "a8eb8a076276cb3db5674b33c67d743b1c3d21fc",
+            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
         )
 
     def test_release_remains_unapproved(self):

@@ -1,0 +1,134 @@
+{
+  "kind": "formatter_requested_source_followup_only",
+  "baseline": "2cd0f77e9f4719739aa645832f7bf2fde93c6ac2",
+  "formatter_job": 121909294810,
+  "files": [
+    {
+      "path": "codex-rs/core/src/tools/registry_tests.rs",
+      "before_blob": "845f31a9b8085778bbf4a47b6ce7ce736079c2a8",
+      "formatted_blob": "99e1209a1910c34012901bec3615e94333000aec",
+      "edits": [
+        {
+          "before": "    }\n}\n\n\n#[tokio::test]\nasync fn adaptive_reconnaissance_rejects_hook_rewritten_write_command() -> anyhow::Result<()> {\n    let (session, turn) = crate::session::tests::make_session_and_context().await;\n",
+          "after": "    }\n}\n\n#[tokio::test]\nasync fn adaptive_reconnaissance_rejects_hook_rewritten_write_command() -> anyhow::Result<()> {\n    let (session, turn) = crate::session::tests::make_session_and_context().await;\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core-plugins/src/startup_sync_tests.rs",
+      "before_blob": "c6904fcc5f8eb0026a8e2d6d833429706321478d",
+      "formatted_blob": "114c1abca5b023abcb3cb6b7aa0bc1edfec78372",
+      "edits": [
+        {
+          "before": "    let mut writer = ZipWriter::new(cursor);\n    // ZIP 9 defaults to Deflate (method 8). The fixture must start with\n    // Stored (method 0) before rewriting only the selected member to BZIP2.\n    let options = SimpleFileOptions::default()\n        .compression_method(zip::CompressionMethod::Stored);\n    writer\n        .start_file(\n            \"openai-plugins-test/.agents/plugins/marketplace.json\",\n",
+          "after": "    let mut writer = ZipWriter::new(cursor);\n    // ZIP 9 defaults to Deflate (method 8). The fixture must start with\n    // Stored (method 0) before rewriting only the selected member to BZIP2.\n    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);\n    writer\n        .start_file(\n            \"openai-plugins-test/.agents/plugins/marketplace.json\",\n"
+        },
+        {
+          "before": "    writer\n        .start_file(\"openai-plugins-test/plugins/bzip2-only.bin\", options)\n        .expect(\"start stored payload entry\");\n    writer.write_all(b\"unsupported compression\").expect(\"write payload\");\n    let mut bytes = writer.finish().expect(\"finish stored ZIP\").into_inner();\n\n    // ZIP local file header method at +8; central directory method at +10.\n",
+          "after": "    writer\n        .start_file(\"openai-plugins-test/plugins/bzip2-only.bin\", options)\n        .expect(\"start stored payload entry\");\n    writer\n        .write_all(b\"unsupported compression\")\n        .expect(\"write payload\");\n    let mut bytes = writer.finish().expect(\"finish stored ZIP\").into_inner();\n\n    // ZIP local file header method at +8; central directory method at +10.\n"
+        },
+        {
+          "before": "        .expect(\"stat plugin\")\n        .permissions()\n        .mode();\n    assert_eq!(mode & 0o7777, 0o755, \"privileged ZIP bits must be discarded\");\n}\n\nfn curated_repo_zipball_bytes(sha: &str) -> Vec<u8> {\n",
+          "after": "        .expect(\"stat plugin\")\n        .permissions()\n        .mode();\n    assert_eq!(\n        mode & 0o7777,\n        0o755,\n        \"privileged ZIP bits must be discarded\"\n    );\n}\n\nfn curated_repo_zipball_bytes(sha: &str) -> Vec<u8> {\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "before_blob": "0fb86514d778776b2b6e76cb9eda07134757778c",
+      "formatted_blob": "d222871cab7b8e55dcd1dec8faef7e9cf4918796",
+      "edits": [
+        {
+          "before": "\nfn content_item_text(item: &ContentItem) -> Option<&str> {\n    match item {\n        ContentItem::InputText { text } | ContentItem::OutputText { text, .. } => Some(text.as_str()),\n        ContentItem::InputImage { .. } | ContentItem::InputAudio { .. } => None,\n    }\n}\n",
+          "after": "\nfn content_item_text(item: &ContentItem) -> Option<&str> {\n    match item {\n        ContentItem::InputText { text } | ContentItem::OutputText { text, .. } => {\n            Some(text.as_str())\n        }\n        ContentItem::InputImage { .. } | ContentItem::InputAudio { .. } => None,\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "before_blob": "29065c6c0c90c010a53bf065c95278312712a90e",
+      "formatted_blob": "3b111def463e2f52b4786b7a6db8c6e3aa7954f7",
+      "edits": [
+        {
+          "before": "        }\n        let mut model = startup_model(&config, &bootstrap, startup_defaults.server_defaults_read);\n        let available_models = bootstrap.available_models;\n        let mut remote_connection = crate::status::remote_connection::remote_connection_status_value(\n            &app_server_target,\n            app_server.server_version(),\n        );\n        if let Some(connection) = &mut remote_connection {\n            connection.is_managed_daemon = connection.is_local_daemon && managed_daemon;\n        }\n",
+          "after": "        }\n        let mut model = startup_model(&config, &bootstrap, startup_defaults.server_defaults_read);\n        let available_models = bootstrap.available_models;\n        let mut remote_connection =\n            crate::status::remote_connection::remote_connection_status_value(\n                &app_server_target,\n                app_server.server_version(),\n            );\n        if let Some(connection) = &mut remote_connection {\n            connection.is_managed_daemon = connection.is_local_daemon && managed_daemon;\n        }\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "before_blob": "f8156f722bd2dae8f2355788826ee9fdf1225933",
+      "formatted_blob": "03febfb8e58c93e975f1f240195576a0f1080e08",
+      "edits": [
+        {
+          "before": "        &app_server.request_handle(),\n    );\n    assert_eq!(\n        app.pending_app_server_requests.note_buffered_request(&buffered),\n        None\n    );\n    app.agents_overview.dispatched_requests.insert(\n",
+          "after": "        &app_server.request_handle(),\n    );\n    assert_eq!(\n        app.pending_app_server_requests\n            .note_buffered_request(&buffered),\n        None\n    );\n    app.agents_overview.dispatched_requests.insert(\n"
+        },
+        {
+          "before": "        .pending_app_server_requests\n        .resolve_notification(&thread_id.to_string(), &AppServerRequestId::Integer(1))\n        .expect(\"matching app-server request should resolve\");\n    app.chat_widget.dismiss_app_server_request(&resolved.request);\n    while app_event_rx.try_recv().is_ok() {}\n\n    let rx = app\n",
+          "after": "        .pending_app_server_requests\n        .resolve_notification(&thread_id.to_string(), &AppServerRequestId::Integer(1))\n        .expect(\"matching app-server request should resolve\");\n    app.chat_widget\n        .dismiss_app_server_request(&resolved.request);\n    while app_event_rx.try_recv().is_ok() {}\n\n    let rx = app\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "before_blob": "f7e48ee454899a5fb01d84ca201b163622dedf9f",
+      "formatted_blob": "7d9da0b198cfac44c0c06933c622b7c1515a613b",
+      "edits": [
+        {
+          "before": "                self.open_agents_overview(app_server);\n            } else if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {\n                let activation_key = self.routed_key_activation.take();\n                self.chat_widget.handle_disconnected_view_key(*key, activation_key);\n                if self\n                    .chat_widget\n                    .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)\n",
+          "after": "                self.open_agents_overview(app_server);\n            } else if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {\n                let activation_key = self.routed_key_activation.take();\n                self.chat_widget\n                    .handle_disconnected_view_key(*key, activation_key);\n                if self\n                    .chat_widget\n                    .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "before_blob": "804a723f0939ca0b3b71e52afc25ac9903144446",
+      "formatted_blob": "5f43579e23f87a94786ae9803df8dba40060a84e",
+      "edits": [
+        {
+          "before": "        server_name: String,\n        request_id: AppServerRequestId,\n        attempt_id: Uuid,\n        result: Result<codex_app_server_protocol::UserVerificationProof, crate::app_command::UserVerificationFailure>,\n    },\n\n    /// Interrupt, fork, and retry a safety-buffered turn with the server-selected model.\n",
+          "after": "        server_name: String,\n        request_id: AppServerRequestId,\n        attempt_id: Uuid,\n        result: Result<\n            codex_app_server_protocol::UserVerificationProof,\n            crate::app_command::UserVerificationFailure,\n        >,\n    },\n\n    /// Interrupt, fork, and retry a safety-buffered turn with the server-selected model.\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "before_blob": "578d7443bf8c95f346915caa6251c4a50292f8e7",
+      "formatted_blob": "bb747507416e7712fe4ff5832446783c0127994e",
+      "edits": [
+        {
+          "before": "                    self.status_account_display,\n                    Some(StatusAccountDisplay::ApiKey)\n                )\n                || self.config.features.enabled(Feature::ApiKeyCyberAccessPrograms))\n    }\n\n    /// UI and turn-selection eligibility; the catalog and server still determine program access.\n",
+          "after": "                    self.status_account_display,\n                    Some(StatusAccountDisplay::ApiKey)\n                )\n                || self\n                    .config\n                    .features\n                    .enabled(Feature::ApiKeyCyberAccessPrograms))\n    }\n\n    /// UI and turn-selection eligibility; the catalog and server still determine program access.\n"
+        },
+        {
+          "before": "            );\n        }\n        let enabled = self.config.features.enabled(feature);\n        if matches!(feature, Feature::CliDaybreak | Feature::ApiKeyCyberAccessPrograms) {\n            self.set_daybreak_enabled(self.daybreak_enabled);\n            self.refresh_status_surfaces();\n        }\n",
+          "after": "            );\n        }\n        let enabled = self.config.features.enabled(feature);\n        if matches!(\n            feature,\n            Feature::CliDaybreak | Feature::ApiKeyCyberAccessPrograms\n        ) {\n            self.set_daybreak_enabled(self.daybreak_enabled);\n            self.refresh_status_surfaces();\n        }\n"
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "before_blob": "ede40dcf9566a813004ac57614991f6eb1518ce4",
+      "formatted_blob": "bec8d92caae4cdff17b7f06923bd4cd9ee358a52",
+      "edits": [
+        {
+          "before": "    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;\n    let paste = KeyEvent::new(KeyCode::Char('v'), KeyModifiers::CONTROL);\n\n    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });\n    assert_matches!(chat.handle_key_event(paste), KeyEventAction::None);\n\n    chat.suppress_image_paste_until = Instant::now() - Duration::from_secs(/*secs*/ 1);\n",
+          "after": "    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;\n    let paste = KeyEvent::new(KeyCode::Char('v'), KeyModifiers::CONTROL);\n\n    assert_matches!(\n        chat.handle_key_event(paste),\n        KeyEventAction::PasteImage { .. }\n    );\n    assert_matches!(chat.handle_key_event(paste), KeyEventAction::None);\n\n    chat.suppress_image_paste_until = Instant::now() - Duration::from_secs(/*secs*/ 1);\n"
+        },
+        {
+          "before": "    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });\n\n    chat.suppress_image_paste_until = Instant::now() + Duration::from_secs(/*secs*/ 1);\n    chat.handle_key_event(KeyEvent::from(KeyCode::Char('x')));\n",
+          "after": "    assert_matches!(\n        chat.handle_key_event(paste),\n        KeyEventAction::PasteImage { .. }\n    );\n\n    chat.suppress_image_paste_until = Instant::now() + Duration::from_secs(/*secs*/ 1);\n    chat.handle_key_event(KeyEvent::from(KeyCode::Char('x')));\n"
+        },
+        {
+          "before": "    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });\n\n    chat.suppress_image_paste_until = Instant::now() + Duration::from_secs(/*secs*/ 1);\n    chat.handle_key_event(KeyEvent {\n",
+          "after": "    assert_matches!(\n        chat.handle_key_event(paste),\n        KeyEventAction::PasteImage { .. }\n    );\n\n    chat.suppress_image_paste_until = Instant::now() + Duration::from_secs(/*secs*/ 1);\n    chat.handle_key_event(KeyEvent {\n"
+        },
+        {
+          "before": "        kind: KeyEventKind::Release,\n        ..paste\n    });\n    assert_matches!(chat.handle_key_event(paste), KeyEventAction::PasteImage { .. });\n}\n\n#[tokio::test]\n",
+          "after": "        kind: KeyEventKind::Release,\n        ..paste\n    });\n    assert_matches!(\n        chat.handle_key_event(paste),\n        KeyEventAction::PasteImage { .. }\n    );\n}\n\n#[tokio::test]\n"
+        }
+      ]
+    }
+  ]
+}

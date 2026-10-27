@@ -45,7 +45,7 @@ class GeneratorInputTriggers(unittest.TestCase):
     def test_locked_reproduction_and_no_drift_acceptance(self):
         s = self.source
         self.assertIn("cargo metadata --locked --format-version 1", s)
-        self.assertIn("'a8eb8a076276cb3db5674b33c67d743b1c3d21fc'", s)
+        self.assertIn("'a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb'", s)
         self.assertIn("write_schema_fixtures.py --experimental", s)
         self.assertIn("codex-write-config-schema", s)
         self.assertIn("precomputed_exports_tests::", s)

@@ -162,7 +162,7 @@ class StartupOrchestrationMergeTests(unittest.TestCase):
         )
         self.assertEqual(
             git("rev-parse", "HEAD:codex-rs/Cargo.lock"),
-            "a8eb8a076276cb3db5674b33c67d743b1c3d21fc",
+            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
         )
 
     def test_checkpoint_denies_runtime_and_release_authority(self):

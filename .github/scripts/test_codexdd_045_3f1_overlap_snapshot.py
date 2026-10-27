@@ -10,6 +10,7 @@ import json
 import subprocess
 import unittest
 from pathlib import Path
+from codexdd_045_format_provenance import current_blob
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
@@ -18,6 +19,8 @@ PINNED_BASE = "c1382380de69521303b416720a52f42d51af6248"
 PINNED_UPSTREAM = "83086188ae0614bd882818ff1aa23f3194962012"
 PINNED_PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 PINNED_SNAPSHOT = "f6fb89c098da28626c7c072a40d5e9b7306c8866"
+PRE_TLS_INTEGRATION = "e35cf007be31d2fd5f6aa98c1360b297e5b9325a"
+PATCHED_TLS_LOCK = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
 
 
 def git(*args: str) -> bytes:
@@ -43,6 +46,7 @@ class FourWayOverlapReceipt(unittest.TestCase):
         cls.receipt = json.loads(MANIFEST.read_text(encoding="utf-8"))
         cls.production = objects_at(PINNED_PRODUCTION)
         cls.integration = objects_at("HEAD")
+        cls.historical_integration = objects_at(PRE_TLS_INTEGRATION)
 
     def test_pinned_refs_and_no_release_claim(self):
         record = self.receipt
@@ -90,7 +94,14 @@ class FourWayOverlapReceipt(unittest.TestCase):
                 self.assertNotEqual(base, production)
                 self.assertNotEqual(production, reviewed)
                 self.assertEqual(self.production.get(path), production)
-                self.assertEqual(self.integration.get(path), reviewed)
+                if path == "codex-rs/Cargo.lock":
+                    # The frozen four-way receipt must retain its original SHA.
+                    # Only the separately verified three-crate TLS lock supersedes it.
+                    self.assertEqual(self.historical_integration.get(path), reviewed)
+                    self.assertEqual(self.integration.get(path), PATCHED_TLS_LOCK)
+                else:
+                    self.assertEqual(self.historical_integration.get(path), reviewed)
+                    self.assertEqual(self.integration.get(path), current_blob(path, reviewed))
 
     def test_legacy_043_conflicts_are_not_mislabeled_163_conflicts(self):
         r = self.receipt
@@ -107,11 +118,12 @@ class FourWayOverlapReceipt(unittest.TestCase):
                 self.assertEqual(row["upstream_changed"], row["official_162_blob"] != row["official_163_blob"])
                 self.assertEqual(row["production_changed"], row["production_044_blob"] != row["reviewed_045_blob"])
                 self.assertEqual(self.production.get(row["path"]), row["production_044_blob"])
-                self.assertEqual(self.integration.get(row["path"]), row["reviewed_045_blob"])
+                self.assertEqual(self.historical_integration.get(row["path"]), row["reviewed_045_blob"])
+                self.assertEqual(self.integration.get(row["path"]), current_blob(row["path"], row["reviewed_045_blob"]))
 
     def test_dependency_policy_not_implicitly_promoted(self):
         self.assertEqual(git("hash-object", "codex-rs/Cargo.toml").decode().strip(), "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4")
-        self.assertEqual(git("hash-object", "codex-rs/Cargo.lock").decode().strip(), "a8eb8a076276cb3db5674b33c67d743b1c3d21fc")
+        self.assertEqual(git("hash-object", "codex-rs/Cargo.lock").decode().strip(), "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb")
         self.assertEqual(git("hash-object", "codex-rs/deny.toml").decode().strip(), "ea7fdc149fc880c6b36d75c29851641034289a4e")
 
 

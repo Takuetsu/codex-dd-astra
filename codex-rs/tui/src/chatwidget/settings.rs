@@ -20,7 +20,10 @@ impl ChatWidget {
                     self.status_account_display,
                     Some(StatusAccountDisplay::ApiKey)
                 )
-                || self.config.features.enabled(Feature::ApiKeyCyberAccessPrograms))
+                || self
+                    .config
+                    .features
+                    .enabled(Feature::ApiKeyCyberAccessPrograms))
     }
 
     /// UI and turn-selection eligibility; the catalog and server still determine program access.
@@ -124,7 +127,10 @@ impl ChatWidget {
             );
         }
         let enabled = self.config.features.enabled(feature);
-        if matches!(feature, Feature::CliDaybreak | Feature::ApiKeyCyberAccessPrograms) {
+        if matches!(
+            feature,
+            Feature::CliDaybreak | Feature::ApiKeyCyberAccessPrograms
+        ) {
             self.set_daybreak_enabled(self.daybreak_enabled);
             self.refresh_status_surfaces();
         }
