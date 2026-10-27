@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   combined:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a2eea3c8bdb3912346bcda833b13b790f862c5e4'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a4f08fba139949b49cfd5028607e1795d82ae5f6'
     runs-on: ubuntu-24.04
     timeout-minutes: 22
     env:
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'a2eea3c8bdb3912346bcda833b13b790f862c5e4'
+          test "$(git rev-parse HEAD^)" = 'a4f08fba139949b49cfd5028607e1795d82ae5f6'
           test "$(git hash-object codex-rs/Cargo.toml)" = 'd46347640b6ca6e43e96a12ee14eec894178af4f'
           test "$(git hash-object codex-rs/Cargo.lock)" = 'b08006b6928d98eff75ea764db71ea281cb5df3e'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
@@ -128,7 +128,8 @@ jobs:
           assert "0.5.5" not in names.get("crypto-bigint",set()),"VULNERABLE crypto-bigint 0.5.5 STILL PRESENT"
           assert names.get("crypto-bigint") and all(tuple(map(int,v.split("."))) >= (0,7,6) for v in names["crypto-bigint"])
           assert "0.13.2" not in names.get("p256",set()),"old P256 persists"
-          assert "p384" not in names,"old P384 chain persists"
+          print("RESOLVED P384:", sorted(names.get("p384",set())))
+          assert all(tuple(map(int,v.split(".")[:3])) >= (0,14,0) for v in names.get("p384",set())), "legacy P384 below 0.14.0 persists"
           assert names.get("age")=={"0.12.1"} and names.get("hpke")=={"0.14.1"}
           assert names.get("clatter")=={"3.0.0"} and names.get("kem")=={"0.3.0"}
           assert names.get("rtc")==names.get("webrtc")=={"0.21.1"}
@@ -139,7 +140,7 @@ jobs:
               by_id={p["id"]:p for p in data["packages"]}
               active={n["id"] for n in data["resolve"]["nodes"]}
               selected=sorted({(by_id[x]["name"],by_id[x]["version"]) for x in active if by_id[x]["name"] in (
-                  "crypto-bigint","age","hpke","clatter","p256","rtc","aws-config")})
+                  "crypto-bigint","age","hpke","clatter","p256","p384","rtc","aws-config")})
               assert not any(n=="crypto-bigint" and v=="0.5.5" for n,v in selected)
               print(platform,"SECURE CRYPTO GRAPH:",selected)
           print("SECURITY GRAPH CLOSURE CANDIDATE PASS — still nonrelease; native compatibility and unchanged all-target cargo-deny mandatory")
