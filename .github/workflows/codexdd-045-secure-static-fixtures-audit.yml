@@ -1,0 +1,81 @@
+# Read-only reconciliation inventory, NOT static-gate acceptance or release.
+name: CodexDD 0.4.5 current secure graph historical fixture audit (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-static-fixture-audit]
+    paths: ['.github/workflows/codexdd-045-secure-static-fixtures-audit.yml']
+permissions:
+  contents: read
+jobs:
+  fixture-inventory:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '73defc3d4eea23d2c0d41ad71c4d607806d9ffd0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout entire reviewed history without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Pin exact source and ensure secure dependency floor is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '73defc3d4eea23d2c0d41ad71c4d607806d9ffd0'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git hash-object codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git hash-object codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(git rev-parse HEAD:codex-rs/vendor/aws-config-1.13.0)" = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          python3 scripts/codexdd-045-inherited-risk-guard.py
+          git cat-file -e '2cd0f77e9f4719739aa645832f7bf2fde93c6ac2^{commit}'
+      - name: Run full nonempty 0.4.5 legacy static suite and classify exact failures
+        shell: bash
+        run: |
+          set -uo pipefail
+          log="$RUNNER_TEMP/codexdd045-secure-static-fixtures.log"
+          set +e
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_*.py' -v > "$log" 2>&1
+          rc=$?
+          set -e
+          python3 - "$log" "$rc" <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import re
+          import sys
+          source = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+          code = int(sys.argv[2])
+          headers = re.findall(r"^(FAIL|ERROR): (.+)$", source, re.MULTILINE)
+          suites = Counter()
+          for _, test in headers:
+              match = re.search(r"\(([^()]+)\)", test)
+              suite = match.group(1).split(".")[0] if match else "other"
+              suites[suite] += 1
+          counts = re.findall(r"^Ran (\d+) tests? in [^\n]+", source, re.MULTILINE)
+          print("ACTUAL_RESULT:", "PASS" if code == 0 else "FAIL", "exit", code)
+          print("ACTUAL_TEST_COUNT:", counts[-1] if counts else "NOT FOUND")
+          print("TOTAL_FAIL_ERROR_HEADINGS:", len(headers))
+          print("BY_TEST_OWNER:")
+          for name, count in suites.most_common():
+              print(f"  {name}: {count}")
+          print("FIRST_25_FAILED_TEST_NAMES:")
+          for kind, name in headers[:25]:
+              print(f"  {kind}: {name}")
+          print("FINAL_RAW_SUMMARY:")
+          print("\n".join(source.splitlines()[-15:]))
+          if not counts or int(counts[-1]) == 0:
+              raise SystemExit("No static tests ran; failing closed")
+          PY
+          exit "$rc"
+      - name: Upload complete failing or passing test log (no source mutation)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-current-secure-static-fixture-inventory
+          path: ${{ runner.temp }}/codexdd045-secure-static-fixtures.log
+          if-no-files-found: warn
+          retention-days: 7
