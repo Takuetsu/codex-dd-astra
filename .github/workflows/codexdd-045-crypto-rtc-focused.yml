@@ -1,0 +1,93 @@
+# Read-only, exact combined-source native-free voice compatibility check.
+name: CodexDD 0.4.5 combined WebRTC 0.21 voice focused (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-crypto-integrated-staging]
+    paths: ['.github/workflows/codexdd-045-crypto-rtc-focused.yml']
+permissions:
+  contents: read
+jobs:
+  voice:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '85055a2010ea836b12a37a416514a0fe4716b1db'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '4'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - name: Checkout exact nonrelease combined crypto commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Fail closed on nonrelease and secure source versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '85055a2010ea836b12a37a416514a0fe4716b1db'
+          test "$(git hash-object codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git hash-object codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          python3 scripts/codexdd-045-inherited-risk-guard.py
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Install Linux musl C compiler with bounded APT network
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 75s sudo apt-get update -qq
+          timeout 75s sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends musl-tools
+          command -v musl-gcc
+          rustup target add x86_64-unknown-linux-musl
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/codexdd045-voice-target" >> "$GITHUB_ENV"
+      - name: Restore source and build cache scoped to exact candidate
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/codexdd045-voice-target
+          key: codexdd045-voice-musl-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-voice-musl-${{ hashFiles('codex-rs/Cargo.lock') }}-
+      - name: Compile exact 0.21.1 voice host and redact diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 2250s cargo check --manifest-path codex-rs/Cargo.toml --locked --target x86_64-unknown-linux-musl -p codex-voice-host --bin codex-voice-host > "$RUNNER_TEMP/codexdd045-voice-check.log" 2>&1
+          rc=$?
+          set -e
+          tail -n 75 "$RUNNER_TEMP/codexdd045-voice-check.log"
+          if [ "$rc" -ne 0 ]; then
+            grep -nE -A 14 '^(error|error\\[E[0-9]+\\])' "$RUNNER_TEMP/codexdd045-voice-check.log" | tail -n 240 || true
+            echo "BLOCKED: focused voice compiler exit $rc"
+            exit "$rc"
+          fi
+          echo "PASS: exact combined graph WebRTC 0.21.1 voice source compilation"
+      - name: Test 0.21.1 voice network loss, privacy, ICE, teardown
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 900s cargo test --manifest-path codex-rs/Cargo.toml --locked --target x86_64-unknown-linux-musl -p codex-voice-host --bin codex-voice-host -- --test-threads=1 > "$RUNNER_TEMP/codexdd045-voice-test.log" 2>&1
+          rc=$?
+          set -e
+          tail -n 90 "$RUNNER_TEMP/codexdd045-voice-test.log"
+          if [ "$rc" -ne 0 ]; then echo "BLOCKED: voice regression exit $rc"; exit "$rc"; fi
+          grep -Eq '^test result: ok\\. [1-9][0-9]* passed; 0 failed;' "$RUNNER_TEMP/codexdd045-voice-test.log"
+          echo 'PASS: voice regression set; native Windows audio remains separate'
+      - name: Upload focused source-only diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-secure-rtc-voice-focused
+          path: |
+            ${{ runner.temp }}/codexdd045-voice-check.log
+            ${{ runner.temp }}/codexdd045-voice-test.log
+          if-no-files-found: warn
+          retention-days: 5
