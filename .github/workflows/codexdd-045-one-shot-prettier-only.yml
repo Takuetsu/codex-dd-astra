@@ -9,11 +9,11 @@ permissions:
   contents: write
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f62c3179572ce4ea43ca301a818c5fe9acad2b25'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b614c032c50bc6306fa75f830158570eb8a706e8'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'f62c3179572ce4ea43ca301a818c5fe9acad2b25'
+      EXPECTED_PARENT: 'b614c032c50bc6306fa75f830158570eb8a706e8'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -62,6 +62,11 @@ jobs:
             exit 1
           }
           tail -n 16 "$RUNNER_TEMP/codexdd045-prettier-fix.log"
+      - name: Diagnose first Markdown-only formatter escape change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --unified=4 -- docs/codexdd-0.4.5-packet-1a1-upstream-0.163.0-reconnaissance.md | head -n 180
       - name: Verify exact 90-file roster and Markdown content-preserving transformation
         shell: bash
         run: |
