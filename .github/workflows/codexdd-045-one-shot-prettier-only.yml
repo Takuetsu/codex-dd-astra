@@ -9,11 +9,11 @@ permissions:
   contents: write
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e4deb98eda599ab6a91c6e0d222a9db20ab39286'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd0b597fd8ff1c20293f2e11bc0372536f91e288c'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'e4deb98eda599ab6a91c6e0d222a9db20ab39286'
+      EXPECTED_PARENT: 'd0b597fd8ff1c20293f2e11bc0372536f91e288c'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -168,6 +168,11 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           version: '0.11.3'
+      - name: Diagnose current YAML parse differences in locked protocol work
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --unified=4 -- .github/workflows/codexdd-045-patched-lock-integration-proof.yml
       - name: Reject any YAML value, expression, key, graph or permissions change
         shell: bash
         run: |
