@@ -4,24 +4,24 @@
 
 The new machine-checkable ledger is `docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json`. It maps all 109 official 0.163.0 overlaps to one of nine owners; every path remains `PENDING_OWNER_REVIEW` and `NOT_ACCEPTED`. The original 15 direct conflicts remain independently tracked. The ledger records source identity and bounded test evidence **without** using a green owner-level run as proof that every path is accepted.
 
-| Owner | Files | Original direct conflicts |
-| --- | ---: | ---: |
-| TUI adaptive/daemon | 44 | 6 |
-| Core authority/history | 21 | 3 |
-| Persistence/rollout/memory | 13 | 0 |
-| Generated protocol and SDK | 12 | 4 |
-| App-server and protocol | 11 | 0 |
-| Bazel packaging | 3 | 1 |
-| Dependency lock and manifest | 2 | 1 |
-| CLI startup | 2 | 0 |
-| Config | 1 | 0 |
-| **Total** | **109** | **15** |
+| Owner                        |   Files | Original direct conflicts |
+| ---------------------------- | ------: | ------------------------: |
+| TUI adaptive/daemon          |      44 |                         6 |
+| Core authority/history       |      21 |                         3 |
+| Persistence/rollout/memory   |      13 |                         0 |
+| Generated protocol and SDK   |      12 |                         4 |
+| App-server and protocol      |      11 |                         0 |
+| Bazel packaging              |       3 |                         1 |
+| Dependency lock and manifest |       2 |                         1 |
+| CLI startup                  |       2 |                         0 |
+| Config                       |       1 |                         0 |
+| **Total**                    | **109** |                    **15** |
 
 The 109 source dispositions remain **100 historical reviewed blobs, seven exact documented formatter changes and two intentionally secured Cargo manifest/lock changes**. The standalone `.github/scripts/test_codexdd_045_3f14_owner_matrix.py` test fails closed on missing paths, changed Git objects, changed owner counts, unexpected conflict status or weakened protected Cargo/deny/vendor identities.
 
 ## Local Daniel-CL preflight before release CI
 
-Run from an isolated exact-candidate worktree beneath `E:\\codexdd`; do not run in the installed 0.4.4 production checkout. The script `scripts/codexdd-045-owner-preflight.ps1` is read-only and supports:
+Run from an isolated exact-candidate worktree beneath `E:\codexdd`; do not run in the installed 0.4.4 production checkout. The script `scripts/codexdd-045-owner-preflight.ps1` is read-only and supports:
 
 - `-Mode Source` (default): verifies locked source/version markers, only six focused Python source/ownership tests, secure dependency staging and inherited INFO guard; avoids Rust compilation, Bazel, and broad GitHub CI.
 - `-Mode Bazel`: performs those Source checks first, then strictly read-only Bazel 9.2.0 module lock analysis and only the CLI and combined-archive MSVC `cquery` labels. It does **not** build, package, install, modify Cargo policy or accept a Microsoft runtime EULA.
