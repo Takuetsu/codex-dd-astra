@@ -6,21 +6,21 @@ on:
     branches: [dd/codexdd-v0.4.5-prettier-only-90]
     paths: ['.github/workflows/codexdd-045-one-shot-prettier-only.yml']
 permissions:
-  contents: write
+  contents: read
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0277f62aa5b9b5c0c2565d9cae9b1a1715a1bd7c'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'c150491c07774295a2ae99b49d7f73c89f42bf6d'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: '0277f62aa5b9b5c0c2565d9cae9b1a1715a1bd7c'
+      EXPECTED_PARENT: 'c150491c07774295a2ae99b49d7f73c89f42bf6d'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - name: Checkout exact isolated formatter source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          persist-credentials: true
+          persist-credentials: false
           fetch-depth: 2
       - name: Verify source, reviewed cargo graph and original release markers
         shell: bash
@@ -224,19 +224,37 @@ jobs:
           python3 scripts/codexdd-045-dependency-security-check.py --mode staging
           git diff --check
           tail -n 4 "$RUNNER_TEMP/codexdd045-prettier-check.log"
-      - name: Commit exact vetted Prettier changes to isolated staging only
+      - name: Export exact verified source texts for connector-controlled approval
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-remote origin "refs/heads/$EXPECTED_BRANCH" | cut -f1)" = "$GITHUB_SHA"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- '.github/workflows/codexdd-045-109-core-tui-native.yml' '.github/workflows/codexdd-045-109-overlap-current-receipt.yml' '.github/workflows/codexdd-045-accepted-info-cargo-deny.yml' '.github/workflows/codexdd-045-advisory-decision-preview.yml' '.github/workflows/codexdd-045-combined-crypto-graph.yml' '.github/workflows/codexdd-045-crypto-rtc-focused.yml' '.github/workflows/codexdd-045-crypto-security-audit.yml' '.github/workflows/codexdd-045-crypto-windows-focused.yml' '.github/workflows/codexdd-045-ctutils-security-recon.yml' '.github/workflows/codexdd-045-dependency-audit.yml' '.github/workflows/codexdd-045-dependency-role-recon.yml' '.github/workflows/codexdd-045-dependency-security-staging.yml' '.github/workflows/codexdd-045-generated-schema-drift.yml' '.github/workflows/codexdd-045-inherited-advisory-recon.yml' '.github/workflows/codexdd-045-linux-info-risk-guard.yml' '.github/workflows/codexdd-045-patched-lock-integration-proof.yml' '.github/workflows/codexdd-045-patched-lock-source-guards.yml' '.github/workflows/codexdd-045-rtc021-compat.yml' '.github/workflows/codexdd-045-source-guards.yml' '.github/workflows/codexdd-045-tls-root-patch-preview.yml' '.github/workflows/codexdd-045-windows-appserver-safety.yml' '.github/workflows/codexdd-045-windows-bazel-core-plugins-alias.yml' '.github/workflows/codexdd-045-windows-bazel-release-analysis.yml' '.github/workflows/codexdd-045-windows-bazel-skills-alias.yml' '.github/workflows/codexdd-045-windows-bazel-zstd-smoke.yml' '.github/workflows/codexdd-045-windows-cargo-check.yml' '.github/workflows/codexdd-045-windows-cli-focused.yml' '.github/workflows/codexdd-045-windows-cli-optimized-preflight.yml' '.github/workflows/codexdd-045-windows-cli-release-smoke.yml' '.github/workflows/codexdd-045-windows-core-authority.yml' '.github/workflows/codexdd-045-windows-core-scenarios-compile.yml' '.github/workflows/codexdd-045-windows-focused-native.yml' '.github/workflows/codexdd-045-windows-guardian-focused.yml' '.github/workflows/codexdd-045-windows-history-compat.yml' '.github/workflows/codexdd-045-windows-registry-focused.yml' '.github/workflows/codexdd-045-windows-remaining-yaml-aliases.yml' '.github/workflows/codexdd-045-windows-rollout-repair.yml' '.github/workflows/codexdd-045-windows-secrets-focused.yml' '.github/workflows/codexdd-045-windows-test-compile.yml' '.github/workflows/codexdd-045-windows-zip9-focused.yml' '.github/workflows/codexdd-045-zip9-feature-lock-blob-import.yml' '.github/workflows/codexdd-045-zip9-feature-preview.yml' 'docs/codexdd-0.4.5-packet-1a1-upstream-0.163.0-reconnaissance.md' 'docs/codexdd-0.4.5-packet-1a2-overlap-security-and-automation-audit.md' 'docs/codexdd-0.4.5-packet-1a3-automation-and-integration-contract.md' 'docs/codexdd-0.4.5-packet-2a1-overlap-deny-classifier.md' 'docs/codexdd-0.4.5-packet-2b1-guarded-preparer.md' 'docs/codexdd-0.4.5-packet-2b2-unvalidated-draft-adapter.md' 'docs/codexdd-0.4.5-packet-3a1-provenance-dependency-staging.md' 'docs/codexdd-0.4.5-packet-3a3-crate-manifests.md' 'docs/codexdd-0.4.5-packet-3b1-protocol-models.md' 'docs/codexdd-0.4.5-packet-3b2-appserver-protocol.md' 'docs/codexdd-0.4.5-packet-3b3-adaptive-event-replay.md' 'docs/codexdd-0.4.5-packet-3b4-rpc-routing.md' 'docs/codexdd-0.4.5-packet-3c1-history-reconciliation.md' 'docs/codexdd-0.4.5-packet-3c2-tool-lifecycle.md' 'docs/codexdd-0.4.5-packet-3c3-registry-security.md' 'docs/codexdd-0.4.5-packet-3c4-sandbox-contract.md' 'docs/codexdd-0.4.5-packet-3c5a-configuration.md' 'docs/codexdd-0.4.5-packet-3c5b-session-replay.md' 'docs/codexdd-0.4.5-packet-3c6c-tool-routing.md' 'docs/codexdd-0.4.5-packet-3c9d3-startup-merge.md' 'docs/codexdd-0.4.5-packet-3c9d3-startup-recon.md' 'docs/codexdd-0.4.5-packet-3c9d4-managed-daemon-handoff.md' 'docs/codexdd-0.4.5-packet-3c9d4-managed-daemon-recon.md' 'docs/codexdd-0.4.5-packet-3c9f-config-panel-integration.md' 'docs/codexdd-0.4.5-packet-3c9f-config-panel-recon.md' 'docs/codexdd-0.4.5-packet-3c9h-core-interface-reconciliation.md' 'docs/codexdd-0.4.5-packet-3c9i-native-library-compile-checkpoint.md' 'docs/codexdd-0.4.5-packet-3d1-resolved-lockfile-acceptance.md' 'docs/codexdd-0.4.5-packet-3d2-protected-tui-test-reconciliation.md' 'docs/codexdd-0.4.5-packet-3d3-generated-schema-acceptance.md' 'docs/codexdd-0.4.5-packet-3d5-dependency-advisory-triage.md' 'docs/codexdd-0.4.5-packet-3d6-zip-remediation-recon.md' 'docs/codexdd-0.4.5-packet-3d7-inherited-advisory-release-decision.md' 'docs/codexdd-0.4.5-packet-3d8-overlap-audit.md' 'docs/codexdd-0.4.5-packet-3d8-tls-inherited-advisory-preview.md' 'docs/codexdd-0.4.5-packet-3d9-core-integration-test-reconciliation.md' 'docs/codexdd-0.4.5-packet-3e10-renamed-yaml-consumer-inventory.md' 'docs/codexdd-0.4.5-packet-3e8-bazel-cargo-rename-aliases.md' 'docs/codexdd-0.4.5-packet-3f1-overlap-source-inventory.md' 'docs/codexdd-0.4.5-packet-3f10-crypto-owner-closure.md' 'docs/codexdd-0.4.5-packet-3f11-current-109-semantic-review.md' 'docs/codexdd-0.4.5-packet-3f2-upstream-conflict-replay.md' 'docs/codexdd-0.4.5-packet-3f3-native-core-conflict-regressions.md' 'docs/codexdd-0.4.5-packet-3f4-native-tui-conflict-regressions.md' 'docs/codexdd-0.4.5-packet-3f7-dependency-security-closure.md' 'docs/codexdd-0.4.5-packet-3f8-inherited-maintenance-decision.md' 'docs/codexdd-0.4.5-packet-3f9-linux-info-risk-acceptance.md' 'docs/codexdd-roadmap.md'
-          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 90
-          git diff --cached --check
-          git commit -m 'style(codexdd 0.4.5): preserve exact 90-file Prettier semantics'
-          git push origin "HEAD:refs/heads/$EXPECTED_BRANCH"
-          echo 'PASS: 90-file Prettier-only formatting staged; no release'
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import subprocess
+          receipt = json.loads(pathlib.Path("/tmp/codexdd045-prettier-source-receipt.json").read_text())
+          paths = receipt["changed_paths"]
+          if len(paths) != 90 or len(set(paths)) != 90:
+              raise SystemExit("Expected exactly 90 prevalidated source paths")
+          changed = set(filter(None, subprocess.check_output(
+              ["git", "diff", "--name-only", "-z"]).decode().split("\0")))
+          temporary = ".github/workflows/codexdd-045-one-shot-prettier-only.yml"
+          if changed != set(paths) | {temporary}:
+              raise SystemExit("Export source set changed since semantic proof")
+          for path in sorted(paths):
+              content = pathlib.Path(path).read_text(encoding="utf-8")
+              digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+              parts = [content[i:i + 3000] for i in range(0, len(content), 3000)]
+              if not parts:
+                  raise SystemExit("Empty source file in approved 90 path roster: " + path)
+              for index, part in enumerate(parts):
+                  item = {"path": path, "index": index, "count": len(parts),
+                          "sha256": digest, "content": part}
+                  print("CODEXDD_045_FORMATTED_PART_V1:" +
+                        json.dumps(item, ensure_ascii=True, separators=(",", ":")))
+          print("CODEXDD_045_VERIFIED_SOURCE_COUNT:" + str(len(paths)))
+          PY
       - name: Retain only nonrelease formatting logs and path receipt
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
