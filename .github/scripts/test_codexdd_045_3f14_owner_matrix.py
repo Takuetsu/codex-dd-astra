@@ -116,6 +116,43 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         )
         self.assertEqual(count, self.matrix["source_dispositions"])
 
+    def test_three_focused_review_receipts_are_scoped_and_source_bound(self):
+        expected = {
+            "codex-rs/core/src/tools/registry.rs",
+            "codex-rs/core/src/context_manager/normalize.rs",
+            "codex-rs/tui/src/chatwidget/interaction.rs",
+        }
+        selected = {
+            row["path"]: row
+            for row in self.matrix["paths"]
+            if "focused_review" in row
+        }
+        self.assertEqual(set(selected), expected)
+        native = (
+            ROOT / ".github/workflows/codexdd-045-109-core-tui-native.yml"
+        ).read_text(encoding="utf-8")
+        for path, row in selected.items():
+            with self.subTest(path=path):
+                evidence = row["focused_review"]
+                self.assertTrue(row["original_direct_conflict"])
+                self.assertEqual(row["semantic_status"], "PENDING_OWNER_REVIEW")
+                self.assertEqual(row["release_status"], "NOT_ACCEPTED")
+                self.assertEqual(evidence["semantic_signoff"], "NOT_GRANTED")
+                self.assertEqual(
+                    evidence["review_kind"],
+                    "focused_source_and_native_behavior_evidence_only",
+                )
+                self.assertEqual(evidence["native_evidence_run"], 40583499451)
+                self.assertEqual(evidence["source_blob"], row["current_blob"])
+                self.assertEqual(git("rev-parse", "HEAD:" + path), evidence["source_blob"])
+                self.assertTrue(evidence["review_scope"])
+                self.assertTrue(evidence["remaining_gate"])
+                source = (ROOT / path).read_text(encoding="utf-8")
+                for fragment in evidence["source_fragments"]:
+                    self.assertIn(fragment, source)
+                for selector in evidence["native_selectors"]:
+                    self.assertIn("'" + selector + "'", native)
+
     def test_security_and_product_markers_are_not_promoted(self):
         self.assertEqual(self.matrix["contract_version"], 1)
         self.assertEqual(

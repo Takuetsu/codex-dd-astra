@@ -1,0 +1,45 @@
+# One-shot source-only test of three scoped original-conflict review receipts.
+# No Rust/Bazel build, production promotion, installer or dependency waiver.
+name: CodexDD 0.4.5 three-path source receipt guard (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-3f17-source-receipts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  exact-receipts:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == 'd4df7b20d5c8d8953b19d2cf0f623619d6fe266c'
+    name: Exact secured graph and three focused path receipts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact reviewed source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify expected parent and nonrelease markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = 'd4df7b20d5c8d8953b19d2cf0f623619d6fe266c'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+      - name: Check all 109 path identities and the three bounded source/native receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f14_owner_matrix.py -v
+          test -z "$(git status --porcelain)"
+          echo 'PASS: 109 Git objects pinned; 3 scoped original-conflict reviews, 106 pending; NO semantic release acceptance'

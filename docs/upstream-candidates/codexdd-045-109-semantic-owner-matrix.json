@@ -616,7 +616,23 @@
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "focused_source_and_native_behavior_evidence_only",
+        "review_scope": "Upstream orphan-output recovery retained; interrupted local calls synthesize aborted output without debug panic",
+        "source_blob": "4ca88c6a668e9896df06ca81940a0e41e357898d",
+        "upstream_reference": "official rust-v0.163.0 overlap receipt",
+        "native_evidence_run": 40583499451,
+        "native_selectors": [
+          "resumed_history_recovers_orphan_custom_tool_call_without_panicking"
+        ],
+        "source_fragments": [
+          "synthesizing aborted output",
+          "synthetic_output_id(\"ctco\""
+        ],
+        "remaining_gate": "Does not cover all late parent result or history replay cases.",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
@@ -766,7 +782,25 @@
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "focused_source_and_native_behavior_evidence_only",
+        "review_scope": "PreToolUse and post-hook adaptive read-only authorization including terminal blocked completion",
+        "source_blob": "fc75b3bbf91f1881bd32faaaca93356fbb598b5e",
+        "upstream_reference": "official rust-v0.163.0 overlap receipt",
+        "native_evidence_run": 40583499451,
+        "native_selectors": [
+          "adaptive_reconnaissance_rejects_hook_rewritten_write_command",
+          "adaptive_reconnaissance_rejection_finishes_blocked_without_start",
+          "adaptive_validation_terminalization_allows_only_trusted_signal_tool"
+        ],
+        "source_fragments": [
+          "adaptive_reconnaissance_rejection(&invocation)",
+          "PreToolUse hook may have rewritten the invocation."
+        ],
+        "remaining_gate": "Does not cover every PostToolUse cancellation path.",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/core/src/tools/spec_plan.rs",
@@ -1381,7 +1415,25 @@
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "focused_source_and_native_behavior_evidence_only",
+        "review_scope": "Upstream activation-aware key routing retained; manual Escape pause guarded on press and active interruption",
+        "source_blob": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67",
+        "upstream_reference": "official rust-v0.163.0 overlap receipt",
+        "native_evidence_run": 40583499451,
+        "native_selectors": [
+          "external_writer_escape_preserves_snapshot_and_explicit_quits",
+          "new_session_worker_binding_resets_dirty_adaptive_state"
+        ],
+        "source_fragments": [
+          "handle_key_event_with_activation_key",
+          "is_manual_esc_interrupt",
+          "self.on_adaptive_user_interrupt();"
+        ],
+        "remaining_gate": "Does not cover every paste, popup, or TUI lifecycle path.",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/tui/src/chatwidget/protocol.rs",
