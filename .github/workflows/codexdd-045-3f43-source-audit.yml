@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   audit:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'c2b0e6f3e4ea0fe28301feb78defaa23360e3028'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f1abe255854493d91d65f247cad37b999b17f5d5'
     runs-on: ubuntu-latest
     timeout-minutes: 9
     steps:
@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'c2b0e6f3e4ea0fe28301feb78defaa23360e3028'
+          test "$(git rev-parse HEAD^)" = 'f1abe255854493d91d65f247cad37b999b17f5d5'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f43_manual_build_contract.py' -v
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f42a_windows_archive_verifier.py' -v

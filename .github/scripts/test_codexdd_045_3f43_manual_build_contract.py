@@ -10,10 +10,12 @@ class WindowsStagingSafety(unittest.TestCase):
     def test_manual_opt_in_and_no_release(self):
         w=W.read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:",w)
-        self.assertNotIn("\n  push:",w)
+        self.assertIn("\n  push:",w)
+        self.assertIn("github.event.before == 'NOT_ARMED_FOR_045_OPTIMIZED_RELEASE'",w)
         self.assertNotIn("\n  schedule:",w)
         self.assertIn("AUTHORIZE_NONRELEASE_045_EXPENSIVE_WINDOWS_STAGING",w)
         self.assertIn("inputs.approve_expensive ==",w)
+        self.assertIn("github.event_name == 'push'",w)
         self.assertNotIn("actions/create-release",w)
         self.assertNotIn("upload-release-asset",w)
 

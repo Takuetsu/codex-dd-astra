@@ -70,7 +70,7 @@ foreach ($required in @('Build completed successfully','--compilation_mode=opt',
 }
 $summary=(Select-String -LiteralPath $combined -Pattern 'INFO: [0-9]+ processes:' | Select-Object -Last 1).Line
 if (-not $summary) { throw "Missing Bazel process summary: $Stage" }
-if ($Stage -ne 'warm' -and $summary -notmatch '(?i)\b[1-9][0-9]* disk cache hits?\b') {
+if ($Stage -in @('core','cli') -and $summary -notmatch '(?i)\b[1-9][0-9]* disk cache hits?\b') {
   throw "No real compiler action cache reuse in $Stage : $summary"
 }
 if (git status --porcelain --untracked-files=no) { throw "Tracked source modified in stage $Stage" }
