@@ -1,0 +1,144 @@
+# One-shot Windows Bazel packaging RULE test with synthetic EXE and PDB only.
+# It does NOT rebuild CodexDD, ship outputs, or accept release artifacts.
+name: CodexDD 0.4.5 Windows EXE/PDB archive fixture (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-3f19-package-rule.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    name: Windows MSVC symbols and archive policy, no Rust build
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == '093a98be37585298fab73b22c2a7a1082badfbb9'
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - name: Check out the exact reviewed source, no stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify secure graph and original packaging rule identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unreviewed HEAD' }
+          if ((git rev-parse HEAD^).Trim() -ne '093a98be37585298fab73b22c2a7a1082badfbb9') { throw 'Unreviewed parent' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'Unexpected EULA override' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            '.bazelrc' = 'b7698b896e8d0830b60477999d330b115cf5ee8e'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/BUILD.bazel' = '843e9fe095e0982df2043bb17c7da8e6e1c95025'
+            'codex-rs/cli/BUILD.bazel' = '5dd2b8b9629275fb2c392c59134ea95a3ce317d5'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Release marker changed' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker changed' }
+          if (git status --porcelain) { throw 'Worktree dirty before validation' }
+          Write-Host 'PASS: secure source, unchanged runtime packaging rule and no release promotion'
+
+      - name: Install pinned Bazel 9.2.0
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          cache-save: false
+
+      - name: Initialize GitHub-hosted MSVC environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Native preinstalled MSVC unavailable' }
+          $cmd = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $cmd)) { throw 'VsDevCmd missing' }
+          $keys = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $vals = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $cmd)
+          if ($LASTEXITCODE -ne 0) { throw 'Failed preinstalled MSVC initialization' }
+          foreach ($line in $vals) {
+            if ($line -match '^(.*?)=(.*)$' -and $keys -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+          Write-Host 'PASS: preinstalled MSVC only; no EULA acceptance/download'
+
+      - name: Build only synthetic archive, inspect contents and require missing-PDB rejection
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((& bazel --version | Out-String).Trim() -ne 'bazel 9.2.0') { throw 'Wrong Bazel version' }
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-3f19-package'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $config = @(
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--//codex-rs:runtime_package_build_mode=debug',
+            '--jobs=2',
+            '--verbose_failures'
+          )
+          $label = '//bazel/rules/testing/runtime_archive_fixture:fixture_combined'
+          $log = Join-Path $dir 'synthetic-package.log'
+          $ErrorActionPreference = 'Continue'
+          & bazel --noexperimental_remote_repo_contents_cache build @config $label *> $log
+          $rc = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if ($rc -ne 0) {
+            if (Test-Path $log) { Get-Content $log -Tail 60 }
+            throw "Synthetic packaging rule failed: exit $rc"
+          }
+          $queryLog = Join-Path $dir 'fixture-output.log'
+          $ErrorActionPreference = 'Continue'
+          $analysisConfig = @($config | Where-Object { $_ -ne '--jobs=2' -and $_ -ne '--verbose_failures' })
+          & bazel --noexperimental_remote_repo_contents_cache cquery @analysisConfig '--output=files' $label *> $queryLog
+          $queryRc = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if ($queryRc -ne 0) { throw "Output selection failed: $queryRc" }
+          $candidates = @(Get-Content $queryLog | Where-Object { $_ -match 'fixture_combined\.tar\.gz\s*$' })
+          if ($candidates.Count -ne 1) { throw ('Unexpected archive candidate count: ' + $candidates.Count) }
+          $entry = $candidates[0].Trim()
+          $root = (& bazel info execution_root | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or -not $root) { throw 'Bazel execution root unavailable' }
+          $archive = Join-Path $root ($entry.Replace('/', '\'))
+          if (-not (Test-Path $archive)) { throw "Missing archive: $archive" }
+          python -B .github/scripts/test_codexdd_045_3f19_package_fixture.py $archive
+          if ($LASTEXITCODE -ne 0) { throw 'Archive layout failed' }
+          $bad = '//bazel/rules/testing/runtime_archive_fixture:fixture_rejected_files'
+          $negativeLog = Join-Path $dir 'missing-pdb-rejection.log'
+          $ErrorActionPreference = 'Continue'
+          & bazel --noexperimental_remote_repo_contents_cache build @config $bad *> $negativeLog
+          $badRc = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if ($badRc -eq 0) { throw 'Packaging incorrectly accepted a Windows binary with no PDB' }
+          if (-not (Select-String -LiteralPath $negativeLog -Pattern 'Missing pdb_file for' -Quiet)) {
+            Get-Content $negativeLog -Tail 45
+            throw 'Missing PDB rejected for unrelated reason; NOT ACCEPTED'
+          }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source modified' }
+          Write-Host 'PASS: fixture archive EXE/PDB layout and missing-PDB negative test'
+          Write-Host 'NOT ACCEPTED: real native Windows optimized package remains pending'
+
+      - name: Upload only narrow nonrelease fixture diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f19-synthetic-package-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-3f19-package/*.log
+          if-no-files-found: warn
+          retention-days: 7

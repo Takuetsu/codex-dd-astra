@@ -1,0 +1,16 @@
+load("//bazel/rules:runtime_package.bzl", "release_binary", "runtime_archive")
+load(":fixture.bzl", "fake_runtime_binary")
+
+# These outputs are intentionally NOT PE executables, and may never be shipped.
+fake_runtime_binary(name = "fixture_codex")
+release_binary(binary = ":fixture_codex", name = "fixture")
+runtime_archive(
+    name = "fixture_combined",
+    srcs = [":fixture_files"],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+# Confirm Windows packaging fails closed without required PDB metadata.
+fake_runtime_binary(name = "fixture_without_pdb", with_pdb = False)
+release_binary(binary = ":fixture_without_pdb", name = "fixture_rejected")
