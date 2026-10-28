@@ -6,9 +6,9 @@
 
 ## Reviewed three-way inputs
 
-| File | Official 0.162.0 | CodexDD 0.4.4 | Official 0.163.0 | Reconciled Git blob |
-| --- | --- | --- | --- | --- |
-| `codex-rs/core/src/context_manager/normalize.rs` | `7fc45ba217a3b7b733ee6225132f7c5eac99ed8c` | `0f60bdc82016c45ff035667778d20aba0ee298f3` | `532cfdfb34a74f774c41a9a1914347a2492997de` | `4ca88c6a668e9896df06ca81940a0e41e357898d` |
+| File                                                 | Official 0.162.0                           | CodexDD 0.4.4                              | Official 0.163.0                           | Reconciled Git blob                        |
+| ---------------------------------------------------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| `codex-rs/core/src/context_manager/normalize.rs`     | `7fc45ba217a3b7b733ee6225132f7c5eac99ed8c` | `0f60bdc82016c45ff035667778d20aba0ee298f3` | `532cfdfb34a74f774c41a9a1914347a2492997de` | `4ca88c6a668e9896df06ca81940a0e41e357898d` |
 | `codex-rs/core/src/context_manager/history_tests.rs` | `c5551b632048455dfda3263d48f498832c52f334` | `c2268ac3c142b8a788afa375f3b832b4c393464a` | `8f22910ed2086c07edbd41f84a1327705f4700f3` | `4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d` |
 
 **`normalize.rs` conflict:** The fork replaced debug panics on missing custom-tool and local-shell call outputs with informative aborted-output recovery for persisted interrupted turns. The official 0.163.0 code adds an `inherited_user_message` metadata guard to avoid panicking for copied in-progress calls in preserved-prefix forks. The integrated source starts from the complete official 0.163.0 file and changes only these two guarded branches: inherited calls **do not log an error**, while non-inherited interrupted calls log an INFO diagnostic and synthesize an `aborted` output **without panicking**. Both still insert deterministic synthetic output next to the call. This preserves the fork's resume tolerance and the upstream inherited-call metadata contract.

@@ -12,7 +12,7 @@ The 3C.9c official 0.163.0 staging already includes:
 - `tui/src/app/config_panel.rs` (upstream blob `f1fb01ff12deb14fd99f402812839721fd1ef88b`), implementing preference persistence and notification previews.
 - `tui/src/chatwidget/model_popup_state.rs` (upstream blob `15f99f85bbe4d903ebed8560ce733a0ecadb41d4`), providing account-scoped model refresh. Independent 3C.9e3 source already calls this helper.
 
-The *protected* CodexDD `tui/src/lib.rs`, `app.rs`, and `chatwidget.rs` still do **not** register their respective `config_panel` modules. Protected `chatwidget.rs` lacks the upstream `config_panel_tui: codex_config::types::Tui` field; `chatwidget/constructor.rs` has not initialized it. These gaps prevent blindly porting individual `/config` call sites.
+The _protected_ CodexDD `tui/src/lib.rs`, `app.rs`, and `chatwidget.rs` still do **not** register their respective `config_panel` modules. Protected `chatwidget.rs` lacks the upstream `config_panel_tui: codex_config::types::Tui` field; `chatwidget/constructor.rs` has not initialized it. These gaps prevent blindly porting individual `/config` call sites.
 
 ## Coordinated source/call-site inventory
 

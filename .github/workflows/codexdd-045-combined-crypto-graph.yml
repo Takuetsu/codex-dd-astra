@@ -4,7 +4,7 @@ name: CodexDD 0.4.5 combined crypto-bigint closure graph (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-combined-crypto-graph-preview]
-    paths: ['.github/workflows/codexdd-045-combined-crypto-graph.yml']
+    paths: [".github/workflows/codexdd-045-combined-crypto-graph.yml"]
 permissions:
   contents: read
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - name: Checkout exact source without write token
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

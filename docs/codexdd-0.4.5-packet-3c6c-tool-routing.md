@@ -10,7 +10,7 @@ All twenty-three selected `codex-rs/core/src/tools/` files matched tracked offic
 
 The changed consumers cover CodeMode execution, accepted-tool-call and MCP attribution, tool-search and extension tool exposure, dynamic-tools metadata, MCP and multi-agent handlers, parallel dispatch, the tool router, and matching upstream native test fixtures. These move together to reduce signature drift between upstream 0.163.0 callers and previously staged registry/runtime handlers.
 
-The three retired Unix zsh-fork Rust source files remain in the checkout as *orphaned* historical sources and are not re-registered by the upstream 0.163.0 `tools/runtimes/mod.rs`. Deletion is deferred for explicit review; this is a Windows-only fork and no behavior is being silently re-enabled.
+The three retired Unix zsh-fork Rust source files remain in the checkout as _orphaned_ historical sources and are not re-registered by the upstream 0.163.0 `tools/runtimes/mod.rs`. Deletion is deferred for explicit review; this is a Windows-only fork and no behavior is being silently re-enabled.
 
 ## CodexDD guardrails and outstanding validation
 

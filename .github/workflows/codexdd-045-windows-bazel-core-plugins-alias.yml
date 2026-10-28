@@ -7,11 +7,11 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-windows-bazel-core-plugins-alias.yml'
-      - 'patches/zstd-sys_windows_msvc_include_dirs.patch'
-      - 'defs.bzl'
-      - 'codex-rs/core-plugins/BUILD.bazel'
-      - 'codex-rs/core-plugins/Cargo.toml'
+      - ".github/workflows/codexdd-045-windows-bazel-core-plugins-alias.yml"
+      - "patches/zstd-sys_windows_msvc_include_dirs.patch"
+      - "defs.bzl"
+      - "codex-rs/core-plugins/BUILD.bazel"
+      - "codex-rs/core-plugins/Cargo.toml"
 
 permissions:
   contents: read

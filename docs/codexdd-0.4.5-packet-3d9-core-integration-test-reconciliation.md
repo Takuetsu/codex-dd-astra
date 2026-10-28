@@ -12,16 +12,16 @@
 
 Four immutable source identities were compared using Git blob SHA for every file before staging:
 
-| Role | Commit |
-| --- | --- |
+| Role                              | Commit                                     |
+| --------------------------------- | ------------------------------------------ |
 | Baseline official `rust-v0.162.0` | `c1382380de69521303b416720a52f42d51af6248` |
-| Target official `rust-v0.163.0` | `83086188ae0614bd882818ff1aa23f3194962012` |
-| Fork production 0.4.4 | `b25550dcb2c6e84a84074b603086c9db6f32a63b` |
-| Reviewed branch parent | `5d86b7a1d53b49dcfeb1c6de236d580a2909ccca` |
+| Target official `rust-v0.163.0`   | `83086188ae0614bd882818ff1aa23f3194962012` |
+| Fork production 0.4.4             | `b25550dcb2c6e84a84074b603086c9db6f32a63b` |
+| Reviewed branch parent            | `5d86b7a1d53b49dcfeb1c6de236d580a2909ccca` |
 
 For the **96 direct upstream copies**, the production blob equalled the official 0.162 baseline and the integration branch still held that baseline blob (or an absent new source). Each copied file matches its exact official 0.163 content and object identity. The 24 snapshots accompany upstream tests instead of inventing fixtures; they do not replace fork-modified snapshot files.
 
-`codex-rs/core/tests/suite/unified_exec.rs` is deliberately **not** copied wholesale: the original production 0.4.4 file differed from official 0.162 by *only one inserted 83-line trusted adaptive-evidence regression*. That test was transplanted to the official 0.163 source while preserving upstream's command-origin metadata persistence test. Both named tests remain in the staged source. This closes the unchanged-fork identity overlap for `unified_exec.rs` only after actual native compile/behavior checks.
+`codex-rs/core/tests/suite/unified_exec.rs` is deliberately **not** copied wholesale: the original production 0.4.4 file differed from official 0.162 by _only one inserted 83-line trusted adaptive-evidence regression_. That test was transplanted to the official 0.163 source while preserving upstream's command-origin metadata persistence test. Both named tests remain in the staged source. This closes the unchanged-fork identity overlap for `unified_exec.rs` only after actual native compile/behavior checks.
 
 Other fork-modified `suite/agent_websocket.rs`, `suite/audio_truncation.rs`, and the previously reconciled `suite/scenarios.rs` retain their prior reviewed blob identities. The staged Git tree was compared to the exact branch parent and showed **73 Rust file changes + 24 snapshot file changes = 97 changes**.
 

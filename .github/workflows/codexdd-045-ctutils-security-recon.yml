@@ -7,7 +7,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-patched-lock-integration
     paths:
-      - '.github/workflows/codexdd-045-ctutils-security-recon.yml'
+      - ".github/workflows/codexdd-045-ctutils-security-recon.yml"
 
 permissions:
   contents: read

@@ -12,12 +12,12 @@ Read-only Git tree comparison at the 0.4.5 integration checkpoint used:
 - Integration checkpoint after the rollout-order merge: `89307e9136c8747db43031adb4d56499ddf52a54`; predecessor used for full-tree comparison was `4edca883f02efa80636c9c8de508d8cbd9e86603`. The only intervening relevant source changes were `codex-rs/rollout/src/recorder.rs` and its test.
 - Compute overlap per Git blob path: official 0.162 and official 0.163 differ **and** original production and official 0.162 differ. Missing paths must count as distinct from present paths. Compare exact Git object hashes, not only filenames or line similarity.
 
-| Directory | Upstream-changed paths | Fork-changed paths | Overlaps | Integration classification at this packet |
-| --- | ---: | ---: | ---: | --- |
-| `codex-rs/` | 1,266 | 207 | **106** | 102 integration-specific blobs; **4** still byte-identical to old fork |
-| `.github/` | 17 | 45 | **1** | **1** intentionally retained fork Bazel CI file, review still open |
-| `sdk/` | 4 | 2 | **2** | 2 reviewed generated output differences; generator drift CI separately green |
-| **Total** | | | **109** | **104 changed/reconciled blob identities; 5 unchanged-fork overlaps** |
+| Directory   | Upstream-changed paths | Fork-changed paths | Overlaps | Integration classification at this packet                                    |
+| ----------- | ---------------------: | -----------------: | -------: | ---------------------------------------------------------------------------- |
+| `codex-rs/` |                  1,266 |                207 |  **106** | 102 integration-specific blobs; **4** still byte-identical to old fork       |
+| `.github/`  |                     17 |                 45 |    **1** | **1** intentionally retained fork Bazel CI file, review still open           |
+| `sdk/`      |                      4 |                  2 |    **2** | 2 reviewed generated output differences; generator drift CI separately green |
+| **Total**   |                        |                    |  **109** | **104 changed/reconciled blob identities; 5 unchanged-fork overlaps**        |
 
 All currently reviewed 44 fork-sensitive TUI source paths in `.github/scripts/test_codexdd_045_3c9c_tui_upstream.py` have distinct pinned `REVIEWED_FORK` hashes versus their original production hashes. The source-guard workflow was green at `f10b862d` and again at [run #39491671832](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39491671832) following the rollout edit. This **closes the 44-path TUI file-identity review inventory**, not every TUI behavioral, 109-overlap semantic, or original 15-conflict release attestation. Older 3C.9f documentation reporting only 24/44 reviewed is a historical checkpoint, not the live blob inventory.
 
@@ -43,4 +43,3 @@ The previous sixth verbatim-fork overlap, `codex-rs/rollout/src/recorder.rs`, wa
 - This packet's `codex-rs/core/tests/suite/scenarios.rs` edit stages upstream 0.163's scenario source, retaining the fork's only original change: removal of the unused `ReasoningEffort` import. The full original baseline-versus-production difference was verified to be **exactly that single import deletion**. Official 0.163 also uses `ReasoningEffort` only in its import, so this removal is source-neutral. This staging still requires native integration-test compile/behavior validation before release.
 - The five original verbatim-fork overlaps above are now reduced to **three** in the current source identity inventory: `codex-rs/BUILD.bazel`, `codex-rs/core/tests/suite/unified_exec.rs` and `.github/workflows/bazel.yml`. The updated breakdown is **104** changed-identity plus **2** unchanged-fork overlap paths within `codex-rs/`, **2** changed identities in `sdk/`, and **1** unchanged-fork overlap in `.github/`: **109 total = 106 changed identities + 3 old-fork identities**. Changed identities alone are not semantic acceptance. The separately tracked 15 original conflicts remain under review.
 - Preserve CodexDD's 90-minute Bazel CI windows. The official 0.163 Bazel `--config=ci-windows-msvc` flag cannot be copied in isolation: the fork's current `.bazelrc` has no matching `build:ci-windows-msvc` configuration, unlike upstream, and the new upstream `codex-rs/BUILD.bazel` packaging aliases rely on rules and targets not yet staged. Reconcile this as an atomic Bazel owner packet, not as an unrelated CI setting change.
-

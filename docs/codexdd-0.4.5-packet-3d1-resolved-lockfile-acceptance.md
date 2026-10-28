@@ -8,7 +8,7 @@ The nonrelease native Windows library compile passed [GitHub Actions run #393466
 
 - Previous checked-in `Cargo.lock` Git blob: `0c913b46674d3593ee84f1fee5508d16e33efae5`.
 - Actual Windows-resolved Cargo.lock Git blob: `096939fcec32cb259bccc0cb36c5d4120701da57`.
-- The new blob was reconstructed solely from the checked-in old lock and the machine-generated changes; the reconstructed Git blob SHA matches the artifact's content *exactly*. It is not a copied official upstream lock.
+- The new blob was reconstructed solely from the checked-in old lock and the machine-generated changes; the reconstructed Git blob SHA matches the artifact's content _exactly_. It is not a copied official upstream lock.
 - All 160 local workspace version entries advance from 0.162.0 to 0.163.0. The graph adopts official `rmcp` and `rmcp-macros` version 3.5.1 with pinned rev `4048ac40e958fb1a7d614617a2ae8d26666ee2fa`, adds `linkify 0.11.0`, and removes the outdated `codex-shell-escalation` package from the resolved graph. The source crate may remain until a separate removal audit.
 
 ## Fork security constraints

@@ -6,7 +6,7 @@
 
 ## Scope / consequence boundary
 
-`.github/scripts/upstream_auto_prepare.py` adds the *uninvoked*, hard-disabled isolated candidate construction and publication contract. **`AUTO_PUBLISH_ENABLED = False`** is a literal source guard; neither the six-hour discovery workflow nor a new privileged schedule imports this module. The separate reviewed safe upstream path allowlist is **empty**, making real automatic preparation ineligible even if the hard gate were changed accidentally.
+`.github/scripts/upstream_auto_prepare.py` adds the _uninvoked_, hard-disabled isolated candidate construction and publication contract. **`AUTO_PUBLISH_ENABLED = False`** is a literal source guard; neither the six-hour discovery workflow nor a new privileged schedule imports this module. The separate reviewed safe upstream path allowlist is **empty**, making real automatic preparation ineligible even if the hard gate were changed accidentally.
 
 No GitHub Actions permission changes, scheduled writers, candidate branch, PR, merge, product-version bump, installation or upstream 0.163.0 conflict reconciliation are part of this packet. The original 0.163.0 manifest and fifteen real conflicts stay blocked for owner-reviewed v2 integration. Prior 0.4.2/0.4.3 manifests, receipts and v1 explicit manual preparation are unchanged.
 

@@ -6,12 +6,12 @@
 
 ## Fixed source identities
 
-| File below `codex-rs/app-server-protocol/src/` | Tracked official 0.162.0 | CodexDD 0.4.4 | Pinned official 0.163.0 | Merged Git blob |
-| --- | --- | --- | --- | --- |
-| `protocol/common.rs` | `3e73b44fffe5a83843727dd500a0baefd0993653` | `82f047ec52f9762e607a8f73db71357ddb3d1ad4` | `b710f18f14e711a748318ee980bcdc4168a7d843` | `6cb1a33ea48ed0de73f420ff6c179d9629fec45a` |
-| `protocol/thread_history.rs` | `18b87d9ce485f585a6640f6d9fd49e227b7d351f` | `6941ecc90dc3c364b8029eb420aeb35d413da97f` | `53817bb9e50e87ad8a85f39c6a27037bc87d5081` | `82c980c427501b594389fed439e105c2f696b9a5` |
-| `protocol/v2/thread.rs` | `c7f22e2930c39746531798617d2f4595b826078d` | `a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2` | `1746ceb7bcf4ed50ceca643170ffc65dada37f41` | `4180b91565e1a47b38c4f40114716e55b2973d3f` |
-| `protocol/v2/turn.rs` | `6b784ada66f5116594ec13224728069c9fca78b0` | `5b646bcb09da65e9752b5f318c9e48aab9b27b36` | `b09a191289349a68e6602a30ec9d887664dab73f` | `04f38d2535ba46da2bc22358589aeb1bd2840499` |
+| File below `codex-rs/app-server-protocol/src/` | Tracked official 0.162.0                   | CodexDD 0.4.4                              | Pinned official 0.163.0                    | Merged Git blob                            |
+| ---------------------------------------------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| `protocol/common.rs`                           | `3e73b44fffe5a83843727dd500a0baefd0993653` | `82f047ec52f9762e607a8f73db71357ddb3d1ad4` | `b710f18f14e711a748318ee980bcdc4168a7d843` | `6cb1a33ea48ed0de73f420ff6c179d9629fec45a` |
+| `protocol/thread_history.rs`                   | `18b87d9ce485f585a6640f6d9fd49e227b7d351f` | `6941ecc90dc3c364b8029eb420aeb35d413da97f` | `53817bb9e50e87ad8a85f39c6a27037bc87d5081` | `82c980c427501b594389fed439e105c2f696b9a5` |
+| `protocol/v2/thread.rs`                        | `c7f22e2930c39746531798617d2f4595b826078d` | `a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2` | `1746ceb7bcf4ed50ceca643170ffc65dada37f41` | `4180b91565e1a47b38c4f40114716e55b2973d3f` |
+| `protocol/v2/turn.rs`                          | `6b784ada66f5116594ec13224728069c9fca78b0` | `5b646bcb09da65e9752b5f318c9e48aab9b27b36` | `b09a191289349a68e6602a30ec9d887664dab73f` | `04f38d2535ba46da2bc22358589aeb1bd2840499` |
 
 Two disjoint files from official 0.163.0 are copied **byte-for-byte** because the tracked 0.162.0 and production 0.4.4 Git blob for each matched: `export.rs` at `0f90faf920cfcf6565c55548fc4064ba7dcccd96` and `protocol/v2/environment.rs` at `3794780c18b67113374dcf0c9148fdb6e903b6f1`.
 

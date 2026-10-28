@@ -6,10 +6,10 @@
 
 ## Exact source identity
 
-| File under `codex-rs/app-server/src/` | Tracked official 0.162.0 | CodexDD 0.4.4 | Official 0.163.0 | Merged Git blob |
-| --- | --- | --- | --- | --- |
-| `message_processor.rs` | `6b705c55565ebe3d58c117b38268aea37d05bcd7` | `c4011790aa019b25978cc86fad98d59c4206d88c` | `c9858cd9d513c69a917f6505410ee89b16bdd955` | `d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a` |
-| `request_processors.rs` | `3d3a1df9886edbafcb7f9bb787f4924f68e2bdeb` | `da10d7c0781e81034b872292a280cf31b5a5b9c8` | `a40486e0d512af66aeef1c1307696b2740053500` | `5c4633ab48ea77692e28193ea6e128ec58067a37` |
+| File under `codex-rs/app-server/src/`  | Tracked official 0.162.0                   | CodexDD 0.4.4                              | Official 0.163.0                           | Merged Git blob                            |
+| -------------------------------------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| `message_processor.rs`                 | `6b705c55565ebe3d58c117b38268aea37d05bcd7` | `c4011790aa019b25978cc86fad98d59c4206d88c` | `c9858cd9d513c69a917f6505410ee89b16bdd955` | `d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a` |
+| `request_processors.rs`                | `3d3a1df9886edbafcb7f9bb787f4924f68e2bdeb` | `da10d7c0781e81034b872292a280cf31b5a5b9c8` | `a40486e0d512af66aeef1c1307696b2740053500` | `5c4633ab48ea77692e28193ea6e128ec58067a37` |
 | `request_processors/turn_processor.rs` | `67946c8ebcb0b5f84b9fde7a7f77ad87e2ac38fa` | `8b0825017d7a05793184b98134474a0f03c7c5de` | `1b9a253becc97a7a2c1b0de9e92def7c192691c2` | `1186f0a181704d8ea45243a850f971f1057cb080` |
 
 Two upstream-only companions are staged byte-for-byte from pinned official `rust-v0.163.0` commit `83086188ae0614bd882818ff1aa23f3194962012`, after verifying there were no fork modifications against `rust-v0.162.0`: `request_processors/thread_read_state.rs` at `a64c31b55e7075cf13d8ac8e29e11f4c188096f3` and `message_processor_workspace_routing_tests.rs` at `db478a99602807fd436b121d4c6c46610e365832`.

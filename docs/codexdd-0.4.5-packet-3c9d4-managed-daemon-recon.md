@@ -15,7 +15,7 @@
 ## Bounded implementation plan
 
 1. Pass the `managed_daemon` bool from the trusted 3C.9d3 startup-orchestration local-daemon selection to `run_ratatui_app`.
-2. Extend the protected `lib.rs` function signature, then forward the bool to `App::run` *without* disrupting the adjacent CodexDD adaptive-family argument.
+2. Extend the protected `lib.rs` function signature, then forward the bool to `App::run` _without_ disrupting the adjacent CodexDD adaptive-family argument.
 3. Extend `app/startup.rs::App::run` and set `remote_connection.is_managed_daemon` only when `connection.is_local_daemon && managed_daemon`. Never mark explicit remote transport or embedded startup managed.
 4. Review the fork-only hunks against official 0.163.0 at all affected signatures. Guard native app tests and prevent accidental fallback/approval-policy widening.
 5. Record the exact resulting file blobs and maintain the 3C.9c source-preservation pins. Partial upstream handoff does **not** close unrelated protected lib/app merges or authorize Rust compilation acceptance.

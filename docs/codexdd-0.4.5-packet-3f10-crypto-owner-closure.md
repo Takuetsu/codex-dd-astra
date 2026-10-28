@@ -14,14 +14,14 @@
 
 ## Focused regression evidence
 
-| Evidence | Result | Boundary |
-| --- | --- | --- |
-| [Combined Windows/Linux crypto graph #40573091568](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40573091568) | PASS | Read-only scratch graph, first-party secrets library, P-256 library and AWS owner compile |
-| [Legacy age cross-version encryption/decryption #40564129112](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40564129112) | PASS | Published age ↔ reviewed pinned age, both directions, synthetic scrypt fixture only |
-| [AWS DPoP crypto-owner compile and tests #40565258093](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40565258093) | PASS | Actual CodexDD AWS auth code compiles; DPoP tests, not a live login |
-| [Original all-target cargo-deny #40577886527](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40577886527) | PASS | Real bans, licenses, advisories and Git source controls with existing three Linux INFO owner-accepted exceptions |
-| [Exact combined voice WebRTC 0.21.1 #40578510589](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40578510589) | PASS | Native-free Linux musl voice host: **14 passed, zero failed, one intentionally ignored subprocess fixture**; UDP/TCP, ICE limits, network loss, suppression, privacy and teardown |
-| [Exact combined Windows native crypto #40579717552](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40579717552) | PENDING | Source/lock gate passed; native secrets/verification/AWS tests running |
+| Evidence                                                                                                                           | Result  | Boundary                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Combined Windows/Linux crypto graph #40573091568](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40573091568)            | PASS    | Read-only scratch graph, first-party secrets library, P-256 library and AWS owner compile                                                                                         |
+| [Legacy age cross-version encryption/decryption #40564129112](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40564129112) | PASS    | Published age ↔ reviewed pinned age, both directions, synthetic scrypt fixture only                                                                                              |
+| [AWS DPoP crypto-owner compile and tests #40565258093](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40565258093)        | PASS    | Actual CodexDD AWS auth code compiles; DPoP tests, not a live login                                                                                                               |
+| [Original all-target cargo-deny #40577886527](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40577886527)                 | PASS    | Real bans, licenses, advisories and Git source controls with existing three Linux INFO owner-accepted exceptions                                                                  |
+| [Exact combined voice WebRTC 0.21.1 #40578510589](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40578510589)             | PASS    | Native-free Linux musl voice host: **14 passed, zero failed, one intentionally ignored subprocess fixture**; UDP/TCP, ICE limits, network loss, suppression, privacy and teardown |
+| [Exact combined Windows native crypto #40579717552](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40579717552)           | PENDING | Source/lock gate passed; native secrets/verification/AWS tests running                                                                                                            |
 
 ## Safety and status
 

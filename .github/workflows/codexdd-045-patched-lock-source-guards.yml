@@ -6,22 +6,22 @@ on:
     branches:
       - dd/codexdd-v0.4.5-patched-lock-integration
     paths:
-      - '.github/scripts/test_codexdd_045_*.py'
-      - '.github/scripts/codexdd_045_format_provenance.py'
-      - 'docs/upstream-candidates/codexdd-045-format-followup.json'
-      - '.github/scripts/upstream_auto_*.py'
-      - '.github/scripts/test_upstream_auto_*.py'
-      - '.github/scripts/test_upstream_045_contract_audit.py'
-      - '.github/scripts/test_upstream_sync.py'
-      - '.github/scripts/upstream_sync.py'
-      - '.github/scripts/upstream_reconciliation_*.py'
-      - '.github/scripts/test_upstream_reconciliation*.py'
-      - '.github/workflows/upstream-sync.yml'
-      - '.github/workflows/codexdd-045-patched-lock-source-guards.yml'
-      - 'codex-rs/**'
-      - 'codex-rs/app-server-protocol/schema/**'
-      - 'codex-rs/core/config.schema.json'
-      - 'sdk/python/src/openai_codex/generated/**'
+      - ".github/scripts/test_codexdd_045_*.py"
+      - ".github/scripts/codexdd_045_format_provenance.py"
+      - "docs/upstream-candidates/codexdd-045-format-followup.json"
+      - ".github/scripts/upstream_auto_*.py"
+      - ".github/scripts/test_upstream_auto_*.py"
+      - ".github/scripts/test_upstream_045_contract_audit.py"
+      - ".github/scripts/test_upstream_sync.py"
+      - ".github/scripts/upstream_sync.py"
+      - ".github/scripts/upstream_reconciliation_*.py"
+      - ".github/scripts/test_upstream_reconciliation*.py"
+      - ".github/workflows/upstream-sync.yml"
+      - ".github/workflows/codexdd-045-patched-lock-source-guards.yml"
+      - "codex-rs/**"
+      - "codex-rs/app-server-protocol/schema/**"
+      - "codex-rs/core/config.schema.json"
+      - "sdk/python/src/openai_codex/generated/**"
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - name: Checkout exact integration revision with history
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

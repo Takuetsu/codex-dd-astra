@@ -6,11 +6,11 @@
 
 ## Three-way source provenance
 
-| Source file under `codex-rs/app-server/src/` | Tracked 0.162.0 | Production 0.4.4 | Official 0.163.0 | Reconciled Git blob |
-| --- | --- | --- | --- | --- |
-| `bespoke_event_handling.rs` | `f632857401ead872c492b887416db98395e8646f` | `65824b0da966df860bcc901d681017545de0227e` | `5e5430826edf33b22c5cdbdec3f5e5a6078f20aa` | `1c4a913d2373a614a2dfe73c10e6f65c64a727a1` |
-| `thread_state.rs` | `a19c41b19ff8aea40842771f261f195661b33ec5` | `79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7` | `6dfe969ab3adfc5d703184ee2ee61a1b6335f282` | `42b434e017c527a8785fbaedf43292a83e1af09d` |
-| `notification_media.rs` | `4223ea796d2882be95a5153f43212e5356d0fa8d` | `05256bae425f635997229a3b29b26c5f1e8eee19` | `a1572cbaf7b9026f789c96ce9d027e0a7cc4b1be` | `c93967717664145a72390384749747212fd5c63a` |
+| Source file under `codex-rs/app-server/src/` | Tracked 0.162.0                            | Production 0.4.4                           | Official 0.163.0                           | Reconciled Git blob                        |
+| -------------------------------------------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| `bespoke_event_handling.rs`                  | `f632857401ead872c492b887416db98395e8646f` | `65824b0da966df860bcc901d681017545de0227e` | `5e5430826edf33b22c5cdbdec3f5e5a6078f20aa` | `1c4a913d2373a614a2dfe73c10e6f65c64a727a1` |
+| `thread_state.rs`                            | `a19c41b19ff8aea40842771f261f195661b33ec5` | `79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7` | `6dfe969ab3adfc5d703184ee2ee61a1b6335f282` | `42b434e017c527a8785fbaedf43292a83e1af09d` |
+| `notification_media.rs`                      | `4223ea796d2882be95a5153f43212e5356d0fa8d` | `05256bae425f635997229a3b29b26c5f1e8eee19` | `a1572cbaf7b9026f789c96ce9d027e0a7cc4b1be` | `c93967717664145a72390384749747212fd5c63a` |
 
 ## Source reconciliation
 

@@ -12,13 +12,13 @@ The 17 staged exact upstream session files were either unchanged by CodexDD 0.4.
 
 Five existing production files required preserving CodexDD-specific changes while accepting upstream 0.163.0 changes. The original 0.4.4 fork-to-0.162.0 delta was inspected as nine small hunks total and applied at uniquely matching 0.163.0 contexts. Pinned resulting Git blobs:
 
-| File under `codex-rs/core/src/session/` | Reconciled Git blob |
-| --- | --- |
-| `rollout_reconstruction.rs` | `118907bac6f1f084c96b81e78c2d1b7fc923583d` |
-| `rollout_reconstruction_tests.rs` | `6286fb33b5d936da253abe9efdc090e494de0ac4` |
-| `session.rs` | `68fb4db5fe8f11638a22c3b249d9f1bc7668cadd` |
-| `tests.rs` | `dc7d8179b298113fedcbcb5d5dc0573737a5c2e1` |
-| `turn.rs` | `50f524a055a92f0d19be5e6bc2665fe18718e35b` |
+| File under `codex-rs/core/src/session/` | Reconciled Git blob                        |
+| --------------------------------------- | ------------------------------------------ |
+| `rollout_reconstruction.rs`             | `118907bac6f1f084c96b81e78c2d1b7fc923583d` |
+| `rollout_reconstruction_tests.rs`       | `6286fb33b5d936da253abe9efdc090e494de0ac4` |
+| `session.rs`                            | `68fb4db5fe8f11638a22c3b249d9f1bc7668cadd` |
+| `tests.rs`                              | `dc7d8179b298113fedcbcb5d5dc0573737a5c2e1` |
+| `turn.rs`                               | `50f524a055a92f0d19be5e6bc2665fe18718e35b` |
 
 `RolloutItem::WorkflowState` remains handled in four reconstruction branches, one session-history case and two session Rust fixtures. The fork's existing native regression that normalizes an orphaned interrupted custom tool call with an `aborted` output remains present. `EventMsg::AdaptiveRuntimeSignal` remains explicitly handled in turn stream rendering. These are exhaustive-match compatibility and replay-safety source requirements, **not evidence that live runtime replay or native Rust tests pass**.
 
@@ -30,4 +30,4 @@ Predecessor **3C.4 static validation is 33/33 green** at detached Daniel-CL `cae
 
 **Cargo.lock** remains the 0.4.4 graph. Native Rust session/turn/event tests, app-server replay behavior, core config/approval API compatibility, generated schema validation and Windows release suite remain outstanding. Other non-overlapping upstream changes and fork conflict sites must be reconciled before expensive testing. The product and upstream version markers remain 0.4.4/rust-v0.162.0.
 
-**Next:** 3C.5c guardian/approval synchronization, followed by a *single* grouped cheap static 3C.5a/b/c checkpoint; no auto-PR, merge, release, artifact distribution, privilege broadening or publisher enablement.
+**Next:** 3C.5c guardian/approval synchronization, followed by a _single_ grouped cheap static 3C.5a/b/c checkpoint; no auto-PR, merge, release, artifact distribution, privilege broadening or publisher enablement.

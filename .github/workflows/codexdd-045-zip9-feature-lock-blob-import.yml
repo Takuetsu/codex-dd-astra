@@ -7,7 +7,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-zip9-feature-lock-blob-import.yml'
+      - ".github/workflows/codexdd-045-zip9-feature-lock-blob-import.yml"
 
 permissions:
   contents: read

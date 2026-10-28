@@ -12,16 +12,16 @@
 
 ## Findings: no blanket exemptions
 
-| Crate and locked version | Advisory | Finding and dependency owner |
-| --- | --- | --- |
-| `zip 2.4.2` | RUSTSEC-2026-0367 | ZIP extraction Unix SUID/SGID bit preservation and potential privilege escalation; direct dependency of `codex-core-plugins` |
-| `zip 2.4.2` | RUSTSEC-2026-0368 | `ZipArchive::extract` may extract symlinks targeting outside the destination; `codex-core-plugins` |
-| `zip 2.4.2` | RUSTSEC-2026-0369 | ZIP extraction Unix permissions through symlinks without confining symlink targets; `codex-core-plugins` |
-| `basic-toml 0.1.10` | RUSTSEC-2026-0374 | Unmaintained; reached through `i18n-config` |
-| `zbus_names 3.0.0` | RUSTSEC-2026-0371 | Unmaintained; reached through `zbus 4.4.0` |
-| `zvariant 4.2.0` | RUSTSEC-2026-0370 | Unmaintained; reached through `zbus 4.4.0` |
-| `zvariant_derive 4.2.0` | RUSTSEC-2026-0372 | Unmaintained; reached through `zvariant 4.2.0` |
-| `spin 0.9.8` | Yanked version warning (no RustSec ID in receipt) | Reached through `flume 0.12.0` and `heapless 0.7.17`; warning, not one of the seven advisory errors |
+| Crate and locked version | Advisory                                          | Finding and dependency owner                                                                                                 |
+| ------------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `zip 2.4.2`              | RUSTSEC-2026-0367                                 | ZIP extraction Unix SUID/SGID bit preservation and potential privilege escalation; direct dependency of `codex-core-plugins` |
+| `zip 2.4.2`              | RUSTSEC-2026-0368                                 | `ZipArchive::extract` may extract symlinks targeting outside the destination; `codex-core-plugins`                           |
+| `zip 2.4.2`              | RUSTSEC-2026-0369                                 | ZIP extraction Unix permissions through symlinks without confining symlink targets; `codex-core-plugins`                     |
+| `basic-toml 0.1.10`      | RUSTSEC-2026-0374                                 | Unmaintained; reached through `i18n-config`                                                                                  |
+| `zbus_names 3.0.0`       | RUSTSEC-2026-0371                                 | Unmaintained; reached through `zbus 4.4.0`                                                                                   |
+| `zvariant 4.2.0`         | RUSTSEC-2026-0370                                 | Unmaintained; reached through `zbus 4.4.0`                                                                                   |
+| `zvariant_derive 4.2.0`  | RUSTSEC-2026-0372                                 | Unmaintained; reached through `zvariant 4.2.0`                                                                               |
+| `spin 0.9.8`             | Yanked version warning (no RustSec ID in receipt) | Reached through `flume 0.12.0` and `heapless 0.7.17`; warning, not one of the seven advisory errors                          |
 
 `zip` is used by `codex-core-plugins`, whose `Cargo.toml` includes a direct `zip` workspace dependency. No claim of harmlessness follows from the product being Windows-only: two reports concern Unix permissions specifically, but symlink/path traversal behavior must be separately reviewed for the actual extraction call sites and Windows semantics.
 
@@ -54,14 +54,13 @@ Production remains CodexDD 0.4.4 tracking `rust-v0.162.0`. Automatic upstream pu
 
 - Exact integration security fix: [commit c6c65a7](https://github.com/Takuetsu/codex-dd-astra/commit/c6c65a7f603d651b35288310a2a220e30d79370f), with canonical LF workspace manifest blob `c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4` and byte-identical Cargo-generated lock blob `a8eb8a076276cb3db5674b33c67d743b1c3d21fc`.
 - This matches the exact [green no-BZIP2 Windows preview #39464423065](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39464423065), sealed artifact `12285200057` (archive SHA-256 `03624d85fb5e1d8e4e2d12fddea3cb4e1adfd4f2df5deabab12df20340eec975`), and [green one-shot orphan blob import #39467022057](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39467022057).
-- Workspace ZIP now explicitly selects its reviewed v9 algorithms *excluding* BZIP2; new resolver removed both `bzip2 0.6.1` and `libbz2-rs-sys 0.2.5`. No license allowlist or deny-advisory exceptions were added.
+- Workspace ZIP now explicitly selects its reviewed v9 algorithms _excluding_ BZIP2; new resolver removed both `bzip2 0.6.1` and `libbz2-rs-sys 0.2.5`. No license allowlist or deny-advisory exceptions were added.
 - [Unmodified cargo-deny #39467522626](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39467522626) reports **advisories FAILED, bans ok, licenses ok, sources ok**. The only errors are inherited informational **unmaintained** advisories `RUSTSEC-2026-0374` (basic-toml), `RUSTSEC-2026-0371` (zbus_names), `RUSTSEC-2026-0370` (zvariant), and `RUSTSEC-2026-0372` (zvariant_derive). `spin 0.9.8` is still a yanked warning; no newly identified ZIP advisory or BZIP2 license error remains.
 - [Windows/Linux locked target-graph probe #39468311160](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39468311160), artifact `12286560303` (SHA-256 `f1f2c609889525eb3360e0f572c0fc0bd84ff259e922f9a9f7a8fc617ed5e36c`), proves `zbus 4.4.0`, `zbus_names 3.0.0`, `zvariant 4.2.0` and `zvariant_derive 4.2.0` **not reachable via the Windows target dependency edges** from any workspace member, but reachable on Linux through `codex-tui`. This does **not** change the all-target cargo-deny policy or exempt Linux risk.
 - `basic-toml 0.1.10` **is Windows reachable** via `codex-secrets -> age 0.12.1 -> i18n-embed-fl 0.10.1 -> i18n-config 0.4.8 -> basic-toml`. That upstream dependency chain requires separate maintenance/remediation review; replacing secrets infrastructure merely to pass an informational audit is not authorized.
 - The same probe generated a compatible, **uncommitted** Cargo-only `spin 0.9.8 -> 0.9.9` trial: its lock blob `c121f97894bee98b48eab6302751723052a99caa` changes only the spin package version/checksum and retains security pins. This is a future separately approved warning cleanup, not an accepted source or release lock. Do not restart expensive native tests just to clear this warning.
 
 **Next release decision:** Resolve the inherited maintenance advisories via compatible tested upstream changes or a clearly reviewed, justified, time-bounded risk disposition. Do not silently ignore them, remove all-target checks, or infer a green cargo-deny gate from Windows reachability alone. Finish native focused tests and generated schema/regression checks on the exact source before any 21-stage release validation. No Daniel-CL action is needed for this dependency analysis.
-
 
 ## Current ZIP runtime closure and maintenance disposition (October 20, 2026)
 

@@ -6,10 +6,10 @@ on:
     branches:
       - dd/codexdd-v0.4.5-dependency-security-remediation
     paths:
-      - '.github/workflows/codexdd-045-dependency-security-staging.yml'
-      - 'scripts/codexdd-045-dependency-security-check.py'
-      - 'codex-rs/Cargo.toml'
-      - 'codex-rs/Cargo.lock'
+      - ".github/workflows/codexdd-045-dependency-security-staging.yml"
+      - "scripts/codexdd-045-dependency-security-check.py"
+      - "codex-rs/Cargo.toml"
+      - "codex-rs/Cargo.lock"
 
 permissions:
   contents: read

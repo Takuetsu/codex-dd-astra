@@ -15,6 +15,7 @@
 Three `zip` advisories (RUSTSEC-2026-0367/0368/0369) require `zip >=9.0.0` for an advisory-clean resolver. Target `zip 9.0.5` for a narrowly pinned Windows preview. Its upstream-declared MSRV is Rust 1.88; the CI toolchain is Rust 1.95.0. Avoid changing the existing GitHub archive structure, fallback order, or trust boundaries.
 
 Expected production migration is limited to `startup_sync.rs`, its tests, workspace `Cargo.toml`, and the exact Cargo-generated lockfile:
+
 1. Retain explicit entry-by-entry enclosed-path extraction. Avoid replacing it with bulk extraction semantics without a separate threat review.
 2. Adjust `ZipFile`'s v9 generic type API by passing `Option<u32>` Unix metadata into the permissions helper; v9 `ZipFile::name()` returns a `ZipResult<Cow<str>>`, so use safe raw-name formatting only for error text.
 3. Reject symlink entries before creating output files, and mask Unix file modes to ordinary `0o777` permission bits before applying them; do not preserve privileged bits from archives.

@@ -32,7 +32,7 @@ The existing staged official `tui/src/config_panel/`, `tui/src/chatwidget/config
 
 ## 3. Provenance and tests
 
-The 3C.9c 44-path protected-source inventory now recognizes **24 reviewed paths**, leaving **20 unresolved for risk-based review**; this is a path inventory, *not* a Rust compile PASS or evidence that remaining paths all require edits.
+The 3C.9c 44-path protected-source inventory now recognizes **24 reviewed paths**, leaving **20 unresolved for risk-based review**; this is a path inventory, _not_ a Rust compile PASS or evidence that remaining paths all require edits.
 
 The 3C.9d4 regression source guard was updated to check its original immutable 3C.9d4 source checkpoint at `1cf92eabd6bc9e7217c70a24c15182a58b5f9d28`, and to validate preserved live caller/callee invariants on HEAD. Historical 3C.9d4 source content was not rewritten. Static source tests still need to run after this checkpoint.
 

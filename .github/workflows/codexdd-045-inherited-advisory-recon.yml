@@ -6,7 +6,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-inherited-advisory-recon.yml'
+      - ".github/workflows/codexdd-045-inherited-advisory-recon.yml"
 permissions:
   contents: read
 jobs:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - name: Checkout exact source commit with no persisted credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

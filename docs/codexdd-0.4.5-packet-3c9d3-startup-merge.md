@@ -30,6 +30,6 @@ Official 0.163.0 also forwards `managed_daemon` to `run_ratatui_app` and thence 
 
 - `.github/scripts/test_codexdd_045_3c9c_tui_upstream.py` now pins this reviewed fifth protected TUI merge. Of the original 44 protected fork TUI paths, **39 remain without reviewed merges** at this checkpoint.
 - `.github/scripts/test_codexdd_045_3c9d3_startup_orchestration.py` checks the exact production-to-integrated transformation, elevated-session fallback, adaptive selection, new signature compatibility, deferred call-site boundary and unchanged release controls.
-- Prior Daniel-CL static results: 3C.7a 10/10 PASS; eight visible 3C.8–3C.9d2 packets 91/91 PASS. These were *source-only* checks, not native Rust compilation.
+- Prior Daniel-CL static results: 3C.7a 10/10 PASS; eight visible 3C.8–3C.9d2 packets 91/91 PASS. These were _source-only_ checks, not native Rust compilation.
 - 3C.9d3 static suite, native Rust compile/tests, Cargo.lock reconciliation, schema generation, full 21-stage Windows suite and GitHub CI remain outstanding.
 - Publisher stays disabled. Product version markers remain CodexDD 0.4.4 and upstream `rust-v0.162.0`. No release or deployment is authorized.

@@ -6,7 +6,7 @@
 **Owner-selected upstream target:** OpenAI Codex official stable `rust-v0.163.0`  
 **Repository:** `Takuetsu/codex-dd-astra` (Windows only)  
 **Documentation/feature branch:** `dd/codexdd-v0.4.5-upstream-0.163.0-automation`  
-**Production branch:** `dd/astra-policy-v2`  
+**Production branch:** `dd/astra-policy-v2`
 
 This is a planning/reconnaissance checkpoint, **not** an upstream integration or 0.4.5 build. Do not change the product version, tracked upstream baseline, runtime, production branch, release artifacts, or installed machines as a consequence of this packet.
 
@@ -18,20 +18,20 @@ CodexDD **0.4.5** is also the requested integration vehicle for official stable 
 
 ## Verified production and official upstream identities
 
-| Identity | Value |
-| --- | --- |
-| Production HEAD when activated | `b25550dcb2c6e84a84074b603086c9db6f32a63b` |
-| Production tree | `196252ceb8982ff52d2af3867ee3cd754bca5564` |
-| Product identity in production | `0.4.4` |
-| Tracked upstream stable tag | `rust-v0.162.0` |
-| Tracked upstream peeled commit | `c1382380de69521303b416720a52f42d51af6248` |
-| Tracked upstream tree | `4899ef4940a8bc7fdf7873aa0d3f438085b8163f` |
-| Target upstream stable tag | `rust-v0.163.0` |
+| Identity                             | Value                                      |
+| ------------------------------------ | ------------------------------------------ |
+| Production HEAD when activated       | `b25550dcb2c6e84a84074b603086c9db6f32a63b` |
+| Production tree                      | `196252ceb8982ff52d2af3867ee3cd754bca5564` |
+| Product identity in production       | `0.4.4`                                    |
+| Tracked upstream stable tag          | `rust-v0.162.0`                            |
+| Tracked upstream peeled commit       | `c1382380de69521303b416720a52f42d51af6248` |
+| Tracked upstream tree                | `4899ef4940a8bc7fdf7873aa0d3f438085b8163f` |
+| Target upstream stable tag           | `rust-v0.163.0`                            |
 | Target official annotated tag object | `129b8ec7ee6f4511557a4856279f529025c25af4` |
-| Target upstream peeled **commit** | `83086188ae0614bd882818ff1aa23f3194962012` |
-| Target upstream tree | `e91f335e7a03e1d14fa1e5fc7fc7620cdfc60842` |
-| Recorded merge base | `ac9b5b8380517ded445b09dd3196d8d9e2ba3c59` |
-| Upstream-vs-fork ancestry | `diverged` |
+| Target upstream peeled **commit**    | `83086188ae0614bd882818ff1aa23f3194962012` |
+| Target upstream tree                 | `e91f335e7a03e1d14fa1e5fc7fc7620cdfc60842` |
+| Recorded merge base                  | `ac9b5b8380517ded445b09dd3196d8d9e2ba3c59` |
+| Upstream-vs-fork ancestry            | `diverged`                                 |
 
 OpenAI published the stable upstream 0.163.0 release on **2026-10-15**: https://github.com/openai/codex/releases/tag/rust-v0.163.0 . The upstream tag object was verified from the canonical `openai/codex` Git ref and peeled to a **commit** (not a tag object).
 
@@ -49,13 +49,13 @@ Production product identity `0.4.4` and upstream identity `rust-v0.162.0` were r
 
 ### Exact tree-delta inventory from the immutable discovery manifest
 
-| Measure | Exact count |
-| --- | ---: |
-| CodexDD customization paths relative to tracked upstream | 356 |
-| Official upstream changed paths from 0.162.0 to 0.163.0 | 1,314 |
-| Path overlaps | 109 |
-| Sensitive overlaps (union of classified paths) | 97 |
-| Unmerged paths in synthetic transplant dry run | 15 |
+| Measure                                                  | Exact count |
+| -------------------------------------------------------- | ----------: |
+| CodexDD customization paths relative to tracked upstream |         356 |
+| Official upstream changed paths from 0.162.0 to 0.163.0  |       1,314 |
+| Path overlaps                                            |         109 |
+| Sensitive overlaps (union of classified paths)           |          97 |
+| Unmerged paths in synthetic transplant dry run           |          15 |
 
 Sensitivity categories overlap; their counts must **not** be summed to calculate the 97 unique sensitive paths:
 

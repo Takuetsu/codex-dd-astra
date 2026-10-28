@@ -3,6 +3,7 @@
 **Status: exact generated artifacts accepted; two independent byte-for-byte regeneration runs passed on prior commits. Recheck under current accepted security lock graph is pending.**
 
 The read-only generator [GitHub run 39356360311](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39356360311) ran successfully through:
+
 - pinned Cargo metadata and stable/experimental app-server generator,
 - core configuration schema generation,
 - native schema fixture/precomputed export unit tests,
@@ -23,10 +24,9 @@ The acceptance workflow is narrowly triggered by its own YAML file and is guarde
 
 No local Daniel-CL validation is necessary for the generator's read-only drift check.
 
-
 ## Independent generator checks and trigger repair — October 21, 2026
 
 - The independent post-acceptance [GitHub generator run #39426026717](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39426026717) **passed** on integration SHA \`c9913f575e8ed95450f92956ea67bbfcd5cd427c\`; the later [read-only run #39463513284](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39463513284) **also passed** at \`8ebadcc04cc5386aec48067ad7e90f85861d8efb\`. Both reported successful stable/experimental schema and Python SDK generation, native protocol/export tests, Python contract tests, and the final **zero-drift / no-out-of-scope-writes** comparison. The original 31 generated outputs have not been silently replaced.
 - The subsequent ZIP9/BZIP2 security resolver review changed \`codex-rs/Cargo.toml\` and \`codex-rs/Cargo.lock\` to the accepted lock blob \`a8eb8a076276cb3db5674b33c67d743b1c3d21fc\`. The prior green runs **do not** establish the generator result against this newer exact dependency graph or a later frozen candidate.
-- The generator audit previously reacted to *generated outputs* and its own YAML, but not changes to Cargo resolver inputs or generator source. This packet adds tightly scoped source- and dependency-input path triggers (protocol sources/writer, config schema and config sources, Python SDK generator and lock inputs), so the current reviewed graph receives a read-only CI rerun when this workflow changes. A new Python source guard asserts these triggers and the existing strict nonrelease, no-drift checks.
+- The generator audit previously reacted to _generated outputs_ and its own YAML, but not changes to Cargo resolver inputs or generator source. This packet adds tightly scoped source- and dependency-input path triggers (protocol sources/writer, config schema and config sources, Python SDK generator and lock inputs), so the current reviewed graph receives a read-only CI rerun when this workflow changes. A new Python source guard asserts these triggers and the existing strict nonrelease, no-drift checks.
 - Any failure is **RED** and requires isolated resolution; no automatically accepted generator output, lock change, release gate override, artifact publication, or Daniel-CL action is authorized. Even a green run on this integration branch is not a substitute for frozen-source 21-stage native release validation or the separate inherited RustSec decision.

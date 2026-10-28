@@ -10,7 +10,7 @@ Source target: official `rust-v0.163.0` integrated into the CodexDD 0.4.5 develo
 - **Exact passing commit:** `e2383021ba6ef50624af77ec9d7b6f48d931df69` (2026-10-19 UTC/US Central).
 - **Command:** `cargo check --keep-going -p codex-tui --lib` on hosted `windows-2022`, pinned Rust `1.95.0`, verified Windows Rusty V8 binding, and isolated runner scratch/target paths.
 - **Result:** workflow `completed/success`, including the native Cargo check. Earlier compiler failures were not waived or masked.
-- **Important limitation:** Cargo was run without `--locked`, because the development branch's checked-in `Cargo.lock` is still the 0.4.4 resolver graph. This is a *library* compile, not a test-target compile, native test execution, a locked resolver guarantee, or a runnable installer acceptance.
+- **Important limitation:** Cargo was run without `--locked`, because the development branch's checked-in `Cargo.lock` is still the 0.4.4 resolver graph. This is a _library_ compile, not a test-target compile, native test execution, a locked resolver guarantee, or a runnable installer acceptance.
 
 ## Corrections that enabled native library compilation
 
@@ -26,7 +26,7 @@ The passing commit establishes compiler compatibility of the selected library cr
 ## Follow-up validation tracks already isolated
 
 - **TUI test-target compilation:** read-only [workflow 39348265982](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39348265982), initially triggered from commit `7be02ba8ad1e03f19f341ef935b4388fc314378c`. It runs `cargo check --keep-going -p codex-tui --tests` with complete compiler diagnostics; `--tests` does not execute the tests.
-- **Python source provenance inventory:** read-only [workflow 39348466846](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39348466846), based on the original staged 0.4.5 source guards. Older packet SHA pins may need to be distinguished from *live* merged-source invariants; do not fake green results by rewriting immutable historical sources. Historical 3C.9c review inventory is a provenance snapshot, not a substitute for native tests.
+- **Python source provenance inventory:** read-only [workflow 39348466846](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39348466846), based on the original staged 0.4.5 source guards. Older packet SHA pins may need to be distinguished from _live_ merged-source invariants; do not fake green results by rewriting immutable historical sources. Historical 3C.9c review inventory is a provenance snapshot, not a substitute for native tests.
 - **Lockfile:** independently reconcile the exact Rust resolver result with new `rmcp 3.5.1`/`linkify` and preserve or explicitly re-audit CodexDD security upgrades. In particular, the pinned branch had `rustls 0.23.46`, `quinn-proto 0.11.18`, and `noyalib-serde-yaml 0.0.57`. Official 0.163 `Cargo.lock` cannot be copied verbatim: its workspace packages are version `0.0.0` whereas this fork requires `0.163.0`, and its `rustls` is `0.23.45`. Obtain a resolver-produced, auditable fork lockfile before `--locked` gate.
 
 ## Gates still required before CodexDD 0.4.5 is complete

@@ -16,7 +16,7 @@ All 109 reviewed integration blobs now differ from the original CodexDD producti
 
 ## Direct-conflict ledger correction
 
-`docs/upstream-candidates/original-blocked-conflicts.txt` lists **22 historic 0.4.3 / upstream-0.162 transplant conflict paths**. That list is *not* the original 0.163 merge-conflict list. At the 0.163 target, **13** of those historic paths independently changed upstream and **9** did not. The receipt records both classes without deleting either set or inventing an acceptance for the separate **15 original 0.163 direct conflicts** described in the 0.4.5 planning documents. That latter 15-path roster/semantic review remains its own gate; do not infer acceptance from this 22-path historical roster.
+`docs/upstream-candidates/original-blocked-conflicts.txt` lists **22 historic 0.4.3 / upstream-0.162 transplant conflict paths**. That list is _not_ the original 0.163 merge-conflict list. At the 0.163 target, **13** of those historic paths independently changed upstream and **9** did not. The receipt records both classes without deleting either set or inventing an acceptance for the separate **15 original 0.163 direct conflicts** described in the 0.4.5 planning documents. That latter 15-path roster/semantic review remains its own gate; do not infer acceptance from this 22-path historical roster.
 
 ## What continuous source tests actually verify
 

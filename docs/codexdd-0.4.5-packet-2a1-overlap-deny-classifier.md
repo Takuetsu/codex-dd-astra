@@ -9,7 +9,7 @@
 
 - The classifier now recognizes the twelve previously unclassified 0.163.0 overlaps: root/nested Bazel BUILD files, CLI/daemon entrypoints/tests, core scenario and unified exec tests, external migration/memory/rollout-trace persistence, and generated Python protocol files.
 - Every unfamiliar overlap is recorded explicitly in `unclassified_overlap`. The classifier retains the **exact Git path** (instead of recording slash-normalized aliases), so an unusual path or mode-only/tree rename cannot be silently omitted from overlap identity evidence.
-- `auto_preparation_overlap_reasons(inventory)` is independent of the v1 `candidate_state` interface: **any** path intersection returns `overlap_requires_semantic_review`. Unknown classifications and inconsistent inventory are additional blockers. Zero overlap clears *only this gate*; it does not authorize publication or declare cross-file API/security compatibility.
+- `auto_preparation_overlap_reasons(inventory)` is independent of the v1 `candidate_state` interface: **any** path intersection returns `overlap_requires_semantic_review`. Unknown classifications and inconsistent inventory are additional blockers. Zero overlap clears _only this gate_; it does not authorize publication or declare cross-file API/security compatibility.
 - Existing v1 `CandidateManifest`, JSON contract version, deterministic identity and historical committed artifacts are **unchanged**. The new fallback can correctly cause a fresh v1 discovery with previously missed overlaps to return manual review, but it does not rewrite past artifacts. Never reinterpret the original 0.163.0 conflict manifest as clean.
 
 ## Tests / validation boundary

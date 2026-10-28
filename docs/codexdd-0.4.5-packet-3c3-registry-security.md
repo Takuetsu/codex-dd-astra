@@ -6,9 +6,9 @@
 
 ## Three-way inputs and exact Git provenance
 
-| Path | Official tracked 0.162.0 | Production CodexDD 0.4.4 | Official pinned 0.163.0 | Reconciled |
-| --- | --- | --- | --- | --- |
-| `codex-rs/core/src/tools/registry.rs` | `e0acae262e8216748c162264d59e98c831302076` | `5b67eb29406d04b021b0fd9a5e259eccdd7da3b2` | `ebde5a7bdc449a11dc9c1fc1d8475c8e4432010f` | `fc75b3bbf91f1881bd32faaaca93356fbb598b5e` |
+| Path                                        | Official tracked 0.162.0                   | Production CodexDD 0.4.4                   | Official pinned 0.163.0                    | Reconciled                                       |
+| ------------------------------------------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------------ |
+| `codex-rs/core/src/tools/registry.rs`       | `e0acae262e8216748c162264d59e98c831302076` | `5b67eb29406d04b021b0fd9a5e259eccdd7da3b2` | `ebde5a7bdc449a11dc9c1fc1d8475c8e4432010f` | `fc75b3bbf91f1881bd32faaaca93356fbb598b5e`       |
 | `codex-rs/core/src/tools/registry_tests.rs` | `895d8d4b997d5fbd3d5401855f4088ef3d6cfb3a` | `b9af52dbb0b771e0b9119d5166b6a047c21bd24c` | `895d8d4b997d5fbd3d5401855f4088ef3d6cfb3a` | Existing production blob `b9af52db...` unchanged |
 
 The entire registry starts from official upstream `rust-v0.163.0`, not the 0.4.4 fork. Official 0.163.0 adds `OrCancelToolExt` cancellation propagation through active-turn locks, hooks and memory state, dynamic-tool `finishes_on_cancellation` support, immutable/overridden specs, `ToolSearchInfo`, `FunctionsNamespaceFunctionPrefixes` and per-step tool metadata. None of these upstream source changes was dropped in the targeted merge.

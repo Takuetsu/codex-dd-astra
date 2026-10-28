@@ -8,17 +8,17 @@
 
 The exact `rust-v0.162.0` Git blob for **each of these nine paths** matches the 0.4.4 production blob byte-for-byte. Therefore they do not contain CodexDD fork-side edits, and their upstream `rust-v0.163.0` blob can be copied without overwriting a local customization:
 
-| Official upstream 0.163.0 path | Exact Git blob | Dependency change |
-| --- | --- | --- |
-| `codex-rs/arg0/Cargo.toml` | `fad5169ffa9e150e70fbe725b853f68594ee38bc` | Remove former shell escalation crate |
-| `codex-rs/code-mode/Cargo.toml` | `daa2de54718268e12418ca981af1481841312867` | Add `rand` |
-| `codex-rs/codex-mcp/Cargo.toml` | `f54c6f1cbdf112af2f93524508bcce9935700740` | Add process/absolute-path/cargo-bin utilities |
-| `codex-rs/core/Cargo.toml` | `39c860803af2517d97344d491cd9b995e2e89288` | Add `hyper-util`, `tonic`, `tower`; remove shell escalation dependency |
-| `codex-rs/exec-server/Cargo.toml` | `0d1f1f5209ca66c6efdd9f6bb54058e89bc7a542` | Add Linux-only sandbox and `which` |
-| `codex-rs/exec/Cargo.toml` | `d5190c2caa2d37217a0335e4c9dd84f796486458` | Add `insta` dev dependency |
-| `codex-rs/external-agent-migration/Cargo.toml` | `3f49a1ae00cc48720b766d9e76bc050e954cf0fa` | Add `linkify` |
-| `codex-rs/tools/Cargo.toml` | `fc75ad22ce146ee5dd852ef2cad03b4bbcdffffb` | Remove obsolete workspace utility/tracing dependencies |
-| `codex-rs/tui/Cargo.toml` | `ea0894b3e1d3777f4c598727b03199c1f69cbd05` | Add `opentelemetry_sdk` dev dependency |
+| Official upstream 0.163.0 path                 | Exact Git blob                             | Dependency change                                                      |
+| ---------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| `codex-rs/arg0/Cargo.toml`                     | `fad5169ffa9e150e70fbe725b853f68594ee38bc` | Remove former shell escalation crate                                   |
+| `codex-rs/code-mode/Cargo.toml`                | `daa2de54718268e12418ca981af1481841312867` | Add `rand`                                                             |
+| `codex-rs/codex-mcp/Cargo.toml`                | `f54c6f1cbdf112af2f93524508bcce9935700740` | Add process/absolute-path/cargo-bin utilities                          |
+| `codex-rs/core/Cargo.toml`                     | `39c860803af2517d97344d491cd9b995e2e89288` | Add `hyper-util`, `tonic`, `tower`; remove shell escalation dependency |
+| `codex-rs/exec-server/Cargo.toml`              | `0d1f1f5209ca66c6efdd9f6bb54058e89bc7a542` | Add Linux-only sandbox and `which`                                     |
+| `codex-rs/exec/Cargo.toml`                     | `d5190c2caa2d37217a0335e4c9dd84f796486458` | Add `insta` dev dependency                                             |
+| `codex-rs/external-agent-migration/Cargo.toml` | `3f49a1ae00cc48720b766d9e76bc050e954cf0fa` | Add `linkify`                                                          |
+| `codex-rs/tools/Cargo.toml`                    | `fc75ad22ce146ee5dd852ef2cad03b4bbcdffffb` | Remove obsolete workspace utility/tracing dependencies                 |
+| `codex-rs/tui/Cargo.toml`                      | `ea0894b3e1d3777f4c598727b03199c1f69cbd05` | Add `opentelemetry_sdk` dev dependency                                 |
 
 All nine new fork blobs have been created from official upstream content and have the **same Git blob SHAs**. They are staged together with the previously verified 3A.1 root `Cargo.toml` blob `8ae5758c9baa6091b8ab5dda4e5b848365c0009d`; 3A.1 retains fork-specific security controls for `rustls` and `noyalib-serde-yaml`.
 

@@ -7,8 +7,8 @@ on:
     branches:
       - dd/codexdd-v0.4.5-patched-lock-integration
     paths:
-      - 'codex-rs/Cargo.lock'
-      - '.github/workflows/codexdd-045-patched-lock-integration-proof.yml'
+      - "codex-rs/Cargo.lock"
+      - ".github/workflows/codexdd-045-patched-lock-integration-proof.yml"
 
 permissions:
   contents: read

@@ -6,16 +6,16 @@ This packet reconciles eight previously unchanged 0.4.4 TUI protected test sourc
 
 ## Exact source changes
 
-| Path (under `codex-rs/tui/src/`) | New upstream regression or fixture | Original CodexDD fork protection retained |
-|---|---|---|
-| `app/owned_transcript_tests.rs` | Footer selection ignores warning click during modal and preserves the draft | Adaptive state field on thread fixture |
-| `app/tests/disconnect_tests.rs` | Disconnected config panel preserves user input | New-session Worker binding, explicit `None` |
-| `app/tests/navigation_reconnect_tests.rs` | Reconnect presentation follows current app state | Fork's non-async event channel send |
-| `app/tests/startup.rs` | Unix unattended modal/approval regression and revised test notification | Fork's adaptive startup preset fixture and existing Worker tests |
-| `app_server_session/workspace_roots_tests.rs` | Larger native stack for remote roots scenario | `turn_trigger` parameter in shared thread-start API |
-| `chatwidget/tests/app_server.rs` | Separate startup config warning presentations for managed, unmanaged and embedded sessions | Adaptive model/effort/thread-state restoration regression |
-| `chatwidget/tests/composer_submission.rs` | Plugin mention must not suppress skill mention with same name | Existing adaptive interrupt test and nine adaptive thread state fixture fields |
-| `history_cell/tests.rs` | Legacy zsh migration warning snapshot | Adaptive state field on existing session fixture |
+| Path (under `codex-rs/tui/src/`)              | New upstream regression or fixture                                                         | Original CodexDD fork protection retained                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `app/owned_transcript_tests.rs`               | Footer selection ignores warning click during modal and preserves the draft                | Adaptive state field on thread fixture                                         |
+| `app/tests/disconnect_tests.rs`               | Disconnected config panel preserves user input                                             | New-session Worker binding, explicit `None`                                    |
+| `app/tests/navigation_reconnect_tests.rs`     | Reconnect presentation follows current app state                                           | Fork's non-async event channel send                                            |
+| `app/tests/startup.rs`                        | Unix unattended modal/approval regression and revised test notification                    | Fork's adaptive startup preset fixture and existing Worker tests               |
+| `app_server_session/workspace_roots_tests.rs` | Larger native stack for remote roots scenario                                              | `turn_trigger` parameter in shared thread-start API                            |
+| `chatwidget/tests/app_server.rs`              | Separate startup config warning presentations for managed, unmanaged and embedded sessions | Adaptive model/effort/thread-state restoration regression                      |
+| `chatwidget/tests/composer_submission.rs`     | Plugin mention must not suppress skill mention with same name                              | Existing adaptive interrupt test and nine adaptive thread state fixture fields |
+| `history_cell/tests.rs`                       | Legacy zsh migration warning snapshot                                                      | Adaptive state field on existing session fixture                               |
 
 Three exact official 0.163 snapshot fixtures are staged with their tests: `legacy_zsh_migration_notice_snapshot`, `fullscreen_footer_selection`, and `startup_config_warning_panel`. These prevent missing-snapshot false failures. Existing fork-specific snapshots are not overwritten.
 

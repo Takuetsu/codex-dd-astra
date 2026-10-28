@@ -3,7 +3,7 @@ name: CodexDD 0.4.5 109 overlap current-source inventory (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: ['.github/workflows/codexdd-045-109-overlap-current-receipt.yml']
+    paths: [".github/workflows/codexdd-045-109-overlap-current-receipt.yml"]
 permissions:
   contents: read
 jobs:

@@ -8,7 +8,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-advisory-decision-preview.yml'
+      - ".github/workflows/codexdd-045-advisory-decision-preview.yml"
 
 permissions:
   contents: read

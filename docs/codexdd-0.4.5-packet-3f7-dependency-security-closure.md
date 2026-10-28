@@ -6,11 +6,11 @@ Branch: `dd/codexdd-v0.4.5-dependency-security-remediation`, based on draft PR #
 
 ## Remediation staged
 
-| Security notice | Old graph | Staged graph | Exact evidence |
-| --- | --- | --- | --- |
-| RUSTSEC-2026-0391, Zstd abandoned-stream reuse | zstd 0.13.3 | zstd 0.14.3 | Green disposable Cargo resolver run [40524515029](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40524515029); exact generated lock blob `7af0b0f1d1e6f750d3bab7a81f21a05bf084de3d` |
-| RUSTSEC-2026-0398, -0403 and related zstd-safe findings | zstd-safe 7.2.4 | zstd-safe 8.2.0 | Same exact Cargo-generated resolver output; no other crate version changed |
-| RUSTSEC-2026-0385, ctutils timing leaks | ctutils 0.4.2 | ctutils 0.4.4 | Exact checksum from earlier green disposable ctutils resolver blob `72a72ebcf5f69d47a6bf195f43c93405290db7cd` |
+| Security notice                                         | Old graph       | Staged graph    | Exact evidence                                                                                                                                                                               |
+| ------------------------------------------------------- | --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RUSTSEC-2026-0391, Zstd abandoned-stream reuse          | zstd 0.13.3     | zstd 0.14.3     | Green disposable Cargo resolver run [40524515029](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40524515029); exact generated lock blob `7af0b0f1d1e6f750d3bab7a81f21a05bf084de3d` |
+| RUSTSEC-2026-0398, -0403 and related zstd-safe findings | zstd-safe 7.2.4 | zstd-safe 8.2.0 | Same exact Cargo-generated resolver output; no other crate version changed                                                                                                                   |
+| RUSTSEC-2026-0385, ctutils timing leaks                 | ctutils 0.4.2   | ctutils 0.4.4   | Exact checksum from earlier green disposable ctutils resolver blob `72a72ebcf5f69d47a6bf195f43c93405290db7cd`                                                                                |
 
 Combined staged Cargo.lock Git blob: `8be43898f94d59f403f8e03d9d4b5361e492f086`; manifest Git blob: `0eb50f54cfbc192e149bd90960878c27bf211a42`. Current native Windows compile/regressions and the combined all-target cargo-deny verdict have **not** been executed on this combined graph. Prior green feasibility proves compatible Cargo resolution, not native correctness. Keep the integration PR draft.
 

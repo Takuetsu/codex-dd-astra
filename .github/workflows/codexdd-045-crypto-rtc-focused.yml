@@ -3,7 +3,7 @@ name: CodexDD 0.4.5 combined WebRTC 0.21 voice focused (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-crypto-integrated-staging]
-    paths: ['.github/workflows/codexdd-045-crypto-rtc-focused.yml']
+    paths: [".github/workflows/codexdd-045-crypto-rtc-focused.yml"]
 permissions:
   contents: read
 jobs:
@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      CARGO_BUILD_JOBS: '4'
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "4"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - name: Checkout exact nonrelease combined crypto commit
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

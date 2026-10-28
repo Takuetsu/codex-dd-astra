@@ -1,7 +1,6 @@
 # CodexDD 0.4.5 — Packet 3F.8: inherited maintenance closure and decision review
 
-> **Current 2026-10-27 disposition:** The owner approved the *three Linux-only* INFO risk exceptions (0371, 0370, 0372) recorded in Packet 3F.9; this document's earlier Path B pending language is historical. The basic-toml 0374 finding is being removed via the pinned parser candidate and is NOT excepted. crypto-bigint remains a release blocker.
-
+> **Current 2026-10-27 disposition:** The owner approved the _three Linux-only_ INFO risk exceptions (0371, 0370, 0372) recorded in Packet 3F.9; this document's earlier Path B pending language is historical. The basic-toml 0374 finding is being removed via the pinned parser candidate and is NOT excepted. crypto-bigint remains a release blocker.
 
 **2026-10-27. NONRELEASE; no risk exception is authorized.**
 
@@ -9,12 +8,12 @@ This packet follows the staged Zstd/ctutils exact-lock changes on `dd/codexdd-v0
 
 ## Individual findings — informational maintenance only
 
-| RustSec | Crate and locked version | Target and role evidence | Preferred remedy | Acceptance |
-| --- | --- | --- | --- | --- |
-| RUSTSEC-2026-0374 | `basic-toml 0.1.10` | Windows and Linux build-time proc-macro via `age -> i18n-embed-fl -> i18n-config 0.4.8`. Not a linked Windows runtime library; build-time supply-chain exposure remains. | Published i18n-config maintenance release or verified, pinned upstream parser replacement. | OPEN; no waiver. |
-| RUSTSEC-2026-0371 | `zbus_names 3.0.0` | Linux only via zbus 4.4; no Windows target path in prior exact locked graph. | Coordinated migration to zbus 6 `names` with all Linux owners. | OPEN; no waiver. |
-| RUSTSEC-2026-0370 | `zvariant 4.2.0` | Linux only via zbus 4.4. | zbus 6 built-in types and wire codec. | OPEN; no waiver. |
-| RUSTSEC-2026-0372 | `zvariant_derive 4.2.0` | Linux only via zvariant 4.2; proc macro. | zbus 6 derive types; migrate with Linux parent. | OPEN; no waiver. |
+| RustSec           | Crate and locked version | Target and role evidence                                                                                                                                                 | Preferred remedy                                                                           | Acceptance       |
+| ----------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------- |
+| RUSTSEC-2026-0374 | `basic-toml 0.1.10`      | Windows and Linux build-time proc-macro via `age -> i18n-embed-fl -> i18n-config 0.4.8`. Not a linked Windows runtime library; build-time supply-chain exposure remains. | Published i18n-config maintenance release or verified, pinned upstream parser replacement. | OPEN; no waiver. |
+| RUSTSEC-2026-0371 | `zbus_names 3.0.0`       | Linux only via zbus 4.4; no Windows target path in prior exact locked graph.                                                                                             | Coordinated migration to zbus 6 `names` with all Linux owners.                             | OPEN; no waiver. |
+| RUSTSEC-2026-0370 | `zvariant 4.2.0`         | Linux only via zbus 4.4.                                                                                                                                                 | zbus 6 built-in types and wire codec.                                                      | OPEN; no waiver. |
+| RUSTSEC-2026-0372 | `zvariant_derive 4.2.0`  | Linux only via zvariant 4.2; proc macro.                                                                                                                                 | zbus 6 derive types; migrate with Linux parent.                                            | OPEN; no waiver. |
 
 RustSec reports **INFO/unmaintained**, **no patched versions**, for each. Do not mistake an unmaintained notice for proof of exploitation, but do not ignore supply-chain implications.
 
@@ -25,6 +24,7 @@ RustSec reports **INFO/unmaintained**, **no patched versions**, for each. Do not
 - On Linux, `codex-tui` declares `zbus 4.4.0` directly and `codex-keyring-store` declares `secret-service 4` and `keyring 3.6` with a Linux Secret Service backend. Published `secret-service 5.2.0` still requires **zbus 5**, and published `keyring 4.2.0` uses `zbus-secret-service-keyring-store 1.0.1`, itself requiring **zbus 5**. Updating CodexDD's one direct zbus reference to 6 **does not** remove all three notices, and may break Linux ABI/API compatibility. The migration requires several coordinated upstream owners, not a safe lock-only update.
 
 Official sources:
+
 - https://rustsec.org/advisories/RUSTSEC-2026-0374.html
 - https://rustsec.org/advisories/RUSTSEC-2026-0371.html
 - https://rustsec.org/advisories/RUSTSEC-2026-0370.html
@@ -38,7 +38,7 @@ Official sources:
 
 **Path B: four explicitly named INFO risk dispositions.** Requires **affirmative** owner authorization and security-review record **for each specific ID**. Current proposed expiry is **November 20, 2026, or the next CodexDD upstream integration, whichever occurs first**. Trigger earlier review if a RustSec severity/category changes, a real vulnerability is published affecting the crate, a Windows runtime dependency becomes reachable, a supported replacement ships, a build-tool dependency changes materially, or production target scope widens. The scope is only the four IDs above; new vulnerabilities (including crypto-bigint RUSTSEC-2026-0387) remain nonwaivable blockers.
 
-For Path B, the release gate must explicitly distinguish `all-target cargo-deny without exceptions = RED` from `all-target cargo-deny with four owner-approved, recorded INFO exceptions = accepted-risk only`. Never call the latter *advisory-free*. Do not set a broad `unmaintained = allow`, target-prune Linux, blanket-ignore, or weaken unrelated checks.
+For Path B, the release gate must explicitly distinguish `all-target cargo-deny without exceptions = RED` from `all-target cargo-deny with four owner-approved, recorded INFO exceptions = accepted-risk only`. Never call the latter _advisory-free_. Do not set a broad `unmaintained = allow`, target-prune Linux, blanket-ignore, or weaken unrelated checks.
 
 **Status:** Neither path has yet closed. Do not modify `deny.toml` or add exceptions without owner authorization, promote draft PR #54, run the detached 21-stage Daniel-CL release suite, or install 0.4.5. The independent Windows-reachable `crypto-bigint 0.5.5` security blocker also remains open.
 

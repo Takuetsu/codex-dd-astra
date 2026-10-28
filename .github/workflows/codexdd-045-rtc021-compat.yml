@@ -4,7 +4,7 @@ name: CodexDD 0.4.5 WebRTC 0.21 voice compatibility (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-rtc021-owner-compat]
-    paths: ['.github/workflows/codexdd-045-rtc021-compat.yml']
+    paths: [".github/workflows/codexdd-045-rtc021-compat.yml"]
 permissions:
   contents: read
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - name: Check out exact tested source candidate without credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

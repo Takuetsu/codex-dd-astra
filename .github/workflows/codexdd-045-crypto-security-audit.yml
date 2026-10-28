@@ -3,7 +3,7 @@ name: CodexDD 0.4.5 integrated crypto original cargo-deny (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-crypto-integrated-staging]
-    paths: ['.github/workflows/codexdd-045-crypto-security-audit.yml']
+    paths: [".github/workflows/codexdd-045-crypto-security-audit.yml"]
 permissions:
   contents: read
 jobs:

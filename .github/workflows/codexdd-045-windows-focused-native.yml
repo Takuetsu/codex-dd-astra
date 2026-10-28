@@ -7,14 +7,14 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-windows-focused-native.yml'
-      - 'codex-rs/tui/src/app/tests.rs'
-      - 'codex-rs/tui/src/app/startup.rs'
-      - 'codex-rs/tui/src/app/tests/session_lifecycle_requests.rs'
-      - 'codex-rs/tui/src/app/tests/startup_defaults_tests.rs'
-      - 'codex-rs/tui/src/app_server_session/workspace_roots_tests.rs'
-      - 'codex-rs/tui/src/chatwidget/interaction.rs'
-      - 'codex-rs/tui/src/lib.rs'
+      - ".github/workflows/codexdd-045-windows-focused-native.yml"
+      - "codex-rs/tui/src/app/tests.rs"
+      - "codex-rs/tui/src/app/startup.rs"
+      - "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"
+      - "codex-rs/tui/src/app/tests/startup_defaults_tests.rs"
+      - "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs"
+      - "codex-rs/tui/src/chatwidget/interaction.rs"
+      - "codex-rs/tui/src/lib.rs"
   workflow_dispatch:
 
 permissions:
@@ -31,12 +31,12 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      CARGO_BUILD_JOBS: '2'
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-      RUST_MIN_STACK: '16777216'
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
     steps:
       - name: Checkout exact integration SHA, no persisted credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

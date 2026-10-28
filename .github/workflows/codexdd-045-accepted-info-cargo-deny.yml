@@ -7,7 +7,7 @@ on:
     branches:
       - dd/codexdd-v0.4.5-linux-info-risk-accepted
     paths:
-      - '.github/workflows/codexdd-045-accepted-info-cargo-deny.yml'
+      - ".github/workflows/codexdd-045-accepted-info-cargo-deny.yml"
 
 permissions:
   contents: read

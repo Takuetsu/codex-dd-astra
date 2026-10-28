@@ -7,8 +7,8 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - 'codex-rs/**'
-      - '.github/workflows/codexdd-045-windows-cargo-check.yml'
+      - "codex-rs/**"
+      - ".github/workflows/codexdd-045-windows-cargo-check.yml"
   workflow_dispatch:
 
 permissions:
@@ -25,11 +25,11 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_BUILD_JOBS: '2'
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-      RUST_MIN_STACK: '16777216'
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
     steps:
       - name: Checkout exact integration commit without saved credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

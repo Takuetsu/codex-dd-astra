@@ -7,12 +7,12 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-dependency-audit.yml'
-      - '.github/workflows/cargo-deny.yml'
-      - 'codex-rs/Cargo.lock'
-      - 'codex-rs/Cargo.toml'
-      - 'codex-rs/**/Cargo.toml'
-      - 'codex-rs/deny.toml'
+      - ".github/workflows/codexdd-045-dependency-audit.yml"
+      - ".github/workflows/cargo-deny.yml"
+      - "codex-rs/Cargo.lock"
+      - "codex-rs/Cargo.toml"
+      - "codex-rs/**/Cargo.toml"
+      - "codex-rs/deny.toml"
   workflow_dispatch:
 
 permissions:

@@ -7,17 +7,17 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-windows-cli-optimized-preflight.yml'
-      - 'patches/zstd-sys_windows_msvc_include_dirs.patch'
-      - 'defs.bzl'
-      - 'codex-rs/skills/BUILD.bazel'
-      - 'codex-rs/core-plugins/BUILD.bazel'
-      - 'codex-rs/ext/skills/BUILD.bazel'
-      - 'codex-rs/external-agent-migration/BUILD.bazel'
-      - 'codex-rs/skills/Cargo.toml'
-      - 'codex-rs/core-plugins/Cargo.toml'
-      - 'codex-rs/ext/skills/Cargo.toml'
-      - 'codex-rs/external-agent-migration/Cargo.toml'
+      - ".github/workflows/codexdd-045-windows-cli-optimized-preflight.yml"
+      - "patches/zstd-sys_windows_msvc_include_dirs.patch"
+      - "defs.bzl"
+      - "codex-rs/skills/BUILD.bazel"
+      - "codex-rs/core-plugins/BUILD.bazel"
+      - "codex-rs/ext/skills/BUILD.bazel"
+      - "codex-rs/external-agent-migration/BUILD.bazel"
+      - "codex-rs/skills/Cargo.toml"
+      - "codex-rs/core-plugins/Cargo.toml"
+      - "codex-rs/ext/skills/Cargo.toml"
+      - "codex-rs/external-agent-migration/Cargo.toml"
 
 permissions:
   contents: read

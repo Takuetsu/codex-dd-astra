@@ -4,7 +4,7 @@ name: CodexDD 0.4.5 109 overlap core TUI exact crypto native (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: ['.github/workflows/codexdd-045-109-core-tui-native.yml']
+    paths: [".github/workflows/codexdd-045-109-core-tui-native.yml"]
 permissions:
   contents: read
 jobs:
@@ -13,12 +13,12 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 100
     env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      CARGO_BUILD_JOBS: '2'
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-      RUST_MIN_STACK: '16777216'
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
     steps:
       - name: Checkout exact reviewed source without persisted credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

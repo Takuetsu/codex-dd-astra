@@ -13,19 +13,20 @@
 
 **Seven purely mechanical formatter transformations independently verified.** Each historical `before_blob` was fetched by immutable Git SHA and each current file by its exact source branch, with all recorded edits applied in order and all expected replacement sites unique; full reconstructed output compared byte-for-byte with current source and Git blob IDs. **7/7 files, 12/12 recorded replacement hunks exact**:
 
-| Path | Current reviewed blob | Reconstruction edits |
-| --- | --- | ---: |
-| `codex-rs/rollout/src/search.rs` | `d222871cab7b8e55dcd1dec8faef7e9cf4918796` | 1 |
-| `codex-rs/tui/src/app/startup.rs` | `3b111def463e2f52b4786b7a6db8c6e3aa7954f7` | 1 |
-| `codex-rs/tui/src/app/tests.rs` | `03febfb8e58c93e975f1f240195576a0f1080e08` | 2 |
-| `codex-rs/tui/src/app.rs` | `7d9da0b198cfac44c0c06933c622b7c1515a613b` | 1 |
-| `codex-rs/tui/src/app_event.rs` | `5f43579e23f87a94786ae9803df8dba40060a84e` | 1 |
-| `codex-rs/tui/src/chatwidget/settings.rs` | `bb747507416e7712fe4ff5832446783c0127994e` | 2 |
-| `codex-rs/tui/src/chatwidget/tests/slash_commands.rs` | `bec8d92caae4cdff17b7f06923bd4cd9ee358a52` | 4 |
+| Path                                                  | Current reviewed blob                      | Reconstruction edits |
+| ----------------------------------------------------- | ------------------------------------------ | -------------------: |
+| `codex-rs/rollout/src/search.rs`                      | `d222871cab7b8e55dcd1dec8faef7e9cf4918796` |                    1 |
+| `codex-rs/tui/src/app/startup.rs`                     | `3b111def463e2f52b4786b7a6db8c6e3aa7954f7` |                    1 |
+| `codex-rs/tui/src/app/tests.rs`                       | `03febfb8e58c93e975f1f240195576a0f1080e08` |                    2 |
+| `codex-rs/tui/src/app.rs`                             | `7d9da0b198cfac44c0c06933c622b7c1515a613b` |                    1 |
+| `codex-rs/tui/src/app_event.rs`                       | `5f43579e23f87a94786ae9803df8dba40060a84e` |                    1 |
+| `codex-rs/tui/src/chatwidget/settings.rs`             | `bb747507416e7712fe4ff5832446783c0127994e` |                    2 |
+| `codex-rs/tui/src/chatwidget/tests/slash_commands.rs` | `bec8d92caae4cdff17b7f06923bd4cd9ee358a52` |                    4 |
 
 Source for exact old/new transformation receipts: `docs/upstream-candidates/codexdd-045-format-followup.json`, formatter job `121909294810`. The two additional formatted files `core/src/tools/registry_tests.rs` and `core-plugins/src/startup_sync_tests.rs` were not part of the 109 original overlaps; they remain covered by the original nine-file reconstruction test. **Do not infer runtime security acceptance solely from formatter provenance.**
 
 **Two approved dependency changes from #1**:
+
 - `codex-rs/Cargo.toml` — current blob `cfebd9b784ef9ff027b274aa9f7101c9c2496613`.
 - `codex-rs/Cargo.lock` — Cargo-generated, current blob `13bc15ff844e93dfaf7777c73bb7313b35bb3b81`.
 - Original all-target `cargo-deny` [#40577886527](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40577886527) **PASS**; complete protected crypto/voice owner graph and static regression evidence are documented in `docs/codexdd-0.4.5-packet-3f10-crypto-owner-closure.md`. A passing source/graph audit does **not** prove every runtime integration across all 109 paths.
@@ -46,11 +47,11 @@ The [actual 109-overlap inventory artifact #40580764913](https://github.com/Taku
 - **1/15 TUI startup source** (`codex-rs/tui/src/app/startup.rs`) changed only from recorded formatter blob `29065c6c0c90c010a53bf065c95278312712a90e` to `3b111def463e2f52b4786b7a6db8c6e3aa7954f7`; that unique source edit was reconstructed exactly from the 3F.6 formatter receipt, with no other byte changes.
 - **1/15 dependency lock** (`codex-rs/Cargo.lock`) changed to the secure, Cargo-generated `13bc15ff844e93dfaf7777c73bb7313b35bb3b81` as part of completed focused crypto remediation; the unchanged original cargo-deny and exact Windows native tests are green. This is intentional functional dependency migration, **not** a format-only edit.
 
-**Therefore: 15/15 original direct conflicts have current source provenance reconciled.** This resolves *source drift accounting only*, not path-by-path semantic acceptance or native Bazel/schema/release signoff. No historical `NOT_ACCEPTED` release gate has been removed or bypassed.
+**Therefore: 15/15 original direct conflicts have current source provenance reconciled.** This resolves _source drift accounting only_, not path-by-path semantic acceptance or native Bazel/schema/release signoff. No historical `NOT_ACCEPTED` release gate has been removed or bypassed.
 
 ## Remaining semantic review contract for 109 paths
 
-- 100 unchanged historical reviewed identities still need explicit *owner behavior* classification, not another blob identity acceptance claim. Prior targeted source/runtime tests can be cited only within their historical SHA and precise behavior boundaries.
+- 100 unchanged historical reviewed identities still need explicit _owner behavior_ classification, not another blob identity acceptance claim. Prior targeted source/runtime tests can be cited only within their historical SHA and precise behavior boundaries.
 - Review by safety-critical owner: **core authority and history**, **TUI adaptive/Worker/daemon**, **app-server/protocol + generated SDKs**, **rollout/state/memory**, and **Windows/Bazel packaging**. Preserve both upstream 0.163 changes and CodexDD fail-closed authorization for every touched contract; run only the affected focused regressions before expensive release-wide work.
 - Original 15 merge-conflict ledger remains a separate review/signoff set; do not replace it with the historical 0.4.3 conflict roster of 22 or claim 15/15 semantics accepted from one static report.
 - Final release acceptance still requires frozen-source Windows native security and behavioral checks, schema drift, Bazel packaging, detached Daniel-CL 21-stage suite, release CI and explicit approval. No auto-publish or installed change here.

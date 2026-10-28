@@ -7,13 +7,13 @@ on:
     branches:
       - dd/codexdd-v0.4.5-upstream-0.163.0-integration
     paths:
-      - '.github/workflows/codexdd-045-windows-core-authority.yml'
-      - 'codex-rs/core/src/client_tests.rs'
-      - 'codex-rs/core/src/session/rollout_reconstruction_tests.rs'
-      - 'codex-rs/core/src/session/step_activation.rs'
-      - 'codex-rs/core/src/session/step_activation_tests.rs'
-      - 'codex-rs/Cargo.toml'
-      - 'codex-rs/Cargo.lock'
+      - ".github/workflows/codexdd-045-windows-core-authority.yml"
+      - "codex-rs/core/src/client_tests.rs"
+      - "codex-rs/core/src/session/rollout_reconstruction_tests.rs"
+      - "codex-rs/core/src/session/step_activation.rs"
+      - "codex-rs/core/src/session/step_activation_tests.rs"
+      - "codex-rs/Cargo.toml"
+      - "codex-rs/Cargo.lock"
   workflow_dispatch:
 
 permissions:
@@ -30,12 +30,12 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      CARGO_BUILD_JOBS: '2'
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-      RUST_MIN_STACK: '16777216'
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
     steps:
       - name: Checkout exact integration SHA without stored credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

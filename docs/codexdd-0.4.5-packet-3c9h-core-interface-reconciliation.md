@@ -9,6 +9,7 @@ Date: 2026-10-19
 The GitHub Actions read-only compile for commit `76734b65a6c5ee4cff92cc7542e51658653c7161` at run [39291001441](https://github.com/Takuetsu/codex-dd-astra/actions/runs/39291001441) failed in `codex-core` with **36 compiler errors**. The job printed only the final 180 log lines, exposing 10 error headings. Its full diagnostic artifact was retained by the GitHub runner.
 
 Visible failures concerned stale:
+
 - `GuardianReviewSessionOutcome::StaleAuthorization` and `ReviewerTurn::cyber_access_program`;
 - plugin-policy-aware `McpServerContributor::selected_plugins(context, plugins_config)`;
 - MCP `PreparedMcpCall::augment_sandbox_metadata`, `McpConfig.plugins` and `McpConfig.codex_self_exe`;

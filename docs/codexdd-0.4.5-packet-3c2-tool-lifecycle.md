@@ -6,11 +6,11 @@
 
 ## Reviewed three-way identities
 
-| File | Tracked official 0.162.0 | CodexDD 0.4.4 | Official 0.163.0 | Merged or retained Git blob |
-| --- | --- | --- | --- | --- |
-| `codex-rs/core/src/tools/handlers/dynamic.rs` | `f658d6742b158fbc5abbf6a8e1a78dba890466e1` | `4f039ad37bf9dbd49c585dd5a98e859777fbb1c6` | `9e78325058546a3924b12fa8c9de938d6421fbcf` | `05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1` |
-| `codex-rs/core/src/tools/mod.rs` | `41ed0189b8bfd80d938a16073b2af5c40b18d2f9` | `4ddea6c560bbc0ff39c47abe2b4535169a4813ba` | `501ce5fe4eb8395ae84f8b7a1b7f14b530a22e5e` | `2a05e28de35348b79e02d80e4bdd8c3381b88279` |
-| `codex-rs/core/src/tools/handlers/dynamic_tests.rs` (new upstream source) | absent | absent | `2d926b321d0347ebc051c5604244e21dee390cb3` | **exact official blob, unchanged** |
+| File                                                                      | Tracked official 0.162.0                   | CodexDD 0.4.4                              | Official 0.163.0                           | Merged or retained Git blob                |
+| ------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| `codex-rs/core/src/tools/handlers/dynamic.rs`                             | `f658d6742b158fbc5abbf6a8e1a78dba890466e1` | `4f039ad37bf9dbd49c585dd5a98e859777fbb1c6` | `9e78325058546a3924b12fa8c9de938d6421fbcf` | `05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1` |
+| `codex-rs/core/src/tools/mod.rs`                                          | `41ed0189b8bfd80d938a16073b2af5c40b18d2f9` | `4ddea6c560bbc0ff39c47abe2b4535169a4813ba` | `501ce5fe4eb8395ae84f8b7a1b7f14b530a22e5e` | `2a05e28de35348b79e02d80e4bdd8c3381b88279` |
+| `codex-rs/core/src/tools/handlers/dynamic_tests.rs` (new upstream source) | absent                                     | absent                                     | `2d926b321d0347ebc051c5604244e21dee390cb3` | **exact official blob, unchanged**         |
 
 ## Semantics preserved
 

@@ -5,6 +5,7 @@
 ## Why this packet exists
 
 The pinned official rust-v0.163.0 cherry-pick replay (GitHub run 39613477624) yielded fifteen original direct conflicts, six in TUI:
+
 - `codex-rs/tui/src/app/startup.rs` (integrated blob `29065c6c0c90c010a53bf065c95278312712a90e`)
 - `codex-rs/tui/src/app/tests/session_lifecycle_requests.rs` (integrated blob `994d54b631493b3d0784e836c544c57a275e9985`)
 - `codex-rs/tui/src/app/tests/startup_defaults_tests.rs` (integrated blob `e60808df0448682d47af1a14b5bd8d5c52206397`)

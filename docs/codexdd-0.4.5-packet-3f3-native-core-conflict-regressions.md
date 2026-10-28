@@ -18,7 +18,7 @@
 
 ## What completion would and would not prove
 
-A green Windows native job would specifically improve the **core history/registry original conflict** behavioral evidence, including a malicious PreToolUse hook rewrite which must be rejected *after* the hook; it does not assert that the protected TUI, package build, or all-target security gate is release green. The four inherited INFO/unmaintained RustSec advisories still require remediation or explicit owner-reviewed expiry before 0.4.5 release acceptance. Do not weaken `deny.toml`, auto-publish, edit product markers or invoke the long native release suite in this packet.
+A green Windows native job would specifically improve the **core history/registry original conflict** behavioral evidence, including a malicious PreToolUse hook rewrite which must be rejected _after_ the hook; it does not assert that the protected TUI, package build, or all-target security gate is release green. The four inherited INFO/unmaintained RustSec advisories still require remediation or explicit owner-reviewed expiry before 0.4.5 release acceptance. Do not weaken `deny.toml`, auto-publish, edit product markers or invoke the long native release suite in this packet.
 
 ## Focused native Windows closeout — October 21, 2026
 
