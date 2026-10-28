@@ -48,7 +48,7 @@ def _hash_member(stream, size: int, name: str) -> tuple[str, bytes]:
 
 
 def inspect_archive(path: Path) -> dict:
-    if not path.is_file() or path.stat().st_size < 1024:
+    if not path.is_file() or path.stat().st_size < 64:
         raise ArchiveValidationError("Missing or empty combined release archive")
     if path.suffixes[-2:] != [".tar", ".gz"]:
         raise ArchiveValidationError("Expected a .tar.gz combined archive")
