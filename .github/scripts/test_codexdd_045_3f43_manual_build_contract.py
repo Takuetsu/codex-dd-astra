@@ -47,7 +47,7 @@ class WindowsStagingSafety(unittest.TestCase):
             "--disk_cache=D:/_bazel-disk", "--config=release",
             "--@rules_rust//rust/settings:lto=thin",
             "BAZEL_ACTION_PATH_SHA256", "ExpectedPathSha",
-            "codex.exe","codex.pdb","runtime_package_combined.tar.gz",
+            "codex.exe","codex.pdb",r"runtime_package_combined\.tar\.gz",
             "codexdd_045_verify_windows_archive.py",
             "release_approved=$false",
         ):
