@@ -1,0 +1,28 @@
+# Source only: no Bazel invocation, Windows runner or release artifact produced.
+name: CodexDD 0.4.5 Windows combined package inventory source audit (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f41a-windows-package-source-audit.yml"]
+permissions:
+  contents: read
+jobs:
+  packaging-inventory:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '509b6b306d86773bb3e4ada4cd62b16f052345ba'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable source with no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check target manifest PDB rules and 109-owner nonrelease boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '509b6b306d86773bb3e4ada4cd62b16f052345ba'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f41a_windows_package_inventory.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          test -z "$(git status --porcelain)"

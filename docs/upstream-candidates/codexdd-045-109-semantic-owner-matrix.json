@@ -628,7 +628,14 @@
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "native_evidence_3f40b": {
+        "run_id": 40765870072,
+        "selector_count": 8,
+        "actual_test_cases": 10,
+        "conclusion": "success",
+        "focus": "missing output local+inherited, orphan debug panics, server-side tool search retention"
+      }
     },
     {
       "path": "codex-rs/core/src/context_manager/normalize.rs",
@@ -657,9 +664,12 @@
           "synthesizing aborted output",
           "synthetic_output_id(\"ctco\""
         ],
-        "remaining_gate": "Does not cover all late parent result or history replay cases.",
+        "remaining_gate": "3F.40B Windows core 8 selectors / 10 test cases GREEN. Full history replay under late parent outputs and final 109-owner source-frozen release integration remain pending; do not adopt upstream missing-output debug panic.",
         "semantic_signoff": "NOT_GRANTED",
-        "next_focus": "3F.40 native local/inherited custom tool and local shell output synthesis, orphan-output debug panic and server-side tool-search-output retention"
+        "next_focus": "3F.40 native local/inherited custom tool and local shell output synthesis, orphan-output debug panic and server-side tool-search-output retention",
+        "focused_native_run_3f40b": 40765870072,
+        "focused_native_result": "EIGHT_CORE_SELECTORS_PASS_TEN_ACTUAL_TEST_CASES",
+        "native_scope": "local/inherited custom tool and local shell aborted output; tool search synthesis, 3 debug orphan panic cases, server tool search retention and resumed history recovery"
       }
     },
     {

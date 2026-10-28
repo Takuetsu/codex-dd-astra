@@ -15,3 +15,7 @@ The job uses the current exact-source 0.4.5 review branch with unchanged `normal
 8. `resumed_history_recovers_orphan_custom_tool_call_without_panicking`
 
 Selectors 1 and 2 each run **two local/inherited variants**; the others verify tool search synthesis/retention, three expected debug `should_panic` cases for invalid orphaned results, and resumed custom tool recovery. This gate is bounded to 60 minutes and continues through all selectors to report every failure. A green result would not sign off 109 owners, prove release-profile replay/optimized CLI/PDB, or replace the final 21-stage Daniel-CL test suite. No runtime code, dependency source, installer, release marker or production installation changes. CodexDD 0.4.4 remains installed.
+
+## Verified native result — 2026-10-28
+
+[3F.40B Windows run #40765870072](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40765870072) is **GREEN** on the immutable candidate `509b6b306d86773bb3e4ada4cd62b16f052345ba`. The 8 selected `codex-core --locked --lib` test filters executed **10 native Rust test cases total**: 2 local/inherited CustomToolCall variants, 2 local/inherited LocalShellCall variants, and six singleton tests (tool search synthesis, 3 expected debug orphan panics, server-side orphan search retention and resumed-history recovery). All passed; no skips or exclusions were reported by the focused run. Cargo locked resolver and secured source identity preflights passed. This is focused native evidence, **not 109-owner final signoff** or optimized release readiness.
