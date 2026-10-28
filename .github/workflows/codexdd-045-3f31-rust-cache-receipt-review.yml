@@ -9,12 +9,11 @@ permissions:
   actions: read
 jobs:
   recheck-native-evidence:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '375713dba8f8aa77073f41d4eaff14ef8a5f6470'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e2f2a2f8a14bb59339a169f46c020d758f5bdf96'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
       GH_TOKEN: ${{ github.token }}
-      CODEXDD_3F31_EVIDENCE: ${{ runner.temp }}/codexdd045-3f31
     steps:
       - name: Checkout latest receipt verifier without stored credentials
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -25,7 +24,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '375713dba8f8aa77073f41d4eaff14ef8a5f6470'
+          export CODEXDD_3F31_EVIDENCE="$RUNNER_TEMP/codexdd045-3f31"
+          test "$(git rev-parse HEAD^)" = 'e2f2a2f8a14bb59339a169f46c020d758f5bdf96'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
