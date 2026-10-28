@@ -1,0 +1,10 @@
+# CodexDD 0.4.5 — Packet 3F.39: source-frozen Windows retest after two test-policy reconciliations
+
+**NONRELEASE; no production runtime implementation changes.** The 3F.37 [Windows run #40754050953](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40754050953) compiled `codex-tui` successfully, passed protected Cargo/deny pins, ran all eight targeted native tests, and returned 6 PASS / 2 FAIL:
+
+- `reconnect_allows_slow_hydration_but_bounds_a_stalled_server` was written for local-source CLI v0.0.0 while sending actual 0.163.0 to version-warning policy. Actual suppression of a warning about newer server v2.0.0 was correct. New test-only input explicitly uses `/*client_version*/ "0.0.0"` and keeps expected full snapshot byte-identical.
+- `daybreak_command_persists_and_confirms_each_selection` imported upstream's `Some("standard")` on an API-key turn with Daybreak disabled, but the fork intentionally omits cyberAccessProgram in that case. Changed test expectation to `None` while preserving all five feature combinations and mandatory gates for enabled Daybreak.
+
+[3F.38 source-only audit #40760224553](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40760224553) **GREEN**: both tests' exact Git blob inverses, previous 3F.25/34/36 source reconciliation and 109-path owner matrix passed. The 3F.39 workflow pins the two latest test source blobs, all existing crypto/dependency sources, unchanged TUI startup production code and original version-warning snapshot. Runs the same eight selectors as 3F.37 against a Windows-2022 Rust 1.95.0 test binary, continuing after failures to collect all selector results. Time ceiling 60 minutes. No full optimized thin-LTO CLI/installer or 21-stage release suite.
+
+**Scope of potential green:** only eight focused Windows startup, reconnect, daemon, Daybreak, dynamic auth and legacy external server/session cases. Does not establish real WSL clipboard or daemon exit end-to-end coverage, 109 semantic-owner signoff, complete optimized CLI/PDB and combined release archive, or final 21-stage Daniel-CL acceptance. PR #58 remains draft and CodexDD 0.4.4 remains installed.
