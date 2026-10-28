@@ -1,0 +1,49 @@
+# One-shot read-only audit of real prior Windows Rust receipts. NO native build.
+name: CodexDD 0.4.5 real optimized Rust cache receipts recheck (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f31-rust-cache-receipt-review.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  recheck-native-evidence:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '375713dba8f8aa77073f41d4eaff14ef8a5f6470'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CODEXDD_3F31_EVIDENCE: ${{ runner.temp }}/codexdd045-3f31
+    steps:
+      - name: Checkout latest receipt verifier without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Download historical exact-source Windows job evidence (no build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '375713dba8f8aa77073f41d4eaff14ef8a5f6470'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          mkdir -p "$CODEXDD_3F31_EVIDENCE"
+          api() {
+            curl --fail --silent --show-error --location --retry 2 \
+              --connect-timeout 15 --max-time 90 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/Takuetsu/codex-dd-astra/$1" \
+              --output "$CODEXDD_3F31_EVIDENCE/$2"
+          }
+          api "actions/runs/40739170655" "run.json"
+          api "actions/jobs/122995762452" "seed.json"
+          api "actions/jobs/122998612039" "restore.json"
+          api "actions/jobs/122995762452/logs" "seed.log"
+          api "actions/jobs/122998612039/logs" "restore.log"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f31_realrust_evidence.py' -v
+          test -z "$(git status --porcelain)"

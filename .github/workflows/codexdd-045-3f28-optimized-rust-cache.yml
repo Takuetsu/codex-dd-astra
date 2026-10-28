@@ -288,10 +288,10 @@ jobs:
           Write-Host ("RUST_OPT_CACHE_SIZE_BYTES={0}; BUILD_SECONDS={1:F1}" -f $size, $watch.Elapsed.TotalSeconds)
           if (git status --porcelain --untracked-files=no) { throw 'Tracked source mutated during optimized Rust build' }
 
-          $hits = @(Select-String -LiteralPath $log -Pattern '(?i)\b[1-9][0-9]*\s+(disk|remote)\s+cache\s+hits?\b')
-          if (-not $hits.Count) { throw 'No explicit optimized Rust library disk cache-hit evidence; full optimized CLI retry NOT authorized' }
+          $hits = @(Select-String -LiteralPath $combined -Pattern '(?i)\b[1-9][0-9]*\s+(disk|remote)\s+cache\s+hits?\b')
+          if (-not $hits.Count) { throw 'Missing Bazel disk-cache process-summary evidence in combined stdout/stderr; optimized CLI retry NOT authorized' }
           $summary = (Select-String -LiteralPath $combined -Pattern 'INFO: [0-9]+ processes:' | Select-Object -Last 1).Line
-          if ($summary -match '\\b[1-9][0-9]* local\\b') { throw "Unexpected local action rebuild on consumer: $summary" }
+          if ($summary -match '(^|,\s*)[1-9][0-9]* local([.,]|$)') { throw "Unexpected local action rebuild on consumer: $summary" }
           Write-Host ("PASS: independent Windows optimized Rust runner verified " + $hits.Count + " cache summary line(s): " + $summary)
           Write-Host 'NONRELEASE: only codex-utils-elapsed real Rust library; no CLI binary or combined archive'
       - name: Upload only restore diagnostics
