@@ -1,0 +1,242 @@
+# One-shot SMALL Windows test of cross-job Bazel action cache before any repeat of 90m optimized build.
+# A green cache probe is NOT optimized release acceptance, and stores no binary artifacts.
+name: CodexDD 0.4.5 Windows Bazel stable PATH cache feasibility (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f27-stable-path-cache-probe.yml"]
+permissions:
+  contents: read
+jobs:
+  seed-cache:
+    outputs:
+      path_sha: ${{ steps.fixture.outputs.path_sha }}
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '86fda094c2c3e59d35e467de170d01ed6a2ddb30'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Source, security and nonrelease marker gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source commit' }
+          if ((git rev-parse HEAD^).Trim() -ne '86fda094c2c3e59d35e467de170d01ed6a2ddb30') { throw 'Unexpected source parent' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker promoted' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker promoted' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'Unexpected EULA override' }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source dirty' }
+
+      - name: Configure source-bound Bazel 9.2.0 and reusable GitHub action cache
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          disk-cache: codexdd045-3f27-stablepath
+          repository-cache: true
+          cache-version: "045-3f27"
+          cache-save: true
+
+      - name: Use preinstalled Windows MSVC tools only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Preinstalled MSVC missing' }
+          $dev = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'Preinstalled developer command missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $values = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to initialize preinstalled MSVC' }
+          foreach ($line in $values) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+      - name: Produce only the tiny synthetic EXE/PDB archive fixture for cache
+        id: fixture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $args = @(
+            '--noexperimental_remote_repo_contents_cache',
+            'build',
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--//codex-rs:runtime_package_build_mode=debug',
+            '--jobs=2',
+            '--verbose_failures',
+            '//bazel/rules/testing/runtime_archive_fixture:fixture_combined'
+          )
+          # MSVC Bazel actions inherit PATH; unrelated hosted Ruby patch versions drift.
+          # Preserve every path other than the unique hosted Ruby directory.
+          $allPaths = @($env:PATH -split ';' | Where-Object { $_ })
+          $rubyPath = @($allPaths | Where-Object { $_ -match '(?i)^[A-Z]:\\hostedtoolcache\\windows\\Ruby\\' })
+          if ($rubyPath.Count -ne 1) { throw "Expected one unrelated Ruby path, found $($rubyPath.Count); fail closed" }
+          $env:PATH = (@($allPaths | Where-Object { $_ -notin $rubyPath }) -join ';')
+          $pathBytes = [System.Text.Encoding]::UTF8.GetBytes($env:PATH)
+          $pathSha = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($pathBytes)).ToLowerInvariant()
+          Write-Host "BAZEL_ACTION_PATH_SHA256=$pathSha"
+          $ver = (& bazel --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $ver -ne 'bazel 9.2.0') { throw "Unexpected Bazel: $ver" }
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-3f27-cache-probe'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $log = Join-Path $dir 'fixture.log'
+          $ErrorActionPreference = 'Continue'
+          & bazel @args *> $log
+          $exit = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path $log)) { throw 'No Bazel build evidence' }
+          Get-Content -LiteralPath $log -Tail 65
+          if ($exit -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'Build completed successfully' -Quiet)) { throw "Fixture failed: $exit" }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source mutated during fixture build' }
+
+          "path_sha=$pathSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host 'PASS: exact source fixture built with normalized PATH; setup-bazel post-step must save disk cache'
+      - name: Upload only cache probe log
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f27-cache-seed-log
+          path: ${{ runner.temp }}/codexdd045-3f27-cache-probe/*.log
+          if-no-files-found: warn
+          retention-days: 4
+
+  restore-cache:
+    needs: seed-cache
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '86fda094c2c3e59d35e467de170d01ed6a2ddb30'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout same exact secured source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Source, security and nonrelease marker gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source commit' }
+          if ((git rev-parse HEAD^).Trim() -ne '86fda094c2c3e59d35e467de170d01ed6a2ddb30') { throw 'Unexpected source parent' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker promoted' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker promoted' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'Unexpected EULA override' }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source dirty' }
+
+      - name: Configure source-bound Bazel 9.2.0 and reusable GitHub action cache
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          disk-cache: codexdd045-3f27-stablepath
+          repository-cache: true
+          cache-version: "045-3f27"
+          cache-save: true
+
+      - name: Use preinstalled Windows MSVC tools only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Preinstalled MSVC missing' }
+          $dev = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'Preinstalled developer command missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $values = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to initialize preinstalled MSVC' }
+          foreach ($line in $values) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+      - name: Rebuild identical fixture from independent runner and demand cache hit
+        shell: pwsh
+        env:
+          EXPECTED_ACTION_PATH_SHA: ${{ needs.seed-cache.outputs.path_sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $args = @(
+            '--noexperimental_remote_repo_contents_cache',
+            'build',
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--//codex-rs:runtime_package_build_mode=debug',
+            '--jobs=2',
+            '--verbose_failures',
+            '//bazel/rules/testing/runtime_archive_fixture:fixture_combined'
+          )
+          # MSVC Bazel actions inherit PATH; unrelated hosted Ruby patch versions drift.
+          # Preserve every path other than the unique hosted Ruby directory.
+          $allPaths = @($env:PATH -split ';' | Where-Object { $_ })
+          $rubyPath = @($allPaths | Where-Object { $_ -match '(?i)^[A-Z]:\\hostedtoolcache\\windows\\Ruby\\' })
+          if ($rubyPath.Count -ne 1) { throw "Expected one unrelated Ruby path, found $($rubyPath.Count); fail closed" }
+          $env:PATH = (@($allPaths | Where-Object { $_ -notin $rubyPath }) -join ';')
+          $pathBytes = [System.Text.Encoding]::UTF8.GetBytes($env:PATH)
+          $pathSha = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($pathBytes)).ToLowerInvariant()
+          Write-Host "BAZEL_ACTION_PATH_SHA256=$pathSha"
+          if (-not $env:EXPECTED_ACTION_PATH_SHA -or $pathSha -ne $env:EXPECTED_ACTION_PATH_SHA) {
+            throw "Action PATH still differs across runners after removing Ruby; cache experiment invalid"
+          }
+          $ver = (& bazel --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $ver -ne 'bazel 9.2.0') { throw "Unexpected Bazel: $ver" }
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-3f27-cache-probe'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $log = Join-Path $dir 'fixture.log'
+          $ErrorActionPreference = 'Continue'
+          & bazel @args *> $log
+          $exit = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path $log)) { throw 'No Bazel build evidence' }
+          Get-Content -LiteralPath $log -Tail 65
+          if ($exit -ne 0 -or -not (Select-String -LiteralPath $log -Pattern 'Build completed successfully' -Quiet)) { throw "Fixture failed: $exit" }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source mutated during fixture build' }
+
+          $hits = @(Select-String -LiteralPath $log -Pattern '(?i)\b[1-9][0-9]*\s+(disk|remote)\s+cache\s+hits?\b')
+          if (-not $hits.Count) { throw 'No explicit cross-run Bazel disk cache-hit evidence; optimized warm retry NOT authorized' }
+          Write-Host ("PASS: independent Windows runner verified " + $hits.Count + " disk cache receipt line(s)")
+          Write-Host 'NONRELEASE: this checks cache feasibility only, not the large optimized Rust binary'
+      - name: Upload only restore diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f27-cache-restore-log
+          path: ${{ runner.temp }}/codexdd045-3f27-cache-probe/*.log
+          if-no-files-found: warn
+          retention-days: 4
