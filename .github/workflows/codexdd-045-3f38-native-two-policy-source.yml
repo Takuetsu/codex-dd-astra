@@ -1,0 +1,31 @@
+# One-shot cheap test-only verification, no Rust compile or policy change.
+name: CodexDD 0.4.5 two failing TUI native selectors source audit (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f38-native-two-policy-source.yml"]
+permissions:
+  contents: read
+jobs:
+  audit:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '7d7f538b424d5f68974120112d0f310d3790877f'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact nonrelease candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Reconstruct two reviewed Git changes, upstream matrix and access policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '7d7f538b424d5f68974120112d0f310d3790877f'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f38_two_native_policy_expectations.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f36_reconnect_notice_fixture.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f34_session_tests.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f25_dynamic_auth_regression.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          test -z "$(git status --porcelain)"

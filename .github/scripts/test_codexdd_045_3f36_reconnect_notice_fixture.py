@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import unittest
 from pathlib import Path
@@ -11,6 +12,7 @@ SRC = "codex-rs/tui/src/app/tests/active_reconnect_tests.rs"
 SNAP = "codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__active_reconnect__unavailable_conversation.snap"
 OLD = "18fbde768d8e88e954c5c266c56cd67fd21d3dec"
 NEW = "3faafe11a166fca1354dfc35ff797384c68838cf"
+LATEST = "fc7a9e1871d511c1453f259b08c903bf21e66b08"
 INSERT = "        // The snapshot intentionally covers an unavailable thread with a server-version notice.\n        // Do not rely on the user's/default show_server_version_notice setting.\n        app.local_settings.tui.show_server_version_notice = true;\n"
 
 
@@ -25,6 +27,13 @@ def oid(b: bytes) -> str:
 class ReconnectSnapshotVersionNoticeFixture(unittest.TestCase):
     def test_single_fixture_edit_and_exact_snapshot_preservation(self):
         current = git("cat-file", "blob", "HEAD:" + SRC)
+        self.assertEqual(oid(current), LATEST)
+        latest = json.loads(
+            (ROOT / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json").read_text(encoding="utf-8")
+        )["edits"][0]
+        before, after = latest["before"].encode(), latest["after"].encode()
+        self.assertEqual(current.count(after), 1)
+        current = current.replace(after, before, 1)
         self.assertEqual(oid(current), NEW)
         extra = INSERT.encode("utf-8")
         self.assertEqual(current.count(extra), 1)
@@ -61,7 +70,7 @@ class ReconnectSnapshotVersionNoticeFixture(unittest.TestCase):
             "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
             "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462",
             "codex-rs/tui/src/app/startup.rs": "e51254ea2f16f2a356670413ae29c9de0d002e9d",
-            "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": "1a99fcac6b070fff957248a5e13ec37910a0e588",
+            "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": "2460017301fa1c57480e1092e7ce69413aa7867e",
         }.items():
             with self.subTest(path=path):
                 self.assertEqual(git("rev-parse", "HEAD:" + path).decode().strip(), expected)

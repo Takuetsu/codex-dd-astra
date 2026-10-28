@@ -1,0 +1,10 @@
+# CodexDD 0.4.5 — 3F.38: reconcile two failed Windows native test contracts
+
+**NONRELEASE; test-only changes.** [3F.37](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40754050953) compiled the actual Windows TUI successfully, ran all 8 native selectors, and recorded 6 PASS / 2 FAIL.
+
+- **Reconnect snapshot:** expected two warning lines comparing service v2.0.0 to a local-source client v0.0.0. Current test passed `CODEX_CLI_VERSION` (0.163.0 release), and stable-version policy correctly omits warnings for **newer** servers. 3F.36 explicitly opted into warning UI but did not resolve the release-versus-local test input. This fix explicitly uses `/*client_version*/ "0.0.0"` only in this snapshot test; actual version policy and original snapshot remain unchanged.
+- **Daybreak/API-key:** the 3F.34 upstream expectation `Some("standard")` for enabled API-key flags but Daybreak off conflicted with intentional CodexDD runtime policy: `daybreak_turn_eligible` returns false for API-key turns while Daybreak is disabled. On 3F.37 Windows, the final program was `None`, while the four other combinations matched expectations. This test now requires `[None, None, None, Some("daybreakBlue"), None]`. The explicit program remains available only when Daybreak and API-key features are enabled; no security relaxation.
+
+Both edits have byte-precise before/after hashes in `docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json`. The 3F.25, 3F.34 and 3F.36 historical guards reverse the new edits before verifying older upstream restore receipts. The 109-path matrix and correction ledger maintain `NOT_ACCEPTED` and `PENDING_OWNER_REVIEW`. No Rust product implementation, crypto policy, dependency sources, installer or release markers changed.
+
+A green source-only audit is prerequisite for the next *single* Windows native run; do not count 3F.37 as green. Remaining release gates include 109-owner signoff, optimized CLI/PDB and combined archive, and 21-stage Daniel-CL final acceptance. Production is 0.4.4.

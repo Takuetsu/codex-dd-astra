@@ -33,6 +33,13 @@ class SessionTestOnlyRestoration(unittest.TestCase):
         self.assertEqual(r["release_status"], "NOT_ACCEPTED")
         self.assertEqual(len(r["edits"]), 7)
         current = git("cat-file", "blob", "HEAD:" + P)
+        latest = json.loads(
+            (ROOT / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json").read_text(encoding="utf-8")
+        )["edits"][1]
+        self.assertEqual(oid(current), latest["after_blob"])
+        before, after = latest["before"].encode(), latest["after"].encode()
+        self.assertEqual(current.count(after), 1)
+        current = current.replace(after, before, 1)
         self.assertEqual(oid(current), r["after_blob"])
         historical = current
         # Reverse the current committed source to its original 3F.25 test blob.
@@ -59,7 +66,7 @@ class SessionTestOnlyRestoration(unittest.TestCase):
             "(true, false, true)",
             "(true, true, true)",
             "(true, true, false)",
-            'vec![None, None, None, Some("daybreakBlue"), Some("standard")]',
+            'vec![None, None, None, Some("daybreakBlue"), None]',
             'expect("account model refresh")',
             "app.chat_widget.on_models_loaded(request_id, Ok(models))",
             "Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false,",
@@ -81,12 +88,12 @@ class SessionTestOnlyRestoration(unittest.TestCase):
         row = next(x for x in m["paths"] if x["path"] == P)
         r = next(x for x in c["paths"] if x["path"] == P)
         self.assertEqual(len(m["paths"]), 109)
-        self.assertEqual(row["current_blob"], "1a99fcac6b070fff957248a5e13ec37910a0e588")
+        self.assertEqual(row["current_blob"], "2460017301fa1c57480e1092e7ce69413aa7867e")
         self.assertEqual(row["semantic_status"], "PENDING_OWNER_REVIEW")
         self.assertEqual(row["release_status"], "NOT_ACCEPTED")
         self.assertEqual(row["session_test_reconciliation"]["semantic_signoff"], "NOT_GRANTED")
         self.assertEqual(r["auth_matrix_restoration_blob"], "c10799047d696edcafd24d994c84f1fd87fd6a26")
-        self.assertEqual(r["after_blob"], "1a99fcac6b070fff957248a5e13ec37910a0e588")
+        self.assertEqual(r["after_blob"], "2460017301fa1c57480e1092e7ce69413aa7867e")
         self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
         self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
 

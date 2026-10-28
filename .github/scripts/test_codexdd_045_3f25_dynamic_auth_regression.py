@@ -37,7 +37,14 @@ class DynamicToolAuthMatrixRestoration(unittest.TestCase):
             (ROOT / "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json").read_text(encoding="utf-8")
         )
         self.assertEqual(followup["before_blob"], receipt["after_blob"])
+        latest = json.loads(
+            (ROOT / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json").read_text(encoding="utf-8")
+        )["edits"][1]
         current = git("cat-file", "blob", "HEAD:" + receipt["path"])
+        self.assertEqual(oid(current), latest["after_blob"])
+        before, after = latest["before"].encode(), latest["after"].encode()
+        self.assertEqual(current.count(after), 1)
+        current = current.replace(after, before, 1)
         self.assertEqual(oid(current), followup["after_blob"])
         subprocess.run(
             ["git", "diff", "--quiet", "HEAD", "--", receipt["path"]],
@@ -63,7 +70,7 @@ class DynamicToolAuthMatrixRestoration(unittest.TestCase):
         self.assertEqual(oid(prior), receipt["after_blob"])
         self.assertEqual(
             git("rev-parse", "HEAD:" + receipt["path"]).decode("ascii").strip(),
-            followup["after_blob"],
+            latest["after_blob"],
         )
 
     def test_upstream_matrix_and_codexdd_adaptive_cases_are_both_present(self):
