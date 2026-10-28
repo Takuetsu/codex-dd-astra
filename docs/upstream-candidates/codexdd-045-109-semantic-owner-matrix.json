@@ -1277,7 +1277,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
+      "current_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
       "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
       "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
       "disposition": "reviewed_upstream_dynamic_auth_test_restoration",
@@ -1292,7 +1292,10 @@
         "receipt": "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json",
         "previous_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
         "scope": "Five API-key Daybreak/feature cases and graceful mock WS shutdown, test harness only; native selector still pending",
-        "semantic_signoff": "NOT_GRANTED"
+        "semantic_signoff": "NOT_GRANTED",
+        "followup_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+        "followup_receipt": "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json",
+        "policy_note": "Native Windows 3F.37 shows API-key Daybreak-off omits explicit cyberAccessProgram per protected fork gate. Do not replace with upstream Standard."
       }
     },
     {

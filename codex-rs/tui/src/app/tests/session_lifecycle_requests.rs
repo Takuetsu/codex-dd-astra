@@ -259,7 +259,9 @@ async fn daybreak_command_persists_and_confirms_each_selection() -> Result<()> {
             .iter()
             .map(|turn| turn["cyberAccessProgram"].as_str())
             .collect::<Vec<_>>(),
-        vec![None, None, None, Some("daybreakBlue"), Some("standard")]
+        // API-key turns with Daybreak disabled omit an explicit cyber program.
+        // Preserve the CodexDD access-policy gate rather than upstream Standard.
+        vec![None, None, None, Some("daybreakBlue"), None]
     );
     while events.try_recv().is_ok() {}
 

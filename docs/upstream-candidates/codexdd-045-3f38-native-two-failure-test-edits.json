@@ -1,0 +1,29 @@
+{
+  "contract_version": 1,
+  "scope": "NONRELEASE_TWO_NATIVE_TEST_EXPECTATIONS_RECONCILED_WITH_EXISTING_POLICY",
+  "source_parent": "a6fc7b9063fac9918b33dde08b4b3ae0057b4992",
+  "release_status": "NOT_ACCEPTED",
+  "windows_run_id": 40754050953,
+  "original_results": {
+    "passed": 6,
+    "failed": 2
+  },
+  "edits": [
+    {
+      "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+      "before_blob": "3faafe11a166fca1354dfc35ff797384c68838cf",
+      "after_blob": "fc7a9e1871d511c1453f259b08c903bf21e66b08",
+      "before": "                result?,\n                CODEX_CLI_VERSION,\n            )\n            .await?;\n            assert!(app.thread_unavailable(id));",
+      "after": "                result?,\n                // Snapshot intentionally covers local 0.0.0 versus newer mock v2.0.0.\n                // Stable release clients correctly suppress notices for newer servers.\n                /*client_version*/ \"0.0.0\",\n            )\n            .await?;\n            assert!(app.thread_unavailable(id));",
+      "reason": "Preserve 0.0.0 local-build snapshot semantics; stable 0.163.0 correctly suppresses v2.0.0 newer-server warning."
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "before_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
+      "after_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+      "before": "        vec![None, None, None, Some(\"daybreakBlue\"), Some(\"standard\")]\n",
+      "after": "        // API-key turns with Daybreak disabled omit an explicit cyber program.\n        // Preserve the CodexDD access-policy gate rather than upstream Standard.\n        vec![None, None, None, Some(\"daybreakBlue\"), None]\n",
+      "reason": "Preserve API-key Daybreak-off policy: cyberAccessProgram absent, not explicit standard."
+    }
+  ]
+}

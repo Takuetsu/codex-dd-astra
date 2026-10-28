@@ -28,15 +28,17 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "before_blob": "994d54b631493b3d0784e836c544c57a275e9985",
-      "after_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
+      "after_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
       "official_163_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
       "source_parent": "ebb6975b7ee78e00299cfd3f9bd2f33fa5fc9789",
-      "reason": "Restore upstream 0.163 dynamic tool authorization, API key feature and legacy config/read compatibility matrix in existing CodexDD TUI test while retaining adaptive Worker assertions; restore official five-case Daybreak feature/API-key matrix and mock WebSocket disconnect handling, retaining CodexDD account-state no-op assertion",
+      "reason": "Restore upstream 0.163 dynamic tool authorization, API key feature and legacy config/read compatibility matrix in existing CodexDD TUI test while retaining adaptive Worker assertions; restore official five-case Daybreak feature/API-key matrix and mock WebSocket disconnect handling, retaining CodexDD account-state no-op assertion; confirmed 3F.37 API-key Daybreak disabled intentionally omits the explicit program; tested fork policy takes precedence over upstream test expectation",
       "required_native_gate": "Windows codex-tui native daybreak_command_persists_and_confirms_each_selection, dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace, TUI session/reconnect/disconnect/Worker lifecycle selectors",
       "release_status": "NOT_ACCEPTED",
       "auth_matrix_restoration_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
       "followup_source_parent": "cab5bf8db870e3ab9997e126b0e777afdfd74315",
-      "followup_correction_receipt": "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json"
+      "followup_correction_receipt": "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json",
+      "previous_daybreak_matrix_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
+      "native_reconciliation_receipt": "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json"
     }
   ]
 }
