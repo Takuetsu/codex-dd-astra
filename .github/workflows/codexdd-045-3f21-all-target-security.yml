@@ -1,0 +1,85 @@
+# One-shot full cargo-deny audit after secured 0.4.5 Windows TUI 40/40 and CLI smoke.
+# NO narrowed target graph, NO new exception, NO release or production modification.
+name: CodexDD 0.4.5 exact all-target crypto security audit (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-3f21-all-target-security.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-3f21-secure-deny
+  cancel-in-progress: true
+
+jobs:
+  exact-all-target-security:
+    name: Exact Cargo/deny crypto graph, live INFO guard and full cargo-deny
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == 'f267ab7e82286049f166ce5aedc52043074fabe0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout reviewed source without persisted GitHub credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Require exact unpromoted crypto graph, policy, vendor, Windows source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = 'f267ab7e82286049f166ce5aedc52043074fabe0'
+          test "$GITHUB_REPOSITORY" = 'Takuetsu/codex-dd-astra'
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(git rev-parse HEAD:codex-rs/vendor/aws-config-1.13.0)" = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          test "$(git rev-parse HEAD:MODULE.bazel.lock)" = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/startup.rs)" = 'f092c3cf69b8302609f975ee2931e8fd15aa6797'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          test -z "$(git status --porcelain)"
+          python3 -B scripts/codexdd-045-inherited-risk-guard.py
+          python3 -B scripts/codexdd-045-dependency-security-check.py --mode staging
+          echo 'PASS: source, all-target deny policy, Cargo/Bazel and production markers pinned'
+
+      - name: Configure original pinned repository CI environment
+        uses: ./.github/actions/setup-ci
+
+      - name: Install exact 1.95.0 Rust toolchain for locked resolver
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Recompute both target-specific locked graphs and live RustSec risk expiry
+        shell: bash
+        run: |
+          set -euo pipefail
+          windows="$RUNNER_TEMP/codexdd045-3f21-windows.json"
+          linux="$RUNNER_TEMP/codexdd045-3f21-linux.json"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc > "$windows"
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 --filter-platform x86_64-unknown-linux-gnu > "$linux"
+          python3 -B scripts/codexdd-045-dependency-security-check.py --mode release --windows-metadata "$windows" --linux-metadata "$linux"
+          echo 'PASS: dual-platform release precheck only; cargo-deny still mandatory'
+
+      - name: Enforce actual upstream all-target cargo-deny without policy exceptions
+        uses: EmbarkStudios/cargo-deny-action@82eb9f621fbc699dd0918f3ea06864c14cc84246 # v2
+        with:
+          rust-version: 1.95.0
+          manifest-path: ./codex-rs/Cargo.toml
+
+      - name: Require no dependency or policy rewrites after audit
+        if: always() && !cancelled()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test -z "$(git status --porcelain --untracked-files=no)"
+          echo 'AUDIT SOURCE INTEGRITY PASS (does not override upstream audit result)'
