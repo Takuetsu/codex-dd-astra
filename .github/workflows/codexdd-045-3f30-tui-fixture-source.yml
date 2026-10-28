@@ -1,0 +1,30 @@
+# One-shot source-only upstream identity proof; not native or release acceptance.
+name: CodexDD 0.4.5 two TUI fixture upstream additive identities (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f30-tui-fixture-source.yml"]
+permissions:
+  contents: read
+jobs:
+  source-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '5628e57cb2c03b858e14a3d72efd89a24af59201'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact immutable candidate without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Prove official 0.163 source identities after exactly one CodexDD addition
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '5628e57cb2c03b858e14a3d72efd89a24af59201'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f30_tui_fixture_additive.py' -v
+          test -z "$(git status --porcelain)"
