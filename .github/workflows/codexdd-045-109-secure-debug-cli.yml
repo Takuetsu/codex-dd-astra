@@ -1,0 +1,173 @@
+# Source-pinned debug-profile Windows CLI binary/PDB smoke after optimized thin-LTO timeout; NONRELEASE.
+# No Microsoft SDK/EULA acceptance, installer, PR, source write or binary publishing.
+name: CodexDD 0.4.5 secure Windows CLI debug smoke (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-109-secure-debug-cli.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-109-secure-debug-cli
+  cancel-in-progress: true
+
+jobs:
+  cli-release-smoke:
+    name: Windows MSVC secure CLI debug-profile executable and PDB smoke
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == 'e9508201d94ba7321914063c1d4bd0d5cfba8875'
+    runs-on: windows-2022
+    timeout-minutes: 50
+    steps:
+      - name: Checkout immutable integration SHA without saved credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Require exact nonrelease branch, source graph and unchanged security floor
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review') { throw 'Wrong branch' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected HEAD' }
+          if ((git rev-parse HEAD^).Trim() -ne 'e9508201d94ba7321914063c1d4bd0d5cfba8875') { throw 'Unreviewed workflow-only parent' }
+          $expected = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
+            'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'
+            'codex-rs/skills/BUILD.bazel' = '46f96f1b0f015a05e2abf1dd055a4ab4dba1d24a'
+            'codex-rs/skills/Cargo.toml' = '7342975aaea0e3ecc61da41f145674cd154a12c9'
+            'codex-rs/core-plugins/BUILD.bazel' = '66f466ac1338e0fb4e974b407593ba5934a07467'
+            'codex-rs/core-plugins/Cargo.toml' = '668da25d6c4db37e737b3401e78333290bf1f2f8'
+            'codex-rs/ext/skills/BUILD.bazel' = '9406ae9fbc20d6c208e76290148b5c7e5b67ed3b'
+            'codex-rs/ext/skills/Cargo.toml' = '80bcfba8cb37de4c62d0f80d3c54a8290fdb084d'
+            'codex-rs/external-agent-migration/BUILD.bazel' = 'b0bd26034aa1fb3dae364b8e56382a193105005d'
+            'codex-rs/external-agent-migration/Cargo.toml' = '3f49a1ae00cc48720b766d9e76bc050e954cf0fa'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $expected.Keys) {
+            if ((git rev-parse ("HEAD:" + $path)).Trim() -ne $expected[$path]) {
+              throw "Unreviewed source identity: $path"
+            }
+          }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') {
+            throw 'Version marker advanced before acceptance'
+          }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') {
+            throw 'Upstream release marker advanced before acceptance'
+          }
+          git diff --exit-code -- MODULE.bazel MODULE.bazel.lock defs.bzl patches/zstd-sys_windows_msvc_include_dirs.patch codex-rs/skills/BUILD.bazel codex-rs/skills/Cargo.toml codex-rs/core-plugins/BUILD.bazel codex-rs/core-plugins/Cargo.toml codex-rs/ext/skills/BUILD.bazel codex-rs/ext/skills/Cargo.toml codex-rs/external-agent-migration/BUILD.bazel codex-rs/external-agent-migration/Cargo.toml codex-rs/Cargo.toml codex-rs/Cargo.lock codex-rs/deny.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Protected working tree is modified' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) {
+            throw 'Unexpected external MSVC runtime license override'
+          }
+          python scripts/codexdd-045-inherited-risk-guard.py
+          if ($LASTEXITCODE -ne 0) { throw 'Inherited INFO policy guard blocked' }
+          python scripts/codexdd-045-dependency-security-check.py --mode staging
+          if ($LASTEXITCODE -ne 0) { throw 'Security staging guard blocked' }
+          Write-Host 'PASS: pinned secure Cargo/Bazel graph, unchanged policies and nonrelease markers'
+
+      - name: Install pinned Bazelisk and repository Bazel 9.2.0
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+
+      - name: Expose preinstalled GitHub-hosted MSVC developer environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $vswhere)) { throw 'Hosted VS discovery missing' }
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Hosted MSVC C++ toolchain missing' }
+          $vsDevCmd = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path -LiteralPath $vsDevCmd)) { throw 'VsDevCmd missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $values = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $vsDevCmd)
+          if ($LASTEXITCODE -ne 0) { throw 'Could not initialize preinstalled MSVC environment' }
+          foreach ($line in $values) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+          Write-Host 'PASS: preinstalled MSVC environment resolved; no EULA acceptance or SDK download performed'
+
+      - name: Build native CLI release files with bounded debug smoke profile
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-109-secure-debug-cli'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $log = Join-Path $dir 'cli-release-files.log'
+          $v = & bazel --version
+          if ($LASTEXITCODE -ne 0 -or $v -notmatch 'bazel 9\.2\.0') { throw "Unreviewed Bazel version: $v" }
+          $buildArgs = @(
+            '--noexperimental_remote_repo_contents_cache',
+            'build',
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--//codex-rs:runtime_package_build_mode=debug',
+            '--jobs=2',
+            '--verbose_failures',
+            '//codex-rs/cli:release_files'
+          )
+          Write-Host 'BEGIN: exact CLI release-files smoke, no full archive or release'
+          $ErrorActionPreference = 'Continue'
+          $lastProgress = [System.Diagnostics.Stopwatch]::StartNew()
+          $lastLine = ''
+          & bazel @buildArgs 2>&1 | Tee-Object -FilePath $log | ForEach-Object {
+            $line = [string]$_
+            if ($line -match '\[\d+ / \d+\]' -or $line -match 'ERROR:|FAILED:|Build completed') { $lastLine = $line }
+            if ($lastProgress.Elapsed.TotalSeconds -ge 120) {
+              $out = $lastLine
+              if ($out.Length -gt 300) { $out = $out.Substring(0,300) + ' ...' }
+              Write-Host ("BUILD_PROGRESS 120s: " + $out)
+              $lastProgress.Restart()
+            }
+          }
+          $rc = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path -LiteralPath $log)) { throw 'No CLI compiler diagnostics created' }
+          if ($rc -ne 0) {
+            $rows = Get-Content -LiteralPath $log
+            $errors = @($rows | Select-String -Pattern 'ERROR:|FAILED:|error(\[E[0-9]+\])?:|could not|fatal|Analysis failed' | Select-Object -Last 50)
+            foreach ($line in $errors) { Write-Host $line.Line }
+            Get-Content -LiteralPath $log -Tail 85
+            throw "BLOCKED: CLI release-files debug smoke exit=$rc"
+          }
+          if (-not (Select-String -LiteralPath $log -Pattern 'INFO: Build completed successfully|Build completed successfully' -Quiet)) {
+            Get-Content -LiteralPath $log -Tail 85
+            throw 'Missing native CLI release-files build receipt'
+          }
+          if (-not (Select-String -LiteralPath $log -Pattern 'release_files|release_files up-to-date|release_files:' -Quiet)) {
+            Get-Content -LiteralPath $log -Tail 85
+            throw 'Missing expected CLI release-files output in Bazel receipt'
+          }
+          Get-Content -LiteralPath $log -Tail 35 | ForEach-Object {
+            $row = [string]$_
+            if ($row.Length -gt 600) { $row = $row.Substring(0,600) + ' [complete line in artifact]' }
+            Write-Host $row
+          }
+          if (git status --porcelain --untracked-files=no) { throw 'Source or lock changed during build' }
+          Write-Host 'PASS: Windows CLI debug-profile release_files built (NOT optimized release package)'
+
+      - name: Upload only compiler diagnostics, never binaries or credentials
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-109-secure-debug-cli-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codexdd045-109-secure-debug-cli/*.log
+          if-no-files-found: warn
+          retention-days: 7
