@@ -1,0 +1,158 @@
+# One-shot, read-only native Windows 0.4.5 semantic owner regression gate.
+# Exact 109-overlap review candidate; no release, upload of credentials, or production change.
+name: CodexDD 0.4.5 Windows core history recovery and orphan-panic focused tests (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f40b-core-history-windows-native.yml"]
+permissions:
+  contents: read
+jobs:
+  protected-owners:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'de5fed38be263e281e017c8f2e02d8edc5f260ee'
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact reviewed source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify reviewed source identity and security constraints
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD^).Trim() -ne 'de5fed38be263e281e017c8f2e02d8edc5f260ee') { throw 'Unexpected workflow-only parent' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.lock').Trim() -ne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Reviewed Cargo.lock changed' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.toml').Trim() -ne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Reviewed Cargo.toml changed' }
+          if ((git rev-parse 'HEAD:codex-rs/deny.toml').Trim() -ne 'f282c7c55d05201e308e60804f85754c8522d462') { throw 'Unreviewed advisory policy' }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker unexpectedly changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker unexpectedly changed' }
+          if ((git rev-parse "HEAD:codex-rs/core/src/context_manager/history_tests.rs").Trim() -ne '4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d') { throw 'Source identity differs: codex-rs/core/src/context_manager/history_tests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/core/src/context_manager/normalize.rs").Trim() -ne '4ca88c6a668e9896df06ca81940a0e41e357898d') { throw 'Source identity differs: codex-rs/core/src/context_manager/normalize.rs' }
+          if ((git rev-parse "HEAD:codex-rs/core/src/tools/registry.rs").Trim() -ne 'fc75b3bbf91f1881bd32faaaca93356fbb598b5e') { throw 'Source identity differs: codex-rs/core/src/tools/registry.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/startup.rs").Trim() -ne 'e51254ea2f16f2a356670413ae29c9de0d002e9d') { throw 'Source identity differs: codex-rs/tui/src/app/startup.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/tests/session_lifecycle_requests.rs").Trim() -ne '2460017301fa1c57480e1092e7ce69413aa7867e') { throw 'Source identity differs: codex-rs/tui/src/app/tests/session_lifecycle_requests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/tests/active_reconnect_tests.rs").Trim() -ne 'fc7a9e1871d511c1453f259b08c903bf21e66b08') { throw 'Focused reconnection snapshot test fixture source drift' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__active_reconnect__unavailable_conversation.snap").Trim() -ne '335071a07742e41b50ce0eb62805f740d019b586') { throw 'Reconnect warning snapshot mutated' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app/tests/startup_defaults_tests.rs").Trim() -ne 'e60808df0448682d47af1a14b5bd8d5c52206397') { throw 'Source identity differs: codex-rs/tui/src/app/tests/startup_defaults_tests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/app_server_session/workspace_roots_tests.rs").Trim() -ne 'd6447d22a0a1e943b1352b8c945cf7f6cf09734e') { throw 'Source identity differs: codex-rs/tui/src/app_server_session/workspace_roots_tests.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/chatwidget/interaction.rs").Trim() -ne 'e83bc3d1860a8f2f04a14bc136c4b6468785eb67') { throw 'Source identity differs: codex-rs/tui/src/chatwidget/interaction.rs' }
+          if ((git rev-parse "HEAD:codex-rs/tui/src/lib.rs").Trim() -ne 'f45b01a668998d817abec91313f425f2fa6a9ad7') { throw 'Source identity differs: codex-rs/tui/src/lib.rs' }
+          python scripts/codexdd-045-inherited-risk-guard.py
+          if ($LASTEXITCODE -ne 0) { throw 'Immutable crypto/provenance guard failed' }
+          python scripts/codexdd-045-dependency-security-check.py --mode staging
+          if ($LASTEXITCODE -ne 0) { throw 'Protected dependency graph changed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f32_startup_restoration.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Startup upstream exact-source reconstruction guard failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f20_startup_timeout_guard.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Original startup modal timeout quarantine guard failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          if ($LASTEXITCODE -ne 0) { throw '109-path source owner guard failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f34_session_tests.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Restored Daybreak and WebSocket source guard failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f25_dynamic_auth_regression.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Historical dynamic auth matrix guard failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f36_reconnect_notice_fixture.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Deterministic reconnect warning/snapshot fixture guard failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f38_two_native_policy_expectations.py' -v
+          if ($LASTEXITCODE -ne 0) { throw '3F.38 native policy/test source reconciliation failed' }
+          python -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f40_history_normalize_policy.py' -v
+          if ($LASTEXITCODE -ne 0) { throw '3F.40 source-locked core history fork policy audit failed' }
+      - name: Configure isolated Windows scratch paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path $env:RUNNER_TEMP 'codexdd045-109-native'
+          $target = Join-Path $base 'target'
+          $temp = Join-Path $base 'tmp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CI_BUILD_ROOT=$base"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Install DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Cache Cargo source downloads only
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f12-source-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-crypto-msvc-
+      - name: Verify Windows locked resolver
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo metadata --manifest-path codex-rs/Cargo.toml --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Windows locked Cargo resolver failed' }
+      - name: Configure repository-pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run eight core history selectors covering local inherited and orphan recovery
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            'normalize_adds_missing_output_for_custom_tool_call',
+            'normalize_adds_missing_output_for_local_shell_call_with_id',
+            'normalize_adds_missing_output_for_tool_search_call',
+            'normalize_removes_orphan_function_call_output_panics_in_debug',
+            'normalize_removes_orphan_custom_tool_call_output_panics_in_debug',
+            'normalize_removes_orphan_client_tool_search_output_panics_in_debug',
+            'normalize_keeps_server_tool_search_output_without_matching_call',
+            'resumed_history_recovers_orphan_custom_tool_call_without_panicking'
+          )
+          $index = 0
+          $failedCases = @()
+          foreach ($case in $cases) {
+            $log = Join-Path $env:RUNNER_TEMP ('codexdd045-3f40b-core-{0:D2}.log' -f $index)
+            & cmd.exe /d /c ('cargo test --locked -p codex-core --lib ' + $case + ' -- --test-threads=1 > "' + $log + '" 2>&1')
+            $code = $LASTEXITCODE
+            if (-not (Test-Path -LiteralPath $log)) {
+              Write-Host "FAIL: no log for Core $($index+1)/$($cases.Count): $case (exit $code)"
+              $failedCases += $case
+              $index++
+              continue
+            }
+            $tail = (Get-Content -LiteralPath $log -Tail 90) -join "`n"
+            Write-Host "Core $($index+1)/$($cases.Count): $case`n$tail"
+            if ($code -ne 0 -or $tail -notmatch '(?m)^test result: ok\.\s+[1-9][0-9]* passed;') {
+              Write-Host "FAIL: Core $($index+1)/$($cases.Count): $case (exit $code)"
+              $failedCases += $case
+            } else {
+              Write-Host "PASS: Core $($index+1)/$($cases.Count): $case"
+            }
+            $index++
+          }
+          if ($index -ne 8) { throw "Expected 8 focused core regressions" }
+          if ($failedCases.Count -gt 0) {
+            throw ("{0}/8 focused core tests failed: {1}" -f $failedCases.Count, ($failedCases -join ', '))
+          }
+          Write-Host "PASS: $index/8 core local/inherited history normalization and orphan-output regressions on secured 0.163 Windows source"
+      - name: Retain narrow nonrelease test evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f40b-core-history-windows-regressions
+          path: ${{ runner.temp }}/codexdd045-3f40b-*.log
+          if-no-files-found: warn
+          retention-days: 5
