@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   protected-owners:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'ead7fd1ae597f7d61132212622809d259c286ada'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '5be8162040617283e3ef63e028244ce5b62936f1'
     runs-on: windows-2022
     timeout-minutes: 60
     env:
@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          if ((git rev-parse HEAD^).Trim() -ne 'ead7fd1ae597f7d61132212622809d259c286ada') { throw 'Unexpected workflow-only parent' }
+          if ((git rev-parse HEAD^).Trim() -ne '5be8162040617283e3ef63e028244ce5b62936f1') { throw 'Unexpected workflow-only parent' }
           & git cat-file -e '994d54b631493b3d0784e836c544c57a275e9985^{blob}'
           if ($LASTEXITCODE -ne 0) { throw 'Shallow checkout omitted immutable pre-restoration source blob' }
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
