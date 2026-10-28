@@ -14,6 +14,7 @@ MATRIX = ROOT / "docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.
 OVERLAPS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
 CONFLICTS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
 FORMAT = ROOT / "docs/upstream-candidates/codexdd-045-format-followup.json"
+CORRECTIONS = ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
 
 
 def git(*args: str) -> str:
@@ -29,6 +30,7 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         cls.overlaps = json.loads(OVERLAPS.read_text(encoding="utf-8"))
         cls.conflicts = json.loads(CONFLICTS.read_text(encoding="utf-8"))
         cls.formatters = json.loads(FORMAT.read_text(encoding="utf-8"))
+        cls.corrections = json.loads(CORRECTIONS.read_text(encoding="utf-8"))
 
     def test_every_one_of_109_overlap_paths_has_explicit_owner(self):
         rows = self.matrix["paths"]
@@ -73,12 +75,21 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
                 old = reviewed[path]
                 self.assertEqual(row["historical_reviewed_blob"], old["reviewed_045_blob"])
                 self.assertEqual(row["production_044_blob"], old["production_044_blob"])
-                current = (
+                correction = next(
+                    (r for r in self.corrections["paths"] if r["path"] == path), None
+                )
+                expected_pre_correction = (
                     security[path]
                     if path in ("codex-rs/Cargo.lock", "codex-rs/Cargo.toml")
                     else formats[path]["formatted_blob"]
                     if path in formats
                     else old["reviewed_045_blob"]
+                )
+                if correction is not None:
+                    self.assertEqual(correction["before_blob"], expected_pre_correction)
+                current = (
+                    correction["after_blob"] if correction is not None
+                    else expected_pre_correction
                 )
                 self.assertEqual(row["current_blob"], current)
                 self.assertRegex(current, r"^[0-9a-f]{40}$")
@@ -104,14 +115,15 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
             self.matrix["total_original_direct_conflicts"], 15
         )
 
-    def test_seven_formatter_and_two_secured_dependency_deltas_are_separate(self):
+    def test_formatter_security_and_reviewed_upstream_corrections_are_distinct(self):
         count = Counter(r["disposition"] for r in self.matrix["paths"])
         self.assertEqual(
             dict(count),
             {
                 "frozen_reviewed_identity": 100,
                 "audited_secure_dependency_migration": 2,
-                "verified_formatter_only": 7,
+                "verified_formatter_only": 6,
+                "reviewed_upstream_timeout_recovery_correction": 1,
             },
         )
         self.assertEqual(count, self.matrix["source_dispositions"])
@@ -130,7 +142,7 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         }
         self.assertEqual(set(selected), expected)
         self.assertEqual(
-            len([r for r in self.matrix["paths"] if "focused_review" in r]), 5
+            len([r for r in self.matrix["paths"] if "focused_review" in r]), 6
         )
         native = (
             ROOT / ".github/workflows/codexdd-045-109-core-tui-native.yml"

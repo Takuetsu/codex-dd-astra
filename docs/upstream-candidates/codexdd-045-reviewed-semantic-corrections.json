@@ -1,0 +1,16 @@
+{
+  "contract_version": 1,
+  "scope": "FOCUSED_UPSTREAM_SEMANTIC_CORRECTION_NONRELEASE",
+  "source_parent": "1b090cf9e302c16292a907529cf93738e52d03d5",
+  "paths": [
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "before_blob": "3b111def463e2f52b4786b7a6db8c6e3aa7954f7",
+      "after_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
+      "official_163_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
+      "reason": "Restore upstream startup protected-input timeout quarantine instead of propagating TimedOut error",
+      "required_native_gate": "TUI startup input timeout, protected request quarantine and terminal color probe regression",
+      "release_status": "NOT_ACCEPTED"
+    }
+  ]
+}

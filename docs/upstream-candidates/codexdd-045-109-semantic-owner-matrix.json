@@ -16,9 +16,10 @@
   "total_paths": 109,
   "total_original_direct_conflicts": 15,
   "source_dispositions": {
-    "frozen_reviewed_identity": 100,
     "audited_secure_dependency_migration": 2,
-    "verified_formatter_only": 7
+    "frozen_reviewed_identity": 100,
+    "reviewed_upstream_timeout_recovery_correction": 1,
+    "verified_formatter_only": 6
   },
   "owner_counts": {
     "bazel_packaging": 3,
@@ -1189,17 +1190,27 @@
     {
       "path": "codex-rs/tui/src/app/startup.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "3b111def463e2f52b4786b7a6db8c6e3aa7954f7",
+      "current_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
       "historical_reviewed_blob": "29065c6c0c90c010a53bf065c95278312712a90e",
       "production_044_blob": "86f1afec7ce715799c9fa62859e53f312918d067",
-      "disposition": "verified_formatter_only",
+      "disposition": "reviewed_upstream_timeout_recovery_correction",
       "original_direct_conflict": true,
       "original_conflict_gate": "Managed daemon provenance and elevated Windows startup fallback",
       "evidence_runs": [
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "upstream_startup_quarantine_behavior_restoration",
+        "review_scope": "Port official 0.163 protected modal input TimedOut handling and retain CodexDD startup/adaptive event dispatch",
+        "source_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
+        "official_upstream_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
+        "correction_receipt": "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json",
+        "source_only_test": ".github/scripts/test_codexdd_045_3f20_startup_timeout_guard.py",
+        "remaining_gate": "Native Windows TUI startup modal timeout/retry and buffered approval tests on final candidate SHA",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/tui/src/app/test_support.rs",

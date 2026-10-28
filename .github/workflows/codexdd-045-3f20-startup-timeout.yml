@@ -1,0 +1,45 @@
+# One-shot source-bound regression for the upstream protected modal timeout recovery fix.
+# Source-only, no unsafe code execution or shipping acceptance.
+name: CodexDD 0.4.5 Windows protected startup timeout source guard (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-3f20-startup-timeout.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source:
+    name: Exact original-upstream startup quarantine and 109-path protection
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == '1b090cf9e302c16292a907529cf93738e52d03d5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable reviewed source without saved credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Prove source and security graph unchanged except timeout recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '1b090cf9e302c16292a907529cf93738e52d03d5'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/startup.rs)" = 'f092c3cf69b8302609f975ee2931e8fd15aa6797'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(git rev-parse HEAD:MODULE.bazel.lock)" = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          test -z "$(git status --porcelain)"
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f20_startup_timeout_guard.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f14_owner_matrix.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f18_generated_notifications.py -v
+          test -z "$(git status --porcelain)"
+          echo 'PASS: 0.163 startup timeout recovery restored with exact single-source delta'
+          echo 'NOT ACCEPTED: final native Windows TUI timeout behavior still needs testing'
