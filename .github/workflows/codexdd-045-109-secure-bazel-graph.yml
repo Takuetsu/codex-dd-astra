@@ -19,7 +19,7 @@ concurrency:
 jobs:
   native-release-analysis:
     name: Secure 0.163 Windows MSVC CLI and archive graph (nonrelease)
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == 'df38f1eddca7c12a58f67990b240f382fc74503f'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == 'b978961c122437f4f60bb087369c076297a74d93'
     runs-on: windows-2022
     timeout-minutes: 40
     steps:
@@ -36,10 +36,10 @@ jobs:
           if ($env:GITHUB_REPOSITORY -ne 'Takuetsu/codex-dd-astra') { throw 'Wrong repository' }
           if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review') { throw 'Wrong branch' }
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected HEAD' }
-          if ((git rev-parse HEAD^).Trim() -ne 'df38f1eddca7c12a58f67990b240f382fc74503f') { throw 'Unreviewed workflow-only parent' }
+          if ((git rev-parse HEAD^).Trim() -ne 'b978961c122437f4f60bb087369c076297a74d93') { throw 'Unreviewed workflow-only parent' }
           $expected = @{
             'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
-            'MODULE.bazel.lock' = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
             'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
             'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'
             'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
@@ -110,7 +110,13 @@ jobs:
             & bazel @BazelArgs *> $log
             $rc = $LASTEXITCODE
             $ErrorActionPreference = 'Stop'
-            if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 85 }
+            if (Test-Path -LiteralPath $log) {
+              Get-Content -LiteralPath $log -Tail 60 | ForEach-Object {
+                $line = [string]$_
+                if ($line.Length -gt 600) { $line = $line.Substring(0,600) + ' [line shortened; full log uploaded]' }
+                Write-Host $line
+              }
+            }
             if ($rc -ne 0) { throw "BLOCKED: $Name exit=$rc (see uploaded log)" }
             if ($ExpectedLabel -and -not (Select-String -LiteralPath $log -Pattern ([regex]::Escape($ExpectedLabel)) -Quiet)) {
               throw "No configured target matched: $ExpectedLabel"
