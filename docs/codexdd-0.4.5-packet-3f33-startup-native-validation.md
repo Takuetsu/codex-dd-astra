@@ -13,3 +13,9 @@ To avoid a repeat of the costly 21-stage suite, run one source-frozen `windows-2
 Preflight pins the actual new `startup.rs` blob `e51254ea2f16f2a356670413ae29c9de0d002e9d`, protected Cargo/deny/vendor state and adjacent TUI conflict source; re-runs 3F.32, 3F.20 and 3F.14 source-only guards before Cargo. The workflow uses installed Rust 1.95.0 and preconfigured Rusty V8; compiler/test artifacts are local to the runner and only short logs are uploaded. 60-minute hard job ceiling, no FULL release compile or 21-stage run.
 
 **Limitations:** This is a compilation and focused behavioral smoke of related existing tests, not a dedicated WSL clipboard prewarm or daemon join end-to-end test; those require further targeted/manual validation and full release suite on the final immutable source. These five selectors cannot approve all 109 source owners or optimized CLI/combined EXE/PDB. Product stays 0.4.4 until release signoff.
+
+## Outcome and supersession
+
+The original [3F.33 Windows workflow #40742651126](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40742651126) ended **RED** before invoking any Rust test. Dependency/security, exact startup source, Cargo metadata and Rusty V8 setup all passed. The PowerShell `$cases` array had a trailing comma after its final element, causing `ParserError: Missing expression after ','`. This was a **workflow scripting defect**, not evidence of a startup regression; do not count any of its five cases as passed.
+
+The next validation is the one-shot **3F.35B** combined focused Windows job. It uses the same unchanged startup source and now-restored test-only Daybreak/WebSocket harness, eight selectors in a correctly terminated PowerShell array, and the green 3F.35A source-provenance rechecks. No full optimized CLI or production promotion.
