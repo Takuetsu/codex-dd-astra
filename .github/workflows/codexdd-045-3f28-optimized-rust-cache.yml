@@ -1,0 +1,304 @@
+# One-shot SMALL Windows test of cross-job Bazel action cache before any repeat of 90m optimized build.
+# A green cache probe is NOT optimized release acceptance, and stores no binary artifacts.
+name: CodexDD 0.4.5 optimized real Rust library cache proof (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f28-optimized-rust-cache.yml"]
+permissions:
+  contents: read
+jobs:
+  seed-cache:
+    outputs:
+      path_sha: ${{ steps.fixture.outputs.path_sha }}
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd6b8edd07216f6f93b1127ff33247edd033b0081'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Source, security and nonrelease marker gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source commit' }
+          if ((git rev-parse HEAD^).Trim() -ne 'd6b8edd07216f6f93b1127ff33247edd033b0081') { throw 'Unexpected source parent' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/utils/elapsed/BUILD.bazel' = 'dcc7b206d205e376306ad0d8291cf0c98ae3633b'
+            'codex-rs/utils/elapsed/Cargo.toml' = '7ba5e6ae6614fddadaa1ba1e1f8299ffc251d78f'
+            'codex-rs/utils/elapsed/src/lib.rs' = '209657e8c416a814a87d77886aeb592eda734959'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker promoted' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker promoted' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'Unexpected EULA override' }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source dirty' }
+
+      - name: Configure source-bound Bazel 9.2.0 and reusable GitHub action cache
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          disk-cache: codexdd045-3f28-realrust
+          repository-cache: true
+          cache-version: "045-3f28"
+          cache-save: true
+
+      - name: Use preinstalled Windows MSVC tools only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Preinstalled MSVC missing' }
+          $dev = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'Preinstalled developer command missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $values = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to initialize preinstalled MSVC' }
+          foreach ($line in $values) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+      - name: Compile only codex-utils-elapsed Rust library with native optimized release flags
+        id: fixture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $args = @(
+            '--noexperimental_remote_repo_contents_cache',
+            'build',
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--config=release',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--//codex-rs:runtime_package_build_mode=release',
+            '--jobs=2',
+            '--verbose_failures',
+            '--announce_rc',
+            '--subcommands=pretty_print',
+            '//codex-rs/utils/elapsed:elapsed'
+          )
+          # MSVC Bazel actions inherit PATH; unrelated hosted Ruby patch versions drift.
+          # Preserve every path other than the unique hosted Ruby directory.
+          $allPaths = @($env:PATH -split ';' | Where-Object { $_ })
+          $rubyPath = @($allPaths | Where-Object { $_ -match '(?i)^[A-Z]:\\hostedtoolcache\\windows\\Ruby\\' })
+          if ($rubyPath.Count -ne 1) { throw "Expected one unrelated Ruby path, found $($rubyPath.Count); fail closed" }
+          $env:PATH = (@($allPaths | Where-Object { $_ -notin $rubyPath }) -join ';')
+          $pathBytes = [System.Text.Encoding]::UTF8.GetBytes($env:PATH)
+          $pathSha = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($pathBytes)).ToLowerInvariant()
+          Write-Host "BAZEL_ACTION_PATH_SHA256=$pathSha"
+          $ver = (& bazel --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $ver -ne 'bazel 9.2.0') { throw "Unexpected Bazel: $ver" }
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-3f28-real-rust-probe'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $log = Join-Path $dir 'fixture.log'
+          # 11-minute *soft* compile cap, leaving the GitHub job running for cache post-save.
+          # No opt CLI target or full release archive can be selected by this workflow.
+          $errLog = Join-Path $dir 'rust-stderr.log'
+          $bazelExe = (Get-Command bazel).Source
+          if (-not $bazelExe -or -not (Test-Path $bazelExe)) { throw 'Cannot resolve pinned Bazelisk executable' }
+          $watch = [System.Diagnostics.Stopwatch]::StartNew()
+          $proc = Start-Process -FilePath $bazelExe -ArgumentList $args -PassThru -NoNewWindow -RedirectStandardOutput $log -RedirectStandardError $errLog
+          if (-not $proc.WaitForExit(660000)) {
+            $ErrorActionPreference = 'Continue'
+            & taskkill.exe /PID $proc.Id /T /F *> $null
+            $ErrorActionPreference = 'Stop'
+            throw 'BOUNDED_OPT_RUST_BUILD_TIMEOUT: stopped after 11 minutes (no full-build retry)'
+          }
+          $proc.Refresh()
+          $exit = $proc.ExitCode
+          $watch.Stop()
+          if (-not (Test-Path $log) -or -not (Test-Path $errLog)) { throw 'Missing bounded Rust stdout/stderr logs' }
+          $combined = Join-Path $dir 'optimized-rust-build.log'
+          @((Get-Content -LiteralPath $log), (Get-Content -LiteralPath $errLog)) | Set-Content -LiteralPath $combined -Encoding utf8
+          Get-Content -LiteralPath $combined -Tail 65
+          if ($exit -ne 0) { throw "BOUNDED_OPT_RUST_BUILD_FAILED: exit=$exit" }
+          if (-not (Select-String -LiteralPath $combined -Pattern 'Build completed successfully' -Quiet)) { throw 'No optimized Rust build success receipt' }
+          if (-not (Select-String -LiteralPath $combined -Pattern 'Target //codex-rs/utils/elapsed:elapsed up-to-date:' -Quiet)) { throw 'Wrong Rust library target result' }
+          if (-not (Select-String -LiteralPath $combined -Pattern '(?m)--compilation_mode=opt' -Quiet)) { throw 'Release optimization setting not confirmed' }
+          if (-not (Select-String -LiteralPath $combined -SimpleMatch '--@rules_rust//rust/settings:lto=thin' -Quiet)) { throw 'Release thin LTO setting not confirmed' }
+          $cacheRoot = 'D:/_bazel-disk'
+          if (-not (Test-Path -LiteralPath $cacheRoot)) { throw 'No Bazel action disk cache created' }
+          $size = (Get-ChildItem -LiteralPath $cacheRoot -Recurse -File | Measure-Object -Property Length -Sum).Sum
+          if (-not $size -or $size -le 0) { throw 'No reusable action-cache bytes' }
+          if ($size -gt 536870912) { throw "CACHE_SIZE_LIMIT_EXCEEDED: $size bytes > 512 MiB" }
+          Write-Host ("RUST_OPT_CACHE_SIZE_BYTES={0}; BUILD_SECONDS={1:F1}" -f $size, $watch.Elapsed.TotalSeconds)
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source mutated during optimized Rust build' }
+
+          "path_sha=$pathSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host 'PASS: optimized real CodexDD Rust library built; native post-step may save <=512 MiB cache'
+      - name: Upload only cache probe log
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f28-realrust-seed-log
+          path: ${{ runner.temp }}/codexdd045-3f28-real-rust-probe/*.log
+          if-no-files-found: warn
+          retention-days: 4
+
+  restore-cache:
+    needs: seed-cache
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd6b8edd07216f6f93b1127ff33247edd033b0081'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout same exact secured source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Source, security and nonrelease marker gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source commit' }
+          if ((git rev-parse HEAD^).Trim() -ne 'd6b8edd07216f6f93b1127ff33247edd033b0081') { throw 'Unexpected source parent' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/utils/elapsed/BUILD.bazel' = 'dcc7b206d205e376306ad0d8291cf0c98ae3633b'
+            'codex-rs/utils/elapsed/Cargo.toml' = '7ba5e6ae6614fddadaa1ba1e1f8299ffc251d78f'
+            'codex-rs/utils/elapsed/src/lib.rs' = '209657e8c416a814a87d77886aeb592eda734959'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker promoted' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker promoted' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'Unexpected EULA override' }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source dirty' }
+
+      - name: Configure source-bound Bazel 9.2.0 and reusable GitHub action cache
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          disk-cache: codexdd045-3f28-realrust
+          repository-cache: true
+          cache-version: "045-3f28"
+          cache-save: true
+
+      - name: Use preinstalled Windows MSVC tools only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Preinstalled MSVC missing' }
+          $dev = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'Preinstalled developer command missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $values = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to initialize preinstalled MSVC' }
+          foreach ($line in $values) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+      - name: Rebuild same optimized Rust library from independent runner and prove cache reuse
+        shell: pwsh
+        env:
+          EXPECTED_ACTION_PATH_SHA: ${{ needs.seed-cache.outputs.path_sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $args = @(
+            '--noexperimental_remote_repo_contents_cache',
+            'build',
+            '--lockfile_mode=error',
+            '--config=ci-windows-msvc',
+            '--config=release',
+            '--platforms=//:windows_x86_64_msvc',
+            '--host_platform=//:local_windows_msvc',
+            '--//codex-rs:runtime_package_build_mode=release',
+            '--jobs=2',
+            '--verbose_failures',
+            '--announce_rc',
+            '--subcommands=pretty_print',
+            '//codex-rs/utils/elapsed:elapsed'
+          )
+          # MSVC Bazel actions inherit PATH; unrelated hosted Ruby patch versions drift.
+          # Preserve every path other than the unique hosted Ruby directory.
+          $allPaths = @($env:PATH -split ';' | Where-Object { $_ })
+          $rubyPath = @($allPaths | Where-Object { $_ -match '(?i)^[A-Z]:\\hostedtoolcache\\windows\\Ruby\\' })
+          if ($rubyPath.Count -ne 1) { throw "Expected one unrelated Ruby path, found $($rubyPath.Count); fail closed" }
+          $env:PATH = (@($allPaths | Where-Object { $_ -notin $rubyPath }) -join ';')
+          $pathBytes = [System.Text.Encoding]::UTF8.GetBytes($env:PATH)
+          $pathSha = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($pathBytes)).ToLowerInvariant()
+          Write-Host "BAZEL_ACTION_PATH_SHA256=$pathSha"
+          if (-not $env:EXPECTED_ACTION_PATH_SHA -or $pathSha -ne $env:EXPECTED_ACTION_PATH_SHA) {
+            throw "Action PATH still differs across runners after removing Ruby; cache experiment invalid"
+          }
+          $ver = (& bazel --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $ver -ne 'bazel 9.2.0') { throw "Unexpected Bazel: $ver" }
+          $dir = Join-Path $env:RUNNER_TEMP 'codexdd045-3f28-real-rust-probe'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $log = Join-Path $dir 'fixture.log'
+          # 11-minute *soft* compile cap, leaving the GitHub job running for cache post-save.
+          # No opt CLI target or full release archive can be selected by this workflow.
+          $errLog = Join-Path $dir 'rust-stderr.log'
+          $bazelExe = (Get-Command bazel).Source
+          if (-not $bazelExe -or -not (Test-Path $bazelExe)) { throw 'Cannot resolve pinned Bazelisk executable' }
+          $watch = [System.Diagnostics.Stopwatch]::StartNew()
+          $proc = Start-Process -FilePath $bazelExe -ArgumentList $args -PassThru -NoNewWindow -RedirectStandardOutput $log -RedirectStandardError $errLog
+          if (-not $proc.WaitForExit(660000)) {
+            $ErrorActionPreference = 'Continue'
+            & taskkill.exe /PID $proc.Id /T /F *> $null
+            $ErrorActionPreference = 'Stop'
+            throw 'BOUNDED_OPT_RUST_BUILD_TIMEOUT: stopped after 11 minutes (no full-build retry)'
+          }
+          $proc.Refresh()
+          $exit = $proc.ExitCode
+          $watch.Stop()
+          if (-not (Test-Path $log) -or -not (Test-Path $errLog)) { throw 'Missing bounded Rust stdout/stderr logs' }
+          $combined = Join-Path $dir 'optimized-rust-build.log'
+          @((Get-Content -LiteralPath $log), (Get-Content -LiteralPath $errLog)) | Set-Content -LiteralPath $combined -Encoding utf8
+          Get-Content -LiteralPath $combined -Tail 65
+          if ($exit -ne 0) { throw "BOUNDED_OPT_RUST_BUILD_FAILED: exit=$exit" }
+          if (-not (Select-String -LiteralPath $combined -Pattern 'Build completed successfully' -Quiet)) { throw 'No optimized Rust build success receipt' }
+          if (-not (Select-String -LiteralPath $combined -Pattern 'Target //codex-rs/utils/elapsed:elapsed up-to-date:' -Quiet)) { throw 'Wrong Rust library target result' }
+          if (-not (Select-String -LiteralPath $combined -Pattern '(?m)--compilation_mode=opt' -Quiet)) { throw 'Release optimization setting not confirmed' }
+          if (-not (Select-String -LiteralPath $combined -SimpleMatch '--@rules_rust//rust/settings:lto=thin' -Quiet)) { throw 'Release thin LTO setting not confirmed' }
+          $cacheRoot = 'D:/_bazel-disk'
+          if (-not (Test-Path -LiteralPath $cacheRoot)) { throw 'No Bazel action disk cache created' }
+          $size = (Get-ChildItem -LiteralPath $cacheRoot -Recurse -File | Measure-Object -Property Length -Sum).Sum
+          if (-not $size -or $size -le 0) { throw 'No reusable action-cache bytes' }
+          if ($size -gt 536870912) { throw "CACHE_SIZE_LIMIT_EXCEEDED: $size bytes > 512 MiB" }
+          Write-Host ("RUST_OPT_CACHE_SIZE_BYTES={0}; BUILD_SECONDS={1:F1}" -f $size, $watch.Elapsed.TotalSeconds)
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source mutated during optimized Rust build' }
+
+          $hits = @(Select-String -LiteralPath $log -Pattern '(?i)\b[1-9][0-9]*\s+(disk|remote)\s+cache\s+hits?\b')
+          if (-not $hits.Count) { throw 'No explicit optimized Rust library disk cache-hit evidence; full optimized CLI retry NOT authorized' }
+          $summary = (Select-String -LiteralPath $combined -Pattern 'INFO: [0-9]+ processes:' | Select-Object -Last 1).Line
+          if ($summary -match '\\b[1-9][0-9]* local\\b') { throw "Unexpected local action rebuild on consumer: $summary" }
+          Write-Host ("PASS: independent Windows optimized Rust runner verified " + $hits.Count + " cache summary line(s): " + $summary)
+          Write-Host 'NONRELEASE: only codex-utils-elapsed real Rust library; no CLI binary or combined archive'
+      - name: Upload only restore diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f28-realrust-restore-log
+          path: ${{ runner.temp }}/codexdd045-3f28-real-rust-probe/*.log
+          if-no-files-found: warn
+          retention-days: 4
