@@ -1,0 +1,30 @@
+# One-shot cheap source-only verification. No Windows build or expensive stage.
+name: CodexDD 0.4.5 manual optimized Windows build plan syntax and security audit (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f43-source-audit.yml"]
+permissions:
+  contents: read
+jobs:
+  audit:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'aed79d16bf43d740feb604e37d24a04701f2004a'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Checkout immutable candidate without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate manual gating, stages, archive tests, and PowerShell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = 'aed79d16bf43d740feb604e37d24a04701f2004a'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f43_manual_build_contract.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f42a_windows_archive_verifier.py' -v
+          command -v pwsh
+          pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile(".github/scripts/codexdd-045-staged-optimized-windows.ps1",[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }; Write-Host "PASS: staged release script parses"'
+          test -z "$(git status --porcelain)"
