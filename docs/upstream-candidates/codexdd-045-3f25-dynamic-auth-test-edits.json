@@ -1,0 +1,53 @@
+{
+  "contract_version": 1,
+  "source_scope": "NONRELEASE_EXACT_OFFICIAL_163_TEST_RESTORATION",
+  "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+  "source_parent": "ebb6975b7ee78e00299cfd3f9bd2f33fa5fc9789",
+  "before_blob": "994d54b631493b3d0784e836c544c57a275e9985",
+  "after_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
+  "upstream_tag_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+  "upstream_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
+  "edits": [
+    {
+      "before": "use crate::bottom_pane::BottomPaneView;\n",
+      "after": "use crate::bottom_pane::BottomPaneView;\nuse crate::test_support::boxed_future;\n",
+      "count": 1
+    },
+    {
+      "before": "#[tokio::test]\nasync fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace() -> Result<()> {\n    check_dynamic_tool_requests(/*rollout_enabled*/ true).await?;\n    check_dynamic_tool_requests(/*rollout_enabled*/ false).await\n}\n\nasync fn check_dynamic_tool_requests(rollout_enabled: bool) -> Result<()> {\n",
+      "after": "#[tokio::test]\nasync fn dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace() -> Result<()> {\n    use HistoryCapabilities::ConfigReadUnsupported;\n    use HistoryCapabilities::Current;\n    use codex_app_server_protocol::AuthMode::ApiKey;\n    use codex_app_server_protocol::AuthMode::Chatgpt;\n\n    for (\n        rollout_enabled,\n        auth_mode,\n        api_key_cyber_access_programs,\n        history_capabilities,\n        expected_program,\n    ) in [\n        (true, Chatgpt, false, Current, Some(\"daybreakBlue\")),\n        (false, Chatgpt, false, Current, None),\n        (true, ApiKey, false, Current, None),\n        (true, ApiKey, true, Current, Some(\"daybreakBlue\")),\n        (true, Chatgpt, false, ConfigReadUnsupported(-32601), None),\n        (true, Chatgpt, false, ConfigReadUnsupported(-32600), None),\n    ] {\n        boxed_future!(check_dynamic_tool_requests(\n            rollout_enabled,\n            auth_mode,\n            api_key_cyber_access_programs,\n            history_capabilities,\n            expected_program,\n        ))\n        .await?;\n    }\n    Ok(())\n}\n\nasync fn check_dynamic_tool_requests(\n    rollout_enabled: bool,\n    auth_mode: codex_app_server_protocol::AuthMode,\n    api_key_cyber_access_programs: bool,\n    history_capabilities: HistoryCapabilities,\n    expected_program: Option<&str>,\n) -> Result<()> {\n",
+      "count": 1
+    },
+    {
+      "before": "    let backend_url = format!(\"{}/backend-api\", backend.uri());\n",
+      "after": "    let backend_url = format!(\"{}/backend-api\", backend.uri());\n    let api_url = format!(\"{}/v1\", backend.uri());\n    app.config.model_provider.base_url = Some(api_url.clone());\n",
+      "count": 1
+    },
+    {
+      "before": "    std::fs::write(\n        codex_home.path().join(\"config.toml\"),\n        format!(\n            \"daybreak = true\\nmodel_catalog_json = {:?}\\nchatgpt_base_url = {backend_url:?}\\ncli_auth_credentials_store = \\\"file\\\"\\n\",\n            catalog_path.display().to_string()\n        ),\n    )?;\n",
+      "after": "    // The server's target-thread config may differ from the launching TUI's defaults.\n    std::fs::write(\n        codex_home.path().join(\"config.toml\"),\n        format!(\n            \"daybreak = true\\nmodel_catalog_json = {:?}\\nchatgpt_base_url = {backend_url:?}\\ncli_auth_credentials_store = \\\"file\\\"\\nopenai_base_url = {api_url:?}\\nfeatures.cli_daybreak = {rollout_enabled}\\nfeatures.api_key_cyber_access_programs = {api_key_cyber_access_programs}\\n\",\n            catalog_path.display().to_string()\n        ),\n    )?;\n",
+      "count": 1
+    },
+    {
+      "before": "    .expect(\"write fixture auth\");\n",
+      "after": "    .expect(\"write fixture auth\");\n    if auth_mode == codex_app_server_protocol::AuthMode::ApiKey {\n        codex_login::login_with_api_key(\n            codex_home.path(),\n            \"test-key\",\n            codex_login::AuthCredentialsStoreMode::File,\n            codex_login::AuthKeyringBackendKind::default(),\n        )?;\n    }\n",
+      "count": 1
+    },
+    {
+      "before": "    let (mut app_server, requests, proxy) = start_recording_app_server(\n        &app.config,\n        /*blocked_thread_list*/ None,\n        /*failed_thread_name*/ Some(\"Unavailable name\"),\n    )\n    .await?;\n",
+      "after": "    let (mut app_server, requests, proxy) = start_recording_app_server_with_history(\n        &app.config,\n        history_capabilities,\n        /*blocked_thread_list*/ None,\n        /*failed_thread_name*/ Some(\"Unavailable name\"),\n        crate::app_server_session::ThreadParamsMode::Embedded,\n        LoaderOverrides::without_managed_config_for_tests(),\n    )\n    .await?;\n",
+      "count": 1
+    },
+    {
+      "before": "        serde_json::json!(rollout_enabled.then_some(true))\n",
+      "after": "        serde_json::json!(\n            (rollout_enabled && history_capabilities == HistoryCapabilities::Current)\n                .then_some(true)\n        )\n",
+      "count": 1
+    },
+    {
+      "before": "        serde_json::json!(rollout_enabled.then_some(\"daybreakBlue\"))\n",
+      "after": "        serde_json::json!(expected_program)\n",
+      "count": 2
+    }
+  ],
+  "release_status": "NOT_ACCEPTED"
+}

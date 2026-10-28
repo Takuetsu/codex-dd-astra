@@ -55,7 +55,7 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
     def test_timeout_is_quarantined_and_no_other_tui_source_edits_were_made(self):
         data = json.loads(LEDGER.read_text(encoding="utf-8"))
         self.assertEqual(data["contract_version"], 1)
-        self.assertEqual(len(data["paths"]), 2)
+        self.assertEqual(len(data["paths"]), 3)
         item = next(r for r in data["paths"] if r["path"] == "codex-rs/tui/src/app/startup.rs")
         self.assertEqual(item["path"], "codex-rs/tui/src/app/startup.rs")
         self.assertEqual(item["before_blob"], "3b111def463e2f52b4786b7a6db8c6e3aa7954f7")

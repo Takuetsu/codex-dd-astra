@@ -17,10 +17,11 @@
   "total_original_direct_conflicts": 15,
   "source_dispositions": {
     "audited_secure_dependency_migration": 2,
-    "frozen_reviewed_identity": 99,
+    "frozen_reviewed_identity": 98,
     "reviewed_upstream_govcloud_guidance_restoration": 1,
     "reviewed_upstream_timeout_recovery_correction": 1,
-    "verified_formatter_only": 6
+    "verified_formatter_only": 6,
+    "reviewed_upstream_dynamic_auth_test_restoration": 1
   },
   "owner_counts": {
     "bazel_packaging": 3,
@@ -1276,10 +1277,10 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "994d54b631493b3d0784e836c544c57a275e9985",
+      "current_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
       "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
       "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
-      "disposition": "frozen_reviewed_identity",
+      "disposition": "reviewed_upstream_dynamic_auth_test_restoration",
       "original_direct_conflict": true,
       "original_conflict_gate": "Native session request ownership, restart and disconnect tests",
       "evidence_runs": [

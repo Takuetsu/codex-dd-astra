@@ -53,7 +53,7 @@ class ExactUpstreamGovCloudRestoration(unittest.TestCase):
     def test_exact_seven_edits_only_and_provenance(self):
         records = json.loads(LEDGER.read_text(encoding="utf-8"))
         self.assertEqual(records["contract_version"], 1)
-        self.assertEqual(len(records["paths"]), 2)
+        self.assertEqual(len(records["paths"]), 3)
         receipt = next(x for x in records["paths"] if x["path"] == SOURCE_PATH)
         self.assertEqual(receipt["before_blob"], OLD_BLOB)
         self.assertEqual(receipt["after_blob"], NEW_BLOB)
