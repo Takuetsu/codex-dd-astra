@@ -17,7 +17,8 @@
   "total_original_direct_conflicts": 15,
   "source_dispositions": {
     "audited_secure_dependency_migration": 2,
-    "frozen_reviewed_identity": 100,
+    "frozen_reviewed_identity": 99,
+    "reviewed_upstream_govcloud_guidance_restoration": 1,
     "reviewed_upstream_timeout_recovery_correction": 1,
     "verified_formatter_only": 6
   },
@@ -1728,17 +1729,27 @@
     {
       "path": "codex-rs/tui/src/lib.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "7b0746fe66b55537d3c445bfac194cbdb005b2b2",
+      "current_blob": "f45b01a668998d817abec91313f425f2fa6a9ad7",
       "historical_reviewed_blob": "7b0746fe66b55537d3c445bfac194cbdb005b2b2",
       "production_044_blob": "83ad7124e531be410477bd097cde8950bca40ed2",
-      "disposition": "frozen_reviewed_identity",
+      "disposition": "reviewed_upstream_govcloud_guidance_restoration",
       "original_direct_conflict": true,
       "original_conflict_gate": "TUI entrypoint managed-daemon forwarding and adaptive isolation",
       "evidence_runs": [
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "upstream_govcloud_startup_guidance_restoration",
+        "review_scope": "Restores exactly seven official 0.163 GovCloud guidance imports, bootstrap prefetch, display and persistence fragments; preserves existing CodexDD adaptive and managed-daemon startup arguments",
+        "source_blob": "f45b01a668998d817abec91313f425f2fa6a9ad7",
+        "official_upstream_blob": "a3fb5447b06d48d3a2924eb25dae4174243cb844",
+        "correction_receipt": "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json",
+        "source_only_test": ".github/scripts/test_codexdd_045_3f23_govcloud_restore.py",
+        "remaining_gate": "Compile exact changed TUI source on Windows, test Bedrock/GovCloud guidance, connected remote provider and adaptive daemon startup",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/tui/src/slash_command.rs",

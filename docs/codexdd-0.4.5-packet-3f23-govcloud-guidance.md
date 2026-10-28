@@ -1,0 +1,7 @@
+# CodexDD 0.4.5 — 3F.23: preserve upstream 0.163 GovCloud startup guidance
+
+An original 109-overlap TUI entrypoint conflict was found to have omitted upstream 0.163 Bedrock/GovCloud discovery guidance, despite `onboarding::check_gov_cloud` and `run_gov_cloud_guidance` remaining in the repository. This could skip official GovCloud usage guidance for Amazon Bedrock or connected app-server sessions.
+
+**Exact correction:** Restore seven official upstream 0.163 blocks in `codex-rs/tui/src/lib.rs`: config edit and onboarding imports, connected-vs-local provider conditional, async guidance discovery alongside bootstrap/hooks prefetch, result handling, and guidance acknowledgment persistence. Preserve CodexDD adaptive-family argument, managed-daemon forwarding, startup draft lifecycle and all other fork source. A new correction receipt pins old/new Git blobs and the official 0.163 baseline. The fail-closed source test proves the exact seven inverse substitutions reconstruct the full previously reviewed fork blob, so no unrelated runtime code drift is accepted.
+
+This is a **potential behavior regression correction, not release acceptance**. No native Windows compilation at the new TUI source SHA, end-to-end Bedrock provider detection, or acknowledgment persistence test has yet passed. Original 109-overlap semantic gates and production release are still unapproved. Follow with focused Windows TUI compile and representative GovCloud tests, then final integration. Do not silently treat the prior 40/40 result as covering newly modified `lib.rs`.

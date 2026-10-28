@@ -11,6 +11,16 @@
       "reason": "Restore upstream startup protected-input timeout quarantine instead of propagating TimedOut error",
       "required_native_gate": "TUI startup input timeout, protected request quarantine and terminal color probe regression",
       "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "before_blob": "7b0746fe66b55537d3c445bfac194cbdb005b2b2",
+      "after_blob": "f45b01a668998d817abec91313f425f2fa6a9ad7",
+      "official_163_blob": "a3fb5447b06d48d3a2924eb25dae4174243cb844",
+      "source_parent": "44c15253c790b822cc5cb254bb61aa554eeed0d3",
+      "reason": "Restore official 0.163 GovCloud/Bedrock onboarding guidance in TUI startup while preserving CodexDD adaptive startup model forwarding",
+      "required_native_gate": "Windows TUI GovCloud guidance and saved notice with app-server Bedrock discovery, connected server provider override and adaptive startup",
+      "release_status": "NOT_ACCEPTED"
     }
   ]
 }

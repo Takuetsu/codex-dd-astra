@@ -1,0 +1,47 @@
+# Exact source-delta proof only: GovCloud startup guidance 0.163 restored.
+# Does not replace native TUI compile, Bedrock E2E, release archive or 21-stage suite.
+name: CodexDD 0.4.5 GovCloud startup upstream source correction (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-3f23-govcloud-source.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  source-bound:
+    name: Exact GovCloud source restoration, no unrelated adaptive changes
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == '44c15253c790b822cc5cb254bb61aa554eeed0d3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact reviewed candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Pin upstream source delta and secured dependency graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '44c15253c790b822cc5cb254bb61aa554eeed0d3'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/lib.rs)" = 'f45b01a668998d817abec91313f425f2fa6a9ad7'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/startup.rs)" = 'f092c3cf69b8302609f975ee2931e8fd15aa6797'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(git rev-parse HEAD:MODULE.bazel.lock)" = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f23_govcloud_restore.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f20_startup_timeout_guard.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f14_owner_matrix.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f18_generated_notifications.py -v
+          test -z "$(git status --porcelain)"
+          echo 'PASS: exact 0.163 GovCloud restoration, upstream protected-modal fix and unchanged secure graph'
+          echo 'NOT ACCEPTED: native TUI GovCloud behavior and full release still pending'

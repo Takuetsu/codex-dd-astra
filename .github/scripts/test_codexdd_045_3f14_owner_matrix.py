@@ -120,7 +120,8 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         self.assertEqual(
             dict(count),
             {
-                "frozen_reviewed_identity": 100,
+                "frozen_reviewed_identity": 99,
+                "reviewed_upstream_govcloud_guidance_restoration": 1,
                 "audited_secure_dependency_migration": 2,
                 "verified_formatter_only": 6,
                 "reviewed_upstream_timeout_recovery_correction": 1,
@@ -142,7 +143,7 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         }
         self.assertEqual(set(selected), expected)
         self.assertEqual(
-            len([r for r in self.matrix["paths"] if "focused_review" in r]), 6
+            len([r for r in self.matrix["paths"] if "focused_review" in r]), 7
         )
         native = (
             ROOT / ".github/workflows/codexdd-045-109-core-tui-native.yml"
