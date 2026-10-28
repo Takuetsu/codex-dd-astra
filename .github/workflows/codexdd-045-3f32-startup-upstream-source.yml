@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   startup-source-only:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '4fe38bf164c0c39420b85faa280c0ba4ca541571'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '37ee68da1dbba73cb0a411d38e97bea1ce5202d9'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '4fe38bf164c0c39420b85faa280c0ba4ca541571'
+          test "$(git rev-parse HEAD^)" = '37ee68da1dbba73cb0a411d38e97bea1ce5202d9'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'

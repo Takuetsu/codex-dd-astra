@@ -64,7 +64,10 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
         self.assertEqual(
             item["official_163_blob"], "4c329f378702414c3c17cc31802c778a8dbb2266"
         )
-        # Historical 3F20 upstream timeout quarantine source, now preserved as a Git blob.\n        source = subprocess.check_output(["git", "cat-file", "blob", item["timeout_recovery_blob"]], cwd=ROOT).decode("utf-8")
+        # Historical 3F20 upstream timeout quarantine source, preserved as a Git blob.
+        source = subprocess.check_output(
+            ["git", "cat-file", "blob", item["timeout_recovery_blob"]], cwd=ROOT
+        ).decode("utf-8")
         self.assertEqual(source.count(NEW), 1)
         self.assertEqual(source.count(OLD), 0)
         self.assertEqual(oid(source.encode("utf-8")), item["timeout_recovery_blob"])
