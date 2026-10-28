@@ -24,12 +24,16 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-          fetch-depth: 2
+          # The immutable 3F.25 prior-source blob is four ancestors behind the
+          # workflow-only commit; avoid full-history fetch on this large repository.
+          fetch-depth: 8
       - name: Verify reviewed source identity and security constraints
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           if ((git rev-parse HEAD^).Trim() -ne 'ead7fd1ae597f7d61132212622809d259c286ada') { throw 'Unexpected workflow-only parent' }
+          & git cat-file -e '994d54b631493b3d0784e836c544c57a275e9985^{blob}'
+          if ($LASTEXITCODE -ne 0) { throw 'Shallow checkout omitted immutable pre-restoration source blob' }
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
           if ((git rev-parse 'HEAD:codex-rs/Cargo.lock').Trim() -ne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Reviewed Cargo.lock changed' }
           if ((git rev-parse 'HEAD:codex-rs/Cargo.toml').Trim() -ne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Reviewed Cargo.toml changed' }
