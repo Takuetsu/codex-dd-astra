@@ -21,7 +21,11 @@ OVERLAPS = (
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 REPLAY = "77bd55e2360a3c35f94ee1608c8b7eed49247365"
 PRE_TLS_INTEGRATION = "e35cf007be31d2fd5f6aa98c1360b297e5b9325a"
-PATCHED_TLS_LOCK = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
+# Original 15-conflict ledger remains frozen at the pre-TLS snapshot.
+# The crypto-owner migration replaced only the current lock identity.
+SECURE_CARGO_TOML = "cfebd9b784ef9ff027b274aa9f7101c9c2496613"
+SECURE_CARGO_LOCK = "13bc15ff844e93dfaf7777c73bb7313b35bb3b81"
+SECURE_DENY = "f282c7c55d05201e308e60804f85754c8522d462"
 
 
 def git(*args: str) -> str:
@@ -81,7 +85,7 @@ class OriginalDirectConflictReceipt(unittest.TestCase):
                         r["integration_reviewed_blob"],
                     )
                     self.assertEqual(
-                        git("rev-parse", "HEAD:" + r["path"]), PATCHED_TLS_LOCK
+                        git("rev-parse", "HEAD:" + r["path"]), SECURE_CARGO_LOCK
                     )
                 else:
                     self.assertEqual(
@@ -135,7 +139,15 @@ class OriginalDirectConflictReceipt(unittest.TestCase):
         )
         self.assertEqual(
             git("hash-object", "codex-rs/deny.toml"),
-            "ea7fdc149fc880c6b36d75c29851641034289a4e",
+            SECURE_DENY,
+        )
+
+    def test_current_secure_manifest_is_still_pinned(self):
+        self.assertEqual(
+            git("rev-parse", "HEAD:codex-rs/Cargo.toml"), SECURE_CARGO_TOML
+        )
+        self.assertEqual(
+            git("rev-parse", "HEAD:codex-rs/Cargo.lock"), SECURE_CARGO_LOCK
         )
 
     def test_retired_original_conflict_diagnostic(self):

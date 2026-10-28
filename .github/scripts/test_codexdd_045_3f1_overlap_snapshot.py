@@ -24,7 +24,15 @@ PINNED_UPSTREAM = "83086188ae0614bd882818ff1aa23f3194962012"
 PINNED_PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 PINNED_SNAPSHOT = "f6fb89c098da28626c7c072a40d5e9b7306c8866"
 PRE_TLS_INTEGRATION = "e35cf007be31d2fd5f6aa98c1360b297e5b9325a"
-PATCHED_TLS_LOCK = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
+# Frozen 0.163 evidence is not rewritten. These are the separately reviewed
+# current crypto-owner candidate identities, not production release markers.
+SECURE_CARGO_TOML = "cfebd9b784ef9ff027b274aa9f7101c9c2496613"
+SECURE_CARGO_LOCK = "13bc15ff844e93dfaf7777c73bb7313b35bb3b81"
+SECURE_DENY = "f282c7c55d05201e308e60804f85754c8522d462"
+SECURE_BLOBS = {
+    "codex-rs/Cargo.toml": SECURE_CARGO_TOML,
+    "codex-rs/Cargo.lock": SECURE_CARGO_LOCK,
+}
 
 
 def git(*args: str) -> bytes:
@@ -109,13 +117,13 @@ class FourWayOverlapReceipt(unittest.TestCase):
                 self.assertNotEqual(base, production)
                 self.assertNotEqual(production, reviewed)
                 self.assertEqual(self.production.get(path), production)
-                if path == "codex-rs/Cargo.lock":
-                    # The frozen four-way receipt must retain its original SHA.
-                    # Only the separately verified three-crate TLS lock supersedes it.
-                    self.assertEqual(self.historical_integration.get(path), reviewed)
-                    self.assertEqual(self.integration.get(path), PATCHED_TLS_LOCK)
+                # Historical 0.163 review source is immutable, including the
+                # old lock and workspace manifest. Changes to these two paths
+                # must match *both* separately audited secure-owner blobs.
+                self.assertEqual(self.historical_integration.get(path), reviewed)
+                if path in SECURE_BLOBS:
+                    self.assertEqual(self.integration.get(path), SECURE_BLOBS[path])
                 else:
-                    self.assertEqual(self.historical_integration.get(path), reviewed)
                     self.assertEqual(
                         self.integration.get(path), current_blob(path, reviewed)
                     )
@@ -152,18 +160,15 @@ class FourWayOverlapReceipt(unittest.TestCase):
                     current_blob(row["path"], row["reviewed_045_blob"]),
                 )
 
-    def test_dependency_policy_not_implicitly_promoted(self):
-        self.assertEqual(
-            git("hash-object", "codex-rs/Cargo.toml").decode().strip(),
-            "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4",
-        )
-        self.assertEqual(
-            git("hash-object", "codex-rs/Cargo.lock").decode().strip(),
-            "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb",
-        )
+    def test_security_owner_graph_not_implicitly_promoted(self):
+        for path, reviewed in SECURE_BLOBS.items():
+            with self.subTest(path=path):
+                self.assertEqual(
+                    git("hash-object", path).decode().strip(), reviewed
+                )
         self.assertEqual(
             git("hash-object", "codex-rs/deny.toml").decode().strip(),
-            "ea7fdc149fc880c6b36d75c29851641034289a4e",
+            SECURE_DENY,
         )
 
 

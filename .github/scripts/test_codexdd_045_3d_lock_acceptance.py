@@ -15,7 +15,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION = "b25550dcb2c6e84a84074b603086c9db6f32a63b"
 BASELINE_LOCK = "0c913b46674d3593ee84f1fee5508d16e33efae5"
-WINDOWS_RESOLVED_LOCK = "a6cd27b0b70fde2f2be9c1777f3666ad3fa318bb"
+# Current 0.4.5 nonrelease graph, verified by native Windows owner tests
+# and original unchanged all-target cargo-deny. Not a shipping acceptance.
+WINDOWS_RESOLVED_LOCK = "13bc15ff844e93dfaf7777c73bb7313b35bb3b81"
+SECURE_CARGO_TOML = "cfebd9b784ef9ff027b274aa9f7101c9c2496613"
 RMCP_REV = "4048ac40e958fb1a7d614617a2ae8d26666ee2fa"
 
 
@@ -48,6 +51,9 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
             oid(git_file(PRODUCTION, "codex-rs/Cargo.lock")), BASELINE_LOCK
         )
         self.assertEqual(self.lock["version"], 4)
+        self.assertEqual(
+            oid(git_file("HEAD", "codex-rs/Cargo.toml")), SECURE_CARGO_TOML
+        )
 
     def test_upstream_0163_workspace_versions_and_rmcp_revision(self):
         for crate in ("codex-core", "codex-tui", "codex-app-server", "codex-feedback"):
@@ -111,6 +117,46 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
             "Do not import unapproved BZIP2 license dependencies",
         )
         self.assertNotIn("bzip2", self.packages[("zip", "9.0.5")]["dependencies"])
+
+    def test_crypto_bigint_owners_and_tls_root_fixes_remain_locked(self):
+        # All dependency owners must remain on the reviewed secure graph;
+        # no vulnerable 0.5.x crypto-bigint is permitted in any target.
+        self.assertEqual(
+            sorted(version for name, version in self.packages if name == "crypto-bigint"),
+            ["0.7.10"],
+        )
+        for name, version in (
+            ("ctutils", "0.4.6"),
+            ("p256", "0.14.0"),
+            ("p384", "0.14.0"),
+            ("hpke", "0.14.1"),
+            ("age", "0.12.1"),
+            ("age-core", "0.12.0"),
+            ("clatter", "3.0.0"),
+            ("aws-config", "1.13.0"),
+            ("rtc", "0.21.1"),
+            ("rustls-webpki", "0.103.16"),
+            ("webpki-roots", "1.0.10"),
+            ("webpki-root-certs", "1.0.10"),
+        ):
+            with self.subTest(name=name):
+                self.assertIn((name, version), self.packages)
+                self.assertFalse(
+                    any(key == name and ver != version for key, ver in self.packages)
+                )
+        # Exact Git revisions rather than floating Git refs or registry-only
+        # substitutions are required for the reviewed encryption and KEM owners.
+        for name, url, rev, version in (
+            ("age", "https://github.com/str4d/rage", "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f", "0.12.1"),
+            ("age-core", "https://github.com/str4d/rage", "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f", "0.12.0"),
+            ("clatter", "https://github.com/jmlepisto/clatter", "9a8d15c4f80d5911ca0403aa22e0de99ea59df08", "3.0.0"),
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(
+                    self.packages[(name, version)]["source"],
+                    f"git+{url}?rev={rev}#{rev}",
+                )
+        self.assertNotIn("source", self.packages[("aws-config", "1.13.0")])
 
     def test_release_markers_not_promoted_by_lock_acceptance(self):
         self.assertEqual(
