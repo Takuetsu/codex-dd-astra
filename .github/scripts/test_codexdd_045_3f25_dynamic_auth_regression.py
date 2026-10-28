@@ -37,7 +37,14 @@ class DynamicToolAuthMatrixRestoration(unittest.TestCase):
             before, after = edit["before"].encode("utf-8"), edit["after"].encode("utf-8")
             self.assertEqual(prior.count(before), edit["count"])
             prior = prior.replace(before, after)
-        actual = source_path.read_bytes()
+        # Windows checkout may normalize LF Git blobs to CRLF in the working tree.
+        # Require no tracked source changes, then compare exact committed Git bytes.
+        subprocess.run(
+            ["git", "diff", "--quiet", "HEAD", "--", receipt["path"]],
+            cwd=ROOT,
+            check=True,
+        )
+        actual = git("cat-file", "blob", "HEAD:" + receipt["path"])
         self.assertEqual(prior, actual)
         self.assertEqual(oid(actual), receipt["after_blob"])
         self.assertEqual(

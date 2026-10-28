@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   protected-owners:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '5be8162040617283e3ef63e028244ce5b62936f1'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '67a27d9c3533ea6a1e69b12c9d8c5a934748f804'
     runs-on: windows-2022
     timeout-minutes: 60
     env:
@@ -24,14 +24,14 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-          # The immutable 3F.25 prior-source blob is four ancestors behind the
-          # workflow-only commit; avoid full-history fetch on this large repository.
+          # Fetch bounded ancestors for immutable pre-restoration Git object; 
+          # no full-history fetch on this large repository.
           fetch-depth: 8
       - name: Verify reviewed source identity and security constraints
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          if ((git rev-parse HEAD^).Trim() -ne '5be8162040617283e3ef63e028244ce5b62936f1') { throw 'Unexpected workflow-only parent' }
+          if ((git rev-parse HEAD^).Trim() -ne '67a27d9c3533ea6a1e69b12c9d8c5a934748f804') { throw 'Unexpected workflow-only parent' }
           & git cat-file -e '994d54b631493b3d0784e836c544c57a275e9985^{blob}'
           if ($LASTEXITCODE -ne 0) { throw 'Shallow checkout omitted immutable pre-restoration source blob' }
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
