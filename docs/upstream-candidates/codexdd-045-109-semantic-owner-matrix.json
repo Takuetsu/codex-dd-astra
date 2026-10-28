@@ -1,0 +1,1732 @@
+{
+  "contract_version": 1,
+  "scope": "NONRELEASE_SOURCE_OWNER_REVIEW_ONLY",
+  "release_status": "NOT_ACCEPTED",
+  "source_branch": "dd/codexdd-v0.4.5-109-overlap-semantic-review",
+  "official_upstream": "rust-v0.163.0",
+  "historical_overlap_receipt": "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json",
+  "historical_direct_conflicts": "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json",
+  "historical_formatter_receipt": "docs/upstream-candidates/codexdd-045-format-followup.json",
+  "actual_candidate_security_blobs": {
+    "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+    "codex-rs/Cargo.lock": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+    "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462",
+    "codex-rs/vendor/aws-config-1.13.0": "5b1db93de9e14ab5c060794d23a567d907b66f21"
+  },
+  "total_paths": 109,
+  "total_original_direct_conflicts": 15,
+  "source_dispositions": {
+    "frozen_reviewed_identity": 100,
+    "audited_secure_dependency_migration": 2,
+    "verified_formatter_only": 7
+  },
+  "owner_counts": {
+    "bazel_packaging": 3,
+    "dependency": 2,
+    "generated_protocol": 12,
+    "app_server_protocol": 11,
+    "cli_startup": 2,
+    "config": 1,
+    "core_authority_history": 21,
+    "persistence_rollout_memory": 13,
+    "tui_adaptive_daemon": 44
+  },
+  "owner_contracts": {
+    "bazel_packaging": {
+      "contract": "Bazel 0.163 workflow/target graph must retain fork Windows CI bounds and produce a secure-graph MSVC release archive",
+      "evidence": [
+        39630905182
+      ],
+      "next_gate": "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging"
+    },
+    "dependency": {
+      "contract": "Pinned secure Cargo sources, no crypto-bigint 0.5.x, no unauthorized advisories or Git ref drift",
+      "evidence": [
+        40581389379,
+        40579717552,
+        40578510589
+      ],
+      "next_gate": "Frozen final all-target cargo-deny and native owner regression on release candidate"
+    },
+    "generated_protocol": {
+      "contract": "Stable/experimental schemas, notification TypeScript and Python SDK must regenerate byte-exactly",
+      "evidence": [
+        40598386099
+      ],
+      "next_gate": "Frozen-source generator drift and native app-server protocol acceptance"
+    },
+    "app_server_protocol": {
+      "contract": "Thread-owned verification and adaptive notifications preserve authenticated, serialized, fail-closed RPC semantics",
+      "evidence": [
+        40598678934
+      ],
+      "next_gate": "Full contract review for every protocol and handler path, plus native integration"
+    },
+    "cli_startup": {
+      "contract": "CLI startup and embedded/daemon entry preserve Windows authority, argument and adaptive isolation",
+      "evidence": [],
+      "next_gate": "Secure-graph native CLI startup, daemon and argument regression"
+    },
+    "config": {
+      "contract": "0.163 config parsing retains CodexDD adaptive, Worker, elevation and trust contract",
+      "evidence": [],
+      "next_gate": "Secure-graph config parsing and native startup regression"
+    },
+    "core_authority_history": {
+      "contract": "Registry, Guardian, Worker, trusted signals and history normalization preserve fail-closed policy and replay",
+      "evidence": [
+        40583499451
+      ],
+      "next_gate": "Per-path semantic source review plus frozen-source native authority tests"
+    },
+    "persistence_rollout_memory": {
+      "contract": "Rollout, history, memory and state save/read/fork preserve private workflow data and durable contract",
+      "evidence": [
+        40598678934
+      ],
+      "next_gate": "Per-path memory and state native regression, with historical replay compatibility"
+    },
+    "tui_adaptive_daemon": {
+      "contract": "TUI event ordering, adaptive trust, Worker binding, elevated startup and daemon paths preserve fork safety",
+      "evidence": [
+        40583499451
+      ],
+      "next_gate": "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite"
+    }
+  },
+  "paths": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "owner": "bazel_packaging",
+      "current_blob": "0595de4220a15c98d6f3862368d7df0288012ccc",
+      "historical_reviewed_blob": "0595de4220a15c98d6f3862368d7df0288012ccc",
+      "production_044_blob": "716fcca85a3cd03f44647ffab051aed34bd9c95f",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Native Bazel release-profile packaging and Windows MSVC smoke",
+      "evidence_runs": [
+        39630905182
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/BUILD.bazel",
+      "owner": "bazel_packaging",
+      "current_blob": "843e9fe095e0982df2043bb17c7da8e6e1c95025",
+      "historical_reviewed_blob": "843e9fe095e0982df2043bb17c7da8e6e1c95025",
+      "production_044_blob": "2c92e0d3723460d245538c67c8fa1bc8cce57e3c",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        39630905182
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "owner": "dependency",
+      "current_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+      "historical_reviewed_blob": "a8eb8a076276cb3db5674b33c67d743b1c3d21fc",
+      "production_044_blob": "0c913b46674d3593ee84f1fee5508d16e33efae5",
+      "disposition": "audited_secure_dependency_migration",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "All-target cargo-deny advisory decision and locked candidate build",
+      "evidence_runs": [
+        40581389379,
+        40579717552,
+        40578510589
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/Cargo.toml",
+      "owner": "dependency",
+      "current_blob": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+      "historical_reviewed_blob": "c78e1e92e3cfd21a4d16ceea2d55b43d1976e8e4",
+      "production_044_blob": "72f91ace86ea1e5335bb789b0886d4d9c81bffb4",
+      "disposition": "audited_secure_dependency_migration",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40581389379,
+        40579717552,
+        40578510589
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "owner": "generated_protocol",
+      "current_blob": "443297aa65e890a4601d5bdcc9ef831a33a5b477",
+      "historical_reviewed_blob": "443297aa65e890a4601d5bdcc9ef831a33a5b477",
+      "production_044_blob": "ade3dbd6fa3698be5c6f54b070c74be093e517dc",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "owner": "generated_protocol",
+      "current_blob": "98ce23d7be0ad5d0c2db67bb3cb4855fd9429f85",
+      "historical_reviewed_blob": "98ce23d7be0ad5d0c2db67bb3cb4855fd9429f85",
+      "production_044_blob": "d1cc19b7cfcb16d3684589eec2cf4870e21aa78c",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "owner": "generated_protocol",
+      "current_blob": "3c46fd551b2ebdedcb2f0483ff104276f56dfe52",
+      "historical_reviewed_blob": "3c46fd551b2ebdedcb2f0483ff104276f56dfe52",
+      "production_044_blob": "775354e0ae6e0d81aad038625f16c7e1675ce10f",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "owner": "generated_protocol",
+      "current_blob": "ec3c7b7bc2c61e89d4b39b17827edc6cb0cb3691",
+      "historical_reviewed_blob": "ec3c7b7bc2c61e89d4b39b17827edc6cb0cb3691",
+      "production_044_blob": "e123a5131aecd33e574b1fcd87763176ae4af5ec",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "owner": "generated_protocol",
+      "current_blob": "10fdcbeb1ffc7e6b4bf08bca3af08e7429a95810",
+      "historical_reviewed_blob": "10fdcbeb1ffc7e6b4bf08bca3af08e7429a95810",
+      "production_044_blob": "94bf97c4c9ec45371794d37d49864542967be50d",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Exact candidate native stable/experimental schema regeneration",
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "owner": "generated_protocol",
+      "current_blob": "d13a46abe6ab7224612abcbd4cf82951c7b0aab8",
+      "historical_reviewed_blob": "d13a46abe6ab7224612abcbd4cf82951c7b0aab8",
+      "production_044_blob": "6b29934a6fa191e695c8c580a25fac34b92edcc5",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Exact candidate native stable/experimental schema regeneration",
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "owner": "generated_protocol",
+      "current_blob": "39931bea900f12b97c0c876d2708ad64844f649f",
+      "historical_reviewed_blob": "39931bea900f12b97c0c876d2708ad64844f649f",
+      "production_044_blob": "c239fc7bfa81f75d4725237dcd967d5484a6f8f2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Exact candidate TypeScript notification contract tests",
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "owner": "generated_protocol",
+      "current_blob": "7edad7f0219258e2fe65b9f97e095940ba78c675",
+      "historical_reviewed_blob": "7edad7f0219258e2fe65b9f97e095940ba78c675",
+      "production_044_blob": "2c34825523a52c69be6093c7f90e3c1923f6e581",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Exact candidate TypeScript envelope contract tests",
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "owner": "generated_protocol",
+      "current_blob": "d34e0eeb106b8cbd90438933fccdc05199abca0d",
+      "historical_reviewed_blob": "d34e0eeb106b8cbd90438933fccdc05199abca0d",
+      "production_044_blob": "786f961364a86a74347ab8806e3301d4e09d7135",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "6cb1a33ea48ed0de73f420ff6c179d9629fec45a",
+      "historical_reviewed_blob": "6cb1a33ea48ed0de73f420ff6c179d9629fec45a",
+      "production_044_blob": "82f047ec52f9762e607a8f73db71357ddb3d1ad4",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "82c980c427501b594389fed439e105c2f696b9a5",
+      "historical_reviewed_blob": "82c980c427501b594389fed439e105c2f696b9a5",
+      "production_044_blob": "6941ecc90dc3c364b8029eb420aeb35d413da97f",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "4180b91565e1a47b38c4f40114716e55b2973d3f",
+      "historical_reviewed_blob": "4180b91565e1a47b38c4f40114716e55b2973d3f",
+      "production_044_blob": "a18516d0fbae6d74d09eb7586639bd6bc1d0b3a2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "04f38d2535ba46da2bc22358589aeb1bd2840499",
+      "historical_reviewed_blob": "04f38d2535ba46da2bc22358589aeb1bd2840499",
+      "production_044_blob": "5b646bcb09da65e9752b5f318c9e48aab9b27b36",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
+      "historical_reviewed_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
+      "production_044_blob": "65824b0da966df860bcc901d681017545de0227e",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a",
+      "historical_reviewed_blob": "d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a",
+      "production_044_blob": "c4011790aa019b25978cc86fad98d59c4206d88c",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "c93967717664145a72390384749747212fd5c63a",
+      "historical_reviewed_blob": "c93967717664145a72390384749747212fd5c63a",
+      "production_044_blob": "05256bae425f635997229a3b29b26c5f1e8eee19",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "5c4633ab48ea77692e28193ea6e128ec58067a37",
+      "historical_reviewed_blob": "5c4633ab48ea77692e28193ea6e128ec58067a37",
+      "production_044_blob": "da10d7c0781e81034b872292a280cf31b5a5b9c8",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "1186f0a181704d8ea45243a850f971f1057cb080",
+      "historical_reviewed_blob": "1186f0a181704d8ea45243a850f971f1057cb080",
+      "production_044_blob": "8b0825017d7a05793184b98134474a0f03c7c5de",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "42b434e017c527a8785fbaedf43292a83e1af09d",
+      "historical_reviewed_blob": "42b434e017c527a8785fbaedf43292a83e1af09d",
+      "production_044_blob": "79bb2c10a6994dfdfcd96d7f458fdc15c5f60ba7",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/cli/BUILD.bazel",
+      "owner": "bazel_packaging",
+      "current_blob": "5dd2b8b9629275fb2c392c59134ea95a3ce317d5",
+      "historical_reviewed_blob": "5dd2b8b9629275fb2c392c59134ea95a3ce317d5",
+      "production_044_blob": "5da93d14962eb0a19f5c14542e62d2d0d68f6ee0",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        39630905182
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "owner": "cli_startup",
+      "current_blob": "9379d52b41473f1a57cb49d07048af7c139ebcf9",
+      "historical_reviewed_blob": "9379d52b41473f1a57cb49d07048af7c139ebcf9",
+      "production_044_blob": "173d95554ec555bd4ea5e04408a95d350f209015",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/cli/tests/daemon_startup.rs",
+      "owner": "cli_startup",
+      "current_blob": "e1c6d330f602f3c4cebf9d7163ecdcd2adb9100f",
+      "historical_reviewed_blob": "e1c6d330f602f3c4cebf9d7163ecdcd2adb9100f",
+      "production_044_blob": "a530450d73cb88cea034b2792ae19cb83400d6f6",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "owner": "config",
+      "current_blob": "a07f08c8831dd011d4950a52088c7233722620d8",
+      "historical_reviewed_blob": "a07f08c8831dd011d4950a52088c7233722620d8",
+      "production_044_blob": "72f0ad4756d6f4a523bd2ed886be3757343677eb",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "owner": "generated_protocol",
+      "current_blob": "1da7a45f8c2cbffe0a7e30ce9f4564663b37b779",
+      "historical_reviewed_blob": "1da7a45f8c2cbffe0a7e30ce9f4564663b37b779",
+      "production_044_blob": "7945ce6b8c9d4b7fea174092ff90c4a7a466321b",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "owner": "core_authority_history",
+      "current_blob": "dca46d848c2035457001f07c191d201b1b8db380",
+      "historical_reviewed_blob": "dca46d848c2035457001f07c191d201b1b8db380",
+      "production_044_blob": "cd6bf20ea4259d72926835b08dc502fbdf289ff7",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "owner": "core_authority_history",
+      "current_blob": "583447f35eaba564771771813bd4d897cb6b73de",
+      "historical_reviewed_blob": "583447f35eaba564771771813bd4d897cb6b73de",
+      "production_044_blob": "a08e2386475b0c4e87d0d79aaccc27efeaff641d",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "owner": "core_authority_history",
+      "current_blob": "2e5525612379a29af24116dd738a6612dc4420e6",
+      "historical_reviewed_blob": "2e5525612379a29af24116dd738a6612dc4420e6",
+      "production_044_blob": "ebfeb73694a5d22b4a030ca7d89e2d370511924e",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "owner": "core_authority_history",
+      "current_blob": "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9",
+      "historical_reviewed_blob": "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9",
+      "production_044_blob": "24fc487a32cd930f39a3c8137c40790d37e60713",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "owner": "core_authority_history",
+      "current_blob": "17680eeef69718965df66cc12466985c84bdcd63",
+      "historical_reviewed_blob": "17680eeef69718965df66cc12466985c84bdcd63",
+      "production_044_blob": "95327c51bc04000d8eb72fe41c6d3a4da632dff7",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/history_tests.rs",
+      "owner": "core_authority_history",
+      "current_blob": "4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d",
+      "historical_reviewed_blob": "4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d",
+      "production_044_blob": "c2268ac3c142b8a788afa375f3b832b4c393464a",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Retained history replay under inherited and interrupted calls",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/normalize.rs",
+      "owner": "core_authority_history",
+      "current_blob": "4ca88c6a668e9896df06ca81940a0e41e357898d",
+      "historical_reviewed_blob": "4ca88c6a668e9896df06ca81940a0e41e357898d",
+      "production_044_blob": "0f60bdc82016c45ff035667778d20aba0ee298f3",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Context normalization interrupted versus in-progress behavior",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "owner": "core_authority_history",
+      "current_blob": "118907bac6f1f084c96b81e78c2d1b7fc923583d",
+      "historical_reviewed_blob": "118907bac6f1f084c96b81e78c2d1b7fc923583d",
+      "production_044_blob": "61ae6cecd6573c4d51e2fcad94239e9fda226964",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "owner": "core_authority_history",
+      "current_blob": "106f07a29d8cde54784c516898472518736b9c37",
+      "historical_reviewed_blob": "106f07a29d8cde54784c516898472518736b9c37",
+      "production_044_blob": "58afefe47716a4dce344685974db69b46a6d4d35",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "owner": "core_authority_history",
+      "current_blob": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd",
+      "historical_reviewed_blob": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd",
+      "production_044_blob": "294d0a4e30e6db5a6a5415ded47305469c9a3af7",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "owner": "core_authority_history",
+      "current_blob": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1",
+      "historical_reviewed_blob": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1",
+      "production_044_blob": "b1df117534bae52bd4e6dd1ecdbfc75350042f15",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "owner": "core_authority_history",
+      "current_blob": "50f524a055a92f0d19be5e6bc2665fe18718e35b",
+      "historical_reviewed_blob": "50f524a055a92f0d19be5e6bc2665fe18718e35b",
+      "production_044_blob": "190e23137e6e4d4b097bea98b6b1814adec14720",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "owner": "core_authority_history",
+      "current_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
+      "historical_reviewed_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
+      "production_044_blob": "ff796b8c877f3e671252d6db885ac968b08e5893",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "owner": "core_authority_history",
+      "current_blob": "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25",
+      "historical_reviewed_blob": "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25",
+      "production_044_blob": "fe36ae0ae22feca5118d52d0dbee762b06b00c6d",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "owner": "core_authority_history",
+      "current_blob": "05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1",
+      "historical_reviewed_blob": "05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1",
+      "production_044_blob": "4f039ad37bf9dbd49c585dd5a98e859777fbb1c6",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "owner": "core_authority_history",
+      "current_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
+      "historical_reviewed_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
+      "production_044_blob": "4ddea6c560bbc0ff39c47abe2b4535169a4813ba",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "owner": "core_authority_history",
+      "current_blob": "fc75b3bbf91f1881bd32faaaca93356fbb598b5e",
+      "historical_reviewed_blob": "fc75b3bbf91f1881bd32faaaca93356fbb598b5e",
+      "production_044_blob": "5b67eb29406d04b021b0fd9a5e259eccdd7da3b2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Post-hook command policy and cancellation lifecycle native tests",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "owner": "core_authority_history",
+      "current_blob": "422870dba8b5a3b36994a598380c93f58760ad1b",
+      "historical_reviewed_blob": "422870dba8b5a3b36994a598380c93f58760ad1b",
+      "production_044_blob": "a7e9353da4e397bc49df84521793cc06ae3341de",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "owner": "core_authority_history",
+      "current_blob": "379eb8d44dfa672b70ed3b7d5408e882d8e803e3",
+      "historical_reviewed_blob": "379eb8d44dfa672b70ed3b7d5408e882d8e803e3",
+      "production_044_blob": "d9abdf0072136154432d2fbd080ddf3b2f1672be",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "owner": "core_authority_history",
+      "current_blob": "842ae7aeae97f6912e364f972ff8044061f176aa",
+      "historical_reviewed_blob": "842ae7aeae97f6912e364f972ff8044061f176aa",
+      "production_044_blob": "6021db64243290630dc436c120d26cf428e9294f",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "owner": "core_authority_history",
+      "current_blob": "0d53c5aebc2c2543f2f1190e46ed95db93992288",
+      "historical_reviewed_blob": "0d53c5aebc2c2543f2f1190e46ed95db93992288",
+      "production_044_blob": "02ae9e4f864ad69514f87a8ce3eab35ac6ed0df7",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/external-agent-migration/src/sessions/append_tests.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "72d8fc5d5cf9c388f179247330a354bd88d4c8f8",
+      "historical_reviewed_blob": "72d8fc5d5cf9c388f179247330a354bd88d4c8f8",
+      "production_044_blob": "3c4d1f4a86582aab173eef6c3ff2e286953f28f0",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "a54a5733e029fe3728a46adb3f50c68dae4d0eb2",
+      "historical_reviewed_blob": "a54a5733e029fe3728a46adb3f50c68dae4d0eb2",
+      "production_044_blob": "6822fa4b7bb5f7c7c2e658e694de4967cc9d7267",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/history/src/rollout_payload.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "180b889e87cf3b0c13d1e43cfef0f21bb88c7c1c",
+      "historical_reviewed_blob": "180b889e87cf3b0c13d1e43cfef0f21bb88c7c1c",
+      "production_044_blob": "5ab29ed9ac0ce83d3162a13f2193c7ce6796b0a0",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "a0a99cddd94064b6245e174cc74818ea3b5a3df2",
+      "historical_reviewed_blob": "a0a99cddd94064b6245e174cc74818ea3b5a3df2",
+      "production_044_blob": "a7eb71676d45219a8689790684e3012a93ed85cf",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/memories/write/src/phase1.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "a036229bb256483f3a6e96ef6ceed86e4d12f3af",
+      "historical_reviewed_blob": "a036229bb256483f3a6e96ef6ceed86e4d12f3af",
+      "production_044_blob": "04fc09475f2ac50790500975e0cfb0fd7f6c88e2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/memories/write/src/rollout_input.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "3c54f1884b409a7060f54dd90739fa897ef7e604",
+      "historical_reviewed_blob": "3c54f1884b409a7060f54dd90739fa897ef7e604",
+      "production_044_blob": "9a26400db5a1a26318507524cb6c1ffdff064169",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "owner": "app_server_protocol",
+      "current_blob": "9ff46a4e1331e15f35f95b8e17ba41dfc931a5cf",
+      "historical_reviewed_blob": "9ff46a4e1331e15f35f95b8e17ba41dfc931a5cf",
+      "production_044_blob": "5a19125a22aa3ebccc83a91b20996687cdeb76f9",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout-trace/src/protocol_event.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "4d16022f93841cb5d92eca00c76ec8cd84dd5bfd",
+      "historical_reviewed_blob": "4d16022f93841cb5d92eca00c76ec8cd84dd5bfd",
+      "production_044_blob": "c7d7a51775430045e358d89f7c4ef61f9d7addf2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "294ce2a11eacf8aca837a828a0012cb1301f3e4d",
+      "historical_reviewed_blob": "294ce2a11eacf8aca837a828a0012cb1301f3e4d",
+      "production_044_blob": "84818a2e6dbd70ac46f2a96b34488b5e1a1a1155",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "6e70783e7c2e93e9a705a2ce32f7317545ea9228",
+      "historical_reviewed_blob": "6e70783e7c2e93e9a705a2ce32f7317545ea9228",
+      "production_044_blob": "5a334771fc6d42a2fd96c6904ebd6c05d66db068",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "d222871cab7b8e55dcd1dec8faef7e9cf4918796",
+      "historical_reviewed_blob": "0fb86514d778776b2b6e76cb9eda07134757778c",
+      "production_044_blob": "cd928a6a977acbaa4a5be666c6a795ad164f3b33",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/state/src/extract.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "f9792c339f184ea66f58db9463ba8b85a1cbe4d9",
+      "historical_reviewed_blob": "f9792c339f184ea66f58db9463ba8b85a1cbe4d9",
+      "production_044_blob": "3bb6348621bcaeb460301b0453626b9c0735d8eb",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/state/src/runtime/threads.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "5a0edb6a4f5c4968df7586b5d7adae7c1653c301",
+      "historical_reviewed_blob": "5a0edb6a4f5c4968df7586b5d7adae7c1653c301",
+      "production_044_blob": "4e36e954a700d1d472cd6cab1a2a555fa4f9e9f9",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/thread-store/src/types.rs",
+      "owner": "persistence_rollout_memory",
+      "current_blob": "315498be3dcdd650fa147ca6d3c69abd9c089e2c",
+      "historical_reviewed_blob": "315498be3dcdd650fa147ca6d3c69abd9c089e2c",
+      "production_044_blob": "9a6696b209aebceee3d3976afb7f650bcf31f0ad",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598678934
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "7d9da0b198cfac44c0c06933c622b7c1515a613b",
+      "historical_reviewed_blob": "f7e48ee454899a5fb01d84ca201b163622dedf9f",
+      "production_044_blob": "b76ee1107fabcc98625fc663c7967e0dc6e906a5",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
+      "historical_reviewed_blob": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
+      "production_044_blob": "521afcee6d57e0adfdb6ffdf89aad77f6bc7c11e",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
+      "historical_reviewed_blob": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
+      "production_044_blob": "a4a84eb699475a4042a3e7b038d2cc323e079c48",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "81df877569e0c205e2a4dec5e9e790f7c7993b93",
+      "historical_reviewed_blob": "81df877569e0c205e2a4dec5e9e790f7c7993b93",
+      "production_044_blob": "86f62f5f80ea9691d96c62ba1151cd87f0c57c1e",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273",
+      "historical_reviewed_blob": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273",
+      "production_044_blob": "28dbe32a743e3608225af6cfeb6ae036b30d74bf",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf",
+      "historical_reviewed_blob": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf",
+      "production_044_blob": "3954842d391ae36715e335aba3ff9117fb630ae1",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "3b111def463e2f52b4786b7a6db8c6e3aa7954f7",
+      "historical_reviewed_blob": "29065c6c0c90c010a53bf065c95278312712a90e",
+      "production_044_blob": "86f1afec7ce715799c9fa62859e53f312918d067",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Managed daemon provenance and elevated Windows startup fallback",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "b95971975610ff94ef823eff73e36a4691e7e29c",
+      "historical_reviewed_blob": "b95971975610ff94ef823eff73e36a4691e7e29c",
+      "production_044_blob": "3007b910d9f155d68faf9f4c2e19346ef1dc848e",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "03febfb8e58c93e975f1f240195576a0f1080e08",
+      "historical_reviewed_blob": "f8156f722bd2dae8f2355788826ee9fdf1225933",
+      "production_044_blob": "1a1d42c2cb3586e19aa22ec71f8d264d97ef2909",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "662967de32dc64517b250dc180baafd1da4dd36a",
+      "historical_reviewed_blob": "662967de32dc64517b250dc180baafd1da4dd36a",
+      "production_044_blob": "e8506446b855b07a5ae44453c0a730bec627fc5d",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "e090162290f82156213340967c76a398887ecf44",
+      "historical_reviewed_blob": "e090162290f82156213340967c76a398887ecf44",
+      "production_044_blob": "6d23894a630247d8e9ea9be436ecf9a10b733d32",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "994d54b631493b3d0784e836c544c57a275e9985",
+      "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
+      "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Native session request ownership, restart and disconnect tests",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "a437116e81e54063a2df7e41752ac3e88a3d245d",
+      "historical_reviewed_blob": "a437116e81e54063a2df7e41752ac3e88a3d245d",
+      "production_044_blob": "2202f6cc661d54d6950e517e8f50adc4edb50a88",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "e60808df0448682d47af1a14b5bd8d5c52206397",
+      "historical_reviewed_blob": "e60808df0448682d47af1a14b5bd8d5c52206397",
+      "production_044_blob": "0ac1ba8cd4878e9cb61d412c4e0cb88d629b0398",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Native default model/startup and managed daemon tests",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
+      "historical_reviewed_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
+      "production_044_blob": "46584906c9c228bf20c7a1c1b676b2940b8f707c",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "5f43579e23f87a94786ae9803df8dba40060a84e",
+      "historical_reviewed_blob": "804a723f0939ca0b3b71e52afc25ac9903144446",
+      "production_044_blob": "44cd4adbcc90db4f55500d9f10b3bd8e3220364c",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa",
+      "historical_reviewed_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa",
+      "production_044_blob": "c95f1d080836e934d83296ebab20b01abf1af5be",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "d6447d22a0a1e943b1352b8c945cf7f6cf09734e",
+      "historical_reviewed_blob": "d6447d22a0a1e943b1352b8c945cf7f6cf09734e",
+      "production_044_blob": "d0e8abc5667e513b233d87f9ad7449ca1cc11fc5",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Workspace-root and app-server session authority tests",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "76ae0ab2d341188a6deed0c4347b489fa93f29e4",
+      "historical_reviewed_blob": "76ae0ab2d341188a6deed0c4347b489fa93f29e4",
+      "production_044_blob": "e1a042122e0df76b990d4b2f6668de666fe3beab",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "a584d5513ea40321e920d795bbb93b8d96e8f03b",
+      "historical_reviewed_blob": "a584d5513ea40321e920d795bbb93b8d96e8f03b",
+      "production_044_blob": "ab181ba6d60317df316bd2fcf70ab2385ef1db16",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "e463da2af9440b3dc8382464a5d0b98ee6758404",
+      "historical_reviewed_blob": "e463da2af9440b3dc8382464a5d0b98ee6758404",
+      "production_044_blob": "a0a393269cf36201c43a901f778bf48823d34d9a",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
+      "historical_reviewed_blob": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
+      "production_044_blob": "c7e06368cf7336bfee8ceaf1ab9ee1913790639a",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/interaction.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67",
+      "historical_reviewed_blob": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67",
+      "production_044_blob": "f8ec1053365881baae512dc9b1575032bec99ac6",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "Adaptive Escape interrupt, paste and guarded key-event tests",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "ad71108b91a0d7f1f079cab0482076237b138994",
+      "historical_reviewed_blob": "ad71108b91a0d7f1f079cab0482076237b138994",
+      "production_044_blob": "26e2c0f1500ef11f401c4fd3c92f228a19f9f85b",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "d17ff1c77f63c8c57e0a847c58377999fda78480",
+      "historical_reviewed_blob": "d17ff1c77f63c8c57e0a847c58377999fda78480",
+      "production_044_blob": "8b079cdb3863f0d613ec1f9eb702c142c6445133",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "17500409f70dfda7fa1c489258fa19ab01bed747",
+      "historical_reviewed_blob": "17500409f70dfda7fa1c489258fa19ab01bed747",
+      "production_044_blob": "73d7f75b26e5de276be3357a5fda836c24b4090b",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "bb747507416e7712fe4ff5832446783c0127994e",
+      "historical_reviewed_blob": "578d7443bf8c95f346915caa6251c4a50292f8e7",
+      "production_044_blob": "3779d5e6c557e3108f32a2ae329fb6a1e684bb10",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845",
+      "historical_reviewed_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845",
+      "production_044_blob": "63d8b4b41cc237167a6c32ace5eb60cb193e4c46",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/status_controls.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "c3973a6a72da8533b47951b0d529adf839398b1d",
+      "historical_reviewed_blob": "c3973a6a72da8533b47951b0d529adf839398b1d",
+      "production_044_blob": "b815e819fb0742d339d074a2dce2f98577c7c5a4",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
+      "historical_reviewed_blob": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
+      "production_044_blob": "28a23fc322abc198ee684f6132e7384e672538d2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "53ca9fdae79b07822e8551289b97f1732b5e3ab0",
+      "historical_reviewed_blob": "53ca9fdae79b07822e8551289b97f1732b5e3ab0",
+      "production_044_blob": "8c419bc8d3b1ae418b46a9db1dc3cba640cc8e3a",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c",
+      "historical_reviewed_blob": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c",
+      "production_044_blob": "80a1b2d3022ea6d989b1b25122dfb786106b3c2f",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
+      "historical_reviewed_blob": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
+      "production_044_blob": "f9d994657238fca820e1062e239bb23c51cd2dbe",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
+      "historical_reviewed_blob": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
+      "production_044_blob": "70cd5dfffc22f6f7ae1bdb66643a21a61c5cdc44",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "bec8d92caae4cdff17b7f06923bd4cd9ee358a52",
+      "historical_reviewed_blob": "ede40dcf9566a813004ac57614991f6eb1518ce4",
+      "production_044_blob": "d5405150df0ed218cb347010c9a9d817ba1ff3fc",
+      "disposition": "verified_formatter_only",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "23ea7ee8024deb95767f8322a42a1f330be715ff",
+      "historical_reviewed_blob": "23ea7ee8024deb95767f8322a42a1f330be715ff",
+      "production_044_blob": "0d1f1f28923ca09382c0cb2afc9bcf3b2248dbe9",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/cli.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
+      "historical_reviewed_blob": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
+      "production_044_blob": "841e9e282941bc856c8c7acf62f094c03c274b58",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
+      "historical_reviewed_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
+      "production_044_blob": "2a4c1190086bee4b16f86252ab802bf06e4a0361",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
+      "historical_reviewed_blob": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
+      "production_044_blob": "f103b69a4629f9d019cd2a39c3823ae29dc646bf",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "f1075c14620c0217e2433f1501c8f171bc59989d",
+      "historical_reviewed_blob": "f1075c14620c0217e2433f1501c8f171bc59989d",
+      "production_044_blob": "c09c80cbfcea36a41d839822fe15ea9abb3514b5",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "7b0746fe66b55537d3c445bfac194cbdb005b2b2",
+      "historical_reviewed_blob": "7b0746fe66b55537d3c445bfac194cbdb005b2b2",
+      "production_044_blob": "83ad7124e531be410477bd097cde8950bca40ed2",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": true,
+      "original_conflict_gate": "TUI entrypoint managed-daemon forwarding and adaptive isolation",
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a",
+      "historical_reviewed_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a",
+      "production_044_blob": "edd98b26ffdfba98d095ca6631830f2571928fe7",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932",
+      "historical_reviewed_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932",
+      "production_044_blob": "e03aa30b4723717cfc72935d118e074fbf4f2aae",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "current_blob": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
+      "historical_reviewed_blob": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
+      "production_044_blob": "a3091a07c8d8927f7fc8fbeba2ed44434487d1fd",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40583499451
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "owner": "generated_protocol",
+      "current_blob": "69f4e77ea9098353315f874e90f5495649bb1905",
+      "historical_reviewed_blob": "69f4e77ea9098353315f874e90f5495649bb1905",
+      "production_044_blob": "b527068e804a5e7bbe697464c331b21424cdafa6",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/v2_all.py",
+      "owner": "generated_protocol",
+      "current_blob": "7eba3aa28d900113f9efd85230719b50942849d0",
+      "historical_reviewed_blob": "7eba3aa28d900113f9efd85230719b50942849d0",
+      "production_044_blob": "79e2b3a2e3b7620102ab12252efc7fd0a3d2bf81",
+      "disposition": "frozen_reviewed_identity",
+      "original_direct_conflict": false,
+      "original_conflict_gate": null,
+      "evidence_runs": [
+        40598386099
+      ],
+      "semantic_status": "PENDING_OWNER_REVIEW",
+      "release_status": "NOT_ACCEPTED"
+    }
+  ]
+}
