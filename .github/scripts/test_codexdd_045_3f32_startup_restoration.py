@@ -38,16 +38,24 @@ class OriginalUpstreamStartupBehaviorRestored(unittest.TestCase):
         self.assertEqual(doc["before_blob"], "f092c3cf69b8302609f975ee2931e8fd15aa6797")
         self.assertEqual(doc["after_blob"], "e51254ea2f16f2a356670413ae29c9de0d002e9d")
         self.assertEqual(doc["official_upstream_blob"], "4c329f378702414c3c17cc31802c778a8dbb2266")
-        previous = git_bytes("cat-file", "blob", doc["before_blob"])
-        self.assertEqual(git_hash(previous), doc["before_blob"])
-        self.assertEqual(len(doc["edits"]), 3)
-        for edit in doc["edits"]:
-            start, after = edit["before"].encode(), edit["after"].encode()
-            self.assertEqual(previous.count(start), edit["count"])
-            previous = previous.replace(start, after)
         current = git_bytes("cat-file", "blob", "HEAD:" + P)
-        self.assertEqual(previous, current)
         self.assertEqual(git_hash(current), doc["after_blob"])
+        self.assertEqual(len(doc["edits"]), 3)
+        # Reverse the exact reviewed change directly from current Git content.
+        # No earlier checkout ancestor or dangling object is required.
+        historical = current
+        for edit in reversed(doc["edits"]):
+            before, after = edit["before"].encode(), edit["after"].encode()
+            self.assertEqual(historical.count(after), edit["count"])
+            historical = historical.replace(after, before, edit["count"])
+        self.assertEqual(git_hash(historical), doc["before_blob"])
+        replayed = historical
+        for edit in doc["edits"]:
+            before, after = edit["before"].encode(), edit["after"].encode()
+            self.assertEqual(replayed.count(before), edit["count"])
+            replayed = replayed.replace(before, after, edit["count"])
+        self.assertEqual(replayed, current)
+
 
     def test_upstream_startup_lifecycle_guards_and_adaptive_preservation(self):
         source = (ROOT / P).read_text(encoding="utf-8")

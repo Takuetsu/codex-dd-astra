@@ -32,18 +32,23 @@ class SessionTestOnlyRestoration(unittest.TestCase):
         self.assertEqual(r["after_blob"], "1a99fcac6b070fff957248a5e13ec37910a0e588")
         self.assertEqual(r["release_status"], "NOT_ACCEPTED")
         self.assertEqual(len(r["edits"]), 7)
-        historical = git("show", "HEAD^:" + P)
-        self.assertEqual(oid(historical), r["before_blob"])
-        changed = historical
-        for edit in r["edits"]:
-            with self.subTest(edit=edit["kind"]):
+        current = git("cat-file", "blob", "HEAD:" + P)
+        self.assertEqual(oid(current), r["after_blob"])
+        historical = current
+        # Reverse the current committed source to its original 3F.25 test blob.
+        for edit in reversed(r["edits"]):
+            with self.subTest(inverse=edit["kind"]):
                 before, after = edit["before"].encode(), edit["after"].encode()
                 self.assertEqual(edit["count"], 1)
-                self.assertEqual(changed.count(before), 1)
-                changed = changed.replace(before, after)
-        current = git("cat-file", "blob", "HEAD:" + P)
-        self.assertEqual(changed, current)
-        self.assertEqual(oid(changed), r["after_blob"])
+                self.assertEqual(historical.count(after), 1)
+                historical = historical.replace(after, before, 1)
+        self.assertEqual(oid(historical), r["before_blob"])
+        replayed = historical
+        for edit in r["edits"]:
+            before, after = edit["before"].encode(), edit["after"].encode()
+            self.assertEqual(replayed.count(before), 1)
+            replayed = replayed.replace(before, after, 1)
+        self.assertEqual(replayed, current)
         subprocess.run(["git", "diff", "--quiet", "HEAD", "--", P], cwd=ROOT, check=True)
 
     def test_five_daybreak_cases_and_all_disconnect_paths(self):

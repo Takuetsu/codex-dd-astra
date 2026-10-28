@@ -64,10 +64,19 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
         self.assertEqual(
             item["official_163_blob"], "4c329f378702414c3c17cc31802c778a8dbb2266"
         )
-        # Historical 3F20 upstream timeout quarantine source, preserved as a Git blob.
-        source = subprocess.check_output(
-            ["git", "cat-file", "blob", item["timeout_recovery_blob"]], cwd=ROOT
-        ).decode("utf-8")
+        # Reconstruct the historical timeout-quarantine source from the current
+        # candidate by reversing the three exact 3F.32 upstream additions.
+        followup = json.loads(
+            (ROOT / "docs/upstream-candidates/codexdd-045-3f32-startup-restoration-edits.json")
+            .read_text(encoding="utf-8")
+        )
+        source = SOURCE.read_text(encoding="utf-8")
+        self.assertEqual(oid(source.encode("utf-8")), followup["after_blob"])
+        for edit in reversed(followup["edits"]):
+            before, after = edit["before"], edit["after"]
+            self.assertEqual(source.count(after), edit["count"])
+            source = source.replace(after, before, edit["count"])
+        self.assertEqual(oid(source.encode("utf-8")), item["timeout_recovery_blob"])
         self.assertEqual(source.count(NEW), 1)
         self.assertEqual(source.count(OLD), 0)
         self.assertEqual(oid(source.encode("utf-8")), item["timeout_recovery_blob"])
