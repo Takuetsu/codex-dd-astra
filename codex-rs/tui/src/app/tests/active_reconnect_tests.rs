@@ -668,6 +668,9 @@ async fn reconnect_exhaustion_and_unknown_initial_thread_stay_offline() -> Resul
 async fn reconnect_allows_slow_hydration_but_bounds_a_stalled_server() -> Result<()> {
     for delay in [15, 150] {
         let (mut app, mut events, _) = make_test_app_with_channels().await;
+        // The snapshot intentionally covers an unavailable thread with a server-version notice.
+        // Do not rely on the user's/default show_server_version_notice setting.
+        app.local_settings.tui.show_server_version_notice = true;
         app.config.model = Some("gpt-test".into());
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let endpoint = crate::RemoteAppServerEndpoint::WebSocket {

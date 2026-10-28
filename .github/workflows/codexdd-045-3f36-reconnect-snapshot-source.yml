@@ -1,0 +1,28 @@
+# One-shot cheap source check before another expensive Windows TUI compilation.
+name: CodexDD 0.4.5 reconnect notice test fixture source proof (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f36-reconnect-snapshot-source.yml"]
+permissions:
+  contents: read
+jobs:
+  source-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '42eaebd71b1124045057979bb8a6a260d45eab74'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable candidate without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check exact scoped fixture correction and locked dependency graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '42eaebd71b1124045057979bb8a6a260d45eab74'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f36_reconnect_notice_fixture.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          test -z "$(git status --porcelain)"
