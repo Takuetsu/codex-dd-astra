@@ -1,0 +1,32 @@
+# One-shot source-only validation; not a native Rust build or release signoff.
+name: CodexDD 0.4.5 upstream startup lifecycle restoration source proof (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f32-startup-upstream-source.yml"]
+permissions:
+  contents: read
+jobs:
+  startup-source-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '4fe38bf164c0c39420b85faa280c0ba4ca541571'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout immutable candidate without stored credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check security pins and exact 0.163 startup restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '4fe38bf164c0c39420b85faa280c0ba4ca541571'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f32_startup_restoration.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f20_startup_timeout_guard.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          test -z "$(git status --porcelain)"

@@ -6,11 +6,14 @@
     {
       "path": "codex-rs/tui/src/app/startup.rs",
       "before_blob": "3b111def463e2f52b4786b7a6db8c6e3aa7954f7",
-      "after_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
+      "after_blob": "e51254ea2f16f2a356670413ae29c9de0d002e9d",
       "official_163_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
-      "reason": "Restore upstream startup protected-input timeout quarantine instead of propagating TimedOut error",
-      "required_native_gate": "TUI startup input timeout, protected request quarantine and terminal color probe regression",
-      "release_status": "NOT_ACCEPTED"
+      "reason": "Restore upstream startup protected-input timeout quarantine instead of propagating TimedOut error; additionally restore official WSL paste prewarm, reconnect failure safe exit cleanup and pending managed daemon restart join.",
+      "required_native_gate": "Native Windows TUI modal timeout and input quarantine, WSL right-click paste prewarm, failed reconnect orderly shutdown, pending daemon restart join; retain adaptive startup.",
+      "release_status": "NOT_ACCEPTED",
+      "timeout_recovery_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
+      "followup_source_parent": "4fe38bf164c0c39420b85faa280c0ba4ca541571",
+      "followup_correction_receipt": "docs/upstream-candidates/codexdd-045-3f32-startup-restoration-edits.json"
     },
     {
       "path": "codex-rs/tui/src/lib.rs",

@@ -1192,7 +1192,7 @@
     {
       "path": "codex-rs/tui/src/app/startup.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
+      "current_blob": "e51254ea2f16f2a356670413ae29c9de0d002e9d",
       "historical_reviewed_blob": "29065c6c0c90c010a53bf065c95278312712a90e",
       "production_044_blob": "86f1afec7ce715799c9fa62859e53f312918d067",
       "disposition": "reviewed_upstream_timeout_recovery_correction",
@@ -1204,13 +1204,13 @@
       "semantic_status": "PENDING_OWNER_REVIEW",
       "release_status": "NOT_ACCEPTED",
       "focused_review": {
-        "review_kind": "upstream_startup_quarantine_behavior_restoration",
-        "review_scope": "Port official 0.163 protected modal input TimedOut handling and retain CodexDD startup/adaptive event dispatch",
-        "source_blob": "f092c3cf69b8302609f975ee2931e8fd15aa6797",
+        "review_kind": "upstream_startup_quarantine_and_lifecycle_restoration",
+        "review_scope": "Preserve CodexDD adaptive startup and upstream protected-input timeout quarantine while restoring exact official 0.163 WSL clipboard-reader warmup, reconnect-error exit-loop cleanup and daemon-restart wait on shutdown.",
+        "source_blob": "e51254ea2f16f2a356670413ae29c9de0d002e9d",
         "official_upstream_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
         "correction_receipt": "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json",
         "source_only_test": ".github/scripts/test_codexdd_045_3f20_startup_timeout_guard.py",
-        "remaining_gate": "Native Windows TUI startup modal timeout/retry and buffered approval tests on final candidate SHA",
+        "remaining_gate": "Targeted Windows TUI startup modal protected-input, WSL right-click paste, reconnect failure orderly cleanup and daemon restart shutdown; source-only checks do not grant native owner acceptance.",
         "semantic_signoff": "NOT_GRANTED"
       }
     },

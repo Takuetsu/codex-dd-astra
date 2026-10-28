@@ -1008,6 +1008,16 @@ See the Codex keymap documentation for supported actions and examples."
             #[cfg(test)]
             _test_codex_home: None,
         };
+        if tui.is_owned_screen()
+            && app.right_click_paste_environment.wsl
+            && app.right_click_paste_environment.allows(
+                app.local_settings.tui.right_click_paste,
+                app.local_settings.transcript_mode,
+            )
+        {
+            // Prewarm WSL interop off the UI thread, without accessing clipboard contents.
+            let _ = tui.clipboard.warm_text_reader(tui.frame_requester());
+        }
         app.remember_launch_permissions();
         if !tui.is_terminal_focused() {
             app.recap.note_focus_lost(Instant::now());
@@ -1384,7 +1394,9 @@ See the Codex keymap documentation for supported actions and examples."
                         reconnect = None;
                         match result {
                             Ok(connected) => {
-                                app.finish_reconnect(tui, &mut app_server, &mut app_event_rx, connected, CODEX_CLI_VERSION).await?;
+                                if let Err(err) = app.finish_reconnect(tui, &mut app_server, &mut app_event_rx, connected, CODEX_CLI_VERSION).await {
+                                    break Err(err);
+                                }
                                 listen_for_app_server_events = true;
                                 waiting_for_initial_session_configured = false;
                             }
@@ -1481,6 +1493,11 @@ See the Codex keymap documentation for supported actions and examples."
         }
         let clear_pet_result = tui.clear_ambient_pet_image();
         let clear_result = tui.terminal.clear();
+        if let Some(task) = app.daemon_restart.take()
+            && let Err(err) = task.await.unwrap_or_else(|err| Err(err.into()))
+        {
+            tracing::warn!(error = %err, "failed to finish background server restart during exit");
+        }
         // Keep the alternate screen active until the outer guard restores both keyboard stacks.
         let exit_reason = match exit_reason_result {
             Ok(exit_reason) => {

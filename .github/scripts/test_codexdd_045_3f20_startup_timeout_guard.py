@@ -59,14 +59,15 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
         item = next(r for r in data["paths"] if r["path"] == "codex-rs/tui/src/app/startup.rs")
         self.assertEqual(item["path"], "codex-rs/tui/src/app/startup.rs")
         self.assertEqual(item["before_blob"], "3b111def463e2f52b4786b7a6db8c6e3aa7954f7")
-        self.assertEqual(item["after_blob"], "f092c3cf69b8302609f975ee2931e8fd15aa6797")
+        self.assertEqual(item["timeout_recovery_blob"], "f092c3cf69b8302609f975ee2931e8fd15aa6797")
+        self.assertEqual(item["after_blob"], "e51254ea2f16f2a356670413ae29c9de0d002e9d")
         self.assertEqual(
             item["official_163_blob"], "4c329f378702414c3c17cc31802c778a8dbb2266"
         )
-        source = SOURCE.read_text(encoding="utf-8")
+        # Historical 3F20 upstream timeout quarantine source, now preserved as a Git blob.\n        source = subprocess.check_output(["git", "cat-file", "blob", item["timeout_recovery_blob"]], cwd=ROOT).decode("utf-8")
         self.assertEqual(source.count(NEW), 1)
         self.assertEqual(source.count(OLD), 0)
-        self.assertEqual(oid(source.encode("utf-8")), item["after_blob"])
+        self.assertEqual(oid(source.encode("utf-8")), item["timeout_recovery_blob"])
         self.assertEqual(git("rev-parse", "HEAD:" + item["path"]), item["after_blob"])
         # Exact inverse reconstructs the whole previously verified formatter
         # blob. No adaptive model, Worker, daemon, authorization, or other
