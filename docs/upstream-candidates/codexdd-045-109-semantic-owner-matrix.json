@@ -658,7 +658,8 @@
           "synthetic_output_id(\"ctco\""
         ],
         "remaining_gate": "Does not cover all late parent result or history replay cases.",
-        "semantic_signoff": "NOT_GRANTED"
+        "semantic_signoff": "NOT_GRANTED",
+        "next_focus": "3F.40 native local/inherited custom tool and local shell output synthesis, orphan-output debug panic and server-side tool-search-output retention"
       }
     },
     {
@@ -1210,8 +1211,10 @@
         "official_upstream_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
         "correction_receipt": "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json",
         "source_only_test": ".github/scripts/test_codexdd_045_3f20_startup_timeout_guard.py",
-        "remaining_gate": "Targeted Windows TUI startup modal protected-input, WSL right-click paste, reconnect failure orderly cleanup and daemon restart shutdown; source-only checks do not grant native owner acceptance.",
-        "semantic_signoff": "NOT_GRANTED"
+        "remaining_gate": "3F.39 passed 8 focused Windows TUI selectors; still requires direct WSL clipboard prewarm, reconnect-failure orderly shutdown and daemon-restart join end-to-end checks plus frozen 21-stage release validation.",
+        "semantic_signoff": "NOT_GRANTED",
+        "focused_native_run_3f39": 40760413516,
+        "focused_native_result": "EIGHT_STARTUP_SESSION_SELECTORS_PASS"
       }
     },
     {
@@ -1291,11 +1294,13 @@
       "session_test_reconciliation": {
         "receipt": "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json",
         "previous_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
-        "scope": "Five API-key Daybreak/feature cases and graceful mock WS shutdown, test harness only; native selector still pending",
+        "scope": "Five API-key Daybreak combinations, dynamic auth, older external server and WebSocket shutdown tested on 3F.39; broader TUI ownership/release acceptance still pending.",
         "semantic_signoff": "NOT_GRANTED",
         "followup_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
         "followup_receipt": "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json",
-        "policy_note": "Native Windows 3F.37 shows API-key Daybreak-off omits explicit cyberAccessProgram per protected fork gate. Do not replace with upstream Standard."
+        "policy_note": "Native Windows 3F.37 shows API-key Daybreak-off omits explicit cyberAccessProgram per protected fork gate. Do not replace with upstream Standard.",
+        "native_run_3f39": 40760413516,
+        "native_result": "EIGHT_STARTUP_SESSION_SELECTORS_PASS"
       }
     },
     {

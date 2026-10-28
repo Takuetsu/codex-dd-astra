@@ -1,0 +1,28 @@
+# One-shot exact-source core history fork semantics proof, without native Rust compile.
+name: CodexDD 0.4.5 core history normalization source owner audit (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f40a-history-source-audit.yml"]
+permissions:
+  contents: read
+jobs:
+  guarded-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '8f3ddf6edd46d8c246c829ecc1a9c79a2f10754e'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable branch without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify native 3F.39 record and fail-closed core history semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '8f3ddf6edd46d8c246c829ecc1a9c79a2f10754e'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f40_history_normalize_policy.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          test -z "$(git status --porcelain)"
