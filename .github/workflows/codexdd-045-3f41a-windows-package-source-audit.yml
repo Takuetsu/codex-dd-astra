@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   packaging-inventory:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '509b6b306d86773bb3e4ada4cd62b16f052345ba'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd9c761916adce137c7327d29fd7d7fca91954691'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = '509b6b306d86773bb3e4ada4cd62b16f052345ba'
+          test "$(git rev-parse HEAD^)" = 'd9c761916adce137c7327d29fd7d7fca91954691'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f41a_windows_package_inventory.py' -v
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v

@@ -68,7 +68,7 @@ class WindowsReleaseInventory(unittest.TestCase):
             'symbol_group = select({',
             '"@platforms//os:windows": "pdb_file"',
             'fail("Missing %s for %s"',
-            'fail("Expected one %s for %s"',
+            'fail("Expected one %s for %s, got %s"',
             'cfg = _release_profile',
             'allow_duplicates_with_different_content = False',
             'mode = "0755"',
