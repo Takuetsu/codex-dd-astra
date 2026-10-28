@@ -1,0 +1,286 @@
+# Manual-only staging; no push or scheduled build.
+name: CodexDD 0.4.5 staged optimized CLI PDB combined archive (NONRELEASE)
+on:
+  workflow_dispatch:
+    inputs:
+      approve_expensive:
+        description: 'Type AUTHORIZE_NONRELEASE_045_EXPENSIVE_WINDOWS_STAGING'
+        type: string
+        required: true
+        default: 'NO'
+permissions:
+  contents: read
+jobs:
+  contract:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && inputs.approve_expensive == 'AUTHORIZE_NONRELEASE_045_EXPENSIVE_WINDOWS_STAGING'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Fail closed on source ownership and archive verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f43_manual_build_contract.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f42a_windows_archive_verifier.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+  warm:
+    needs: contract
+    runs-on: windows-2022
+    timeout-minutes: 49
+    outputs:
+      path_sha: ${{ steps.warm.outputs.path_sha }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify secure Cargo/Bazel source graph and production markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source HEAD' }
+          $pins=@{
+            'MODULE.bazel'='d178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock'='ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'codex-rs/Cargo.toml'='cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock'='13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml'='f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/BUILD.bazel'='843e9fe095e0982df2043bb17c7da8e6e1c95025'
+            'codex-rs/cli/BUILD.bazel'='5dd2b8b9629275fb2c392c59134ea95a3ce317d5'
+            'bazel/rules/runtime_package.bzl'='ba4cdad58f916f04602109c7b4d2512e83da5485'
+            '.bazelrc'='b7698b896e8d0830b60477999d330b115cf5ee8e'
+          }
+          foreach ($p in $pins.Keys) {
+            if ((git rev-parse ('HEAD:'+$p)).Trim() -ne $pins[$p]) { throw "Protected source drift: $p" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Product promoted too early' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream promoted too early' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'License override not permitted' }
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize hosted MSVC x64 environment, without SDK downloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $vswhere=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs=& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'No preinstalled Visual Studio compiler' }
+          $dev=Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'VsDevCmd absent' }
+          $names=@('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $envlines=& cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to enter hosted MSVC environment' }
+          foreach ($line in $envlines) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+      - name: Build bounded warm optimized Rust stage
+        id: warm
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-staged-optimized-windows.ps1 -Stage warm -SoftMinutes 32 -MaxCacheBytes 1610612736
+          if (-not $?) { throw 'warm native build stage failed' }
+
+      - uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f43-${{ github.run_id }}-warm
+      - name: Keep warm nonrelease build diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f43-warm-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-release-staged/*.log
+          retention-days: 3
+          if-no-files-found: warn
+  core:
+    needs: warm
+    runs-on: windows-2022
+    timeout-minutes: 116
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify secure Cargo/Bazel source graph and production markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source HEAD' }
+          $pins=@{
+            'MODULE.bazel'='d178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock'='ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'codex-rs/Cargo.toml'='cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock'='13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml'='f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/BUILD.bazel'='843e9fe095e0982df2043bb17c7da8e6e1c95025'
+            'codex-rs/cli/BUILD.bazel'='5dd2b8b9629275fb2c392c59134ea95a3ce317d5'
+            'bazel/rules/runtime_package.bzl'='ba4cdad58f916f04602109c7b4d2512e83da5485'
+            '.bazelrc'='b7698b896e8d0830b60477999d330b115cf5ee8e'
+          }
+          foreach ($p in $pins.Keys) {
+            if ((git rev-parse ('HEAD:'+$p)).Trim() -ne $pins[$p]) { throw "Protected source drift: $p" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Product promoted too early' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream promoted too early' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'License override not permitted' }
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize hosted MSVC x64 environment, without SDK downloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $vswhere=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs=& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'No preinstalled Visual Studio compiler' }
+          $dev=Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'VsDevCmd absent' }
+          $names=@('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $envlines=& cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to enter hosted MSVC environment' }
+          foreach ($line in $envlines) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+      - uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f43-${{ github.run_id }}-warm
+          fail-on-cache-miss: true
+      - name: Build bounded core optimized Rust stage
+        id: core
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-staged-optimized-windows.ps1 -Stage core -SoftMinutes 96 -MaxCacheBytes 3221225472 -ExpectedPathSha '${{ needs.warm.outputs.path_sha }}'
+          if (-not $?) { throw 'core native build stage failed' }
+
+      - uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f43-${{ github.run_id }}-core
+      - name: Keep core nonrelease build diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f43-core-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-release-staged/*.log
+          retention-days: 3
+          if-no-files-found: warn
+  final:
+    needs: [warm, core]
+    runs-on: windows-2022
+    timeout-minutes: 285
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify secure Cargo/Bazel source graph and production markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source HEAD' }
+          $pins=@{
+            'MODULE.bazel'='d178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock'='ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'codex-rs/Cargo.toml'='cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock'='13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml'='f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/BUILD.bazel'='843e9fe095e0982df2043bb17c7da8e6e1c95025'
+            'codex-rs/cli/BUILD.bazel'='5dd2b8b9629275fb2c392c59134ea95a3ce317d5'
+            'bazel/rules/runtime_package.bzl'='ba4cdad58f916f04602109c7b4d2512e83da5485'
+            '.bazelrc'='b7698b896e8d0830b60477999d330b115cf5ee8e'
+          }
+          foreach ($p in $pins.Keys) {
+            if ((git rev-parse ('HEAD:'+$p)).Trim() -ne $pins[$p]) { throw "Protected source drift: $p" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Product promoted too early' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream promoted too early' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'License override not permitted' }
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize hosted MSVC x64 environment, without SDK downloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $vswhere=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs=& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'No preinstalled Visual Studio compiler' }
+          $dev=Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'VsDevCmd absent' }
+          $names=@('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $envlines=& cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to enter hosted MSVC environment' }
+          foreach ($line in $envlines) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+      - uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f43-${{ github.run_id }}-core
+          fail-on-cache-miss: true
+      - name: Build bounded cli optimized Rust stage
+        id: cli
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-staged-optimized-windows.ps1 -Stage cli -SoftMinutes 165 -MaxCacheBytes 5368709120 -ExpectedPathSha '${{ needs.warm.outputs.path_sha }}'
+          if (-not $?) { throw 'cli native build stage failed' }
+
+      - name: Build bounded combined optimized Rust stage
+        id: combined
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-staged-optimized-windows.ps1 -Stage combined -SoftMinutes 90 -MaxCacheBytes 6442450944 -ExpectedPathSha '${{ needs.warm.outputs.path_sha }}'
+          if (-not $?) { throw 'combined native build stage failed' }
+
+      - name: Verify actual combined archive integrity inventory
+        shell: pwsh
+        run: |
+          $inventory=Join-Path $env:RUNNER_TEMP 'codexdd045-release-staged/combined-sha256-inventory.json'
+          if (-not (Test-Path $inventory)) { throw 'No physical EXE/PDB combined archive inventory' }
+          $result=Get-Content $inventory -Raw | ConvertFrom-Json
+          if ($result.file_count -ne 10 -or $result.release_approved) { throw 'Wrong or prematurely released archive' }
+          Write-Host ("NONRELEASE_10_FILE_ARCHIVE_SHA256={0}" -f $result.archive_sha256)
+      - name: Keep final nonrelease build diagnostics
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f43-final-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-release-staged/*.log
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Retain only SHA-256 receipts, not unsigned release binaries
+        if: success()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f43-source-and-hash-receipts-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-release-staged/*.json
+          retention-days: 7
+          if-no-files-found: error
