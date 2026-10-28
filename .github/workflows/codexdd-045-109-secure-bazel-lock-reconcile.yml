@@ -1,0 +1,227 @@
+# One-shot regeneration of 0.4.5 Bazel lock after secured Cargo dependency migration.
+# Generator is read-only; importer may create an immutable Git blob, never update refs.
+name: CodexDD 0.4.5 secure Bazel lock reconciliation (NONRELEASE)
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-109-overlap-semantic-review
+    paths:
+      - ".github/workflows/codexdd-045-109-secure-bazel-lock-reconcile.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-045-secure-bazel-lock-reconcile
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    name: Windows Bazel secure Cargo graph lock rebuild (read-only)
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review' && github.event.before == '54cfa3d8462d6c4ea142f639193a33d91bad62a1'
+    runs-on: windows-2022
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact original graph without persistent credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Pin all source, cryptographic policy and historical product markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong checkout SHA' }
+          if ((git rev-parse HEAD^).Trim() -ne '54cfa3d8462d6c4ea142f639193a33d91bad62a1') { throw 'Wrong source parent' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.5-109-overlap-semantic-review') { throw 'Wrong branch' }
+          $expected = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
+            'defs.bzl' = 'f49bfc9be69d03d60a02e8aec6974a6fae9e200c'
+            'patches/zstd-sys_windows_msvc_include_dirs.patch' = '866a458a2df4dd0d565f8066deadf73e2fdf8176'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/vendor/aws-config-1.13.0' = '5b1db93de9e14ab5c060794d23a567d907b66f21'
+          }
+          foreach ($path in $expected.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $expected[$path]) {
+              throw "Protected source changed: $path"
+            }
+          }
+          if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Product marker changed' }
+          if ((Get-Content 'codex-rs/upstream-codex-release.txt' -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker changed' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'Unexpected EULA acceptance' }
+          if (git status --porcelain) { throw 'Source is not clean' }
+          python scripts/codexdd-045-inherited-risk-guard.py
+          if ($LASTEXITCODE -ne 0) { throw 'Inherited policy guard blocked' }
+          python scripts/codexdd-045-dependency-security-check.py --mode staging
+          if ($LASTEXITCODE -ne 0) { throw 'Crypto dependency staging blocked' }
+          Write-Host 'PASS: pinned secure source, audited crypto and no-release markers'
+
+      - name: Install pinned Bazelisk / Bazel 9.2.0
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+
+      - name: Regenerate MODULE.bazel.lock only, then check strict resolution
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd045-bazel-lock'
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          $version = (& bazel --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $version -ne 'bazel 9.2.0') { throw "Incorrect Bazel version: $version" }
+          function Invoke-Bazel {
+            param([string]$Stage, [string[]]$BazelArgs)
+            $log = Join-Path $root ($Stage + '.log')
+            Write-Host "BEGIN: $Stage"
+            $ErrorActionPreference = 'Continue'
+            & bazel @BazelArgs *> $log
+            $rc = $LASTEXITCODE
+            $ErrorActionPreference = 'Stop'
+            if (Test-Path $log) {
+              Get-Content -LiteralPath $log -Tail 30 | ForEach-Object {
+                $s = [string]$_
+                if ($s.Length -gt 500) { $s = $s.Substring(0,500) + ' [full line in artifact]' }
+                Write-Host $s
+              }
+            }
+            if ($rc -ne 0) { throw "Bazel $Stage blocked: exit $rc (log uploaded)" }
+            Write-Host "PASS: $Stage"
+          }
+          $start = @('--noexperimental_remote_repo_contents_cache')
+          Invoke-Bazel 'update' ($start + @('mod','deps','--lockfile_mode=update'))
+          $modified = @(git diff --name-only --)
+          if ($LASTEXITCODE -ne 0 -or $modified.Count -ne 1 -or $modified[0] -ne 'MODULE.bazel.lock') {
+            throw ('Only MODULE.bazel.lock may change: ' + ($modified -join ', '))
+          }
+          Invoke-Bazel 'strict' ($start + @('mod','deps','--lockfile_mode=error'))
+          $modified = @(git diff --name-only --)
+          if ($LASTEXITCODE -ne 0 -or $modified.Count -ne 1 -or $modified[0] -ne 'MODULE.bazel.lock') {
+            throw ('Strict resolution changed unexpected sources: ' + ($modified -join ', '))
+          }
+          & git diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid module lock diff' }
+          $blob = (& git hash-object MODULE.bazel.lock | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $blob -eq '40c46197d71c93d3ea7fbdea1930c9bf394ae6df') { throw 'Lock was not updated' }
+          $size = (Get-Item -LiteralPath 'MODULE.bazel.lock').Length
+          if ($size -lt 100000 -or $size -gt 10000000) { throw "Unexpected lock length: $size" }
+          $parsed = Get-Content -LiteralPath 'MODULE.bazel.lock' -Raw | ConvertFrom-Json -AsHashtable
+          if (-not $parsed.ContainsKey('moduleExtensions') -or -not $parsed.ContainsKey('lockFileVersion')) {
+            throw 'Invalid Bazel lockfile schema'
+          }
+          $sealed = Join-Path $root 'sealed'
+          New-Item -ItemType Directory -Force -Path $sealed | Out-Null
+          Copy-Item -LiteralPath 'MODULE.bazel.lock' -Destination (Join-Path $sealed 'MODULE.bazel.lock')
+          $receipt = [ordered]@{
+            contract = 'codexdd045-secure-module-lock-v1'
+            source_sha = $env:GITHUB_SHA
+            original_blob = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
+            new_blob = $blob
+            sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath 'MODULE.bazel.lock').Hash.ToLowerInvariant()
+            size = $size
+            bazel = '9.2.0'
+            strict_lock = 'PASS'
+            release_status = 'NOT_ACCEPTED'
+          }
+          $receipt | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $sealed 'receipt.json') -Encoding utf8
+          Write-Host "CODEXDD_045_REGENERATED_LOCK_V1: $blob"
+          Write-Host 'PASS: updated Bazel lock strict-valid; no non-lock source changes'
+
+      - name: Upload sealed regenerated lock and failure logs
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-bazel-lock-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/codexdd045-bazel-lock/sealed/
+            ${{ runner.temp }}/codexdd045-bazel-lock/*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  import-blob:
+    name: Import verified Bazel lock as immutable Git blob (no branch writes)
+    if: needs.regenerate.result == 'success' && github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '54cfa3d8462d6c4ea142f639193a33d91bad62a1'
+    needs: regenerate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout pinned original source, no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify source ancestor and existing lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '54cfa3d8462d6c4ea142f639193a33d91bad62a1'
+          test "$(git rev-parse HEAD:MODULE.bazel.lock)" = '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test -z "$(git status --porcelain)"
+      - name: Download same-run sealed lock artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: codexdd045-bazel-lock-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-verified-lock
+
+      - name: Verify exact lock evidence and import blob only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ['RUNNER_TEMP'])
+          folder = root / 'codexdd045-verified-lock' / 'sealed'
+          receipt = json.loads((folder / 'receipt.json').read_text(encoding='utf-8-sig'))
+          lock = (folder / 'MODULE.bazel.lock').read_bytes()
+          assert receipt['contract'] == 'codexdd045-secure-module-lock-v1'
+          assert receipt['source_sha'] == os.environ['GITHUB_SHA']
+          assert receipt['original_blob'] == '40c46197d71c93d3ea7fbdea1930c9bf394ae6df'
+          assert receipt['bazel'] == '9.2.0' and receipt['strict_lock'] == 'PASS'
+          assert receipt['release_status'] == 'NOT_ACCEPTED'
+          assert 100000 < len(lock) < 10000000 and len(lock) == receipt['size']
+          assert hashlib.sha256(lock).hexdigest() == receipt['sha256']
+          digest = hashlib.sha1(b'blob ' + str(len(lock)).encode('ascii') + b'\x00' + lock).hexdigest()
+          assert digest == receipt['new_blob'] and digest != receipt['original_blob']
+          document = json.loads(lock)
+          assert isinstance(document.get('moduleExtensions'), dict)
+          assert document.get('lockFileVersion') is not None
+          (root / 'expected-blob.txt').write_text(digest)
+          (root / 'git-blob-payload.json').write_text(
+              json.dumps({'content':base64.b64encode(lock).decode('ascii'),'encoding':'base64'})
+          )
+          print('PASS: source and strict-lock checks match sealed Git blob identity')
+          PY
+          curl --fail --silent --show-error --location \
+            -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            --data-binary "@$RUNNER_TEMP/git-blob-payload.json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs" \
+            > "$RUNNER_TEMP/git-blob-response.json"
+          actual="$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"git-blob-response.json")))["sha"])')"
+          expected="$(cat "$RUNNER_TEMP/expected-blob.txt")"
+          test "$actual" = "$expected"
+          test -z "$(git status --porcelain)"
+          echo "CODEXDD_045_IMPORTED_BAZEL_LOCK_V1: $actual"
+          echo 'PASS: immutable Bazel lock blob available; branch unchanged'
