@@ -9,11 +9,11 @@ permissions:
   contents: write
 jobs:
   formatter:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd0b597fd8ff1c20293f2e11bc0372536f91e288c'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0277f62aa5b9b5c0c2565d9cae9b1a1715a1bd7c'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      EXPECTED_PARENT: 'd0b597fd8ff1c20293f2e11bc0372536f91e288c'
+      EXPECTED_PARENT: '0277f62aa5b9b5c0c2565d9cae9b1a1715a1bd7c'
       EXPECTED_BRANCH: 'dd/codexdd-v0.4.5-prettier-only-90'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -182,14 +182,35 @@ jobs:
           import subprocess
           import yaml
           paths = [".github/workflows/codexdd-045-109-core-tui-native.yml",".github/workflows/codexdd-045-109-overlap-current-receipt.yml",".github/workflows/codexdd-045-accepted-info-cargo-deny.yml",".github/workflows/codexdd-045-advisory-decision-preview.yml",".github/workflows/codexdd-045-combined-crypto-graph.yml",".github/workflows/codexdd-045-crypto-rtc-focused.yml",".github/workflows/codexdd-045-crypto-security-audit.yml",".github/workflows/codexdd-045-crypto-windows-focused.yml",".github/workflows/codexdd-045-ctutils-security-recon.yml",".github/workflows/codexdd-045-dependency-audit.yml",".github/workflows/codexdd-045-dependency-role-recon.yml",".github/workflows/codexdd-045-dependency-security-staging.yml",".github/workflows/codexdd-045-generated-schema-drift.yml",".github/workflows/codexdd-045-inherited-advisory-recon.yml",".github/workflows/codexdd-045-linux-info-risk-guard.yml",".github/workflows/codexdd-045-patched-lock-integration-proof.yml",".github/workflows/codexdd-045-patched-lock-source-guards.yml",".github/workflows/codexdd-045-rtc021-compat.yml",".github/workflows/codexdd-045-source-guards.yml",".github/workflows/codexdd-045-tls-root-patch-preview.yml",".github/workflows/codexdd-045-windows-appserver-safety.yml",".github/workflows/codexdd-045-windows-bazel-core-plugins-alias.yml",".github/workflows/codexdd-045-windows-bazel-release-analysis.yml",".github/workflows/codexdd-045-windows-bazel-skills-alias.yml",".github/workflows/codexdd-045-windows-bazel-zstd-smoke.yml",".github/workflows/codexdd-045-windows-cargo-check.yml",".github/workflows/codexdd-045-windows-cli-focused.yml",".github/workflows/codexdd-045-windows-cli-optimized-preflight.yml",".github/workflows/codexdd-045-windows-cli-release-smoke.yml",".github/workflows/codexdd-045-windows-core-authority.yml",".github/workflows/codexdd-045-windows-core-scenarios-compile.yml",".github/workflows/codexdd-045-windows-focused-native.yml",".github/workflows/codexdd-045-windows-guardian-focused.yml",".github/workflows/codexdd-045-windows-history-compat.yml",".github/workflows/codexdd-045-windows-registry-focused.yml",".github/workflows/codexdd-045-windows-remaining-yaml-aliases.yml",".github/workflows/codexdd-045-windows-rollout-repair.yml",".github/workflows/codexdd-045-windows-secrets-focused.yml",".github/workflows/codexdd-045-windows-test-compile.yml",".github/workflows/codexdd-045-windows-zip9-focused.yml",".github/workflows/codexdd-045-zip9-feature-lock-blob-import.yml",".github/workflows/codexdd-045-zip9-feature-preview.yml"]
+          def equivalent(a, b, context=()):
+              if type(a) is not type(b):
+                  return False
+              if a == b:
+                  return True
+              if isinstance(a, dict):
+                  return a.keys() == b.keys() and all(
+                      equivalent(a[key], b[key], (*context, str(key))) for key in a
+                  )
+              if isinstance(a, list):
+                  return len(a) == len(b) and all(
+                      equivalent(x, y, (*context, str(idx))) for idx, (x, y) in enumerate(zip(a, b))
+                  )
+              # Prettier adds the file's missing last LF after shell heredoc PY.
+              # GitHub's shell executes identical script bytes apart from that
+              # final terminal LF. No other scalar, permissions or key may differ.
+              if isinstance(a, str) and context and context[-1] == "run" and a + "\n" == b:
+                  print("ACCEPT: terminal LF added to the final shell run scalar:", context)
+                  return True
+              return False
+
           for path in paths:
               original = subprocess.check_output(["git", "show", "HEAD:" + path])
               updated = Path(path).read_bytes()
               a = yaml.safe_load(original)
               b = yaml.safe_load(updated)
-              if a != b:
+              if not equivalent(a, b):
                   raise SystemExit("SECURITY BLOCK: YAML semantics differ: " + path)
-          print("PASS: 42/42 YAML syntax trees preserve all workflow values")
+          print("PASS: 42/42 YAML workflow graphs identical (except exact final shell LF)")
           PY
       - name: Check Prettier idempotence and current crypto safety guards
         shell: bash
