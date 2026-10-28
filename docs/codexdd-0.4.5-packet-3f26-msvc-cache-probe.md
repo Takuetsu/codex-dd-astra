@@ -1,0 +1,11 @@
+# CodexDD 0.4.5 — 3F.26: verify Windows Bazel warm-cache feasibility before any optimized retry
+
+The original secure `--config=release`/thin-LTO build [#40693489522](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40693489522) reached action 2,857/2,858 but hit its 90-minute job cancellation during final Rust compilation. Repeating the same cold job is prohibited. The later debug-profile CLI [#40708502368](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40708502368) passed all 2,858 actions in 38m41s but is not optimized acceptance.
+
+The pinned `bazel-contrib/setup-bazel@c5acdfb...` action has **disk-cache** and **repository-cache** inputs disabled by default; `post-if: !cancelled()` means timed-out/cancelled jobs cannot save the cache for another run. Before committing to another expensive optimized attempt, this one-shot workflow tests whether **two independent Windows 2022 runners** can share a cache for the exact same low-cost synthetic EXE/PDB fixture. The action uses `disk-cache: codexdd045-3f26-msvc-probe`, `repository-cache: true`, `cache-save: true`, and `cache-version: 045-3f26` with pinned Bazelisk 1.28.1 / Bazel 9.2.0. The fixture previously compiled successfully in ~3 minutes, without producing real CodexDD binaries.
+
+1. The producer runs the fixture against unchanged Cargo/Bazel/vendor/deny sources; the job must **complete normally** so its cache-saving post-step runs.
+2. The consumer depends on the producer, uses a fresh hosted Windows runner at the identical source SHA/flags and demands a Bazel disk-cache-hit diagnostic. If it compiles without an explicit hit or restores nothing, the feasibility test **fails closed**.
+3. This test only verifies small action-cache transport, not cache capacity or effectiveness for the very large optimized Rust binary. A future scoped optimized cache experiment must respect GitHub cache size/retention and avoid cancellation by graceful pre-timeout termination. Final shipping compilation, archive, security signoff, 109 semantic owners and the 21-stage native suite remain open.
+
+**NONRELEASE.** No application code or Cargo dependency changed, and no optimized artifact, installer, binary upload, merge or production upgrade is allowed from this experiment. Official 0.163 target and CodexDD 0.4.4 production markers are unchanged.
