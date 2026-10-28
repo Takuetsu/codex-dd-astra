@@ -30,26 +30,40 @@ class DynamicToolAuthMatrixRestoration(unittest.TestCase):
         self.assertEqual(receipt["before_blob"], "994d54b631493b3d0784e836c544c57a275e9985")
         self.assertEqual(receipt["upstream_blob"], "062efa383da797e46f6aa56540cbf76a9c130353")
         self.assertEqual(len(receipt["edits"]), 8)
-        source_path = ROOT / receipt["path"]
-        prior = git("cat-file", "blob", receipt["before_blob"])
+        # Historical 3F25 reconstruction now starts from the exact 3F34
+        # candidate blob and reverses the newer *test-only* edits. No shallow
+        # checkout access to long-obsolete historical Git objects is needed.
+        followup = json.loads(
+            (ROOT / "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(followup["before_blob"], receipt["after_blob"])
+        current = git("cat-file", "blob", "HEAD:" + receipt["path"])
+        self.assertEqual(oid(current), followup["after_blob"])
+        subprocess.run(
+            ["git", "diff", "--quiet", "HEAD", "--", receipt["path"]],
+            cwd=ROOT, check=True,
+        )
+        historical = current
+        for edit in reversed(followup["edits"]):
+            before, after = edit["before"].encode("utf-8"), edit["after"].encode("utf-8")
+            self.assertEqual(historical.count(after), edit["count"])
+            historical = historical.replace(after, before, edit["count"])
+        self.assertEqual(oid(historical), receipt["after_blob"])
+        prior = historical
+        for edit in reversed(receipt["edits"]):
+            before, after = edit["before"].encode("utf-8"), edit["after"].encode("utf-8")
+            self.assertEqual(prior.count(after), edit["count"])
+            prior = prior.replace(after, before, edit["count"])
         self.assertEqual(oid(prior), receipt["before_blob"])
         for edit in receipt["edits"]:
             before, after = edit["before"].encode("utf-8"), edit["after"].encode("utf-8")
             self.assertEqual(prior.count(before), edit["count"])
-            prior = prior.replace(before, after)
-        # Windows checkout may normalize LF Git blobs to CRLF in the working tree.
-        # Require no tracked source changes, then compare exact committed Git bytes.
-        subprocess.run(
-            ["git", "diff", "--quiet", "HEAD", "--", receipt["path"]],
-            cwd=ROOT,
-            check=True,
-        )
-        actual = git("cat-file", "blob", "HEAD:" + receipt["path"])
-        self.assertEqual(prior, actual)
-        self.assertEqual(oid(actual), receipt["after_blob"])
+            prior = prior.replace(before, after, edit["count"])
+        self.assertEqual(prior, historical)
+        self.assertEqual(oid(prior), receipt["after_blob"])
         self.assertEqual(
             git("rev-parse", "HEAD:" + receipt["path"]).decode("ascii").strip(),
-            receipt["after_blob"],
+            followup["after_blob"],
         )
 
     def test_upstream_matrix_and_codexdd_adaptive_cases_are_both_present(self):

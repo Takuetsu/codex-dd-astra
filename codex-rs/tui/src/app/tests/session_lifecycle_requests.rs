@@ -47,10 +47,25 @@ use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::accept_async;
+use tokio_tungstenite::tungstenite::Error as WebSocketError;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::tungstenite::error::ProtocolError;
 
 pub(super) type RecordedRequests = Arc<Mutex<Vec<JSONRPCRequest>>>;
 pub(super) type RecordingAppServer = (AppServerSession, RecordedRequests, JoinHandle<Result<()>>);
+
+fn is_recording_client_disconnect(error: &WebSocketError) -> bool {
+    match error {
+        WebSocketError::Protocol(ProtocolError::ResetWithoutClosingHandshake) => true,
+        WebSocketError::Io(error) => matches!(
+            error.kind(),
+            std::io::ErrorKind::BrokenPipe
+                | std::io::ErrorKind::ConnectionReset
+                | std::io::ErrorKind::ConnectionAborted
+        ),
+        _ => false,
+    }
+}
 
 #[tokio::test]
 async fn daybreak_command_persists_and_confirms_each_selection() -> Result<()> {
@@ -199,23 +214,53 @@ async fn daybreak_command_persists_and_confirms_each_selection() -> Result<()> {
     app.chat_widget
         .set_feature_enabled(Feature::CliDaybreak, /*enabled*/ true);
     app.chat_widget.set_daybreak_enabled(/*enabled*/ true);
+    app.chat_widget
+        .set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false);
+    let models = app.chat_widget.model_catalog().models.clone();
     app.chat_widget.update_account_state(
         Some(crate::status::StatusAccountDisplay::ApiKey),
         /*plan_type*/ None,
         /*has_chatgpt_account*/ false,
         /*has_codex_backend_auth*/ false,
     );
+    assert!(!app.chat_widget.daybreak_enabled);
     assert!(
         !app.chat_widget
             .set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false,)
     );
-    app.submit_thread_op(&mut server, thread_id, turn.clone())
-        .await?;
-    app.chat_widget.set_daybreak_enabled(/*enabled*/ false);
-    app.submit_thread_op(&mut server, thread_id, turn).await?;
+    let request_id = std::iter::from_fn(|| events.try_recv().ok())
+        .filter_map(|event| match event {
+            AppEvent::FetchModels { request_id } => Some(request_id),
+            _ => None,
+        })
+        .last()
+        .expect("account model refresh");
+    assert!(app.chat_widget.on_models_loaded(request_id, Ok(models)));
+    for (cli_daybreak, api_key_cyber_access_programs, enabled) in [
+        (false, false, true),
+        (false, true, true),
+        (true, false, true),
+        (true, true, true),
+        (true, true, false),
+    ] {
+        app.chat_widget
+            .set_feature_enabled(Feature::CliDaybreak, cli_daybreak);
+        app.chat_widget.set_feature_enabled(
+            Feature::ApiKeyCyberAccessPrograms,
+            api_key_cyber_access_programs,
+        );
+        app.chat_widget.set_daybreak_enabled(enabled);
+        app.submit_thread_op(&mut server, thread_id, turn.clone())
+            .await?;
+    }
     let turns = recorded_params(&requests, "turn/start");
-    assert_eq!(turns[5]["cyberAccessProgram"], "daybreakBlue");
-    assert!(turns[6]["cyberAccessProgram"].is_null());
+    assert_eq!(
+        turns[5..]
+            .iter()
+            .map(|turn| turn["cyberAccessProgram"].as_str())
+            .collect::<Vec<_>>(),
+        vec![None, None, None, Some("daybreakBlue"), Some("standard")]
+    );
     while events.try_recv().is_ok() {}
 
     let missing_thread_id = ThreadId::new();
@@ -488,20 +533,19 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
                     if let codex_app_server_client::InProcessServerEvent::ServerNotification(notification) = event
                         && matches!(*notification, ServerNotification::ThreadSettingsUpdated(_))
                     {
-                        websocket.send(Message::Text(serde_json::to_string(&notification)?.into())).await?;
+                        let result = websocket.send(Message::Text(serde_json::to_string(&notification)?.into())).await;
+                        if result.as_ref().is_err_and(is_recording_client_disconnect) {
+                            break;
+                        }
+                        result?;
                     }
                     continue;
                 }
             };
             let Some(frame) = frame else { break };
-            // The client can close with an unread settings notification during shutdown.
-            match &frame {
-                Err(tokio_tungstenite::tungstenite::Error::Protocol(
-                    tokio_tungstenite::tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,
-                )) => break,
-                Err(tokio_tungstenite::tungstenite::Error::Io(error))
-                    if matches!(error.kind(), std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::ConnectionAborted) => break,
-                _ => {}
+            // The client can close with requests or notifications pending during shutdown.
+            if frame.as_ref().is_err_and(is_recording_client_disconnect) {
+                break;
             }
             let Message::Text(text) = frame? else {
                 continue;
@@ -509,7 +553,7 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
             let message = serde_json::from_str::<JSONRPCMessage>(&text)?;
             match message {
                 JSONRPCMessage::Request(request) if request.method == "initialize" => {
-                    websocket
+                    let result = websocket
                         .send(Message::Text(
                             serde_json::to_string(&JSONRPCMessage::Response(JSONRPCResponse {
                                 id: request.id,
@@ -520,7 +564,11 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
                             }))?
                             .into(),
                         ))
-                        .await?;
+                        .await;
+                    if result.as_ref().is_err_and(is_recording_client_disconnect) {
+                        break;
+                    }
+                    result?;
                 }
                 JSONRPCMessage::Request(request) => {
                     request_sink
@@ -796,9 +844,13 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
                             }
                         }
                     };
-                    websocket
+                    let result = websocket
                         .send(Message::Text(serde_json::to_string(&response)?.into()))
-                        .await?;
+                        .await;
+                    if result.as_ref().is_err_and(is_recording_client_disconnect) {
+                        break;
+                    }
+                    result?;
                 }
                 JSONRPCMessage::Notification(notification)
                     if notification.method == "initialized" => {}

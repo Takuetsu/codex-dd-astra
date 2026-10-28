@@ -1277,7 +1277,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
+      "current_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
       "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
       "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
       "disposition": "reviewed_upstream_dynamic_auth_test_restoration",
@@ -1287,7 +1287,13 @@
         40583499451
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "session_test_reconciliation": {
+        "receipt": "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json",
+        "previous_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
+        "scope": "Five API-key Daybreak/feature cases and graceful mock WS shutdown, test harness only; native selector still pending",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/tui/src/app/tests/startup.rs",

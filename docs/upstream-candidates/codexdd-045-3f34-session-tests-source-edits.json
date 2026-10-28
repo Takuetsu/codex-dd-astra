@@ -1,0 +1,56 @@
+{
+  "contract_version": 1,
+  "source_scope": "NONRELEASE_EXACT_OFFICIAL_163_SESSION_TEST_RESTORATION",
+  "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+  "source_parent": "cab5bf8db870e3ab9997e126b0e777afdfd74315",
+  "before_blob": "c10799047d696edcafd24d994c84f1fd87fd6a26",
+  "after_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
+  "upstream_tag_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+  "upstream_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
+  "retained_codexdd_addition": "Keep existing assertion: ApiKeyCyberAccessPrograms=false is a no-op immediately after account switching",
+  "edits": [
+    {
+      "kind": "imports",
+      "before": "use tokio_tungstenite::accept_async;\nuse tokio_tungstenite::tungstenite::Message;\n",
+      "after": "use tokio_tungstenite::accept_async;\nuse tokio_tungstenite::tungstenite::Error as WebSocketError;\nuse tokio_tungstenite::tungstenite::Message;\nuse tokio_tungstenite::tungstenite::error::ProtocolError;\n",
+      "count": 1
+    },
+    {
+      "kind": "handler",
+      "before": "pub(super) type RecordingAppServer = (AppServerSession, RecordedRequests, JoinHandle<Result<()>>);\n\n",
+      "after": "pub(super) type RecordingAppServer = (AppServerSession, RecordedRequests, JoinHandle<Result<()>>);\n\nfn is_recording_client_disconnect(error: &WebSocketError) -> bool {\n    match error {\n        WebSocketError::Protocol(ProtocolError::ResetWithoutClosingHandshake) => true,\n        WebSocketError::Io(error) => matches!(\n            error.kind(),\n            std::io::ErrorKind::BrokenPipe\n                | std::io::ErrorKind::ConnectionReset\n                | std::io::ErrorKind::ConnectionAborted\n        ),\n        _ => false,\n    }\n}\n\n",
+      "count": 1
+    },
+    {
+      "kind": "daybreak",
+      "before": "    app.chat_widget\n        .set_feature_enabled(Feature::CliDaybreak, /*enabled*/ true);\n    app.chat_widget.set_daybreak_enabled(/*enabled*/ true);\n    app.chat_widget.update_account_state(\n        Some(crate::status::StatusAccountDisplay::ApiKey),\n        /*plan_type*/ None,\n        /*has_chatgpt_account*/ false,\n        /*has_codex_backend_auth*/ false,\n    );\n    assert!(\n        !app.chat_widget\n            .set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false,)\n    );\n    app.submit_thread_op(&mut server, thread_id, turn.clone())\n        .await?;\n    app.chat_widget.set_daybreak_enabled(/*enabled*/ false);\n    app.submit_thread_op(&mut server, thread_id, turn).await?;\n    let turns = recorded_params(&requests, \"turn/start\");\n    assert_eq!(turns[5][\"cyberAccessProgram\"], \"daybreakBlue\");\n    assert!(turns[6][\"cyberAccessProgram\"].is_null());\n",
+      "after": "    app.chat_widget\n        .set_feature_enabled(Feature::CliDaybreak, /*enabled*/ true);\n    app.chat_widget.set_daybreak_enabled(/*enabled*/ true);\n    app.chat_widget\n        .set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false);\n    let models = app.chat_widget.model_catalog().models.clone();\n    app.chat_widget.update_account_state(\n        Some(crate::status::StatusAccountDisplay::ApiKey),\n        /*plan_type*/ None,\n        /*has_chatgpt_account*/ false,\n        /*has_codex_backend_auth*/ false,\n    );\n    assert!(!app.chat_widget.daybreak_enabled);\n    assert!(\n        !app.chat_widget\n            .set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false,)\n    );\n    let request_id = std::iter::from_fn(|| events.try_recv().ok())\n        .filter_map(|event| match event {\n            AppEvent::FetchModels { request_id } => Some(request_id),\n            _ => None,\n        })\n        .last()\n        .expect(\"account model refresh\");\n    assert!(app.chat_widget.on_models_loaded(request_id, Ok(models)));\n    for (cli_daybreak, api_key_cyber_access_programs, enabled) in [\n        (false, false, true),\n        (false, true, true),\n        (true, false, true),\n        (true, true, true),\n        (true, true, false),\n    ] {\n        app.chat_widget\n            .set_feature_enabled(Feature::CliDaybreak, cli_daybreak);\n        app.chat_widget.set_feature_enabled(\n            Feature::ApiKeyCyberAccessPrograms,\n            api_key_cyber_access_programs,\n        );\n        app.chat_widget.set_daybreak_enabled(enabled);\n        app.submit_thread_op(&mut server, thread_id, turn.clone())\n            .await?;\n    }\n    let turns = recorded_params(&requests, \"turn/start\");\n    assert_eq!(\n        turns[5..]\n            .iter()\n            .map(|turn| turn[\"cyberAccessProgram\"].as_str())\n            .collect::<Vec<_>>(),\n        vec![None, None, None, Some(\"daybreakBlue\"), Some(\"standard\")]\n    );\n",
+      "count": 1
+    },
+    {
+      "kind": "notifications",
+      "before": "                        websocket.send(Message::Text(serde_json::to_string(&notification)?.into())).await?;\n",
+      "after": "                        let result = websocket.send(Message::Text(serde_json::to_string(&notification)?.into())).await;\n                        if result.as_ref().is_err_and(is_recording_client_disconnect) {\n                            break;\n                        }\n                        result?;\n",
+      "count": 1
+    },
+    {
+      "kind": "disconnect",
+      "before": "            // The client can close with an unread settings notification during shutdown.\n            match &frame {\n                Err(tokio_tungstenite::tungstenite::Error::Protocol(\n                    tokio_tungstenite::tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,\n                )) => break,\n                Err(tokio_tungstenite::tungstenite::Error::Io(error))\n                    if matches!(error.kind(), std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::ConnectionAborted) => break,\n                _ => {}\n            }\n",
+      "after": "            // The client can close with requests or notifications pending during shutdown.\n            if frame.as_ref().is_err_and(is_recording_client_disconnect) {\n                break;\n            }\n",
+      "count": 1
+    },
+    {
+      "kind": "initialize",
+      "before": "                JSONRPCMessage::Request(request) if request.method == \"initialize\" => {\n                    websocket\n                        .send(Message::Text(\n                            serde_json::to_string(&JSONRPCMessage::Response(JSONRPCResponse {\n                                id: request.id,\n                                result: serde_json::json!({\n                                    \"userAgent\": \"codex-tui-test\",\n                                    \"codexHome\": codex_home,\n                                }),\n                            }))?\n                            .into(),\n                        ))\n                        .await?;\n                }\n",
+      "after": "                JSONRPCMessage::Request(request) if request.method == \"initialize\" => {\n                    let result = websocket\n                        .send(Message::Text(\n                            serde_json::to_string(&JSONRPCMessage::Response(JSONRPCResponse {\n                                id: request.id,\n                                result: serde_json::json!({\n                                    \"userAgent\": \"codex-tui-test\",\n                                    \"codexHome\": codex_home,\n                                }),\n                            }))?\n                            .into(),\n                        ))\n                        .await;\n                    if result.as_ref().is_err_and(is_recording_client_disconnect) {\n                        break;\n                    }\n                    result?;\n                }\n",
+      "count": 1
+    },
+    {
+      "kind": "responses",
+      "before": "                    websocket\n                        .send(Message::Text(serde_json::to_string(&response)?.into()))\n                        .await?;\n",
+      "after": "                    let result = websocket\n                        .send(Message::Text(serde_json::to_string(&response)?.into()))\n                        .await;\n                    if result.as_ref().is_err_and(is_recording_client_disconnect) {\n                        break;\n                    }\n                    result?;\n",
+      "count": 1
+    }
+  ],
+  "release_status": "NOT_ACCEPTED"
+}
