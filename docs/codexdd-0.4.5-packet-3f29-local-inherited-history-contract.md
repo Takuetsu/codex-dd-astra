@@ -9,3 +9,7 @@ The fork's two `normalize_adds_missing_output_for_...` test functions each expli
 The source-only Python guard `.github/scripts/test_codexdd_045_3f29_history_semantics.py` pins both reviewed Git objects, preserves the two by two test variants and the non-panic implementation, and checks product/upstream markers stay `0.4.4` / `rust-v0.162.0`. It does not establish full behavioral equivalence with upstream 0.163. **Remaining native gate:** exact-source Windows `codex-core` tests for local and inherited missing custom-tool/shell outputs, interrupted replay and post-hook cancellation on a frozen release candidate. Semantic owner signoff stays `NOT_GRANTED` and PR #58 remains draft.
 
 Packet 3F.28's bounded native optimized Rust cache probe runs independently against its immutable earlier source SHA. Do not launch a full 2,858-action optimized CLI job, merge, publish or install from either source-only result.
+
+## Verified source-only CI evidence
+
+[3F.29 source guard #40739487537](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40739487537) completed **SUCCESS** on the immutable source reviewed in commit `5628e57`. This verifies the historical local/inherited test-source and nonpanic normalizer contract only; no native Windows `codex-core` test was run. Review disposition remains **NOT ACCEPTED / native tests pending**.
