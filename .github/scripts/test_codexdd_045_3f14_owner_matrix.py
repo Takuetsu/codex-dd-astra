@@ -125,9 +125,13 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         selected = {
             row["path"]: row
             for row in self.matrix["paths"]
-            if "focused_review" in row
+            if row.get("focused_review", {}).get("review_kind")
+            == "focused_source_and_native_behavior_evidence_only"
         }
         self.assertEqual(set(selected), expected)
+        self.assertEqual(
+            len([r for r in self.matrix["paths"] if "focused_review" in r]), 5
+        )
         native = (
             ROOT / ".github/workflows/codexdd-045-109-core-tui-native.yml"
         ).read_text(encoding="utf-8")

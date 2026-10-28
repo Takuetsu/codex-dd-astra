@@ -262,7 +262,19 @@
         40598386099
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "generated_notification_additive_source_provenance",
+        "review_scope": "Generated notification TypeScript union preserves every byte of official 0.163 after removing exactly one CodexDD event import and method; no upstream variants dropped",
+        "current_blob": "39931bea900f12b97c0c876d2708ad64844f649f",
+        "baseline_upstream_163_blob": "4af7a4307ada139592b325f0aa1da2301deed861",
+        "upstream_method_count": 87,
+        "candidate_method_count": 88,
+        "added_method": "turn/adaptiveRuntimeSignal",
+        "generator_native_evidence_run": 40598386099,
+        "remaining_gate": "Regenerate native stable/experimental protocol and SDK on final frozen release candidate; test adaptive notification routing end-to-end",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
@@ -277,7 +289,19 @@
         40598386099
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "focused_review": {
+        "review_kind": "generated_notification_additive_source_provenance",
+        "review_scope": "Generated notification TypeScript union preserves every byte of official 0.163 after removing exactly one CodexDD event import and method; no upstream variants dropped",
+        "current_blob": "7edad7f0219258e2fe65b9f97e095940ba78c675",
+        "baseline_upstream_163_blob": "a5b07d304d2095bb69864400a1c83f255ed04f83",
+        "upstream_method_count": 87,
+        "candidate_method_count": 88,
+        "added_method": "turn/adaptiveRuntimeSignal",
+        "generator_native_evidence_run": 40598386099,
+        "remaining_gate": "Regenerate native stable/experimental protocol and SDK on final frozen release candidate; test adaptive notification routing end-to-end",
+        "semantic_signoff": "NOT_GRANTED"
+      }
     },
     {
       "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
