@@ -1,0 +1,166 @@
+# One-shot user-authorized source-frozen optimized artifact build. Initially DISARMED.
+# This is NONRELEASE and uploads the CLI/PDB before attempting the combined archive.
+name: CodexDD 0.4.5 recover real optimized Windows CLI PDB then combined package (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f48-optimized-cli-and-combined-retry.yml"]
+permissions:
+  contents: read
+jobs:
+  preflight:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_045_OPTIMIZED_RELEASE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Checkout source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate actual successful CLI completion and artifact preservation rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f48_release_cache_reuse_contract.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f48_cli_salvage_source.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f48_final_retry_plan.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f42a_windows_archive_verifier.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          command -v pwsh
+          pwsh -NoProfile -Command '$tok=$null;$err=$null;foreach($f in @(".github/scripts/codexdd-045-staged-optimized-windows.ps1",".github/scripts/codexdd-045-preserve-real-cli-pdb.ps1")){[System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$tok,[ref]$err)|Out-Null;if($err.Count -gt 0){$err|ForEach-Object {Write-Error $_};exit 1}};"PASS: Win32 PE/PDB preservation scripts parse"'
+          test -z "$(git status --porcelain)"
+  final:
+    needs: preflight
+    runs-on: windows-2022
+    timeout-minutes: 358
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify secure Cargo/Bazel source graph and production markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source HEAD' }
+          $pins=@{
+            'MODULE.bazel'='d178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock'='ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'codex-rs/Cargo.toml'='cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock'='13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml'='f282c7c55d05201e308e60804f85754c8522d462'
+            'codex-rs/BUILD.bazel'='843e9fe095e0982df2043bb17c7da8e6e1c95025'
+            'codex-rs/cli/BUILD.bazel'='5dd2b8b9629275fb2c392c59134ea95a3ce317d5'
+            'bazel/rules/runtime_package.bzl'='ba4cdad58f916f04602109c7b4d2512e83da5485'
+            '.bazelrc'='b7698b896e8d0830b60477999d330b115cf5ee8e'
+          }
+          foreach ($p in $pins.Keys) {
+            if ((git rev-parse ('HEAD:'+$p)).Trim() -ne $pins[$p]) { throw "Protected source drift: $p" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Product promoted too early' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream promoted too early' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'License override not permitted' }
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize hosted MSVC x64 environment, without SDK downloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $vswhere=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs=& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'No preinstalled Visual Studio compiler' }
+          $dev=Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'VsDevCmd absent' }
+          $names=@('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $envlines=& cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to enter hosted MSVC environment' }
+          foreach ($line in $envlines) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+
+
+      - name: Restore previously completed core Rust action cache, skip repeating core seed and finish
+        id: cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f47-40884725763-core-complete
+          fail-on-cache-miss: true
+      - name: Verify exact prior full core cache was restored
+        shell: pwsh
+        run: |
+          if ('${{ steps.cache.outputs.cache-hit }}' -ne 'true') { throw 'Previously verified core action cache not restored' }
+      - name: Build actual opt thin-LTO release codex.exe and codex.pdb
+        id: cli
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-staged-optimized-windows.ps1 -Stage cli -SoftMinutes 195 -MaxCacheBytes 12884901888 -ExpectedPathSha '7e3457c3218c6933b8b30de65061ccf56c951619862e7d4f38ed9f2be086908e'
+          if (-not $?) { throw 'Real Windows CLI/PDB build or verification failed' }
+      - name: Preserve physical CLI/PDB if native compilation succeeded, EVEN if a later CI check failed
+        id: salvage
+        if: always()
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-preserve-real-cli-pdb.ps1
+          if (-not $?) { throw 'Cannot salvage and hash genuine optimized CLI/PDB' }
+      - name: Upload ACTUAL CLI executable and PDB immediately, before archive build
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f48-real-optimized-cli-and-pdb-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/codexdd045-release-staged/nonrelease-artifacts/codex.exe
+            ${{ runner.temp }}/codexdd045-release-staged/nonrelease-artifacts/codex.pdb
+            ${{ runner.temp }}/codexdd045-release-staged/nonrelease-artifacts/cli-integrity.json
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 7
+      - name: Build combined Windows archive on SAME output base, all five EXEs and matching PDBs
+        id: combined
+        if: steps.cli.outcome == 'success' && steps.salvage.outputs.cli_artifact_ready == 'true'
+        shell: pwsh
+        run: |
+          & .github/scripts/codexdd-045-staged-optimized-windows.ps1 -Stage combined -SoftMinutes 145 -MaxCacheBytes 12884901888 -ExpectedPathSha '7e3457c3218c6933b8b30de65061ccf56c951619862e7d4f38ed9f2be086908e'
+          if (-not $?) { throw 'Actual combined optimized Windows archive failed binary integrity validation' }
+      - name: Independently recheck real archive and its ten-member SHA-256 manifest
+        id: verify
+        if: steps.combined.outcome == 'success'
+        shell: pwsh
+        run: |
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-release-staged/nonrelease-artifacts'
+          $manifest=Join-Path $root 'combined-sha256-inventory.json'
+          $archive=Join-Path $root 'runtime_package_combined.tar.gz'
+          if (-not (Test-Path -LiteralPath $manifest) -or -not (Test-Path -LiteralPath $archive)) { throw 'Missing actual combined files' }
+          python scripts/codexdd_045_verify_windows_archive.py "$archive" --json-output "$manifest"
+          if ($LASTEXITCODE -ne 0) { throw 'Failed repeat PE/PDB/combined archive member verification' }
+          $report=Get-Content $manifest -Raw | ConvertFrom-Json
+          if ($report.file_count -ne 10 -or $report.release_approved) { throw 'Invalid unsigned nonrelease package receipt' }
+          Write-Host "NONRELEASE_COMBINED_ARCHIVE_SHA256=$($report.archive_sha256)"
+      - name: Upload real verified combined Windows package and all integrity reports
+        if: steps.verify.outcome == 'success'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f48-real-combined-win-msvc-exe-pdb-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/codexdd045-release-staged/nonrelease-artifacts/runtime_package_combined.tar.gz
+            ${{ runner.temp }}/codexdd045-release-staged/nonrelease-artifacts/combined-sha256-inventory.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Always upload concise final native diagnostics, including when combined stage fails
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f48-native-logs-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-release-staged/*.log
+          if-no-files-found: warn
+          retention-days: 7
