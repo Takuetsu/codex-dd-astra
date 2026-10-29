@@ -1,0 +1,215 @@
+# One-shot source-locked checkpoint proof. No CLI release target or installer.
+name: CodexDD 0.4.5 corrected partial optimized action-cache transport (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f45b-optimized-cache-restore-proof.yml"]
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '3aaf713c30e6d46f6ae559bcc8ef955500a1eeac'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify source guard and native PowerShell checkpoint parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '3aaf713c30e6d46f6ae559bcc8ef955500a1eeac'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f44_checkpoint_contract.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f45_checkpoint_flag_verifier.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          command -v pwsh
+          pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile(".github/scripts/codexdd-045-3f44-checkpointed-opt-cache.ps1",[ref]$tokens,[ref]$errors) | Out-Null; if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_ }; exit 1}; Write-Host "PASS: checkpoint script parses"'
+          test -z "$(git status --porcelain)"
+  seed:
+    needs: source-contract
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: windows-2022
+    timeout-minutes: 27
+    outputs:
+      path_sha: ${{ steps.compile.outputs.path_sha }}
+      build_complete: ${{ steps.compile.outputs.build_complete }}
+    steps:
+      - name: Checkout frozen candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact nonrelease source and locked security graph
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source SHA' }
+          if ((git rev-parse HEAD^).Trim() -ne '3aaf713c30e6d46f6ae559bcc8ef955500a1eeac') { throw 'Unexpected workflow parent' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'codex-rs/config/BUILD.bazel' = '2b540027532dd9e48f3f846671eff3f4f08feaeb'
+            'codex-rs/config/Cargo.toml' = 'b4be94bb585c6757234299a78f8b42a02b3d2017'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            '.bazelrc' = 'b7698b896e8d0830b60477999d330b115cf5ee8e'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker advanced' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker advanced' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'No SDK license override permitted' }
+          if (git status --porcelain --untracked-files=no) { throw 'Dirty tracked worktree' }
+      - name: Configure pinned Bazelisk without automatic immutable disk cache saves
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize preinstalled Windows MSVC (no SDK install)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $where = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $where)) { throw 'MSVC discovery utility absent' }
+          $vs = & $where -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Required hosted MSVC toolchain missing' }
+          $dev = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path -LiteralPath $dev)) { throw 'Hosted VsDevCmd missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $pairs = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot initialize preinstalled MSVC' }
+          foreach ($entry in $pairs) {
+            if ($entry -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+          Write-Host 'PASS: hosted MSVC x64 env initialized without toolchain downloads'
+
+      - name: Compile bounded real Rust crate; checkpoint completed cache on timeout
+        id: compile
+        shell: pwsh
+        run: |
+          & ./.github/scripts/codexdd-045-3f44-checkpointed-opt-cache.ps1 -Mode seed -SoftMinutes 10 -MaxCacheBytes 1610612736
+          if (-not $?) { throw 'Seed checkpoint failed' }
+      - name: Save completed action outputs even if Rust target is unfinished
+        if: success() && steps.compile.outputs.checkpoint_ready == 'true'
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f45b-${{ github.run_id }}-seed
+      - name: Upload seed action checkpoint diagnostics only
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f45b-seed-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-3f44-checkpoint/
+          if-no-files-found: warn
+          retention-days: 3
+
+  restore:
+    needs: seed
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: windows-2022
+    timeout-minutes: 38
+    steps:
+      - name: Checkout frozen candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact nonrelease source and locked security graph
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source SHA' }
+          if ((git rev-parse HEAD^).Trim() -ne '3aaf713c30e6d46f6ae559bcc8ef955500a1eeac') { throw 'Unexpected workflow parent' }
+          $pinned = @{
+            'MODULE.bazel' = 'd178d9882169a5c06e42869338c99c4300e4e791'
+            'MODULE.bazel.lock' = 'ac964e1ac4f455d6277063e235556a1387e8ba19'
+            'codex-rs/config/BUILD.bazel' = '2b540027532dd9e48f3f846671eff3f4f08feaeb'
+            'codex-rs/config/Cargo.toml' = 'b4be94bb585c6757234299a78f8b42a02b3d2017'
+            'bazel/rules/runtime_package.bzl' = 'ba4cdad58f916f04602109c7b4d2512e83da5485'
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/Cargo.lock' = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+            '.bazelrc' = 'b7698b896e8d0830b60477999d330b115cf5ee8e'
+          }
+          foreach ($path in $pinned.Keys) {
+            if ((git rev-parse ('HEAD:' + $path)).Trim() -ne $pinned[$path]) { throw "Protected source changed: $path" }
+          }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker advanced' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker advanced' }
+          if ($env:BAZEL_MSVC_RUNTIME_VISUAL_STUDIO_EULA) { throw 'No SDK license override permitted' }
+          if (git status --porcelain --untracked-files=no) { throw 'Dirty tracked worktree' }
+      - name: Configure pinned Bazelisk without automatic immutable disk cache saves
+        uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize preinstalled Windows MSVC (no SDK install)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $where = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path -LiteralPath $where)) { throw 'MSVC discovery utility absent' }
+          $vs = & $where -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Required hosted MSVC toolchain missing' }
+          $dev = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path -LiteralPath $dev)) { throw 'Hosted VsDevCmd missing' }
+          $names = @('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $pairs = & cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot initialize preinstalled MSVC' }
+          foreach ($entry in $pairs) {
+            if ($entry -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+          Write-Host 'PASS: hosted MSVC x64 env initialized without toolchain downloads'
+
+      - name: Restore exact completed-action checkpoint (no prefix fallback)
+        id: cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f45b-${{ github.run_id }}-seed
+          fail-on-cache-miss: true
+      - name: Verify exact checkpoint and prior MSVC PATH fingerprint
+        shell: pwsh
+        run: |
+          if ('${{ steps.cache.outputs.cache-hit }}' -ne 'true') { throw 'Exact action checkpoint cache was not restored' }
+          if (-not '${{ needs.seed.outputs.path_sha }}') { throw 'Missing prior runner action PATH hash' }
+      - name: Finish the real optimized Rust target with independently restored cache
+        id: compile
+        shell: pwsh
+        run: |
+          & ./.github/scripts/codexdd-045-3f44-checkpointed-opt-cache.ps1 -Mode restore -SoftMinutes 22 -MaxCacheBytes 3221225472 -ExpectedPathSha '${{ needs.seed.outputs.path_sha }}'
+          if (-not $?) { throw 'Restored optimized Rust target was not accepted' }
+          if ('${{ steps.compile.outputs.checkpoint_ready }}' -ne 'true') { throw 'Restored runner did not emit a valid cache receipt' }
+      - name: Require finished real Rust target, not just a partial cache
+        shell: pwsh
+        run: |
+          if ('${{ steps.compile.outputs.build_complete }}' -ne 'true') { throw 'Real optimized Rust target did not complete' }
+          if (git status --porcelain --untracked-files=no) { throw 'Protected source changed' }
+          Write-Host 'PASS: checkpointed cross-runner Rust optimization actions and completed original target; NONRELEASE'
+      - name: Upload restore action checkpoint diagnostics only
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f45b-restore-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-3f44-checkpoint/
+          if-no-files-found: warn
+          retention-days: 3
+
