@@ -1,0 +1,48 @@
+# Source-only read-only audit of historical native Windows logs. No recompile.
+name: CodexDD 0.4.5 real 1320-action optimized Rust cache receipts (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f46-historical-optimized-cache-evidence.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit-historical-windows:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '0777d6d0586a3f65324cae06ab7c1cba9eec8e71'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout immutable evidence verifier
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check actual 3F.45B seed and restore job metadata and full logs
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CODEXDD_3F46_EVIDENCE="$RUNNER_TEMP/codexdd045-3f46"
+          test "$(git rev-parse HEAD^)" = '0777d6d0586a3f65324cae06ab7c1cba9eec8e71'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p "$CODEXDD_3F46_EVIDENCE"
+          api() {
+            curl --fail --silent --show-error --location --retry 2 \
+              --connect-timeout 15 --max-time 90 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/Takuetsu/codex-dd-astra/$1" \
+              --output "$CODEXDD_3F46_EVIDENCE/$2"
+          }
+          api "actions/runs/40877812353" "run.json"
+          api "actions/jobs/123461228848" "seed.json"
+          api "actions/jobs/123466929289" "restore.json"
+          api "actions/jobs/123461228848/logs" "seed.log"
+          api "actions/jobs/123466929289/logs" "restore.log"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f46_real_cache_evidence.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f43_manual_build_contract.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          test -z "$(git status --porcelain)"
