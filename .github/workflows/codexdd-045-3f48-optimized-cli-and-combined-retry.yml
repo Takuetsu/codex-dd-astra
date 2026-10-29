@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   preflight:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_045_OPTIMIZED_RELEASE'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '473440195e4b4abad3a9966f6709baea50932d47'
     runs-on: ubuntu-latest
     timeout-minutes: 9
     steps:
