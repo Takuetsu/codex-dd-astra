@@ -15,7 +15,7 @@ class FinalRetry(unittest.TestCase):
   self.assertNotIn("workflow_dispatch:",W)
   self.assertNotIn("gh release",W)
  def test_cli_verified_and_artifact_uploaded_before_combined(self):
-  keys=("-Stage cli -SoftMinutes 195","-preserve-real-cli-pdb.ps1","Upload ACTUAL CLI executable and PDB immediately",
+  keys=("-Stage cli -SoftMinutes 195","name: Preserve physical CLI/PDB if native compilation succeeded","Upload ACTUAL CLI executable and PDB immediately",
         "-Stage combined -SoftMinutes 145")
   positions=[W.index(k) for k in keys]
   self.assertEqual(positions,sorted(positions))
