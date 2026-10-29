@@ -2,9 +2,10 @@
 [CmdletBinding()]
 param(
  [Parameter(Mandatory=$true)][ValidateSet('seed','restore')][string]$Mode,
- [Parameter(Mandatory=$true)][ValidateRange(2,25)][int]$SoftMinutes,
+ [Parameter(Mandatory=$true)][ValidateRange(2,170)][int]$SoftMinutes,
  [Parameter(Mandatory=$true)][long]$MaxCacheBytes,
- [string]$ExpectedPathSha=''
+ [string]$ExpectedPathSha='',
+ [ValidateSet('//codex-rs/config:config','//codex-rs/core:core')][string]$Target='//codex-rs/config:config'
 )
 $ErrorActionPreference='Stop'
 if (-not $env:GITHUB_SHA -or (git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unfrozen source' }
@@ -37,7 +38,7 @@ $args=@(
  '--platforms=//:windows_x86_64_msvc','--host_platform=//:local_windows_msvc',
  '--//codex-rs:runtime_package_build_mode=release',
  '--disk_cache=D:/_bazel-disk','--jobs=2','--verbose_failures','--announce_rc',
- '//codex-rs/config:config'
+ $Target
 )
 # Bazel --announce_rc records configuration-expanded flags, NOT arbitrary
 # direct command-line options. Validate the actual argument vector for the
@@ -86,7 +87,7 @@ if ($timedOut -and $Mode -ne 'seed') { throw 'RESTORE_TIMEOUT: target did not fi
 $complete= -not $timedOut
 $summary=''
 if ($complete) {
- foreach ($phrase in @('Build completed successfully','Target //codex-rs/config:config up-to-date:')) {
+ foreach ($phrase in @('Build completed successfully',('Target '+$Target+' up-to-date:'))) {
   if (-not (Select-String -LiteralPath $combined -SimpleMatch $phrase -Quiet)) { throw "Missing real Rust build receipt: $phrase" }
  }
  $record=(Select-String -LiteralPath $combined -Pattern 'INFO: [0-9]+ processes:' | Select-Object -Last 1)
@@ -111,7 +112,7 @@ if ($env:GITHUB_OUTPUT) {
  "build_complete=$($complete.ToString().ToLowerInvariant())" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
  "cache_bytes=$bytes" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
 }
-$receipt=@{mode=$Mode; source_sha=$env:GITHUB_SHA; path_sha=$pathSha; timed_out=$timedOut; build_complete=$complete; cache_bytes=$bytes; cache_files=$files.Count; elapsed_s=$watch.Elapsed.TotalSeconds; action_summary=$summary; release_approved=$false}
+$receipt=@{target=$Target; mode=$Mode; source_sha=$env:GITHUB_SHA; path_sha=$pathSha; timed_out=$timedOut; build_complete=$complete; cache_bytes=$bytes; cache_files=$files.Count; elapsed_s=$watch.Elapsed.TotalSeconds; action_summary=$summary; release_approved=$false}
 $receipt | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $dir ($Mode+'-receipt.json')) -Encoding utf8
 if ($complete) {
  Write-Host ("NONRELEASE_REAL_OPTIMIZED_RUST_{0}_TARGET_PASS" -f $Mode.ToUpperInvariant())

@@ -88,9 +88,18 @@ if ($Stage -in @('core','cli') -and $summary -notmatch '(?i)\b[1-9][0-9]* disk c
 if (git status --porcelain --untracked-files=no) { throw "Tracked source modified in stage $Stage" }
 $stats=Get-ChildItem $cache -Recurse -File | Measure-Object Length -Sum
 $cacheBytes=[long]$stats.Sum
-if ($cacheBytes -le 0 -or $cacheBytes -gt $MaxCacheBytes) { throw "Disk cache capacity outside approved bound: $cacheBytes" }
+if ($cacheBytes -le 0) { throw 'Bazel disk cache empty after real optimized build' }
+if ($cacheBytes -gt $MaxCacheBytes) {
+  if ($Stage -in @('cli','combined')) {
+    # These two targets execute on the same runner and never upload their action
+    # cache. Do not discard already linked release binaries for cache size alone.
+    Write-Warning "Non-transferred final-stage cache exceeded soft cap: $cacheBytes"
+  } else { throw "Transferable Bazel cache exceeds approved bound: $cacheBytes" }
+}
 if ($env:GITHUB_OUTPUT) { "cache_bytes=$cacheBytes" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append }
 if ($Stage -in @('cli','combined')) {
+  $review=Join-Path $dir 'nonrelease-artifacts'
+  New-Item -Path $review -ItemType Directory -Force | Out-Null
   $qFile=Join-Path $dir ($Stage+'-cquery.log')
   $qArgs=@('--noexperimental_remote_repo_contents_cache','cquery')+$opts+@('--output=files',$targets[$Stage][0])
   $ErrorActionPreference='Continue'
@@ -106,6 +115,19 @@ if ($Stage -in @('cli','combined')) {
       $full=Join-Path (Get-Location).Path ($found[0] -replace '/','\')
       if (-not (Test-Path -LiteralPath $full) -or (Get-Item $full).Length -le 4096) { throw "Invalid physical optimized $name file" }
       Write-Host ("REAL_OPT_CLI_FILE={0} BYTES={1}" -f $name,(Get-Item $full).Length)
+      # Verify physical PE/PDB signatures, then retain originals for source
+      # frozen Windows validation; these are not production releases.
+      $stream=[IO.File]::OpenRead($full)
+      try {
+        $buf=New-Object byte[] 32
+        $read=$stream.Read($buf,0,$buf.Length)
+        if ($read -lt 32) { throw "Truncated optimized file: $name" }
+        $prefix=[Text.Encoding]::ASCII.GetString($buf,0,$read)
+        if ($name.EndsWith('.exe') -and -not $prefix.StartsWith('MZ')) { throw "Invalid Windows EXE: $name" }
+        if ($name.EndsWith('.pdb') -and -not $prefix.StartsWith('Microsoft C/C++ MSF 7.00')) { throw "Invalid MSVC PDB: $name" }
+      } finally { $stream.Dispose() }
+      Copy-Item -LiteralPath $full -Destination (Join-Path $review $name) -Force
+      Write-Host ("NONRELEASE_CLI_SHA256={0} {1}" -f (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash,$name)
     }
   } else {
     $found=@($files | Where-Object { $_ -match '(?i)[/\\]runtime_package_combined\.tar\.gz$' })
@@ -115,6 +137,9 @@ if ($Stage -in @('cli','combined')) {
     $inventory=Join-Path $dir 'combined-sha256-inventory.json'
     python scripts/codexdd_045_verify_windows_archive.py "$full" --json-output "$inventory"
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $inventory)) { throw 'Actual EXE/PDB archive inspection failed' }
+    Copy-Item -LiteralPath $full -Destination (Join-Path $review 'runtime_package_combined.tar.gz') -Force
+    Copy-Item -LiteralPath $inventory -Destination (Join-Path $review 'combined-sha256-inventory.json') -Force
+    Write-Host "NONRELEASE_COMBINED_ARCHIVE_SHA256=$((Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash)"
   }
 }
 $receipt=@{ stage=$Stage; source_sha=$env:GITHUB_SHA; path_sha=$pathSha; cache_bytes=$cacheBytes; summary=$summary; elapsed_s=$clock.Elapsed.TotalSeconds; release_approved=$false }
