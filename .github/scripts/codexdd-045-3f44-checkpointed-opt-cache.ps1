@@ -39,6 +39,19 @@ $args=@(
  '--disk_cache=D:/_bazel-disk','--jobs=2','--verbose_failures','--announce_rc',
  '//codex-rs/config:config'
 )
+# Bazel --announce_rc records configuration-expanded flags, NOT arbitrary
+# direct command-line options. Validate the actual argument vector for the
+# explicit disk cache override instead of expecting it echoed in stderr.
+$requiredCacheFlag='--disk_cache=D:/_bazel-disk'
+if (@($args | Where-Object { $_ -ceq $requiredCacheFlag }).Count -ne 1) {
+ throw 'Missing or duplicate explicit disk-cache argument'
+}
+$cacheIndex=[Array]::IndexOf([string[]]$args,$requiredCacheFlag)
+$ciConfigIndex=[Array]::IndexOf([string[]]$args,'--config=ci-windows-msvc')
+if ($cacheIndex -le $ciConfigIndex) {
+ throw 'Explicit disk cache must override the ci-windows-msvc config'
+}
+Write-Host "VERIFIED_EXPLICIT_BAZEL_DISK_CACHE_ARGUMENT=$requiredCacheFlag"
 $watch=[System.Diagnostics.Stopwatch]::StartNew()
 $proc=Start-Process -FilePath $bazel -ArgumentList $args -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 $timedOut=-not $proc.WaitForExit($SoftMinutes*60000)
@@ -57,7 +70,15 @@ Get-Content $combined -Tail 30 | ForEach-Object {
  $s=[string]$_
  Write-Host $s.Substring(0,[Math]::Min(650,$s.Length))
 }
-foreach ($opt in @('--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin','--disk_cache=D:/_bazel-disk')) {
+# Measure cache capacity before log assertions, so a failure never hides the
+# reason a partially completed cache could not be checkpointed.
+$files=@(Get-ChildItem -LiteralPath $cache -Recurse -File)
+$bytes=[long](($files | Measure-Object -Property Length -Sum).Sum)
+Write-Host ("CHECKPOINT_DISK_CACHE_INVENTORY=BYTES:{0}; FILES:{1}; MAX:{2}" -f $bytes,$files.Count,$MaxCacheBytes)
+if ($bytes -le 0 -or $bytes -gt $MaxCacheBytes -or $files.Count -lt 2) {
+ throw "Checkpoint out of bounds: bytes=$bytes files=$($files.Count) max=$MaxCacheBytes"
+}
+foreach ($opt in @('--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin')) {
  if (-not (Select-String -LiteralPath $combined -SimpleMatch $opt -Quiet)) { throw "Missing optimized flag: $opt" }
 }
 if (-not $timedOut -and $rc -ne 0) { throw "Actual Rust compiler failure (not timeout): $rc" }
@@ -81,11 +102,6 @@ if ($complete) {
  if (Select-String -LiteralPath $stderr -Pattern '(^|\s)(ERROR:|FAILED:|error\[E[0-9]+\]:)' -Quiet) {
   throw 'Compiler error before timeout: do not checkpoint failed compilation'
  }
-}
-$files=@(Get-ChildItem -LiteralPath $cache -Recurse -File)
-$bytes=[long](($files | Measure-Object -Property Length -Sum).Sum)
-if ($bytes -le 0 -or $bytes -gt $MaxCacheBytes -or $files.Count -lt 2) {
- throw "Checkpoint out of bounds: bytes=$bytes files=$($files.Count) max=$MaxCacheBytes"
 }
 if (git status --porcelain --untracked-files=no) { throw 'Source or lockfile mutated during compiler run' }
 Write-Host ("3F44_{0}_CACHE_BYTES={1}; FILES={2}; ELAPSED_S={3:F1}" -f $Mode.ToUpperInvariant(),$bytes,$files.Count,$watch.Elapsed.TotalSeconds)
