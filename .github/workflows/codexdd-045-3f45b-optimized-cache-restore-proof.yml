@@ -197,10 +197,11 @@ jobs:
         run: |
           & ./.github/scripts/codexdd-045-3f44-checkpointed-opt-cache.ps1 -Mode restore -SoftMinutes 22 -MaxCacheBytes 3221225472 -ExpectedPathSha '${{ needs.seed.outputs.path_sha }}'
           if (-not $?) { throw 'Restored optimized Rust target was not accepted' }
-          if ('${{ steps.compile.outputs.checkpoint_ready }}' -ne 'true') { throw 'Restored runner did not emit a valid cache receipt' }
       - name: Require finished real Rust target, not just a partial cache
         shell: pwsh
         run: |
+          # Step outputs are available only after the previous id: compile step completes.
+          if ('${{ steps.compile.outputs.checkpoint_ready }}' -ne 'true') { throw 'Restored runner did not emit a valid cache receipt' }
           if ('${{ steps.compile.outputs.build_complete }}' -ne 'true') { throw 'Real optimized Rust target did not complete' }
           if (git status --porcelain --untracked-files=no) { throw 'Protected source changed' }
           Write-Host 'PASS: checkpointed cross-runner Rust optimization actions and completed original target; NONRELEASE'
