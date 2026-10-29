@@ -1,0 +1,31 @@
+# One-shot cheap source-only verification of dormant full-release runner; NO Rust compile.
+name: CodexDD 0.4.5 full release argv not log cache verifier (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f45c-release-cache-arg-audit.yml"]
+permissions:
+  contents: read
+jobs:
+  source-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f7c5836615ac3a347af20c8068048adc28a5c82e'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Prove CLI, PDB and combined archive runner uses actual Bazel action args
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = 'f7c5836615ac3a347af20c8068048adc28a5c82e'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f45c_staged_release_cache_assertion.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f43_manual_build_contract.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          command -v pwsh
+          pwsh -NoProfile -Command '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile(".github/scripts/codexdd-045-staged-optimized-windows.ps1",[ref]$tokens,[ref]$errors) | Out-Null; if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_ }; exit 1}; Write-Host "PASS: staged release executor parses"'
+          test -z "$(git status --porcelain)"

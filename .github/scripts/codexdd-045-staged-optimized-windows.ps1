@@ -47,6 +47,18 @@ if ($Stage -in @('cli','combined') -and (Get-PSDrive -Name D).Free -lt 644245094
   throw 'Insufficient D: scratch space for optimized release link'
 }
 $buildArgs=@('--noexperimental_remote_repo_contents_cache','build')+$opts+@('--jobs=2','--verbose_failures','--announce_rc')+$targets[$Stage]
+# --announce_rc only prints configuration/rc flags, not all direct Bazel CLI
+# options. Verify explicit disk cache override in actual command arguments.
+$requiredCacheArg='--disk_cache=D:/_bazel-disk'
+if (@($buildArgs | Where-Object { $_ -ceq $requiredCacheArg }).Count -ne 1) {
+  throw 'Missing or duplicate direct disk-cache option in optimized build arguments'
+}
+$ciOptionIndex=[Array]::IndexOf([string[]]$buildArgs,'--config=ci-windows-msvc')
+$cacheOptionIndex=[Array]::IndexOf([string[]]$buildArgs,$requiredCacheArg)
+if ($cacheOptionIndex -le $ciOptionIndex) {
+  throw 'Explicit Bazel disk-cache argument must appear after ci-windows-msvc config'
+}
+Write-Host "VERIFIED_EXPLICIT_OPT_RELEASE_BAZEL_DISK_CACHE=$requiredCacheArg"
 $clock=[System.Diagnostics.Stopwatch]::StartNew()
 $proc=Start-Process -FilePath $bazel -ArgumentList $buildArgs -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 if (-not $proc.WaitForExit($SoftMinutes*60000)) {
@@ -65,7 +77,7 @@ Get-Content $combined -Tail 55 | ForEach-Object {
   Write-Host $s.Substring(0,[Math]::Min(600,$s.Length))
 }
 if ($exitCode -ne 0) { throw "Optimized Bazel build failed for $Stage with exit $exitCode" }
-foreach ($required in @('Build completed successfully','--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin','--disk_cache=D:/_bazel-disk')) {
+foreach ($required in @('Build completed successfully','--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin')) {
   if (-not (Select-String -LiteralPath $combined -SimpleMatch $required -Quiet)) { throw "Missing required stage receipt: $required" }
 }
 $summary=(Select-String -LiteralPath $combined -Pattern 'INFO: [0-9]+ processes:' | Select-Object -Last 1).Line
