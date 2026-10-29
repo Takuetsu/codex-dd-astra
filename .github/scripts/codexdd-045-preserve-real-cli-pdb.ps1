@@ -5,6 +5,7 @@ param()
 $ErrorActionPreference='Stop'
 if (-not $env:GITHUB_SHA -or (git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unfrozen CLI source SHA' }
 if ((Get-Content 'codex-rs/codexdd-version.txt' -Raw).Trim() -ne '0.4.4') { throw 'Production marker promoted' }
+if (git status --porcelain --untracked-files=no) { throw 'Tracked source modified before CLI artifact salvage' }
 $dir=Join-Path $env:RUNNER_TEMP 'codexdd045-release-staged'
 $log=Join-Path $dir 'cli-combined.log'
 $dest=Join-Path $dir 'nonrelease-artifacts'
