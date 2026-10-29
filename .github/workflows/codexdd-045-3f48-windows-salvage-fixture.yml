@@ -1,0 +1,73 @@
+# Cheap native Windows synthetic PE/PDB salvage: validate actual code before expensive link.
+name: CodexDD 0.4.5 native CLI/PDB artifact salvage fixture (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f48-windows-salvage-fixture.yml"]
+permissions:
+  contents: read
+jobs:
+  native-fixture:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '123456bce01853f2b171f3f0253e9bbaccec9b76'
+    runs-on: windows-2022
+    timeout-minutes: 9
+    steps:
+      - name: Checkout exact frozen source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify real PowerShell artifact salvage with dummy Win32 headers and bounded files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD^).Trim() -ne '123456bce01853f2b171f3f0253e9bbaccec9b76') { throw 'Unexpected fixture source parent' }
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Unexpected source HEAD' }
+          $originalTemp=$env:RUNNER_TEMP
+          $env:RUNNER_TEMP=Join-Path $originalTemp 'codexdd045-3f48-salvage-fixture'
+          $fake=Join-Path (Get-Location).Path 'bazel-out/fixture/bin/codex-rs/cli'
+          New-Item -Path $fake -ItemType Directory -Force | Out-Null
+          $dir=Join-Path $env:RUNNER_TEMP 'codexdd045-release-staged'
+          New-Item -Path $dir -ItemType Directory -Force | Out-Null
+          $exe=Join-Path $fake 'codex.exe'
+          $pdb=Join-Path $fake 'codex.pdb'
+          $exeb=New-Object byte[] 8192
+          $exeb[0]=77
+          $exeb[1]=90
+          [IO.File]::WriteAllBytes($exe,$exeb)
+          $pdbb=New-Object byte[] 8192
+          [Text.Encoding]::ASCII.GetBytes('Microsoft C/C++ MSF 7.00').CopyTo($pdbb,0)
+          [IO.File]::WriteAllBytes($pdb,$pdbb)
+          $log=Join-Path $dir 'cli-combined.log'
+          @(
+            'INFO: Analyzing target //codex-rs/cli:release_files',
+            'Target //codex-rs/cli:release_files up-to-date:',
+            '  bazel-out/fixture/bin/codex-rs/cli/codex.exe',
+            '  bazel-out/fixture/bin/codex-rs/cli/codex.pdb',
+            'INFO: 2858 processes: 794 internal, 2064 local.',
+            'INFO: Build completed successfully, 2858 total actions'
+          ) | Set-Content -LiteralPath $log -Encoding utf8
+          try {
+            & .github/scripts/codexdd-045-preserve-real-cli-pdb.ps1
+            if (-not $?) { throw 'Actual native salvage script failed on valid synthetic headers' }
+            $target=Join-Path $dir 'nonrelease-artifacts'
+            foreach($n in @('codex.exe','codex.pdb','cli-integrity.json')) {
+              if (-not (Test-Path -LiteralPath (Join-Path $target $n))) { throw "Missing salvaged file: $n" }
+            }
+            $data=Get-Content (Join-Path $target 'cli-integrity.json') -Raw | ConvertFrom-Json
+            if ($data.release_approved -or $data.result -ne 'REAL_OPTIMIZED_WINDOWS_CLI_AND_PDB_VERIFIED_NONRELEASE') {
+              throw 'Source artifact salvage receipt misrepresented nonrelease state'
+            }
+            Write-Host 'PASS: native Windows synthetic CLI and PDB both copied, hashed and receipt validated'
+            $pdbb[0]=0
+            [IO.File]::WriteAllBytes($pdb,$pdbb)
+            $rejected=$false
+            try { & .github/scripts/codexdd-045-preserve-real-cli-pdb.ps1 } catch { $rejected=$true }
+            if (-not $rejected) { throw 'Bad MSVC PDB magic was not rejected' }
+            Write-Host 'PASS: invalid PDB source fails closed'
+          } finally {
+            Remove-Item -LiteralPath $env:RUNNER_TEMP -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath (Join-Path (Get-Location).Path 'bazel-out/fixture') -Recurse -Force -ErrorAction SilentlyContinue
+            $env:RUNNER_TEMP=$originalTemp
+          }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked source changed during Win32 fixture test' }
