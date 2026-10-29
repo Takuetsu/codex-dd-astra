@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   contract:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd7a5924c33ff612007b874bec5476a8d63c70d58'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '9a81bad9c9cd7b12a7bc6bc8b6c889bd11e2aca6'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f47_full_package_launch.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f47_release_stage.py' -v
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f42a_windows_archive_verifier.py' -v
           python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
           command -v pwsh
