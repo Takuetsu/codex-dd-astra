@@ -15,6 +15,7 @@ class RealBinaryPreservation(unittest.TestCase):
    with self.subTest(s=s):self.assertIn(s,S)
   self.assertIn("NONRELEASE",S)
   self.assertIn("cli_artifact_ready=true",S)
+  self.assertIn("git status --porcelain --untracked-files=no",S)
   self.assertNotIn("Start-Process",S)
   self.assertNotIn("gh release",S)
  def test_no_cache_efficiency_false_rejection(self):
