@@ -1,0 +1,30 @@
+# Cheap one-shot source gate; real optimized workflow remains dormant.
+name: CodexDD 0.4.5 optimized Windows binaries source gate (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
+    paths: [".github/workflows/codexdd-045-3f47-source-audit.yml"]
+permissions:
+  contents: read
+jobs:
+  audit:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '67f888f20696d23fd91b0631c640d67a817289e6'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate exact workflow and PowerShell scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '67f888f20696d23fd91b0631c640d67a817289e6'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f47_release_stage.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f42a_windows_archive_verifier.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f14_owner_matrix.py' -v
+          command -v pwsh
+          pwsh -NoProfile -Command '$t=$null;$e=$null;foreach($f in @(".github/scripts/codexdd-045-staged-optimized-windows.ps1",".github/scripts/codexdd-045-3f44-checkpointed-opt-cache.ps1")) { [System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$t,[ref]$e) | Out-Null; if($e.Count -gt 0) { $e | ForEach-Object { Write-Error $_ }; exit 1 } }; "PASS: optimized script syntax"'
+          test -z "$(git status --porcelain)"
