@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   contract:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_045_OPTIMIZED_RELEASE'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd7a5924c33ff612007b874bec5476a8d63c70d58'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
