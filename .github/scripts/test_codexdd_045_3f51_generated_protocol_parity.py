@@ -26,7 +26,8 @@ def method_variants(schema: dict) -> dict[str, str]:
     for variant in schema["oneOf"]:
         method = variant["properties"]["method"]["enum"]
         assert len(method) == 1, "Method JSON schema must use one exact enum value"
-        pairs.append((method[0], variant["properties"]["params"]["$ref"]))
+        # Eleven upstream requests legitimately have null/optional params.
+        pairs.append((method[0], variant["properties"]["params"].get("$ref")))
     assert len(pairs) == len(dict(pairs)), "Duplicate wire methods"
     return dict(pairs)
 
