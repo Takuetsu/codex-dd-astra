@@ -8,8 +8,8 @@
   "release_approved": false,
   "required_owner_count": 109,
   "approved_owner_count": 0,
-  "ready_for_formal_review_count": 37,
-  "source_review_queued_count": 72,
+  "ready_for_formal_review_count": 44,
+  "source_review_queued_count": 65,
   "decision_workflow": {
     "path_identity": "Exact Git blob pinned per path; revision invalidates owner decision",
     "owner_signoff": "An owner accepts only after reviewing specific upstream intent, fork behavior, negative security cases and native receipt matching this source; signing identity and UTC timestamp required",
@@ -709,17 +709,26 @@
       "candidate_blob": "9379d52b41473f1a57cb49d07048af7c139ebcf9",
       "official_upstream_0163_blob": "9d540c3124ee692250d345719d122aa1884ba12f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_CLI_SOURCE_DIFF_NATIVE_STARTUP_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Only additive adaptive startup forwarding: interactive.adaptive is assigned if supplied; upstream CLI argument/dispatch untouched."
+        }
+      ],
       "required_evidence": [
-        "Secure-graph native CLI startup, daemon and argument regression"
+        "Secure-graph native CLI startup, daemon and argument regression",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Only additive adaptive startup forwarding: interactive.adaptive is assigned if supplied; upstream CLI argument/dispatch untouched."
     },
     {
       "path": "codex-rs/cli/tests/daemon_startup.rs",
@@ -727,17 +736,26 @@
       "candidate_blob": "e1c6d330f602f3c4cebf9d7163ecdcd2adb9100f",
       "official_upstream_0163_blob": "f50758363578497af6e1139e8a1410858706e38c",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_CLI_SOURCE_DIFF_NATIVE_STARTUP_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Elevated Windows embedded mode deliberately removes the historical F2 warning: test waits for /status instead and asserts no shared daemon PID on resume/fork."
+        }
+      ],
       "required_evidence": [
-        "Secure-graph native CLI startup, daemon and argument regression"
+        "Secure-graph native CLI startup, daemon and argument regression",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Elevated Windows embedded mode deliberately removes the historical F2 warning: test waits for /status instead and asserts no shared daemon PID on resume/fork."
     },
     {
       "path": "codex-rs/config/src/config_toml.rs",
@@ -745,17 +763,26 @@
       "candidate_blob": "a07f08c8831dd011d4950a52088c7233722620d8",
       "official_upstream_0163_blob": "8c8c66ea1dc45669a3f52e3e0d3f10e633267167",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_TOML_SOURCE_DIFF_NATIVE_AUTHORITY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Additive initial adaptive Worker authority TOML role/config, with paired Daybreak deserialization; no original upstream config field deleted."
+        }
+      ],
       "required_evidence": [
-        "Secure-graph config parsing and native startup regression"
+        "Secure-graph config parsing and native startup regression",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Additive initial adaptive Worker authority TOML role/config, with paired Daybreak deserialization; no original upstream config field deleted."
     },
     {
       "path": "codex-rs/core/config.schema.json",
@@ -1357,17 +1384,26 @@
       "candidate_blob": "180b889e87cf3b0c13d1e43cfef0f21bb88c7c1c",
       "official_upstream_0163_blob": "9ab89363df8a895ee4cfb28c4f38acb8a9d35250",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Add exactly one CodexDdWorkflowState wire variant with symmetric borrowed/owned encode and decode; old upstream variants preserved."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Add exactly one CodexDdWorkflowState wire variant with symmetric borrowed/owned encode and decode; old upstream variants preserved."
     },
     {
       "path": "codex-rs/history/src/tests.rs",
@@ -1479,17 +1515,26 @@
       "candidate_blob": "294ce2a11eacf8aca837a828a0012cb1301f3e4d",
       "official_upstream_0163_blob": "eb13ec553ef546f8c982dd46deef9d0880a24555",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Private WorkflowState is retained as durable rollout, adaptive runtime event excluded from journal; old bool persistence API adapted to upstream optional payload policy."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Private WorkflowState is retained as durable rollout, adaptive runtime event excluded from journal; old bool persistence API adapted to upstream optional payload policy."
     },
     {
       "path": "codex-rs/rollout/src/recorder.rs",
@@ -1497,17 +1542,26 @@
       "candidate_blob": "6e70783e7c2e93e9a705a2ce32f7317545ea9228",
       "official_upstream_0163_blob": "765d83ccc7df4b136c04774930f4ac65af15bbd5",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Private WorkflowState permitted durable upload; state-db-only empty-filter queries must still contact DB rather than masking absence."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Private WorkflowState permitted durable upload; state-db-only empty-filter queries must still contact DB rather than masking absence."
     },
     {
       "path": "codex-rs/rollout/src/search.rs",
@@ -1569,17 +1623,26 @@
       "candidate_blob": "315498be3dcdd650fa147ca6d3c69abd9c089e2c",
       "official_upstream_0163_blob": "5b3dea35516301a35d47c70b83e548dc060b8c9c",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f57-cli-state-reversible-source-review.json",
+          "scope": "Add restored workflow state to thread storage snapshots, preserved across owned clone constructor; does not remove upstream fields."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source regressions must verify this newly source-reviewed behavior, including negative authority/replay cases"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Add restored workflow state to thread storage snapshots, preserved across owned clone constructor; does not remove upstream fields."
     },
     {
       "path": "codex-rs/tui/src/app.rs",

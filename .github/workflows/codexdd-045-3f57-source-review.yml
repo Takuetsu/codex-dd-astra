@@ -1,0 +1,28 @@
+# One-shot source-only review, no compile or release.
+name: CodexDD 0.4.5 3F.57 CLI config persistence formal review (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f57-cli-state-source-review]
+    paths: [".github/workflows/codexdd-045-3f57-source-review.yml"]
+permissions:
+  contents: read
+jobs:
+  review:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd4c89b58d3448bb33151b95c079d7642b9521709'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact reversible upstream and 109-path source acceptance boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f57_cli_state_semantics.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f55_formal_owner_approvals.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f51_exact_upstream_semantic_deltas.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f52_appserver_owner_source.py -q
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
