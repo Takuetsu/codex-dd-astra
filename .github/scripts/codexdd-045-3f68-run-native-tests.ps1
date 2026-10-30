@@ -12,6 +12,7 @@ $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 $baselineSha = 'cee9f3cd0ede2296f95e66cabdf997c291b940e2'
 $lock = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
 $stages = @()
+$failedSelectors = @()
 $exitCode = 1
 if (-not $LogRoot) { $LogRoot = Join-Path $env:TEMP 'codexdd045-3f68-acceptance' }
 New-Item -ItemType Directory -Force -Path $LogRoot | Out-Null
