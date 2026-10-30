@@ -130,9 +130,7 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
             // so a broken install-context lookup cannot silently pass the snapshot.
             let version = codex_install_context::InstallContext::current()
                 .package_manifest()
-                .map_or_else(|| CODEX_CLI_VERSION.to_string(), |manifest| {
-                    manifest.version.to_string()
-                });
+                .map_or_else(|| CODEX_CLI_VERSION.to_string(), |manifest| manifest.version.to_string());
             let actual = format!("Use this CLI package v{version} from ");
             assert!(
                 confirmation.contains(&actual),
