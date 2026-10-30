@@ -67,13 +67,14 @@ async fn startup_modal_quarantine_only_blocks_protected_input() -> Result<()> {
     // No visible modal: input is not consumed by the startup guard.
     assert!(!app.startup_modal_input_needs_quarantine(&key));
 
-    app.chat_widget.show_selection_view(crate::bottom_pane::SelectionViewParams {
-        items: vec![crate::bottom_pane::SelectionItem {
-            name: "Sensitive decision".into(),
+    app.chat_widget
+        .show_selection_view(crate::bottom_pane::SelectionViewParams {
+            items: vec![crate::bottom_pane::SelectionItem {
+                name: "Sensitive decision".into(),
+                ..Default::default()
+            }],
             ..Default::default()
-        }],
-        ..Default::default()
-    });
+        });
     assert!(app.chat_widget.has_active_modal());
     assert!(app.startup_modal_input_needs_quarantine(&key));
     assert!(app.startup_modal_input_needs_quarantine(&paste));
