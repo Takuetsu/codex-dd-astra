@@ -1,0 +1,115 @@
+# One-shot targeted native Core/TUI source acceptance. NO production release or signing.
+name: CodexDD 0.4.5 3F.61 Windows Core and TUI owner native acceptance (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f61-native-core-tui-acceptance]
+    paths: [".github/workflows/codexdd-045-3f61-core-tui-native.yml"]
+permissions:
+  contents: read
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_3F61_NATIVE'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check all 109 source evidence, 32 real test selectors and risk non-acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f60_all_56_core_tui.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f61_native_selector_preflight.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f59_persistence_memory_semantics.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f55_formal_owner_approvals.py -q
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Parse native PowerShell without running Rust
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $t=$null;$e=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('.github/scripts/codexdd-045-3f61-run-native-tests.ps1',[ref]$t,[ref]$e) | Out-Null
+          if ($e.Count -ne 0) { $e | ForEach-Object { Write-Error $_ }; throw 'Native acceptance script syntax failed' }
+          Write-Host 'PASS: one-shot source and native-selector preflight; Rust not compiled'
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 110
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact reviewed source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Confirm exact Git commit and secured immutable Rust graph
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Native source HEAD changed' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.lock').Trim() -cne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Cargo.lock drift' }
+          if ((git rev-parse 'HEAD:codex-rs/Cargo.toml').Trim() -cne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Cargo.toml drift' }
+          if ((git rev-parse 'HEAD:codex-rs/deny.toml').Trim() -cne 'f282c7c55d05201e308e60804f85754c8522d462') { throw 'Security policy drift' }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production marker prematurely changed' }
+          if ((Get-Content codex-rs/upstream-codex-release.txt -Raw).Trim() -ne 'rust-v0.162.0') { throw 'Upstream marker prematurely changed' }
+          if (git status --porcelain --untracked-files=no) { throw 'Tracked file drift' }
+      - name: Setup bounded scratch and long Windows paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base=Join-Path $env:RUNNER_TEMP 'codexdd045-3f61'
+          New-Item -ItemType Directory -Force -Path (Join-Path $base 'target'),(Join-Path $base 'tmp'),(Join-Path $base 'logs') | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $base 'target')"
+            "TEMP=$(Join-Path $base 'tmp')"
+            "TMP=$(Join-Path $base 'tmp')"
+            "CI_BUILD_ROOT=$base"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Install DotSlash for locked source tools
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Try cached Cargo sources only, never cache massive debug binary outputs
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f61-registry-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - name: Configure repository-pinned Windows Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run 14 Core and 18 TUI native acceptance selectors without false greens
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & .github/scripts/codexdd-045-3f61-run-native-tests.ps1 -ExpectedHead $env:GITHUB_SHA -Group Both -LogRoot (Join-Path $env:RUNNER_TEMP 'codexdd045-3f61/logs')
+          if ($LASTEXITCODE -ne 0) { throw 'One or more exact-source native acceptance cases failed' }
+      - name: Always upload narrow Core/TUI native case logs and nonrelease receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f61-native-core-tui-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-3f61/logs/*
+          if-no-files-found: warn
+          compression-level: 3
+          retention-days: 7
