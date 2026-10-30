@@ -1,0 +1,108 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_windows_release_distribution_contract",
+  "status": "NONRELEASE_REQUIREMENTS_FIXED_VALIDATION_INCOMPLETE",
+  "architecture": "x86_64-pc-windows-msvc",
+  "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+  "production_markers": {
+    "codexdd": "0.4.4",
+    "upstream": "rust-v0.162.0"
+  },
+  "current_candidate_upstream": "rust-v0.163.0",
+  "build_evidence": {
+    "run_id": 40922368730,
+    "run_status": "success",
+    "release_approved": false,
+    "combined_artifact_id": 12933707437,
+    "cli_pdb_artifact_id": 12930092426,
+    "combined_archive_sha256": "ce6bd0115fc0f46c1d861517221b2f898e763bfa7e539bb672a26bdb2eeaeb8e",
+    "combined_members": {
+      "codex.exe": {
+        "bytes": 343167488,
+        "sha256": "941b0acc4d0b1b8d2d53a13d52ac7cf642f1add2a8bfcc6cd2a189d6955edc0f"
+      },
+      "codex.pdb": {
+        "bytes": 944545792,
+        "sha256": "dd563410b57b168270d1eef996c7f54fecfc8c76d91199415f72aadb2e1712fe"
+      },
+      "codex-app-server.exe": {
+        "bytes": 259785728,
+        "sha256": "53b61afa8239ff9ab8bfcc8b10e1a75f44aa05c8559fc4113dbd30f87a94bb23"
+      },
+      "codex-app-server.pdb": {
+        "bytes": 732221440,
+        "sha256": "8f97e26d3461fdbfa3d4f66c14da712784281663389ab6d1e15b520350797f74"
+      },
+      "codex-code-mode-host.exe": {
+        "bytes": 73807360,
+        "sha256": "ff4434ee522f8d6bc3a030b54d1459da800ffaf1eadd7e5b3d9057bee31c0591"
+      },
+      "codex-code-mode-host.pdb": {
+        "bytes": 115896320,
+        "sha256": "9688f50af053879ad4d68bc847b2345072360e42772914243fe988a9083581ed"
+      },
+      "codex-command-runner.exe": {
+        "bytes": 8078848,
+        "sha256": "0a2bbf8c1c02b7fc5becee6c47a340b90dc0eb2c15df52c4c6d495c6aa376822"
+      },
+      "codex-command-runner.pdb": {
+        "bytes": 35901440,
+        "sha256": "4c07ee9c18ad578e1a8c4c043a3d258c4874789b0ad74ac4b82c5ec8fa92b0df"
+      },
+      "codex-windows-sandbox-setup.exe": {
+        "bytes": 16986112,
+        "sha256": "930b219bb30367a2a125a16be0de98c93d3e7ea9dcb83ab5fbc9ffe53752c4ec"
+      },
+      "codex-windows-sandbox-setup.pdb": {
+        "bytes": 63033344,
+        "sha256": "1fa7cd837ea286af6388940c46d4cb2bd9796961b9400f6fcbbcf8f499ebbcf7"
+      }
+    }
+  },
+  "combined_optimized_exes": [
+    "codex.exe",
+    "codex-app-server.exe",
+    "codex-code-mode-host.exe",
+    "codex-command-runner.exe",
+    "codex-windows-sandbox-setup.exe"
+  ],
+  "separately_required_windows_exes": [
+    "codex-windows-sandbox-service.exe",
+    "codex-responses-api-proxy.exe"
+  ],
+  "separately_required_development_symbols": [
+    "codex-windows-sandbox-service.pdb",
+    "codex-responses-api-proxy.pdb"
+  ],
+  "full_installer_binaries": [
+    "codex.exe",
+    "codex-code-mode-host.exe",
+    "codex-responses-api-proxy.exe",
+    "codex-windows-sandbox-setup.exe",
+    "codex-windows-sandbox-service.exe",
+    "codex-command-runner.exe",
+    "codex-app-server.exe"
+  ],
+  "public_release_requirements": {
+    "native_windows_x64_seven_binaries": "PENDING_TWO_SEPARATE_EXES",
+    "developer_symbol_provenance": "PENDING_TWO_SEPARATE_PDBS",
+    "signed_windows_exes_and_timestamped_installer": "NOT_RUN",
+    "upstream_compatible_voice_runtime_and_signed_dll_closure": "NOT_RUN",
+    "python_wheel_and_official_archive_output": "NOT_RUN",
+    "install_update_rollback_behaviors": "NOT_RUN",
+    "owner_semantic_review_109_of_109": "NOT_ACCEPTED",
+    "daniel_cl_21_stage_final_receipt": "NOT_RUN",
+    "release_authorization": "NOT_GRANTED"
+  },
+  "protected_bazel_blobs": {
+    "codex-rs/BUILD.bazel": "843e9fe095e0982df2043bb17c7da8e6e1c95025",
+    "bazel/rules/runtime_package.bzl": "ba4cdad58f916f04602109c7b4d2512e83da5485",
+    "codex-rs/cli/BUILD.bazel": "5dd2b8b9629275fb2c392c59134ea95a3ce317d5",
+    ".github/workflows/bazel.yml": "0595de4220a15c98d6f3862368d7df0288012ccc"
+  },
+  "protected_security_blobs": {
+    "codex-rs/Cargo.lock": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+    "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+    "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462"
+  }
+}

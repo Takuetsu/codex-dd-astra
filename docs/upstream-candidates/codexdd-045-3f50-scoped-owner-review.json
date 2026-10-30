@@ -1,0 +1,103 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_scoped_owner_semantic_evidence",
+  "scope": "SCOPED_SOURCE_REVIEW_NOT_FULL_OWNER_APPROVAL",
+  "candidate_source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+  "status": "NONRELEASE_NOT_ACCEPTED",
+  "source_reviewed_count": 5,
+  "total_paths": 109,
+  "total_original_conflicts": 15,
+  "reviewed": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "owner": "bazel_packaging",
+      "current_blob": "0595de4220a15c98d6f3862368d7df0288012ccc",
+      "original_direct_conflict": true,
+      "source_reviewed": "WORKFLOW_WINDOWS_SHARD_AND_NATIVE_MAIN_SOURCE_REVIEWED",
+      "source_fragments": [
+        "test-windows-shard:",
+        "cancel-in-progress:",
+        "timeout-minutes: 90",
+        "test-windows-native-main:"
+      ],
+      "native_evidence_runs": [
+        39630905182
+      ],
+      "remaining_semantic_gate": "Four Windows shards, BuildBuddy/no-secret fallback and required-check aggregation on final branch; full Bazel workflow not proven by optimized CLI build",
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/BUILD.bazel",
+      "owner": "bazel_packaging",
+      "current_blob": "843e9fe095e0982df2043bb17c7da8e6e1c95025",
+      "original_direct_conflict": false,
+      "source_reviewed": "FIVE_COMPONENT_COMBINED_AND_SEPARATE_SERVICE_PROXY_SOURCE_REVIEWED",
+      "source_fragments": [
+        "name = \"runtime_package_combined\"",
+        "name = \"runtime_package_primary\"",
+        "name = \"runtime_package_helpers\"",
+        "//codex-rs/windows-sandbox-service:release_files",
+        "//codex-rs/responses-api-proxy:release_files"
+      ],
+      "native_evidence_runs": [
+        40922368730
+      ],
+      "remaining_semantic_gate": "Separate Windows service and responses proxy physical optimized build, PDBs, signing and installer distribution",
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/cli/BUILD.bazel",
+      "owner": "bazel_packaging",
+      "current_blob": "5dd2b8b9629275fb2c392c59134ea95a3ce317d5",
+      "original_direct_conflict": false,
+      "source_reviewed": "OPTIMIZED_CLI_WITH_ONE_WINDOWS_PDB_SOURCE_AND_NATIVE_ARTIFACT_REVIEWED",
+      "source_fragments": [
+        "release_binary(",
+        "binary = \":codex\"",
+        "build_script_data = [\"//codex-rs:codexdd-version.txt\"]"
+      ],
+      "native_evidence_runs": [
+        40922368730
+      ],
+      "remaining_semantic_gate": "Final native CLI adaptive and managed-daemon startup, signed distribution and 21-stage release suite",
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/Cargo.toml",
+      "owner": "dependency",
+      "current_blob": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+      "original_direct_conflict": false,
+      "source_reviewed": "SECURED_AGE_AWS_WEBRTC_HPKE_MANIFEST_SOURCES_REVIEWED",
+      "source_fragments": [
+        "age = \"0.12.1\"",
+        "aws-config = \"1\"",
+        "clatter = { version = \"3.0.0\""
+      ],
+      "native_evidence_runs": [
+        40581389379,
+        40579717552,
+        40578510589
+      ],
+      "remaining_semantic_gate": "Final candidate all-target audit and auth/age historical compatibility, plus Linux INFO expiry before 2026-11-20",
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "owner": "dependency",
+      "current_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+      "original_direct_conflict": true,
+      "source_reviewed": "CRYPTO_BIGINT_0_7_10_ONLY_LOCK_AND_CARGO_DENY_SOURCE_REVIEWED",
+      "source_fragments": [
+        "name = \"crypto-bigint\"",
+        "version = \"0.7.10\""
+      ],
+      "native_evidence_runs": [
+        40581389379,
+        40922368730
+      ],
+      "remaining_semantic_gate": "Re-run original security audit on final source SHA, verify no newly introduced vulnerabilities, no unapproved advisory waiver",
+      "semantic_signoff": "NOT_GRANTED"
+    }
+  ],
+  "remaining_owner_signoffs": 109
+}
