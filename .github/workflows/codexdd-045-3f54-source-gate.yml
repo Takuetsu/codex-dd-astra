@@ -1,0 +1,62 @@
+# One-shot cheap source-only + rustfmt; no Rust compilation, release or installer.
+name: CodexDD 0.4.5 3F.54 test-only TUI/Core semantic correction (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f54-core-tui-native-recovery]
+    paths: [".github/workflows/codexdd-045-3f54-source-gate.yml"]
+permissions:
+  contents: read
+jobs:
+  test-only-semantic:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_3F54_SOURCE'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout full source identity history without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Source and historical corrected-owner provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          for test in \
+            test_codexdd_045_3f14_owner_matrix.py \
+            test_codexdd_045_3f1_overlap_snapshot.py \
+            test_codexdd_045_3f2_direct_conflicts.py \
+            test_codexdd_045_3f51_exact_upstream_semantic_deltas.py \
+            test_codexdd_045_3f51_generated_protocol_parity.py \
+            test_codexdd_045_3f51_appserver_event_semantics.py \
+            test_codexdd_045_3f52_appserver_owner_source.py \
+            test_codexdd_045_3f54_native_semantic_gate.py
+          do
+            python3 -B -m unittest discover -s .github/scripts -p "$test" -q
+          done
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Parse Daniel-CL native runner without executing it
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $file = 'scripts/codexdd-045-3f54-targeted-semantic.ps1'
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            throw "PowerShell parser rejected $file"
+          }
+          Write-Host "PASS: targeted native script parses, not executed"
+      - name: Pin supported 1.95 rustfmt for source formatting only
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt source check without compilation
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+          echo 'PASS: format + source guards, no native tests or release'
