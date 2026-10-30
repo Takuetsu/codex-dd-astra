@@ -1401,6 +1401,12 @@ async fn archive_current_thread_returns_shared_servers_to_agents() -> Result<()>
 
 #[tokio::test]
 async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() -> Result<()> {
+    boxed_future!(local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario())
+        .await
+}
+
+async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario()
+-> Result<()> {
     let (mut app, events, _ops) = Box::pin(make_test_app_with_channels()).await;
     // Invalid optional worktree settings must preserve both daemon start paths.
     app.config.features.enable(Feature::Worktrees)?;
