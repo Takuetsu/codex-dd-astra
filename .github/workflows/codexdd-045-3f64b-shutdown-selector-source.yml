@@ -1,0 +1,57 @@
+# 3F.64b source+selector-only validation; native Windows not claimed.
+name: CodexDD 0.4.5 3F.64b side-shutdown native selector source preflight (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f64-realtime-shutdown-recovery]
+    paths: [".github/workflows/codexdd-045-3f64b-shutdown-selector-source.yml"]
+permissions:
+  contents: read
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b80c73d864a62b279d7a8543219fa15aae2b21d1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact native side-shutdown regression and frozen dependency graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = 13bc15ff844e93dfaf7777c73bb7313b35bb3b81
+          test "$(cat codex-rs/codexdd-version.txt)" = 0.4.4
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('.')
+          formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          assert formal['approved_owner_count']==0 and formal['required_owner_count']==109
+          assert len(formal['pending_native_or_semantic_restoration'])==13
+          tests=(root/'codex-rs/tui/src/app/tests.rs').read_text()
+          method='shutdown_first_exit_unsubscribes_live_side_threads_before_leaving'
+          assert len(re.findall(r'\basync\s+fn\s+'+method+r'\s*\(',tests))==1
+          sample=tests[tests.index('async fn '+method):tests.index('async fn shutdown_first_exit_returns_immediate_exit_when_shutdown_submit_fails')]
+          assert 'app_server.start_thread(&side_config)' in sample
+          assert 'app.handle_exit_mode(&mut app_server, ExitMode::ShutdownFirst)' in sample
+          assert 'assert!(!app.side_threads.contains_key(&side_id))' in sample
+          assert 'assert!(app.abandoned_side_threads.contains(&side_id))' in sample
+          dispatch=(root/'codex-rs/tui/src/app/event_dispatch.rs').read_text()
+          stop=dispatch.index('let is_realtime_stop = matches!(&op')
+          recover=dispatch.index('if self.recover_transport_error(&err)',stop)
+          assert stop < dispatch.index('chat_widget.record_realtime_failure(',stop) < recover
+          exit_mode=dispatch[dispatch.index('pub(super) async fn handle_exit_mode'):dispatch.index('pub(super) async fn archive_current_thread')]
+          assert 'self.shutdown_side_threads(app_server)' in exit_mode
+          print('PASS: new native shutdown selector exists; owner signoffs remain 0/109; 13 risk holds')
+          PY
+          git diff --check HEAD~1 HEAD
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Full Rust workspace rustfmt without compiling
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
