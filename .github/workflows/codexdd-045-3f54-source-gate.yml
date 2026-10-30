@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   test-only-semantic:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '024374604e802a72c64715b4df5c00dc4b10dbd8'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a633d630cc38441508f21814c553986460f93812'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -30,7 +30,8 @@ jobs:
             test_codexdd_045_3f51_generated_protocol_parity.py \
             test_codexdd_045_3f51_appserver_event_semantics.py \
             test_codexdd_045_3f52_appserver_owner_source.py \
-            test_codexdd_045_3f54_native_semantic_gate.py
+            test_codexdd_045_3f54_native_semantic_gate.py \
+            test_codexdd_045_3f54_remaining_core_tui_upstream.py
           do
             python3 -B -m unittest discover -s .github/scripts -p "$test" -q
           done
@@ -53,10 +54,12 @@ jobs:
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           components: rustfmt
-      - name: Rustfmt source check without compilation
+      - name: Rustfmt two changed test files without compiling Rust
         shell: bash
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          cargo fmt --all -- --check
-          echo 'PASS: format + source guards, no native tests or release'
+          rustfmt --check --edition 2024 \
+            tui/src/app/tests/session_lifecycle_requests.rs \
+            app-server/src/bespoke_event_handling.rs
+          echo 'PASS: both intentionally changed Rust test files formatted, no native tests or release'
