@@ -3713,6 +3713,16 @@ impl App {
                         tracing::warn!("timed out waiting for app-server thread shutdown");
                     }
                 }
+                if !self.side_threads.is_empty()
+                    && tokio::time::timeout(
+                        SHUTDOWN_FIRST_EXIT_TIMEOUT,
+                        self.shutdown_side_threads(app_server),
+                    )
+                    .await
+                    .is_err()
+                {
+                    tracing::warn!("timed out waiting for side-conversation shutdown");
+                }
                 self.pending_shutdown_exit_thread_id = None;
                 AppRunControl::Exit(if mode == ExitMode::ShutdownAfterInterrupt {
                     ExitReason::TurnInterrupted
