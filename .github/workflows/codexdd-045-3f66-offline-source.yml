@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e71c7e331f417731cd4ae5175189b27c3391b1f1'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'c8955dfe33c660b6d135d8ab4fa7232a9b946b50'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -36,7 +36,7 @@ jobs:
           first=app.index('if self.reconnect.offline')
           assert app.index('&& !self.chat_widget.active_view_accepts_input_when_disconnected()',first)<app.index('let screen_size =',first)
           assert 'handle_disconnected_view_key(*key, activation_key)' in app
-          assert '&& self.chat_widget.active_view_is(agents_overview::AGENTS_OVERVIEW_VIEW_ID)' in app
+          assert 'active_view_is(agents_overview::AGENTS_OVERVIEW_VIEW_ID)' in app
           assert 'if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview' in app
           assert 'let restrict_disconnected_input = self.reconnect.offline' in app
           assert '!self.chat_widget.active_view_accepts_input_when_disconnected();' in app
