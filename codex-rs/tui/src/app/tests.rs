@@ -801,7 +801,6 @@ async fn background_resolution_keeps_matching_foreground_user_input_visible() ->
     Ok(())
 }
 
-
 fn set_test_initial_prompt(app: &mut App, initial_prompt: String) {
     let config = app.config.clone();
     let model = get_model_offline_for_tests(config.model.as_deref());
