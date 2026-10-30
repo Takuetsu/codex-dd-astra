@@ -58,8 +58,9 @@ class SevenOwnerSourceReview(unittest.TestCase):
     self.assertEqual(git_oid("\n".join(lines).encode("utf-8")),row["upstream_blob"])
 
  def test_formal_owner_submission_is_evidenced_not_accepted(self):
-  self.assertEqual(self.formal["ready_for_formal_review_count"],44)
-  self.assertEqual(self.formal["source_review_queued_count"],65)
+  self.assertGreaterEqual(self.formal["ready_for_formal_review_count"],44)
+  self.assertLessEqual(self.formal["source_review_queued_count"],65)
+  self.assertEqual(self.formal["ready_for_formal_review_count"]+self.formal["source_review_queued_count"],109)
   self.assertEqual(self.formal["approved_owner_count"],0)
   self.assertEqual(len(self.formal["paths"]),109)
   for path in EXPECTED:

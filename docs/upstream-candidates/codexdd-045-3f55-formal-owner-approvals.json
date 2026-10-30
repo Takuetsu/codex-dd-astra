@@ -8,8 +8,8 @@
   "release_approved": false,
   "required_owner_count": 109,
   "approved_owner_count": 0,
-  "ready_for_formal_review_count": 44,
-  "source_review_queued_count": 65,
+  "ready_for_formal_review_count": 53,
+  "source_review_queued_count": 56,
   "decision_workflow": {
     "path_identity": "Exact Git blob pinned per path; revision invalidates owner decision",
     "owner_signoff": "An owner accepts only after reviewing specific upstream intent, fork behavior, negative security cases and native receipt matching this source; signing identity and UTC timestamp required",
@@ -1375,17 +1375,26 @@
       "candidate_blob": "72d8fc5d5cf9c388f179247330a354bd88d4c8f8",
       "official_upstream_0163_blob": "cbe3ae6a7c1509d582a959af38839eb082f1ab55",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "Adds explicit imported-history negative test: external source workflow authority cannot affect native append/prefix, native private state may remain in destination; also removes two obsolete response fields in fixture, needs native import regression."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds explicit imported-history negative test: external source workflow authority cannot affect native append/prefix, native private state may remain in destination; also removes two obsolete response fields in fixture, needs native import regression."
     },
     {
       "path": "codex-rs/history/src/lib.rs",
@@ -1393,17 +1402,26 @@
       "candidate_blob": "a54a5733e029fe3728a46adb3f50c68dae4d0eb2",
       "official_upstream_0163_blob": "826669cc3335dc23102e6a5bdbf2d62c1cb22fa4",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "Adds versioned WorkflowState record and AdaptiveValidationStatusSnapshot plus durable/private metadata. Comment narrows developer-message attribution to app-server client; review API compatibility and legacy deserialize."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds versioned WorkflowState record and AdaptiveValidationStatusSnapshot plus durable/private metadata. Comment narrows developer-message attribution to app-server client; review API compatibility and legacy deserialize."
     },
     {
       "path": "codex-rs/history/src/rollout_payload.rs",
@@ -1438,17 +1456,26 @@
       "candidate_blob": "a0a99cddd94064b6245e174cc74818ea3b5a3df2",
       "official_upstream_0163_blob": "32a6110d3b53ee1dac0a7ac5ed12ede35a012812",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "Adds workflow-state rollout serialization/identity roundtrip tests and increases wire variant count from 12 to 13; locked history import/export native test required."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds workflow-state rollout serialization/identity roundtrip tests and increases wire variant count from 12 to 13; locked history import/export native test required."
     },
     {
       "path": "codex-rs/memories/write/src/phase1.rs",
@@ -1456,17 +1483,26 @@
       "candidate_blob": "a036229bb256483f3a6e96ef6ceed86e4d12f3af",
       "official_upstream_0163_blob": "aa11ce276a51b197b9f9ba3e58d66eb16401b066",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "Explicitly excludes private WorkflowState from phase-one memory/model summarization without modifying upstream memory logic."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Explicitly excludes private WorkflowState from phase-one memory/model summarization without modifying upstream memory logic."
     },
     {
       "path": "codex-rs/memories/write/src/rollout_input.rs",
@@ -1474,17 +1510,26 @@
       "candidate_blob": "3c54f1884b409a7060f54dd90739fa897ef7e604",
       "official_upstream_0163_blob": "2d45c7b63bdcda64ff2d37eccb112556e10a2f4e",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "Excludes WorkflowState from rollout memory input alongside events, preserving upstream extraction for user/assistant text."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Excludes WorkflowState from rollout memory input alongside events, preserving upstream extraction for user/assistant text."
     },
     {
       "path": "codex-rs/protocol/src/protocol.rs",
@@ -1524,17 +1569,26 @@
       "candidate_blob": "4d16022f93841cb5d92eca00c76ec8cd84dd5bfd",
       "official_upstream_0163_blob": "f4d66320352ca0266ca7f8c1cc823d4c054adcd3",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "AdaptiveRuntimeSignal is rejected/handled as private signal from two trace event branches rather than leaked into generic trace serialization."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "AdaptiveRuntimeSignal is rejected/handled as private signal from two trace event branches rather than leaked into generic trace serialization."
     },
     {
       "path": "codex-rs/rollout/src/policy.rs",
@@ -1596,17 +1650,26 @@
       "candidate_blob": "d222871cab7b8e55dcd1dec8faef7e9cf4918796",
       "official_upstream_0163_blob": "77206404e1acd9f120240d41c155e4aa9b503cb5",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "WorkflowState is omitted from user-facing persisted rollout search where non-chat items are excluded."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "WorkflowState is omitted from user-facing persisted rollout search where non-chat items are excluded."
     },
     {
       "path": "codex-rs/state/src/extract.rs",
@@ -1614,17 +1677,26 @@
       "candidate_blob": "f9792c339f184ea66f58db9463ba8b85a1cbe4d9",
       "official_upstream_0163_blob": "f079ebc4ee8c09213df53b234e20d8c94800adf8",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "WorkflowState ignored for public state message extraction/turn event matching, avoids interpretation as user-visible chat messages."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "WorkflowState ignored for public state message extraction/turn event matching, avoids interpretation as user-visible chat messages."
     },
     {
       "path": "codex-rs/state/src/runtime/threads.rs",
@@ -1632,17 +1704,26 @@
       "candidate_blob": "5a0edb6a4f5c4968df7586b5d7adae7c1653c301",
       "official_upstream_0163_blob": "1179126f6241be8a8d39cefcbd5ded38660d8cb9",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "EXACT_PERSISTENCE_PRIVACY_AND_HISTORY_SOURCE_DIFF_NATIVE_REPLAY_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f59-persistence-memory-upstream-deltas.json",
+          "scope": "WorkflowState recognized in thread runtime type match, preserving explicit handling without panics."
+        }
+      ],
       "required_evidence": [
-        "Per-path memory and state native regression, with historical replay compatibility"
+        "Per-path memory and state native regression, with historical replay compatibility",
+        "Native exact-source private-state history roundtrip, external import trust, memory/trace non-leakage and restart/fork replay acceptance"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "WorkflowState recognized in thread runtime type match, preserving explicit handling without panics."
     },
     {
       "path": "codex-rs/thread-store/src/types.rs",
