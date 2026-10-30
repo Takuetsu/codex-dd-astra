@@ -81,7 +81,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "upstream_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
-      "candidate_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
+      "candidate_blob": "7d2be3352380d43df714399b441a95960b87a59f",
       "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
       "hunks": [
         {
@@ -93,7 +93,7 @@
           ]
         },
         {
-          "candidate_start_line": 7,
+          "candidate_start_line": 6,
           "upstream_lines": [],
           "candidate_lines": [
             "use crate::chatwidget::adaptive_effort::AdaptiveEffort;",
