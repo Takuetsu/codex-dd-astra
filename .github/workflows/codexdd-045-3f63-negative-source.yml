@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   restored-negatives-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'a38f1b58b47b0c65067b65ee160deb609de2175c'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6c5d5bd98fd7fb1378a3ee188e5515ce2615bffb'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
