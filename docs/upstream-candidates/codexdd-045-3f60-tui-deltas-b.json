@@ -1,0 +1,1037 @@
+{
+  "contract_version": 1,
+  "scope": "TUI_B_EIGHT_EXACT_UPSTREAM_0163",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "reviewed_count": 8,
+  "formal_approved": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "upstream_blob": "7828068a5bd915501576bc09d792c7b43d287ef1",
+      "candidate_blob": "662967de32dc64517b250dc180baafd1da4dd36a",
+      "hunks": [
+        {
+          "candidate_start_line": 92,
+          "upstream_lines": [
+            "    app.handle_event(&mut tui, &mut session, AppEvent::NewSession { name: None })",
+            "        .await?;"
+          ],
+          "candidate_lines": [
+            "    app.handle_event(",
+            "        &mut tui,",
+            "        &mut session,",
+            "        AppEvent::NewSession {",
+            "            name: None,",
+            "            worker_binding: None,",
+            "        },",
+            "    )",
+            "    .await?;"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
+      "upstream_blob": "918e7a73a6beae18be001943d3e63cab6b0fc7cd",
+      "candidate_blob": "e090162290f82156213340967c76a398887ecf44",
+      "hunks": [
+        {
+          "candidate_start_line": 598,
+          "upstream_lines": [
+            "            channel.sender.send(event).await?;"
+          ],
+          "candidate_lines": [
+            "            channel.sender.send(event)?;"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "upstream_blob": "196ff1ab16337f607aa1b305ad389fe6f590267d",
+      "candidate_blob": "a437116e81e54063a2df7e41752ac3e88a3d245d",
+      "hunks": [
+        {
+          "candidate_start_line": 1347,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[test]",
+            "fn async_fresh_startup_applies_adaptive_preset_before_attachment() {",
+            "    const TEST_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;",
+            "",
+            "    std::thread::Builder::new()",
+            "        .name(\"tui-adaptive-fresh-startup\".to_string())",
+            "        .stack_size(TEST_STACK_SIZE_BYTES)",
+            "        .spawn(|| {",
+            "            let runtime = tokio::runtime::Builder::new_current_thread()",
+            "                .enable_all()",
+            "                .build()",
+            "                .expect(\"test runtime\");",
+            "            runtime.block_on(async {",
+            "                let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;",
+            "                app.pending_startup_thread_start = true;",
+            "                app.adaptive_startup_preset = Some(crate::adaptive_policy::AdaptiveFamily::Astra);",
+            "                let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(",
+            "                    app.chat_widget.config_ref(),",
+            "                ))",
+            "                .await",
+            "                .expect(\"embedded app server\");",
+            "",
+            "                app.handle_startup_thread_started(",
+            "                    &mut app_server,",
+            "                    Ok(AppServerStartedThread {",
+            "                        session: test_thread_session(",
+            "                            ThreadId::new(),",
+            "                            test_path_buf(\"/tmp/project\"),",
+            "                        ),",
+            "                        turns: Vec::new(),",
+            "                        blocks_direct_input: false,",
+            "                        task_tools_available: false,",
+            "                    }),",
+            "                )",
+            "                .await",
+            "                .expect(\"startup thread should attach\");",
+            "",
+            "                let state = &app",
+            "                    .primary_session_configured",
+            "                    .as_ref()",
+            "                    .expect(\"attached session\")",
+            "                    .adaptive_effort;",
+            "                assert!(state.enabled);",
+            "                assert_eq!(",
+            "                    state.starting_family,",
+            "                    Some(crate::adaptive_policy::AdaptiveFamily::Astra)",
+            "                );",
+            "                assert_eq!(",
+            "                    state.current_family,",
+            "                    Some(crate::adaptive_policy::AdaptiveFamily::Luna)",
+            "                );",
+            "                assert_eq!(",
+            "                    state.current_effort,",
+            "                    Some(crate::adaptive_policy::AdaptiveEffort::Low)",
+            "                );",
+            "                assert_eq!(state.attempt_number, 1);",
+            "                assert_eq!(",
+            "                    state.worker_context.role,",
+            "                    crate::adaptive_worker::AdaptiveWorkerRole::Unspecified",
+            "                );",
+            "            });",
+            "        })",
+            "        .expect(\"spawn adaptive startup test thread\")",
+            "        .join()",
+            "        .expect(\"adaptive startup test thread\");",
+            "}",
+            "",
+            "#[test]",
+            "fn async_fresh_startup_without_adaptive_preset_stays_off() {",
+            "    const TEST_STACK_SIZE_BYTES: usize = 8 * 1024 * 1024;",
+            "",
+            "    std::thread::Builder::new()",
+            "        .name(\"tui-nonadaptive-fresh-startup\".to_string())",
+            "        .stack_size(TEST_STACK_SIZE_BYTES)",
+            "        .spawn(|| {",
+            "            let runtime = tokio::runtime::Builder::new_current_thread()",
+            "                .enable_all()",
+            "                .build()",
+            "                .expect(\"test runtime\");",
+            "            runtime.block_on(async {",
+            "                let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;",
+            "                app.pending_startup_thread_start = true;",
+            "                let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(",
+            "                    app.chat_widget.config_ref(),",
+            "                ))",
+            "                .await",
+            "                .expect(\"embedded app server\");",
+            "                app.handle_startup_thread_started(",
+            "                    &mut app_server,",
+            "                    Ok(AppServerStartedThread {",
+            "                        session: test_thread_session(",
+            "                            ThreadId::new(),",
+            "                            test_path_buf(\"/tmp/project\"),",
+            "                        ),",
+            "                        turns: Vec::new(),",
+            "                        blocks_direct_input: false,",
+            "                        task_tools_available: false,",
+            "                    }),",
+            "                )",
+            "                .await",
+            "                .expect(\"startup thread should attach\");",
+            "                assert!(",
+            "                    !app.primary_session_configured",
+            "                        .as_ref()",
+            "                        .expect(\"attached session\")",
+            "                        .adaptive_effort",
+            "                        .enabled",
+            "                );",
+            "            });",
+            "        })",
+            "        .expect(\"spawn nonadaptive startup test thread\")",
+            "        .join()",
+            "        .expect(\"nonadaptive startup test thread\");",
+            "}",
+            ""
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "upstream_blob": "c8d16dc9c6712a01640553f9b5b680faf535f2f9",
+      "candidate_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
+      "hunks": [
+        {
+          "candidate_start_line": 9,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use crate::adaptive_worker::AdaptiveWorkerRole;",
+            "use crate::adaptive_worker::parse_adaptive_worker_assignment;"
+          ]
+        },
+        {
+          "candidate_start_line": 16,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::UserInput;"
+          ]
+        },
+        {
+          "candidate_start_line": 18,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER;",
+            "use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;",
+            "use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;",
+            "use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;"
+          ]
+        },
+        {
+          "candidate_start_line": 26,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "fn user_turn_starts_bound_implementation(items: &[UserInput]) -> bool {",
+            "    let Some(text) = items.iter().find_map(|item| match item {",
+            "        UserInput::Text { text, .. } => Some(text.as_str()),",
+            "        _ => None,",
+            "    }) else {",
+            "        return false;",
+            "    };",
+            "",
+            "    matches!(",
+            "        parse_adaptive_worker_assignment(text),",
+            "        Ok(Some(worker_context))",
+            "            if worker_context.role == AdaptiveWorkerRole::Implementation",
+            "    )",
+            "}",
+            "",
+            "fn adaptive_turn_trigger(",
+            "    reconnaissance_required: bool,",
+            "    implementation_control_signal_required: bool,",
+            "    mechanical_validation_active: bool,",
+            "    validation_terminalization_active: bool,",
+            ") -> Option<String> {",
+            "    if reconnaissance_required {",
+            "        Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string())",
+            "    } else if mechanical_validation_active {",
+            "        Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string())",
+            "    } else if validation_terminalization_active {",
+            "        Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string())",
+            "    } else if implementation_control_signal_required {",
+            "        Some(CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER.to_string())",
+            "    } else {",
+            "        None",
+            "    }",
+            "}",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 165,
+          "upstream_lines": [
+            "    ) -> Option<(mpsc::Receiver<ThreadBufferedEvent>, ThreadEventSnapshot)> {"
+          ],
+          "candidate_lines": [
+            "    ) -> Option<(",
+            "        mpsc::UnboundedReceiver<ThreadBufferedEvent>,",
+            "        ThreadEventSnapshot,",
+            "    )> {"
+          ]
+        },
+        {
+          "candidate_start_line": 764,
+          "upstream_lines": [
+            "                                    && let Err(error) = thread_event_tx",
+            "                                        .send(ThreadBufferedEvent::Notification(Box::new(",
+            "                                            notification,",
+            "                                        )))",
+            "                                        .await"
+          ],
+          "candidate_lines": [
+            "                                    && let Err(error) = thread_event_tx.send(",
+            "                                        ThreadBufferedEvent::Notification(Box::new(notification)),",
+            "                                    )"
+          ]
+        },
+        {
+          "candidate_start_line": 872,
+          "upstream_lines": [
+            "                    let eligible_account = self.chat_widget.daybreak_account_eligible();"
+          ],
+          "candidate_lines": [
+            "                    let eligible_account = self.chat_widget.daybreak_turn_eligible(enabled);"
+          ]
+        },
+        {
+          "candidate_start_line": 930,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                    let adaptive_reconnaissance_required = self",
+            "                        .chat_widget",
+            "                        .adaptive_implementation_reconnaissance_required()",
+            "                        || user_turn_starts_bound_implementation(items);",
+            "                    let turn_trigger = adaptive_turn_trigger(",
+            "                        adaptive_reconnaissance_required,",
+            "                        self.chat_widget",
+            "                            .adaptive_implementation_control_signal_required(),",
+            "                        self.chat_widget",
+            "                            .adaptive_implementation_mechanical_validation_active(),",
+            "                        self.chat_widget",
+            "                            .adaptive_validation_terminalization_active(),",
+            "                    );"
+          ]
+        },
+        {
+          "candidate_start_line": 957,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                            turn_trigger,"
+          ]
+        },
+        {
+          "candidate_start_line": 1393,
+          "upstream_lines": [
+            "        if let Some(notification) = notification {",
+            "            match sender.try_send(ThreadBufferedEvent::Notification(Box::new(notification))) {",
+            "                Ok(()) => {}",
+            "                Err(TrySendError::Full(event)) => {",
+            "                    tokio::spawn(async move {",
+            "                        if let Err(err) = sender.send(event).await {",
+            "                            tracing::warn!(\"thread {thread_id} event channel closed: {err}\");",
+            "                        }",
+            "                    });",
+            "                }",
+            "                Err(TrySendError::Closed(_)) => {",
+            "                    tracing::warn!(\"thread {thread_id} event channel closed\");",
+            "                }",
+            "            }"
+          ],
+          "candidate_lines": [
+            "        if let Some(notification) = notification",
+            "            && let Err(err) = sender.send(ThreadBufferedEvent::Notification(Box::new(notification)))",
+            "        {",
+            "            tracing::warn!(\"thread {thread_id} event channel closed: {err}\");"
+          ]
+        },
+        {
+          "candidate_start_line": 1505,
+          "upstream_lines": [
+            "            match sender.try_send(ThreadBufferedEvent::Request(Box::new(request))) {",
+            "                Ok(()) => {}",
+            "                Err(TrySendError::Full(event)) => {",
+            "                    tokio::spawn(async move {",
+            "                        if let Err(err) = sender.send(event).await {",
+            "                            tracing::warn!(\"thread {thread_id} event channel closed: {err}\");",
+            "                        }",
+            "                    });",
+            "                }",
+            "                Err(TrySendError::Closed(_)) => {",
+            "                    tracing::warn!(\"thread {thread_id} event channel closed\");",
+            "                }"
+          ],
+          "candidate_lines": [
+            "            if let Err(err) = sender.send(ThreadBufferedEvent::Request(Box::new(request))) {",
+            "                tracing::warn!(\"thread {thread_id} event channel closed: {err}\");"
+          ]
+        },
+        {
+          "candidate_start_line": 1542,
+          "upstream_lines": [
+            "        if should_send {",
+            "            match sender.try_send(ThreadBufferedEvent::HistoryEntryResponse(event)) {",
+            "                Ok(()) => {}",
+            "                Err(TrySendError::Full(event)) => {",
+            "                    tokio::spawn(async move {",
+            "                        if let Err(err) = sender.send(event).await {",
+            "                            tracing::warn!(\"thread {thread_id} event channel closed: {err}\");",
+            "                        }",
+            "                    });",
+            "                }",
+            "                Err(TrySendError::Closed(_)) => {",
+            "                    tracing::warn!(\"thread {thread_id} event channel closed\");",
+            "                }",
+            "            }"
+          ],
+          "candidate_lines": [
+            "        if should_send",
+            "            && let Err(err) = sender.send(ThreadBufferedEvent::HistoryEntryResponse(event))",
+            "        {",
+            "            tracing::warn!(\"thread {thread_id} event channel closed: {err}\");"
+          ]
+        },
+        {
+          "candidate_start_line": 1565,
+          "upstream_lines": [
+            "        session: ThreadSessionState,"
+          ],
+          "candidate_lines": [
+            "        mut session: ThreadSessionState,"
+          ]
+        },
+        {
+          "candidate_start_line": 1569,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if session.adaptive_effort == Default::default()",
+            "            && let Some(parent_id) = session.forked_from_id",
+            "        {",
+            "            let parent = if self.primary_thread_id == Some(parent_id) {",
+            "                self.primary_session_configured.clone()",
+            "            } else if let Some(channel) = self.thread_event_channels.get(&parent_id) {",
+            "                channel.store.lock().await.session.clone()",
+            "            } else {",
+            "                None",
+            "            };",
+            "            if let Some(parent) = parent {",
+            "                session.inherit_adaptive_effort_from(&parent);",
+            "            }",
+            "        }",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 2214,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                self.select_agent_thread(tui, app_server, primary_thread_id)",
+            "                    .await?;",
+            "            } else {",
+            "                self.select_agent_thread_and_discard_side(tui, app_server, primary_thread_id)",
+            "                    .await?;"
+          ]
+        },
+        {
+          "candidate_start_line": 2220,
+          "upstream_lines": [
+            "            self.select_agent_thread(tui, app_server, primary_thread_id)",
+            "                .await?;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2281,
+          "upstream_lines": [
+            "            self.discard_startup_modal_input(tui)?;"
+          ],
+          "candidate_lines": [
+            "            tui.discard_pending_input_before_interactive_screen()?;",
+            "            self.startup_pending_protected_request = false;"
+          ]
+        },
+        {
+          "candidate_start_line": 2308,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    }",
+            "",
+            "    #[test]",
+            "    fn adaptive_reconnaissance_detects_initial_implementation_assignment() {",
+            "        let implementation = UserInput::Text {",
+            "            text: \"[adaptive_worker]\\nrole = \\\"implementation\\\"\\nauthorized_scope = \\\"bounded docs change\\\"\\n\\nMake the change.\"",
+            "                .to_string(),",
+            "            text_elements: Vec::new(),",
+            "        };",
+            "        let validation = UserInput::Text {",
+            "            text: \"[adaptive_worker]\\nrole = \\\"validation\\\"\\nauthorized_scope = \\\"bounded docs change\\\"\\n\\nValidate the change.\"",
+            "                .to_string(),",
+            "            text_elements: Vec::new(),",
+            "        };",
+            "        let ordinary = UserInput::Text {",
+            "            text: \"Make the change.\".to_string(),",
+            "            text_elements: Vec::new(),",
+            "        };",
+            "",
+            "        assert!(user_turn_starts_bound_implementation(&[implementation]));",
+            "        assert!(!user_turn_starts_bound_implementation(&[validation]));",
+            "        assert!(!user_turn_starts_bound_implementation(&[ordinary]));",
+            "    }",
+            "",
+            "    #[test]",
+            "    fn adaptive_turn_uses_lifecycle_write_gate_markers() {",
+            "        // Reconnaissance and Mechanical Validation remain distinct protected",
+            "        // phases. The Implementation marker never grants the native LVO runner.",
+            "        assert_eq!(",
+            "            adaptive_turn_trigger(true, true, true, true).as_deref(),",
+            "            Some(CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)",
+            "        );",
+            "        assert_eq!(",
+            "            adaptive_turn_trigger(false, true, true, true).as_deref(),",
+            "            Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)",
+            "        );",
+            "        assert_eq!(",
+            "            adaptive_turn_trigger(false, true, false, true).as_deref(),",
+            "            Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)",
+            "        );",
+            "        assert_eq!(",
+            "            adaptive_turn_trigger(false, true, false, false).as_deref(),",
+            "            Some(CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER)",
+            "        );",
+            "        assert_eq!(adaptive_turn_trigger(false, false, false, false), None);"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "upstream_blob": "a20193149e57e60f75e89fbd4b4aa819d511b2e5",
+      "candidate_blob": "5f43579e23f87a94786ae9803df8dba40060a84e",
+      "hunks": [
+        {
+          "candidate_start_line": 16,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use crate::adaptive_worker::NewWorkerBinding;"
+          ]
+        },
+        {
+          "candidate_start_line": 40,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::ThreadWorkflowStateOperation;"
+          ]
+        },
+        {
+          "candidate_start_line": 63,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use crate::chatwidget::adaptive_effort::AdaptiveEffortState;"
+          ]
+        },
+        {
+          "candidate_start_line": 115,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    pub(crate) worker_binding: Option<NewWorkerBinding>,"
+          ]
+        },
+        {
+          "candidate_start_line": 124,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    pub(crate) worker_binding: Option<NewWorkerBinding>,"
+          ]
+        },
+        {
+          "candidate_start_line": 255,
+          "upstream_lines": [
+            "/// Kind of shortcut recorded by one `/keymap` capture."
+          ],
+          "candidate_lines": [
+            "/// Number of key strokes recorded by one `/keymap` capture."
+          ]
+        },
+        {
+          "candidate_start_line": 320,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Persist the active widget's adaptive state into its canonical thread session.",
+            "    UpdateAdaptiveEffortState(AdaptiveEffortState),",
+            "    /// Persist a human/trusted workflow-state mutation on the exact displayed thread.",
+            "    PersistWorkflowState {",
+            "        thread_id: ThreadId,",
+            "        operation: ThreadWorkflowStateOperation,",
+            "        source_turn_id: Option<String>,",
+            "        adaptive_state: Option<codex_app_server_protocol::ThreadAdaptiveWorkflowState>,",
+            "    },"
+          ]
+        },
+        {
+          "candidate_start_line": 563,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        worker_binding: Option<NewWorkerBinding>,"
+          ]
+        },
+        {
+          "candidate_start_line": 570,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        worker_binding: Option<NewWorkerBinding>,"
+          ]
+        },
+        {
+          "candidate_start_line": 1341,
+          "upstream_lines": [
+            "        request_id: uuid::Uuid,",
+            "        result: Result<Vec<ModelPreset>, String>,",
+            "    },",
+            "    /// Finished the API-key compatibility check; do not check the same catalog again.",
+            "    ApiKeyCompatModelsLoaded {"
+          ],
+          "candidate_lines": []
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "upstream_blob": "837fcb13c2a2d9543b89257fa8cab26af8bab8d9",
+      "candidate_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa",
+      "hunks": [
+        {
+          "candidate_start_line": 77,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::ThreadAdaptiveWorkflowState;"
+          ]
+        },
+        {
+          "candidate_start_line": 129,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::ThreadWorkflowStateOperation;",
+            "use codex_app_server_protocol::ThreadWorkflowStateUpdateParams;",
+            "use codex_app_server_protocol::ThreadWorkflowStateUpdateResponse;"
+          ]
+        },
+        {
+          "candidate_start_line": 1430,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    pub(crate) async fn thread_workflow_state_update(",
+            "        &mut self,",
+            "        thread_id: ThreadId,",
+            "        operation: ThreadWorkflowStateOperation,",
+            "        source_turn_id: Option<String>,",
+            "        adaptive_state: Option<ThreadAdaptiveWorkflowState>,",
+            "    ) -> Result<ThreadWorkflowStateUpdateResponse> {",
+            "        let request_id = self.next_request_id();",
+            "        self.client",
+            "            .request_typed(ClientRequest::ThreadWorkflowStateUpdate {",
+            "                request_id,",
+            "                params: ThreadWorkflowStateUpdateParams {",
+            "                    thread_id: thread_id.to_string(),",
+            "                    operation,",
+            "                    source_turn_id,",
+            "                    adaptive_state,",
+            "                },",
+            "            })",
+            "            .await",
+            "            .wrap_err(\"thread/workflowState/update failed\")",
+            "    }",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 1458,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        turn_trigger: Option<String>,"
+          ]
+        },
+        {
+          "candidate_start_line": 1481,
+          "upstream_lines": [
+            "                    turn_trigger: Some(\"user\".to_string()),"
+          ],
+          "candidate_lines": [
+            "                    turn_trigger: turn_trigger.or_else(|| Some(\"user\".to_string())),"
+          ]
+        },
+        {
+          "candidate_start_line": 1821,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    pub(crate) async fn reject_server_request(",
+            "        &self,",
+            "        request_id: RequestId,",
+            "        error: JSONRPCErrorError,",
+            "    ) -> std::io::Result<()> {",
+            "        self.client.reject_server_request(request_id, error).await",
+            "    }",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 1882,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    if let Some(binding) = config.adaptive_worker.clone() {",
+            "        started.session.adaptive_effort.worker_context = binding.into();",
+            "    }"
+          ]
+        },
+        {
+          "candidate_start_line": 2453,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        WorkflowStateRestoreMode::FreshThread,"
+          ]
+        },
+        {
+          "candidate_start_line": 2492,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        WorkflowStateRestoreMode::ExistingThread,"
+          ]
+        },
+        {
+          "candidate_start_line": 2530,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        WorkflowStateRestoreMode::ExistingThread,"
+          ]
+        },
+        {
+          "candidate_start_line": 2562,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[derive(Clone, Copy)]",
+            "enum WorkflowStateRestoreMode {",
+            "    FreshThread,",
+            "    ExistingThread,",
+            "}",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 2590,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    workflow_state_restore_mode: WorkflowStateRestoreMode,"
+          ]
+        },
+        {
+          "candidate_start_line": 2604,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    let mut adaptive_effort = Default::default();",
+            "    if matches!(",
+            "        workflow_state_restore_mode,",
+            "        WorkflowStateRestoreMode::ExistingThread",
+            "    ) {",
+            "        crate::session_state::restore_persisted_workflow_state(",
+            "            rollout_path.as_deref(),",
+            "            thread_id,",
+            "            &mut adaptive_effort,",
+            "        )",
+            "        .await?;",
+            "    }"
+          ]
+        },
+        {
+          "candidate_start_line": 2641,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort,"
+          ]
+        },
+        {
+          "candidate_start_line": 2695,
+          "upstream_lines": [
+            "    use codex_protocol::openai_models::ModelAccessPrograms;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2702,
+          "upstream_lines": [
+            "    use codex_protocol::turn_input::CyberAccessProgram;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2719,
+          "upstream_lines": [
+            "        let mut config = build_config(&codex_home).await;",
+            "        let mut catalog = codex_models_manager::bundled_models_response()?;",
+            "        for model in &mut catalog.models {",
+            "            model.available_access_programs = Some(ModelAccessPrograms {",
+            "                cyber: vec![",
+            "                    CyberAccessProgram::Standard,",
+            "                    CyberAccessProgram::DaybreakBlue,",
+            "                ],",
+            "            });",
+            "        }",
+            "        config.model_catalog = Some(catalog);"
+          ],
+          "candidate_lines": [
+            "        let config = build_config(&codex_home).await;"
+          ]
+        },
+        {
+          "candidate_start_line": 2751,
+          "upstream_lines": [
+            "        // Account-specific catalog filtering at startup and before/after thread creation.",
+            "        let models = bootstrap.available_models;",
+            "        assert!(",
+            "            models",
+            "                .iter()",
+            "                .any(|model| model.available_access_programs.is_some())",
+            "        );",
+            "        let client_home = tempfile::tempdir()?;",
+            "        let key = \"features.api_key_cyber_access_programs\";",
+            "        for (server_enabled, cli_override, forwarding_enabled) in [",
+            "            (false, None, false),",
+            "            (true, None, true),",
+            "            (false, Some(true), true),",
+            "            (true, Some(false), false),",
+            "        ] {",
+            "            std::fs::write(",
+            "                codex_home.path().join(\"config.toml\"),",
+            "                format!(\"[features]\\napi_key_cyber_access_programs = {server_enabled}\\n\"),",
+            "            )?;",
+            "            let client_config = ConfigBuilder::default()",
+            "                .codex_home(client_home.path().to_path_buf())",
+            "                .cli_overrides(",
+            "                    cli_override",
+            "                        .into_iter()",
+            "                        .map(|value| (key.into(), value.into()))",
+            "                        .collect(),",
+            "                )",
+            "                .build()",
+            "                .await?;",
+            "            let api_key = app_server",
+            "                .bootstrap_with_account(",
+            "                    &client_config,",
+            "                    GetAccountResponse {",
+            "                        account: Some(Account::ApiKey {}),",
+            "                        requires_openai_auth: true,",
+            "                        workspace_routing: None,",
+            "                    },",
+            "                )",
+            "                .await?;",
+            "            let mut expected = models.clone();",
+            "            if !forwarding_enabled {",
+            "                for model in &mut expected {",
+            "                    model.available_access_programs = None;",
+            "                }",
+            "            }",
+            "            assert_eq!(api_key.available_models, expected);",
+            "            let thread = app_server.start_thread(&client_config).await?;",
+            "            let refreshed = app_server",
+            "                .constrain_api_key_models(",
+            "                    &client_config,",
+            "                    Some(thread.session.thread_id),",
+            "                    /*requirements*/ None,",
+            "                    models.clone(),",
+            "                )",
+            "                .await;",
+            "            assert_eq!(refreshed, expected);",
+            "        }"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 3803,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    async fn detached_fork_restores_persisted_adaptive_workflow_state() -> Result<()> {",
+            "        let codex_home = tempfile::tempdir().expect(\"tempdir\");",
+            "        let config = build_config(&codex_home).await;",
+            "        let source_thread_id = ThreadId::from_string(",
+            "            &create_fake_rollout(",
+            "                codex_home.path(),",
+            "                \"2025-01-05T12-00-00\",",
+            "                \"2025-01-05T12:00:00Z\",",
+            "                \"Saved user message\",",
+            "                Some(config.model_provider_id.as_str()),",
+            "                /*git_info*/ None,",
+            "            )",
+            "            .expect(\"create source rollout\"),",
+            "        )?;",
+            "        let mut app_server = crate::start_embedded_app_server_for_picker(&config).await?;",
+            "",
+            "        app_server",
+            "            .resume_thread(",
+            "                &LocalSettings::from(&config),",
+            "                config.clone(),",
+            "                source_thread_id,",
+            "                ResumeModelSettings::RestoreFromThread,",
+            "            )",
+            "            .await?;",
+            "        app_server",
+            "            .thread_workflow_state_update(",
+            "                source_thread_id,",
+            "                ThreadWorkflowStateOperation::SetAdaptiveState,",
+            "                Some(\"source-turn\".to_string()),",
+            "                Some(ThreadAdaptiveWorkflowState {",
+            "                    enabled: true,",
+            "                    starting_family: Some(\"astra\".to_string()),",
+            "                    current_family: Some(\"sol\".to_string()),",
+            "                    current_effort: Some(\"high\".to_string()),",
+            "                    complexity_class: Some(\"complex\".to_string()),",
+            "                    implementation_phase: Some(\"implementation\".to_string()),",
+            "                    validation_repair_fingerprint: Some(",
+            "                        \"v1:work_packet:core-adaptive-tests\".to_string(),",
+            "                    ),",
+            "                    validation_repair_cycles_used: Some(1),",
+            "                    validation_targeted_retest_required: Some(true),",
+            "                    validation_status: Some(",
+            "                        codex_app_server_protocol::ThreadAdaptiveValidationStatus {",
+            "                            profile: \"work_packet\".to_string(),",
+            "                            result: \"fail\".to_string(),",
+            "                            run_id: \"run-detached-fork\".to_string(),",
+            "                            branch: Some(\"feature/fork\".to_string()),",
+            "                            head_sha: \"0123456789abcdef\".to_string(),",
+            "                            failed_stage: Some(\"core-adaptive-tests\".to_string()),",
+            "                            failure_fingerprint: Some(",
+            "                                \"v1:work_packet:core-adaptive-tests\".to_string(),",
+            "                            ),",
+            "                            log_path: \"C:\\\\codexdd\\\\validation\\\\validation.log\".to_string(),",
+            "                        },",
+            "                    ),",
+            "                    attempt_number: 3,",
+            "                    paused_by_user: false,",
+            "                    worker_role: \"implementation\".to_string(),",
+            "                    authorized_scope: Some(\"detached fork regression\".to_string()),",
+            "                    worker_assignment_locked: true,",
+            "                    workflow_terminal: None,",
+            "                }),",
+            "            )",
+            "            .await?;",
+            "",
+            "        let forked = app_server",
+            "            .fork_thread(&LocalSettings::from(&config), config, source_thread_id)",
+            "            .await?;",
+            "        let state = forked.session.adaptive_effort;",
+            "        assert!(state.enabled);",
+            "        assert_eq!(",
+            "            state.starting_family,",
+            "            Some(crate::adaptive_policy::AdaptiveFamily::Astra)",
+            "        );",
+            "        assert_eq!(",
+            "            state.current_family,",
+            "            Some(crate::adaptive_policy::AdaptiveFamily::Sol)",
+            "        );",
+            "        assert_eq!(",
+            "            state.current_effort,",
+            "            Some(crate::adaptive_policy::AdaptiveEffort::High)",
+            "        );",
+            "        assert_eq!(state.attempt_number, 3);",
+            "        assert_eq!(",
+            "            state.worker_context.role,",
+            "            crate::adaptive_worker::AdaptiveWorkerRole::Implementation",
+            "        );",
+            "        assert_eq!(",
+            "            state.worker_context.authorized_scope.as_deref(),",
+            "            Some(\"detached fork regression\")",
+            "        );",
+            "        assert_eq!(",
+            "            state.complexity_class,",
+            "            Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex)",
+            "        );",
+            "        assert_eq!(",
+            "            state.implementation_phase,",
+            "            Some(crate::adaptive_complexity::AdaptiveImplementationPhase::Implementation)",
+            "        );",
+            "        assert_eq!(",
+            "            state.validation_repair_fingerprint.as_deref(),",
+            "            Some(\"v1:work_packet:core-adaptive-tests\")",
+            "        );",
+            "        assert_eq!(state.validation_repair_cycles_used, 1);",
+            "        assert!(state.validation_targeted_retest_required);",
+            "        let validation_status = state",
+            "            .validation_status",
+            "            .as_ref()",
+            "            .expect(\"validation operator status\");",
+            "        assert_eq!(validation_status.profile, \"work_packet\");",
+            "        assert_eq!(validation_status.result, \"fail\");",
+            "        assert_eq!(validation_status.run_id, \"run-detached-fork\");",
+            "        assert_eq!(validation_status.branch.as_deref(), Some(\"feature/fork\"));",
+            "        assert_eq!(validation_status.head_sha, \"0123456789abcdef\");",
+            "        assert_eq!(",
+            "            validation_status.failed_stage.as_deref(),",
+            "            Some(\"core-adaptive-tests\")",
+            "        );",
+            "        assert_eq!(",
+            "            validation_status.failure_fingerprint.as_deref(),",
+            "            Some(\"v1:work_packet:core-adaptive-tests\")",
+            "        );",
+            "        assert!(state.worker_assignment_locked);",
+            "        assert!(state.pending_attempt.is_none());",
+            "        assert!(state.pending_signal.is_none());",
+            "        assert!(state.successor_admission.is_none());",
+            "",
+            "        app_server.shutdown().await?;",
+            "        Ok(())",
+            "    }",
+            "",
+            "    #[tokio::test]"
+          ]
+        },
+        {
+          "candidate_start_line": 4536,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            WorkflowStateRestoreMode::ExistingThread,"
+          ]
+        },
+        {
+          "candidate_start_line": 4573,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            WorkflowStateRestoreMode::ExistingThread,"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "upstream_blob": "2f74f843d59d8578fe32a195de0c664bf049e4fe",
+      "candidate_blob": "76ae0ab2d341188a6deed0c4347b489fa93f29e4",
+      "hunks": [
+        {
+          "candidate_start_line": 259,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "mod adaptive_admission;",
+            "pub(crate) mod adaptive_effort;",
+            "mod adaptive_evidence;",
+            "mod adaptive_runtime_bridge;",
+            "mod adaptive_signal_transport;",
+            "mod adaptive_trusted_signal;"
+          ]
+        },
+        {
+          "candidate_start_line": 574,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    adaptive_effort: adaptive_effort::AdaptiveEffortState,"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "upstream_blob": "05dde949edeadc4c4ef2c510d13c19f195a9b43a",
+      "candidate_blob": "a584d5513ea40321e920d795bbb93b8d96e8f03b",
+      "hunks": [
+        {
+          "candidate_start_line": 154,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_effort: adaptive_effort::AdaptiveEffortState::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    }
+  ]
+}

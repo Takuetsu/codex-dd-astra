@@ -8,8 +8,8 @@
   "release_approved": false,
   "required_owner_count": 109,
   "approved_owner_count": 0,
-  "ready_for_formal_review_count": 53,
-  "source_review_queued_count": 56,
+  "ready_for_formal_review_count": 109,
+  "source_review_queued_count": 0,
   "decision_workflow": {
     "path_identity": "Exact Git blob pinned per path; revision invalidates owner decision",
     "owner_signoff": "An owner accepts only after reviewing specific upstream intent, fork behavior, negative security cases and native receipt matching this source; signing identity and UTC timestamp required",
@@ -843,8 +843,8 @@
       "candidate_blob": "dca46d848c2035457001f07c191d201b1b8db380",
       "official_upstream_0163_blob": "70cf8b7ef07e6ffaab9cfa32435bf6d7408137e3",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -852,15 +852,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Exact upstream 0.163 per-hunk comparison; native behavioral and negative-case signoff still required for codex-rs/core/src/agent/control/spawn.rs",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Exact upstream 0.163 per-hunk comparison; native behavioral and negative-case signoff still required for codex-rs/core/src/agent/control/spawn.rs",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/client.rs",
@@ -868,8 +878,8 @@
       "candidate_blob": "583447f35eaba564771771813bd4d897cb6b73de",
       "official_upstream_0163_blob": "9ef4c0591931e00e9b195f0b47f51b850088c75f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -877,15 +887,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "FORCED_TERMINAL_TOOL_CHOICE: adaptive terminalization changes upstream tool_choice from auto; require tests for no replay/false-positive trigger.",
+          "hunk_count": 3
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "FORCED_TERMINAL_TOOL_CHOICE: adaptive terminalization changes upstream tool_choice from auto; require tests for no replay/false-positive trigger.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/core/src/client_tests.rs",
@@ -893,8 +913,8 @@
       "candidate_blob": "2e5525612379a29af24116dd738a6612dc4420e6",
       "official_upstream_0163_blob": "46ac8953074e2871eebd74e66242111732a0e2ee",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -902,15 +922,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Adds native regression for terminalization mandatory tool selection.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds native regression for terminalization mandatory tool selection.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/codex_thread.rs",
@@ -918,8 +948,8 @@
       "candidate_blob": "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9",
       "official_upstream_0163_blob": "a63dc8f4d231e215513606e7e534a4900203718f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -927,15 +957,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Adds thread-scoped persisted rollout mutation and explicit flush.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds thread-scoped persisted rollout mutation and explicit flush.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/config/mod.rs",
@@ -943,8 +983,8 @@
       "candidate_blob": "17680eeef69718965df66cc12466985c84bdcd63",
       "official_upstream_0163_blob": "c5ab36546e189781c8b1f957cf56d8d31ad3d7fe",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -952,15 +992,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Adds initial Worker TOML authority configuration.",
+          "hunk_count": 3
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds initial Worker TOML authority configuration.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/context_manager/history_tests.rs",
@@ -1024,8 +1074,8 @@
       "candidate_blob": "118907bac6f1f084c96b81e78c2d1b7fc923583d",
       "official_upstream_0163_blob": "7c8ae88b5dd59674df284c49c13cc4d99b614b54",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1033,15 +1083,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Exact upstream 0.163 per-hunk comparison; native behavioral and negative-case signoff still required for codex-rs/core/src/session/rollout_reconstruction.rs",
+          "hunk_count": 4
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Exact upstream 0.163 per-hunk comparison; native behavioral and negative-case signoff still required for codex-rs/core/src/session/rollout_reconstruction.rs",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
@@ -1049,8 +1109,8 @@
       "candidate_blob": "106f07a29d8cde54784c516898472518736b9c37",
       "official_upstream_0163_blob": "21463d873c7e87fcf1ca8357d451bfec676dfe44",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1058,15 +1118,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Exact upstream 0.163 per-hunk comparison; native behavioral and negative-case signoff still required for codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Exact upstream 0.163 per-hunk comparison; native behavioral and negative-case signoff still required for codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/session/session.rs",
@@ -1074,8 +1144,8 @@
       "candidate_blob": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd",
       "official_upstream_0163_blob": "a617d9367bc34a265c60c540ef8cd7b3d954c888",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1083,15 +1153,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Ignores WorkflowState in session event replay path.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Ignores WorkflowState in session event replay path.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/session/tests.rs",
@@ -1099,8 +1179,8 @@
       "candidate_blob": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1",
       "official_upstream_0163_blob": "2cde3795393f3da412d7d9c4e516033e5896901d",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1108,15 +1188,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-a.json",
+          "scope": "Excludes WorkflowState from public history/compaction test projections.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Excludes WorkflowState from public history/compaction test projections.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/session/turn.rs",
@@ -1124,8 +1214,8 @@
       "candidate_blob": "50f524a055a92f0d19be5e6bc2665fe18718e35b",
       "official_upstream_0163_blob": "d1d43621210c979e2a98e2c2bc49698e825d71c1",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1133,15 +1223,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "Treats adaptive runtime signals as private non-user-facing events.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Treats adaptive runtime signals as private non-user-facing events.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/thread_manager.rs",
@@ -1149,8 +1249,8 @@
       "candidate_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
       "official_upstream_0163_blob": "2fb6da8d71570d48f9218ec8015cd3d6d3e12e3a",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1158,15 +1258,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "FORK_PRIVATE_WORKFLOW_STATE: child workflow must not inherit active pending trigger/permissions on fork, even when durable state is copied.",
+          "hunk_count": 7
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "FORK_PRIVATE_WORKFLOW_STATE: child workflow must not inherit active pending trigger/permissions on fork, even when durable state is copied.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/core/src/thread_manager_tests.rs",
@@ -1174,8 +1284,8 @@
       "candidate_blob": "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25",
       "official_upstream_0163_blob": "df585fa7d98b6e325796f16bab970c952fa036ec",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1183,15 +1293,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "Covers child adaptive state snapshot preservation.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Covers child adaptive state snapshot preservation.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
@@ -1199,8 +1319,8 @@
       "candidate_blob": "05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1",
       "official_upstream_0163_blob": "9e78325058546a3924b12fa8c9de938d6421fbcf",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1208,15 +1328,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "Adds evidence_id to dynamic tool output and preserves call ID.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds evidence_id to dynamic tool output and preserves call ID.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/src/tools/mod.rs",
@@ -1224,8 +1354,8 @@
       "candidate_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
       "official_upstream_0163_blob": "501ce5fe4eb8395ae84f8b7a1b7f14b530a22e5e",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1233,15 +1363,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "DIRECT_TOOL_POLICY: adaptive implementation and mechanical validation turn modes override normal tool-mode restrictions; prove no write-tool bypass.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "DIRECT_TOOL_POLICY: adaptive implementation and mechanical validation turn modes override normal tool-mode restrictions; prove no write-tool bypass.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/core/src/tools/registry.rs",
@@ -1275,8 +1415,8 @@
       "candidate_blob": "422870dba8b5a3b36994a598380c93f58760ad1b",
       "official_upstream_0163_blob": "fd5b5e14eeeb57b5be78af53d3f855702167dcc7",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1284,15 +1424,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "LVO_SCOPED_TOOL_EXPOSURE: validation runner must be unavailable outside mechanical validation and require source-bound authority.",
+          "hunk_count": 4
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "LVO_SCOPED_TOOL_EXPOSURE: validation runner must be unavailable outside mechanical validation and require source-bound authority.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
@@ -1300,8 +1450,8 @@
       "candidate_blob": "379eb8d44dfa672b70ed3b7d5408e882d8e803e3",
       "official_upstream_0163_blob": "1a8a0661878c6e847b5ed61c80c328c1444afc29",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1309,15 +1459,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "Adds validation runner visibility restrictions and trusted signal authority tests.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds validation runner visibility restrictions and trusted signal authority tests.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/tests/suite/scenarios.rs",
@@ -1325,8 +1485,8 @@
       "candidate_blob": "842ae7aeae97f6912e364f972ff8044061f176aa",
       "official_upstream_0163_blob": "cfad8149ad70f43482453d59e7128ac975bbca03",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1334,15 +1494,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "Removes unused reasoning effort fixture import.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Removes unused reasoning effort fixture import.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/core/tests/suite/unified_exec.rs",
@@ -1350,8 +1520,8 @@
       "candidate_blob": "0d53c5aebc2c2543f2f1190e46ed95db93992288",
       "official_upstream_0163_blob": "acdb81445f12fc13779650ae1d71757795f5143a",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1359,15 +1529,25 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-core-authority-deltas-b.json",
+          "scope": "Adds external exec evidence propagation test; test may self-skip without network.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
-        "Per-path semantic source review plus frozen-source native authority tests"
+        "Per-path semantic source review plus frozen-source native authority tests",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds external exec evidence propagation test; test may self-skip without network.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/external-agent-migration/src/sessions/append_tests.rs",
@@ -1758,8 +1938,8 @@
       "candidate_blob": "7d9da0b198cfac44c0c06933c622b7c1515a613b",
       "official_upstream_0163_blob": "1b07e9826dd10fae888b903d75bdf0187a768e82",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1767,16 +1947,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "UPSTREAM_INPUT_PROTECTION_GAP: modal input quarantine, rendered-selection dispatch and disconnected active-view routing differ from official 0.163; investigate and restore or prove equivalent behavior.",
+          "hunk_count": 15
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UPSTREAM_INPUT_PROTECTION_GAP: modal input quarantine, rendered-selection dispatch and disconnected active-view routing differ from official 0.163; investigate and restore or prove equivalent behavior.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
@@ -1784,8 +1974,8 @@
       "candidate_blob": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
       "official_upstream_0163_blob": "13d30c273f472d1c4271216ee3fbeaa5c350894f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1793,16 +1983,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "Routes adaptive notifications to their owning thread only.",
+          "hunk_count": 4
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Routes adaptive notifications to their owning thread only.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/config_persistence.rs",
@@ -1810,8 +2010,8 @@
       "candidate_blob": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
       "official_upstream_0163_blob": "76d0111f4adb859fa49a4effe180fe36d5026d26",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1819,16 +2019,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "UPSTREAM_TEST_COVERAGE_REMOVED: upstream session_picker_view and resume_cwd live preference assertions were deleted; restore native coverage or document equivalent.",
+          "hunk_count": 6
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UPSTREAM_TEST_COVERAGE_REMOVED: upstream session_picker_view and resume_cwd live preference assertions were deleted; restore native coverage or document equivalent.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/app/event_dispatch.rs",
@@ -1836,8 +2046,8 @@
       "candidate_blob": "81df877569e0c205e2a4dec5e9e790f7c7993b93",
       "official_upstream_0163_blob": "a7f7f1e827818386b7417f27ab9a829f34fe1fa7",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1845,16 +2055,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "UPSTREAM_DISPATCH_GAP: managed daemon verification, realtime stop handling and API-key-specific model popup path differ; dedicated behavior acceptance required.",
+          "hunk_count": 19
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UPSTREAM_DISPATCH_GAP: managed daemon verification, realtime stop handling and API-key-specific model popup path differ; dedicated behavior acceptance required.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
@@ -1862,8 +2082,8 @@
       "candidate_blob": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273",
       "official_upstream_0163_blob": "ff6e0201bb827516090eb84b7a1b12f342c8844d",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1871,16 +2091,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "Adds initialized adaptive-effort fixture.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds initialized adaptive-effort fixture.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/session_lifecycle.rs",
@@ -1888,8 +2118,8 @@
       "candidate_blob": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf",
       "official_upstream_0163_blob": "a4fff209ab7c630ecb8f7465f24b65cc9c4328e9",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1897,16 +2127,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "Binds Worker startup presets to asynchronously attached sessions.",
+          "hunk_count": 5
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Binds Worker startup presets to asynchronously attached sessions.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/startup.rs",
@@ -1945,8 +2185,8 @@
       "candidate_blob": "b95971975610ff94ef823eff73e36a4691e7e29c",
       "official_upstream_0163_blob": "9394604dd2c6cb01c34ef6c907b2a6d3e6a0befe",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1954,16 +2194,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "Adds adaptive startup state to fixture; upstream explanatory test comment removed.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds adaptive startup state to fixture; upstream explanatory test comment removed.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/tests.rs",
@@ -1971,8 +2221,8 @@
       "candidate_blob": "03febfb8e58c93e975f1f240195576a0f1080e08",
       "official_upstream_0163_blob": "40c30df9239f3ac5a5680953dfc4ccc64867af8a",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -1980,16 +2230,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-a.json",
+          "scope": "UPSTREAM_TEST_COVERAGE_REMOVED: background resolution must not hide matching foreground user input; additional request/reconnect cases were dropped or weakened.",
+          "hunk_count": 31
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UPSTREAM_TEST_COVERAGE_REMOVED: background resolution must not hide matching foreground user input; additional request/reconnect cases were dropped or weakened.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
@@ -1997,8 +2257,8 @@
       "candidate_blob": "662967de32dc64517b250dc180baafd1da4dd36a",
       "official_upstream_0163_blob": "7828068a5bd915501576bc09d792c7b43d287ef1",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2006,16 +2266,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "Adapts new session event to Worker binding.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adapts new session event to Worker binding.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
@@ -2023,8 +2293,8 @@
       "candidate_blob": "e090162290f82156213340967c76a398887ecf44",
       "official_upstream_0163_blob": "918e7a73a6beae18be001943d3e63cab6b0fc7cd",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2032,16 +2302,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "Adapts navigation test to unbounded event send.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adapts navigation test to unbounded event send.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
@@ -2076,8 +2356,8 @@
       "candidate_blob": "a437116e81e54063a2df7e41752ac3e88a3d245d",
       "official_upstream_0163_blob": "196ff1ab16337f607aa1b305ad389fe6f590267d",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2085,16 +2365,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "Adds pre-attachment adaptive startup preset test.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds pre-attachment adaptive startup preset test.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
@@ -2129,8 +2419,8 @@
       "candidate_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
       "official_upstream_0163_blob": "c8d16dc9c6712a01640553f9b5b680faf535f2f9",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2138,16 +2428,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "UNBOUNDED_EVENT_CHANNEL: replaced upstream bounded request buffers and full-event protection with unbounded send; requires memory/backpressure and stale approval checks.",
+          "hunk_count": 18
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UNBOUNDED_EVENT_CHANNEL: replaced upstream bounded request buffers and full-event protection with unbounded send; requires memory/backpressure and stale approval checks.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/app_event.rs",
@@ -2155,8 +2455,8 @@
       "candidate_blob": "5f43579e23f87a94786ae9803df8dba40060a84e",
       "official_upstream_0163_blob": "a20193149e57e60f75e89fbd4b4aa819d511b2e5",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2164,16 +2464,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "Adds Worker, adaptive state and workflow RPC events, changes model load event dispatch.",
+          "hunk_count": 10
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds Worker, adaptive state and workflow RPC events, changes model load event dispatch.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/app_server_session.rs",
@@ -2181,8 +2491,8 @@
       "candidate_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa",
       "official_upstream_0163_blob": "837fcb13c2a2d9543b89257fa8cab26af8bab8d9",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2190,16 +2500,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "THREAD_BOUND_AUTHORITY: restored state, source-turn IDs and workflow mutation RPC require cross-client rejection and stale-turn behavior tests.",
+          "hunk_count": 21
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "THREAD_BOUND_AUTHORITY: restored state, source-turn IDs and workflow mutation RPC require cross-client rejection and stale-turn behavior tests.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
@@ -2234,8 +2554,8 @@
       "candidate_blob": "76ae0ab2d341188a6deed0c4347b489fa93f29e4",
       "official_upstream_0163_blob": "2f74f843d59d8578fe32a195de0c664bf049e4fe",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2243,16 +2563,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "Adds adaptive state and separate policy modules.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds adaptive state and separate policy modules.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/constructor.rs",
@@ -2260,8 +2590,8 @@
       "candidate_blob": "a584d5513ea40321e920d795bbb93b8d96e8f03b",
       "official_upstream_0163_blob": "05dde949edeadc4c4ef2c510d13c19f195a9b43a",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2269,16 +2599,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-b.json",
+          "scope": "Initializes default adaptive state.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Initializes default adaptive state.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
@@ -2286,8 +2626,8 @@
       "candidate_blob": "e463da2af9440b3dc8382464a5d0b98ee6758404",
       "official_upstream_0163_blob": "5b44cac1b0a97e94a786705c490dd80e5a7a8888",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2295,16 +2635,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Manual prompts invalidate queued automatic successor.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Manual prompts invalidate queued automatic successor.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
@@ -2312,8 +2662,8 @@
       "candidate_blob": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
       "official_upstream_0163_blob": "9998e77583d40fe12e0026c7028332c109c4c8ea",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2321,16 +2671,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Manual submissions cancel pending automatic successors.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Manual submissions cancel pending automatic successors.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/interaction.rs",
@@ -2365,8 +2725,8 @@
       "candidate_blob": "ad71108b91a0d7f1f079cab0482076237b138994",
       "official_upstream_0163_blob": "0065ef473b7c65562620edde50bea4a21a1b9c3f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2374,16 +2734,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Tracks trusted adaptive signal and terminal ordering, prevents replay from granting authority.",
+          "hunk_count": 6
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Tracks trusted adaptive signal and terminal ordering, prevents replay from granting authority.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/replay.rs",
@@ -2391,8 +2761,8 @@
       "candidate_blob": "d17ff1c77f63c8c57e0a847c58377999fda78480",
       "official_upstream_0163_blob": "1ebff8fcb314d5c8c2a867c18def36b1b2f7ea60",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2400,16 +2770,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Refreshes Worker context during state replay.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Refreshes Worker context during state replay.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
@@ -2417,8 +2797,8 @@
       "candidate_blob": "17500409f70dfda7fa1c489258fa19ab01bed747",
       "official_upstream_0163_blob": "6077a0f9ef11faec6a95b69ddf9d50616c00a6c4",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2426,16 +2806,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Restores and reapplies adaptive session settings on attach.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Restores and reapplies adaptive session settings on attach.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/settings.rs",
@@ -2443,8 +2833,8 @@
       "candidate_blob": "bb747507416e7712fe4ff5832446783c0127994e",
       "official_upstream_0163_blob": "b0b9674c6ae5849dabb63bf873ec5ea082da6dbe",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2452,16 +2842,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "DAYBREAK_AUTHORITY: new API-key turn eligibility must not bypass CLI feature controls and account access program conditions.",
+          "hunk_count": 4
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "DAYBREAK_AUTHORITY: new API-key turn eligibility must not bypass CLI feature controls and account access program conditions.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
@@ -2469,8 +2869,8 @@
       "candidate_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845",
       "official_upstream_0163_blob": "5327f805cf5d3e78d283cd558be3a40e8c569966",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2478,16 +2878,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Adds /adaptive and Worker binding to slash input dispatch.",
+          "hunk_count": 7
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds /adaptive and Worker binding to slash input dispatch.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/status_controls.rs",
@@ -2495,8 +2905,8 @@
       "candidate_blob": "c3973a6a72da8533b47951b0d529adf839398b1d",
       "official_upstream_0163_blob": "692eba105a92c446fd4ffb8a3440c08b7b88134c",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2504,16 +2914,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-c.json",
+          "scope": "Adds explicit adaptive status line.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds explicit adaptive status line.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests.rs",
@@ -2521,8 +2941,8 @@
       "candidate_blob": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
       "official_upstream_0163_blob": "8534d753f6c92a7a0fdc8254d970bb260a4b4faa",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2530,16 +2950,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "UPSTREAM_TEST_MODULE_REMOVED: official terminal_program_status test module no longer registered.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UPSTREAM_TEST_MODULE_REMOVED: official terminal_program_status test module no longer registered.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
@@ -2547,8 +2977,8 @@
       "candidate_blob": "53ca9fdae79b07822e8551289b97f1732b5e3ab0",
       "official_upstream_0163_blob": "8e83ad083ae63717492fe3d7d60bf29f7cf19e8e",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2556,16 +2986,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "Adds adaptive fixture and app-server state test.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds adaptive fixture and app-server state test.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
@@ -2573,8 +3013,8 @@
       "candidate_blob": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c",
       "official_upstream_0163_blob": "6ef2db01fb53431a6bf79562780057f340477f42",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2582,16 +3022,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "Adds Escape interrupt plus adaptive fixture fields.",
+          "hunk_count": 10
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds Escape interrupt plus adaptive fixture fields.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
@@ -2599,8 +3049,8 @@
       "candidate_blob": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
       "official_upstream_0163_blob": "93662ffac475697d4f5a41c918b80de85e47b7b3",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2608,16 +3058,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "Adds adaptive replay fixture, adjusts Daybreak comments.",
+          "hunk_count": 13
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds adaptive replay fixture, adjusts Daybreak comments.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
@@ -2625,8 +3085,8 @@
       "candidate_blob": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
       "official_upstream_0163_blob": "7e136521f585c25e4c59d371df7fa13183f0a584",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2634,16 +3094,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "Adapts NewSession event to additional Worker fields.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adapts NewSession event to additional Worker fields.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
@@ -2651,8 +3121,8 @@
       "candidate_blob": "bec8d92caae4cdff17b7f06923bd4cd9ee358a52",
       "official_upstream_0163_blob": "f867a24d5c917091dca60f0102700e989970aef7",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "BLOCKED_NATIVE_OR_UPSTREAM_BEHAVIOR_RESTORATION",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2660,16 +3130,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "UPSTREAM_TEST_COVERAGE_REMOVED: API-key Daybreak permission-gate tests and Windows image paste/Shift+Insert keyboard checks removed.",
+          "hunk_count": 8
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Explicit upstream semantic preservation or justified deviation plus failing-before/fixing-after native test"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "UPSTREAM_TEST_COVERAGE_REMOVED: API-key Daybreak permission-gate tests and Windows image paste/Shift+Insert keyboard checks removed.",
+      "native_acceptance_priority": "P0_BLOCKING"
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
@@ -2677,8 +3157,8 @@
       "candidate_blob": "23ea7ee8024deb95767f8322a42a1f330be715ff",
       "official_upstream_0163_blob": "301b55c2cc7bd0b1c94d137322b9951c04e49e46",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2686,16 +3166,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "Adds validation status before first LVO run.",
+          "hunk_count": 2
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds validation status before first LVO run.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/cli.rs",
@@ -2703,8 +3193,8 @@
       "candidate_blob": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
       "official_upstream_0163_blob": "29469b295e97de8a2a5f9b1f1e1c0c79d4b445d8",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2712,16 +3202,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-d.json",
+          "scope": "Adds --adaptive FAMILY argument.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds --adaptive FAMILY argument.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/daemon_startup.rs",
@@ -2729,8 +3229,8 @@
       "candidate_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
       "official_upstream_0163_blob": "91c38d78373e4215282549f9f4dbc1af997c77d3",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2738,16 +3238,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-e.json",
+          "scope": "Introduces Windows elevated/unknown elevation fallback reasons.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Introduces Windows elevated/unknown elevation fallback reasons.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/daemon_startup_tests.rs",
@@ -2755,8 +3265,8 @@
       "candidate_blob": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
       "official_upstream_0163_blob": "2a6a2eaf1f5d601a72b6ea09669091e676f1ff4f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2764,16 +3274,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-e.json",
+          "scope": "Adds Windows elevation/embedded daemon tests.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds Windows elevation/embedded daemon tests.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/history_cell/tests.rs",
@@ -2781,8 +3301,8 @@
       "candidate_blob": "f1075c14620c0217e2433f1501c8f171bc59989d",
       "official_upstream_0163_blob": "f3b62e10dd713d32bd1330f7c6548cda6313d47f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2790,16 +3310,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-e.json",
+          "scope": "Adds adaptive state to session test fixture.",
+          "hunk_count": 1
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds adaptive state to session test fixture.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/lib.rs",
@@ -2834,8 +3364,8 @@
       "candidate_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a",
       "official_upstream_0163_blob": "afb372bb7b9bc4e6f32ee82d6f86c32b4c40b97d",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2843,16 +3373,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-e.json",
+          "scope": "Declares /adaptive command and policy metadata.",
+          "hunk_count": 4
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Declares /adaptive command and policy metadata.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/startup_orchestration.rs",
@@ -2860,8 +3400,8 @@
       "candidate_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932",
       "official_upstream_0163_blob": "c29d464adcb2f52a7a6dc38329e19319217cc3ad",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2869,16 +3409,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-e.json",
+          "scope": "Changes elevated Windows daemon startup fallback and adaptive initial model.",
+          "hunk_count": 11
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Changes elevated Windows daemon startup fallback and adaptive initial model.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "codex-rs/tui/src/status/tests.rs",
@@ -2886,8 +3436,8 @@
       "candidate_blob": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
       "official_upstream_0163_blob": "d84b3d373f8d496810fd0ab86fdf1de9de9e676f",
       "original_direct_conflict": false,
-      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
-      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SOURCE_EVIDENCE_COMPLETE_NATIVE_OWNER_ACCEPTANCE_PENDING",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -2895,16 +3445,26 @@
           "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
           "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
           "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "EXACT_REVERSIBLE_UPSTREAM_SOURCE_DELTA",
+          "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "receipt": "docs/upstream-candidates/codexdd-045-3f60-tui-deltas-e.json",
+          "scope": "Adds adaptive status fixture assertions.",
+          "hunk_count": 5
         }
       ],
       "required_evidence": [
         "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
-        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection",
+        "Native focused owner-specific security, reconnect and regression evidence at frozen source"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
       "approval_utc": null,
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "review_summary": "Adds adaptive status fixture assertions.",
+      "native_acceptance_priority": "P1_TARGETED"
     },
     {
       "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
@@ -2958,5 +3518,20 @@
       "approval_utc": null,
       "release_status": "NOT_ACCEPTED"
     }
+  ],
+  "pending_native_or_semantic_restoration": [
+    "codex-rs/tui/src/app.rs",
+    "codex-rs/tui/src/app/event_dispatch.rs",
+    "codex-rs/tui/src/app/config_persistence.rs",
+    "codex-rs/tui/src/app/tests.rs",
+    "codex-rs/tui/src/app/thread_routing.rs",
+    "codex-rs/tui/src/chatwidget/tests.rs",
+    "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+    "codex-rs/tui/src/app_server_session.rs",
+    "codex-rs/tui/src/chatwidget/settings.rs",
+    "codex-rs/core/src/tools/mod.rs",
+    "codex-rs/core/src/tools/spec_plan.rs",
+    "codex-rs/core/src/client.rs",
+    "codex-rs/core/src/thread_manager.rs"
   ]
 }

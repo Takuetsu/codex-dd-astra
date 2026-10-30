@@ -1,0 +1,360 @@
+{
+  "contract_version": 1,
+  "scope": "CORE_9_OF_18_EXACT_REVERSIBLE_UPSTREAM_0163",
+  "binary_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "review_count": 9,
+  "formal_accepted": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "upstream_blob": "70cf8b7ef07e6ffaab9cfa32435bf6d7408137e3",
+      "candidate_blob": "dca46d848c2035457001f07c191d201b1b8db380",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 123,
+          "upstream_lines": [
+            "        RolloutItem::Compacted(_) | RolloutItem::EventMsg(_) | RolloutItem::SessionMeta(_) => true,"
+          ],
+          "candidate_lines": [
+            "        RolloutItem::Compacted(_)",
+            "        | RolloutItem::EventMsg(_)",
+            "        | RolloutItem::SessionMeta(_)",
+            "        | RolloutItem::WorkflowState(_) => true,"
+          ]
+        },
+        {
+          "candidate_start_line": 1287,
+          "upstream_lines": [
+            "                | RolloutItem::InterAgentCommunicationMetadata { .. } => true,"
+          ],
+          "candidate_lines": [
+            "                | RolloutItem::InterAgentCommunicationMetadata { .. }",
+            "                | RolloutItem::WorkflowState(_) => true,"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "upstream_blob": "9ef4c0591931e00e9b195f0b47f51b850088c75f",
+      "candidate_blob": "583447f35eaba564771771813bd4d897cb6b73de",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 87,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;"
+          ]
+        },
+        {
+          "candidate_start_line": 1073,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        let terminalization_signal_already_called = prompt.input.iter().any(|item| {",
+            "            matches!(",
+            "                item,",
+            "                ResponseItem::FunctionCall { name, .. } if name == \"report_adaptive_signal\"",
+            "            )",
+            "        });",
+            "        let tool_choice = if responses_metadata.turn_trigger.as_deref()",
+            "            == Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)",
+            "            && !terminalization_signal_already_called",
+            "        {",
+            "            \"required\"",
+            "        } else {",
+            "            \"auto\"",
+            "        };"
+          ]
+        },
+        {
+          "candidate_start_line": 1091,
+          "upstream_lines": [
+            "            tool_choice: \"auto\".to_string(),"
+          ],
+          "candidate_lines": [
+            "            tool_choice: tool_choice.to_string(),"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "upstream_blob": "46ac8953074e2871eebd74e66242111732a0e2ee",
+      "candidate_blob": "2e5525612379a29af24116dd738a6612dc4420e6",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 478,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[test]",
+            "fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<()> {",
+            "    let client = test_model_client(SessionSource::Cli);",
+            "    let prompt = Prompt::default();",
+            "    let model = test_model_info();",
+            "    let mut responses_metadata = test_responses_metadata_for_client(",
+            "        &client,",
+            "        /*turn_id*/ Some(\"terminalization-turn\"),",
+            "        format!(\"{}:0\", client.state.thread_id),",
+            "        /*parent_thread_id*/ None,",
+            "        TestCodexResponsesRequestKind::Turn,",
+            "    );",
+            "    responses_metadata.turn_trigger =",
+            "        Some(codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string());",
+            "",
+            "    let terminalization = client.build_responses_request(",
+            "        &prompt,",
+            "        &model,",
+            "        /*effort*/ None,",
+            "        codex_protocol::config_types::ReasoningSummary::None,",
+            "        /*service_tier*/ None,",
+            "        &responses_metadata,",
+            "        /*include_internal*/ false,",
+            "    )?;",
+            "    assert_eq!(terminalization.tool_choice, \"required\");",
+            "",
+            "    let prompt_after_signal = Prompt {",
+            "        input: vec![ResponseItem::FunctionCall {",
+            "            encrypted_content: None,",
+            "            status: None,",
+            "            id: None,",
+            "            name: \"report_adaptive_signal\".to_string(),",
+            "            namespace: None,",
+            "            arguments: \"{}\".to_string(),",
+            "            encrypted_function_args: None,",
+            "            call_id: \"adaptive-signal-call\".to_string(),",
+            "            internal_chat_message_metadata_passthrough: None,",
+            "        }],",
+            "        ..Prompt::default()",
+            "    };",
+            "    let after_signal = client.build_responses_request(",
+            "        &prompt_after_signal,",
+            "        &model,",
+            "        /*effort*/ None,",
+            "        codex_protocol::config_types::ReasoningSummary::None,",
+            "        /*service_tier*/ None,",
+            "        &responses_metadata,",
+            "        /*include_internal*/ false,",
+            "    )?;",
+            "    assert_eq!(after_signal.tool_choice, \"auto\");",
+            "",
+            "    responses_metadata.turn_trigger = None;",
+            "    let ordinary = client.build_responses_request(",
+            "        &prompt,",
+            "        &model,",
+            "        /*effort*/ None,",
+            "        codex_protocol::config_types::ReasoningSummary::None,",
+            "        /*service_tier*/ None,",
+            "        &responses_metadata,",
+            "        /*include_internal*/ false,",
+            "    )?;",
+            "    assert_eq!(ordinary.tool_choice, \"auto\");",
+            "    Ok(())",
+            "}",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "upstream_blob": "a63dc8f4d231e215513606e7e534a4900203718f",
+      "candidate_blob": "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 954,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Appends and flushes one codex-dd workflow-state mutation on this exact thread.",
+            "    pub async fn persist_workflow_state(",
+            "        &self,",
+            "        item: codex_history::WorkflowStateItem,",
+            "    ) -> CodexResult<()> {",
+            "        self.append_rollout_items(&[RolloutItem::WorkflowState(item)])",
+            "            .await",
+            "            .map_err(|err| CodexErr::Fatal(format!(\"failed to append workflow state: {err}\")))?;",
+            "        self.flush_rollout().await.map_err(CodexErr::Io)",
+            "    }",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "upstream_blob": "c5ab36546e189781c8b1f957cf56d8d31ad3d7fe",
+      "candidate_blob": "17680eeef69718965df66cc12466985c84bdcd63",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 28,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_config::config_toml::AdaptiveWorkerConfigToml;"
+          ]
+        },
+        {
+          "candidate_start_line": 643,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Startup-only external authority for the initial adaptive Worker.",
+            "    pub adaptive_worker: Option<AdaptiveWorkerConfigToml>,"
+          ]
+        },
+        {
+          "candidate_start_line": 4414,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_worker: cfg.adaptive_worker,"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "upstream_blob": "7c8ae88b5dd59674df284c49c13cc4d99b614b54",
+      "candidate_blob": "118907bac6f1f084c96b81e78c2d1b7fc923583d",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 253,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                | RolloutItem::WorkflowState(_)"
+          ]
+        },
+        {
+          "candidate_start_line": 448,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                | RolloutItem::WorkflowState(_)"
+          ]
+        },
+        {
+          "candidate_start_line": 558,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                | RolloutItem::WorkflowState(_)"
+          ]
+        },
+        {
+          "candidate_start_line": 601,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                | RolloutItem::WorkflowState(_)"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "upstream_blob": "21463d873c7e87fcf1ca8357d451bfec676dfe44",
+      "candidate_blob": "106f07a29d8cde54784c516898472518736b9c37",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 125,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "async fn resumed_history_recovers_orphan_custom_tool_call_without_panicking() {",
+            "    let (session, turn) = make_session_and_context().await;",
+            "    let call = ResponseItem::CustomToolCall {",
+            "        encrypted_content: None,",
+            "        id: None,",
+            "        status: None,",
+            "        call_id: \"interrupted-custom-tool\".to_string(),",
+            "        name: \"playwright\".to_string(),",
+            "        namespace: None,",
+            "        input: \"{}\".to_string(),",
+            "        internal_chat_message_metadata_passthrough: None,",
+            "    };",
+            "",
+            "    session",
+            "        .record_initial_history(InitialHistory::Resumed(ResumedHistory {",
+            "            conversation_id: session.thread_id,",
+            "            history: Arc::new(vec![RolloutItem::ResponseItem(call.clone().into())]),",
+            "            history_revision: None,",
+            "            rollout_path: None,",
+            "        }))",
+            "        .await;",
+            "",
+            "    let normalized = session",
+            "        .clone_history()",
+            "        .await",
+            "        .for_prompt(&turn.model_info().input_modalities);",
+            "",
+            "    assert_eq!(",
+            "        normalized,",
+            "        vec![",
+            "            call,",
+            "            ResponseItem::CustomToolCallOutput {",
+            "                id: None,",
+            "                call_id: \"interrupted-custom-tool\".to_string(),",
+            "                name: None,",
+            "                output: codex_protocol::models::FunctionCallOutputPayload::from_text(",
+            "                    \"aborted\".to_string()",
+            "                ),",
+            "                internal_chat_message_metadata_passthrough: None,",
+            "            },",
+            "        ]",
+            "    );",
+            "}",
+            "",
+            "#[tokio::test]"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "upstream_blob": "a617d9367bc34a265c60c540ef8cd7b3d954c888",
+      "candidate_blob": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 1680,
+          "upstream_lines": [
+            "                    | RolloutItem::SecurityRiskScore(_) => {}"
+          ],
+          "candidate_lines": [
+            "                    | RolloutItem::SecurityRiskScore(_)",
+            "                    | RolloutItem::WorkflowState(_) => {}"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "upstream_blob": "2cde3795393f3da412d7d9c4e516033e5896901d",
+      "candidate_blob": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 4117,
+          "upstream_lines": [
+            "        | RolloutItem::EventMsg(_) => None,"
+          ],
+          "candidate_lines": [
+            "        | RolloutItem::EventMsg(_)",
+            "        | RolloutItem::WorkflowState(_) => None,"
+          ]
+        },
+        {
+          "candidate_start_line": 4215,
+          "upstream_lines": [
+            "        | RolloutItem::EventMsg(_) => None,"
+          ],
+          "candidate_lines": [
+            "        | RolloutItem::EventMsg(_)",
+            "        | RolloutItem::WorkflowState(_) => None,"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,464 @@
+{
+  "contract_version": 1,
+  "scope": "TUI_C_EIGHT_EXACT_UPSTREAM_0163",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "reviewed_count": 8,
+  "formal_approved": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "upstream_blob": "5b44cac1b0a97e94a786705c490dd80e5a7a8888",
+      "candidate_blob": "e463da2af9440b3dc8382464a5d0b98ee6758404",
+      "hunks": [
+        {
+          "candidate_start_line": 169,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if source == UserMessageSource::Prompt {",
+            "            self.invalidate_adaptive_successor_for_manual_input();",
+            "        }"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "upstream_blob": "9998e77583d40fe12e0026c7028332c109c4c8ea",
+      "candidate_blob": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
+      "hunks": [
+        {
+          "candidate_start_line": 80,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        self.invalidate_adaptive_successor_for_manual_input();"
+          ]
+        },
+        {
+          "candidate_start_line": 85,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    }",
+            "",
+            "    pub(super) fn invalidate_adaptive_successor_for_manual_input(&mut self) {",
+            "        if self.adaptive_effort.successor_admission.is_none()",
+            "            && self.adaptive_effort.pending_attempt.is_none()",
+            "        {",
+            "            return;",
+            "        }",
+            "        self.adaptive_effort.successor_admission = None;",
+            "        self.adaptive_effort.pending_attempt = None;",
+            "        self.save_adaptive_effort_for_current_thread();"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "upstream_blob": "0065ef473b7c65562620edde50bea4a21a1b9c3f",
+      "candidate_blob": "ad71108b91a0d7f1f079cab0482076237b138994",
+      "hunks": [
+        {
+          "candidate_start_line": 101,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                self.clear_stale_pending_adaptive_signal(&notification.turn.id);"
+          ]
+        },
+        {
+          "candidate_start_line": 113,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            ServerNotification::AdaptiveRuntimeSignal(notification) => {",
+            "                if replay_kind.is_none() {",
+            "                    self.handle_adaptive_runtime_signal(notification);",
+            "                }",
+            "            }"
+          ]
+        },
+        {
+          "candidate_start_line": 122,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                if replay_kind.is_none() {",
+            "                    self.register_adaptive_evidence(&notification);",
+            "                }"
+          ]
+        },
+        {
+          "candidate_start_line": 426,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Hold a completed bound Worker turn when its own trusted tool output proves",
+            "    /// report_adaptive_signal ran but the separate app-server signal notification has not arrived",
+            "    /// yet. This closes the notification-ordering window without trusting final-answer prose or",
+            "    /// introducing a timing-based grace period.",
+            "    fn hold_completed_turn_for_adaptive_signal(&mut self, turn: &Turn) -> bool {",
+            "        let state = &self.adaptive_effort;",
+            "        if !state.enabled",
+            "            || state.paused_by_user",
+            "            || state.workflow_terminal.is_some()",
+            "            || state.last_processed_terminal_turn_id.as_deref() == Some(turn.id.as_str())",
+            "        {",
+            "            return false;",
+            "        }",
+            "        let bound_worker = matches!(",
+            "            state.worker_context.role,",
+            "            crate::adaptive_worker::AdaptiveWorkerRole::Implementation",
+            "                | crate::adaptive_worker::AdaptiveWorkerRole::Validation",
+            "                | crate::adaptive_worker::AdaptiveWorkerRole::Repair",
+            "        ) && state",
+            "            .worker_context",
+            "            .authorized_scope",
+            "            .as_deref()",
+            "            .is_some_and(|scope| !scope.trim().is_empty());",
+            "        if !bound_worker {",
+            "            return false;",
+            "        }",
+            "        let reported_adaptive_signal = turn.items.iter().any(|item| match item {",
+            "            ThreadItem::FunctionCallOutput { name, output, .. }",
+            "                if name == \"report_adaptive_signal\" =>",
+            "            {",
+            "                output",
+            "                    .to_text()",
+            "                    .is_some_and(|text| text.contains(\"\\\"status\\\":\\\"request_emitted\\\"\"))",
+            "            }",
+            "            _ => false,",
+            "        });",
+            "        // Prose claiming a complexity report is not a trusted tool receipt.",
+            "        // Never enter an unbounded Awaiting state just because the first",
+            "        // reconnaissance turn ended without an accepted complexity class.",
+            "        // Only a recorded successful built-in call can justify waiting for",
+            "        // its separately delivered notification.",
+            "        if !reported_adaptive_signal {",
+            "            return false;",
+            "        }",
+            "",
+            "        let can_wait = match state.pending_signal.as_ref() {",
+            "            None => true,",
+            "            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Pending(signal)) => {",
+            "                signal.source_turn_id == turn.id",
+            "                    && signal.signal_kind",
+            "                        == codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability",
+            "                    && signal.diagnostic_note.as_deref()",
+            "                        == Some(crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC)",
+            "            }",
+            "            Some(crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {",
+            "                source_turn_id,",
+            "            }) => source_turn_id == &turn.id,",
+            "            Some(_) => false,",
+            "        };",
+            "        if !can_wait {",
+            "            return false;",
+            "        }",
+            "",
+            "        self.adaptive_effort.pending_signal = Some(",
+            "            crate::chatwidget::adaptive_effort::AdaptivePendingSignal::Awaiting {",
+            "                source_turn_id: turn.id.clone(),",
+            "            },",
+            "        );",
+            "        // A trusted terminal is in flight. Any stale authorization from a prior reduction must",
+            "        // lose immediately, before on_task_complete can reach successor submission.",
+            "        self.adaptive_effort.pending_attempt = None;",
+            "        self.adaptive_effort.successor_admission = None;",
+            "        self.save_adaptive_effort_for_current_thread();",
+            "        true",
+            "    }",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 514,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if replay_kind.is_none() && notification.turn.status != TurnStatus::InProgress {",
+            "            let signal = match (&notification.turn.status, notification.turn.error.as_ref()) {",
+            "                (TurnStatus::Failed, Some(error)) => error.codex_error_info.as_ref().map_or(",
+            "                    crate::adaptive_policy::AdaptiveOutcomeSignal::Failed,",
+            "                    crate::adaptive_classification::signal_from_codex_error,",
+            "                ),",
+            "                (status, _) => crate::adaptive_classification::signal_from_turn_status(status),",
+            "            };",
+            "            let completed = matches!(notification.turn.status, TurnStatus::Completed);",
+            "            let trusted_signal_delivery_pending =",
+            "                completed && self.hold_completed_turn_for_adaptive_signal(&notification.turn);",
+            "            let trusted_signal_consumed = completed",
+            "                && !trusted_signal_delivery_pending",
+            "                && self.consume_adaptive_signal_at_terminal(&notification.turn.id);",
+            "            let unfinished_worker_consumed = completed",
+            "                && !trusted_signal_delivery_pending",
+            "                && !trusted_signal_consumed",
+            "                && self.apply_adaptive_unfinished_authorized_turn(&notification.turn.id);",
+            "            if !trusted_signal_delivery_pending",
+            "                && !trusted_signal_consumed",
+            "                && !unfinished_worker_consumed",
+            "            {",
+            "                self.apply_adaptive_terminal_signal(&notification.turn.id, signal);",
+            "            }",
+            "        }"
+          ]
+        },
+        {
+          "candidate_start_line": 592,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                if replay_kind.is_none() {",
+            "                    self.maybe_submit_adaptive_successor();",
+            "                }"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "upstream_blob": "1ebff8fcb314d5c8c2a867c18def36b1b2f7ea60",
+      "candidate_blob": "d17ff1c77f63c8c57e0a847c58377999fda78480",
+      "hunks": [
+        {
+          "candidate_start_line": 111,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if self.adaptive_effort.worker_context.role",
+            "            != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified",
+            "        {",
+            "            for turn in &turns {",
+            "                if turn.status == TurnStatus::Completed",
+            "                    && let Some(duration_ms) = turn",
+            "                        .duration_ms",
+            "                        .and_then(|duration| u64::try_from(duration).ok())",
+            "                {",
+            "                    self.turn_lifecycle",
+            "                        .record_worker_duration(&turn.id, duration_ms);",
+            "                }",
+            "            }",
+            "        }"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "upstream_blob": "6077a0f9ef11faec6a95b69ddf9d50616c00a6c4",
+      "candidate_blob": "17500409f70dfda7fa1c489258fa19ab01bed747",
+      "hunks": [
+        {
+          "candidate_start_line": 71,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        self.adaptive_effort = session.adaptive_effort.clone();"
+          ]
+        },
+        {
+          "candidate_start_line": 196,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if self.adaptive_effort.enabled",
+            "            && let Some(family) = self",
+            "                .adaptive_effort",
+            "                .enabled",
+            "                .then_some(self.adaptive_effort.current_family)",
+            "                .flatten()",
+            "            && let Some(effort) = self.adaptive_effort.current_effort",
+            "        {",
+            "            let model = family.model();",
+            "",
+            "            if session.model != model {",
+            "                self.app_event_tx",
+            "                    .send(AppEvent::UpdateModel(model.to_string()));",
+            "            }",
+            "",
+            "            let effort = match effort {",
+            "                crate::adaptive_policy::AdaptiveEffort::Low => ReasoningEffortConfig::Low,",
+            "                crate::adaptive_policy::AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,",
+            "                crate::adaptive_policy::AdaptiveEffort::High => ReasoningEffortConfig::High,",
+            "                crate::adaptive_policy::AdaptiveEffort::XHigh => ReasoningEffortConfig::XHigh,",
+            "                crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,",
+            "            };",
+            "",
+            "            if session.reasoning_effort != Some(effort.clone()) {",
+            "                self.app_event_tx",
+            "                    .send(AppEvent::UpdateReasoningEffort(Some(effort)));",
+            "            }",
+            "        }",
+            ""
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "upstream_blob": "b0b9674c6ae5849dabb63bf873ec5ea082da6dbe",
+      "candidate_blob": "bb747507416e7712fe4ff5832446783c0127994e",
+      "hunks": [
+        {
+          "candidate_start_line": 15,
+          "upstream_lines": [
+            "        // Preserve a resumed preference while account state is still unknown. Once an API-key",
+            "        // account is known, both flags must be enabled before using that preference."
+          ],
+          "candidate_lines": [
+            "        // A stored preference is not authority: explicitly known API-key identities require",
+            "        // both controls before broader cybersecurity access can be enabled."
+          ]
+        },
+        {
+          "candidate_start_line": 40,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// API-key turns need no explicit program while Daybreak is off.",
+            "    pub(crate) fn daybreak_turn_eligible(&self, enabled: bool) -> bool {",
+            "        self.daybreak_account_eligible() && (self.has_chatgpt_account || enabled)",
+            "    }",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 228,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        self.maybe_submit_adaptive_successor();"
+          ]
+        },
+        {
+          "candidate_start_line": 344,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        self.maybe_submit_adaptive_successor();"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "upstream_blob": "5327f805cf5d3e78d283cd558be3a40e8c569966",
+      "candidate_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845",
+      "hunks": [
+        {
+          "candidate_start_line": 191,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            SlashCommand::Adaptive => self.dispatch_adaptive_command(\"status\"),"
+          ]
+        },
+        {
+          "candidate_start_line": 239,
+          "upstream_lines": [
+            "                self.show_session_checkout_picker(ManagedWorktreeMode::New, /*name*/ None);"
+          ],
+          "candidate_lines": [
+            "                self.show_session_checkout_picker(",
+            "                    ManagedWorktreeMode::New,",
+            "                    /*name*/ None,",
+            "                    None,",
+            "                );"
+          ]
+        },
+        {
+          "candidate_start_line": 318,
+          "upstream_lines": [
+            "                self.show_session_checkout_picker(ManagedWorktreeMode::Fork, /*name*/ None);"
+          ],
+          "candidate_lines": [
+            "                self.show_session_checkout_picker(",
+            "                    ManagedWorktreeMode::Fork,",
+            "                    /*name*/ None,",
+            "                    None,",
+            "                );"
+          ]
+        },
+        {
+          "candidate_start_line": 688,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if cmd == SlashCommand::Adaptive {",
+            "            let Some((prepared_args, _prepared_elements)) =",
+            "                self.prepare_live_inline_args(args, text_elements)",
+            "            else {",
+            "                return;",
+            "            };",
+            "            self.dispatch_adaptive_command(&prepared_args);",
+            "            return;",
+            "        }"
+          ]
+        },
+        {
+          "candidate_start_line": 925,
+          "upstream_lines": [
+            "                self.show_session_checkout_picker(",
+            "                    ManagedWorktreeMode::New,",
+            "                    Some(trimmed.to_string()),",
+            "                );"
+          ],
+          "candidate_lines": [
+            "                if let Some(role) = crate::adaptive_worker::parse_new_worker_role(trimmed) {",
+            "                    let Some(scope) = self",
+            "                        .adaptive_effort",
+            "                        .worker_context",
+            "                        .authorized_scope",
+            "                        .as_ref()",
+            "                        .filter(|scope| !scope.trim().is_empty())",
+            "                    else {",
+            "                        self.add_error_message(",
+            "                            \"Cannot create a roleful Worker: current Worker has no authorized_scope.\"",
+            "                                .to_string(),",
+            "                        );",
+            "                        return;",
+            "                    };",
+            "                    self.show_session_checkout_picker(",
+            "                        ManagedWorktreeMode::New,",
+            "                        None,",
+            "                        Some(crate::adaptive_worker::NewWorkerBinding {",
+            "                            role,",
+            "                            authorized_scope: scope.clone(),",
+            "                        }),",
+            "                    );",
+            "                } else {",
+            "                    self.show_session_checkout_picker(",
+            "                        ManagedWorktreeMode::New,",
+            "                        Some(trimmed.to_string()),",
+            "                        None,",
+            "                    );",
+            "                }"
+          ]
+        },
+        {
+          "candidate_start_line": 964,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                    None,"
+          ]
+        },
+        {
+          "candidate_start_line": 1317,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            | SlashCommand::Adaptive"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/status_controls.rs",
+      "upstream_blob": "692eba105a92c446fd4ffb8a3440c08b7b88134c",
+      "candidate_blob": "c3973a6a72da8533b47951b0d529adf839398b1d",
+      "hunks": [
+        {
+          "candidate_start_line": 265,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            Some(self.adaptive_effort_status_text()),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    }
+  ]
+}

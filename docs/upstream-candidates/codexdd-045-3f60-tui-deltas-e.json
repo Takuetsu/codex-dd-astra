@@ -1,0 +1,524 @@
+{
+  "contract_version": 1,
+  "scope": "TUI_E_SIX_EXACT_UPSTREAM_0163",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "reviewed_count": 6,
+  "formal_approved": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "upstream_blob": "91c38d78373e4215282549f9f4dbc1af997c77d3",
+      "candidate_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
+      "hunks": [
+        {
+          "candidate_start_line": 58,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "pub(super) const ELEVATED_WINDOWS_EMBEDDED_REASON: &str = \"an elevated Windows terminal\";",
+            "pub(super) const WINDOWS_ELEVATION_UNVERIFIED_REASON: &str =",
+            "    \"Windows terminal elevation could not be verified\";",
+            "",
+            "/// Implicit elevated Windows sessions are embedded from the outset. Never probe,",
+            "/// attach to, start, or mutate the shared daemon on this path. Explicit remote and",
+            "/// daemon-wide agents actions retain their existing transport requirements.",
+            "pub(super) fn elevated_windows_implicit_exclusion(",
+            "    existing: Option<&'static str>,",
+            "    elevation: Result<bool, ()>,",
+            "    agents_overview: bool,",
+            "    explicit_remote: bool,",
+            ") -> Option<&'static str> {",
+            "    if existing.is_some() || agents_overview || explicit_remote {",
+            "        return existing;",
+            "    }",
+            "    match elevation {",
+            "        Ok(true) => Some(ELEVATED_WINDOWS_EMBEDDED_REASON),",
+            "        Ok(false) => None,",
+            "        Err(()) => Some(WINDOWS_ELEVATION_UNVERIFIED_REASON),",
+            "    }",
+            "}",
+            "",
+            "/// The elevated-session fallback is a deliberate supported mode, not a failed",
+            "/// startup. Other automatic exclusions continue to appear in F2 warnings.",
+            "pub(super) fn automatic_exclusion_warning(",
+            "    reason: Option<&str>,",
+            "    auto_start_daemon: bool,",
+            ") -> Option<String> {",
+            "    reason",
+            "        .filter(|reason| auto_start_daemon && *reason != ELEVATED_WINDOWS_EMBEDDED_REASON)",
+            "        .map(|reason| {",
+            "            format!(",
+            "                \"Running without the shared background server: {reason} requires embedded mode.\"",
+            "            )",
+            "        })",
+            "}",
+            "",
+            "#[cfg(windows)]",
+            "pub(super) fn windows_automatic_fallback_reason(err: &anyhow::Error) -> Option<&'static str> {",
+            "    if err.is::<codex_app_server_daemon::ElevatedLaunchRestricted>() {",
+            "        Some(ELEVATED_WINDOWS_EMBEDDED_REASON)",
+            "    } else if err.is::<codex_app_server_daemon::DetachedLaunchRestricted>() {",
+            "        Some(\"this Windows launcher\")",
+            "    } else {",
+            "        None",
+            "    }",
+            "}",
+            ""
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "upstream_blob": "2a6a2eaf1f5d601a72b6ea09669091e676f1ff4f",
+      "candidate_blob": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
+      "hunks": [
+        {
+          "candidate_start_line": 8,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[cfg(windows)]",
+            "#[test]",
+            "fn elevated_daemon_auto_start_falls_back_to_embedded_mode() {",
+            "    let error = anyhow::Error::new(codex_app_server_daemon::ElevatedLaunchRestricted);",
+            "    let reason = daemon_startup::windows_automatic_fallback_reason(&error);",
+            "    assert_eq!(",
+            "        reason,",
+            "        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)",
+            "    );",
+            "    // Preserve the classified legacy fallback without hiding unrelated failures.",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),",
+            "        None,",
+            "    );",
+            "}",
+            "",
+            "#[cfg(windows)]",
+            "#[test]",
+            "fn restricted_windows_launcher_still_warns_on_implicit_fallback() {",
+            "    let error = anyhow::Error::new(codex_app_server_daemon::DetachedLaunchRestricted);",
+            "    let reason = daemon_startup::windows_automatic_fallback_reason(&error);",
+            "    assert_eq!(reason, Some(\"this Windows launcher\"));",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),",
+            "        Some(",
+            "            \"Running without the shared background server: this Windows launcher requires embedded mode.\"",
+            "                .into()",
+            "        ),",
+            "    );",
+            "}",
+            "",
+            "#[cfg(windows)]",
+            "#[test]",
+            "fn unrelated_daemon_start_error_does_not_fall_back() {",
+            "    let error = anyhow::anyhow!(\"unrelated daemon failure\");",
+            "    assert_eq!(",
+            "        daemon_startup::windows_automatic_fallback_reason(&error),",
+            "        None",
+            "    );",
+            "}",
+            "",
+            "#[test]",
+            "fn elevated_windows_implicit_startup_uses_embedded_without_f2_warning() {",
+            "    let reason = daemon_startup::elevated_windows_implicit_exclusion(",
+            "        None,",
+            "        /*elevation*/ Ok(true),",
+            "        /*agents_overview*/ false,",
+            "        /*explicit_remote*/ false,",
+            "    );",
+            "    assert_eq!(",
+            "        reason,",
+            "        Some(daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON)",
+            "    );",
+            "    // A nonempty exclusion also disables implicit daemon socket discovery.",
+            "    assert!(reason.is_some());",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),",
+            "        None,",
+            "    );",
+            "}",
+            "",
+            "#[test]",
+            "fn failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning() {",
+            "    let reason = daemon_startup::elevated_windows_implicit_exclusion(",
+            "        None,",
+            "        /*elevation*/ Err(()),",
+            "        /*agents_overview*/ false,",
+            "        /*explicit_remote*/ false,",
+            "    );",
+            "    // This exclusion prevents both socket discovery and automatic daemon startup.",
+            "    assert_eq!(",
+            "        reason,",
+            "        Some(daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON)",
+            "    );",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ true),",
+            "        Some(format!(",
+            "            \"Running without the shared background server: {} requires embedded mode.\",",
+            "            daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON",
+            "        )),",
+            "    );",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(reason, /*auto_start_daemon*/ false),",
+            "        None,",
+            "    );",
+            "    // Explicit remote or daemon-wide agents transport remains untouched.",
+            "    for (agents_overview, explicit_remote) in [(true, false), (false, true)] {",
+            "        assert_eq!(",
+            "            daemon_startup::elevated_windows_implicit_exclusion(",
+            "                None,",
+            "                /*elevation*/ Err(()),",
+            "                agents_overview,",
+            "                explicit_remote,",
+            "            ),",
+            "            None,",
+            "        );",
+            "    }",
+            "    assert_eq!(",
+            "        daemon_startup::elevated_windows_implicit_exclusion(",
+            "            Some(\"--no-daemon\"),",
+            "            /*elevation*/ Err(()),",
+            "            /*agents_overview*/ false,",
+            "            /*explicit_remote*/ false,",
+            "        ),",
+            "        Some(\"--no-daemon\"),",
+            "    );",
+            "}",
+            "",
+            "#[test]",
+            "fn elevated_windows_implicit_policy_preserves_explicit_transport_and_real_warnings() {",
+            "    let none = daemon_startup::elevated_windows_implicit_exclusion(",
+            "        None,",
+            "        /*elevation*/ Ok(false),",
+            "        /*agents_overview*/ false,",
+            "        /*explicit_remote*/ false,",
+            "    );",
+            "    assert_eq!(none, None);",
+            "",
+            "    for (agents_overview, explicit_remote) in [(true, false), (false, true)] {",
+            "        assert_eq!(",
+            "            daemon_startup::elevated_windows_implicit_exclusion(",
+            "                None,",
+            "                /*elevation*/ Ok(true),",
+            "                agents_overview,",
+            "                explicit_remote,",
+            "            ),",
+            "            None,",
+            "        );",
+            "    }",
+            "",
+            "    for excluded in [",
+            "        \"--no-daemon\",",
+            "        \"--strict-config\",",
+            "        \"custom configuration loader\",",
+            "    ] {",
+            "        assert_eq!(",
+            "            daemon_startup::elevated_windows_implicit_exclusion(",
+            "                Some(excluded),",
+            "                /*elevation*/ Ok(true),",
+            "                /*agents_overview*/ false,",
+            "                /*explicit_remote*/ false,",
+            "            ),",
+            "            Some(excluded),",
+            "        );",
+            "    }",
+            "",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(",
+            "            Some(\"--strict-config\"),",
+            "            /*auto_start_daemon*/ true,",
+            "        ),",
+            "        Some(",
+            "            \"Running without the shared background server: --strict-config requires embedded mode.\"",
+            "                .into()",
+            "        ),",
+            "    );",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(",
+            "            Some(\"this Windows launcher\"),",
+            "            /*auto_start_daemon*/ true,",
+            "        ),",
+            "        Some(",
+            "            \"Running without the shared background server: this Windows launcher requires embedded mode.\"",
+            "                .into()",
+            "        ),",
+            "    );",
+            "    assert_eq!(",
+            "        daemon_startup::automatic_exclusion_warning(",
+            "            Some(\"--strict-config\"),",
+            "            /*auto_start_daemon*/ false,",
+            "        ),",
+            "        None,",
+            "    );",
+            "}",
+            ""
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "upstream_blob": "f3b62e10dd713d32bd1330f7c6548cda6313d47f",
+      "candidate_blob": "f1075c14620c0217e2433f1501c8f171bc59989d",
+      "hunks": [
+        {
+          "candidate_start_line": 627,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "upstream_blob": "afb372bb7b9bc4e6f32ee82d6f86c32b4c40b97d",
+      "candidate_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a",
+      "hunks": [
+        {
+          "candidate_start_line": 16,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    Adaptive,"
+          ]
+        },
+        {
+          "candidate_start_line": 136,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            SlashCommand::Adaptive => \"control thread-local adaptive effort\","
+          ]
+        },
+        {
+          "candidate_start_line": 195,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                | SlashCommand::Adaptive"
+          ]
+        },
+        {
+          "candidate_start_line": 274,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            | SlashCommand::Adaptive"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "upstream_blob": "c29d464adcb2f52a7a6dc38329e19319217cc3ad",
+      "candidate_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932",
+      "hunks": [
+        {
+          "candidate_start_line": 26,
+          "upstream_lines": [
+            "    #[cfg(windows)]",
+            "    let elevated_warning = if explicit_remote_endpoint.is_none()",
+            "        && !cli.no_daemon",
+            "        && !cli.agents_overview",
+            "        && codex_app_server_daemon::is_elevated().map_err(std::io::Error::other)?",
+            "    {",
+            "        cli.no_daemon = true;",
+            "        Some(daemon_startup::ELEVATED_LAUNCH_WARNING)",
+            "    } else {",
+            "        None",
+            "    };",
+            "    #[cfg(not(windows))]",
+            "    let elevated_warning: Option<&str> = None;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 176,
+          "upstream_lines": [
+            "    let mut daemon_exclusion = daemon_startup::exclusion("
+          ],
+          "candidate_lines": [
+            "    let cli_daemon_exclusion = daemon_startup::exclusion("
+          ]
+        },
+        {
+          "candidate_start_line": 183,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    // The explicit daemon lifecycle guard rejects elevated Windows clients. For",
+            "    // implicit interactive startup, mirror --no-daemon before probing an existing",
+            "    // shared socket, rather than attempting daemon startup and emitting F2.",
+            "    // If token inspection fails, do not risk attaching to or starting a shared",
+            "    // daemon: use embedded mode and keep a diagnostic warning visible in F2.",
+            "    #[cfg(windows)]",
+            "    let windows_elevation = if cli_daemon_exclusion.is_none()",
+            "        && !cli.agents_overview",
+            "        && explicit_remote_endpoint.is_none()",
+            "    {",
+            "        codex_app_server_daemon::is_current_process_elevated().map_err(|err| {",
+            "            tracing::warn!(error = %err, \"Windows elevation probe failed; using embedded mode\");",
+            "        })",
+            "    } else {",
+            "        Ok(false)",
+            "    };",
+            "    #[cfg(not(windows))]",
+            "    let windows_elevation = Ok(false);",
+            "    let mut daemon_exclusion = daemon_startup::elevated_windows_implicit_exclusion(",
+            "        cli_daemon_exclusion,",
+            "        windows_elevation,",
+            "        cli.agents_overview,",
+            "        explicit_remote_endpoint.is_some(),",
+            "    );"
+          ]
+        },
+        {
+          "candidate_start_line": 448,
+          "upstream_lines": [
+            "        model,"
+          ],
+          "candidate_lines": [
+            "        model: cli",
+            "            .adaptive",
+            "            .as_ref()",
+            "            .map(|_| {",
+            "                crate::adaptive_policy::AdaptiveFamily::Luna",
+            "                    .model()",
+            "                    .to_string()",
+            "            })",
+            "            .or(model),"
+          ]
+        },
+        {
+          "candidate_start_line": 566,
+          "upstream_lines": [
+            "        let output = startup_draft"
+          ],
+          "candidate_lines": [
+            "        let (output, automatic_fallback_reason) = startup_draft"
+          ]
+        },
+        {
+          "candidate_start_line": 573,
+          "upstream_lines": [
+            "                    Ok(output) => Ok(Some(output)),"
+          ],
+          "candidate_lines": [
+            "                    Ok(output) => Ok((Some(output), None)),"
+          ]
+        },
+        {
+          "candidate_start_line": 575,
+          "upstream_lines": [
+            "                    Err(err) if err.is::<codex_app_server_daemon::DetachedLaunchRestricted>() => {",
+            "                        Ok(None)"
+          ],
+          "candidate_lines": [
+            "                    Err(err)",
+            "                        if let Some(reason) =",
+            "                            daemon_startup::windows_automatic_fallback_reason(&err) =>",
+            "                    {",
+            "                        Ok((None, Some(reason)))"
+          ]
+        },
+        {
+          "candidate_start_line": 598,
+          "upstream_lines": [
+            "            daemon_exclusion = Some(\"this Windows launcher\");"
+          ],
+          "candidate_lines": [
+            "            daemon_exclusion = automatic_fallback_reason.or(Some(\"this Windows launcher\"));"
+          ]
+        },
+        {
+          "candidate_start_line": 621,
+          "upstream_lines": [
+            "    let daemon_startup_warning = elevated_warning",
+            "        .map(str::to_string)",
+            "        .or(compatibility_warning)",
+            "        .or_else(|| {",
+            "            daemon_exclusion",
+            "            .filter(|_| auto_start_daemon)",
+            "            .map(|reason| {",
+            "                format!(",
+            "                    \"Running without the shared background server: {reason} requires embedded mode.\"",
+            "                )",
+            "            })",
+            "        });"
+          ],
+          "candidate_lines": [
+            "    let daemon_startup_warning = compatibility_warning.or_else(|| {",
+            "        daemon_startup::automatic_exclusion_warning(daemon_exclusion, auto_start_daemon)",
+            "    });"
+          ]
+        },
+        {
+          "candidate_start_line": 685,
+          "upstream_lines": [
+            "        _ if elevated_warning.is_some() => \"elevated_windows\","
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 686,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        (_, Some(reason)) if reason == daemon_startup::ELEVATED_WINDOWS_EMBEDDED_REASON => {",
+            "            \"elevated_windows_embedded\"",
+            "        }",
+            "        (_, Some(reason)) if reason == daemon_startup::WINDOWS_ELEVATION_UNVERIFIED_REASON => {",
+            "            \"windows_elevation_unverified_embedded\"",
+            "        }"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "upstream_blob": "d84b3d373f8d496810fd0ab86fdf1de9de9e676f",
+      "candidate_blob": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
+      "hunks": [
+        {
+          "candidate_start_line": 794,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        /*adaptive_effort*/ None,"
+          ]
+        },
+        {
+          "candidate_start_line": 826,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        /*adaptive_effort*/ None,"
+          ]
+        },
+        {
+          "candidate_start_line": 1517,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        /*adaptive_effort*/ None,"
+          ]
+        },
+        {
+          "candidate_start_line": 1757,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            Some(",
+            "                \"Adaptive Effort\\n  Enabled: yes\\n  Preference: Astra\\n  Current: Sol High\\n  Budget mode: Surplus\\n  Complexity: Complex\\n  Implementation phase: Mechanical validation\\n  Implementation floor: Luna High\\n  Attempt: 2\\n  Failure pressure: 0/2\\n  Unfinished pressure: 0/2\\n  Paused: no\\n  Last outcome: None\\n  Last failure: None\\n  Worker role: Implementation\\n  Worker scope: bounded status integration\\n  Worker binding: Bound\\n  Workflow terminal: READY_FOR_VALIDATION\".to_string(),",
+            "            ),"
+          ]
+        },
+        {
+          "candidate_start_line": 1872,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        /*adaptive_effort*/ None,"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    }
+  ]
+}
