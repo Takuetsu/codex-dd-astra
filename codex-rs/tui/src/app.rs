@@ -1159,8 +1159,7 @@ impl App {
                         && self.chat_widget.has_active_modal()
                         && self.startup_protected_input_boundary
                     {
-                        tui.discard_pending_input_before_interactive_screen()?;
-                        self.startup_pending_protected_request = false;
+                        self.discard_startup_modal_input(tui)?;
                     }
                     if self.chat_widget.ambient_pet_image_enabled() {
                         let ambient_pet_area = Rect::new(
