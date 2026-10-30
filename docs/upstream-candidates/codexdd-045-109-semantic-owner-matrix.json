@@ -1290,7 +1290,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+      "current_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
       "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
       "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
       "disposition": "reviewed_upstream_dynamic_auth_test_restoration",
