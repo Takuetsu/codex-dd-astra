@@ -25,8 +25,8 @@ class NativeSemanticGate(unittest.TestCase):
         self.assertEqual(len(self.rows), 109)
         self.assertEqual(self.matrix["release_status"], "NOT_ACCEPTED")
         self.assertTrue(all(r["semantic_status"] == "PENDING_OWNER_REVIEW" and r["release_status"] == "NOT_ACCEPTED" for r in self.rows.values()))
-        self.assertEqual(self.rows["codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"]["current_blob"], "67276c6c855647dc7b0bc0c7ffe022f93f3e570e")
-        self.assertEqual(self.rows["codex-rs/app-server/src/bespoke_event_handling.rs"]["current_blob"], "8f77eee9595c8780d6c76ded43d3043b30af8ce8")
+        self.assertEqual(self.rows["codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"]["current_blob"], "7d2be3352380d43df714399b441a95960b87a59f")
+        self.assertEqual(self.rows["codex-rs/app-server/src/bespoke_event_handling.rs"]["current_blob"], "693eac395673e062d27bbf2cf7b467e9f6af9a5a")
         self.assertEqual((R / "codexdd-version.txt").read_text().strip(), "0.4.4")
         self.assertEqual((R / "upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
 
