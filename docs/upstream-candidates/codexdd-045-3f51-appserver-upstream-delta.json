@@ -1,0 +1,275 @@
+{
+  "contract_version": 1,
+  "scope": "NONRELEASE_EXACT_OFFICIAL_UPSTREAM_0163_RECONSTRUCTION",
+  "official_ref": "openai/codex@rust-v0.163.0",
+  "candidate_ref": "dd/codexdd-v0.4.5-109-overlap-semantic-review",
+  "reviewed_count": 6,
+  "paths": [
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "upstream_blob": "b710f18f14e711a748318ee980bcdc4168a7d843",
+      "candidate_blob": "6cb1a33ea48ed0de73f420ff6c179d9629fec45a",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 894,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Persist a codex-dd workflow-terminal mutation without creating model-visible history.",
+            "    ThreadWorkflowStateUpdate => \"thread/workflowState/update\" {",
+            "        params: v2::ThreadWorkflowStateUpdateParams,",
+            "        serialization: thread_id(params.thread_id),",
+            "        response: v2::ThreadWorkflowStateUpdateResponse,",
+            "    },"
+          ]
+        },
+        {
+          "candidate_start_line": 1987,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    #[experimental(\"turn/adaptiveRuntimeSignal\")]",
+            "    AdaptiveRuntimeSignal => \"turn/adaptiveRuntimeSignal\" (v2::AdaptiveRuntimeSignalNotification),"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "upstream_blob": "53817bb9e50e87ad8a85f39c6a27037bc87d5081",
+      "candidate_blob": "82c980c427501b594389fed439e105c2f696b9a5",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 438,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            | RolloutItem::WorkflowState(_)"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "upstream_blob": "1746ceb7bcf4ed50ceca643170ffc65dada37f41",
+      "candidate_blob": "4180b91565e1a47b38c4f40114716e55b2973d3f",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 1739,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(rename_all = \"camelCase\", export_to = \"v2/\")]",
+            "pub enum ThreadWorkflowStateOperation {",
+            "    SetReadyForOwnerQa,",
+            "    SetAdaptiveState,",
+            "    Clear,",
+            "}",
+            "",
+            "#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(export_to = \"v2/\")]",
+            "pub struct ThreadAdaptiveValidationStatus {",
+            "    pub profile: String,",
+            "    pub result: String,",
+            "    pub run_id: String,",
+            "    pub branch: Option<String>,",
+            "    pub head_sha: String,",
+            "    pub failed_stage: Option<String>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub failure_fingerprint: Option<String>,",
+            "    pub log_path: String,",
+            "}",
+            "",
+            "#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(export_to = \"v2/\")]",
+            "pub struct ThreadAdaptiveWorkflowState {",
+            "    pub enabled: bool,",
+            "    pub starting_family: Option<String>,",
+            "    pub current_family: Option<String>,",
+            "    pub current_effort: Option<String>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub complexity_class: Option<String>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub implementation_phase: Option<String>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub validation_repair_fingerprint: Option<String>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub validation_repair_cycles_used: Option<u8>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub validation_targeted_retest_required: Option<bool>,",
+            "    #[serde(default, skip_serializing_if = \"Option::is_none\")]",
+            "    #[ts(optional)]",
+            "    pub validation_status: Option<ThreadAdaptiveValidationStatus>,",
+            "    pub attempt_number: u32,",
+            "    pub paused_by_user: bool,",
+            "    pub worker_role: String,",
+            "    pub authorized_scope: Option<String>,",
+            "    pub worker_assignment_locked: bool,",
+            "    pub workflow_terminal: Option<String>,",
+            "}",
+            "",
+            "#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(export_to = \"v2/\")]",
+            "pub struct ThreadWorkflowStateUpdateParams {",
+            "    pub thread_id: String,",
+            "    pub operation: ThreadWorkflowStateOperation,",
+            "    #[ts(optional = nullable)]",
+            "    pub source_turn_id: Option<String>,",
+            "    #[ts(optional = nullable)]",
+            "    pub adaptive_state: Option<ThreadAdaptiveWorkflowState>,",
+            "}",
+            "",
+            "#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(export_to = \"v2/\")]",
+            "pub struct ThreadWorkflowStateUpdateResponse {}",
+            ""
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "upstream_blob": "b09a191289349a68e6602a30ec9d887664dab73f",
+      "candidate_blob": "04f38d2535ba46da2bc22358589aeb1bd2840499",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 572,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(export_to = \"v2/\")]",
+            "pub struct AdaptiveRuntimeSignalEnvelope {",
+            "    pub source_turn_id: String,",
+            "    pub signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind,",
+            "    pub evidence_refs: Vec<String>,",
+            "    pub diagnostic_note: Option<String>,",
+            "}",
+            "",
+            "#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"camelCase\")]",
+            "#[ts(export_to = \"v2/\")]",
+            "pub struct AdaptiveRuntimeSignalNotification {",
+            "    pub thread_id: String,",
+            "    pub signal: AdaptiveRuntimeSignalEnvelope,",
+            "}",
+            ""
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "upstream_blob": "c9858cd9d513c69a917f6505410ee89b16bdd955",
+      "candidate_blob": "d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 1658,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            ClientRequest::ThreadWorkflowStateUpdate { params, .. } => {",
+            "                self.turn_processor",
+            "                    .thread_workflow_state_update(params)",
+            "                    .await",
+            "            }"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "upstream_blob": "1b9a253becc97a7a2c1b0de9e92def7c192691c2",
+      "candidate_blob": "1186f0a181704d8ea45243a850f971f1057cb080",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 205,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    pub(crate) async fn thread_workflow_state_update(",
+            "        &self,",
+            "        params: ThreadWorkflowStateUpdateParams,",
+            "    ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {",
+            "        let (_, thread) = self.load_thread(&params.thread_id).await?;",
+            "        let item = match params.operation {",
+            "            ThreadWorkflowStateOperation::SetReadyForOwnerQa => {",
+            "                codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(params.source_turn_id)",
+            "            }",
+            "            ThreadWorkflowStateOperation::SetAdaptiveState => {",
+            "                let Some(state) = params.adaptive_state else {",
+            "                    return Err(invalid_request(",
+            "                        \"setAdaptiveState requires adaptiveState\".to_string(),",
+            "                    ));",
+            "                };",
+            "                codex_rollout::WorkflowStateItem::set_adaptive_state(",
+            "                    codex_rollout::AdaptiveWorkflowStateSnapshot {",
+            "                        enabled: state.enabled,",
+            "                        starting_family: state.starting_family,",
+            "                        current_family: state.current_family,",
+            "                        current_effort: state.current_effort,",
+            "                        complexity_class: state.complexity_class,",
+            "                        implementation_phase: state.implementation_phase,",
+            "                        validation_repair_fingerprint: state.validation_repair_fingerprint,",
+            "                        validation_repair_cycles_used: state",
+            "                            .validation_repair_cycles_used",
+            "                            .unwrap_or_default(),",
+            "                        validation_targeted_retest_required: state",
+            "                            .validation_targeted_retest_required",
+            "                            .unwrap_or_default(),",
+            "                        validation_status: state.validation_status.map(|status| {",
+            "                            codex_rollout::AdaptiveValidationStatusSnapshot {",
+            "                                profile: status.profile,",
+            "                                result: status.result,",
+            "                                run_id: status.run_id,",
+            "                                branch: status.branch,",
+            "                                head_sha: status.head_sha,",
+            "                                failed_stage: status.failed_stage,",
+            "                                failure_fingerprint: status.failure_fingerprint,",
+            "                                log_path: status.log_path,",
+            "                            }",
+            "                        }),",
+            "                        attempt_number: state.attempt_number,",
+            "                        paused_by_user: state.paused_by_user,",
+            "                        worker_role: state.worker_role,",
+            "                        authorized_scope: state.authorized_scope,",
+            "                        worker_assignment_locked: state.worker_assignment_locked,",
+            "                        workflow_terminal: state.workflow_terminal,",
+            "                    },",
+            "                    params.source_turn_id,",
+            "                )",
+            "            }",
+            "            ThreadWorkflowStateOperation::Clear => codex_rollout::WorkflowStateItem::clear(),",
+            "        };",
+            "        thread",
+            "            .persist_workflow_state(item)",
+            "            .await",
+            "            .map_err(|err| internal_error(format!(\"failed to persist workflow state: {err}\")))?;",
+            "        Ok(Some(ThreadWorkflowStateUpdateResponse {}.into()))",
+            "    }",
+            ""
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    }
+  ],
+  "release_approved": false
+}
