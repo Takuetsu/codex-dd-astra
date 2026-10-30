@@ -9167,6 +9167,36 @@ async fn new_session_requests_shutdown_for_previous_conversation() {
 }
 
 #[tokio::test]
+async fn shutdown_first_exit_unsubscribes_live_side_threads_before_leaving() -> Result<()> {
+    let mut app = make_test_app().await;
+    let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
+        app.chat_widget.config_ref(),
+    ))
+    .await?;
+    let mut side_config = app.chat_widget.config_ref().clone();
+    side_config.ephemeral = true;
+    let started = app_server.start_thread(&side_config).await?;
+    let side_id = started.session.thread_id;
+    app.side_threads
+        .insert(side_id, SideThreadState::new(ThreadId::new()));
+    app.thread_event_channels
+        .insert(side_id, ThreadEventChannel::new(/*capacity*/ 4));
+
+    let control = Box::pin(app.handle_exit_mode(&mut app_server, ExitMode::ShutdownFirst)).await;
+
+    assert!(matches!(
+        control,
+        AppRunControl::Exit(ExitReason::UserRequested)
+    ));
+    assert_eq!(app.pending_shutdown_exit_thread_id, None);
+    assert!(!app.side_threads.contains_key(&side_id));
+    assert!(!app.thread_event_channels.contains_key(&side_id));
+    assert!(app.abandoned_side_threads.contains(&side_id));
+    app_server.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test]
 async fn shutdown_first_exit_returns_immediate_exit_when_shutdown_submit_fails() {
     let mut app = make_test_app().await;
     let thread_id = ThreadId::new();
