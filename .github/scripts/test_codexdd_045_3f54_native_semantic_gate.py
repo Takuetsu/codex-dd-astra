@@ -93,9 +93,9 @@ class NativeSemanticGate(unittest.TestCase):
         self.assertNotIn("git push", self.runner)
         self.assertNotIn("gh release", self.runner)
         self.assertNotIn("cargo build --release", self.runner)
-        self.assertIn("tui/src/app/tests/session_lifecycle_requests.rs", self.runner)
-        self.assertIn("app-server/src/bespoke_event_handling.rs", self.runner)
-        self.assertNotIn("cargo fmt --all", self.runner)
+        self.assertIn("'fmt','--all','--','--check'", self.runner)
+        source = (ROOT / "codex-rs/tui/src/app/tests/active_reconnect_tests.rs").read_text(encoding="utf-8")
+        self.assertIn('/*client_version*/\n                "0.0.0",', source)
         self.assertNotIn("codexdd-test-release.ps1", self.runner)
 
 if __name__ == "__main__":
