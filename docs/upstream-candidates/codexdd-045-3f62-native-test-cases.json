@@ -1,0 +1,85 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f62_native_tui_trust_selector_manifest",
+  "cargo_lock_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+  "scope": "NONRELEASE_SOURCE_PINNED_TUI_TRUST",
+  "cases": {
+    "core": [],
+    "tui": [
+      {
+        "selector": "startup_modal_quarantine_only_blocks_protected_input",
+        "rationale": "Startup modal input quarantine blocks stale keys and paste"
+      },
+      {
+        "selector": "plan_menu_allows_transcript_wheel_scrolling_and_keeps_keyboard_ownership",
+        "rationale": "Plan modal keeps keyboard ownership while transcript scrolls"
+      },
+      {
+        "selector": "plan_menu_allows_transcript_selection_and_copy_but_respects_popup_bounds",
+        "rationale": "Painted selection and popup bounds preserve input ownership"
+      },
+      {
+        "selector": "configured_ctrl_space_submit_wins_over_transcript_selection",
+        "rationale": "Normal composer submission remains authoritative"
+      },
+      {
+        "selector": "selection_copy_cancels_a_pending_find_editor_chord",
+        "rationale": "Selection copy cancels chord prefix"
+      },
+      {
+        "selector": "refresh_in_memory_config_from_disk_updates_live_widget_preferences",
+        "rationale": "Disk refresh carries session picker and resume cwd to live widget"
+      },
+      {
+        "selector": "session_status_follows_existing_lifecycle_state",
+        "rationale": "Terminal status follows real lifecycle state"
+      },
+      {
+        "selector": "session_status_detail_uses_only_foreground_activity",
+        "rationale": "Background execution never impersonates foreground status"
+      },
+      {
+        "selector": "daemon_version_notice_preserves_manual_update_guidance",
+        "rationale": "Daemon version notice retains user guidance"
+      },
+      {
+        "selector": "daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff",
+        "rationale": "Daemon update requires explicit confirmation"
+      },
+      {
+        "selector": "unavailable_daemon_menu_offers_guidance_without_update_actions",
+        "rationale": "Unavailable daemon menu offers no runnable update actions"
+      },
+      {
+        "selector": "resolved_buffered_approval_does_not_become_actionable_after_drain",
+        "rationale": "Resolved approval cannot be replayed as actionable"
+      },
+      {
+        "selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
+        "rationale": "Local daemon tools remain approval-gated"
+      },
+      {
+        "selector": "output_free_esc_interrupt_pauses_adaptive_execution",
+        "rationale": "Manual Escape blocks adaptive successor"
+      },
+      {
+        "selector": "external_writer_escape_preserves_snapshot_and_explicit_quits",
+        "rationale": "Disconnected external writer Escape/quit preserves snapshot"
+      }
+    ]
+  },
+  "expected_core": 0,
+  "expected_tui": 15,
+  "success_rule": "nonzero native case count, each case executed (not skipped) at exact frozen source and test exit 0",
+  "source_only_gaps": [
+    "Bounded queue backpressure is not restored by event-order test",
+    "API-key models popup filtering is still absent",
+    "Foreground user-input and Daybreak regression tests removed upstream",
+    "Windows Shift+Insert and Ctrl+Shift+V paste negatives not restored",
+    "Realtime-stop request rejection and shutdown cleanup not fully verified",
+    "Core authority owner signoff remains pending"
+  ],
+  "formal_owner_decisions": "PENDING_SIGNOFF",
+  "release_approved": false,
+  "baseline_reviewed_head": "ccec79f9dca3035562fe72c55961eea8f73a414d"
+}
