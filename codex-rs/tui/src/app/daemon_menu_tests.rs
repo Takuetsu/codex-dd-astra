@@ -123,11 +123,24 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
             .unwrap(),
         );
         app.confirm_daemon_update(source);
-        insta::assert_snapshot!(
-            snapshot,
-            render_bottom_popup(&app.chat_widget, width)
-                .replace(r"C:\cli-build\bin\codex", "/x/cli-build/bin/codex")
-        );
+        let mut confirmation = render_bottom_popup(&app.chat_widget, width)
+            .replace(r"C:\cli-build\bin\codex", "/x/cli-build/bin/codex");
+        if source == DaemonUpdateSource::ThisCli {
+            // Normalize only the dynamic CLI version. Assert the actual version first
+            // so a broken install-context lookup cannot silently pass the snapshot.
+            let version = codex_install_context::InstallContext::current()
+                .package_manifest()
+                .map_or_else(|| CODEX_CLI_VERSION.to_string(), |manifest| {
+                    manifest.version.to_string()
+                });
+            let actual = format!("Use this CLI package v{version} from ");
+            assert!(
+                confirmation.contains(&actual),
+                "confirmation omitted the installed CLI version {version}: {confirmation:?}"
+            );
+            confirmation = confirmation.replace(&actual, "Use this CLI package v0.0.0 from ");
+        }
+        insta::assert_snapshot!(snapshot, confirmation);
         // The default choice cancels without emitting an update or exiting.
         app.chat_widget.handle_key_event(KeyCode::Enter.into());
         assert!(rx.try_recv().is_err());
