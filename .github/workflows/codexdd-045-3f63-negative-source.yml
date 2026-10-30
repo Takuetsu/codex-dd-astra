@@ -1,0 +1,63 @@
+# 3F.63 one-shot cheap source gate only. No Windows/Cargo build or release.
+name: CodexDD 0.4.5 3F.63 restored upstream negatives source preflight (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f63-missing-tui-regression-restoration]
+    paths: [".github/workflows/codexdd-045-3f63-negative-source.yml"]
+permissions:
+  contents: read
+jobs:
+  restored-negatives-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '6c5d5bd98fd7fb1378a3ee188e5515ce2615bffb'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check exact removed upstream tests were restored and formal signoffs unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = 13bc15ff844e93dfaf7777c73bb7313b35bb3b81
+          test "$(cat codex-rs/codexdd-version.txt)" = 0.4.4
+          test "$(cat codex-rs/upstream-codex-release.txt)" = rust-v0.162.0
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path(".")
+          formal=json.loads((root/"docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json").read_text())
+          assert len(formal["paths"])==109 and formal["approved_owner_count"]==0
+          assert len(formal["pending_native_or_semantic_restoration"])==13
+          paths={
+            "codex-rs/tui/src/app/tests.rs":["background_resolution_keeps_matching_foreground_user_input_visible","ServerRequestResolvedNotification"],
+            "codex-rs/tui/src/chatwidget/tests/slash_commands.rs":["KeyCode::Insert, KeyModifiers::SHIFT","text_fallback","Feature::ApiKeyCyberAccessPrograms"],
+            "codex-rs/tui/src/app_server_session.rs":["CyberAccessProgram::DaybreakBlue","api_key_cyber_access_programs","constrain_api_key_models"],
+          }
+          for filename,needles in paths.items():
+            source=(root/filename).read_text()
+            for needle in needles:
+              assert needle in source,(filename,needle)
+          named=[
+            ("codex-rs/tui/src/app/tests.rs","background_resolution_keeps_matching_foreground_user_input_visible"),
+            ("codex-rs/tui/src/chatwidget/tests/slash_commands.rs","copy_shortcut_can_be_remapped"),
+            ("codex-rs/tui/src/chatwidget/tests/slash_commands.rs","slash_daybreak_offers_an_application_when_unavailable"),
+            ("codex-rs/tui/src/app_server_session.rs","bootstrap_reuses_prefetched_account_without_another_account_read"),
+          ]
+          for file,name in named:
+            source=(root/file).read_text()
+            pattern=re.compile(r"\b(?:async\s+)?fn\s+"+re.escape(name)+r"\s*\(")
+            assert len(pattern.findall(source))==1,(file,name)
+          print("PASS: upstream negative tests restored, formal ledger still 109/0 with 13 holds")
+          PY
+          git diff --check HEAD~1 HEAD
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Rust formatting only; do not compile native Rust yet
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
