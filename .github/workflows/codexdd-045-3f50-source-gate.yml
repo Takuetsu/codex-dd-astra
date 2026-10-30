@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   scoped-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_045_3F50_SOURCE'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '1cf844e16d1dda83777dc4bbf789cb022e438366'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
