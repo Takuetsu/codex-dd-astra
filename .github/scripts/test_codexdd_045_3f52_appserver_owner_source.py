@@ -17,7 +17,7 @@ BATCH_B = BASE / "codexdd-045-3f52-appserver-owner-remaining-deltas.json"
 MATRIX = BASE / "codexdd-045-109-semantic-owner-matrix.json"
 OFFICIAL = "openai/codex@rust-v0.163.0"
 LATEST = {
-    "codex-rs/app-server/src/bespoke_event_handling.rs": ("1c4a913d2373a614a2dfe73c10e6f65c64a727a1", "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa"),
+    "codex-rs/app-server/src/bespoke_event_handling.rs": ("693eac395673e062d27bbf2cf7b467e9f6af9a5a", "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa"),
     "codex-rs/app-server/src/notification_media.rs": ("c93967717664145a72390384749747212fd5c63a", "a1572cbaf7b9026f789c96ce9d027e0a7cc4b1be"),
     "codex-rs/app-server/src/request_processors.rs": ("5c4633ab48ea77692e28193ea6e128ec58067a37", "a40486e0d512af66aeef1c1307696b2740053500"),
     "codex-rs/app-server/src/thread_state.rs": ("42b434e017c527a8785fbaedf43292a83e1af09d", "6dfe969ab3adfc5d703184ee2ee61a1b6335f282"),
@@ -81,6 +81,7 @@ class AppServerOwnerElevenSource(unittest.TestCase):
         self.assertIn("source_turn_id: String", event)
         self.assertIn("thread_id: conversation_id.to_string()", event)
         self.assertIn("EventMsg::AdaptiveRuntimeSignal(signal) => {", event)
+        self.assertIn("async fn adaptive_runtime_signal_does_not_replay_on_failed_or_interrupted_turn()", event)
 
     def test_signal_is_transported_without_media_modification_and_delegates_typed_params(self):
         media = (ROOT / "codex-rs/app-server/src/notification_media.rs").read_text(encoding="utf-8")

@@ -3643,6 +3643,92 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn adaptive_runtime_signal_does_not_replay_on_failed_or_interrupted_turn() -> Result<()> {
+        for interrupted in [false, true] {
+            let conversation_id = ThreadId::new();
+            let source_turn_id = "terminal-signal".to_string();
+            let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);
+            let outgoing = Arc::new(OutgoingMessageSender::new(
+                tx,
+                codex_analytics::AnalyticsEventsClient::disabled(),
+            ));
+            let outgoing = ThreadScopedOutgoingMessageSender::new(
+                outgoing,
+                vec![ConnectionId(1)],
+                ThreadId::new(),
+            );
+            let thread_state = new_thread_state();
+            handle_adaptive_runtime_signal(
+                conversation_id,
+                source_turn_id.clone(),
+                AdaptiveRuntimeSignalEvent {
+                    signal_kind:
+                        codex_protocol::protocol::AdaptiveRuntimeSignalKind::RepairRequired,
+                    evidence_refs: vec!["test-only".to_string()],
+                    diagnostic_note: None,
+                },
+                &outgoing,
+                &thread_state,
+            )
+            .await;
+            assert!(matches!(
+                recv_broadcast_notification(&mut rx).await?,
+                ServerNotification::AdaptiveRuntimeSignal(_)
+            ));
+
+            if interrupted {
+                handle_turn_interrupted(
+                    conversation_id,
+                    source_turn_id.clone(),
+                    turn_aborted_event(&source_turn_id),
+                    &outgoing,
+                    &thread_state,
+                )
+                .await;
+            } else {
+                handle_error(
+                    conversation_id,
+                    TurnError {
+                        misalignment: None,
+                        message: "failed source turn".to_string(),
+                        codex_error_info: None,
+                        additional_details: None,
+                    },
+                    &thread_state,
+                )
+                .await;
+                handle_turn_complete(
+                    conversation_id,
+                    source_turn_id.clone(),
+                    turn_complete_event(&source_turn_id),
+                    &outgoing,
+                    &thread_state,
+                )
+                .await;
+            }
+
+            let notification = recv_broadcast_notification(&mut rx).await?;
+            let ServerNotification::TurnCompleted(completed) = notification else {
+                bail!("unexpected terminal notification: {notification:?}");
+            };
+            assert_eq!(completed.turn.id, source_turn_id);
+            assert_eq!(
+                completed.turn.status,
+                if interrupted {
+                    TurnStatus::Interrupted
+                } else {
+                    TurnStatus::Failed
+                }
+            );
+            assert!(
+                rx.try_recv().is_err(),
+                "a failed or interrupted turn must not replay trusted adaptive signals"
+            );
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_handle_turn_interrupted_emits_interrupted_without_error() -> Result<()> {
         let conversation_id = ThreadId::new();
         let event_turn_id = "interrupt1".to_string();
