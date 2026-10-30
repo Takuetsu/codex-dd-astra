@@ -110,8 +110,8 @@ class SevenWindowsPrograms(unittest.TestCase):
     def test_build_scripts_only_target_two_missing_components(self):
         script = (ROOT / ".github/scripts/codexdd-045-3f56-build-windows-sidecar.ps1").read_text()
         self.assertIn("'57152222a1ef523fe6e2f5079871672423c6cb56'", script)
-        self.assertIn("codex-windows-sandbox-service:release_files", script)
-        self.assertIn("codex-responses-api-proxy:release_files", script)
+        self.assertIn("//codex-rs/windows-sandbox-service:release_files", script)
+        self.assertIn("//codex-rs/responses-api-proxy:release_files", script)
         self.assertIn("Non-deterministic hosted Ruby", script)
         self.assertIn("Protected source drift", script)
         self.assertIn("Windows compiler action PATH drift", script)
