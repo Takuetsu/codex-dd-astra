@@ -9166,7 +9166,6 @@ async fn new_session_requests_shutdown_for_previous_conversation() {
     .await;
 }
 
-
 #[tokio::test]
 async fn shutdown_first_exit_unsubscribes_live_side_threads_before_leaving() -> Result<()> {
     let mut app = make_test_app().await;
