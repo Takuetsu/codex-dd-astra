@@ -17,11 +17,12 @@
   "total_original_direct_conflicts": 15,
   "source_dispositions": {
     "audited_secure_dependency_migration": 2,
-    "frozen_reviewed_identity": 98,
+    "frozen_reviewed_identity": 97,
     "reviewed_upstream_govcloud_guidance_restoration": 1,
     "reviewed_upstream_timeout_recovery_correction": 1,
     "verified_formatter_only": 6,
-    "reviewed_upstream_dynamic_auth_test_restoration": 1
+    "reviewed_upstream_dynamic_auth_test_restoration": 1,
+    "reviewed_adaptive_terminal_replay_negative_tests": 1
   },
   "owner_counts": {
     "bazel_packaging": 3,
@@ -387,14 +388,22 @@
       "current_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
       "historical_reviewed_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
       "production_044_blob": "65824b0da966df860bcc901d681017545de0227e",
-      "disposition": "frozen_reviewed_identity",
+      "disposition": "reviewed_adaptive_terminal_replay_negative_tests",
       "original_direct_conflict": false,
       "original_conflict_gate": null,
       "evidence_runs": [
         40598678934
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "native_semantic_followup": {
+        "scope": "test-only negative failed/interrupted turn signal replay",
+        "source_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
+        "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+        "native_selector": "adaptive_runtime_signal_does_not_replay_on_failed_or_interrupted_turn",
+        "semantic_signoff": "NOT_GRANTED",
+        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md"
+      }
     },
     {
       "path": "codex-rs/app-server/src/message_processor.rs",
@@ -1311,6 +1320,14 @@
         "policy_note": "Native Windows 3F.37 shows API-key Daybreak-off omits explicit cyberAccessProgram per protected fork gate. Do not replace with upstream Standard.",
         "native_run_3f39": 40760413516,
         "native_result": "EIGHT_STARTUP_SESSION_SELECTORS_PASS"
+      },
+      "native_semantic_followup": {
+        "scope": "restore exact upstream boxed local-daemon test entry to avoid Windows native test stack exhaustion",
+        "source_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
+        "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+        "native_selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
+        "semantic_signoff": "NOT_GRANTED",
+        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md"
       }
     },
     {
