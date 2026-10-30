@@ -1,0 +1,62 @@
+# One-shot source-only restoration gate. Never a distribution or release.
+name: CodexDD 0.4.5 3F.64 realtime stop and side shutdown source gate (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f64-realtime-shutdown-recovery]
+    paths: [".github/workflows/codexdd-045-3f64-shutdown-source.yml"]
+permissions:
+  contents: read
+jobs:
+  realtime-shutdown-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e64a21937e501c41f8ca991efaefdd208c4a633f'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Fail closed on unapproved owners, drift, and restored lifecycle invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = 13bc15ff844e93dfaf7777c73bb7313b35bb3b81
+          test "$(cat codex-rs/codexdd-version.txt)" = 0.4.4
+          test "$(cat codex-rs/upstream-codex-release.txt)" = rust-v0.162.0
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('.')
+          formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          assert len(formal['paths'])==109
+          assert formal['approved_owner_count']==0 and formal['release_approved'] is False
+          assert len(formal['pending_native_or_semantic_restoration'])==13
+          src=(root/'codex-rs/tui/src/app/event_dispatch.rs').read_text()
+          start=src.index('let is_realtime_stop = matches!(&op, AppCommand::RealtimeConversationStop')
+          recover=src.index('if self.recover_transport_error(&err) {',start)
+          accounting=src.index('chat_widget.record_realtime_failure(',start)
+          assert start < accounting < recover
+          assert src[start:recover].count('chat_widget.record_realtime_failure(')==1
+          # No second stop-failure accounting after failed transport recovery
+          failure_branch=src[recover:src.index('AppEvent::ConfirmSafetyBufferedRetry',recover)]
+          assert failure_branch.count('record_realtime_failure(')==0
+          shutdown=src[src.index('pub(super) async fn handle_exit_mode('):src.index('pub(super) async fn archive_current_thread(')]
+          assert 'self.shutdown_current_thread(app_server)' in shutdown
+          assert 'self.shutdown_side_threads(app_server)' in shutdown
+          assert 'tokio::time::timeout(' in shutdown
+          assert 'timed out waiting for side-conversation shutdown' in shutdown
+          assert shutdown.index('self.shutdown_current_thread(app_server)') < shutdown.index('self.shutdown_side_threads(app_server)')
+          assert 'ExitMode::Immediate =>' in shutdown
+          assert src.count('SHUTDOWN_FIRST_EXIT_TIMEOUT') >= 3
+          print('PASS: source-pinned voice stop accounting and bounded side-thread shutdown; 109/0/13 formal ledger')
+          PY
+          git diff --check HEAD~1 HEAD
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # pinned Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Full Rust workspace formatting; no compilation
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
