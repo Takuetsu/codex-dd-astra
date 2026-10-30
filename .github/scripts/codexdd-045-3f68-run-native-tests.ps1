@@ -84,6 +84,10 @@ try {
       $required = if ($area -eq 'core') {$spec.expected_core} else {$spec.expected_tui}
       if ($index -ne $required) { throw "Missing native $area selectors" }
     }
+    if ($stages.Count -ne 25) { throw "Incomplete 25-selector native receipt" }
+    if ($failedSelectors.Count -gt 0) {
+      throw ("Failed {0}/25 native selectors: {1}" -f $failedSelectors.Count,($failedSelectors -join ', '))
+    }
   } finally { Pop-Location }
   if ((git rev-parse HEAD | Out-String).Trim() -cne $head -or (git status --porcelain --untracked-files=no | Out-String).Trim()) {
     throw 'Source changed during native test run'
