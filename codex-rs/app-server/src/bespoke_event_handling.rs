@@ -3662,7 +3662,8 @@ mod tests {
                 conversation_id,
                 source_turn_id.clone(),
                 AdaptiveRuntimeSignalEvent {
-                    signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::RepairRequired,
+                    signal_kind:
+                        codex_protocol::protocol::AdaptiveRuntimeSignalKind::RepairRequired,
                     evidence_refs: vec!["test-only".to_string()],
                     diagnostic_note: None,
                 },
