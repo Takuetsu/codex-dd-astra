@@ -74,8 +74,12 @@ try {
           elapsed_seconds=[math]::Round($step.Elapsed.TotalSeconds,1)
           log_file=[IO.Path]::GetFileName($log)
         }
-        if (-not $pass) { throw "Native test $selector failed or ran zero test cases; see log $log" }
-        Write-Host ('PASS_NATIVE: '+$area+' '+$index+' '+$selector)
+        if (-not $pass) {
+          $failedSelectors += $selector
+          Write-Host ('FAIL_NATIVE: '+$area+' '+$index+' '+$selector+'; see '+$log)
+        } else {
+          Write-Host ('PASS_NATIVE: '+$area+' '+$index+' '+$selector)
+        }
       }
       $required = if ($area -eq 'core') {$spec.expected_core} else {$spec.expected_tui}
       if ($index -ne $required) { throw "Missing native $area selectors" }
