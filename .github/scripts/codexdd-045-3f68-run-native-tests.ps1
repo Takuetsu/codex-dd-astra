@@ -46,6 +46,14 @@ try {
     & cmd.exe /d /c ('cargo metadata --locked --no-deps --format-version 1 > "'+$metadataLog+'" 2>&1')
     if ($LASTEXITCODE -ne 0) { throw 'Locked Cargo metadata failed' }
     Write-Host 'PASS: CARGO_LOCKED_METADATA'
+    # Compile the libtest binary exactly once before classifying any native selector.
+    $buildLog = Join-Path $LogRoot 'tui-lib-compile.log'
+    & cargo test --locked -p codex-tui --lib --no-run *> $buildLog
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host ((Get-Content -LiteralPath $buildLog -Tail 80) -join [Environment]::NewLine)
+      throw 'Native TUI libtest compilation failed; inspect tui-lib-compile.log'
+    }
+    Write-Host 'PASS: PRECOMPILE_TUI_LIB'
     $areas = if ($Group -eq 'Both') { @('core','tui') } else { @($Group.ToLowerInvariant()) }
     foreach ($area in $areas) {
       $package = if ($area -eq 'core') {'codex-core'} else {'codex-tui'}
