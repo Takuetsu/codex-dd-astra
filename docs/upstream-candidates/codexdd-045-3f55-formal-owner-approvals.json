@@ -24,7 +24,7 @@
       "official_upstream_0163_blob": "2f4b09deb1c0af682dd77bcd3370a67f662d959e",
       "original_direct_conflict": true,
       "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
-      "readiness": "FIVE_NATIVE_BINARIES_PROVEN_SEVEN_PENDING",
+      "readiness": "SEVEN_OPTIMIZED_WINDOWS_EXES_AND_PDBS_VERIFIED_UNSIGNED_BASELINE_SOURCE",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -32,12 +32,21 @@
           "run_id": 40922368730,
           "sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
           "scope": "five PE/PDB pairs; two Windows sidecars pending"
+        },
+        {
+          "kind": "SEVEN_OPTIMIZED_WINDOWS_EXE_PDB_GITHUB_GREEN",
+          "run_id": 41073817590,
+          "archive_sha256": "dccb86a05caa7bf695f4ddd2b471025a50683853fd5dffacc35f0cb981d6ed77",
+          "binary_source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+          "source_bound_to_reviewed_candidate": false,
+          "receipt": "docs/upstream-candidates/codexdd-045-3f58-seven-program-windows-evidence.json",
+          "scope": "Seven optimized unsigned Windows x64 executables and seven matching PDBs; no signing, voice, installer or final 21 stages"
         }
       ],
       "required_evidence": [
         "Native Bazel release-profile packaging and Windows MSVC smoke",
         "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging",
-        "Seven-program source-matched Windows bundle, archive integrity and distribution verification"
+        "Seven-program unsigned archive VERIFIED at 3F.48 binary source; still requires final accepted-source rebuild or justified source-equivalence review, signing, voice DLL closure and installer"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
@@ -51,7 +60,7 @@
       "official_upstream_0163_blob": "e1698941536ac5020adeceb5801055bf39f2a16a",
       "original_direct_conflict": false,
       "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
-      "readiness": "FIVE_NATIVE_BINARIES_PROVEN_SEVEN_PENDING",
+      "readiness": "SEVEN_OPTIMIZED_WINDOWS_EXES_AND_PDBS_VERIFIED_UNSIGNED_BASELINE_SOURCE",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -59,11 +68,20 @@
           "run_id": 40922368730,
           "sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
           "scope": "five PE/PDB pairs; two Windows sidecars pending"
+        },
+        {
+          "kind": "SEVEN_OPTIMIZED_WINDOWS_EXE_PDB_GITHUB_GREEN",
+          "run_id": 41073817590,
+          "archive_sha256": "dccb86a05caa7bf695f4ddd2b471025a50683853fd5dffacc35f0cb981d6ed77",
+          "binary_source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+          "source_bound_to_reviewed_candidate": false,
+          "receipt": "docs/upstream-candidates/codexdd-045-3f58-seven-program-windows-evidence.json",
+          "scope": "Seven optimized unsigned Windows x64 executables and seven matching PDBs; no signing, voice, installer or final 21 stages"
         }
       ],
       "required_evidence": [
         "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging",
-        "Seven-program source-matched Windows bundle, archive integrity and distribution verification"
+        "Seven-program unsigned archive VERIFIED at 3F.48 binary source; still requires final accepted-source rebuild or justified source-equivalence review, signing, voice DLL closure and installer"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
@@ -684,7 +702,7 @@
       "official_upstream_0163_blob": "d9673f989f062b5ea2e3f4bba124295bf010f7da",
       "original_direct_conflict": false,
       "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
-      "readiness": "FIVE_NATIVE_BINARIES_PROVEN_SEVEN_PENDING",
+      "readiness": "SEVEN_OPTIMIZED_WINDOWS_EXES_AND_PDBS_VERIFIED_UNSIGNED_BASELINE_SOURCE",
       "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
       "evidence": [
         {
@@ -692,11 +710,20 @@
           "run_id": 40922368730,
           "sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
           "scope": "five PE/PDB pairs; two Windows sidecars pending"
+        },
+        {
+          "kind": "SEVEN_OPTIMIZED_WINDOWS_EXE_PDB_GITHUB_GREEN",
+          "run_id": 41073817590,
+          "archive_sha256": "dccb86a05caa7bf695f4ddd2b471025a50683853fd5dffacc35f0cb981d6ed77",
+          "binary_source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+          "source_bound_to_reviewed_candidate": false,
+          "receipt": "docs/upstream-candidates/codexdd-045-3f58-seven-program-windows-evidence.json",
+          "scope": "Seven optimized unsigned Windows x64 executables and seven matching PDBs; no signing, voice, installer or final 21 stages"
         }
       ],
       "required_evidence": [
         "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging",
-        "Seven-program source-matched Windows bundle, archive integrity and distribution verification"
+        "Seven-program unsigned archive VERIFIED at 3F.48 binary source; still requires final accepted-source rebuild or justified source-equivalence review, signing, voice DLL closure and installer"
       ],
       "formal_owner_decision": "PENDING_SIGNOFF",
       "approved_by": null,
