@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '7fbb755869cc297bdebb92f142df8afcd69e54e2'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'cee9f3cd0ede2296f95e66cabdf997c291b940e2'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,6 +32,7 @@ jobs:
           formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
           assert spec['expected_core']==0 and spec['expected_tui']==25==len(spec['cases']['tui'])
           assert spec['release_approved'] is False
+          assert spec['baseline_reviewed_head']=='cee9f3cd0ede2296f95e66cabdf997c291b940e2'
           assert len(formal['paths'])==109 and formal['approved_owner_count']==0
           assert len(formal['pending_native_or_semantic_restoration'])==13
           app=(root/'codex-rs/tui/src/app.rs').read_text()
