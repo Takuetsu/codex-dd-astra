@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   test-only-semantic:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_3F54_SOURCE'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '024374604e802a72c64715b4df5c00dc4b10dbd8'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
