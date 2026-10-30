@@ -9206,7 +9206,15 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
         .start_thread(app.chat_widget.config_ref())
         .await?;
     app.chat_widget.handle_thread_session_quiet(started.session);
-    app.chat_widget.status_account_display = Some(crate::status::StatusAccountDisplay::ApiKey);
+    app.chat_widget.update_account_state(
+        Some(crate::status::StatusAccountDisplay::ApiKey),
+        /*plan_type*/ None,
+        /*has_chatgpt_account*/ false,
+        /*has_codex_backend_auth*/ true,
+    );
+    // Account updates queue a separate model refresh. It is intentionally superseded
+    // by the explicit popup request below; do not replay its stale request ID.
+    while events.try_recv().is_ok() {}
 
     let mut preset = crate::test_support::TEST_MODEL_PRESETS[0].clone();
     preset.model = "api-key-popup-compat-3f67".to_string();
@@ -9286,7 +9294,7 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
     );
 
     // A capability check initiated under API-key credentials is not authoritative
-    // after sign-out or account switching, even if the old popup ID is still current.
+    // after sign-out. The real account-update handler invalidates its request ID.
     app.chat_widget.open_model_popup();
     let stale_id = std::iter::from_fn(|| events.try_recv().ok())
         .find_map(|event| match event {
@@ -9294,7 +9302,16 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
             _ => None,
         })
         .expect("second model popup must request fresh models");
-    app.chat_widget.status_account_display = None;
+    app.chat_widget.update_account_state(
+        /*status_account_display*/ None,
+        /*plan_type*/ None,
+        /*has_chatgpt_account*/ false,
+        /*has_codex_backend_auth*/ false,
+    );
+    assert!(
+        !app.chat_widget.model_popup_request_is_current(stale_id),
+        "an account switch must invalidate the prior API-key model request"
+    );
     app.handle_event(
         &mut tui,
         &mut app_server,
@@ -9304,7 +9321,10 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
         },
     )
     .await?;
-    assert!(app.chat_widget.model_popup_request_is_current(stale_id));
+    assert!(
+        !app.chat_widget.model_popup_request_is_current(stale_id),
+        "a filtered callback from an old API-key account must remain stale"
+    );
     assert!(
         app.chat_widget
             .model_catalog()
