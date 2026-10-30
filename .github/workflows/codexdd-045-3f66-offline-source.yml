@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'c8955dfe33c660b6d135d8ab4fa7232a9b946b50'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b407fe8e324c267bf3cd32b41306e7b87bc46129'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -25,7 +25,7 @@ jobs:
           test "$(cat codex-rs/codexdd-version.txt)" = 0.4.4
           test "$(cat codex-rs/upstream-codex-release.txt)" = rust-v0.162.0
           python3 - <<'PY'
-          import json
+          import json,re
           from pathlib import Path
           root=Path('.')
           formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
@@ -33,13 +33,14 @@ jobs:
           assert len(formal['pending_native_or_semantic_restoration'])==13
           app=(root/'codex-rs/tui/src/app.rs').read_text()
           assert app.count('active_view_accepts_input_when_disconnected()')==3
-          first=app.index('if self.reconnect.offline')
-          assert app.index('&& !self.chat_widget.active_view_accepts_input_when_disconnected()',first)<app.index('let screen_size =',first)
+          compact=re.sub(r'\s+', '', app)
+          first=compact.index('ifself.reconnect.offline')
+          assert compact.index('&&!self.chat_widget.active_view_accepts_input_when_disconnected()',first)<compact.index('letscreen_size=',first)
           assert 'handle_disconnected_view_key(*key, activation_key)' in app
-          assert 'active_view_is(agents_overview::AGENTS_OVERVIEW_VIEW_ID)' in app
+          assert 'active_view_is(agents_overview::AGENTS_OVERVIEW_VIEW_ID)' in compact
           assert 'if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview' in app
           assert 'let restrict_disconnected_input = self.reconnect.offline' in app
-          assert '!self.chat_widget.active_view_accepts_input_when_disconnected();' in app
+          assert '!self.chat_widget.active_view_accepts_input_when_disconnected();' in compact
           chat=(root/'codex-rs/tui/src/chatwidget/reconnect.rs').read_text()
           pane=(root/'codex-rs/tui/src/bottom_pane/mod.rs').read_text()
           assert 'fn active_view_accepts_input_when_disconnected' in chat
