@@ -384,7 +384,7 @@
     {
       "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
       "owner": "app_server_protocol",
-      "current_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
+      "current_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
       "historical_reviewed_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
       "production_044_blob": "65824b0da966df860bcc901d681017545de0227e",
       "disposition": "frozen_reviewed_identity",
