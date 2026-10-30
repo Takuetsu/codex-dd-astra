@@ -1,0 +1,63 @@
+# 3F.67 cheap exact-source verification; native Windows behavioral tests remain separate.
+name: CodexDD 0.4.5 3F.67 API-key popup source guard (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f67-api-key-popup-compat]
+    paths: [".github/workflows/codexdd-045-3f67-api-key-popup-source.yml"]
+permissions:
+  contents: read
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '5156f50c6c7fc8147584e97258d28b4c851b90be'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Require API-key popup source boundary and nonrelease formal holds
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = 13bc15ff844e93dfaf7777c73bb7313b35bb3b81
+          test "$(cat codex-rs/codexdd-version.txt)" = 0.4.4
+          test "$(cat codex-rs/upstream-codex-release.txt)" = rust-v0.162.0
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re
+          root=Path('.')
+          formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          assert len(formal['paths'])==109 and formal['approved_owner_count']==0
+          assert len(formal['pending_native_or_semantic_restoration'])==13
+          event=(root/'codex-rs/tui/src/app_event.rs').read_text()
+          dispatch=(root/'codex-rs/tui/src/app/event_dispatch.rs').read_text()
+          server=(root/'codex-rs/tui/src/app_server_session/daybreak_api_key_compat.rs').read_text()
+          test=(root/'codex-rs/tui/src/app/tests.rs').read_text()
+          assert event.count('ApiKeyCompatModelsLoaded {')==1
+          assert 'fn constrain_api_key_models(' in server
+          assert 'constrain_api_key_models(' in dispatch
+          assert 'result: Ok(models)' in dispatch
+          assert 'self.chat_widget.model_popup_request_is_current(request_id)' in dispatch
+          assert 'Some(&StatusAccountDisplay::ApiKey)' in dispatch
+          assert 'AppEvent::ApiKeyCompatModelsLoaded {' in dispatch
+          assert 'result: Ok(checked.await)' in dispatch
+          assert 'AppEvent::ModelsLoaded { request_id, result }' in dispatch
+          assert 'self.chat_widget.on_models_loaded(request_id, result)' in dispatch
+          assert 'model_popup_request_is_current(request_id)' in (root/'codex-rs/tui/src/chatwidget/model_popup_state.rs').read_text()
+          selector='api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account'
+          assert len(re.findall(r'\basync\s+fn\s+'+selector+r'\s*\(',test))==1
+          for token in ['CyberAccessProgram::DaybreakBlue','AppEvent::ApiKeyCompatModelsLoaded','model_popup_request_is_current(stale_id)','available_access_programs.is_none()']:
+            assert token in test,token
+          print('PASS: raw API-key model replies deferred; current IDs, account switch and 0/109/13 holds verified')
+          PY
+          git diff --check HEAD~1 HEAD
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # pinned Rust 1.95
+        with:
+          components: rustfmt
+      - name: Full Rust workspace formatting only
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
