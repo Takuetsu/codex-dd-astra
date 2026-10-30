@@ -1,0 +1,563 @@
+{
+  "contract_version": 1,
+  "scope": "CORE_9_OF_18_EXACT_REVERSIBLE_UPSTREAM_0163_PART_B",
+  "binary_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "review_count": 9,
+  "formal_accepted": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "upstream_blob": "d1d43621210c979e2a98e2c2bc49698e825d71c1",
+      "candidate_blob": "50f524a055a92f0d19be5e6bc2665fe18718e35b",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 2204,
+          "upstream_lines": [
+            "        EventMsg::Error(_)"
+          ],
+          "candidate_lines": [
+            "        EventMsg::AdaptiveRuntimeSignal(_)",
+            "        | EventMsg::Error(_)"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "upstream_blob": "2fb6da8d71570d48f9218ec8015cd3d6d3e12e3a",
+      "candidate_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 227,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    workflow_state: Option<codex_history::RestoredWorkflowState>,"
+          ]
+        },
+        {
+          "candidate_start_line": 1571,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                workflow_state: None,"
+          ]
+        },
+        {
+          "candidate_start_line": 1583,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        let workflow_state = prepared.workflow_state.clone();"
+          ]
+        },
+        {
+          "candidate_start_line": 1601,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                    workflow_state: Some(workflow_state),"
+          ]
+        },
+        {
+          "candidate_start_line": 1618,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            workflow_state,"
+          ]
+        },
+        {
+          "candidate_start_line": 1655,
+          "upstream_lines": [
+            "        options.initial_history = fork_history_from_snapshot(snapshot, history, interrupted_marker);"
+          ],
+          "candidate_lines": [
+            "        let workflow_state =",
+            "            workflow_state.unwrap_or_else(|| workflow_state_from_history(&history));",
+            "        options.initial_history = append_child_workflow_state_snapshot(",
+            "            fork_history_from_snapshot(snapshot, history, interrupted_marker),",
+            "            workflow_state,",
+            "        );"
+          ]
+        },
+        {
+          "candidate_start_line": 2727,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        }",
+            "    }",
+            "}",
+            "",
+            "fn workflow_state_from_history(history: &InitialHistory) -> codex_history::RestoredWorkflowState {",
+            "    match history {",
+            "        InitialHistory::New | InitialHistory::Cleared => codex_history::RestoredWorkflowState::None,",
+            "        InitialHistory::Resumed(history) => {",
+            "            codex_history::restored_workflow_state(history.history.iter())",
+            "        }",
+            "        InitialHistory::Forked(history) => codex_history::restored_workflow_state(history.iter()),",
+            "    }",
+            "}",
+            "",
+            "fn append_child_workflow_state_snapshot(",
+            "    history: InitialHistory,",
+            "    workflow_state: codex_history::RestoredWorkflowState,",
+            ") -> InitialHistory {",
+            "    let snapshot = match workflow_state {",
+            "        codex_history::RestoredWorkflowState::None => return history,",
+            "        codex_history::RestoredWorkflowState::ReadyForOwnerQa => {",
+            "            codex_history::WorkflowStateItem::set_ready_for_owner_qa(None)",
+            "        }",
+            "        codex_history::RestoredWorkflowState::Adaptive {",
+            "            state,",
+            "            source_turn_id,",
+            "        } => codex_history::WorkflowStateItem::set_adaptive_state(state, source_turn_id),",
+            "        codex_history::RestoredWorkflowState::Unsupported => codex_history::WorkflowStateItem {",
+            "            schema_version: codex_history::WORKFLOW_STATE_SCHEMA_VERSION,",
+            "            operation: codex_history::WorkflowStateOperation::Unsupported,",
+            "            source_turn_id: None,",
+            "            adaptive_state: None,",
+            "        },",
+            "    };",
+            "    let item = RolloutItem::WorkflowState(snapshot);",
+            "    match history {",
+            "        InitialHistory::New | InitialHistory::Cleared => InitialHistory::Forked(vec![item]),",
+            "        InitialHistory::Forked(mut history) => {",
+            "            history.push(item);",
+            "            InitialHistory::Forked(history)",
+            "        }",
+            "        InitialHistory::Resumed(history) => {",
+            "            let mut items = Arc::unwrap_or_clone(history.history);",
+            "            items.push(item);",
+            "            InitialHistory::Forked(items)"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "upstream_blob": "df585fa7d98b6e325796f16bab970c952fa036ec",
+      "candidate_blob": "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 286,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[test]",
+            "fn child_workflow_snapshot_preserves_adaptive_state() {",
+            "    let state = codex_history::AdaptiveWorkflowStateSnapshot {",
+            "        enabled: true,",
+            "        starting_family: Some(\"astra\".to_string()),",
+            "        current_family: Some(\"luna\".to_string()),",
+            "        current_effort: Some(\"high\".to_string()),",
+            "        complexity_class: None,",
+            "        implementation_phase: None,",
+            "        validation_repair_fingerprint: None,",
+            "        validation_repair_cycles_used: 0,",
+            "        validation_targeted_retest_required: false,",
+            "        validation_status: None,",
+            "        attempt_number: 6,",
+            "        paused_by_user: false,",
+            "        worker_role: \"repair\".to_string(),",
+            "        authorized_scope: Some(\"bounded repair\".to_string()),",
+            "        worker_assignment_locked: true,",
+            "        workflow_terminal: Some(\"ready_for_validation\".to_string()),",
+            "    };",
+            "    let history = append_child_workflow_state_snapshot(",
+            "        InitialHistory::Forked(Vec::new()),",
+            "        codex_history::RestoredWorkflowState::Adaptive {",
+            "            state: state.clone(),",
+            "            source_turn_id: Some(\"repair-turn\".to_string()),",
+            "        },",
+            "    );",
+            "",
+            "    let InitialHistory::Forked(items) = history else {",
+            "        panic!(\"expected forked child history\");",
+            "    };",
+            "    let Some(RolloutItem::WorkflowState(item)) = items.last() else {",
+            "        panic!(\"expected adaptive workflow state item\");",
+            "    };",
+            "    assert_eq!(item.adaptive_state.as_ref(), Some(&state));",
+            "    assert_eq!(item.source_turn_id.as_deref(), Some(\"repair-turn\"));",
+            "    assert_eq!(",
+            "        item.operation,",
+            "        codex_history::WorkflowStateOperation::AdaptiveState",
+            "    );",
+            "}",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "upstream_blob": "9e78325058546a3924b12fa8c9de938d6421fbcf",
+      "candidate_blob": "05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 145,
+          "upstream_lines": [
+            "            call_id,"
+          ],
+          "candidate_lines": [
+            "            call_id.clone(),"
+          ]
+        },
+        {
+          "candidate_start_line": 165,
+          "upstream_lines": [
+            "        Ok(boxed_tool_output(FunctionToolOutput::from_content(",
+            "            body,",
+            "            Some(success),",
+            "        )))"
+          ],
+          "candidate_lines": [
+            "        Ok(boxed_tool_output(",
+            "            FunctionToolOutput::from_content(body, Some(success)).with_evidence_id(call_id),",
+            "        ))"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "upstream_blob": "501ce5fe4eb8395ae84f8b7a1b7f14b530a22e5e",
+      "candidate_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 76,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    // The controller-authorized reconnaissance, Implementation and Mechanical",
+            "    // Validation turns each need direct-only built-in lifecycle tools.",
+            "    // Implementation must be able to report its mechanical_validation handoff",
+            "    // even if Luna normally selects CodeModeOnly. The Implementation marker",
+            "    // does not grant the native LVO runner, nor weaken the separately gated",
+            "    // no-source-edit restrictions of reconnaissance and Mechanical Validation.",
+            "    // Ordinary and terminalization turns keep their configured model mode.",
+            "    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(",
+            "        turn_context.turn_metadata_state.as_ref(),",
+            "    );",
+            "    if turn_trigger.as_deref() == Some(codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER)",
+            "        || turn_trigger.as_deref()",
+            "            == Some(codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER)",
+            "        || turn_trigger.as_deref()",
+            "            == Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)",
+            "    {",
+            "        return ToolMode::Direct;",
+            "    }",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "upstream_blob": "fd5b5e14eeeb57b5be78af53d3f855702167dcc7",
+      "candidate_blob": "422870dba8b5a3b36994a598380c93f58760ad1b",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 9,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use crate::tools::handlers::AdaptiveSignalHandler;"
+          ]
+        },
+        {
+          "candidate_start_line": 13,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use crate::tools::handlers::CodexDDValidationHandler;"
+          ]
+        },
+        {
+          "candidate_start_line": 71,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;"
+          ]
+        },
+        {
+          "candidate_start_line": 1317,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "",
+            "    registry.add_with_exposure(AdaptiveSignalHandler, ToolExposure::DirectModelOnly);",
+            "",
+            "    let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(",
+            "        turn_context.turn_metadata_state.as_ref(),",
+            "    );",
+            "    if turn_trigger.as_deref() == Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {",
+            "        registry.add_with_exposure(CodexDDValidationHandler, ToolExposure::DirectModelOnly);",
+            "    }"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "upstream_blob": "1a8a0661878c6e847b5ed61c80c328c1444afc29",
+      "candidate_blob": "379eb8d44dfa672b70ed3b7d5408e882d8e803e3",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 586,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "async fn codexdd_validation_runner_is_visible_only_during_mechanical_validation() {",
+            "    let ordinary = probe_with(|_| {}, ToolPlanInputs::default()).await;",
+            "    ordinary.assert_visible_lacks(&[\"run_codexdd_validation\"]);",
+            "    ordinary.assert_registered_lacks(&[\"run_codexdd_validation\"]);",
+            "",
+            "    let mechanical = probe_with(",
+            "        |turn| {",
+            "            turn.turn_metadata_state.set_turn_trigger(",
+            "                codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),",
+            "            );",
+            "        },",
+            "        ToolPlanInputs::default(),",
+            "    )",
+            "    .await;",
+            "    mechanical.assert_visible_contains(&[\"run_codexdd_validation\"]);",
+            "    mechanical.assert_registered_contains(&[\"run_codexdd_validation\"]);",
+            "    assert_eq!(",
+            "        mechanical.exposure(\"run_codexdd_validation\"),",
+            "        ToolExposure::DirectModelOnly",
+            "    );",
+            "}",
+            "",
+            "#[tokio::test]",
+            "async fn codexdd_protected_turns_force_direct_tools_without_widening_other_turns() {",
+            "    let ordinary = probe(|turn| {",
+            "        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);",
+            "    })",
+            "    .await;",
+            "    assert_eq!(ordinary.tool_mode, ToolMode::CodeModeOnly);",
+            "    ordinary.assert_visible_lacks(&[\"run_codexdd_validation\"]);",
+            "    ordinary.assert_registered_lacks(&[\"run_codexdd_validation\"]);",
+            "    ordinary.assert_visible_contains(&[codex_code_mode::PUBLIC_TOOL_NAME]);",
+            "",
+            "    let reconnaissance = probe(|turn| {",
+            "        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);",
+            "        turn.turn_metadata_state.set_turn_trigger(",
+            "            codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER.to_string(),",
+            "        );",
+            "    })",
+            "    .await;",
+            "    assert_eq!(reconnaissance.tool_mode, ToolMode::Direct);",
+            "    reconnaissance.assert_visible_contains(&[\"report_adaptive_signal\"]);",
+            "    reconnaissance.assert_registered_contains(&[\"report_adaptive_signal\"]);",
+            "    reconnaissance",
+            "        .assert_visible_lacks(&[\"run_codexdd_validation\", codex_code_mode::PUBLIC_TOOL_NAME]);",
+            "    reconnaissance.assert_registered_lacks(&[\"run_codexdd_validation\"]);",
+            "    assert!(reconnaissance.code_mode_tool_names.is_empty());",
+            "    assert_eq!(",
+            "        reconnaissance.exposure(\"report_adaptive_signal\"),",
+            "        ToolExposure::DirectModelOnly",
+            "    );",
+            "",
+            "    // The post-complexity Implementation successor still needs to emit a",
+            "    // trusted lifecycle signal. It must not see the native validator early.",
+            "    let implementation = probe(|turn| {",
+            "        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);",
+            "        turn.turn_metadata_state.set_turn_trigger(",
+            "            codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER.to_string(),",
+            "        );",
+            "    })",
+            "    .await;",
+            "    assert_eq!(implementation.tool_mode, ToolMode::Direct);",
+            "    implementation.assert_visible_contains(&[\"report_adaptive_signal\"]);",
+            "    implementation.assert_registered_contains(&[\"report_adaptive_signal\"]);",
+            "    implementation",
+            "        .assert_visible_lacks(&[\"run_codexdd_validation\", codex_code_mode::PUBLIC_TOOL_NAME]);",
+            "    implementation.assert_registered_lacks(&[\"run_codexdd_validation\"]);",
+            "    assert!(implementation.code_mode_tool_names.is_empty());",
+            "    assert_eq!(",
+            "        implementation.exposure(\"report_adaptive_signal\"),",
+            "        ToolExposure::DirectModelOnly",
+            "    );",
+            "",
+            "    let mechanical = probe(|turn| {",
+            "        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);",
+            "        turn.turn_metadata_state.set_turn_trigger(",
+            "            codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),",
+            "        );",
+            "    })",
+            "    .await;",
+            "    assert_eq!(mechanical.tool_mode, ToolMode::Direct);",
+            "    mechanical.assert_visible_contains(&[\"run_codexdd_validation\", \"report_adaptive_signal\"]);",
+            "    mechanical.assert_registered_contains(&[\"run_codexdd_validation\"]);",
+            "    mechanical.assert_visible_lacks(&[",
+            "        codex_code_mode::PUBLIC_TOOL_NAME,",
+            "        codex_code_mode::WAIT_TOOL_NAME,",
+            "    ]);",
+            "    assert!(mechanical.code_mode_tool_names.is_empty());",
+            "    assert_eq!(",
+            "        mechanical.exposure(\"run_codexdd_validation\"),",
+            "        ToolExposure::DirectModelOnly",
+            "    );",
+            "",
+            "    let terminalization = probe(|turn| {",
+            "        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);",
+            "        turn.turn_metadata_state.set_turn_trigger(",
+            "            codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER.to_string(),",
+            "        );",
+            "    })",
+            "    .await;",
+            "    assert_eq!(terminalization.tool_mode, ToolMode::CodeModeOnly);",
+            "    terminalization.assert_visible_lacks(&[\"run_codexdd_validation\"]);",
+            "    terminalization.assert_registered_lacks(&[\"run_codexdd_validation\"]);",
+            "}",
+            "",
+            "#[tokio::test]"
+          ]
+        },
+        {
+          "candidate_start_line": 1039,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "}",
+            "",
+            "#[tokio::test]",
+            "async fn adaptive_signal_tool_is_registered_with_runtime_bound_authority() {",
+            "    let plan = probe(|_| {}).await;",
+            "",
+            "    plan.assert_visible_contains(&[\"report_adaptive_signal\"]);",
+            "    plan.assert_registered_contains(&[\"report_adaptive_signal\"]);",
+            "    assert_eq!(",
+            "        plan.exposure(\"report_adaptive_signal\"),",
+            "        ToolExposure::DirectModelOnly",
+            "    );",
+            "    let ToolSpec::Function(tool) = plan.visible_spec(\"report_adaptive_signal\") else {",
+            "        panic!(\"expected function tool\");",
+            "    };",
+            "    let properties = tool",
+            "        .parameters",
+            "        .properties",
+            "        .as_ref()",
+            "        .expect(\"object properties\");",
+            "    assert_eq!(",
+            "        properties.keys().map(String::as_str).collect::<Vec<_>>(),",
+            "        vec![\"complexity\", \"diagnostic_note\", \"evidence_refs\", \"kind\"]",
+            "    );"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "upstream_blob": "cfad8149ad70f43482453d59e7128ac975bbca03",
+      "candidate_blob": "842ae7aeae97f6912e364f972ff8044061f176aa",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 48,
+          "upstream_lines": [
+            "use codex_protocol::openai_models::ReasoningEffort;"
+          ],
+          "candidate_lines": []
+        }
+      ]
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "upstream_blob": "acdb81445f12fc13779650ae1d71757795f5143a",
+      "candidate_blob": "0d53c5aebc2c2543f2f1190e46ed95db93992288",
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_PENDING_NATIVE_AUTHORITY_APPROVAL",
+      "hunks": [
+        {
+          "candidate_start_line": 2029,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "async fn completed_exec_evidence_id_survives_into_next_model_request_and_signal() -> Result<()> {",
+            "    skip_if_no_network!(Ok(()));",
+            "    skip_if_sandbox!(Ok(()));",
+            "",
+            "    let server = start_mock_server().await;",
+            "    let mut builder = test_codex();",
+            "    let test = builder.build_with_auto_env(&server).await?;",
+            "",
+            "    let call_id = \"runtime-native-evidence-id\";",
+            "    let exec_args = json!({",
+            "        \"cmd\": \"git rev-parse --show-toplevel\",",
+            "        \"yield_time_ms\": 5_000,",
+            "    });",
+            "    let signal_call_id = \"report-ready-for-owner-qa\";",
+            "    let signal_args = json!({",
+            "        \"kind\": \"ready_for_owner_qa\",",
+            "        \"evidence_refs\": [call_id],",
+            "    });",
+            "    let response_mock = mount_sse_sequence(",
+            "        &server,",
+            "        vec![",
+            "            sse(vec![",
+            "                ev_response_created(\"resp-1\"),",
+            "                ev_function_call(call_id, \"exec_command\", &serde_json::to_string(&exec_args)?),",
+            "                ev_completed(\"resp-1\"),",
+            "            ]),",
+            "            sse(vec![",
+            "                ev_response_created(\"resp-2\"),",
+            "                ev_function_call(",
+            "                    signal_call_id,",
+            "                    \"report_adaptive_signal\",",
+            "                    &serde_json::to_string(&signal_args)?,",
+            "                ),",
+            "                ev_completed(\"resp-2\"),",
+            "            ]),",
+            "            sse(vec![",
+            "                ev_assistant_message(\"msg-1\", \"READY_FOR_OWNER_QA\"),",
+            "                ev_completed(\"resp-3\"),",
+            "            ]),",
+            "        ],",
+            "    )",
+            "    .await;",
+            "",
+            "    submit_unified_exec_turn(",
+            "        &test,",
+            "        \"run git rev-parse --show-toplevel and report the result\",",
+            "        PermissionProfile::Disabled,",
+            "    )",
+            "    .await?;",
+            "",
+            "    let mut completed_command_id = None;",
+            "    let mut reported_evidence_refs = None;",
+            "    wait_for_event(&test.codex, |event| match event {",
+            "        EventMsg::ExecCommandEnd(event) if event.call_id == call_id => {",
+            "            completed_command_id = Some(event.call_id.clone());",
+            "            false",
+            "        }",
+            "        EventMsg::AdaptiveRuntimeSignal(event) => {",
+            "            reported_evidence_refs = Some(event.evidence_refs.clone());",
+            "            false",
+            "        }",
+            "        EventMsg::TurnComplete(_) => true,",
+            "        _ => false,",
+            "    })",
+            "    .await;",
+            "",
+            "    let requests = response_mock.requests();",
+            "    assert_eq!(requests.len(), 3);",
+            "    let model_visible_output = requests[1]",
+            "        .function_call_output_text(call_id)",
+            "        .expect(\"completed command output should be plain model-visible text\");",
+            "    let metadata = model_visible_output",
+            "        .lines()",
+            "        .next()",
+            "        .and_then(|line| serde_json::from_str::<Value>(line).ok())",
+            "        .expect(\"command output should start with structured evidence metadata\");",
+            "    assert_eq!(metadata, json!({\"evidence_id\": call_id}));",
+            "    assert_eq!(completed_command_id.as_deref(), Some(call_id));",
+            "    assert_eq!(reported_evidence_refs, Some(vec![call_id.to_string()]));",
+            "    Ok(())",
+            "}",
+            "",
+            "#[tokio::test(flavor = \"multi_thread\", worker_threads = 2)]"
+          ]
+        }
+      ]
+    }
+  ]
+}
