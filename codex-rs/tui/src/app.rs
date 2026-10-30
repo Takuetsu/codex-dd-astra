@@ -857,6 +857,18 @@ impl App {
         }
     }
 
+    /// Protect newly visible startup decisions from queued terminal input while
+    /// the original startup input boundary is still unsettled.
+    pub(super) fn startup_modal_input_needs_quarantine(&self, event: &TuiEvent) -> bool {
+        self.startup_protected_input_boundary
+            && self.startup_pending_protected_request
+            && self.chat_widget.has_active_modal()
+            && matches!(
+                event,
+                TuiEvent::Key(_) | TuiEvent::Paste(_) | TuiEvent::Mouse(_)
+            )
+    }
+
     pub(crate) async fn handle_tui_event(
         &mut self,
         tui: &mut tui::Tui,
@@ -868,6 +880,15 @@ impl App {
         self.invalidate_right_click_paste(&event);
         self.finish_clipboard(tui, &event);
         let event = self.finish_right_click_paste(tui, event);
+        if self.startup_modal_input_needs_quarantine(&event) {
+            self.discard_startup_modal_input(tui)?;
+            return Ok(AppRunControl::Continue);
+        }
+        // A painted selection owns its pointer/copy gesture ahead of key chords,
+        // transcript input and composer shortcuts.
+        if self.handle_rendered_selection_event(tui, &event)? {
+            return Ok(AppRunControl::Continue);
+        }
         let idle_draw = matches!(event, TuiEvent::Draw);
         if matches!(&event, TuiEvent::Key(_))
             && self.handle_composer_copy_event(tui, &event, |tui, text| {
@@ -1138,8 +1159,7 @@ impl App {
                         && self.chat_widget.has_active_modal()
                         && self.startup_protected_input_boundary
                     {
-                        tui.discard_pending_input_before_interactive_screen()?;
-                        self.startup_pending_protected_request = false;
+                        self.discard_startup_modal_input(tui)?;
                     }
                     if self.chat_widget.ambient_pet_image_enabled() {
                         let ambient_pet_area = Rect::new(
