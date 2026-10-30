@@ -64,7 +64,7 @@ class NativeSemanticGate(unittest.TestCase):
             "codexdd-045-owner-preflight.ps1",
             "test_codexdd_045_3f51_exact_upstream_semantic_deltas.py",
             "test_codexdd_045_3f52_appserver_owner_source.py",
-            "modified-test-rustfmt",
+            "cargo-format",
             "'--no-fail-fast'",
             "'--lib'",
             "RUST_MIN_STACK",
