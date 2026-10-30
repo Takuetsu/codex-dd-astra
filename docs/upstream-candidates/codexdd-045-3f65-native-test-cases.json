@@ -1,0 +1,84 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f65_restored_negative_windows_tui_native",
+  "cargo_lock_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+  "scope": "NONRELEASE_RESTORED_NEGATIVES",
+  "cases": {
+    "core": [],
+    "tui": [
+      {
+        "selector": "startup_modal_quarantine_only_blocks_protected_input",
+        "rationale": "Quarantine stale approval keys and paste at startup"
+      },
+      {
+        "selector": "refresh_in_memory_config_from_disk_updates_live_widget_preferences",
+        "rationale": "Keep live picker and resume settings after reload"
+      },
+      {
+        "selector": "session_status_follows_existing_lifecycle_state",
+        "rationale": "Terminal status tracks actual lifecycle"
+      },
+      {
+        "selector": "session_status_detail_uses_only_foreground_activity",
+        "rationale": "Background status never replaces foreground details"
+      },
+      {
+        "selector": "background_resolution_keeps_matching_foreground_user_input_visible",
+        "rationale": "Background request resolution cannot dismiss foreground user input"
+      },
+      {
+        "selector": "copy_shortcut_can_be_remapped",
+        "rationale": "Negative Windows Ctrl+Shift+V and Shift+Insert paste fallback behavior"
+      },
+      {
+        "selector": "slash_daybreak_offers_an_application_when_unavailable",
+        "rationale": "API key Daybreak flag disabled negative case"
+      },
+      {
+        "selector": "bootstrap_reuses_prefetched_account_without_another_account_read",
+        "rationale": "API key cyber-access model catalog filtering and CLI override precedence"
+      },
+      {
+        "selector": "shutdown_first_exit_unsubscribes_live_side_threads_before_leaving",
+        "rationale": "ShutdownFirst unsubscribes an actual live side thread before exit"
+      },
+      {
+        "selector": "shutdown_first_exit_uses_app_server_shutdown_without_submitting_op",
+        "rationale": "ShutdownFirst does not submit legacy core Shutdown op"
+      },
+      {
+        "selector": "resolved_buffered_approval_does_not_become_actionable_after_drain",
+        "rationale": "Resolved approvals never become actionable after buffering"
+      },
+      {
+        "selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
+        "rationale": "Local daemon tool exposure stays approval gated"
+      },
+      {
+        "selector": "output_free_esc_interrupt_pauses_adaptive_execution",
+        "rationale": "Manual Esc stops adaptive successor"
+      },
+      {
+        "selector": "external_writer_escape_preserves_snapshot_and_explicit_quits",
+        "rationale": "Disconnected external writer Escape preserves snapshot"
+      },
+      {
+        "selector": "elevated_windows_implicit_startup_uses_embedded_without_f2_warning",
+        "rationale": "Elevated Windows fallback uses embedded backend without false warning"
+      }
+    ]
+  },
+  "expected_core": 0,
+  "expected_tui": 15,
+  "success_rule": "nonzero native case count, each case executed (not skipped) at exact frozen source and test exit 0",
+  "source_only_gaps": [
+    "Formal 13 high-priority owner holds remain unapproved",
+    "Unbounded event channel has no proven backpressure cap",
+    "Offline active-view input and API-key popup filtering pending",
+    "Realtime stop and parked voice owner negatives pending",
+    "Narrow native test gate is not 21-stage release acceptance"
+  ],
+  "formal_owner_decisions": "PENDING_SIGNOFF",
+  "release_approved": false,
+  "baseline_reviewed_head": "d90a85121337861933d7d3cd0169ef0185aa46a9"
+}
