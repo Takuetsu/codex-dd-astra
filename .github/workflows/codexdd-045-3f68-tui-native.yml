@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '763510e2c54b0ccd9e87eaed8c1f766e5d233ea1'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '961abe24f4081fe31d5d39a8c819ca5e15db465c'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,7 +32,7 @@ jobs:
           formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
           assert spec['expected_core']==0 and spec['expected_tui']==25==len(spec['cases']['tui'])
           assert spec['release_approved'] is False
-          assert spec['baseline_reviewed_head']=='e7fd2b0f007add318a0d6023205ac88930fe7d8f'
+          assert spec['baseline_reviewed_head']=='961abe24f4081fe31d5d39a8c819ca5e15db465c'
           assert len(formal['paths'])==109 and formal['approved_owner_count']==0
           assert len(formal['pending_native_or_semantic_restoration'])==13
           app=(root/'codex-rs/tui/src/app.rs').read_text()
@@ -81,6 +81,8 @@ jobs:
           assert 'Enable broader access for cybersecurity work' in daybreak
           daemon_tests=(root/'codex-rs/tui/src/app/daemon_menu_tests.rs').read_text()
           assert 'InstallContext::current()' in daemon_tests
+          assert '.map_or_else(\n' in daemon_tests
+          assert '                    |manifest| manifest.version.to_string(),' in daemon_tests
           assert 'confirmation.contains(&actual)' in daemon_tests
           assert 'confirmation = confirmation.replace(&actual, "Use this CLI package v0.0.0 from ");' in daemon_tests
           runner=(root/'.github/scripts/codexdd-045-3f68-run-native-tests.ps1').read_text()
