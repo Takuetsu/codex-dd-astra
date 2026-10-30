@@ -385,7 +385,7 @@
     {
       "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
       "owner": "app_server_protocol",
-      "current_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
+      "current_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
       "historical_reviewed_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
       "production_044_blob": "65824b0da966df860bcc901d681017545de0227e",
       "disposition": "reviewed_adaptive_terminal_replay_negative_tests",
@@ -398,11 +398,12 @@
       "release_status": "NOT_ACCEPTED",
       "native_semantic_followup": {
         "scope": "test-only negative failed/interrupted turn signal replay",
-        "source_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
+        "source_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
         "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
         "native_selector": "adaptive_runtime_signal_does_not_replay_on_failed_or_interrupted_turn",
         "semantic_signoff": "NOT_GRANTED",
-        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md"
+        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md",
+        "formatted_from_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8"
       }
     },
     {
@@ -1299,7 +1300,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
+      "current_blob": "7d2be3352380d43df714399b441a95960b87a59f",
       "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
       "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
       "disposition": "reviewed_upstream_dynamic_auth_test_restoration",
@@ -1323,11 +1324,12 @@
       },
       "native_semantic_followup": {
         "scope": "restore exact upstream boxed local-daemon test entry to avoid Windows native test stack exhaustion",
-        "source_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
+        "source_blob": "7d2be3352380d43df714399b441a95960b87a59f",
         "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
         "native_selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
         "semantic_signoff": "NOT_GRANTED",
-        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md"
+        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md",
+        "formatted_from_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e"
       }
     },
     {
