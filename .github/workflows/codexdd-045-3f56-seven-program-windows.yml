@@ -1,0 +1,188 @@
+# Source-frozen seven-program UNSIGNED Windows developer bundle. No release signing.
+# Exactly one push will arm the build after a cheap source-only preflight.
+name: CodexDD 0.4.5 3F.56 optimized seven-program Windows bundle (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f56-seven-program-bundle]
+    paths: [".github/workflows/codexdd-045-3f56-seven-program-windows.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preflight:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_3F56'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout reviewed workflow/tooling source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Validate original five-program manifest, 109 review path and source-bound sidecar contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f56_seven_program_bundle.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f55_formal_owner_approvals.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f50_distribution_gate.py -q
+          python3 -B scripts/codexdd_045_distribution_gate.py --source-only
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Parse source-frozen PowerShell build scripts without executing them
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $file='.github/scripts/codexdd-045-3f56-build-windows-sidecar.ps1'
+          $tokens=$null;$errors=$null
+          [Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; throw 'PowerShell build script parse error' }
+          Write-Host 'PASS: no native compilation in preflight'
+      - name: Ensure exact historic source-binary artifact exists and has not expired
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/12933707437 \
+            --jq '[.id, .name, .expired, .size_in_bytes] | @tsv' > baseline-metadata.txt
+          IFS=$'\t' read -r id name expired bytes < baseline-metadata.txt
+          test "$id" = "12933707437"
+          test "$name" = "codexdd045-3f48-real-combined-win-msvc-exe-pdb-40922368730"
+          test "$expired" = "false"
+          test "$bytes" -gt 100000000
+          rm baseline-metadata.txt
+          echo 'PASS: real five-program source-frozen artifact available; no rebuild authorized'
+
+  two-missing-optimized-programs:
+    needs: preflight
+    runs-on: windows-2022
+    timeout-minutes: 335
+    steps:
+      - name: Checkout validation and packaging tools at exact one-shot SHA
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          path: tooling
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Checkout SAME source SHA as successful five-program binary archive
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: 57152222a1ef523fe6e2f5079871672423c6cb56
+          path: source
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Reject mismatched source revisions before compilation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git -C tooling rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Unreviewed tooling source SHA' }
+          if ((git -C source rev-parse HEAD).Trim() -cne '57152222a1ef523fe6e2f5079871672423c6cb56') {
+            throw 'Sources of original five Windows programs differ'
+          }
+          if ((git -C source status --porcelain --untracked-files=no)) { throw 'Dirty source checkout' }
+          $v=(python --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $v -notmatch '^Python 3\.(1[1-9]|[2-9][0-9])\.') { throw "Missing Python 3.11+: $v" }
+          Write-Host 'SOURCE_FROZEN_FIVE_PLUS_TWO=57152222a1ef523fe6e2f5079871672423c6cb56'
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.28.1
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: false
+          cache-save: false
+      - name: Initialize existing Windows hosted MSVC x64 toolchain
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $vswhere=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs=& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Hosted Visual Studio x64 compiler unavailable' }
+          $dev=Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          if (-not (Test-Path $dev)) { throw 'Hosted MSVC environment missing' }
+          $names=@('PATH','INCLUDE','LIB','LIBPATH','SystemRoot','WindowsSdkDir','VCINSTALLDIR','VCToolsInstallDir','WindowsSDKVersion')
+          $envlines=& cmd.exe /d /c ('"{0}" -no_logo -arch=x64 -host_arch=x64 >nul && set' -f $dev)
+          if ($LASTEXITCODE -ne 0) { throw 'Failed MSVC environment setup' }
+          foreach($line in $envlines) {
+            if ($line -match '^(.*?)=(.*)$' -and $names -contains $matches[1]) {
+              "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
+      - name: Restore actual previous core cache; do not recompile existing five programs
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: D:/_bazel-disk
+          key: codexdd045-3f47-40884725763-core-complete
+          fail-on-cache-miss: true
+      - name: Build and verify optimized sandbox-service EXE and PDB
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          & ../tooling/.github/scripts/codexdd-045-3f56-build-windows-sidecar.ps1 -Component service -SourceSha '57152222a1ef523fe6e2f5079871672423c6cb56' -ToolingSha $env:GITHUB_SHA -SoftMinutes 170
+          if (-not $?) { throw 'Sandbox-service native optimized build failed' }
+      - name: Preserve and upload REAL sandbox-service pair BEFORE proxy compilation
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f56-real-service-exe-pdb-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-seven-program/built-service/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Build and verify optimized responses-api-proxy EXE and PDB
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          & ../tooling/.github/scripts/codexdd-045-3f56-build-windows-sidecar.ps1 -Component proxy -SourceSha '57152222a1ef523fe6e2f5079871672423c6cb56' -ToolingSha $env:GITHUB_SHA -SoftMinutes 125
+          if (-not $?) { throw 'Responses-proxy native optimized build failed' }
+      - name: Preserve and upload REAL responses proxy pair BEFORE archive assembly
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f56-real-proxy-exe-pdb-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-seven-program/built-proxy/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Download verified 3F.48 five-program archive from its ORIGINAL green run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: codexdd045-3f48-real-combined-win-msvc-exe-pdb-40922368730
+          run-id: 40922368730
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/codexdd045-seven-program/old-verified-combined
+      - name: Assemble seven original-source Windows programs and matching PDBs; rehash all 14
+        shell: pwsh
+        working-directory: tooling
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-seven-program'
+          $old=Join-Path $root 'old-verified-combined/runtime_package_combined.tar.gz'
+          $service=Join-Path $root 'built-service'
+          $proxy=Join-Path $root 'built-proxy'
+          $dest=Join-Path $root 'complete'
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          python -B scripts/codexdd_045_3f56_seven_program_assembler.py --combined $old --service-dir $service --proxy-dir $proxy --out-archive (Join-Path $dest 'codexdd045-seven-programs-win-x64-unsigned.tar.gz') --out-manifest (Join-Path $dest 'seven-program-sha256-inventory.json') --tooling-sha $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'Seven-program source or binary SHA-256 integrity failed' }
+          $receipt=Get-Content (Join-Path $dest 'seven-program-sha256-inventory.json') -Raw | ConvertFrom-Json
+          if ($receipt.program_count -ne 7 -or $receipt.symbol_count -ne 7 -or $receipt.release_approved -or $receipt.code_signed) {
+            throw 'Unsigned seven-program nonrelease inventory rejected'
+          }
+          Write-Host "SEVEN_PROGRAM_UNSIGNED_BUNDLE_SHA256=$($receipt.seven_bundle_sha256)"
+      - name: Upload full verified seven-program 14-file UNSIGNED developer bundle
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f56-real-seven-program-unsigned-win-x64-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-seven-program/complete/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Always preserve bounded native diagnostic logs even if second component fails
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f56-sidecar-build-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/codexdd045-seven-program/logs/*
+          if-no-files-found: warn
+          retention-days: 7
