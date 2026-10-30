@@ -1,0 +1,47 @@
+# Cheap Linux source/PowerShell parser checks ONLY. One-shot; never compiles Rust.
+name: CodexDD 0.4.5 3F.50 scoped ownership and Windows distribution source gate (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f50-distribution-and-native-gate]
+    paths: [".github/workflows/codexdd-045-3f50-source-gate.yml"]
+permissions:
+  contents: read
+jobs:
+  scoped-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_045_3F50_SOURCE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout audited candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Test exact source, five scoped owner reviews and seven binary distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -B -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f50_scoped_owner_review.py' -v
+          python3 -B -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f50_distribution_gate.py' -v
+          python3 -B -m unittest discover -s .github/scripts -p 'test_codexdd_045_3f50_21_stage_gate.py' -v
+          python3 -B scripts/codexdd_045_distribution_gate.py --source-only
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Parse exact staged Daniel-CL PowerShell script; do not execute it
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(
+            'scripts/codexdd-045-run-final-21.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_ }
+              throw "PowerShell parser rejected $file"
+            }
+          }
+          Write-Host 'PASS: Daniel-CL native release gate parses, not executed'
