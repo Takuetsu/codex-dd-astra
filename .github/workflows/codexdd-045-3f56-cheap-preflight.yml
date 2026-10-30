@@ -9,7 +9,7 @@ permissions:
   actions: read
 jobs:
   cheap-preflight:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '4ed45ed5ed99d096213f2cc28d548a12089a8511'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '322405f488082a64af6531b1aa1796deb4a69475'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
