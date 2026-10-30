@@ -9197,11 +9197,14 @@ async fn shutdown_first_exit_unsubscribes_live_side_threads_before_leaving() -> 
 }
 
 #[tokio::test]
-async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account() -> Result<()> {
+async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account() -> Result<()>
+{
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
     let mut app_server =
         crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref()).await?;
-    let started = app_server.start_thread(app.chat_widget.config_ref()).await?;
+    let started = app_server
+        .start_thread(app.chat_widget.config_ref())
+        .await?;
     app.chat_widget.handle_thread_session_quiet(started.session);
     app.chat_widget.status_account_display = Some(crate::status::StatusAccountDisplay::ApiKey);
 
@@ -9261,7 +9264,9 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
         } => {
             assert_eq!(*actual_id, request_id);
             assert!(
-                models.iter().all(|model| model.available_access_programs.is_none()),
+                models
+                    .iter()
+                    .all(|model| model.available_access_programs.is_none()),
                 "API-key catalog must remove unsupported access programs"
             );
         }
@@ -9274,7 +9279,11 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
         models.iter().any(|model| model.model == forbidden_model),
         "filtered model response must eventually update the popup catalog"
     );
-    assert!(models.iter().all(|model| model.available_access_programs.is_none()));
+    assert!(
+        models
+            .iter()
+            .all(|model| model.available_access_programs.is_none())
+    );
 
     // A capability check initiated under API-key credentials is not authoritative
     // after sign-out or account switching, even if the old popup ID is still current.
