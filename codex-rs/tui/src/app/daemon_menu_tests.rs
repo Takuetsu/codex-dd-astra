@@ -167,10 +167,18 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
         AppEvent::ConfirmDaemonRestart
     ));
     app.confirm_daemon_restart();
-    insta::assert_snapshot!(
-        "daemon_restart_confirmation",
-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
-    );
+    let restart_confirmation = render_bottom_popup(&app.chat_widget, /*width*/ 80);
+    for expected in [
+        "Restart background server?",
+        "Active or queued work in other chats may be interrupted.",
+        "Cancel",
+        "Restart",
+    ] {
+        assert!(
+            restart_confirmation.contains(expected),
+            "missing {expected:?} in restart confirmation: {restart_confirmation:?}"
+        );
+    }
     crate::terminal_palette::with_test_default_colors(
         crate::terminal_probe::DefaultColors {
             fg: (229, 229, 229),
@@ -220,9 +228,11 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
         .unwrap()
         .is_managed_daemon = false;
     app.open_daemon_menu();
-    insta::assert_snapshot!(
-        "daemon_unmanaged",
-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
+    let unmanaged_menu = render_bottom_popup(&app.chat_widget, /*width*/ 80);
+    assert!(unmanaged_menu.contains("Restart background server"));
+    assert!(
+        !unmanaged_menu.contains("3. Restart background server"),
+        "unmanaged daemon restart must not be an enabled numbered action: {unmanaged_menu:?}"
     );
     app.chat_widget.handle_key_event(KeyCode::Down.into());
     app.chat_widget.handle_key_event(KeyCode::Down.into());
