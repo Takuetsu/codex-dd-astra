@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '727e3e31f97374e6a028931ecf19008304944f85'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '7fbb755869cc297bdebb92f142df8afcd69e54e2'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -58,7 +58,16 @@ jobs:
           tests=(root/'codex-rs/tui/src/app/tests/disconnect_tests.rs').read_text()
           assert 'disconnected_config_panel_keeps_input' in tests
           assert 'lost_mutation_reply_preserves_work_without_resubmitting' in tests
-          assert 'api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account' in app_tests
+          selector='api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account'
+          assert selector in app_tests
+          case=app_tests[app_tests.index('async fn '+selector):]
+          case=case[:case.index('\n#[tokio::test]',1)]
+          # Prevent another 18-minute Windows compile for a test using private fields.
+          assert 'app.chat_widget.status_account_display =' not in case
+          assert case.count('app.chat_widget.update_account_state(')==2
+          assert 'model_popup_request_is_current(stale_id)' in case
+          assert 'account switch must invalidate' in case
+          assert 'while events.try_recv().is_ok() {}' in case
           dispatch=(root/'codex-rs/tui/src/app/event_dispatch.rs').read_text()
           assert 'AppEvent::ApiKeyCompatModelsLoaded' in dispatch
           assert 'constrain_api_key_models(' in dispatch
@@ -80,7 +89,7 @@ jobs:
             pattern=re.compile(r'\b(?:async\s+)?fn\s+'+re.escape(selector)+r'\s*\(')
             hits=sum(len(pattern.findall(s)) for s in texts)
             assert hits==1,(selector,hits)
-          print('PASS: 15 unique TUI selectors; restored source invariants; 13 holds; 0 approvals')
+          print('PASS: 25 unique TUI selectors, public account lifecycle test API, 13 holds, 0 approvals')
           PY
           git diff --check
           test -z "$(git status --porcelain --untracked-files=no)"
