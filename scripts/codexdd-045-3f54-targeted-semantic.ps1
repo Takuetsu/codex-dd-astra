@@ -84,7 +84,13 @@ try {
     }
     if ($Mode -eq 'Native') {
         Invoke-FocusedStage 'locked-cargo-metadata' 'cargo' @('metadata','--locked','--no-deps','--format-version','1') $rs
-        Invoke-FocusedStage 'cargo-format' 'cargo' @('fmt','--all','--','--check') $rs
+        # Check only the two intentionally edited Rust test files. A separate
+        # unrelated upstream TUI source has pre-existing workspace-wide rustfmt drift.
+        Invoke-FocusedStage 'modified-test-rustfmt' 'rustfmt' @(
+            '--check','--edition','2024',
+            'tui/src/app/tests/session_lifecycle_requests.rs',
+            'app-server/src/bespoke_event_handling.rs'
+        ) $rs
 
         $tests = @(
             @('core-custom-tool-interrupted-output', 'codex-core', 'normalize_adds_missing_output_for_custom_tool_call'),
