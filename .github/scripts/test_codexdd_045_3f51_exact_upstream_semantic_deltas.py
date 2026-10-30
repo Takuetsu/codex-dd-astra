@@ -25,7 +25,7 @@ EXPECTED = {
     "codex-rs/app-server/src/message_processor.rs": ("d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a", "c9858cd9d513c69a917f6505410ee89b16bdd955"),
     "codex-rs/app-server/src/request_processors/turn_processor.rs": ("1186f0a181704d8ea45243a850f971f1057cb080", "1b9a253becc97a7a2c1b0de9e92def7c192691c2"),
     "codex-rs/core/src/context_manager/history_tests.rs": ("4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d", "8f22910ed2086c07edbd41f84a1327705f4700f3"),
-    "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": ("67276c6c855647dc7b0bc0c7ffe022f93f3e570e", "062efa383da797e46f6aa56540cbf76a9c130353"),
+    "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": ("7d2be3352380d43df714399b441a95960b87a59f", "062efa383da797e46f6aa56540cbf76a9c130353"),
     "codex-rs/tui/src/app/tests/startup_defaults_tests.rs": ("e60808df0448682d47af1a14b5bd8d5c52206397", "86e0da6fd4e0550050cc1a704186a9a07038278b"),
     "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs": ("d6447d22a0a1e943b1352b8c945cf7f6cf09734e", "525eed5ece8b9c0110b3b296b68fb6c727d6d096"),
 }
