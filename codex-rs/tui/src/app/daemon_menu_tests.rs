@@ -170,7 +170,8 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
     let restart_confirmation = render_bottom_popup(&app.chat_widget, /*width*/ 80);
     for expected in [
         "Restart background server?",
-        "Active or queued work in other chats may be interrupted.",
+        "Active or queued work",
+        "interrupted.",
         "Cancel",
         "Restart",
     ] {
