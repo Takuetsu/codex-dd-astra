@@ -9196,6 +9196,119 @@ async fn shutdown_first_exit_unsubscribes_live_side_threads_before_leaving() -> 
     Ok(())
 }
 
+
+#[tokio::test]
+async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account() -> Result<()> {
+    let (mut app, mut events, _ops) = make_test_app_with_channels().await;
+    let mut app_server =
+        crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref()).await?;
+    let started = app_server.start_thread(app.chat_widget.config_ref()).await?;
+    app.chat_widget.handle_thread_session_quiet(started.session);
+    app.chat_widget.status_account_display = Some(crate::status::StatusAccountDisplay::ApiKey);
+
+    let mut preset = crate::test_support::TEST_MODEL_PRESETS[0].clone();
+    preset.model = "api-key-popup-compat-3f67".to_string();
+    preset.display_name = "API-key compatibility regression".to_string();
+    preset.available_access_programs = Some(codex_protocol::openai_models::ModelAccessPrograms {
+        cyber: vec![codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue],
+    });
+    let forbidden_model = preset.model.clone();
+
+    app.chat_widget.open_model_popup();
+    let request_id = std::iter::from_fn(|| events.try_recv().ok())
+        .find_map(|event| match event {
+            AppEvent::FetchModels { request_id } => Some(request_id),
+            _ => None,
+        })
+        .expect("opening model popup must request fresh models");
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut app_server,
+        AppEvent::ModelsLoaded {
+            request_id,
+            result: Ok(vec![preset.clone()]),
+        },
+    )
+    .await?;
+    assert!(
+        app.chat_widget.model_popup_request_is_current(request_id),
+        "an API-key model/list response must not be accepted before capability filtering"
+    );
+    assert!(
+        !app.chat_widget
+            .model_catalog()
+            .try_list_models()?
+            .iter()
+            .any(|model| model.model == forbidden_model),
+        "raw cyber access programs were added to the live model catalog"
+    );
+
+    let checked_event = tokio::time::timeout(Duration::from_secs(12), async {
+        loop {
+            match events.recv().await {
+                Some(event @ AppEvent::ApiKeyCompatModelsLoaded { .. }) => break event,
+                Some(_) => {}
+                None => panic!("model popup event channel closed"),
+            }
+        }
+    })
+    .await
+    .expect("API-key compatibility lookup timed out");
+    match &checked_event {
+        AppEvent::ApiKeyCompatModelsLoaded {
+            request_id: actual_id,
+            result: Ok(models),
+        } => {
+            assert_eq!(*actual_id, request_id);
+            assert!(
+                models.iter().all(|model| model.available_access_programs.is_none()),
+                "API-key catalog must remove unsupported access programs"
+            );
+        }
+        _ => panic!("expected a filtered API-key catalog"),
+    }
+    app.handle_event(&mut tui, &mut app_server, checked_event)
+        .await?;
+    let models = app.chat_widget.model_catalog().try_list_models()?;
+    assert!(
+        models.iter().any(|model| model.model == forbidden_model),
+        "filtered model response must eventually update the popup catalog"
+    );
+    assert!(models.iter().all(|model| model.available_access_programs.is_none()));
+
+    // A capability check initiated under API-key credentials is not authoritative
+    // after sign-out or account switching, even if the old popup ID is still current.
+    app.chat_widget.open_model_popup();
+    let stale_id = std::iter::from_fn(|| events.try_recv().ok())
+        .find_map(|event| match event {
+            AppEvent::FetchModels { request_id } => Some(request_id),
+            _ => None,
+        })
+        .expect("second model popup must request fresh models");
+    app.chat_widget.status_account_display = None;
+    app.handle_event(
+        &mut tui,
+        &mut app_server,
+        AppEvent::ApiKeyCompatModelsLoaded {
+            request_id: stale_id,
+            result: Ok(vec![preset]),
+        },
+    )
+    .await?;
+    assert!(app.chat_widget.model_popup_request_is_current(stale_id));
+    assert!(
+        app.chat_widget
+            .model_catalog()
+            .try_list_models()?
+            .iter()
+            .all(|model| model.available_access_programs.is_none()),
+        "a stale API-key capability result crossed an account boundary"
+    );
+    app_server.shutdown().await?;
+    Ok(())
+}
+
 #[tokio::test]
 async fn shutdown_first_exit_returns_immediate_exit_when_shutdown_submit_fails() {
     let mut app = make_test_app().await;
