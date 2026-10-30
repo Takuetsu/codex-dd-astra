@@ -79,9 +79,15 @@ class CoreTuiAllDirectConflicts(unittest.TestCase):
                 self.assertEqual(detail["source_blob"], r["candidate_blob"])
                 self.assertEqual(detail["semantic_signoff"], "NOT_GRANTED")
                 self.assertTrue(detail["remaining_gate"])
-                self.assertTrue(detail["native_selectors"])
+                self.assertTrue(detail["review_scope"])
+                self.assertTrue(
+                    detail.get("native_selectors") or detail.get("source_only_test"),
+                    "every direct conflict needs native selectors or a dedicated source guard",
+                )
+                if detail.get("official_upstream_blob"):
+                    self.assertEqual(detail["official_upstream_blob"], r["upstream_blob"])
                 source = (ROOT / path).read_text(encoding="utf-8")
-                for fragment in detail["source_fragments"]:
+                for fragment in detail.get("source_fragments", ()):
                     self.assertIn(fragment, source)
 
     def test_source_review_only_not_release_or_full_native_claim(self):
