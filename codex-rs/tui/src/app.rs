@@ -863,7 +863,10 @@ impl App {
         self.startup_protected_input_boundary
             && self.startup_pending_protected_request
             && self.chat_widget.has_active_modal()
-            && matches!(event, TuiEvent::Key(_) | TuiEvent::Paste(_) | TuiEvent::Mouse(_))
+            && matches!(
+                event,
+                TuiEvent::Key(_) | TuiEvent::Paste(_) | TuiEvent::Mouse(_)
+            )
     }
 
     pub(crate) async fn handle_tui_event(
