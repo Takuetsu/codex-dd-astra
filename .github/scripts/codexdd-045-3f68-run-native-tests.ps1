@@ -48,7 +48,7 @@ try {
     Write-Host 'PASS: CARGO_LOCKED_METADATA'
     # Compile the libtest binary exactly once before classifying any native selector.
     $buildLog = Join-Path $LogRoot 'tui-lib-compile.log'
-    & cargo test --locked -p codex-tui --lib --no-run *> $buildLog
+    & cmd.exe /d /c ('cargo test --locked -p codex-tui --lib --no-run > "'+$buildLog+'" 2>&1')
     if ($LASTEXITCODE -ne 0) {
       Write-Host ((Get-Content -LiteralPath $buildLog -Tail 80) -join [Environment]::NewLine)
       throw 'Native TUI libtest compilation failed; inspect tui-lib-compile.log'
