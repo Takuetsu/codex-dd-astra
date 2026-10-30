@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   test-only-semantic:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'f12e244e6411221e05d3c5085660f97cf2af33a5'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '5534df6538e0e983dedd6c970bd1dcb1744a752e'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -54,12 +54,10 @@ jobs:
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           components: rustfmt
-      - name: Rustfmt two changed test files without compiling Rust
+      - name: Verify full 21-stage Rust formatting prerequisite without compiling Rust
         shell: bash
         working-directory: codex-rs
         run: |
           set -euo pipefail
-          rustfmt --check --edition 2024 \
-            tui/src/app/tests/session_lifecycle_requests.rs \
-            app-server/src/bespoke_event_handling.rs
-          echo 'PASS: both intentionally changed Rust test files formatted, no native tests or release'
+          cargo fmt --all -- --check
+          echo 'PASS: whole-workspace Rust formatting prerequisite, no native tests or release'
