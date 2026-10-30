@@ -9196,7 +9196,6 @@ async fn shutdown_first_exit_unsubscribes_live_side_threads_before_leaving() -> 
     Ok(())
 }
 
-
 #[tokio::test]
 async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account() -> Result<()> {
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
