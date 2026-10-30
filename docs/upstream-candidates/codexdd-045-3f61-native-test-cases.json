@@ -1,0 +1,154 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f61_targeted_native_owner_acceptance_selectors",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "cargo_lock_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+  "scope": "NONRELEASE_TARGETED_NATIVE_CORE_TUI",
+  "cases": {
+    "core": [
+      {
+        "selector": "validation_terminalization_requests_required_tool_choice",
+        "rationale": "trusted terminalization requests a required tool without ordinary-turn leakage"
+      },
+      {
+        "selector": "child_workflow_snapshot_preserves_adaptive_state",
+        "rationale": "forked child retains persistent preference without pending parent authority"
+      },
+      {
+        "selector": "codexdd_validation_runner_is_visible_only_during_mechanical_validation",
+        "rationale": "native validation tool invisible outside mechanical validation"
+      },
+      {
+        "selector": "adaptive_signal_tool_is_registered_with_runtime_bound_authority",
+        "rationale": "adaptive signal handler guarded by runtime turn authority"
+      },
+      {
+        "selector": "resumed_history_recovers_orphan_custom_tool_call_without_panicking",
+        "rationale": "interrupted custom tools normalize on resume"
+      },
+      {
+        "selector": "adaptive_reconnaissance_rejects_hook_rewritten_write_command",
+        "rationale": "post-hook read-only policy rejects mutation"
+      },
+      {
+        "selector": "adaptive_reconnaissance_rejection_finishes_blocked_without_start",
+        "rationale": "blocked tools do not emit successful starts"
+      },
+      {
+        "selector": "adaptive_validation_terminalization_allows_only_trusted_signal_tool",
+        "rationale": "terminal signal exclusive tool boundary"
+      },
+      {
+        "selector": "delayed_activation_does_not_retarget_a_task",
+        "rationale": "late approval cannot redirect a task"
+      },
+      {
+        "selector": "reviewer_only_activation_enforces_managed_authority",
+        "rationale": "reviewer authority scope preserved"
+      },
+      {
+        "selector": "activation_must_match_the_retained_turn_authority",
+        "rationale": "stale turn authority rejected"
+      },
+      {
+        "selector": "checkpoint_replayed_messages_keep_legacy_review_when_the_source_survives",
+        "rationale": "checkpoint source provenance through rewind/replay"
+      },
+      {
+        "selector": "normalize_adds_missing_output_for_custom_tool_call",
+        "rationale": "custom tool missing output repair"
+      },
+      {
+        "selector": "normalize_adds_missing_output_for_local_shell_call_with_id",
+        "rationale": "local shell output repair"
+      }
+    ],
+    "tui": [
+      {
+        "selector": "async_fresh_startup_applies_adaptive_preset_before_attachment",
+        "rationale": "startup adaptive model applied before async attachment"
+      },
+      {
+        "selector": "fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty",
+        "rationale": "fork restore under empty server state"
+      },
+      {
+        "selector": "new_session_worker_binding_resets_dirty_adaptive_state",
+        "rationale": "new worker binding clears stale execution state"
+      },
+      {
+        "selector": "resolved_buffered_approval_does_not_become_actionable_after_drain",
+        "rationale": "resolved approval cannot regain actionable state"
+      },
+      {
+        "selector": "external_writer_escape_preserves_snapshot_and_explicit_quits",
+        "rationale": "disconnected external writer Escape and quit behavior"
+      },
+      {
+        "selector": "elevated_windows_implicit_startup_uses_embedded_without_f2_warning",
+        "rationale": "elevated Windows implicit daemon fallback"
+      },
+      {
+        "selector": "failed_windows_elevation_probe_uses_embedded_with_visible_f2_warning",
+        "rationale": "uncertain elevation fallback warning"
+      },
+      {
+        "selector": "daemon_startup_falls_back_only_for_implicit_endpoints",
+        "rationale": "explicit remote endpoint not silently replaced"
+      },
+      {
+        "selector": "agents_navigation_requires_local_daemon",
+        "rationale": "offline agent navigation respects daemon ownership"
+      },
+      {
+        "selector": "admission_rejects_stale_identity_and_worker_bindings",
+        "rationale": "stale Worker binding rejected"
+      },
+      {
+        "selector": "remote_workspace_roots_survive_start_turn_resume_and_fork",
+        "rationale": "remote workspace root propagation"
+      },
+      {
+        "selector": "output_free_esc_interrupt_pauses_adaptive_execution",
+        "rationale": "manual Escape stops automatic adaptive successor"
+      },
+      {
+        "selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
+        "rationale": "local daemon MCP authorization and reconnect"
+      },
+      {
+        "selector": "fresh_startup_uses_server_defaults_with_explicit_and_managed_precedence",
+        "rationale": "server owns startup default precedence"
+      },
+      {
+        "selector": "startup_read_failure_exits_before_thread_creation",
+        "rationale": "startup read errors never produce thread"
+      },
+      {
+        "selector": "fresh_startup_thread_drains_buffered_approval_before_draft_handoff",
+        "rationale": "early approval before startup draft transfer"
+      },
+      {
+        "selector": "windows_sandbox_setup_uses_observed_thread_host",
+        "rationale": "Windows host sandbox behavior"
+      },
+      {
+        "selector": "embedded_lifecycle_requests_preserve_explicit_workspace_roots",
+        "rationale": "embedded explicit root preservation"
+      }
+    ]
+  },
+  "expected_core": 14,
+  "expected_tui": 18,
+  "success_rule": "nonzero native case count, each case executed (not skipped) at exact frozen source and test exit 0",
+  "source_only_gaps": [
+    "startup modal input quarantine and rendered-selection dispatch",
+    "removed foreground/background resolution test",
+    "bounded event queue memory/backpressure",
+    "removed Daybreak API-key and Windows paste negative tests",
+    "realtime voice stop and managed daemon verification",
+    "removed terminal program status module"
+  ],
+  "formal_owner_decisions": "PENDING_SIGNOFF",
+  "release_approved": false
+}
