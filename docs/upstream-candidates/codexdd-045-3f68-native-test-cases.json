@@ -1,0 +1,122 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f68_all_focused_tui_native",
+  "cargo_lock_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+  "scope": "NONRELEASE_ALL_FOCUSED_TUI_TRUST_NEGATIVES",
+  "cases": {
+    "core": [],
+    "tui": [
+      {
+        "selector": "startup_modal_quarantine_only_blocks_protected_input",
+        "rationale": "Startup modal input quarantine blocks stale keys and paste"
+      },
+      {
+        "selector": "plan_menu_allows_transcript_wheel_scrolling_and_keeps_keyboard_ownership",
+        "rationale": "Plan modal keeps keyboard ownership while transcript scrolls"
+      },
+      {
+        "selector": "plan_menu_allows_transcript_selection_and_copy_but_respects_popup_bounds",
+        "rationale": "Painted selection and popup bounds preserve input ownership"
+      },
+      {
+        "selector": "configured_ctrl_space_submit_wins_over_transcript_selection",
+        "rationale": "Normal composer submission remains authoritative"
+      },
+      {
+        "selector": "selection_copy_cancels_a_pending_find_editor_chord",
+        "rationale": "Selection copy cancels chord prefix"
+      },
+      {
+        "selector": "refresh_in_memory_config_from_disk_updates_live_widget_preferences",
+        "rationale": "Disk refresh carries session picker and resume cwd to live widget"
+      },
+      {
+        "selector": "session_status_follows_existing_lifecycle_state",
+        "rationale": "Terminal status follows real lifecycle state"
+      },
+      {
+        "selector": "session_status_detail_uses_only_foreground_activity",
+        "rationale": "Background execution never impersonates foreground status"
+      },
+      {
+        "selector": "daemon_version_notice_preserves_manual_update_guidance",
+        "rationale": "Daemon version notice retains user guidance"
+      },
+      {
+        "selector": "daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff",
+        "rationale": "Daemon update requires explicit confirmation"
+      },
+      {
+        "selector": "unavailable_daemon_menu_offers_guidance_without_update_actions",
+        "rationale": "Unavailable daemon menu offers no runnable update actions"
+      },
+      {
+        "selector": "resolved_buffered_approval_does_not_become_actionable_after_drain",
+        "rationale": "Resolved approval cannot be replayed as actionable"
+      },
+      {
+        "selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
+        "rationale": "Local daemon tools remain approval-gated"
+      },
+      {
+        "selector": "output_free_esc_interrupt_pauses_adaptive_execution",
+        "rationale": "Manual Escape blocks adaptive successor"
+      },
+      {
+        "selector": "external_writer_escape_preserves_snapshot_and_explicit_quits",
+        "rationale": "Disconnected external writer Escape/quit preserves snapshot"
+      },
+      {
+        "selector": "background_resolution_keeps_matching_foreground_user_input_visible",
+        "rationale": "Background request resolution cannot dismiss foreground user input"
+      },
+      {
+        "selector": "copy_shortcut_can_be_remapped",
+        "rationale": "Negative Windows Ctrl+Shift+V and Shift+Insert paste fallback behavior"
+      },
+      {
+        "selector": "slash_daybreak_offers_an_application_when_unavailable",
+        "rationale": "API key Daybreak flag disabled negative case"
+      },
+      {
+        "selector": "bootstrap_reuses_prefetched_account_without_another_account_read",
+        "rationale": "API key cyber-access model catalog filtering and CLI override precedence"
+      },
+      {
+        "selector": "shutdown_first_exit_unsubscribes_live_side_threads_before_leaving",
+        "rationale": "ShutdownFirst unsubscribes an actual live side thread before exit"
+      },
+      {
+        "selector": "shutdown_first_exit_uses_app_server_shutdown_without_submitting_op",
+        "rationale": "ShutdownFirst does not submit legacy core Shutdown op"
+      },
+      {
+        "selector": "elevated_windows_implicit_startup_uses_embedded_without_f2_warning",
+        "rationale": "Elevated Windows fallback uses embedded backend without false warning"
+      },
+      {
+        "selector": "disconnected_config_panel_keeps_input",
+        "rationale": "Permitted offline config panel retains search paste and Ctrl+C cancel"
+      },
+      {
+        "selector": "lost_mutation_reply_preserves_work_without_resubmitting",
+        "rationale": "Disconnected draft avoids duplicate submission after lost mutation reply"
+      },
+      {
+        "selector": "api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account",
+        "rationale": "Raw API-key model catalog waits for per-thread filtering; stale auth reply ignored"
+      }
+    ]
+  },
+  "expected_core": 0,
+  "expected_tui": 25,
+  "success_rule": "nonzero native case count, each case executed (not skipped) at exact frozen source and test exit 0",
+  "source_only_gaps": [
+    "All 109 reviewed paths still have 0 owner approvals; 13 high-risk holds remain",
+    "Live thread-event channel is unbounded, with no proven backpressure",
+    "21-stage Windows optimized distribution release suite not run"
+  ],
+  "formal_owner_decisions": "PENDING_SIGNOFF",
+  "release_approved": false,
+  "baseline_reviewed_head": "dcc428e7078a51f4663a6aa1fe5099891def755e"
+}
