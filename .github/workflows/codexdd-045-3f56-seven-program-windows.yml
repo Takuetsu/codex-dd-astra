@@ -1,16 +1,18 @@
 # Source-frozen seven-program UNSIGNED Windows developer bundle. No release signing.
-# Exactly one push will arm the build after a cheap source-only preflight.
+# A one-time draft PR against the original core-cache branch makes the old
+# Windows disk cache readable; a push on a sibling branch cannot restore it.
 name: CodexDD 0.4.5 3F.56 optimized seven-program Windows bundle (NONRELEASE)
 on:
-  push:
-    branches: [dd/codexdd-v0.4.5-3f56-seven-program-bundle]
+  pull_request:
+    types: [opened]
+    branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
     paths: [".github/workflows/codexdd-045-3f56-seven-program-windows.yml"]
 permissions:
   contents: read
   actions: read
 jobs:
   preflight:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_3F56'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.action == 'opened' && github.event.pull_request.head.ref == 'dd/codexdd-v0.4.5-3f56-seven-program-bundle' && github.event.pull_request.base.ref == 'dd/codexdd-v0.4.5-109-overlap-semantic-review'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
