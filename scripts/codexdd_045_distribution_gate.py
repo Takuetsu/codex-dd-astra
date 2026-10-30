@@ -105,8 +105,9 @@ def verify_source_contract(contract: dict, root: Path = ROOT) -> dict:
     for necessary in ('Sign Windows release files with Azure Trusted Signing', 'Download matching native voice build', 'Build Codex package archives', 'Verify packaged Windows voice closure', 'Verify and stage signed PowerShell installer'):
         require(necessary in workflow, 'Required official Windows release step missing: ' + necessary)
     matrix = json.loads((root / 'docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json').read_text(encoding='utf-8'))
-    require(len(matrix['paths']) == 109 and all(p['semantic_status'] == 'PENDING_OWNER_REVIEW' and p['release_status'] == 'NOT_ACCEPTED' for p in matrix['paths']), 'Unexpected release-owner acceptance; update this gate only after independent 109-path review')
-    return {'result': 'SOURCE_DISTRIBUTION_REQUIREMENTS_VERIFIED_NONRELEASE', 'source_sha': contract['source_sha'], 'optimized_combined_exes': 5, 'full_windows_exes_required': 7, 'owner_paths_pending': 109, 'release_approved': False}
+    require(len(matrix['paths']) == 109 and all(p['semantic_status'] in ('PENDING_OWNER_REVIEW', 'OWNER_ACCEPTED') and p['release_status'] == 'NOT_ACCEPTED' for p in matrix['paths']), 'Invalid semantic owner state or premature product release')
+    pending = sum(p['semantic_status'] != 'OWNER_ACCEPTED' for p in matrix['paths'])
+    return {'result': 'SOURCE_DISTRIBUTION_REQUIREMENTS_VERIFIED_NONRELEASE', 'source_sha': contract['source_sha'], 'optimized_combined_exes': 5, 'full_windows_exes_required': 7, 'owner_paths_pending': pending, 'release_approved': False}
 
 
 def verify_combined_archive(contract: dict, path: Path) -> dict:
