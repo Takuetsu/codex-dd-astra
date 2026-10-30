@@ -9303,10 +9303,8 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
         })
         .expect("second model popup must request fresh models");
     app.chat_widget.update_account_state(
-        /*status_account_display*/ None,
-        /*plan_type*/ None,
-        /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ false,
+        /*status_account_display*/ None, /*plan_type*/ None,
+        /*has_chatgpt_account*/ false, /*has_codex_backend_auth*/ false,
     );
     assert!(
         !app.chat_widget.model_popup_request_is_current(stale_id),
