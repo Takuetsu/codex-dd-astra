@@ -1,0 +1,29 @@
+# Cheap one-shot 3F.55 verification only: no compilation, no release.
+name: CodexDD 0.4.5 3F.55 formal owner review ledger (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f55-owner-decisions]
+    paths: [".github/workflows/codexdd-045-3f55-owner-review.yml"]
+permissions:
+  contents: read
+jobs:
+  formal-review:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '2b09e72714c33ad8deeca4b8946a2cd3563cefed'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate 109 formal source identities, evidence, and approval boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f55_formal_owner_approvals.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f14_owner_matrix.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f54_remaining_core_tui_upstream.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f52_appserver_owner_source.py -q
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f51_generated_protocol_parity.py -q
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
