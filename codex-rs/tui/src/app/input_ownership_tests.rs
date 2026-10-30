@@ -54,3 +54,35 @@ async fn selection_copy_cancels_a_pending_find_editor_chord() -> Result<()> {
     tui.set_owned_screen(/*owned*/ false)?;
     Ok(())
 }
+
+#[tokio::test]
+async fn startup_modal_quarantine_only_blocks_protected_input() -> Result<()> {
+    let mut app = crate::app::test_support::make_test_app().await;
+    let key = TuiEvent::Key(KeyCode::Enter.into());
+    let paste = TuiEvent::Paste("stale approval".to_string());
+    let draw = TuiEvent::Draw;
+
+    app.startup_protected_input_boundary = true;
+    app.startup_pending_protected_request = true;
+    // No visible modal: input is not consumed by the startup guard.
+    assert!(!app.startup_modal_input_needs_quarantine(&key));
+
+    app.chat_widget.show_selection_view(crate::bottom_pane::SelectionViewParams {
+        items: vec![crate::bottom_pane::SelectionItem {
+            name: "Sensitive decision".into(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    });
+    assert!(app.chat_widget.has_active_modal());
+    assert!(app.startup_modal_input_needs_quarantine(&key));
+    assert!(app.startup_modal_input_needs_quarantine(&paste));
+    assert!(!app.startup_modal_input_needs_quarantine(&draw));
+
+    app.startup_pending_protected_request = false;
+    assert!(!app.startup_modal_input_needs_quarantine(&key));
+    app.startup_pending_protected_request = true;
+    app.startup_protected_input_boundary = false;
+    assert!(!app.startup_modal_input_needs_quarantine(&key));
+    Ok(())
+}
