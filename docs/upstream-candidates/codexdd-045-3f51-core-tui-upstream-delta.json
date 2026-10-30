@@ -81,7 +81,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "upstream_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
-      "candidate_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+      "candidate_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
       "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
       "hunks": [
         {
@@ -177,47 +177,35 @@
           ]
         },
         {
-          "candidate_start_line": 1404,
-          "upstream_lines": [
-            "    boxed_future!(local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario())",
-            "        .await",
-            "}",
-            "",
-            "async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario()",
-            "-> Result<()> {"
-          ],
-          "candidate_lines": []
-        },
-        {
-          "candidate_start_line": 3796,
+          "candidate_start_line": 3802,
           "upstream_lines": [],
           "candidate_lines": [
             "            worker_binding: None,"
           ]
         },
         {
-          "candidate_start_line": 3870,
+          "candidate_start_line": 3876,
           "upstream_lines": [],
           "candidate_lines": [
             "            worker_binding: None,"
           ]
         },
         {
-          "candidate_start_line": 3895,
+          "candidate_start_line": 3901,
           "upstream_lines": [],
           "candidate_lines": [
             "            worker_binding: None,"
           ]
         },
         {
-          "candidate_start_line": 3971,
+          "candidate_start_line": 3977,
           "upstream_lines": [],
           "candidate_lines": [
             "                worker_binding: None,"
           ]
         },
         {
-          "candidate_start_line": 4147,
+          "candidate_start_line": 4153,
           "upstream_lines": [
             "            AppEvent::StartManagedWorktree { mode, name: None },"
           ],
@@ -230,7 +218,7 @@
           ]
         },
         {
-          "candidate_start_line": 4993,
+          "candidate_start_line": 4999,
           "upstream_lines": [],
           "candidate_lines": [
             "}",
