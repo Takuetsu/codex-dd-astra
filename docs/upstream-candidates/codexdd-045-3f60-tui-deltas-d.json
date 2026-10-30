@@ -1,0 +1,657 @@
+{
+  "contract_version": 1,
+  "scope": "TUI_D_EIGHT_EXACT_UPSTREAM_0163",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "reviewed_count": 8,
+  "formal_approved": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "upstream_blob": "8534d753f6c92a7a0fdc8254d970bb260a4b4faa",
+      "candidate_blob": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
+      "hunks": [
+        {
+          "candidate_start_line": 229,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "#[path = \"tests/adaptive_effort_tests.rs\"]",
+            "mod adaptive_effort_tests;",
+            "#[path = \"tests/adaptive_pressure_tests.rs\"]",
+            "mod adaptive_pressure_tests;"
+          ]
+        },
+        {
+          "candidate_start_line": 304,
+          "upstream_lines": [
+            "#[path = \"tests/terminal_program_status.rs\"]",
+            "mod terminal_program_status;"
+          ],
+          "candidate_lines": []
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "upstream_blob": "8e83ad083ae63717492fe3d7d60bf29f7cf19e8e",
+      "candidate_blob": "53ca9fdae79b07822e8551289b97f1732b5e3ab0",
+      "hunks": [
+        {
+          "candidate_start_line": 69,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 71,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "}",
+            "",
+            "#[tokio::test]",
+            "async fn session_attachment_restores_adaptive_state_and_route() {",
+            "    let (mut chat, mut events, _ops) = make_chatwidget_manual(Some(\"gpt-5.2\")).await;",
+            "",
+            "    while events.try_recv().is_ok() {}",
+            "",
+            "    let mut session = configured_thread_session(ThreadId::new());",
+            "    session.model = \"gpt-5.2\".to_string();",
+            "    session.reasoning_effort = None;",
+            "    session.adaptive_effort.enabled = true;",
+            "    session.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);",
+            "    session.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);",
+            "    session.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::High);",
+            "    session.adaptive_effort.attempt_number = 3;",
+            "",
+            "    let expected = session.adaptive_effort.clone();",
+            "",
+            "    chat.handle_thread_session_quiet(session);",
+            "",
+            "    assert_eq!(chat.adaptive_effort_for_test(), &expected);",
+            "",
+            "    let mut model_update = None;",
+            "    let mut effort_update = None;",
+            "",
+            "    while let Ok(event) = events.try_recv() {",
+            "        match event {",
+            "            AppEvent::UpdateModel(model) => model_update = Some(model),",
+            "            AppEvent::UpdateReasoningEffort(effort) => effort_update = effort,",
+            "            _ => {}",
+            "        }",
+            "    }",
+            "",
+            "    assert_eq!(",
+            "        model_update.as_deref(),",
+            "        Some(crate::adaptive_policy::AdaptiveFamily::Astra.model())",
+            "    );",
+            "    assert_eq!(effort_update, Some(ReasoningEffortConfig::High));"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "upstream_blob": "6ef2db01fb53431a6bf79562780057f340477f42",
+      "candidate_blob": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c",
+      "hunks": [
+        {
+          "candidate_start_line": 68,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "async fn output_free_esc_interrupt_pauses_adaptive_execution() {",
+            "    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(/*model_override*/ None).await;",
+            "",
+            "    chat.thread_id = Some(ThreadId::new());",
+            "    chat.adaptive_effort_for_test_mut().enabled = true;",
+            "    chat.adaptive_effort_for_test_mut().unfinished_turn_pressure = 2;",
+            "",
+            "    chat.submit_user_message(UserMessage::from(\"interrupt adaptive work\"));",
+            "    assert_matches!(next_submit_op(&mut op_rx), Op::UserTurn { .. });",
+            "    handle_turn_started(&mut chat, \"turn-adaptive-interrupt\");",
+            "    chat.bottom_pane.ensure_status_indicator();",
+            "",
+            "    let esc = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);",
+            "    assert!(chat.bottom_pane.should_interrupt_running_task(esc));",
+            "    chat.handle_key_event(esc);",
+            "",
+            "    loop {",
+            "        match rx.try_recv() {",
+            "            Ok(AppEvent::CodexOp(Op::Interrupt)) => break,",
+            "            Ok(_) => {}",
+            "            Err(error) => panic!(\"expected Esc interrupt command, got {error:?}\"),",
+            "        }",
+            "    }",
+            "",
+            "    assert!(chat.adaptive_effort_for_test().paused_by_user);",
+            "    assert_eq!(",
+            "        chat.adaptive_effort_for_test().last_outcome,",
+            "        Some(crate::adaptive_policy::AdaptiveOutcome::UserInterrupted)",
+            "    );",
+            "    assert_eq!(chat.adaptive_effort_for_test().unfinished_turn_pressure, 0);",
+            "    assert_eq!(chat.adaptive_effort_for_test().successor_admission, None);",
+            "}",
+            "",
+            "#[tokio::test]"
+          ]
+        },
+        {
+          "candidate_start_line": 479,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 590,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 647,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 694,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 796,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 867,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 910,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 953,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 999,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "upstream_blob": "93662ffac475697d4f5a41c918b80de85e47b7b3",
+      "candidate_blob": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
+      "hunks": [
+        {
+          "candidate_start_line": 45,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 58,
+          "upstream_lines": [
+            "    // A saved On preference cannot bypass the API-key gate."
+          ],
+          "candidate_lines": [
+            "    // A saved On preference cannot bypass the API-key access-program gate."
+          ]
+        },
+        {
+          "candidate_start_line": 73,
+          "upstream_lines": [
+            "    // Session hydration can precede the account update on ChatGPT sign-in."
+          ],
+          "candidate_lines": [
+            "    // An as-yet-unknown account can resume its saved preference after sign-in."
+          ]
+        },
+        {
+          "candidate_start_line": 196,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 485,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 559,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 667,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 742,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 791,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 834,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 896,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 1253,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 1306,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "upstream_blob": "7e136521f585c25e4c59d371df7fa13183f0a584",
+      "candidate_blob": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
+      "hunks": [
+        {
+          "candidate_start_line": 151,
+          "upstream_lines": [
+            "    assert_matches!(rx.try_recv(), Ok(AppEvent::NewSession { name: None }));"
+          ],
+          "candidate_lines": [
+            "    assert_matches!(rx.try_recv(), Ok(AppEvent::NewSession { name: None, .. }));"
+          ]
+        },
+        {
+          "candidate_start_line": 157,
+          "upstream_lines": [
+            "    assert_matches!(rx.try_recv(), Ok(AppEvent::NewSession { name: None }));"
+          ],
+          "candidate_lines": [
+            "    assert_matches!(rx.try_recv(), Ok(AppEvent::NewSession { name: None, .. }));"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "upstream_blob": "f867a24d5c917091dca60f0102700e989970aef7",
+      "candidate_blob": "bec8d92caae4cdff17b7f06923bd4cd9ee358a52",
+      "hunks": [
+        {
+          "candidate_start_line": 2221,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    chat.set_feature_enabled(Feature::CliDaybreak, /*enabled*/ true);"
+          ]
+        },
+        {
+          "candidate_start_line": 2275,
+          "upstream_lines": [
+            "    chat.set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ true);"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2277,
+          "upstream_lines": [
+            "        .set_composer_text(String::new(), Vec::new(), Vec::new());",
+            "    chat.bottom_pane"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2285,
+          "upstream_lines": [
+            "    chat.set_daybreak_enabled(/*enabled*/ true);",
+            "    chat.set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, /*enabled*/ false);",
+            "    chat.bottom_pane",
+            "        .set_composer_text(String::new(), Vec::new(), Vec::new());",
+            "    chat.bottom_pane",
+            "        .set_composer_text(\"/daybreak\".to_string(), Vec::new(), Vec::new());",
+            "    insta::assert_snapshot!(",
+            "        render_bottom_popup(&chat, /*width*/ 80)",
+            "            .lines()",
+            "            .filter(|line| line.contains(\"broader access\"))",
+            "            .collect::<Vec<_>>()",
+            "            .join(\"\\n\"),",
+            "        @\"\"",
+            "    );"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2513,
+          "upstream_lines": [
+            "    for (code, modifiers) in [",
+            "        (KeyCode::Char('v'), KeyModifiers::CONTROL),",
+            "        (KeyCode::Char('V'), KeyModifiers::CONTROL),",
+            "        (",
+            "            KeyCode::Char('V'),",
+            "            KeyModifiers::CONTROL | KeyModifiers::SHIFT,",
+            "        ),",
+            "        (KeyCode::Char('v'), KeyModifiers::ALT),",
+            "    ] {",
+            "        let paste = KeyEvent::new(code, modifiers);"
+          ],
+          "candidate_lines": [
+            "    for modifiers in [KeyModifiers::CONTROL, KeyModifiers::ALT] {",
+            "        let paste = KeyEvent::new(KeyCode::Char('v'), modifiers);"
+          ]
+        },
+        {
+          "candidate_start_line": 2517,
+          "upstream_lines": [
+            "            crate::chatwidget::KeyEventAction::PasteImage { text_fallback }",
+            "                if text_fallback == (cfg!(windows) && modifiers == KeyModifiers::CONTROL)",
+            "                    .then_some(code)"
+          ],
+          "candidate_lines": [
+            "            crate::chatwidget::KeyEventAction::PasteImage { .. }"
+          ]
+        },
+        {
+          "candidate_start_line": 2524,
+          "upstream_lines": [
+            "    // Crossterm maps VK_INSERT + SHIFT_PRESSED directly to Insert + Shift on Windows.",
+            "    let shift_insert = KeyEvent::new(KeyCode::Insert, KeyModifiers::SHIFT);",
+            "    if cfg!(windows) {",
+            "        chat.bottom_pane.set_disable_paste_burst(/*disabled*/ false);",
+            "        chat.handle_key_event(KeyEvent::from(KeyCode::Char('q')));",
+            "        assert_matches!(",
+            "            chat.handle_key_event(shift_insert),",
+            "            KeyEventAction::PasteImage {",
+            "                text_fallback: Some(KeyCode::Insert)",
+            "            }",
+            "        );",
+            "        assert_eq!(chat.bottom_pane.composer_text(), \"q\");",
+            "        assert_matches!(chat.handle_key_event(shift_insert), KeyEventAction::None);",
+            "        chat.handle_key_event(KeyEvent {",
+            "            kind: KeyEventKind::Release,",
+            "            ..shift_insert",
+            "        });",
+            "        chat.bottom_pane",
+            "            .set_composer_text(String::new(), Vec::new(), Vec::new());",
+            "    }"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2769,
+          "upstream_lines": [
+            "            name: Some(name)"
+          ],
+          "candidate_lines": [
+            "            name: Some(name),",
+            "            worker_binding: None,"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "upstream_blob": "301b55c2cc7bd0b1c94d137322b9951c04e49e46",
+      "candidate_blob": "23ea7ee8024deb95767f8322a42a1f330be715ff",
+      "hunks": [
+        {
+          "candidate_start_line": 16,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "async fn status_output_marks_lvo_as_not_run_before_first_validation() {",
+            "    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some(\"gpt-6-sol\")).await;",
+            "    chat.thread_id = Some(ThreadId::new());",
+            "",
+            "    chat.adaptive_effort.enabled = true;",
+            "    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {",
+            "        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,",
+            "        authorized_scope: Some(\"fresh validation status\".to_string()),",
+            "    };",
+            "    chat.adaptive_effort.worker_assignment_locked = true;",
+            "    chat.adaptive_effort.complexity_class =",
+            "        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);",
+            "    chat.adaptive_effort.implementation_phase =",
+            "        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);",
+            "",
+            "    chat.add_status_output(",
+            "        /*refreshing_rate_limits*/ false, /*request_id*/ None,",
+            "    );",
+            "",
+            "    let rendered = drain_insert_history(&mut rx)",
+            "        .iter()",
+            "        .map(|lines| lines_to_single_string(lines))",
+            "        .collect::<Vec<_>>()",
+            "        .join(\"\\n\");",
+            "",
+            "    for expected in [",
+            "        \"LVO last: not run\",",
+            "        \"LVO run: None\",",
+            "        \"LVO candidate: None\",",
+            "        \"LVO failure fingerprint: None\",",
+            "        \"LVO repair budget: 0/2 used (2 remaining)\",",
+            "        \"LVO next: work_packet\",",
+            "    ] {",
+            "        assert!(",
+            "            rendered.contains(expected),",
+            "            \"expected {expected:?} in /status output: {rendered:?}\"",
+            "        );",
+            "    }",
+            "}",
+            "",
+            "#[tokio::test]",
+            "async fn status_output_includes_codexdd_adaptive_route_and_worker_state() {",
+            "    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some(\"gpt-6.1-sol\")).await;",
+            "    chat.thread_id = Some(ThreadId::new());",
+            "",
+            "    chat.adaptive_effort.enabled = true;",
+            "    chat.adaptive_effort.starting_family = Some(crate::adaptive_policy::AdaptiveFamily::Astra);",
+            "    chat.adaptive_effort.current_family = Some(crate::adaptive_policy::AdaptiveFamily::Sol61);",
+            "    chat.adaptive_effort.current_effort = Some(crate::adaptive_policy::AdaptiveEffort::Medium);",
+            "    chat.adaptive_effort.budget_mode = crate::adaptive_budget::AdaptiveBudgetMode::Surplus;",
+            "    chat.adaptive_effort.complexity_class =",
+            "        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Complex);",
+            "    chat.adaptive_effort.implementation_phase =",
+            "        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);",
+            "    chat.adaptive_effort.attempt_number = 2;",
+            "    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {",
+            "        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,",
+            "        authorized_scope: Some(\"bounded status integration\".to_string()),",
+            "    };",
+            "    chat.adaptive_effort.worker_assignment_locked = true;",
+            "    chat.adaptive_effort.validation_repair_fingerprint =",
+            "        Some(\"v1:work_packet:core-adaptive-tests\".to_string());",
+            "    chat.adaptive_effort.validation_repair_cycles_used = 1;",
+            "    chat.adaptive_effort.validation_targeted_retest_required = true;",
+            "    chat.adaptive_effort.validation_status = Some(",
+            "        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {",
+            "            profile: \"work_packet\".to_string(),",
+            "            result: \"fail\".to_string(),",
+            "            run_id: \"run-status-42\".to_string(),",
+            "            branch: Some(\"dd/status-evidence\".to_string()),",
+            "            head_sha: \"0123456789abcdef\".to_string(),",
+            "            failed_stage: Some(\"core-adaptive-tests\".to_string()),",
+            "            failure_fingerprint: Some(\"v1:work_packet:core-adaptive-tests\".to_string()),",
+            "            log_path: \"C:\\\\codexdd\\\\validation\\\\run-status-42\\\\validation.log\".to_string(),",
+            "        },",
+            "    );",
+            "",
+            "    chat.add_status_output(",
+            "        /*refreshing_rate_limits*/ false, /*request_id*/ None,",
+            "    );",
+            "",
+            "    let rendered = drain_insert_history(&mut rx)",
+            "        .iter()",
+            "        .map(|lines| lines_to_single_string(lines))",
+            "        .collect::<Vec<_>>()",
+            "        .join(\"\\n\");",
+            "",
+            "    for expected in [",
+            "        \"Adaptive Effort\",",
+            "        \"Preference: Astra\",",
+            "        \"Current: Sol 6.1 Medium\",",
+            "        \"Budget mode: Surplus\",",
+            "        \"Complexity: Complex\",",
+            "        \"Implementation phase: Mechanical validation\",",
+            "        \"Implementation floor: Luna High\",",
+            "        \"Attempt: 2\",",
+            "        \"Worker role: Implementation\",",
+            "        \"Worker scope: bounded status integration\",",
+            "        \"Worker binding: Bound\",",
+            "        \"Workflow terminal: None\",",
+            "        \"LVO last: FAIL work_packet\",",
+            "        \"LVO run: run-status-42\",",
+            "        \"LVO candidate: dd/status-evidence @ 0123456789abcdef\",",
+            "        \"LVO failed stage: core-adaptive-tests\",",
+            "        \"LVO failure fingerprint: v1:work_packet:core-adaptive-tests\",",
+            "        \"LVO repair budget: 1/2 used (1 remaining)\",",
+            "        \"LVO next: targeted -> work_packet\",",
+            "        \"LVO log: C:\\\\codexdd\\\\validation\\\\run-status-42\\\\validation.log\",",
+            "    ] {",
+            "        assert!(",
+            "            rendered.contains(expected),",
+            "            \"expected {expected:?} in /status output: {rendered:?}\"",
+            "        );",
+            "    }",
+            "}",
+            "",
+            "#[tokio::test]",
+            "async fn status_output_surfaces_failed_receipt_fingerprint_before_repair_admission() {",
+            "    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some(\"gpt-6-sol\")).await;",
+            "    chat.thread_id = Some(ThreadId::new());",
+            "",
+            "    chat.adaptive_effort.enabled = true;",
+            "    chat.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {",
+            "        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,",
+            "        authorized_scope: Some(\"failed validation status\".to_string()),",
+            "    };",
+            "    chat.adaptive_effort.worker_assignment_locked = true;",
+            "    chat.adaptive_effort.complexity_class =",
+            "        Some(crate::adaptive_complexity::AdaptiveComplexityClass::Standard);",
+            "    chat.adaptive_effort.implementation_phase =",
+            "        Some(crate::adaptive_complexity::AdaptiveImplementationPhase::MechanicalValidation);",
+            "    chat.adaptive_effort.validation_status = Some(",
+            "        crate::chatwidget::adaptive_effort::AdaptiveValidationStatus {",
+            "            profile: \"work_packet\".to_string(),",
+            "            result: \"fail\".to_string(),",
+            "            run_id: \"run-failed-before-repair\".to_string(),",
+            "            branch: Some(\"dd/status-evidence\".to_string()),",
+            "            head_sha: \"fedcba9876543210\".to_string(),",
+            "            failed_stage: Some(\"core-adaptive-tests\".to_string()),",
+            "            failure_fingerprint: Some(\"v1:work_packet:core-adaptive-tests\".to_string()),",
+            "            log_path: \"C:\\\\codexdd\\\\validation\\\\run-failed-before-repair\\\\validation.log\"",
+            "                .to_string(),",
+            "        },",
+            "    );",
+            "",
+            "    chat.add_status_output(",
+            "        /*refreshing_rate_limits*/ false, /*request_id*/ None,",
+            "    );",
+            "",
+            "    let rendered = drain_insert_history(&mut rx)",
+            "        .iter()",
+            "        .map(|lines| lines_to_single_string(lines))",
+            "        .collect::<Vec<_>>()",
+            "        .join(\"\\n\");",
+            "",
+            "    assert!(",
+            "        rendered.contains(\"LVO failure fingerprint: v1:work_packet:core-adaptive-tests\"),",
+            "        \"expected native failed-receipt fingerprint before repair admission: {rendered:?}\"",
+            "    );",
+            "    assert!(",
+            "        rendered.contains(\"LVO repair budget: 0/2 used (2 remaining)\"),",
+            "        \"receipt visibility must not consume repair budget: {rendered:?}\"",
+            "    );",
+            "}",
+            "",
+            "#[tokio::test]"
+          ]
+        },
+        {
+          "candidate_start_line": 4568,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/cli.rs",
+      "upstream_blob": "29469b295e97de8a2a5f9b1f1e1c0c79d4b445d8",
+      "candidate_blob": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
+      "hunks": [
+        {
+          "candidate_start_line": 16,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Start the session with Adaptive Effort enabled for the requested family.",
+            "    #[arg(long = \"adaptive\", value_name = \"FAMILY\")]",
+            "    pub adaptive: Option<String>,"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    }
+  ]
+}
