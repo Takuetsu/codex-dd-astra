@@ -1,0 +1,1075 @@
+{
+  "contract_version": 1,
+  "scope": "TUI_A_EIGHT_EXACT_UPSTREAM_0163",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "reviewed_count": 8,
+  "formal_approved": 0,
+  "release_approved": false,
+  "paths": [
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "upstream_blob": "1b07e9826dd10fae888b903d75bdf0187a768e82",
+      "candidate_blob": "7d9da0b198cfac44c0c06933c622b7c1515a613b",
+      "hunks": [
+        {
+          "candidate_start_line": 192,
+          "upstream_lines": [
+            "use tokio::sync::mpsc::error::TrySendError;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 608,
+          "upstream_lines": [
+            "    /// Retained through all loop exits so shutdown cannot interrupt stop followed by start."
+          ],
+          "candidate_lines": [
+            "    /// Retained until the managed daemon has completed its restart."
+          ]
+        },
+        {
+          "candidate_start_line": 639,
+          "upstream_lines": [
+            "    active_thread_rx: Option<mpsc::Receiver<ThreadBufferedEvent>>,"
+          ],
+          "candidate_lines": [
+            "    active_thread_rx: Option<mpsc::UnboundedReceiver<ThreadBufferedEvent>>,"
+          ]
+        },
+        {
+          "candidate_start_line": 649,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Explicit adaptive preset to apply when the asynchronously-created startup thread arrives.",
+            "    pub(crate) adaptive_startup_preset: Option<crate::adaptive_policy::AdaptiveFamily>,"
+          ]
+        },
+        {
+          "candidate_start_line": 657,
+          "upstream_lines": [
+            "    pending_start_managed_worktree: Option<(crate::app_event::ManagedWorktreeMode, Option<String>)>,"
+          ],
+          "candidate_lines": [
+            "    pending_start_managed_worktree: Option<(",
+            "        crate::app_event::ManagedWorktreeMode,",
+            "        Option<String>,",
+            "        Option<crate::adaptive_worker::NewWorkerBinding>,",
+            "    )>,"
+          ]
+        },
+        {
+          "candidate_start_line": 671,
+          "upstream_lines": [
+            "    /// Keeps that boundary armed while an approval waits for the typing-idle timer or a visible",
+            "    /// modal's terminal input has not settled."
+          ],
+          "candidate_lines": [
+            "    /// Keeps that boundary armed while a startup approval waits for the typing-idle timer."
+          ]
+        },
+        {
+          "candidate_start_line": 871,
+          "upstream_lines": [
+            "        if self.startup_protected_input_boundary",
+            "            && self.startup_pending_protected_request",
+            "            && self.chat_widget.has_active_modal()",
+            "            && matches!(",
+            "                &event,",
+            "                TuiEvent::Key(_) | TuiEvent::Paste(_) | TuiEvent::Mouse(_)",
+            "            )",
+            "        {",
+            "            self.discard_startup_modal_input(tui)?;",
+            "            return Ok(AppRunControl::Continue);",
+            "        }"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 872,
+          "upstream_lines": [
+            "        if self.handle_rendered_selection_event(tui, &event)? {",
+            "            return Ok(AppRunControl::Continue);",
+            "        }"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 900,
+          "upstream_lines": [
+            "            && !self",
+            "                .chat_widget",
+            "                .active_view_accepts_input_when_disconnected()"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 1038,
+          "upstream_lines": [
+            "            } else if self",
+            "                .chat_widget",
+            "                .active_view_accepts_input_when_disconnected()",
+            "                || (self.reconnect.presentation == reconnect::ReconnectPresentation::Overview",
+            "                    && self",
+            "                        .chat_widget",
+            "                        .active_view_is(agents_overview::AGENTS_OVERVIEW_VIEW_ID))",
+            "            {"
+          ],
+          "candidate_lines": [
+            "            } else if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {"
+          ]
+        },
+        {
+          "candidate_start_line": 1042,
+          "upstream_lines": [
+            "                if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview",
+            "                    && self",
+            "                        .chat_widget",
+            "                        .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)",
+            "                        .is_none()"
+          ],
+          "candidate_lines": [
+            "                if self",
+            "                    .chat_widget",
+            "                    .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)",
+            "                    .is_none()"
+          ]
+        },
+        {
+          "candidate_start_line": 1050,
+          "upstream_lines": [
+            "                if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {",
+            "                    self.reconnect.presentation = reconnect::ReconnectPresentation::Conversation;",
+            "                }"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 1098,
+          "upstream_lines": [
+            "                    let restrict_disconnected_input = self.reconnect.offline"
+          ],
+          "candidate_lines": [
+            "                    self.chat_widget.handle_paste(pasted);",
+            "                    if self.reconnect.offline"
+          ]
+        },
+        {
+          "candidate_start_line": 1103,
+          "upstream_lines": [
+            "                        && !self",
+            "                            .chat_widget",
+            "                            .active_view_accepts_input_when_disconnected();",
+            "                    self.chat_widget.handle_paste(pasted);",
+            "                    if restrict_disconnected_input {"
+          ],
+          "candidate_lines": [
+            "                    {"
+          ]
+        },
+        {
+          "candidate_start_line": 1141,
+          "upstream_lines": [
+            "                        self.discard_startup_modal_input(tui)?;"
+          ],
+          "candidate_lines": [
+            "                        tui.discard_pending_input_before_interactive_screen()?;",
+            "                        self.startup_pending_protected_request = false;"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "upstream_blob": "13d30c273f472d1c4271216ee3fbeaa5c350894f",
+      "candidate_blob": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
+      "hunks": [
+        {
+          "candidate_start_line": 86,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        ServerNotification::AdaptiveRuntimeSignal(notification) => {",
+            "            Some(notification.thread_id.as_str())",
+            "        }"
+          ]
+        },
+        {
+          "candidate_start_line": 246,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;",
+            "    use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;"
+          ]
+        },
+        {
+          "candidate_start_line": 262,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    use codex_protocol::protocol::AdaptiveRuntimeSignalKind;"
+          ]
+        },
+        {
+          "candidate_start_line": 325,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "",
+            "        let target = server_notification_thread_target(&notification);",
+            "",
+            "        assert_eq!(target, ServerNotificationThreadTarget::Thread(thread_id));",
+            "    }",
+            "",
+            "    #[test]",
+            "    fn adaptive_runtime_signal_notifications_route_to_threads() {",
+            "        let thread_id = ThreadId::new();",
+            "        let notification =",
+            "            ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {",
+            "                thread_id: thread_id.to_string(),",
+            "                signal: AdaptiveRuntimeSignalEnvelope {",
+            "                    source_turn_id: \"turn-1\".to_string(),",
+            "                    signal_kind: AdaptiveRuntimeSignalKind::Capability,",
+            "                    evidence_refs: Vec::new(),",
+            "                    diagnostic_note: None,",
+            "                },",
+            "            });"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "upstream_blob": "76d0111f4adb859fa49a4effe180fe36d5026d26",
+      "candidate_blob": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
+      "hunks": [
+        {
+          "candidate_start_line": 1920,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 1933,
+          "upstream_lines": [
+            "    async fn refresh_in_memory_config_from_disk_updates_live_widget_preferences() -> Result<()> {"
+          ],
+          "candidate_lines": [
+            "    async fn refresh_in_memory_config_from_disk_updates_resize_reflow_config() -> Result<()> {"
+          ]
+        },
+        {
+          "candidate_start_line": 1937,
+          "upstream_lines": [
+            "        expected_widget_settings.tui.session_picker_view =",
+            "            Some(codex_config::types::SessionPickerViewMode::Comfortable);",
+            "        expected_widget_settings.tui.resume_cwd = Some(codex_config::types::ResumeCwdMode::Current);"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 1944,
+          "upstream_lines": [
+            "session_picker_view = \"comfortable\"",
+            "resume_cwd = \"current\""
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 1954,
+          "upstream_lines": [
+            "        assert_eq!(",
+            "            app.local_settings.tui.session_picker_view,",
+            "            Some(codex_config::types::SessionPickerViewMode::Comfortable)",
+            "        );"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2064,
+          "upstream_lines": [
+            "            Some(\"dracula\")",
+            "        );",
+            "        assert_eq!(",
+            "            app.chat_widget.config_panel_tui.theme.as_deref(),"
+          ],
+          "candidate_lines": []
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "upstream_blob": "a7f7f1e827818386b7417f27ab9a829f34fe1fa7",
+      "candidate_blob": "81df877569e0c205e2a4dec5e9e790f7c7993b93",
+      "hunks": [
+        {
+          "candidate_start_line": 20,
+          "upstream_lines": [
+            "use crate::status::StatusAccountDisplay;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 141,
+          "upstream_lines": [
+            "        if matches!(event, AppEvent::OpenDaemonMenu | AppEvent::OpenWarnings) {",
+            "            self.verify_managed_daemon().await;",
+            "        }",
+            ""
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 194,
+          "upstream_lines": [
+            "            AppEvent::NewSession { name } => {",
+            "                self.start_fresh_session(",
+            "                    tui, app_server, /*session_start_source*/ None,",
+            "                    /*initial_user_message*/ None, name,"
+          ],
+          "candidate_lines": [
+            "            AppEvent::NewSession {",
+            "                name,",
+            "                worker_binding,",
+            "            } => {",
+            "                self.start_fresh_session_with_worker_binding(",
+            "                    tui,",
+            "                    app_server,",
+            "                    /*session_start_source*/ None,",
+            "                    /*initial_user_message*/ None,",
+            "                    name,",
+            "                    worker_binding,"
+          ]
+        },
+        {
+          "candidate_start_line": 211,
+          "upstream_lines": [
+            "            AppEvent::StartManagedWorktree { mode, name } => {"
+          ],
+          "candidate_lines": [
+            "            AppEvent::StartManagedWorktree {",
+            "                mode,",
+            "                name,",
+            "                worker_binding,",
+            "            } => {"
+          ]
+        },
+        {
+          "candidate_start_line": 220,
+          "upstream_lines": [
+            "                    self.pending_start_managed_worktree = Some((mode, name));"
+          ],
+          "candidate_lines": [
+            "                    self.pending_start_managed_worktree = Some((mode, name, worker_binding));"
+          ]
+        },
+        {
+          "candidate_start_line": 1165,
+          "upstream_lines": [
+            "                    if is_realtime_stop {",
+            "                        let chat_widget = match self.background_voice.as_deref_mut() {",
+            "                            Some(owner) if parked_voice => owner,",
+            "                            _ => &mut self.chat_widget,",
+            "                        };",
+            "                        if chat_widget.thread_id() == realtime_stop_thread_id {",
+            "                            chat_widget.record_realtime_failure(",
+            "                                crate::chatwidget::RealtimeFailureCause::AppServerRequest,",
+            "                            );",
+            "                        }",
+            "                    }"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 1191,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                                chat_widget.record_realtime_failure(crate::chatwidget::RealtimeFailureCause::AppServerRequest);"
+          ]
+        },
+        {
+          "candidate_start_line": 1196,
+          "upstream_lines": [
+            "                            chat_widget.on_realtime_error(",
+            "                                message,",
+            "                                crate::chatwidget::RealtimeFailureCause::AppServerRequest,",
+            "                            );"
+          ],
+          "candidate_lines": [
+            "                            chat_widget.on_realtime_error(message, crate::chatwidget::RealtimeFailureCause::AppServerRequest);"
+          ]
+        },
+        {
+          "candidate_start_line": 1360,
+          "upstream_lines": [
+            "            AppEvent::ConfiguredPetLoaded {",
+            "                generation,",
+            "                pet_id,",
+            "                result,",
+            "            } => {"
+          ],
+          "candidate_lines": [
+            "            AppEvent::ConfiguredPetLoaded { generation, pet_id, result } => {"
+          ]
+        },
+        {
+          "candidate_start_line": 2102,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            AppEvent::UpdateAdaptiveEffortState(state) => {",
+            "                self.sync_active_thread_adaptive_effort_to_cached_session(state)",
+            "                    .await;",
+            "            }",
+            "            AppEvent::PersistWorkflowState {",
+            "                thread_id,",
+            "                operation,",
+            "                source_turn_id,",
+            "                adaptive_state,",
+            "            } => {",
+            "                match app_server",
+            "                    .thread_workflow_state_update(",
+            "                        thread_id,",
+            "                        operation,",
+            "                        source_turn_id,",
+            "                        adaptive_state,",
+            "                    )",
+            "                    .await",
+            "                {",
+            "                    Ok(_) => self",
+            "                        .chat_widget",
+            "                        .on_workflow_state_persisted(thread_id, operation),",
+            "                    Err(err) => self.chat_widget.on_workflow_state_persistence_failed(",
+            "                        thread_id,",
+            "                        operation,",
+            "                        &err.to_string(),",
+            "                    ),",
+            "                }",
+            "            }"
+          ]
+        },
+        {
+          "candidate_start_line": 2250,
+          "upstream_lines": [
+            "            AppEvent::ModelsLoaded { request_id, result: Ok(models) }",
+            "                if self.chat_widget.model_popup_request_is_current(request_id)",
+            "                    && self.chat_widget.status_account_display() == Some(&StatusAccountDisplay::ApiKey) =>",
+            "            {",
+            "                let checked = app_server.constrain_api_key_models(",
+            "                    self.chat_widget.config_ref(),",
+            "                    self.chat_widget.thread_id(),",
+            "                    /*requirements*/ None,",
+            "                    models,",
+            "                );",
+            "                let tx = self.app_event_tx.clone();",
+            "                tokio::spawn(async move {",
+            "                    tx.send(AppEvent::ApiKeyCompatModelsLoaded { request_id, result: Ok(checked.await) });",
+            "                });",
+            "            }",
+            "            AppEvent::ModelsLoaded { request_id, result }",
+            "            | AppEvent::ApiKeyCompatModelsLoaded { request_id, result } => {"
+          ],
+          "candidate_lines": [
+            "            AppEvent::ModelsLoaded { request_id, result } => {"
+          ]
+        },
+        {
+          "candidate_start_line": 3031,
+          "upstream_lines": [
+            "                self.select_agent_thread(tui, app_server, thread_id)"
+          ],
+          "candidate_lines": [
+            "                self.select_agent_thread_and_discard_side(tui, app_server, thread_id)"
+          ]
+        },
+        {
+          "candidate_start_line": 3268,
+          "upstream_lines": [
+            "                        self.chat_widget.refresh_config_panel(/*notice*/ None);"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 3273,
+          "upstream_lines": [
+            "                        let message = format!(\"Failed to save status line settings: {error}\");",
+            "                        self.chat_widget.report_config_save_error(message);"
+          ],
+          "candidate_lines": [
+            "                        self.chat_widget.add_error_message(format!(",
+            "                            \"Failed to save status line settings: {error}\"",
+            "                        ));"
+          ]
+        },
+        {
+          "candidate_start_line": 3316,
+          "upstream_lines": [
+            "                        let message = format!(\"Failed to save terminal title items: {err}\");",
+            "                        self.chat_widget.report_config_save_error(message);"
+          ],
+          "candidate_lines": [
+            "                        self.chat_widget.add_error_message(format!(",
+            "                            \"Failed to save terminal title items: {err}\"",
+            "                        ));"
+          ]
+        },
+        {
+          "candidate_start_line": 3389,
+          "upstream_lines": [
+            "                        let message = format!(\"Failed to save theme: {err}\");",
+            "                        self.chat_widget.report_config_save_error(message);"
+          ],
+          "candidate_lines": [
+            "                        self.chat_widget",
+            "                            .add_error_message(format!(\"Failed to save theme: {err}\"));"
+          ]
+        },
+        {
+          "candidate_start_line": 3586,
+          "upstream_lines": [
+            "                    .report_config_save_error(format!(\"Failed to save shortcut: {err}\"));"
+          ],
+          "candidate_lines": [
+            "                    .add_error_message(format!(\"Failed to save shortcut: {err}\"));"
+          ]
+        },
+        {
+          "candidate_start_line": 3647,
+          "upstream_lines": [
+            "                    .report_config_save_error(format!(\"Failed to remove shortcut: {err}\"));"
+          ],
+          "candidate_lines": [
+            "                    .add_error_message(format!(\"Failed to remove shortcut: {err}\"));"
+          ]
+        },
+        {
+          "candidate_start_line": 3682,
+          "upstream_lines": [
+            "                if !self.side_threads.is_empty()",
+            "                    && tokio::time::timeout(",
+            "                        SHUTDOWN_FIRST_EXIT_TIMEOUT,",
+            "                        self.shutdown_side_threads(app_server),",
+            "                    )",
+            "                    .await",
+            "                    .is_err()",
+            "                {",
+            "                    tracing::warn!(\"timed out waiting for side-conversation shutdown\");",
+            "                }"
+          ],
+          "candidate_lines": []
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "upstream_blob": "ff6e0201bb827516090eb84b7a1b12f342c8844d",
+      "candidate_blob": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273",
+      "hunks": [
+        {
+          "candidate_start_line": 59,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "upstream_blob": "a4fff209ab7c630ecb8f7465f24b65cc9c4328e9",
+      "candidate_blob": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf",
+      "hunks": [
+        {
+          "candidate_start_line": 896,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                let mut started = started;",
+            "                if let Some(family) = self.adaptive_startup_preset {",
+            "                    started",
+            "                        .session",
+            "                        .adaptive_effort",
+            "                        .activate_adaptive_startup(family);",
+            "                }"
+          ]
+        },
+        {
+          "candidate_start_line": 1000,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        self.start_fresh_session_with_worker_binding(",
+            "            tui,",
+            "            app_server,",
+            "            session_start_source,",
+            "            initial_user_message,",
+            "            new_thread_name,",
+            "            None,",
+            "        )",
+            "        .await;",
+            "    }",
+            "",
+            "    pub(super) async fn start_fresh_session_with_worker_binding(",
+            "        &mut self,",
+            "        tui: &mut tui::Tui,",
+            "        app_server: &mut AppServerSession,",
+            "        session_start_source: Option<ThreadStartSource>,",
+            "        initial_user_message: Option<crate::chatwidget::UserMessage>,",
+            "        new_thread_name: Option<String>,",
+            "        worker_binding: Option<crate::adaptive_worker::NewWorkerBinding>,",
+            "    ) {"
+          ]
+        },
+        {
+          "candidate_start_line": 1026,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        let initial_user_message = initial_user_message.or_else(|| {",
+            "            worker_binding.as_ref().and_then(|binding| {",
+            "                self.chat_widget",
+            "                    .automatic_validation_prompt_for_new_worker(binding)",
+            "            })",
+            "        });",
+            "        let bound_worker = worker_binding.is_some();",
+            "        let fresh_adaptive_effort = self",
+            "            .chat_widget",
+            "            .fresh_adaptive_effort_for_new_worker(worker_binding.as_ref());"
+          ]
+        },
+        {
+          "candidate_start_line": 1057,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        if bound_worker",
+            "            && let (Some(family), Some(effort)) = (",
+            "                fresh_adaptive_effort.current_family,",
+            "                fresh_adaptive_effort.current_effort,",
+            "            )",
+            "        {",
+            "            config.model = Some(family.model().to_string());",
+            "            config.model_reasoning_effort = Some(match effort {",
+            "                crate::adaptive_policy::AdaptiveEffort::Low => ReasoningEffortConfig::Low,",
+            "                crate::adaptive_policy::AdaptiveEffort::Medium => ReasoningEffortConfig::Medium,",
+            "                crate::adaptive_policy::AdaptiveEffort::High => ReasoningEffortConfig::High,",
+            "                crate::adaptive_policy::AdaptiveEffort::XHigh => ReasoningEffortConfig::XHigh,",
+            "                crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,",
+            "            });",
+            "        }",
+            "        if let Some(binding) = worker_binding {",
+            "            config.adaptive_worker = Some(codex_config::config_toml::AdaptiveWorkerConfigToml {",
+            "                role: match binding.role {",
+            "                    crate::adaptive_worker::AdaptiveWorkerRole::Implementation => {",
+            "                        codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation",
+            "                    }",
+            "                    crate::adaptive_worker::AdaptiveWorkerRole::Validation => {",
+            "                        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation",
+            "                    }",
+            "                    crate::adaptive_worker::AdaptiveWorkerRole::Repair => {",
+            "                        codex_config::config_toml::AdaptiveWorkerRoleToml::Repair",
+            "                    }",
+            "                    crate::adaptive_worker::AdaptiveWorkerRole::Unspecified => {",
+            "                        codex_config::config_toml::AdaptiveWorkerRoleToml::Unspecified",
+            "                    }",
+            "                },",
+            "                authorized_scope: Some(binding.authorized_scope),",
+            "            });",
+            "        }"
+          ]
+        },
+        {
+          "candidate_start_line": 1102,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "                started.session.adaptive_effort = fresh_adaptive_effort;"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "upstream_blob": "9394604dd2c6cb01c34ef6c907b2a6d3e6a0befe",
+      "candidate_blob": "b95971975610ff94ef823eff73e36a4691e7e29c",
+      "hunks": [
+        {
+          "candidate_start_line": 6,
+          "upstream_lines": [
+            "//! Return the large fixture on the heap so async scenarios do not embed it in their stack frames."
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 111,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_startup_preset: None,"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "upstream_blob": "40c30df9239f3ac5a5680953dfc4ccc64867af8a",
+      "candidate_blob": "03febfb8e58c93e975f1f240195576a0f1080e08",
+      "hunks": [
+        {
+          "candidate_start_line": 117,
+          "upstream_lines": [
+            "use crate::test_support::boxed_future;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 119,
+          "upstream_lines": [
+            "    if let Some((mode, name)) = app.pending_start_managed_worktree.take() {",
+            "        app.start_managed_worktree(server, mode, name).await;"
+          ],
+          "candidate_lines": [
+            "    if let Some((mode, name, worker_binding)) = app.pending_start_managed_worktree.take() {",
+            "        app.start_managed_worktree(server, mode, name, worker_binding)",
+            "            .await;"
+          ]
+        },
+        {
+          "candidate_start_line": 767,
+          "upstream_lines": [
+            "#[tokio::test]",
+            "async fn background_resolution_keeps_matching_foreground_user_input_visible() -> Result<()> {",
+            "    let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;",
+            "    let app_server = crate::start_embedded_app_server_for_picker(&app.config).await?;",
+            "    let background_thread = ThreadId::new();",
+            "    let foreground_thread = ThreadId::new();",
+            "    let background_request = request_user_input_request(background_thread, \"turn-1\", \"question\");",
+            "    let foreground_request = request_user_input_request(foreground_thread, \"turn-1\", \"question\");",
+            "    app.enqueue_primary_thread_session(",
+            "        test_thread_session(foreground_thread, test_path_buf(\"/tmp/project\")),",
+            "        Vec::new(),",
+            "    )",
+            "    .await?;",
+            "    app.pending_app_server_requests",
+            "        .note_server_request(&background_request);",
+            "    app.pending_app_server_requests",
+            "        .note_server_request(&foreground_request);",
+            "    app.handle_thread_event_now(ThreadBufferedEvent::Request(Box::new(foreground_request)));",
+            "    assert!(app.chat_widget.has_active_view());",
+            "",
+            "    app.handle_app_server_event(",
+            "        &app_server,",
+            "        codex_app_server_client::AppServerEvent::ServerNotification(Box::new(",
+            "            ServerNotification::ServerRequestResolved(",
+            "                codex_app_server_protocol::ServerRequestResolvedNotification {",
+            "                    thread_id: background_thread.to_string(),",
+            "                    request_id: AppServerRequestId::Integer(2),",
+            "                },",
+            "            ),",
+            "        )),",
+            "    )",
+            "    .await;",
+            "    assert!(app.chat_widget.has_active_view());",
+            "    app_server.shutdown().await?;",
+            "    Ok(())",
+            "}",
+            ""
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 877,
+          "upstream_lines": [
+            "    let app_server = crate::start_embedded_app_server_for_picker(&app.config)",
+            "        .await",
+            "        .expect(\"embedded app server\");"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 878,
+          "upstream_lines": [
+            "    let side_thread_id = ThreadId::new();",
+            "    let side_request = exec_approval_request(",
+            "        side_thread_id,",
+            "        \"turn-1\",",
+            "        \"call-1\",",
+            "        /*approval_id*/ None,",
+            "    );"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 886,
+          "upstream_lines": [
+            "    app.thread_event_listener_tasks",
+            "        .insert(side_thread_id, tokio::spawn(std::future::pending()));",
+            "    app.thread_event_channels.insert(",
+            "        side_thread_id,",
+            "        ThreadEventChannel::new(THREAD_EVENT_CHANNEL_CAPACITY),",
+            "    );",
+            "    app.thread_event_channels[&side_thread_id]",
+            "        .store",
+            "        .lock()",
+            "        .await",
+            "        .push_request(side_request.clone());",
+            "    app.side_threads",
+            "        .insert(side_thread_id, SideThreadState::new(thread_id));",
+            "    let buffered = super::app_server_requests::BufferedServerRequest::new(",
+            "        side_request.clone(),",
+            "        &app_server.request_handle(),",
+            "    );",
+            "    app.pending_app_server_requests",
+            "        .note_buffered_request(&buffered);"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 901,
+          "upstream_lines": [
+            "    assert_eq!(",
+            "        app.thread_event_listener_tasks",
+            "            .keys()",
+            "            .copied()",
+            "            .collect::<Vec<_>>(),",
+            "        vec![side_thread_id]",
+            "    );",
+            "    assert!(app.thread_event_channels.contains_key(&side_thread_id));",
+            "    assert!(app.side_threads.contains_key(&side_thread_id));",
+            "    assert!(",
+            "        app.pending_app_server_requests",
+            "            .contains_server_request(&side_request)",
+            "    );"
+          ],
+          "candidate_lines": [
+            "    assert_eq!(app.thread_event_listener_tasks.is_empty(), true);"
+          ]
+        },
+        {
+          "candidate_start_line": 907,
+          "upstream_lines": [
+            "    app_server.shutdown().await.expect(\"app server shutdown\");"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 1065,
+          "upstream_lines": [
+            "            .is_some_and(tokio::sync::mpsc::Receiver::is_empty),"
+          ],
+          "candidate_lines": [
+            "            .is_some_and(tokio::sync::mpsc::UnboundedReceiver::is_empty),"
+          ]
+        },
+        {
+          "candidate_start_line": 1099,
+          "upstream_lines": [
+            "        .try_send(ThreadBufferedEvent::Notification(Box::new("
+          ],
+          "candidate_lines": [
+            "        .send(ThreadBufferedEvent::Notification(Box::new("
+          ]
+        },
+        {
+          "candidate_start_line": 1102,
+          "upstream_lines": [
+            "        .expect(\"closed side-thread notification should fit in its saved receiver\");"
+          ],
+          "candidate_lines": [
+            "        .expect(\"closed side-thread notification should queue in its saved receiver\");"
+          ]
+        },
+        {
+          "candidate_start_line": 1367,
+          "upstream_lines": [
+            "    let (mut chat_widget, _app_event_tx, _rx, _op_rx) =",
+            "        boxed_future!(make_chatwidget_manual_with_sender()).await;"
+          ],
+          "candidate_lines": [
+            "    let (mut chat_widget, _app_event_tx, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;"
+          ]
+        },
+        {
+          "candidate_start_line": 1626,
+          "upstream_lines": [
+            "    let (chat_widget, _app_event_tx, _rx, _new_op_rx) =",
+            "        boxed_future!(make_chatwidget_manual_with_sender()).await;"
+          ],
+          "candidate_lines": [
+            "    let (chat_widget, _app_event_tx, _rx, _new_op_rx) = make_chatwidget_manual_with_sender().await;"
+          ]
+        },
+        {
+          "candidate_start_line": 1913,
+          "upstream_lines": [
+            "    let (chat_widget, _app_event_tx, _rx, _new_op_rx) =",
+            "        boxed_future!(make_chatwidget_manual_with_sender()).await;"
+          ],
+          "candidate_lines": [
+            "    let (chat_widget, _app_event_tx, _rx, _new_op_rx) = make_chatwidget_manual_with_sender().await;"
+          ]
+        },
+        {
+          "candidate_start_line": 2022,
+          "upstream_lines": [
+            "    assert_eq!(",
+            "        app.chat_widget.config_panel_tui.status_line,",
+            "        app.chat_widget.local_settings.tui.status_line",
+            "    );",
+            "    assert!(app.chat_widget.config_panel_tui.status_line_use_colors);"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2911,
+          "upstream_lines": [
+            "    let other_thread_id = ThreadId::from_string(",
+            "        &app_test_support::create_fake_rollout(",
+            "            config.codex_home.as_path(),",
+            "            \"2025-01-06T12-00-00\",",
+            "            \"2025-01-06T12:00:00Z\",",
+            "            \"Other task\",",
+            "            Some(config.model_provider_id.as_str()),",
+            "            /*git_info*/ None,",
+            "        )",
+            "        .expect(\"create other rollout\"),",
+            "    )?;"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 2990,
+          "upstream_lines": [
+            "    app.select_agents_overview_thread(&mut tui, &mut app_server, other_thread_id)",
+            "        .await?;",
+            "    app.select_agents_overview_thread(&mut tui, &mut app_server, parent_thread_id)",
+            "        .await?;",
+            "    Box::pin(app.handle_start_side(",
+            "        &mut tui,",
+            "        &mut app_server,",
+            "        parent_thread_id,",
+            "        /*user_message*/ None,",
+            "    ))",
+            "    .await?;",
+            "    assert_eq!(app.active_thread_id, Some(side_thread_id));",
+            "    assert_eq!(app.side_threads.len(), 1);"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 5672,
+          "upstream_lines": [
+            "async fn side_discard_selection_only_closes_the_active_side() {"
+          ],
+          "candidate_lines": [
+            "async fn side_discard_selection_keeps_current_side_thread() {"
+          ]
+        },
+        {
+          "candidate_start_line": 5692,
+          "upstream_lines": [
+            "        None"
+          ],
+          "candidate_lines": [
+            "        Some(side_thread_id)"
+          ]
+        },
+        {
+          "candidate_start_line": 6010,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 6143,
+          "upstream_lines": [
+            "    let (mut chat_widget, app_event_tx, _rx, _op_rx) =",
+            "        boxed_future!(make_chatwidget_manual_with_sender()).await;"
+          ],
+          "candidate_lines": [
+            "    let (mut chat_widget, app_event_tx, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;"
+          ]
+        },
+        {
+          "candidate_start_line": 6239,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_startup_preset: None,"
+          ]
+        },
+        {
+          "candidate_start_line": 6267,
+          "upstream_lines": [
+            "    let (mut chat_widget, app_event_tx, rx, op_rx) =",
+            "        boxed_future!(make_chatwidget_manual_with_sender()).await;"
+          ],
+          "candidate_lines": [
+            "    let (mut chat_widget, app_event_tx, rx, op_rx) = make_chatwidget_manual_with_sender().await;"
+          ]
+        },
+        {
+          "candidate_start_line": 6364,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_startup_preset: None,"
+          ]
+        },
+        {
+          "candidate_start_line": 6610,
+          "upstream_lines": [
+            "pub(super) fn test_thread_session(thread_id: ThreadId, cwd: PathBuf) -> ThreadSessionState {"
+          ],
+          "candidate_lines": [
+            "fn test_thread_session(thread_id: ThreadId, cwd: PathBuf) -> ThreadSessionState {"
+          ]
+        },
+        {
+          "candidate_start_line": 6633,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 7735,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 7809,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 8381,
+          "upstream_lines": [
+            "    // Allocate the whole scenario before Tokio polls it on the test thread.",
+            "    boxed_future!(prompt_edit_reverts_earlier_and_first_visible_prompts_in_place_scenario()).await",
+            "}",
+            "",
+            "async fn prompt_edit_reverts_earlier_and_first_visible_prompts_in_place_scenario() -> Result<()> {"
+          ],
+          "candidate_lines": []
+        },
+        {
+          "candidate_start_line": 9109,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_effort: Default::default(),"
+          ]
+        },
+        {
+          "candidate_start_line": 9857,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "            adaptive_effort: Default::default(),"
+          ]
+        }
+      ],
+      "review_state": "SOURCE_DIFF_RECONSTRUCTED_NATIVE_TUI_BEHAVIOR_PENDING"
+    }
+  ]
+}
