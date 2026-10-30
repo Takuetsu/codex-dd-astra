@@ -19,7 +19,7 @@ concurrency:
 jobs:
   generator-audit:
     name: Locked generate stable/experimental SDK+schemas, byte compare (nonrelease)
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-3f53-native-schema-semantic' && github.event.before == 'NOT_ARMED_FOR_3F53_NATIVE_GENERATOR'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.5-3f53-native-schema-semantic' && github.event.before == 'f1e7e6a74671c708a87b31c53a01673fa9ba850e'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
