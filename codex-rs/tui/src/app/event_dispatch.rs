@@ -1165,6 +1165,20 @@ impl App {
                     self.active_thread_id = visible_thread;
                 }
                 if let Err(err) = result {
+                    // Preserve a failed stop on the original voice owner before transport
+                    // recovery returns early. A recovered disconnection is still a failed
+                    // realtime stop; ordinary server failures should be counted only once.
+                    if is_realtime_stop {
+                        let chat_widget = match self.background_voice.as_deref_mut() {
+                            Some(owner) if parked_voice => owner,
+                            _ => &mut self.chat_widget,
+                        };
+                        if chat_widget.thread_id() == realtime_stop_thread_id {
+                            chat_widget.record_realtime_failure(
+                                crate::chatwidget::RealtimeFailureCause::AppServerRequest,
+                            );
+                        }
+                    }
                     if self.recover_transport_error(&err) {
                         return Ok(AppRunControl::Continue);
                     }
@@ -1191,7 +1205,6 @@ impl App {
                         let message = format!("Voice conversation failed: {err:#}");
                         if is_realtime_stop {
                             if chat_widget.thread_id() == realtime_stop_thread_id {
-                                chat_widget.record_realtime_failure(crate::chatwidget::RealtimeFailureCause::AppServerRequest);
                                 chat_widget.reset_realtime_conversation();
                                 chat_widget.add_realtime_error(message);
                             }
