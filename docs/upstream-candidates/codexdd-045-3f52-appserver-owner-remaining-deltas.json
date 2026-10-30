@@ -8,7 +8,7 @@
     {
       "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
       "upstream_blob": "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa",
-      "candidate_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
+      "candidate_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
       "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
       "hunks": [
         {
@@ -240,7 +240,8 @@
             "                conversation_id,",
             "                source_turn_id.clone(),",
             "                AdaptiveRuntimeSignalEvent {",
-            "                    signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::RepairRequired,",
+            "                    signal_kind:",
+            "                        codex_protocol::protocol::AdaptiveRuntimeSignalKind::RepairRequired,",
             "                    evidence_refs: vec![\"test-only\".to_string()],",
             "                    diagnostic_note: None,",
             "                },",
