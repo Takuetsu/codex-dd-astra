@@ -918,7 +918,9 @@ impl App {
         if self.reconnect.offline
             && !transcript_owns_input
             && !self.chat_widget.keymap_contexts().is_warnings()
-            && !self.chat_widget.active_view_accepts_input_when_disconnected()
+            && !self
+                .chat_widget
+                .active_view_accepts_input_when_disconnected()
             && let TuiEvent::Key(key) = &event
             && matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat)
             && key.modifiers.contains(KeyModifiers::CONTROL)
@@ -1129,7 +1131,9 @@ impl App {
                         && !self.chat_widget.keymap_contexts().is_warnings()
                         && self.reconnect.presentation
                             == reconnect::ReconnectPresentation::Conversation
-                        && !self.chat_widget.active_view_accepts_input_when_disconnected();
+                        && !self
+                            .chat_widget
+                            .active_view_accepts_input_when_disconnected();
                     self.chat_widget.handle_paste(pasted);
                     if restrict_disconnected_input {
                         self.chat_widget.handle_restricted_key(
