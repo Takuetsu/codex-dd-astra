@@ -918,6 +918,9 @@ impl App {
         if self.reconnect.offline
             && !transcript_owns_input
             && !self.chat_widget.keymap_contexts().is_warnings()
+            && !self
+                .chat_widget
+                .active_view_accepts_input_when_disconnected()
             && let TuiEvent::Key(key) = &event
             && matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat)
             && key.modifiers.contains(KeyModifiers::CONTROL)
@@ -1056,14 +1059,22 @@ impl App {
                         && self.chat_widget.agents_navigation_key_available()))
             {
                 self.open_agents_overview(app_server);
-            } else if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview {
+            } else if self
+                .chat_widget
+                .active_view_accepts_input_when_disconnected()
+                || (self.reconnect.presentation == reconnect::ReconnectPresentation::Overview
+                    && self
+                        .chat_widget
+                        .active_view_is(agents_overview::AGENTS_OVERVIEW_VIEW_ID))
+            {
                 let activation_key = self.routed_key_activation.take();
                 self.chat_widget
                     .handle_disconnected_view_key(*key, activation_key);
-                if self
-                    .chat_widget
-                    .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)
-                    .is_none()
+                if self.reconnect.presentation == reconnect::ReconnectPresentation::Overview
+                    && self
+                        .chat_widget
+                        .selected_index_for_present_view(agents_overview::AGENTS_OVERVIEW_VIEW_ID)
+                        .is_none()
                 {
                     self.reconnect.presentation = reconnect::ReconnectPresentation::Conversation;
                 }
@@ -1116,12 +1127,15 @@ impl App {
                             self.reset_backtrack_state();
                         }
                     }
-                    self.chat_widget.handle_paste(pasted);
-                    if self.reconnect.offline
+                    let restrict_disconnected_input = self.reconnect.offline
                         && !self.chat_widget.keymap_contexts().is_warnings()
                         && self.reconnect.presentation
                             == reconnect::ReconnectPresentation::Conversation
-                    {
+                        && !self
+                            .chat_widget
+                            .active_view_accepts_input_when_disconnected();
+                    self.chat_widget.handle_paste(pasted);
+                    if restrict_disconnected_input {
                         self.chat_widget.handle_restricted_key(
                             KeyEvent::new(KeyCode::Null, KeyModifiers::NONE),
                             RestrictedInputMode::Disconnected,
