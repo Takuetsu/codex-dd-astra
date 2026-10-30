@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   source-only:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'NOT_ARMED_FOR_045_3F51_SOURCE'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '90d82a5eb1fd446b8305ce658d74809cdcff872e'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
