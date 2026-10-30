@@ -50,7 +50,7 @@ class AllRemainingOwners(unittest.TestCase):
   cls.original=json.loads((DIR/"codexdd-045-109-semantic-owner-matrix.json").read_text(encoding="utf-8"))
 
  def test_18_core_and_38_tui_completely_accounted_for(self):
-  self.assertEqual([r["reviewed_count"] for r in self.receipts.values()],[9,9,8,8,8,8,6])
+  self.assertEqual([r.get("reviewed_count", r.get("review_count")) for r in self.receipts.values()],[9,9,8,8,8,8,6])
   self.assertEqual(len(self.paths),56)
   self.assertEqual(len([p for p in self.paths if p.startswith("codex-rs/core/")]),18)
   self.assertEqual(len([p for p in self.paths if p.startswith("codex-rs/tui/")]),38)
