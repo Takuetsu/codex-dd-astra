@@ -25,7 +25,7 @@ EXPECTED = {
     "codex-rs/app-server/src/message_processor.rs": ("d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a", "c9858cd9d513c69a917f6505410ee89b16bdd955"),
     "codex-rs/app-server/src/request_processors/turn_processor.rs": ("1186f0a181704d8ea45243a850f971f1057cb080", "1b9a253becc97a7a2c1b0de9e92def7c192691c2"),
     "codex-rs/core/src/context_manager/history_tests.rs": ("4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d", "8f22910ed2086c07edbd41f84a1327705f4700f3"),
-    "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": ("2460017301fa1c57480e1092e7ce69413aa7867e", "062efa383da797e46f6aa56540cbf76a9c130353"),
+    "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": ("67276c6c855647dc7b0bc0c7ffe022f93f3e570e", "062efa383da797e46f6aa56540cbf76a9c130353"),
     "codex-rs/tui/src/app/tests/startup_defaults_tests.rs": ("e60808df0448682d47af1a14b5bd8d5c52206397", "86e0da6fd4e0550050cc1a704186a9a07038278b"),
     "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs": ("d6447d22a0a1e943b1352b8c945cf7f6cf09734e", "525eed5ece8b9c0110b3b296b68fb6c727d6d096"),
 }
@@ -123,6 +123,7 @@ class ExactUpstreamSemanticDelta(unittest.TestCase):
         self.assertIn("/*turn_trigger*/ None,", workspace)
         self.assertIn("remote_workspace_roots_survive_start_turn_resume_and_fork", workspace)
         self.assertIn("local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths", lifecycle)
+        self.assertIn("boxed_future!(local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario())", lifecycle)
         self.assertIn("dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace", lifecycle)
         self.assertIn("older_external_server_starts_without_unsupported_dynamic_tools_or_history", lifecycle)
         self.assertIn('vec![None, None, None, Some("daybreakBlue"), None]', lifecycle)
