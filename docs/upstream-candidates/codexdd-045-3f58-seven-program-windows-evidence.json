@@ -1,0 +1,124 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f58_verified_unsigned_windows_seven_program_evidence",
+  "result": "SEVEN_REAL_OPTIMIZED_WINDOWS_PROGRAMS_AND_SEVEN_PDBS_VERIFIED_NONRELEASE",
+  "candidate_source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "binary_source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+  "tooling_sha": "e20ea711f3cd7eda56eb5fe8b477434c735527cf",
+  "original_five_program_run_id": 40922368730,
+  "verification_run_id": 41073817590,
+  "verification_run_conclusion": "success",
+  "archive": {
+    "artifact_id": 12990307741,
+    "artifact_name": "codexdd045-3f56-real-seven-program-unsigned-win-x64-41073817590",
+    "artifact_bytes": 909065220,
+    "archive_sha256": "dccb86a05caa7bf695f4ddd2b471025a50683853fd5dffacc35f0cb981d6ed77",
+    "expires_at": "2026-11-06T15:42:15Z",
+    "program_count": 7,
+    "symbol_count": 7,
+    "file_count": 14
+  },
+  "standalone_artifacts": {
+    "service": {
+      "id": 12990072080,
+      "name": "codexdd045-3f56-real-service-exe-pdb-41073817590",
+      "bytes": 221453864
+    },
+    "proxy": {
+      "id": 12990352271,
+      "name": "codexdd045-3f56-real-proxy-exe-pdb-41073817590",
+      "bytes": 27001842
+    },
+    "diagnostics": {
+      "id": 12989538654,
+      "name": "codexdd045-3f56-sidecar-build-diagnostics-41073817590",
+      "bytes": 50388
+    }
+  },
+  "original_five_archive_sha256": "ce6bd0115fc0f46c1d861517221b2f898e763bfa7e539bb672a26bdb2eeaeb8e",
+  "files": {
+    "codex-app-server.exe": {
+      "bytes": 259785728,
+      "sha256": "53b61afa8239ff9ab8bfcc8b10e1a75f44aa05c8559fc4113dbd30f87a94bb23",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-app-server.pdb": {
+      "bytes": 732221440,
+      "sha256": "8f97e26d3461fdbfa3d4f66c14da712784281663389ab6d1e15b520350797f74",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-code-mode-host.exe": {
+      "bytes": 73807360,
+      "sha256": "ff4434ee522f8d6bc3a030b54d1459da800ffaf1eadd7e5b3d9057bee31c0591",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-code-mode-host.pdb": {
+      "bytes": 115896320,
+      "sha256": "9688f50af053879ad4d68bc847b2345072360e42772914243fe988a9083581ed",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-command-runner.exe": {
+      "bytes": 8078848,
+      "sha256": "0a2bbf8c1c02b7fc5becee6c47a340b90dc0eb2c15df52c4c6d495c6aa376822",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-command-runner.pdb": {
+      "bytes": 35901440,
+      "sha256": "4c07ee9c18ad578e1a8c4c043a3d258c4874789b0ad74ac4b82c5ec8fa92b0df",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-responses-api-proxy.exe": {
+      "bytes": 5852672,
+      "sha256": "690d0e855464135a197e2e6cca08d7da3f63c3a76aab405f1b934eb05866b6a6",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-responses-api-proxy.pdb": {
+      "bytes": 21147648,
+      "sha256": "e001827c2562b87241f70ad1b9722d1d829b5d8468a6fb15f0f63e54eecb8d6d",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-windows-sandbox-service.exe": {
+      "bytes": 55867392,
+      "sha256": "7738934e39ce451f15f342b4ce65710aaab192e5c29fca7707c05d20c523e2ac",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-windows-sandbox-service.pdb": {
+      "bytes": 165584896,
+      "sha256": "13f2abafd1a312bfb69e1310124796a99af7cff83850bba457dce8ba7e58fc6b",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-windows-sandbox-setup.exe": {
+      "bytes": 16986112,
+      "sha256": "930b219bb30367a2a125a16be0de98c93d3e7ea9dcb83ab5fbc9ffe53752c4ec",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex-windows-sandbox-setup.pdb": {
+      "bytes": 63033344,
+      "sha256": "1fa7cd837ea286af6388940c46d4cb2bd9796961b9400f6fcbbcf8f499ebbcf7",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex.exe": {
+      "bytes": 343167488,
+      "sha256": "941b0acc4d0b1b8d2d53a13d52ac7cf642f1add2a8bfcc6cd2a189d6955edc0f",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    },
+    "codex.pdb": {
+      "bytes": 944545792,
+      "sha256": "dd563410b57b168270d1eef996c7f54fecfc8c76d91199415f72aadb2e1712fe",
+      "source_sha": "57152222a1ef523fe6e2f5079871672423c6cb56"
+    }
+  },
+  "verification": {
+    "source_sha_matched_all_seven": true,
+    "archive_sha256_independent_verified": true,
+    "all_14_members_verified": true,
+    "post_build_exe_pdb_headers_verified": true,
+    "code_signed": false,
+    "voice_runtime_included": false,
+    "official_installer_built": false,
+    "release_approved": false,
+    "owner_formal_signoffs": 0,
+    "twenty_one_stage_release_validation": false
+  },
+  "review": "Evidence transcribed from exact successful GitHub Windows job and 14-file archive verifier; not an additional local download/rehash. Developer unsigned package only."
+}
