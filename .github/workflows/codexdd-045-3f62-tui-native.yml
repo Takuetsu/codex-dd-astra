@@ -2,13 +2,13 @@
 name: CodexDD 0.4.5 3F.62 Windows TUI trust owner native acceptance (NONRELEASE)
 on:
   push:
-    branches: [dd/codexdd-v0.4.5-3f62-native-core-tui-acceptance]
-    paths: [".github/workflows/codexdd-045-3f62-core-tui-native.yml"]
+    branches: [dd/codexdd-v0.4.5-3f62-tui-trust-restoration]
+    paths: [".github/workflows/codexdd-045-3f62-tui-native.yml"]
 permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '001ccf99bd838f08d7fe1f6e3fbc78e0b0e1d868'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'd7aae199413e26832cec12ad9bbd04c258fc9514'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
