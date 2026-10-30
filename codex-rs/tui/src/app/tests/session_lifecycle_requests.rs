@@ -3,11 +3,11 @@ use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::app_event::TranscriptExportDestination;
 use crate::bottom_pane::BottomPaneView;
-use crate::test_support::boxed_future;
 use crate::chatwidget::adaptive_effort::AdaptiveEffort;
 use crate::chatwidget::adaptive_effort::AdaptiveFailureKind;
 use crate::chatwidget::adaptive_effort::AdaptiveFamily;
 use crate::chatwidget::adaptive_effort::AdaptiveOutcome;
+use crate::test_support::boxed_future;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::create_fake_parented_rollout_with_source;
 use app_test_support::create_fake_rollout;
@@ -1401,6 +1401,12 @@ async fn archive_current_thread_returns_shared_servers_to_agents() -> Result<()>
 
 #[tokio::test]
 async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() -> Result<()> {
+    boxed_future!(local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario())
+        .await
+}
+
+async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths_scenario()
+-> Result<()> {
     let (mut app, events, _ops) = Box::pin(make_test_app_with_channels()).await;
     // Invalid optional worktree settings must preserve both daemon start paths.
     app.config.features.enable(Feature::Worktrees)?;

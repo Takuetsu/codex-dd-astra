@@ -28,7 +28,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "before_blob": "994d54b631493b3d0784e836c544c57a275e9985",
-      "after_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+      "after_blob": "7d2be3352380d43df714399b441a95960b87a59f",
       "official_163_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
       "source_parent": "ebb6975b7ee78e00299cfd3f9bd2f33fa5fc9789",
       "reason": "Restore upstream 0.163 dynamic tool authorization, API key feature and legacy config/read compatibility matrix in existing CodexDD TUI test while retaining adaptive Worker assertions; restore official five-case Daybreak feature/API-key matrix and mock WebSocket disconnect handling, retaining CodexDD account-state no-op assertion; confirmed 3F.37 API-key Daybreak disabled intentionally omits the explicit program; tested fork policy takes precedence over upstream test expectation",
@@ -38,7 +38,27 @@
       "followup_source_parent": "cab5bf8db870e3ab9997e126b0e777afdfd74315",
       "followup_correction_receipt": "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json",
       "previous_daybreak_matrix_blob": "1a99fcac6b070fff957248a5e13ec37910a0e588",
-      "native_reconciliation_receipt": "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json"
+      "native_reconciliation_receipt": "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json",
+      "previous_after_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+      "latest_test_only_source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+      "latest_followup_reason": "Restore upstream stack-boxed MCP local-daemon lifecycle test wrapper for Windows stack safety while retaining previous CodexDD dynamic-auth and Daybreak policy expectations.",
+      "latest_required_native_gate": "Source-pinned Windows local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths native selector; confirm no stack overflow.",
+      "latest_review_packet": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md",
+      "pre_rustfmt_after_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e",
+      "rustfmt_reason": "Formatting-only adjustment after source gate #41063675819; exact source blob and reversible upstream delta revalidated."
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "before_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
+      "after_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
+      "official_163_blob": "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa",
+      "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+      "reason": "Add fail-closed regression test proving trusted adaptive runtime signals are not replayed on failed or interrupted turns; preserve existing successful-turn FIFO replay test. Test-only addition to existing fork handler.",
+      "required_native_gate": "Windows native codex-app-server --lib adaptive_runtime_signal selectors plus failed-completion and interruption tests; source turn replay order, authorization and stale-turn behavior remain separate owner signoffs.",
+      "release_status": "NOT_ACCEPTED",
+      "source_delta_receipt": "docs/upstream-candidates/codexdd-045-3f52-appserver-owner-remaining-deltas.json",
+      "pre_rustfmt_after_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8",
+      "rustfmt_reason": "Formatting-only adjustment after source gate #41063675819; exact source blob and reversible upstream delta revalidated."
     }
   ]
 }

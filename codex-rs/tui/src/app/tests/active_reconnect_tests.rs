@@ -728,7 +728,8 @@ async fn reconnect_allows_slow_hydration_but_bounds_a_stalled_server() -> Result
                 result?,
                 // Snapshot intentionally covers local 0.0.0 versus newer mock v2.0.0.
                 // Stable release clients correctly suppress notices for newer servers.
-                /*client_version*/ "0.0.0",
+                /*client_version*/
+                "0.0.0",
             )
             .await?;
             assert!(app.thread_unavailable(id));

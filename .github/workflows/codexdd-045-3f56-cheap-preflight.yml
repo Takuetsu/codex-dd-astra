@@ -1,0 +1,56 @@
+# Pre-build-only, one-shot. NO Rust, Bazel, compiler, archive build or upload.
+name: CodexDD 0.4.5 3F.56 cheap seven-program Windows preflight (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f56-seven-program-bundle]
+    paths: [".github/workflows/codexdd-045-3f56-cheap-preflight.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  cheap-preflight:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '322405f488082a64af6531b1aa1796deb4a69475'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Prove seven-program source/release negative fixtures and exact 109-owner identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f56_seven_program_bundle.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f55_formal_owner_approvals.py -v
+          python3 -B -m unittest discover -s .github/scripts -p test_codexdd_045_3f50_distribution_gate.py -v
+          python3 -B scripts/codexdd_045_distribution_gate.py --source-only
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Parse Windows sidecar build script; never run it
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $file='.github/scripts/codexdd-045-3f56-build-windows-sidecar.ps1'
+          $tok=$null;$errors=$null
+          [Management.Automation.Language.Parser]::ParseFile($file,[ref]$tok,[ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            throw 'Windows source-frozen sidecar script syntax invalid'
+          }
+          Write-Host 'CHEAP_PREFLIGHT_SCRIPT_PARSE=GREEN'
+      - name: Confirm original five-program binary archive still exists
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/12933707437 \
+            --jq '[.id,.expired,.size_in_bytes] | @tsv' > artifact-status.txt
+          IFS=$'\t' read -r id expired size < artifact-status.txt
+          test "$id" = "12933707437"
+          test "$expired" = "false"
+          test "$size" -gt 100000000
+          rm artifact-status.txt
+          echo 'CHEAP_PREFLIGHT_SEVEN_PROGRAM_SOURCE_AND_ARTIFACT=GREEN'

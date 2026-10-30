@@ -1,0 +1,435 @@
+{
+  "contract_version": 1,
+  "scope": "NONRELEASE_EXACT_OFFICIAL_UPSTREAM_0163_RECONSTRUCTION",
+  "official_ref": "openai/codex@rust-v0.163.0",
+  "candidate_ref": "dd/codexdd-v0.4.5-109-overlap-semantic-review",
+  "reviewed_count": 5,
+  "paths": [
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "upstream_blob": "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa",
+      "candidate_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 12,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;",
+            "use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;"
+          ]
+        },
+        {
+          "candidate_start_line": 101,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_protocol::protocol::AdaptiveRuntimeSignalEvent;"
+          ]
+        },
+        {
+          "candidate_start_line": 144,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "async fn handle_adaptive_runtime_signal(",
+            "    conversation_id: ThreadId,",
+            "    source_turn_id: String,",
+            "    signal: AdaptiveRuntimeSignalEvent,",
+            "    outgoing: &ThreadScopedOutgoingMessageSender,",
+            "    thread_state: &Arc<Mutex<ThreadState>>,",
+            ") {",
+            "    let signal = AdaptiveRuntimeSignalEnvelope {",
+            "        source_turn_id,",
+            "        signal_kind: signal.signal_kind,",
+            "        evidence_refs: signal.evidence_refs,",
+            "        diagnostic_note: signal.diagnostic_note,",
+            "    };",
+            "    // Keep a turn-scoped copy in addition to live delivery. turn/completed intentionally",
+            "    // exposes only a summary view, so the TUI cannot recover report_adaptive_signal from",
+            "    // completed turn items. Replaying the trusted envelope at the terminal boundary makes",
+            "    // consumption deterministic even if the earlier live notification was delayed.",
+            "    thread_state",
+            "        .lock()",
+            "        .await",
+            "        .turn_summary",
+            "        .adaptive_runtime_signals",
+            "        .push(signal.clone());",
+            "    outgoing",
+            "        .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(",
+            "            AdaptiveRuntimeSignalNotification {",
+            "                thread_id: conversation_id.to_string(),",
+            "                signal,",
+            "            },",
+            "        ))",
+            "        .await;",
+            "}",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 191,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        EventMsg::AdaptiveRuntimeSignal(signal) => {",
+            "            handle_adaptive_runtime_signal(",
+            "                conversation_id,",
+            "                event_turn_id,",
+            "                signal,",
+            "                &outgoing,",
+            "                &thread_state,",
+            "            )",
+            "            .await;",
+            "        }"
+          ]
+        },
+        {
+          "candidate_start_line": 1564,
+          "upstream_lines": [
+            "    let (status, error, last_agent_message) = match turn_summary.last_error {"
+          ],
+          "candidate_lines": [
+            "    let TurnSummary {",
+            "        started_at,",
+            "        last_error,",
+            "        last_agent_message,",
+            "        adaptive_runtime_signals,",
+            "        ..",
+            "    } = turn_summary;",
+            "",
+            "    let (status, error, last_agent_message) = match last_error {"
+          ]
+        },
+        {
+          "candidate_start_line": 1574,
+          "upstream_lines": [
+            "        None => (TurnStatus::Completed, None, turn_summary.last_agent_message),"
+          ],
+          "candidate_lines": [
+            "        None => (TurnStatus::Completed, None, last_agent_message),"
+          ]
+        },
+        {
+          "candidate_start_line": 1577,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    // Live adaptive notifications are useful for in-turn state, but workflow terminals are",
+            "    // authoritative only at turn completion. Re-emit every trusted signal from this turn on the",
+            "    // same outgoing FIFO immediately before TurnCompleted. Exact duplicates are idempotent in the",
+            "    // TUI, while a delayed READY_FOR_VALIDATION is now guaranteed to arrive before terminal",
+            "    // reduction instead of being discarded after the Worker was already treated as unfinished.",
+            "    if matches!(status, TurnStatus::Completed) {",
+            "        for signal in adaptive_runtime_signals {",
+            "            outgoing",
+            "                .send_server_notification(ServerNotification::AdaptiveRuntimeSignal(",
+            "                    AdaptiveRuntimeSignalNotification {",
+            "                        thread_id: conversation_id.to_string(),",
+            "                        signal,",
+            "                    },",
+            "                ))",
+            "                .await;",
+            "        }",
+            "    }",
+            ""
+          ]
+        },
+        {
+          "candidate_start_line": 1603,
+          "upstream_lines": [
+            "            started_at: turn_summary.started_at,"
+          ],
+          "candidate_lines": [
+            "            started_at,"
+          ]
+        },
+        {
+          "candidate_start_line": 3569,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "        Ok(())",
+            "    }",
+            "",
+            "    #[tokio::test]",
+            "    async fn adaptive_runtime_signal_binds_event_turn_and_conversation_identity() -> Result<()> {",
+            "        let conversation_id = ThreadId::new();",
+            "        let source_turn_id = \"native-source-turn\".to_string();",
+            "        let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);",
+            "        let outgoing = Arc::new(OutgoingMessageSender::new(",
+            "            tx,",
+            "            codex_analytics::AnalyticsEventsClient::disabled(),",
+            "        ));",
+            "        let outgoing = ThreadScopedOutgoingMessageSender::new(",
+            "            outgoing,",
+            "            vec![ConnectionId(1)],",
+            "            ThreadId::new(),",
+            "        );",
+            "        let thread_state = new_thread_state();",
+            "        handle_adaptive_runtime_signal(",
+            "            conversation_id,",
+            "            source_turn_id.clone(),",
+            "            AdaptiveRuntimeSignalEvent {",
+            "                signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,",
+            "                evidence_refs: Vec::new(),",
+            "                diagnostic_note: None,",
+            "            },",
+            "            &outgoing,",
+            "            &thread_state,",
+            "        )",
+            "        .await;",
+            "",
+            "        let notification = recv_broadcast_notification(&mut rx).await?;",
+            "        let ServerNotification::AdaptiveRuntimeSignal(notification) = notification else {",
+            "            bail!(\"unexpected notification: {notification:?}\");",
+            "        };",
+            "        let expected_signal = AdaptiveRuntimeSignalNotification {",
+            "            thread_id: conversation_id.to_string(),",
+            "            signal: AdaptiveRuntimeSignalEnvelope {",
+            "                source_turn_id: source_turn_id.clone(),",
+            "                signal_kind: codex_protocol::protocol::AdaptiveRuntimeSignalKind::Capability,",
+            "                evidence_refs: Vec::new(),",
+            "                diagnostic_note: None,",
+            "            },",
+            "        };",
+            "        assert_eq!(notification, expected_signal);",
+            "",
+            "        handle_turn_complete(",
+            "            conversation_id,",
+            "            source_turn_id.clone(),",
+            "            turn_complete_event(&source_turn_id),",
+            "            &outgoing,",
+            "            &thread_state,",
+            "        )",
+            "        .await;",
+            "",
+            "        let replay = recv_broadcast_notification(&mut rx).await?;",
+            "        let ServerNotification::AdaptiveRuntimeSignal(replayed_signal) = replay else {",
+            "            bail!(\"unexpected replay notification: {replay:?}\");",
+            "        };",
+            "        assert_eq!(",
+            "            replayed_signal, expected_signal,",
+            "            \"trusted adaptive signal must be replayed immediately before turn completion\"",
+            "        );",
+            "        let completed = recv_broadcast_notification(&mut rx).await?;",
+            "        let ServerNotification::TurnCompleted(completed) = completed else {",
+            "            bail!(\"unexpected notification after adaptive replay: {completed:?}\");",
+            "        };",
+            "        assert_eq!(completed.turn.id, source_turn_id);",
+            "        assert_eq!(completed.turn.status, TurnStatus::Completed);",
+            "        assert!(",
+            "            rx.try_recv().is_err(),",
+            "            \"terminal replay and TurnCompleted should be the only completion messages\"",
+            "        );",
+            "        Ok(())",
+            "    }",
+            "",
+            "    #[tokio::test]",
+            "    async fn adaptive_runtime_signal_does_not_replay_on_failed_or_interrupted_turn() -> Result<()> {",
+            "        for interrupted in [false, true] {",
+            "            let conversation_id = ThreadId::new();",
+            "            let source_turn_id = \"terminal-signal\".to_string();",
+            "            let (tx, mut rx) = mpsc::channel(CHANNEL_CAPACITY);",
+            "            let outgoing = Arc::new(OutgoingMessageSender::new(",
+            "                tx,",
+            "                codex_analytics::AnalyticsEventsClient::disabled(),",
+            "            ));",
+            "            let outgoing = ThreadScopedOutgoingMessageSender::new(",
+            "                outgoing,",
+            "                vec![ConnectionId(1)],",
+            "                ThreadId::new(),",
+            "            );",
+            "            let thread_state = new_thread_state();",
+            "            handle_adaptive_runtime_signal(",
+            "                conversation_id,",
+            "                source_turn_id.clone(),",
+            "                AdaptiveRuntimeSignalEvent {",
+            "                    signal_kind:",
+            "                        codex_protocol::protocol::AdaptiveRuntimeSignalKind::RepairRequired,",
+            "                    evidence_refs: vec![\"test-only\".to_string()],",
+            "                    diagnostic_note: None,",
+            "                },",
+            "                &outgoing,",
+            "                &thread_state,",
+            "            )",
+            "            .await;",
+            "            assert!(matches!(",
+            "                recv_broadcast_notification(&mut rx).await?,",
+            "                ServerNotification::AdaptiveRuntimeSignal(_)",
+            "            ));",
+            "",
+            "            if interrupted {",
+            "                handle_turn_interrupted(",
+            "                    conversation_id,",
+            "                    source_turn_id.clone(),",
+            "                    turn_aborted_event(&source_turn_id),",
+            "                    &outgoing,",
+            "                    &thread_state,",
+            "                )",
+            "                .await;",
+            "            } else {",
+            "                handle_error(",
+            "                    conversation_id,",
+            "                    TurnError {",
+            "                        misalignment: None,",
+            "                        message: \"failed source turn\".to_string(),",
+            "                        codex_error_info: None,",
+            "                        additional_details: None,",
+            "                    },",
+            "                    &thread_state,",
+            "                )",
+            "                .await;",
+            "                handle_turn_complete(",
+            "                    conversation_id,",
+            "                    source_turn_id.clone(),",
+            "                    turn_complete_event(&source_turn_id),",
+            "                    &outgoing,",
+            "                    &thread_state,",
+            "                )",
+            "                .await;",
+            "            }",
+            "",
+            "            let notification = recv_broadcast_notification(&mut rx).await?;",
+            "            let ServerNotification::TurnCompleted(completed) = notification else {",
+            "                bail!(\"unexpected terminal notification: {notification:?}\");",
+            "            };",
+            "            assert_eq!(completed.turn.id, source_turn_id);",
+            "            assert_eq!(",
+            "                completed.turn.status,",
+            "                if interrupted {",
+            "                    TurnStatus::Interrupted",
+            "                } else {",
+            "                    TurnStatus::Failed",
+            "                }",
+            "            );",
+            "            assert!(",
+            "                rx.try_recv().is_err(),",
+            "                \"a failed or interrupted turn must not replay trusted adaptive signals\"",
+            "            );",
+            "        }"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "upstream_blob": "a1572cbaf7b9026f789c96ce9d027e0a7cc4b1be",
+      "candidate_blob": "c93967717664145a72390384749747212fd5c63a",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 140,
+          "upstream_lines": [
+            "        | ServerNotification::GatewayOAuthChanged(_) => notification,"
+          ],
+          "candidate_lines": [
+            "        | ServerNotification::GatewayOAuthChanged(_)",
+            "        | ServerNotification::AdaptiveRuntimeSignal(_) => notification,"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "upstream_blob": "a40486e0d512af66aeef1c1307696b2740053500",
+      "candidate_blob": "5c4633ab48ea77692e28193ea6e128ec58067a37",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 298,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::ThreadWorkflowStateOperation;",
+            "use codex_app_server_protocol::ThreadWorkflowStateUpdateParams;",
+            "use codex_app_server_protocol::ThreadWorkflowStateUpdateResponse;"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "upstream_blob": "6dfe969ab3adfc5d703184ee2ee61a1b6335f282",
+      "candidate_blob": "42b434e017c527a8785fbaedf43292a83e1af09d",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 3,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;"
+          ]
+        },
+        {
+          "candidate_start_line": 102,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Trusted adaptive signals emitted during the active turn. The app-server replays these",
+            "    /// immediately before successful turn completion so terminal-bound consumers cannot lose a",
+            "    /// signal merely because live notification delivery was delayed.",
+            "    pub(crate) adaptive_runtime_signals: Vec<AdaptiveRuntimeSignalEnvelope>,"
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "upstream_blob": "146209407b78b71c461c854c5d9d1e4d7816b873",
+      "candidate_blob": "9ff46a4e1331e15f35f95b8e17ba41dfc931a5cf",
+      "review_kind": "REVERSIBLE_SOURCE_DELTA_ONLY",
+      "hunks": [
+        {
+          "candidate_start_line": 1453,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "/// Inert data carried by the private adaptive runtime signal transport.",
+            "///",
+            "/// These values have no policy meaning until a later trusted producer slice",
+            "/// validates and consumes them at the matching turn boundary.",
+            "#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]",
+            "#[serde(rename_all = \"snake_case\")]",
+            "#[ts(rename_all = \"snake_case\")]",
+            "pub enum AdaptiveRuntimeSignalKind {",
+            "    Complexity,",
+            "    Capability,",
+            "    MechanicalValidation,",
+            "    ImplementationWork,",
+            "    ReadyForValidation,",
+            "    RepairRequired,",
+            "    ReadyForOwnerQa,",
+            "}",
+            "",
+            "/// Core-side payload for the private adaptive runtime signal transport.",
+            "///",
+            "/// Source thread and turn identity are deliberately absent. The runtime binds",
+            "/// them from the owning session and enclosing [`Event`] instead of accepting",
+            "/// caller-supplied identity."
+          ]
+        },
+        {
+          "candidate_start_line": 1476,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "pub struct AdaptiveRuntimeSignalEvent {",
+            "    pub signal_kind: AdaptiveRuntimeSignalKind,",
+            "    pub evidence_refs: Vec<String>,",
+            "    pub diagnostic_note: Option<String>,",
+            "}",
+            "",
+            "#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]"
+          ]
+        },
+        {
+          "candidate_start_line": 1494,
+          "upstream_lines": [],
+          "candidate_lines": [
+            "    /// Private, inert adaptive runtime transport data.",
+            "    AdaptiveRuntimeSignal(AdaptiveRuntimeSignalEvent),",
+            ""
+          ]
+        }
+      ],
+      "semantic_signoff": "NOT_GRANTED"
+    }
+  ],
+  "release_approved": false
+}

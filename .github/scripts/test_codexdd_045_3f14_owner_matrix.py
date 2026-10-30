@@ -120,7 +120,8 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         self.assertEqual(
             dict(count),
             {
-                "frozen_reviewed_identity": 98,
+                "frozen_reviewed_identity": 97,
+                "reviewed_adaptive_terminal_replay_negative_tests": 1,
                 "reviewed_upstream_dynamic_auth_test_restoration": 1,
                 "reviewed_upstream_govcloud_guidance_restoration": 1,
                 "audited_secure_dependency_migration": 2,

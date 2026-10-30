@@ -1,0 +1,2791 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_formal_path_owner_signoff_ledger",
+  "source_sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+  "upstream_ref": "openai/codex@rust-v0.163.0",
+  "root_owner_matrix": "docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json",
+  "scope": "FORMAL_REVIEW_OPEN_NOT_AUTOMATIC_OWNER_APPROVAL",
+  "release_approved": false,
+  "required_owner_count": 109,
+  "approved_owner_count": 0,
+  "ready_for_formal_review_count": 37,
+  "source_review_queued_count": 72,
+  "decision_workflow": {
+    "path_identity": "Exact Git blob pinned per path; revision invalidates owner decision",
+    "owner_signoff": "An owner accepts only after reviewing specific upstream intent, fork behavior, negative security cases and native receipt matching this source; signing identity and UTC timestamp required",
+    "automated_checks": "Cannot set OWNER_ACCEPTED based only on source diff, an ancestor generator run or a nonrelease native subset",
+    "final_release": "All 109 accepted plus seven-program signed Windows, complete release native suite and explicit authorization"
+  },
+  "paths": [
+    {
+      "path": ".github/workflows/bazel.yml",
+      "owner": "bazel_packaging",
+      "candidate_blob": "0595de4220a15c98d6f3862368d7df0288012ccc",
+      "official_upstream_0163_blob": "2f4b09deb1c0af682dd77bcd3370a67f662d959e",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "FIVE_NATIVE_BINARIES_PROVEN_SEVEN_PENDING",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "OPTIMIZED_FIVE_PROGRAM_BUILD",
+          "run_id": 40922368730,
+          "sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+          "scope": "five PE/PDB pairs; two Windows sidecars pending"
+        }
+      ],
+      "required_evidence": [
+        "Native Bazel release-profile packaging and Windows MSVC smoke",
+        "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging",
+        "Seven-program source-matched Windows bundle, archive integrity and distribution verification"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/BUILD.bazel",
+      "owner": "bazel_packaging",
+      "candidate_blob": "843e9fe095e0982df2043bb17c7da8e6e1c95025",
+      "official_upstream_0163_blob": "e1698941536ac5020adeceb5801055bf39f2a16a",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "FIVE_NATIVE_BINARIES_PROVEN_SEVEN_PENDING",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "OPTIMIZED_FIVE_PROGRAM_BUILD",
+          "run_id": 40922368730,
+          "sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+          "scope": "five PE/PDB pairs; two Windows sidecars pending"
+        }
+      ],
+      "required_evidence": [
+        "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging",
+        "Seven-program source-matched Windows bundle, archive integrity and distribution verification"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/Cargo.lock",
+      "owner": "dependency",
+      "candidate_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+      "official_upstream_0163_blob": "72658b908782ad8f90ba70260fba20a395999f0b",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SECURE_LOCK_EVIDENCE_FINAL_CARGO_DENY_PENDING",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "SECURE_LOCK_DEPENDENCY",
+          "run_id": 40581389379,
+          "scope": "crypto-bigint remediated on secure lock; re-audit on final source still required"
+        }
+      ],
+      "required_evidence": [
+        "All-target cargo-deny advisory decision and locked candidate build",
+        "Frozen final all-target cargo-deny and native owner regression on release candidate"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/Cargo.toml",
+      "owner": "dependency",
+      "candidate_blob": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+      "official_upstream_0163_blob": "e84b9776a1a7b161a522773686888e10e248756c",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "SECURE_LOCK_EVIDENCE_FINAL_CARGO_DENY_PENDING",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "SECURE_LOCK_DEPENDENCY",
+          "run_id": 40581389379,
+          "scope": "crypto-bigint remediated on secure lock; re-audit on final source still required"
+        }
+      ],
+      "required_evidence": [
+        "Frozen final all-target cargo-deny and native owner regression on release candidate"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ClientRequest.json",
+      "owner": "generated_protocol",
+      "candidate_blob": "443297aa65e890a4601d5bdcc9ef831a33a5b477",
+      "official_upstream_0163_blob": "4e9211b36a4128bce7c000a84679788e99e743cf",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/ServerNotification.json",
+      "owner": "generated_protocol",
+      "candidate_blob": "98ce23d7be0ad5d0c2db67bb3cb4855fd9429f85",
+      "official_upstream_0163_blob": "ed40f2f769c02f2874df9209f51384254feef54f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+      "owner": "generated_protocol",
+      "candidate_blob": "3c46fd551b2ebdedcb2f0483ff104276f56dfe52",
+      "official_upstream_0163_blob": "b96da225040e5648d8232cadbc8c560b293c4a14",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+      "owner": "generated_protocol",
+      "candidate_blob": "ec3c7b7bc2c61e89d4b39b17827edc6cb0cb3691",
+      "official_upstream_0163_blob": "6d7bfd893788632926754fb2a39828609fb11fb8",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst",
+      "owner": "generated_protocol",
+      "candidate_blob": "10fdcbeb1ffc7e6b4bf08bca3af08e7429a95810",
+      "official_upstream_0163_blob": "b18386f9681398e48984e807c1b00b72b0a27453",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Exact candidate native stable/experimental schema regeneration",
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-stable.json.zst",
+      "owner": "generated_protocol",
+      "candidate_blob": "d13a46abe6ab7224612abcbd4cf82951c7b0aab8",
+      "official_upstream_0163_blob": "64de0f45ca5f443292b36ed2da21d434ca6e7ad0",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Exact candidate native stable/experimental schema regeneration",
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotification.ts",
+      "owner": "generated_protocol",
+      "candidate_blob": "39931bea900f12b97c0c876d2708ad64844f649f",
+      "official_upstream_0163_blob": "4af7a4307ada139592b325f0aa1da2301deed861",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Exact candidate TypeScript notification contract tests",
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/ServerNotificationEnvelope.ts",
+      "owner": "generated_protocol",
+      "candidate_blob": "7edad7f0219258e2fe65b9f97e095940ba78c675",
+      "official_upstream_0163_blob": "a5b07d304d2095bb69864400a1c83f255ed04f83",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Exact candidate TypeScript envelope contract tests",
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/schema/typescript/v2/index.ts",
+      "owner": "generated_protocol",
+      "candidate_blob": "d34e0eeb106b8cbd90438933fccdc05199abca0d",
+      "official_upstream_0163_blob": "40723453437c27dd37397fde205ed5b2d4638418",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "6cb1a33ea48ed0de73f420ff6c179d9629fec45a",
+      "official_upstream_0163_blob": "b710f18f14e711a748318ee980bcdc4168a7d843",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "82c980c427501b594389fed439e105c2f696b9a5",
+      "official_upstream_0163_blob": "53817bb9e50e87ad8a85f39c6a27037bc87d5081",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "4180b91565e1a47b38c4f40114716e55b2973d3f",
+      "official_upstream_0163_blob": "1746ceb7bcf4ed50ceca643170ffc65dada37f41",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/turn.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "04f38d2535ba46da2bc22358589aeb1bd2840499",
+      "official_upstream_0163_blob": "b09a191289349a68e6602a30ec9d887664dab73f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
+      "official_upstream_0163_blob": "5e5430826edf33b22c5cdbdec3f5e5a6078f20aa",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "d9d1b8403c7bd9bb963f4d3a3b8d24ddf06a393a",
+      "official_upstream_0163_blob": "c9858cd9d513c69a917f6505410ee89b16bdd955",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/notification_media.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "c93967717664145a72390384749747212fd5c63a",
+      "official_upstream_0163_blob": "a1572cbaf7b9026f789c96ce9d027e0a7cc4b1be",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "5c4633ab48ea77692e28193ea6e128ec58067a37",
+      "official_upstream_0163_blob": "a40486e0d512af66aeef1c1307696b2740053500",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "1186f0a181704d8ea45243a850f971f1057cb080",
+      "official_upstream_0163_blob": "1b9a253becc97a7a2c1b0de9e92def7c192691c2",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/app-server/src/thread_state.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "42b434e017c527a8785fbaedf43292a83e1af09d",
+      "official_upstream_0163_blob": "6dfe969ab3adfc5d703184ee2ee61a1b6335f282",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/cli/BUILD.bazel",
+      "owner": "bazel_packaging",
+      "candidate_blob": "5dd2b8b9629275fb2c392c59134ea95a3ce317d5",
+      "official_upstream_0163_blob": "d9673f989f062b5ea2e3f4bba124295bf010f7da",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "FIVE_NATIVE_BINARIES_PROVEN_SEVEN_PENDING",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "OPTIMIZED_FIVE_PROGRAM_BUILD",
+          "run_id": 40922368730,
+          "sha": "57152222a1ef523fe6e2f5079871672423c6cb56",
+          "scope": "five PE/PDB pairs; two Windows sidecars pending"
+        }
+      ],
+      "required_evidence": [
+        "Current secure Cargo graph Bazel lock/cquery, optimized CLI and Windows native release packaging",
+        "Seven-program source-matched Windows bundle, archive integrity and distribution verification"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "owner": "cli_startup",
+      "candidate_blob": "9379d52b41473f1a57cb49d07048af7c139ebcf9",
+      "official_upstream_0163_blob": "9d540c3124ee692250d345719d122aa1884ba12f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Secure-graph native CLI startup, daemon and argument regression"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/cli/tests/daemon_startup.rs",
+      "owner": "cli_startup",
+      "candidate_blob": "e1c6d330f602f3c4cebf9d7163ecdcd2adb9100f",
+      "official_upstream_0163_blob": "f50758363578497af6e1139e8a1410858706e38c",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Secure-graph native CLI startup, daemon and argument regression"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "owner": "config",
+      "candidate_blob": "a07f08c8831dd011d4950a52088c7233722620d8",
+      "official_upstream_0163_blob": "8c8c66ea1dc45669a3f52e3e0d3f10e633267167",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Secure-graph config parsing and native startup regression"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/config.schema.json",
+      "owner": "generated_protocol",
+      "candidate_blob": "1da7a45f8c2cbffe0a7e30ce9f4564663b37b779",
+      "official_upstream_0163_blob": "4aba1bab6cd2cbcc179a5de802731f2775c6bc88",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/spawn.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "dca46d848c2035457001f07c191d201b1b8db380",
+      "official_upstream_0163_blob": "70cf8b7ef07e6ffaab9cfa32435bf6d7408137e3",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "583447f35eaba564771771813bd4d897cb6b73de",
+      "official_upstream_0163_blob": "9ef4c0591931e00e9b195f0b47f51b850088c75f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/client_tests.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "2e5525612379a29af24116dd738a6612dc4420e6",
+      "official_upstream_0163_blob": "46ac8953074e2871eebd74e66242111732a0e2ee",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "84b32544000fde7d16a4b4cd4f4b27f26d7ceaf9",
+      "official_upstream_0163_blob": "a63dc8f4d231e215513606e7e534a4900203718f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "17680eeef69718965df66cc12466985c84bdcd63",
+      "official_upstream_0163_blob": "c5ab36546e189781c8b1f957cf56d8d31ad3d7fe",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/history_tests.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d",
+      "official_upstream_0163_blob": "8f22910ed2086c07edbd41f84a1327705f4700f3",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Retained history replay under inherited and interrupted calls",
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/context_manager/normalize.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "4ca88c6a668e9896df06ca81940a0e41e357898d",
+      "official_upstream_0163_blob": "532cfdfb34a74f774c41a9a1914347a2492997de",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        },
+        {
+          "kind": "PREVIOUS_FOCUSED_NATIVE",
+          "run_id": 40765870072
+        }
+      ],
+      "required_evidence": [
+        "Context normalization interrupted versus in-progress behavior",
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "118907bac6f1f084c96b81e78c2d1b7fc923583d",
+      "official_upstream_0163_blob": "7c8ae88b5dd59674df284c49c13cc4d99b614b54",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/rollout_reconstruction_tests.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "106f07a29d8cde54784c516898472518736b9c37",
+      "official_upstream_0163_blob": "21463d873c7e87fcf1ca8357d451bfec676dfe44",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "68fb4db5fe8f11638a22c3b249d9f1bc7668cadd",
+      "official_upstream_0163_blob": "a617d9367bc34a265c60c540ef8cd7b3d954c888",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "dc7d8179b298113fedcbcb5d5dc0573737a5c2e1",
+      "official_upstream_0163_blob": "2cde3795393f3da412d7d9c4e516033e5896901d",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "50f524a055a92f0d19be5e6bc2665fe18718e35b",
+      "official_upstream_0163_blob": "d1d43621210c979e2a98e2c2bc49698e825d71c1",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
+      "official_upstream_0163_blob": "2fb6da8d71570d48f9218ec8015cd3d6d3e12e3a",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "d7b27ac523a2f6c3d2e8a1beabc9189b17622e25",
+      "official_upstream_0163_blob": "df585fa7d98b6e325796f16bab970c952fa036ec",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/dynamic.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "05353ec9dc97df37db5c85ed1b232d7c9eb5e6d1",
+      "official_upstream_0163_blob": "9e78325058546a3924b12fa8c9de938d6421fbcf",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
+      "official_upstream_0163_blob": "501ce5fe4eb8395ae84f8b7a1b7f14b530a22e5e",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "fc75b3bbf91f1881bd32faaaca93356fbb598b5e",
+      "official_upstream_0163_blob": "ebde5a7bdc449a11dc9c1fc1d8475c8e4432010f",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Post-hook command policy and cancellation lifecycle native tests",
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "422870dba8b5a3b36994a598380c93f58760ad1b",
+      "official_upstream_0163_blob": "fd5b5e14eeeb57b5be78af53d3f855702167dcc7",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "379eb8d44dfa672b70ed3b7d5408e882d8e803e3",
+      "official_upstream_0163_blob": "1a8a0661878c6e847b5ed61c80c328c1444afc29",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/scenarios.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "842ae7aeae97f6912e364f972ff8044061f176aa",
+      "official_upstream_0163_blob": "cfad8149ad70f43482453d59e7128ac975bbca03",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec.rs",
+      "owner": "core_authority_history",
+      "candidate_blob": "0d53c5aebc2c2543f2f1190e46ed95db93992288",
+      "official_upstream_0163_blob": "acdb81445f12fc13779650ae1d71757795f5143a",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "interrupted output, orphans and history; not full core owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native authority tests"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/external-agent-migration/src/sessions/append_tests.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "72d8fc5d5cf9c388f179247330a354bd88d4c8f8",
+      "official_upstream_0163_blob": "cbe3ae6a7c1509d582a959af38839eb082f1ab55",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "a54a5733e029fe3728a46adb3f50c68dae4d0eb2",
+      "official_upstream_0163_blob": "826669cc3335dc23102e6a5bdbf2d62c1cb22fa4",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/history/src/rollout_payload.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "180b889e87cf3b0c13d1e43cfef0f21bb88c7c1c",
+      "official_upstream_0163_blob": "9ab89363df8a895ee4cfb28c4f38acb8a9d35250",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "a0a99cddd94064b6245e174cc74818ea3b5a3df2",
+      "official_upstream_0163_blob": "32a6110d3b53ee1dac0a7ac5ed12ede35a012812",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/memories/write/src/phase1.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "a036229bb256483f3a6e96ef6ceed86e4d12f3af",
+      "official_upstream_0163_blob": "aa11ce276a51b197b9f9ba3e58d66eb16401b066",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/memories/write/src/rollout_input.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "3c54f1884b409a7060f54dd90739fa897ef7e604",
+      "official_upstream_0163_blob": "2d45c7b63bdcda64ff2d37eccb112556e10a2f4e",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "owner": "app_server_protocol",
+      "candidate_blob": "9ff46a4e1331e15f35f95b8e17ba41dfc931a5cf",
+      "official_upstream_0163_blob": "146209407b78b71c461c854c5d9d1e4d7816b873",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "ALL_ELEVEN_SOURCE_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "BYTE_EXACT_UPSTREAM_HUNK_RECONSTRUCTION",
+          "run_id": 41059790018,
+          "sha": "4cc1caee254499335394ba7d164fa1ee5e5ec0f1",
+          "scope": "eleven app-server owner source files"
+        },
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "successful/failed/interrupted adaptive signals; not every app-server RPC"
+        }
+      ],
+      "required_evidence": [
+        "Full contract review for every protocol and handler path, plus native integration",
+        "Owner reviews authenticated RPC, stale-turn rejection and terminal replay end-to-end, not source reconstruction alone"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout-trace/src/protocol_event.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "4d16022f93841cb5d92eca00c76ec8cd84dd5bfd",
+      "official_upstream_0163_blob": "f4d66320352ca0266ca7f8c1cc823d4c054adcd3",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout/src/policy.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "294ce2a11eacf8aca837a828a0012cb1301f3e4d",
+      "official_upstream_0163_blob": "eb13ec553ef546f8c982dd46deef9d0880a24555",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "6e70783e7c2e93e9a705a2ce32f7317545ea9228",
+      "official_upstream_0163_blob": "765d83ccc7df4b136c04774930f4ac65af15bbd5",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/rollout/src/search.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "d222871cab7b8e55dcd1dec8faef7e9cf4918796",
+      "official_upstream_0163_blob": "77206404e1acd9f120240d41c155e4aa9b503cb5",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/state/src/extract.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "f9792c339f184ea66f58db9463ba8b85a1cbe4d9",
+      "official_upstream_0163_blob": "f079ebc4ee8c09213df53b234e20d8c94800adf8",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/state/src/runtime/threads.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "5a0edb6a4f5c4968df7586b5d7adae7c1653c301",
+      "official_upstream_0163_blob": "1179126f6241be8a8d39cefcbd5ded38660d8cb9",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/thread-store/src/types.rs",
+      "owner": "persistence_rollout_memory",
+      "candidate_blob": "315498be3dcdd650fa147ca6d3c69abd9c089e2c",
+      "official_upstream_0163_blob": "5b3dea35516301a35d47c70b83e548dc060b8c9c",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [],
+      "required_evidence": [
+        "Per-path memory and state native regression, with historical replay compatibility"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "7d9da0b198cfac44c0c06933c622b7c1515a613b",
+      "official_upstream_0163_blob": "1b07e9826dd10fae888b903d75bdf0187a768e82",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "16d6b02da4469a7f1ef2d82916a48d04719124d5",
+      "official_upstream_0163_blob": "13d30c273f472d1c4271216ee3fbeaa5c350894f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "aece952c906a2f73f87d1d34b3f9583a36f3c722",
+      "official_upstream_0163_blob": "76d0111f4adb859fa49a4effe180fe36d5026d26",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "81df877569e0c205e2a4dec5e9e790f7c7993b93",
+      "official_upstream_0163_blob": "a7f7f1e827818386b7417f27ab9a829f34fe1fa7",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "c691ba3aaa9c8ff10088b09bdc365d7c06a35273",
+      "official_upstream_0163_blob": "ff6e0201bb827516090eb84b7a1b12f342c8844d",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "fe32d7d8175e6fb039cfa2b21b52b1f8a9463faf",
+      "official_upstream_0163_blob": "a4fff209ab7c630ecb8f7465f24b65cc9c4328e9",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "e51254ea2f16f2a356670413ae29c9de0d002e9d",
+      "official_upstream_0163_blob": "4c329f378702414c3c17cc31802c778a8dbb2266",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        },
+        {
+          "kind": "PREVIOUS_FOCUSED_NATIVE",
+          "run_id": 40760413516
+        }
+      ],
+      "required_evidence": [
+        "Managed daemon provenance and elevated Windows startup fallback",
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/test_support.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "b95971975610ff94ef823eff73e36a4691e7e29c",
+      "official_upstream_0163_blob": "9394604dd2c6cb01c34ef6c907b2a6d3e6a0befe",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "03febfb8e58c93e975f1f240195576a0f1080e08",
+      "official_upstream_0163_blob": "40c30df9239f3ac5a5680953dfc4ccc64867af8a",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "662967de32dc64517b250dc180baafd1da4dd36a",
+      "official_upstream_0163_blob": "7828068a5bd915501576bc09d792c7b43d287ef1",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "e090162290f82156213340967c76a398887ecf44",
+      "official_upstream_0163_blob": "918e7a73a6beae18be001943d3e63cab6b0fc7cd",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "7d2be3352380d43df714399b441a95960b87a59f",
+      "official_upstream_0163_blob": "062efa383da797e46f6aa56540cbf76a9c130353",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Native session request ownership, restart and disconnect tests",
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "a437116e81e54063a2df7e41752ac3e88a3d245d",
+      "official_upstream_0163_blob": "196ff1ab16337f607aa1b305ad389fe6f590267d",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "e60808df0448682d47af1a14b5bd8d5c52206397",
+      "official_upstream_0163_blob": "86e0da6fd4e0550050cc1a704186a9a07038278b",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Native default model/startup and managed daemon tests",
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "629ddda83497d1447819bd84ca8c436d4b23fdcf",
+      "official_upstream_0163_blob": "c8d16dc9c6712a01640553f9b5b680faf535f2f9",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "5f43579e23f87a94786ae9803df8dba40060a84e",
+      "official_upstream_0163_blob": "a20193149e57e60f75e89fbd4b4aa819d511b2e5",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "c9ff4fb4294c894490e224590adfc411a7eff2fa",
+      "official_upstream_0163_blob": "837fcb13c2a2d9543b89257fa8cab26af8bab8d9",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/workspace_roots_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "d6447d22a0a1e943b1352b8c945cf7f6cf09734e",
+      "official_upstream_0163_blob": "525eed5ece8b9c0110b3b296b68fb6c727d6d096",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Workspace-root and app-server session authority tests",
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "76ae0ab2d341188a6deed0c4347b489fa93f29e4",
+      "official_upstream_0163_blob": "2f74f843d59d8578fe32a195de0c664bf049e4fe",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/constructor.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "a584d5513ea40321e920d795bbb93b8d96e8f03b",
+      "official_upstream_0163_blob": "05dde949edeadc4c4ef2c510d13c19f195a9b43a",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_flow.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "e463da2af9440b3dc8382464a5d0b98ee6758404",
+      "official_upstream_0163_blob": "5b44cac1b0a97e94a786705c490dd80e5a7a8888",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "17493a1b689e90ddff7ed4be863b5beb7eb6df0a",
+      "official_upstream_0163_blob": "9998e77583d40fe12e0026c7028332c109c4c8ea",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/interaction.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "e83bc3d1860a8f2f04a14bc136c4b6468785eb67",
+      "official_upstream_0163_blob": "8657de2e8373e4a07fd4e97eb7ca5b1ca6048a54",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Adaptive Escape interrupt, paste and guarded key-event tests",
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "ad71108b91a0d7f1f079cab0482076237b138994",
+      "official_upstream_0163_blob": "0065ef473b7c65562620edde50bea4a21a1b9c3f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/replay.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "d17ff1c77f63c8c57e0a847c58377999fda78480",
+      "official_upstream_0163_blob": "1ebff8fcb314d5c8c2a867c18def36b1b2f7ea60",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "17500409f70dfda7fa1c489258fa19ab01bed747",
+      "official_upstream_0163_blob": "6077a0f9ef11faec6a95b69ddf9d50616c00a6c4",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "bb747507416e7712fe4ff5832446783c0127994e",
+      "official_upstream_0163_blob": "b0b9674c6ae5849dabb63bf873ec5ea082da6dbe",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "57ed2741b86aae99d5ac6054990703c9eabdf845",
+      "official_upstream_0163_blob": "5327f805cf5d3e78d283cd558be3a40e8c569966",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/status_controls.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "c3973a6a72da8533b47951b0d529adf839398b1d",
+      "official_upstream_0163_blob": "692eba105a92c446fd4ffb8a3440c08b7b88134c",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "2b2404e0db36ace3260ecfca0c423cd146b8c95b",
+      "official_upstream_0163_blob": "8534d753f6c92a7a0fdc8254d970bb260a4b4faa",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "53ca9fdae79b07822e8551289b97f1732b5e3ab0",
+      "official_upstream_0163_blob": "8e83ad083ae63717492fe3d7d60bf29f7cf19e8e",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/composer_submission.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "dd1a4a0f124a74f7a2fdc5b67be309d414a81c1c",
+      "official_upstream_0163_blob": "6ef2db01fb53431a6bf79562780057f340477f42",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/history_replay.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "5dec80fbf862d768bd2210c64c6eb1c80123bf4e",
+      "official_upstream_0163_blob": "93662ffac475697d4f5a41c918b80de85e47b7b3",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/misalignment_policy_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "2354a8e517c49e1c25fceea4b849cb0b077bc366",
+      "official_upstream_0163_blob": "7e136521f585c25e4c59d371df7fa13183f0a584",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "bec8d92caae4cdff17b7f06923bd4cd9ee358a52",
+      "official_upstream_0163_blob": "f867a24d5c917091dca60f0102700e989970aef7",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/status_and_layout.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "23ea7ee8024deb95767f8322a42a1f330be715ff",
+      "official_upstream_0163_blob": "301b55c2cc7bd0b1c94d137322b9951c04e49e46",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/cli.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "da5c0e4f1ba02b7ff68811323945b0fd4d26f697",
+      "official_upstream_0163_blob": "29469b295e97de8a2a5f9b1f1e1c0c79d4b445d8",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "9e2b577a840d56efee13856ad9f11fd83a936d0d",
+      "official_upstream_0163_blob": "91c38d78373e4215282549f9f4dbc1af997c77d3",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/daemon_startup_tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "4340c3c42ee4dcd4f5c5e06b918648bee4da51a8",
+      "official_upstream_0163_blob": "2a6a2eaf1f5d601a72b6ea09669091e676f1ff4f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "f1075c14620c0217e2433f1501c8f171bc59989d",
+      "official_upstream_0163_blob": "f3b62e10dd713d32bd1330f7c6548cda6313d47f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "f45b01a668998d817abec91313f425f2fa6a9ad7",
+      "official_upstream_0163_blob": "a3fb5447b06d48d3a2924eb25dae4174243cb844",
+      "original_direct_conflict": true,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "NINE_DIRECT_CONFLICT_DIFFS_RECONSTRUCTED_NATIVE_PARTIAL",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "TUI entrypoint managed-daemon forwarding and adaptive isolation",
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "36e5def7042e71baeeb87945de4fa0b029cd177a",
+      "official_upstream_0163_blob": "afb372bb7b9bc4e6f32ee82d6f86c32b4c40b97d",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "6b3bf4a9cf3d639107126b29992690b19bf4c932",
+      "official_upstream_0163_blob": "c29d464adcb2f52a7a6dc38329e19319217cc3ad",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "candidate_blob": "e067b499977a4e0dcb81d04f2e0178bf10e1793d",
+      "official_upstream_0163_blob": "d84b3d373f8d496810fd0ab86fdf1de9de9e676f",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_DIFF_REVIEW_QUEUED",
+      "readiness": "TARGETED_SEMANTIC_REVIEW_REQUIRED",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "DANIEL_CL_TARGETED_NATIVE",
+          "sha": "72cd09d3f52c076d445078758af20489ccdb4e74",
+          "source": "user-supplied terminal receipt 2026-10-30T14:09:19Z",
+          "scope": "MCP, startup defaults and workspace roots; not complete TUI owner coverage"
+        }
+      ],
+      "required_evidence": [
+        "Per-path semantic source review plus frozen-source native TUI and Windows daemon suite",
+        "Windows daemon/WSL lifecycle and UI trust paths beyond nine-target selection"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/notification_registry.py",
+      "owner": "generated_protocol",
+      "candidate_blob": "69f4e77ea9098353315f874e90f5495649bb1905",
+      "official_upstream_0163_blob": "2c1212bd8a8c67705105d3c0eb22b9b8c40343eb",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    },
+    {
+      "path": "sdk/python/src/openai_codex/generated/v2_all.py",
+      "owner": "generated_protocol",
+      "candidate_blob": "7eba3aa28d900113f9efd85230719b50942849d0",
+      "official_upstream_0163_blob": "0faaa9e074c4de86f9087d4e355bd1ebee42c2b9",
+      "original_direct_conflict": false,
+      "source_review_status": "SOURCE_COMPARISON_AND_EVIDENCE_ATTACHED",
+      "readiness": "GENERATED_BYTES_AND_SDK_REPRODUCIBLE",
+      "proposed_disposition": "RETAIN_FORK_COMPATIBLE_UPSTREAM_0163_WITH_TESTED_DIFFERENCES",
+      "evidence": [
+        {
+          "kind": "LOCKED_GENERATOR_ZERO_DRIFT",
+          "run_id": 41062921661,
+          "sha": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+          "scope": "stable, experimental, config and Python SDK byte-for-byte"
+        }
+      ],
+      "required_evidence": [
+        "Frozen-source generator drift and native app-server protocol acceptance",
+        "Owner evaluates schema/SDK zero drift and protocol wire compatibility on exact final source"
+      ],
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "approved_by": null,
+      "approval_utc": null,
+      "release_status": "NOT_ACCEPTED"
+    }
+  ]
+}

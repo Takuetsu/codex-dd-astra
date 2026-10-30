@@ -17,11 +17,12 @@
   "total_original_direct_conflicts": 15,
   "source_dispositions": {
     "audited_secure_dependency_migration": 2,
-    "frozen_reviewed_identity": 98,
+    "frozen_reviewed_identity": 97,
     "reviewed_upstream_govcloud_guidance_restoration": 1,
     "reviewed_upstream_timeout_recovery_correction": 1,
     "verified_formatter_only": 6,
-    "reviewed_upstream_dynamic_auth_test_restoration": 1
+    "reviewed_upstream_dynamic_auth_test_restoration": 1,
+    "reviewed_adaptive_terminal_replay_negative_tests": 1
   },
   "owner_counts": {
     "bazel_packaging": 3,
@@ -384,17 +385,26 @@
     {
       "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
       "owner": "app_server_protocol",
-      "current_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
+      "current_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
       "historical_reviewed_blob": "1c4a913d2373a614a2dfe73c10e6f65c64a727a1",
       "production_044_blob": "65824b0da966df860bcc901d681017545de0227e",
-      "disposition": "frozen_reviewed_identity",
+      "disposition": "reviewed_adaptive_terminal_replay_negative_tests",
       "original_direct_conflict": false,
       "original_conflict_gate": null,
       "evidence_runs": [
         40598678934
       ],
       "semantic_status": "PENDING_OWNER_REVIEW",
-      "release_status": "NOT_ACCEPTED"
+      "release_status": "NOT_ACCEPTED",
+      "native_semantic_followup": {
+        "scope": "test-only negative failed/interrupted turn signal replay",
+        "source_blob": "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
+        "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+        "native_selector": "adaptive_runtime_signal_does_not_replay_on_failed_or_interrupted_turn",
+        "semantic_signoff": "NOT_GRANTED",
+        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md",
+        "formatted_from_blob": "8f77eee9595c8780d6c76ded43d3043b30af8ce8"
+      }
     },
     {
       "path": "codex-rs/app-server/src/message_processor.rs",
@@ -1290,7 +1300,7 @@
     {
       "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
       "owner": "tui_adaptive_daemon",
-      "current_blob": "2460017301fa1c57480e1092e7ce69413aa7867e",
+      "current_blob": "7d2be3352380d43df714399b441a95960b87a59f",
       "historical_reviewed_blob": "994d54b631493b3d0784e836c544c57a275e9985",
       "production_044_blob": "03f32cbd9806398ce05c1e54d08bf8931434a68c",
       "disposition": "reviewed_upstream_dynamic_auth_test_restoration",
@@ -1311,6 +1321,15 @@
         "policy_note": "Native Windows 3F.37 shows API-key Daybreak-off omits explicit cyberAccessProgram per protected fork gate. Do not replace with upstream Standard.",
         "native_run_3f39": 40760413516,
         "native_result": "EIGHT_STARTUP_SESSION_SELECTORS_PASS"
+      },
+      "native_semantic_followup": {
+        "scope": "restore exact upstream boxed local-daemon test entry to avoid Windows native test stack exhaustion",
+        "source_blob": "7d2be3352380d43df714399b441a95960b87a59f",
+        "source_parent": "dfb82a894bf757ba9742a758d2e5e3a48d2691d2",
+        "native_selector": "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths",
+        "semantic_signoff": "NOT_GRANTED",
+        "receipt": "docs/codexdd-0.4.5-packet-3f54-core-tui-native-semantic-recovery.md",
+        "formatted_from_blob": "67276c6c855647dc7b0bc0c7ffe022f93f3e570e"
       }
     },
     {
