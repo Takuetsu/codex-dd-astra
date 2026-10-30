@@ -17,7 +17,7 @@ The service and proxy release targets are already in the protected 0.163 source;
 
 `//codex-rs/responses-api-proxy:release_files`
 
-The one-shot workflow `.github/workflows/codexdd-045-3f56-seven-program-windows.yml` uses two separately checked-out trees (packaging tools and exact binary source), pinned Windows MSVC x64, secure Cargo/Bazel hashes, native opt thin-LTO settings and **previous completed core action cache**. No five-program rebuild is allowed. Sandbox service and matching PDB are saved to a GitHub artifact **immediately after that build**, before proxy compilation; proxy and matching PDB are likewise saved before archive assembly.
+The one-shot workflow `.github/workflows/codexdd-045-3f56-seven-program-windows.yml` runs **only when its draft PR is first opened with base `dd/codexdd-v0.4.5-109-overlap-semantic-review`**. This is important: GitHub Actions allows PR runs to restore the base branch's cache but ordinary pushes to a sibling branch cannot access it. The workflow uses two separately checked-out trees (packaging tools and exact binary source), pinned Windows MSVC x64, secure Cargo/Bazel hashes, native opt thin-LTO settings and **the actual previous completed core action cache**. A cache miss blocks compilation. No five-program rebuild is allowed. Sandbox service and matching PDB are saved to a GitHub artifact **immediately after that build**, before proxy compilation; proxy and matching PDB are likewise saved before archive assembly.
 
 Each sidecar must have a real Bazel `release_files` target receipt, exactly one physical executable and exactly one MSVC PDB, native PE/PDB headers, byte sizes, SHA-256 hashes, matching Bazel/source/tooling attestations and a copied-payload integrity receipt. Build failure prevents downstream labeling as complete.
 
@@ -36,6 +36,6 @@ No distribution completion is claimed until all four GitHub artifacts actually e
 
 ## Validation policy
 
-The preflight job is source-only and inexpensive. It checks the 3F.55 formal 109-review ledger, the established five-program Windows distribution contract, multiple synthetic sidecar tamper/unsigned-negative tests and PowerShell parseability. Native MSVC sidecar building is **gated on successful preflight and original archive availability**. Every step is one-shot; no manual Daniel-CL edits or CI repetition expected from the user.
+The preflight job is source-only and inexpensive; the pull-request opening event, not later PR updates, is the only trigger for this expensive operation. It checks the 3F.55 formal 109-review ledger, the established five-program Windows distribution contract, multiple synthetic sidecar tamper/unsigned-negative tests and PowerShell parseability. Native MSVC sidecar building is **gated on successful preflight and original archive availability**. Every step is one-shot; no manual Daniel-CL edits or CI repetition expected from the user.
 
 The seven-program artifact is **developer-only** and will also expire unless moved into an approved longer-lived package after release authorization. **Do not install or publish 0.4.5 from this packet.**
