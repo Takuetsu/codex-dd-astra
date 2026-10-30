@@ -64,7 +64,7 @@ class NativeSemanticGate(unittest.TestCase):
             "codexdd-045-owner-preflight.ps1",
             "test_codexdd_045_3f51_exact_upstream_semantic_deltas.py",
             "test_codexdd_045_3f52_appserver_owner_source.py",
-            "cargo-format",
+            "modified-test-rustfmt",
             "'--no-fail-fast'",
             "'--lib'",
             "RUST_MIN_STACK",
@@ -93,6 +93,9 @@ class NativeSemanticGate(unittest.TestCase):
         self.assertNotIn("git push", self.runner)
         self.assertNotIn("gh release", self.runner)
         self.assertNotIn("cargo build --release", self.runner)
+        self.assertIn("tui/src/app/tests/session_lifecycle_requests.rs", self.runner)
+        self.assertIn("app-server/src/bespoke_event_handling.rs", self.runner)
+        self.assertNotIn("cargo fmt --all", self.runner)
         self.assertNotIn("codexdd-test-release.ps1", self.runner)
 
 if __name__ == "__main__":
