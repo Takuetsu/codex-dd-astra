@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '961abe24f4081fe31d5d39a8c819ca5e15db465c'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '92ac8a9336ceb29a3bc38ec27001ea81f7a3ef62'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,7 +32,7 @@ jobs:
           formal=json.loads((root/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
           assert spec['expected_core']==0 and spec['expected_tui']==25==len(spec['cases']['tui'])
           assert spec['release_approved'] is False
-          assert spec['baseline_reviewed_head']=='961abe24f4081fe31d5d39a8c819ca5e15db465c'
+          assert spec['baseline_reviewed_head']=='92ac8a9336ceb29a3bc38ec27001ea81f7a3ef62'
           assert len(formal['paths'])==109 and formal['approved_owner_count']==0
           assert len(formal['pending_native_or_semantic_restoration'])==13
           app=(root/'codex-rs/tui/src/app.rs').read_text()
@@ -69,6 +69,13 @@ jobs:
           assert 'model_popup_request_is_current(stale_id)' in case
           assert 'account switch must invalidate' in case
           assert 'while events.try_recv().is_ok() {}' in case
+          # The negative test must explicitly disable cyber forwarding, not
+          # mistake an authorized feature for an authorization bypass.
+          assert 'api_key_cyber_access_programs = false' in case
+          assert 'ConfigBuilder::default()' in case
+          assert 'Feature::ApiKeyCyberAccessPrograms' in case
+          assert 'start_embedded_app_server_for_picker(&restricted_config)' in case
+          assert 'start_thread(&restricted_config)' in case
           dispatch=(root/'codex-rs/tui/src/app/event_dispatch.rs').read_text()
           assert 'AppEvent::ApiKeyCompatModelsLoaded' in dispatch
           assert 'constrain_api_key_models(' in dispatch

@@ -15,3 +15,7 @@ The third Windows attempt compiled and passed selectors 1–9, then stopped at s
 ## 3F.68 Rustfmt gate correction
 
 [Run #41116734652](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41116734652) passed 25-selector integrity but failed at a single Rustfmt change in the daemon CLI dynamic version normalization. Windows compilation was skipped. This candidate applies the exact formatter diff, pins reviewed runtime to `961abe24f4081fe31d5d39a8c819ca5e15db465c`, and preserves the complete 25-selector native failure-aggregation contract.
+
+## 3F.68 all-selector Windows evidence (October 30)
+
+[Run #41141813476](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41141813476) completed all 25 native selectors: 24 PASS, 1 FAIL at the API-key popup negative. The original test created a thread without explicitly disabling `api_key_cyber_access_programs`, but the app server is expected to *preserve* access program metadata when per-thread feature forwarding is authorized. This is a test-fixture ambiguity, not verified runtime failure. The corrected test builds a private config home with the feature explicitly false, starts the embedded server and actual thread from that config, and asserts the feature is disabled before exercising raw reply suppression, filtered adoption and stale post-signout rejection. No application code or other 24 tests were weakened. This source is `92ac8a9336ceb29a3bc38ec27001ea81f7a3ef62`; acceptance workflow remains fail-closed at 25 real native selectors.
