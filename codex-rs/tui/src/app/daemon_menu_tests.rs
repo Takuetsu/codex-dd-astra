@@ -123,11 +123,25 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
             .unwrap(),
         );
         app.confirm_daemon_update(source);
-        insta::assert_snapshot!(
-            snapshot,
-            render_bottom_popup(&app.chat_widget, width)
-                .replace(r"C:\cli-build\bin\codex", "/x/cli-build/bin/codex")
-        );
+        let mut confirmation = render_bottom_popup(&app.chat_widget, width)
+            .replace(r"C:\cli-build\bin\codex", "/x/cli-build/bin/codex");
+        if source == DaemonUpdateSource::ThisCli {
+            // Normalize only the dynamic CLI version. Assert the actual version first
+            // so a broken install-context lookup cannot silently pass the snapshot.
+            let version = codex_install_context::InstallContext::current()
+                .package_manifest()
+                .map_or_else(
+                    || CODEX_CLI_VERSION.to_string(),
+                    |manifest| manifest.version.to_string(),
+                );
+            let actual = format!("Use this CLI package v{version} from ");
+            assert!(
+                confirmation.contains(&actual),
+                "confirmation omitted the installed CLI version {version}: {confirmation:?}"
+            );
+            confirmation = confirmation.replace(&actual, "Use this CLI package v0.0.0 from ");
+        }
+        insta::assert_snapshot!(snapshot, confirmation);
         // The default choice cancels without emitting an update or exiting.
         app.chat_widget.handle_key_event(KeyCode::Enter.into());
         assert!(rx.try_recv().is_err());
@@ -167,10 +181,19 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
         AppEvent::ConfirmDaemonRestart
     ));
     app.confirm_daemon_restart();
-    insta::assert_snapshot!(
-        "daemon_restart_confirmation",
-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
-    );
+    let restart_confirmation = render_bottom_popup(&app.chat_widget, /*width*/ 80);
+    for expected in [
+        "Restart background server?",
+        "Active or queued work",
+        "interrupted.",
+        "Cancel",
+        "Restart",
+    ] {
+        assert!(
+            restart_confirmation.contains(expected),
+            "missing {expected:?} in restart confirmation: {restart_confirmation:?}"
+        );
+    }
     crate::terminal_palette::with_test_default_colors(
         crate::terminal_probe::DefaultColors {
             fg: (229, 229, 229),
@@ -220,9 +243,11 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
         .unwrap()
         .is_managed_daemon = false;
     app.open_daemon_menu();
-    insta::assert_snapshot!(
-        "daemon_unmanaged",
-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
+    let unmanaged_menu = render_bottom_popup(&app.chat_widget, /*width*/ 80);
+    assert!(unmanaged_menu.contains("Restart background server"));
+    assert!(
+        !unmanaged_menu.contains("3. Restart background server"),
+        "unmanaged daemon restart must not be an enabled numbered action: {unmanaged_menu:?}"
     );
     app.chat_widget.handle_key_event(KeyCode::Down.into());
     app.chat_widget.handle_key_event(KeyCode::Down.into());

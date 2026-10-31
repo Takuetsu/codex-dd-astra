@@ -1341,6 +1341,12 @@ pub(crate) enum AppEvent {
         request_id: uuid::Uuid,
         result: Result<Vec<ModelPreset>, String>,
     },
+    /// A model/list reply checked against API-key access-program requirements.
+    /// The original raw reply must not be displayed or persisted before this arrives.
+    ApiKeyCompatModelsLoaded {
+        request_id: uuid::Uuid,
+        result: Result<Vec<ModelPreset>, String>,
+    },
 
     FetchPermissionProfiles {
         request_id: uuid::Uuid,
