@@ -9220,8 +9220,7 @@ async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_acco
             .enabled(codex_features::Feature::ApiKeyCyberAccessPrograms),
         "test fixture must explicitly disable API-key cyber program forwarding"
     );
-    let mut app_server =
-        crate::start_embedded_app_server_for_picker(&restricted_config).await?;
+    let mut app_server = crate::start_embedded_app_server_for_picker(&restricted_config).await?;
     let started = app_server.start_thread(&restricted_config).await?;
     app.chat_widget.handle_thread_session_quiet(started.session);
     app.chat_widget.update_account_state(
