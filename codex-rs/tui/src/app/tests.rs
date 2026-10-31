@@ -9200,11 +9200,29 @@ async fn shutdown_first_exit_unsubscribes_live_side_threads_before_leaving() -> 
 async fn api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account() -> Result<()>
 {
     let (mut app, mut events, _ops) = make_test_app_with_channels().await;
-    let mut app_server =
-        crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref()).await?;
-    let started = app_server
-        .start_thread(app.chat_widget.config_ref())
+    // This is an explicitly disallowed API-key program case. The default
+    // embedded test config can enable forwarding, in which case preserving
+    // available_access_programs is correct rather than a security violation.
+    // Load the disabled feature through the real thread configuration so the
+    // app-server's per-thread experimental-features lookup sees it too.
+    let restricted_home = tempdir()?;
+    std::fs::write(
+        restricted_home.path().join("config.toml"),
+        "[features]\napi_key_cyber_access_programs = false\n",
+    )?;
+    let restricted_config = ConfigBuilder::default()
+        .codex_home(restricted_home.path().to_path_buf())
+        .build()
         .await?;
+    assert!(
+        !restricted_config
+            .features
+            .enabled(codex_features::Feature::ApiKeyCyberAccessPrograms),
+        "test fixture must explicitly disable API-key cyber program forwarding"
+    );
+    let mut app_server =
+        crate::start_embedded_app_server_for_picker(&restricted_config).await?;
+    let started = app_server.start_thread(&restricted_config).await?;
     app.chat_widget.handle_thread_session_quiet(started.session);
     app.chat_widget.update_account_state(
         Some(crate::status::StatusAccountDisplay::ApiKey),
