@@ -9,7 +9,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $clock = [Diagnostics.Stopwatch]::StartNew()
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
-$baselineSha = '92ac8a9336ceb29a3bc38ec27001ea81f7a3ef62'
+$baselineSha = 'ecaa9461fb8d522615e58b92dc0a0279c228dbf8'
 $lock = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
 $stages = @()
 $failedSelectors = @()
