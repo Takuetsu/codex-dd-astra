@@ -30,6 +30,15 @@ The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd1
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
 
+## Daniel-CL compiled-suite recovery (current blocker)
+
+- Local source-pinned check at `c26a1653de228f2b71949ac486d927ecb3865bfc`: **Rustfmt green** and the first **three app-server library authorization selectors green**.
+- The fourth selector, `workflow_state_update_preserves_authorized_top_level_cli_mutation`, could **not execute**, because the aggregated `--test all` integration binary failed to compile with **60 Rust errors** (26 warnings). The fifth real-WebSocket negative was never reached.
+- The visible compiler diagnostics include `E0063` (older `ResponseItem::Message` fixtures missing `status` and `encrypted_content`) and `E0027` (older `ThreadReadResponse` patterns missing `read_state`).
+- Test-only compatibility commit `ff58a25c74859f9ddd82f844be4ef3997c49f424` applies 18 narrow corrections to eight existing integration-test files. It changes no production source. **This has not cleared the remaining compiler errors and has not passed native compilation.**
+- A follow-up validation script update writes a compact `*-errors.txt` diagnostic index whenever any Cargo test compilation fails. The original complete local log remains at `%TEMP%\\codexdd-045-3f80-local-validation\\workflow_state_update_preserves_authorized_top_level_cli_mutation.log`. Retrieve the existing log before another expensive rebuild to identify all remaining error classes.
+- Release approvals, broad CI and seven-program packaging stay blocked. No old green run implies acceptance for this changed head.
+
 ## Rustfmt remediation after initial Daniel-CL preflight
 
 Initial source-only Rustfmt at `951c4c97a5a722ddb5f6da16c342b4d62c9994` returned exit code 1 with exactly two reported differences: long WebSocket test signature and stale-turn assertion wrapping. These two format-only corrections were committed on the nonrelease branch. The validator now prints `RUSTFMT_DIFF` context and the full log path on failure. **The corrected head still requires a new Daniel-CL source preflight and native receipt**; do not treat this note as a pass.
