@@ -921,6 +921,65 @@ mod tests {
     }
 
     #[test]
+    fn saturated_queue_preserves_feedback_between_approval_and_completion() {
+        let thread_id = ThreadId::new();
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+        let mut rx = channel.receiver.take().expect("receiver");
+
+        channel
+            .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                turn_started_notification(thread_id, "turn-feedback"),
+            )))
+            .expect("start queued");
+        channel
+            .queue_live_event(ThreadBufferedEvent::Request(Box::new(exec_approval_request(
+                thread_id,
+                "turn-feedback",
+                "tool-feedback",
+                /*approval_id*/ None,
+            ))))
+            .expect("approval deferred");
+        channel
+            .queue_live_event(ThreadBufferedEvent::FeedbackSubmission(FeedbackThreadEvent {
+                category: FeedbackCategory::Bug,
+                include_logs: false,
+                feedback_audience: FeedbackAudience::External,
+                result: Ok("uploaded".to_string()),
+            }))
+            .expect("feedback remains after approval");
+        channel
+            .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                turn_completed_notification(thread_id, "turn-feedback", TurnStatus::Completed),
+            )))
+            .expect("terminal remains last");
+
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::Notification(n))
+                if matches!(n.as_ref(), ServerNotification::TurnStarted(_))
+        ));
+        channel.flush_pending_live().expect("flush approval");
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::Request(r))
+                if matches!(r.as_ref(), ServerRequest::CommandExecutionRequestApproval { .. })
+        ));
+        channel.flush_pending_live().expect("flush feedback");
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::FeedbackSubmission(e))
+                if e.result.as_deref() == Ok("uploaded")
+        ));
+        channel.flush_pending_live().expect("flush terminal");
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::Notification(n))
+                if matches!(n.as_ref(), ServerNotification::TurnCompleted(_))
+        ));
+        assert!(!channel.has_pending_live());
+    }
+
+    #[test]
     fn bounded_live_queue_fails_closed_if_owner_task_would_overflow() {
         let thread_id = ThreadId::new();
         let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
