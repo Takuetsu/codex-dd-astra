@@ -623,13 +623,7 @@ impl App {
         // Notifications already routed to the active channel must reach the old
         // widget before its transcript state is transferred. Events routed after
         // deactivation are retained separately for that thread.
-        if let Some(mut receiver) = self.active_thread_rx.take() {
-            while let Ok(event) = receiver.try_recv() {
-                self.handle_thread_event_now_recovering_file_changes(event)
-                    .await;
-            }
-            self.active_thread_rx = Some(receiver);
-        }
+        self.drain_active_thread_events_before_detach().await?;
         self.store_active_thread_receiver().await;
         self.active_thread_id = None;
         let Some((receiver, mut snapshot)) = self.activate_thread_for_replay(thread_id).await
@@ -1183,13 +1177,7 @@ impl App {
         // Initial messages are for freshly attached primary threads only. Thread switches and
         // resume/fork flows pass `None` so they cannot replay old history and then auto-submit a new
         // user turn by accident.
-        if let Some(mut receiver) = self.active_thread_rx.take() {
-            while let Ok(event) = receiver.try_recv() {
-                self.handle_thread_event_now_recovering_file_changes(event)
-                    .await;
-            }
-            self.active_thread_rx = Some(receiver);
-        }
+        self.drain_active_thread_events_before_detach().await?;
         self.store_active_thread_receiver().await;
         if matches!(presentation, ThreadAttachPresentation::FreshWithDraft) {
             self.reset_transcript_state_after_clear();
