@@ -234,7 +234,7 @@
     "merge_reconciliation_required": true
   },
   "last_observed_local_preflight": {
-    "tested_head": "951c4c97a5a722ddb5b5f6dda16c342b4d62c9994",
+    "tested_head": "951c4c97a5a722ddb5b5f6da16c342b4d62c9994",
     "result": "FAIL_SOURCE_RUSTFMT_ONLY",
     "native_tests_started": 0,
     "format_only_remediation_committed": true,
