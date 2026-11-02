@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'ba3a74c0d295b40756141ae2554bd5def9b6cc80'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '7363b3f418ee0ad1a8b9929d5d321073e4f0e42c'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'ba3a74c0d295b40756141ae2554bd5def9b6cc80'
+          test "$(git rev-parse HEAD^)" = '7363b3f418ee0ad1a8b9929d5d321073e4f0e42c'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
           python3 - <<'PY'
@@ -33,6 +33,9 @@ jobs:
           handler=processor.split("pub(crate) async fn thread_workflow_state_update(",1)[1].split("pub(crate) async fn thread_settings_update(",1)[0]
           assert "request_id: &ConnectionRequestId" in handler
           assert "self.ensure_direct_input_allowed(request_id, thread.as_ref())" in handler
+          assert "subscribed_connection_ids(thread_id)" in handler
+          assert "workflow_mutation_is_authorized_connection(request_id, &subscribers)" in handler
+          assert "workflow_mutation_rejects_foreign_and_unsubscribed_connections" in processor
           assert "thread_workflow_state_update(&request_id, params)" in dispatch
           assert "v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue" in policy
           suite=Path("codex-rs/app-server/tests/suite/v2/thread_fork_multi_agent_tests.rs").read_text()
