@@ -293,5 +293,31 @@
     "local_green_new_head": false,
     "ci_triggered": false,
     "full_release_accepted": false
+  },
+  "additional_replay_aggregate_review_hold": {
+    "source_audit_file": "docs/upstream-candidates/codexdd-045-3f80-replay-aggregate-retention-hold.json",
+    "source_parent_head": "7b5485f4bb3f764099d927338dd29a40f30e6364",
+    "per_live_event_max_bytes": 2097152,
+    "replay_event_slots": 32768,
+    "aggregate_agent_delta_cap_bytes": 262144,
+    "non_delta_replay_total_byte_cap": "ABSENT",
+    "release_impact": "DO_NOT_WAIVE_OR_PROMOTE_FROM_3F76_GREEN_EVIDENCE",
+    "formal_ledger_count_unchanged": 13,
+    "native_proof": "PENDING"
+  },
+  "expanded_static_type_audit": {
+    "files_v2": 164,
+    "common_helper_files": 14,
+    "root_suite_modules": 7,
+    "response_item_variants_checked": 16,
+    "additional_types": [
+      "ContentItem::OutputText",
+      "ContentItem::InputImage",
+      "ThreadReadResponse",
+      "ThreadListResponse"
+    ],
+    "obvious_missing_required_fields": 0,
+    "scope": "static named-variant and destructuring patterns only; not a Rust compiler or exhaustive Rust parser",
+    "native_compilation": "STILL_UNVERIFIED"
   }
 }
