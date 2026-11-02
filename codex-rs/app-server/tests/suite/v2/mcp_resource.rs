@@ -621,6 +621,8 @@ async fn metadata_and_mcp_requests_complete_while_unrelated_resume_loads_config(
                     text: "Resume this unrelated thread.".to_string(),
                 }],
                 phase: None,
+                status: None,
+                encrypted_content: None,
                 internal_chat_message_metadata_passthrough: None,
             }]),
             ..Default::default()
