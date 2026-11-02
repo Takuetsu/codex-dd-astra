@@ -1731,6 +1731,12 @@ impl App {
                 .enqueue_thread_notification(thread_id, notification)
                 .await;
         }
+        ThreadEventChannel::ensure_notification_budget(&notification)?;
+        if self.pending_primary_events.len() >= THREAD_EVENT_PENDING_PRIMARY_LIMIT {
+            return Err(color_eyre::eyre::eyre!(
+                "primary-thread startup queue exhausted; refusing to lose an event"
+            ));
+        }
         self.pending_primary_events
             .push_back(ThreadBufferedEvent::Notification(Box::new(notification)));
         Ok(())
@@ -1742,6 +1748,12 @@ impl App {
     ) -> Result<()> {
         if let Some(thread_id) = self.primary_thread_id {
             return self.enqueue_thread_request(thread_id, request).await;
+        }
+        ThreadEventChannel::ensure_request_budget(&request)?;
+        if self.pending_primary_events.len() >= THREAD_EVENT_PENDING_PRIMARY_LIMIT {
+            return Err(color_eyre::eyre::eyre!(
+                "primary-thread startup queue exhausted; refusing to lose an approval"
+            ));
         }
         self.pending_primary_events
             .push_back(ThreadBufferedEvent::Request(Box::new(request)));
