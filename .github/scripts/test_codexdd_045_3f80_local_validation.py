@@ -79,7 +79,7 @@ def _brace_body(text: str, open_brace: int) -> str:
         if in_string:
             if escaped:
                 escaped = False
-            elif char == "\\\\":
+            elif char == "\\":
                 escaped = True
             elif char == '"':
                 in_string = False
@@ -107,7 +107,7 @@ def _outer_fields(body: str) -> tuple[set[str], bool]:
         if in_string:
             if escaped:
                 escaped = False
-            elif char == "\\\\":
+            elif char == "\\":
                 escaped = True
             elif char == '"':
                 in_string = False
@@ -120,7 +120,7 @@ def _outer_fields(body: str) -> tuple[set[str], bool]:
         elif depth == 0:
             if body.startswith("..", i):
                 has_rest = True
-            match = re.match(r"([A-Za-z_]\\w*)\\s*:", body[i:])
+            match = re.match(r"([A-Za-z_]\w*)\s*:", body[i:])
             if match and (i == 0 or not (body[i - 1].isalnum() or body[i - 1] == "_")):
                 fields.add(match.group(1))
                 i += len(match.group(0)) - 1
@@ -136,7 +136,7 @@ def _fixture_compatibility_errors() -> tuple[list[str], dict[str, int]]:
             text = source.read_text(encoding="utf-8")
             for variant, required in FIXTURE_FIELDS.items():
                 pattern = re.compile(
-                    r"(?<![A-Za-z_0-9])" + re.escape(variant) + r"\\s*\\{"
+                    r"(?<![A-Za-z_0-9])" + re.escape(variant) + r"\s*\{"
                 )
                 for match in pattern.finditer(text):
                     counts[variant] += 1
@@ -146,7 +146,7 @@ def _fixture_compatibility_errors() -> tuple[list[str], dict[str, int]]:
                         continue
                     missing = set(required) - fields
                     if missing:
-                        line = text.count("\\n", 0, match.start()) + 1
+                        line = text.count("\n", 0, match.start()) + 1
                         short = str(source.relative_to(ROOT))
                         problems.append(f"{short}:{line}: {variant}: missing {sorted(missing)}")
     return problems, counts
@@ -185,7 +185,7 @@ class ThreeF80ValidatorSourceTests(unittest.TestCase):
 
     def test_legacy_appserver_fixtures_match_current_optional_fields(self) -> None:
         errors, seen = _fixture_compatibility_errors()
-        self.assertEqual(errors, [], "\\n".join(errors))
+        self.assertEqual(errors, [], "\n".join(errors))
         for variant, matches in seen.items():
             self.assertGreater(matches, 0, f"fixture scan saw no {variant} uses")
 
