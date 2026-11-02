@@ -30,6 +30,16 @@ The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd1
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
 
+## 3F.80 automated recovery and source-only fixture audit
+
+The first implementation of the local diagnostic reporter was found to contain an accidental duplicated script tail and an unterminated regex. Repaired on isolated 3F.80 commit `5bc71fe592e758f45fe956014836274c1541e2ab`, removing the duplicate and restoring a structurally balanced runner. The replacement runs source pins/Rustfmt first, attempts the aggregate app-server `--test all --no-run` compilation once, captures every compiler error/location in a digest, and only then runs the five focused tests. This is a **source-level audit only**; the repaired script has not been executed on Daniel-CL.
+
+A nonrelease structural regression check, `.github/scripts/test_codexdd_045_3f80_local_validation.py`, was added to detect duplicate/truncated future runner edits and protect test ordering and security checks. This check is not equivalent to a PowerShell runtime parser or a Rust build.
+
+I also inspected the **164 Rust source files under `codex-rs/app-server/tests/suite/v2/`** against the known pre-existing test fixture mismatch patterns: `ResponseItem` optional status/encryption fields, `ContentItem` output metadata, and new app-server thread read/list state fields. No remaining matches of those specific missing-field patterns were found after the earlier test-only fixes. The scan did **not** check all Rust struct initializers and cannot determine whether the previously reported 60 compiler errors have been cleared. Do not present it as a native pass.
+
+The underlying first failure log was on Daniel-CL only; no source-equivalent 3F.80 integration compile receipt or fresh general CI exists. Do not request that Stonks retrieve Daniel-CL-only logs for this workflow. Keep CI, release promotion, formal owner signoff, and Windows distribution blocked pending native acceptance.
+
 ## Daniel-CL compiled-suite recovery (current blocker)
 
 - Local source-pinned check at `c26a1653de228f2b71949ac486d927ecb3865bfc`: **Rustfmt green** and the first **three app-server library authorization selectors green**.
