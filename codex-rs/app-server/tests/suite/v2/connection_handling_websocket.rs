@@ -111,7 +111,8 @@ async fn websocket_transport_routes_per_connection_handshake_and_responses() -> 
 }
 
 #[tokio::test]
-async fn websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections() -> Result<()> {
+async fn websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections() -> Result<()>
+{
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let codex_home = TempDir::new()?;
     create_config_toml(codex_home.path(), &server.uri(), "never")?;
