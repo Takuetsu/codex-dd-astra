@@ -119,14 +119,20 @@ impl App {
     }
 
     pub(super) fn has_pending_live_thread_events(&self) -> bool {
-        self.thread_event_channels
-            .values()
-            .any(ThreadEventChannel::has_pending_live)
+        // Only the currently attached receiver can make forward progress.
+        // A saved, inactive channel must never stall the entire app-server,
+        // disable terminal input or block a shutdown in another thread.
+        self.active_thread_id
+            .and_then(|id| self.thread_event_channels.get(&id))
+            .is_some_and(ThreadEventChannel::has_pending_live)
     }
 
-    /// Run only from the TUI owner event loop, before accepting more incoming events.
+    /// Run only on the TUI owner event loop, before accepting further ingress.
     pub(super) fn flush_pending_live_thread_events(&mut self) -> Result<()> {
-        for channel in self.thread_event_channels.values_mut() {
+        if let Some(channel) = self
+            .active_thread_id
+            .and_then(|id| self.thread_event_channels.get_mut(&id))
+        {
             channel.flush_pending_live()?;
         }
         Ok(())
@@ -1251,6 +1257,9 @@ impl App {
         thread_id: ThreadId,
         notification: ServerNotification,
     ) -> Result<()> {
+        // Reject out-of-budget messages before the replay store can clone them.
+        // Voice/audio data is handled by the same bound; errors are explicit.
+        ThreadEventChannel::ensure_notification_budget(&notification)?;
         self.deliver_background_voice_notification(thread_id, &notification);
         if self.abandoned_side_threads.contains(&thread_id) {
             return Ok(());
@@ -1507,6 +1516,7 @@ impl App {
         thread_id: ThreadId,
         request: ServerRequest,
     ) -> Result<()> {
+        ThreadEventChannel::ensure_request_budget(&request)?;
         let inactive_interactive_request = if self.active_thread_id != Some(thread_id) {
             self.interactive_request_for_thread_request(thread_id, &request)
                 .await?
@@ -1542,6 +1552,7 @@ impl App {
         thread_id: ThreadId,
         event: HistoryLookupResponse,
     ) -> Result<()> {
+        ThreadEventChannel::ensure_history_budget(&event)?;
         let store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
 
         let should_send = {
