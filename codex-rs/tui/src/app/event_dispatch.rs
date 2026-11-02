@@ -841,9 +841,25 @@ impl App {
                 self.chat_widget.set_queue_autosend_suppressed(/*suppressed*/ true);
                 self.abort_thread_event_listener(thread_id);
                 if let Some(mut rx) = self.active_thread_rx.take() {
-                    while let Ok(event) = rx.try_recv() {
-                        if let ThreadBufferedEvent::Notification(notification) = event {
-                            self.chat_widget.handle_server_notification(*notification, Some(ReplayKind::ThreadSnapshot));
+                    loop {
+                        self.flush_pending_live_thread_events()?;
+                        match rx.try_recv() {
+                            Ok(ThreadBufferedEvent::Notification(notification)) => {
+                                self.chat_widget.handle_server_notification(
+                                    *notification,
+                                    Some(ReplayKind::ThreadSnapshot),
+                                );
+                            }
+                            Ok(_) => {}
+                            Err(TryRecvError::Empty) => {
+                                if self.has_pending_live_thread_events() {
+                                    return Err(color_eyre::eyre::eyre!(
+                                        "cannot revert while protected thread events are pending"
+                                    ));
+                                }
+                                break;
+                            }
+                            Err(TryRecvError::Disconnected) => break,
                         }
                     }
                 }
