@@ -28,9 +28,9 @@
 
 ## Next executable behavior work packet
 
-1. **3F.72: TUI bounded, ordered live-channel repair**. Preserve source-order and delivery of trusted terminals, approvals and turn completions under saturation. An upstream-style bounded channel plus independently spawned send tasks is **not** an acceptable replacement without an ordering regression; merely bounding replay retention is not sufficient.
+1. **3F.73: TUI bounded, ordered live-channel repair**. Preserve source-order and delivery of trusted terminals, approvals and turn completions under saturation. An upstream-style bounded channel plus independently spawned send tasks is **not** an acceptable replacement without an ordering regression; merely bounding replay retention is not sufficient.
 2. Cheap local `targeted` validation on Daniel-CL first, compiling the affected TUI channel and running true negative saturated-event cases. Do not request broad CI before a local source-bound pass; do not use Windows CI as an iterative debugging loop.
-3. **3F.73: Core trust/permission negative matrix**. Pair model tool-choice, phase-gated signal/LVO, pre-tool-hook rewrite, fork inheritance and history reconstitution with boundary-negative tests, not only source text checks.
+3. **3F.74: Core trust/permission negative matrix**. Pair model tool-choice, phase-gated signal/LVO, pre-tool-hook rewrite, fork inheritance and history reconstitution with boundary-negative tests, not only source text checks.
 4. Then perform explicit accountable owner reviews of all thirteen cases. **No `OWNER_ACCEPTED` change may be set merely because this document or one native suite is green.**
 
 **Guardrails:** Production remains 0.4.4; 109/109 source comparisons do not imply 109/109 semantic signoffs. Seven-program final release archive, signing, voice DLL closure, installer and the Daniel-CL 21-stage gate remain separate.
