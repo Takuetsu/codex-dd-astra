@@ -111,6 +111,75 @@ async fn websocket_transport_routes_per_connection_handshake_and_responses() -> 
 }
 
 #[tokio::test]
+async fn websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections() -> Result<()> {
+    let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
+    let codex_home = TempDir::new()?;
+    create_config_toml(codex_home.path(), &server.uri(), "never")?;
+
+    let (mut process, bind_addr) = spawn_websocket_server_with_args(
+        codex_home.path(),
+        "ws://127.0.0.1:0",
+        &["-c".to_string(), "thread_unload_delay_secs=30".to_string()],
+    )
+    .await?;
+    let mut owner = connect_websocket(bind_addr).await?;
+    let mut foreign = connect_websocket(bind_addr).await?;
+    send_initialize_request(&mut owner, /*id*/ 1, "workflow_owner").await?;
+    read_response_for_id(&mut owner, /*id*/ 1).await?;
+    send_initialize_request(&mut foreign, /*id*/ 2, "workflow_foreign").await?;
+    read_response_for_id(&mut foreign, /*id*/ 2).await?;
+
+    let owner_thread = start_thread(&mut owner, /*id*/ 3).await?;
+    let foreign_thread = start_thread(&mut foreign, /*id*/ 4).await?;
+    assert_ne!(owner_thread, foreign_thread);
+    let mutation = codex_app_server_protocol::ThreadWorkflowStateUpdateParams {
+        thread_id: owner_thread.clone(),
+        operation: codex_app_server_protocol::ThreadWorkflowStateOperation::Clear,
+        source_turn_id: None,
+        adaptive_state: None,
+    };
+    let params = serde_json::to_value(mutation)?;
+    let method = "thread/workflowState/update";
+
+    // A valid subscription to some other thread does not authorize this write.
+    send_request(&mut foreign, method, /*id*/ 5, Some(params.clone())).await?;
+    let rejected = read_error_for_id(&mut foreign, /*id*/ 5).await?;
+    assert_eq!(
+        rejected.error.message,
+        "workflow state update requires a subscribed thread connection"
+    );
+
+    // Refusal of the foreign connection must not block the actual subscriber.
+    send_request(&mut owner, method, /*id*/ 6, Some(params.clone())).await?;
+    let authorized = read_response_for_id(&mut owner, /*id*/ 6).await?;
+    assert_eq!(authorized.id, RequestId::Integer(6));
+
+    send_request(
+        &mut owner,
+        "thread/unsubscribe",
+        /*id*/ 7,
+        Some(json!({ "threadId": owner_thread })),
+    )
+    .await?;
+    let unsubscribe = read_response_for_id(&mut owner, /*id*/ 7).await?;
+    assert_eq!(unsubscribe.result["status"], json!("unsubscribed"));
+
+    // Loaded thread state is not an authority grant after this connection unsubscribes.
+    send_request(&mut owner, method, /*id*/ 8, Some(params)).await?;
+    let stale = read_error_for_id(&mut owner, /*id*/ 8).await?;
+    assert_eq!(
+        stale.error.message,
+        "workflow state update requires a subscribed thread connection"
+    );
+
+    process
+        .kill()
+        .await
+        .context("failed to stop websocket app-server process")?;
+    Ok(())
+}
+
+#[tokio::test]
 async fn thread_start_routes_project_exec_policy_warning_to_requester() -> Result<()> {
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let codex_home = TempDir::new()?;

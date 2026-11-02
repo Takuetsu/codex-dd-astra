@@ -204,9 +204,25 @@ impl TurnRequestProcessor {
 
     pub(crate) async fn thread_workflow_state_update(
         &self,
+        request_id: &ConnectionRequestId,
         params: ThreadWorkflowStateUpdateParams,
     ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
-        let (_, thread) = self.load_thread(&params.thread_id).await?;
+        let (thread_id, thread) = self.load_thread(&params.thread_id).await?;
+        // Persisting a workflow checkpoint is a direct thread mutation, not
+        // just a read or an ordinary turn. A V2 spawned sub-agent cannot be
+        // edited through direct input, and an unrelated app-server connection
+        // must not modify a loaded thread's durable role/permissions by ID.
+        self.ensure_direct_input_allowed(request_id, thread.as_ref())
+            .await?;
+        let subscribers = self
+            .thread_state_manager
+            .subscribed_connection_ids(thread_id)
+            .await;
+        if !workflow_mutation_is_authorized_connection(request_id, &subscribers) {
+            return Err(invalid_request(
+                "workflow state update requires a subscribed thread connection".to_string(),
+            ));
+        }
         let item = match params.operation {
             ThreadWorkflowStateOperation::SetReadyForOwnerQa => {
                 codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(params.source_turn_id)
@@ -1768,6 +1784,41 @@ impl TurnRequestProcessor {
             raw_events_enabled,
         )
         .await
+    }
+}
+
+/// Snapshot checks may not grant authority: the active requesting transport
+/// must itself still be subscribed to the exact target thread.
+fn workflow_mutation_is_authorized_connection(
+    request_id: &ConnectionRequestId,
+    subscribed: &[ConnectionId],
+) -> bool {
+    subscribed.contains(&request_id.connection_id)
+}
+
+#[cfg(test)]
+mod workflow_mutation_authority_tests {
+    use super::*;
+
+    #[test]
+    fn workflow_mutation_rejects_foreign_and_unsubscribed_connections() {
+        let owner = ConnectionId(7);
+        let foreign = ConnectionId(8);
+        let request = ConnectionRequestId {
+            connection_id: owner,
+            request_id: codex_app_server_protocol::RequestId::String(
+                "workflow-mutation".to_string(),
+            ),
+        };
+        assert!(!workflow_mutation_is_authorized_connection(&request, &[]));
+        assert!(!workflow_mutation_is_authorized_connection(
+            &request,
+            &[foreign],
+        ));
+        assert!(workflow_mutation_is_authorized_connection(
+            &request,
+            &[foreign, owner],
+        ));
     }
 }
 
