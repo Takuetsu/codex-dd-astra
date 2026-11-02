@@ -2,7 +2,7 @@
   "contract_version": 1,
   "kind": "codexdd_045_3f80_p0_exact_source_evidence_nonrelease",
   "tested_parent_source_head": "7b5485f4bb3f764099d927338dd29a40f30e6364",
-  "integration_runtime_source_commit": "1d55829717e62f1ba7bd633081b4b67bf603d83e",
+  "integration_runtime_source_commit": "cd12a6a45b65a896a5c076214b213cbd818a0d04",
   "native_parent_evidence": {
     "run_id": 41493119662,
     "tested_source_head": "7b5485f4bb3f764099d927338dd29a40f30e6364",
@@ -18,7 +18,6 @@
     "all_six_jobs_passed": true,
     "scope": "related PR #79 snapshot; not a new integrated-head result"
   },
-  "integration_changes_only_app_server": true,
   "cargo_lock_blob": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
   "production_marker": "0.4.4",
   "formal_owner_count": 109,
@@ -196,11 +195,30 @@
     }
   ],
   "additional_native_gates": [
-    "3F.80 integrated app-server compiled unit+websocket positive/negative tests",
+    "3F.80 integrated app-server five source-bound native unit/RPC/WebSocket selectors and Rustfmt on Daniel-CL",
     "Full integrated TUI/app-server behavior revalidation",
     "Separate aggregate replay retained-byte review",
     "Native daemon/WSL/voice lifecycle and secure Seven-program Windows distribution",
     "Daniel-CL 21-stage release suite, owner signoffs, signing and installer"
   ],
-  "release_approved": false
+  "release_approved": false,
+  "integration_runtime_changes_only_app_server": true,
+  "current_guarded_workflow_source": {
+    "processor_blob": "ae25bb6106f534e32f113306562d523757e504df",
+    "integration_rpc_test_blob": "eb95243d2b4183982fef0102071991113ade1e28",
+    "websocket_test_blob": "221dc33a25aeb16aec4fa505bee88546d1979195",
+    "source_turn_freshness": "REJECT_OLDER_WHEN_ACTIVE_OR_LAST_TERMINAL_KNOWN",
+    "cold_resume_without_observed_lifecycle": "COMPATIBILITY_PRESERVED_REQUIRES_FURTHER_OWNER_REVIEW",
+    "status": "SOURCE_AUDIT_PASS_NATIVE_UNVERIFIED"
+  },
+  "native_local_entrypoint": ".github/scripts/codexdd-045-3f80-local-validation.ps1",
+  "required_local_native_selectors": [
+    "workflow_mutation_rejects_foreign_and_unsubscribed_connections",
+    "workflow_mutation_rejects_stale_source_turn_without_blocking_valid_or_cold_resume",
+    "v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue",
+    "workflow_state_update_preserves_authorized_top_level_cli_mutation",
+    "websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections"
+  ],
+  "validated_integrated_native_test_count": 0,
+  "integrated_head_release_approved": false
 }
