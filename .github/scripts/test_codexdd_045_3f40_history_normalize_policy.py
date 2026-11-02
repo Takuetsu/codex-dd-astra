@@ -12,7 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 NORMALIZE = "codex-rs/core/src/context_manager/normalize.rs"
 HISTORY = "codex-rs/core/src/context_manager/history_tests.rs"
 MATRIX = ROOT / "docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json"
-TUI_WORKFLOW = ROOT / ".github/workflows/codexdd-045-3f39-startup-session-windows-native.yml"
+TUI_WORKFLOW = (
+    ROOT / ".github/workflows/codexdd-045-3f39-startup-session-windows-native.yml"
+)
 
 
 def git_sha(path: str) -> str:
@@ -37,8 +39,14 @@ class HistoryNormalizationForkPolicy(unittest.TestCase):
         ):
             with self.subTest(expression=expression):
                 self.assertIn(expression, code)
-        self.assertIn("error_or_panic(format!(\n                    \"Orphan custom tool call output", code)
-        self.assertIn("error_or_panic(format!(\n                    \"Orphan function call output", code)
+        self.assertIn(
+            'error_or_panic(format!(\n                    "Orphan custom tool call output',
+            code,
+        )
+        self.assertIn(
+            'error_or_panic(format!(\n                    "Orphan function call output',
+            code,
+        )
 
     def test_debug_and_replay_regressions_both_remain_registered(self):
         text = (ROOT / HISTORY).read_text(encoding="utf-8")
@@ -62,19 +70,33 @@ class HistoryNormalizationForkPolicy(unittest.TestCase):
                     + selector
                     + r"\(",
                 )
-        self.assertIn("normalize_keeps_server_tool_search_output_without_matching_call", text)
+        self.assertIn(
+            "normalize_keeps_server_tool_search_output_without_matching_call", text
+        )
         self.assertIn("normalize_adds_missing_output_for_tool_search_call", text)
 
     def test_eight_native_tui_results_recorded_but_not_owner_signoff(self):
         m = json.loads(MATRIX.read_text(encoding="utf-8"))
         self.assertEqual(len(m["paths"]), 109)
-        startup = next(r for r in m["paths"] if r["path"] == "codex-rs/tui/src/app/startup.rs")
-        session = next(r for r in m["paths"] if r["path"] == "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs")
+        startup = next(
+            r for r in m["paths"] if r["path"] == "codex-rs/tui/src/app/startup.rs"
+        )
+        session = next(
+            r
+            for r in m["paths"]
+            if r["path"] == "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"
+        )
         core = next(r for r in m["paths"] if r["path"] == NORMALIZE)
-        self.assertEqual(startup["focused_review"]["focused_native_run_3f39"], 40760413516)
-        self.assertEqual(session["session_test_reconciliation"]["native_run_3f39"], 40760413516)
+        self.assertEqual(
+            startup["focused_review"]["focused_native_run_3f39"], 40760413516
+        )
+        self.assertEqual(
+            session["session_test_reconciliation"]["native_run_3f39"], 40760413516
+        )
         self.assertEqual(startup["focused_review"]["semantic_signoff"], "NOT_GRANTED")
-        self.assertEqual(session["session_test_reconciliation"]["semantic_signoff"], "NOT_GRANTED")
+        self.assertEqual(
+            session["session_test_reconciliation"]["semantic_signoff"], "NOT_GRANTED"
+        )
         self.assertEqual(core["focused_review"]["semantic_signoff"], "NOT_GRANTED")
         self.assertEqual(startup["current_blob"], git_sha(startup["path"]))
         self.assertEqual(session["current_blob"], git_sha(session["path"]))
@@ -94,8 +116,13 @@ class HistoryNormalizationForkPolicy(unittest.TestCase):
         for path, expected in pins.items():
             with self.subTest(path=path):
                 self.assertEqual(git_sha(path), expected)
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
+        self.assertEqual(
+            (ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(),
+            "rust-v0.162.0",
+        )
 
 
 if __name__ == "__main__":

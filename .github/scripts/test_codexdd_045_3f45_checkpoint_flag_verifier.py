@@ -4,6 +4,7 @@
 assertion. The explicit cache argument must be verified in the argument vector
 and an actual nonempty on-disk cache measured even if the seed timed out.
 """
+
 from __future__ import annotations
 
 import re
@@ -22,8 +23,10 @@ class DiskCacheCheckpointGuard(unittest.TestCase):
         self.assertIsNotNone(args)
         argv = args.group(1)
         self.assertEqual(argv.count("'--disk_cache=D:/_bazel-disk'"), 1)
-        self.assertLess(argv.index("'--config=ci-windows-msvc'"),
-                        argv.index("'--disk_cache=D:/_bazel-disk'"))
+        self.assertLess(
+            argv.index("'--config=ci-windows-msvc'"),
+            argv.index("'--disk_cache=D:/_bazel-disk'"),
+        )
         self.assertIn("$requiredCacheFlag='--disk_cache=D:/_bazel-disk'", source)
         self.assertIn("[Array]::IndexOf([string[]]$args,$requiredCacheFlag)", source)
         self.assertIn("$cacheIndex -le $ciConfigIndex", source)
@@ -31,8 +34,14 @@ class DiskCacheCheckpointGuard(unittest.TestCase):
 
     def test_announce_rc_is_not_required_to_echo_direct_cache_args(self):
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn("foreach ($opt in @('--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin'))", source)
-        self.assertNotIn("foreach ($opt in @('--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin','--disk_cache=D:/_bazel-disk'))", source)
+        self.assertIn(
+            "foreach ($opt in @('--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin'))",
+            source,
+        )
+        self.assertNotIn(
+            "foreach ($opt in @('--compilation_mode=opt','--@rules_rust//rust/settings:lto=thin','--disk_cache=D:/_bazel-disk'))",
+            source,
+        )
         # Actual Windows rc fragment from 3F.44 captured the release profile
         # but did not echo the command-line disk-cache override.
         sample_log = (
@@ -46,8 +55,10 @@ class DiskCacheCheckpointGuard(unittest.TestCase):
 
     def test_checkpoint_bytes_report_before_any_log_based_failure(self):
         s = SCRIPT.read_text(encoding="utf-8")
-        self.assertLess(s.index("CHECKPOINT_DISK_CACHE_INVENTORY="),
-                        s.index("foreach ($opt in @('--compilation_mode=opt'"))
+        self.assertLess(
+            s.index("CHECKPOINT_DISK_CACHE_INVENTORY="),
+            s.index("foreach ($opt in @('--compilation_mode=opt'"),
+        )
         self.assertIn("$files.Count -lt 2", s)
         self.assertIn("$bytes -gt $MaxCacheBytes", s)
         self.assertIn("checkpoint_ready=true", s)
@@ -63,12 +74,18 @@ class DiskCacheCheckpointGuard(unittest.TestCase):
         }.items():
             with self.subTest(path=path):
                 self.assertEqual(
-                    subprocess.check_output(["git", "rev-parse", "HEAD:" + path],
-                                            cwd=ROOT, text=True).strip(),
+                    subprocess.check_output(
+                        ["git", "rev-parse", "HEAD:" + path], cwd=ROOT, text=True
+                    ).strip(),
                     expected,
                 )
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
+        self.assertEqual(
+            (ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(),
+            "rust-v0.162.0",
+        )
 
 
 if __name__ == "__main__":

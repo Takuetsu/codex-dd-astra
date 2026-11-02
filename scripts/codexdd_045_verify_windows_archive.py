@@ -4,6 +4,7 @@
 Source/checkpoint audits are not release approval. This verifier is deliberately
 independent of Bazel: it validates what the archive *actually contains*.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,7 +42,7 @@ def _hash_member(stream, size: int, name: str) -> tuple[str, bytes]:
         if not block:
             raise ArchiveValidationError(f"Truncated archive member: {name}")
         if len(prefix) < 64:
-            prefix.extend(block[:64 - len(prefix)])
+            prefix.extend(block[: 64 - len(prefix)])
         digest.update(block)
         remaining -= len(block)
     return digest.hexdigest(), bytes(prefix)
@@ -56,7 +57,11 @@ def inspect_archive(path: Path) -> dict:
     with tarfile.open(path, mode="r:gz") as archive:
         for item in archive:
             name = item.name
-            if "\\" in name or name.startswith("/") or ".." in PurePosixPath(name).parts:
+            if (
+                "\\" in name
+                or name.startswith("/")
+                or ".." in PurePosixPath(name).parts
+            ):
                 raise ArchiveValidationError(f"Unsafe tar member name: {name!r}")
             if item.isdir():
                 # Bazel pkg_tar may include a root directory marker only.
@@ -67,13 +72,21 @@ def inspect_archive(path: Path) -> dict:
                 raise ArchiveValidationError(f"Unexpected special tar member: {name!r}")
             canonical = str(PurePosixPath(name))
             if len(PurePosixPath(canonical).parts) != 1:
-                raise ArchiveValidationError(f"Unexpected nested archive file: {name!r}")
+                raise ArchiveValidationError(
+                    f"Unexpected nested archive file: {name!r}"
+                )
             if canonical not in REQUIRED_FILES:
-                raise ArchiveValidationError(f"Unexpected combined archive file: {name!r}")
+                raise ArchiveValidationError(
+                    f"Unexpected combined archive file: {name!r}"
+                )
             if canonical in observed:
                 raise ArchiveValidationError(f"Duplicate archive filename: {canonical}")
-            if item.size < (MIN_PDB_BYTES if canonical.endswith(".pdb") else MIN_EXE_BYTES):
-                raise ArchiveValidationError(f"Truncated or placeholder artifact: {canonical}")
+            if item.size < (
+                MIN_PDB_BYTES if canonical.endswith(".pdb") else MIN_EXE_BYTES
+            ):
+                raise ArchiveValidationError(
+                    f"Truncated or placeholder artifact: {canonical}"
+                )
             if item.size > MAX_MEMBER_BYTES:
                 raise ArchiveValidationError(f"Oversized artifact: {canonical}")
             reader = archive.extractfile(item)
@@ -82,13 +95,17 @@ def inspect_archive(path: Path) -> dict:
             with reader:
                 digest, prefix = _hash_member(reader, item.size, canonical)
             if canonical.endswith(".exe") and not prefix.startswith(b"MZ"):
-                raise ArchiveValidationError(f"Not a Windows PE executable: {canonical}")
+                raise ArchiveValidationError(
+                    f"Not a Windows PE executable: {canonical}"
+                )
             if canonical.endswith(".pdb") and not prefix.startswith(PDB_SIGNATURE):
                 raise ArchiveValidationError(f"Not an MSVC PDB: {canonical}")
             observed[canonical] = {"sha256": digest, "bytes": item.size}
     missing = sorted(REQUIRED_FILES.difference(observed))
     if missing:
-        raise ArchiveValidationError("Missing required archive file(s): " + ", ".join(missing))
+        raise ArchiveValidationError(
+            "Missing required archive file(s): " + ", ".join(missing)
+        )
     archive_digest = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):

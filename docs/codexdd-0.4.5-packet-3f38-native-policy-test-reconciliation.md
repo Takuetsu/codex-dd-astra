@@ -7,4 +7,4 @@
 
 Both edits have byte-precise before/after hashes in `docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json`. The 3F.25, 3F.34 and 3F.36 historical guards reverse the new edits before verifying older upstream restore receipts. The 109-path matrix and correction ledger maintain `NOT_ACCEPTED` and `PENDING_OWNER_REVIEW`. No Rust product implementation, crypto policy, dependency sources, installer or release markers changed.
 
-A green source-only audit is prerequisite for the next *single* Windows native run; do not count 3F.37 as green. Remaining release gates include 109-owner signoff, optimized CLI/PDB and combined archive, and 21-stage Daniel-CL final acceptance. Production is 0.4.4.
+A green source-only audit is prerequisite for the next _single_ Windows native run; do not count 3F.37 as green. Remaining release gates include 109-owner signoff, optimized CLI/PDB and combined archive, and 21-stage Daniel-CL final acceptance. Production is 0.4.4.

@@ -11,16 +11,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MATRIX = ROOT / "docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json"
-OVERLAPS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
-CONFLICTS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
+OVERLAPS = (
+    ROOT
+    / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
+)
+CONFLICTS = (
+    ROOT
+    / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
+)
 FORMAT = ROOT / "docs/upstream-candidates/codexdd-045-format-followup.json"
-CORRECTIONS = ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
+CORRECTIONS = (
+    ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
+)
 
 
 def git(*args: str) -> str:
-    return subprocess.check_output(
-        ["git", *args], cwd=ROOT, text=True
-    ).strip()
+    return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
 
 
 class ExactSemanticOwnerRoster(unittest.TestCase):
@@ -36,9 +42,7 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
         rows = self.matrix["paths"]
         original = self.overlaps["overlaps"]
         self.assertEqual(len(rows), 109)
-        self.assertEqual(
-            [r["path"] for r in rows], [r["path"] for r in original]
-        )
+        self.assertEqual([r["path"] for r in rows], [r["path"] for r in original])
         self.assertEqual(len({r["path"] for r in rows}), 109)
         self.assertEqual(
             dict(Counter(r["owner"] for r in rows)),
@@ -58,12 +62,16 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
                 "tui_adaptive_daemon": 44,
             },
         )
-        self.assertEqual(set(self.matrix["owner_counts"]), set(self.matrix["owner_contracts"]))
+        self.assertEqual(
+            set(self.matrix["owner_counts"]), set(self.matrix["owner_contracts"])
+        )
         for name, info in self.matrix["owner_contracts"].items():
             with self.subTest(owner=name):
                 self.assertTrue(info["contract"])
                 self.assertTrue(info["next_gate"])
-                self.assertTrue(all(isinstance(n, int) and n > 0 for n in info["evidence"]))
+                self.assertTrue(
+                    all(isinstance(n, int) and n > 0 for n in info["evidence"])
+                )
 
     def test_historical_blob_review_is_immutable_and_current_bytes_are_pinned(self):
         reviewed = {r["path"]: r for r in self.overlaps["overlaps"]}
@@ -73,7 +81,9 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
             with self.subTest(path=row["path"]):
                 path = row["path"]
                 old = reviewed[path]
-                self.assertEqual(row["historical_reviewed_blob"], old["reviewed_045_blob"])
+                self.assertEqual(
+                    row["historical_reviewed_blob"], old["reviewed_045_blob"]
+                )
                 self.assertEqual(row["production_044_blob"], old["production_044_blob"])
                 correction = next(
                     (r for r in self.corrections["paths"] if r["path"] == path), None
@@ -88,7 +98,8 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
                 if correction is not None:
                     self.assertEqual(correction["before_blob"], expected_pre_correction)
                 current = (
-                    correction["after_blob"] if correction is not None
+                    correction["after_blob"]
+                    if correction is not None
                     else expected_pre_correction
                 )
                 self.assertEqual(row["current_blob"], current)
@@ -111,9 +122,7 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
                     )
                 else:
                     self.assertIsNone(row["original_conflict_gate"])
-        self.assertEqual(
-            self.matrix["total_original_direct_conflicts"], 15
-        )
+        self.assertEqual(self.matrix["total_original_direct_conflicts"], 15)
 
     def test_formatter_security_and_reviewed_upstream_corrections_are_distinct(self):
         count = Counter(r["disposition"] for r in self.matrix["paths"])
@@ -163,7 +172,9 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
                 )
                 self.assertEqual(evidence["native_evidence_run"], 40583499451)
                 self.assertEqual(evidence["source_blob"], row["current_blob"])
-                self.assertEqual(git("rev-parse", "HEAD:" + path), evidence["source_blob"])
+                self.assertEqual(
+                    git("rev-parse", "HEAD:" + path), evidence["source_blob"]
+                )
                 self.assertTrue(evidence["review_scope"])
                 self.assertTrue(evidence["remaining_gate"])
                 source = (ROOT / path).read_text(encoding="utf-8")
@@ -174,9 +185,7 @@ class ExactSemanticOwnerRoster(unittest.TestCase):
 
     def test_security_and_product_markers_are_not_promoted(self):
         self.assertEqual(self.matrix["contract_version"], 1)
-        self.assertEqual(
-            self.matrix["scope"], "NONRELEASE_SOURCE_OWNER_REVIEW_ONLY"
-        )
+        self.assertEqual(self.matrix["scope"], "NONRELEASE_SOURCE_OWNER_REVIEW_ONLY")
         self.assertEqual(self.matrix["release_status"], "NOT_ACCEPTED")
         for path, pinned in self.matrix["actual_candidate_security_blobs"].items():
             with self.subTest(path=path):

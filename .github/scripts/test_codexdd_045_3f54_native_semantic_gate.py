@@ -1,4 +1,5 @@
 """3F.54: native test-only fixes remain stack safe and source-bound (nonrelease)."""
+
 from __future__ import annotations
 import json
 import re
@@ -12,6 +13,7 @@ RUNNER = ROOT / "scripts/codexdd-045-3f54-targeted-semantic.ps1"
 TUI = R / "tui/src/app/tests/session_lifecycle_requests.rs"
 APP_SERVER = R / "app-server/src/bespoke_event_handling.rs"
 
+
 class NativeSemanticGate(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -24,11 +26,29 @@ class NativeSemanticGate(unittest.TestCase):
     def test_only_source_fingerprint_changes_and_release_gate_remains_closed(self):
         self.assertEqual(len(self.rows), 109)
         self.assertEqual(self.matrix["release_status"], "NOT_ACCEPTED")
-        self.assertTrue(all(r["semantic_status"] == "PENDING_OWNER_REVIEW" and r["release_status"] == "NOT_ACCEPTED" for r in self.rows.values()))
-        self.assertEqual(self.rows["codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"]["current_blob"], "7d2be3352380d43df714399b441a95960b87a59f")
-        self.assertEqual(self.rows["codex-rs/app-server/src/bespoke_event_handling.rs"]["current_blob"], "693eac395673e062d27bbf2cf7b467e9f6af9a5a")
+        self.assertTrue(
+            all(
+                r["semantic_status"] == "PENDING_OWNER_REVIEW"
+                and r["release_status"] == "NOT_ACCEPTED"
+                for r in self.rows.values()
+            )
+        )
+        self.assertEqual(
+            self.rows["codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"][
+                "current_blob"
+            ],
+            "7d2be3352380d43df714399b441a95960b87a59f",
+        )
+        self.assertEqual(
+            self.rows["codex-rs/app-server/src/bespoke_event_handling.rs"][
+                "current_blob"
+            ],
+            "693eac395673e062d27bbf2cf7b467e9f6af9a5a",
+        )
         self.assertEqual((R / "codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((R / "upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+        self.assertEqual(
+            (R / "upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0"
+        )
 
     def test_mcp_daemon_restores_upstream_boxed_wrapper(self):
         fn = "local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths"
@@ -37,7 +57,7 @@ class NativeSemanticGate(unittest.TestCase):
         self.assertIn("boxed_future!(" + fn + "_scenario())", body)
         self.assertIn("async fn " + fn + "_scenario()", body)
         self.assertIn("app_server.start_dynamic_tool_mcp(", body)
-        self.assertIn("!tools[\"create_thread\"]", body)
+        self.assertIn('!tools["create_thread"]', body)
         self.assertIn("tool_server.suspend();", body)
         self.assertIn("tool_server.reconnect(", body)
 
@@ -52,7 +72,10 @@ class NativeSemanticGate(unittest.TestCase):
         self.assertIn("TurnStatus::Interrupted", case)
         self.assertIn("TurnStatus::Failed", case)
         self.assertIn("rx.try_recv().is_err()", case)
-        self.assertIn("adaptive_runtime_signal_binds_event_turn_and_conversation_identity", self.app_server)
+        self.assertIn(
+            "adaptive_runtime_signal_binds_event_turn_and_conversation_identity",
+            self.app_server,
+        )
 
     def test_runner_is_daniel_cl_only_exact_source_and_nonrelease(self):
         for token in (
@@ -75,7 +98,9 @@ class NativeSemanticGate(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 if token == "Tracked source":
-                    self.assertIn("Source worktree contains tracked modifications", self.runner)
+                    self.assertIn(
+                        "Source worktree contains tracked modifications", self.runner
+                    )
                 else:
                     self.assertIn(token, self.runner)
         self.assertEqual(self.runner.count("@('core-"), 3)
@@ -94,9 +119,12 @@ class NativeSemanticGate(unittest.TestCase):
         self.assertNotIn("gh release", self.runner)
         self.assertNotIn("cargo build --release", self.runner)
         self.assertIn("'fmt','--all','--','--check'", self.runner)
-        source = (ROOT / "codex-rs/tui/src/app/tests/active_reconnect_tests.rs").read_text(encoding="utf-8")
+        source = (
+            ROOT / "codex-rs/tui/src/app/tests/active_reconnect_tests.rs"
+        ).read_text(encoding="utf-8")
         self.assertIn('/*client_version*/\n                "0.0.0",', source)
         self.assertNotIn("codexdd-test-release.ps1", self.runner)
+
 
 if __name__ == "__main__":
     unittest.main()

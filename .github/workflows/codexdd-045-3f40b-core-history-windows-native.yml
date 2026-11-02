@@ -4,7 +4,8 @@ name: CodexDD 0.4.5 Windows core history recovery and orphan-panic focused tests
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: [".github/workflows/codexdd-045-3f40b-core-history-windows-native.yml"]
+    paths:
+      [".github/workflows/codexdd-045-3f40b-core-history-windows-native.yml"]
 permissions:
   contents: read
 jobs:

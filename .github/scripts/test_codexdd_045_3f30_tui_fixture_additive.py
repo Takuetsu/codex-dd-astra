@@ -8,7 +8,10 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CONFLICTS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
+CONFLICTS = (
+    ROOT
+    / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
+)
 CASES = {
     "codex-rs/tui/src/app/tests/startup_defaults_tests.rs": {
         "current": "e60808df0448682d47af1a14b5bd8d5c52206397",
@@ -41,13 +44,19 @@ class TwoExactAdditiveTuiTestFixtures(unittest.TestCase):
                 original = reviewed[path]
                 self.assertEqual(original["release_status"], "NOT_ACCEPTED")
                 self.assertEqual(original["official_163_blob"], expected["official"])
-                self.assertEqual(original["integration_reviewed_blob"], expected["current"])
-                self.assertEqual(git_text("rev-parse", "HEAD:" + path), expected["current"])
+                self.assertEqual(
+                    original["integration_reviewed_blob"], expected["current"]
+                )
+                self.assertEqual(
+                    git_text("rev-parse", "HEAD:" + path), expected["current"]
+                )
                 fork = git_bytes("cat-file", "blob", "HEAD:" + path)
                 self.assertEqual(fork.count(expected["extra"]), 1)
                 official = fork.replace(expected["extra"], b"", 1)
                 official_sha = git_bytes("hash-object", "--stdin", input_bytes=official)
-                self.assertEqual(official_sha.decode("ascii").strip(), expected["official"])
+                self.assertEqual(
+                    official_sha.decode("ascii").strip(), expected["official"]
+                )
 
     def test_no_runtime_or_release_promotion(self):
         self.assertEqual(

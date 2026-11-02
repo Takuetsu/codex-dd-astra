@@ -16,6 +16,7 @@ The source-bound `test_codexdd_045_3f51_generated_protocol_parity.py` checks:
 The two machine-readable receipts and `test_codexdd_045_3f51_exact_upstream_semantic_deltas.py` verify the actual current Rust Git blob, reverse **every individual addition/replacement/deletion**, then require a reconstructed Git SHA-1 matching the fetched **official upstream 0.163 Git blob**. A changed line anywhere in these 10 files fails even if its text happens to resemble another hunk.
 
 **Six app-server and protocol paths:**
+
 - `app-server-protocol/src/protocol/common.rs`: exactly eight extra lines for `thread/workflowState/update` and `turn/adaptiveRuntimeSignal` definitions; upstream methods unchanged.
 - `app-server-protocol/src/protocol/thread_history.rs`: exactly one extra `RolloutItem::WorkflowState(_)` suppression, keeping private workflow mutations out of model-visible history.
 - `app-server-protocol/src/protocol/v2/thread.rs`: one **76-line** fork-only workflow-state operation, snapshot and request/response type block.
@@ -24,6 +25,7 @@ The two machine-readable receipts and `test_codexdd_045_3f51_exact_upstream_sema
 - `app-server/src/request_processors/turn_processor.rs`: one **61-line** fork-only handler that loads a thread, converts adaptive state, rejects missing `adaptiveState` for `setAdaptiveState`, and persists a private workflow-state item.
 
 **Four original direct core/TUI conflict paths:**
+
 - `core/src/context_manager/history_tests.rs`: exact reconstruction documents **two** local-call debug/release test attribute changes and removal of **two** upstream expected-debug-panic tests for missing custom-tool/local-shell output. The fork instead synthesizes aborted output for interrupted calls. This intentional difference is **not** the same as upstream behavior; the retained **three orphan-output debug panic tests** and subsequent native history reconciliation must remain intact.
 - `tui/src/app/tests/session_lifecycle_requests.rs`: 16 exact edit hunks, retaining fork Worker/adaptive snapshots and six-scenario upstream Daybreak/API-key/history negotiation. Notable review gaps: the upstream `local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths` test had an explicit `boxed_future!` wrapper; the fork still has the body but has removed that wrapper, potentially affecting Windows test-stack characteristics. Targeted native execution is required before signing off.
 - `tui/src/app/tests/startup_defaults_tests.rs`: official upstream code plus precisely one `/*adaptive_family*/ None` argument.

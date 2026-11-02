@@ -3,11 +3,13 @@
 **NONRELEASE.** Supersedes 3F.33's PowerShell syntax failure before native test execution ([#40742651126](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40742651126)).
 
 Preconditions:
+
 - [3F.32 startup source proof #40742304689](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40742304689) GREEN — three official upstream WSL clipboard / reconnect cleanup / daemon-join restorations with adaptive startup retained.
 - [3F.34 TUI test harness proof #40743349060](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40743349060) GREEN — five Daybreak/API-key feature combinations and expected shutdown WebSocket disconnect handling, without changing live runtime.
 - [3F.35A source history inversion #40743590565](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40743590565) GREEN — 3F.20/25/32/34 historical change guards and 109-path owner source manifest run without deep historical Git objects.
 
 Single 60-minute bounded Windows-2022 job compiles the current `codex-tui` test binary once under Rust 1.95.0 with pinned Rusty V8, Cargo --locked, unchanged crypto/deny/dependency security. Each of **eight** selectors runs serially from the same compiled binary:
+
 1. `async_fresh_startup_applies_adaptive_preset_before_attachment`
 2. `fresh_startup_thread_drains_buffered_approval_before_draft_handoff`
 3. `reconnect_exhaustion_and_unknown_initial_thread_stay_offline`

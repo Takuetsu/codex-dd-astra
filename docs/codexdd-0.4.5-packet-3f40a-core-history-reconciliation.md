@@ -3,6 +3,7 @@
 **NONRELEASE; no Rust product source edits.** Official upstream Codex `rust-v0.163.0` retains `error_or_panic` for a missing, noninherited CustomToolCall/LocalShellCall output in debug builds. CodexDD intentionally keeps `info!` there and synthesizes an `aborted` output so interrupted local tasks, inherited worktree prefixes and resumed sessions can recover without debug panic. The fork retains **strict debug panics for orphan outputs** (no matching call) and still uses stable synthetic output IDs. Restoring upstream's two missing-output panic statements without a controlled migration would break the interrupted-work recovery contract.
 
 Exact current source blobs:
+
 - `codex-rs/core/src/context_manager/normalize.rs` — `4ca88c6a668e9896df06ca81940a0e41e357898d`
 - `codex-rs/core/src/context_manager/history_tests.rs` — `4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d`.
 

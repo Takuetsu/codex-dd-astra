@@ -7,9 +7,13 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RECEIPT = ROOT / "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json"
+RECEIPT = (
+    ROOT / "docs/upstream-candidates/codexdd-045-3f34-session-tests-source-edits.json"
+)
 P = "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs"
-CORRECTIONS = ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
+CORRECTIONS = (
+    ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
+)
 MATRIX = ROOT / "docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json"
 
 
@@ -18,15 +22,19 @@ def git(*args: str) -> bytes:
 
 
 def oid(data: bytes) -> str:
-    return subprocess.check_output(
-        ["git", "hash-object", "--stdin"], input=data, cwd=ROOT
-    ).decode("ascii").strip()
+    return (
+        subprocess.check_output(["git", "hash-object", "--stdin"], input=data, cwd=ROOT)
+        .decode("ascii")
+        .strip()
+    )
 
 
 class SessionTestOnlyRestoration(unittest.TestCase):
     def test_seven_exact_edits_from_parent_source(self):
         r = json.loads(RECEIPT.read_text(encoding="utf-8"))
-        self.assertEqual(r["source_scope"], "NONRELEASE_EXACT_OFFICIAL_163_SESSION_TEST_RESTORATION")
+        self.assertEqual(
+            r["source_scope"], "NONRELEASE_EXACT_OFFICIAL_163_SESSION_TEST_RESTORATION"
+        )
         self.assertEqual(r["path"], P)
         self.assertEqual(r["before_blob"], "c10799047d696edcafd24d994c84f1fd87fd6a26")
         self.assertEqual(r["after_blob"], "1a99fcac6b070fff957248a5e13ec37910a0e588")
@@ -34,7 +42,10 @@ class SessionTestOnlyRestoration(unittest.TestCase):
         self.assertEqual(len(r["edits"]), 7)
         current = git("cat-file", "blob", "HEAD:" + P)
         latest = json.loads(
-            (ROOT / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json").read_text(encoding="utf-8")
+            (
+                ROOT
+                / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json"
+            ).read_text(encoding="utf-8")
         )["edits"][1]
         self.assertEqual(oid(current), latest["after_blob"])
         before, after = latest["before"].encode(), latest["after"].encode()
@@ -56,7 +67,9 @@ class SessionTestOnlyRestoration(unittest.TestCase):
             self.assertEqual(replayed.count(before), 1)
             replayed = replayed.replace(before, after, 1)
         self.assertEqual(replayed, current)
-        subprocess.run(["git", "diff", "--quiet", "HEAD", "--", P], cwd=ROOT, check=True)
+        subprocess.run(
+            ["git", "diff", "--quiet", "HEAD", "--", P], cwd=ROOT, check=True
+        )
 
     def test_five_daybreak_cases_and_all_disconnect_paths(self):
         s = (ROOT / P).read_text(encoding="utf-8")
@@ -78,9 +91,14 @@ class SessionTestOnlyRestoration(unittest.TestCase):
             with self.subTest(fragment=item):
                 self.assertIn(item, s)
         self.assertEqual(s.count("is_recording_client_disconnect"), 5)
-        self.assertIn("fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty", s)
+        self.assertIn(
+            "fresh_fork_inherits_parent_adaptive_state_when_server_state_is_empty", s
+        )
         self.assertIn("new_session_worker_binding_resets_dirty_adaptive_state", s)
-        self.assertIn("dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace", s)
+        self.assertIn(
+            "dynamic_tool_requests_ignore_other_namespaces_and_dispatch_tui_namespace",
+            s,
+        )
 
     def test_owner_ledger_and_nonrelease_markers(self):
         m = json.loads(MATRIX.read_text(encoding="utf-8"))
@@ -88,14 +106,26 @@ class SessionTestOnlyRestoration(unittest.TestCase):
         row = next(x for x in m["paths"] if x["path"] == P)
         r = next(x for x in c["paths"] if x["path"] == P)
         self.assertEqual(len(m["paths"]), 109)
-        self.assertEqual(row["current_blob"], "2460017301fa1c57480e1092e7ce69413aa7867e")
+        self.assertEqual(
+            row["current_blob"], "2460017301fa1c57480e1092e7ce69413aa7867e"
+        )
         self.assertEqual(row["semantic_status"], "PENDING_OWNER_REVIEW")
         self.assertEqual(row["release_status"], "NOT_ACCEPTED")
-        self.assertEqual(row["session_test_reconciliation"]["semantic_signoff"], "NOT_GRANTED")
-        self.assertEqual(r["auth_matrix_restoration_blob"], "c10799047d696edcafd24d994c84f1fd87fd6a26")
+        self.assertEqual(
+            row["session_test_reconciliation"]["semantic_signoff"], "NOT_GRANTED"
+        )
+        self.assertEqual(
+            r["auth_matrix_restoration_blob"],
+            "c10799047d696edcafd24d994c84f1fd87fd6a26",
+        )
         self.assertEqual(r["after_blob"], "2460017301fa1c57480e1092e7ce69413aa7867e")
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
+        self.assertEqual(
+            (ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(),
+            "rust-v0.162.0",
+        )
 
 
 if __name__ == "__main__":

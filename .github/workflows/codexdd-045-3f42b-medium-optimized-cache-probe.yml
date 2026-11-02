@@ -3,7 +3,8 @@ name: CodexDD 0.4.5 medium real Rust cross-runner immutable action cache probe (
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: [".github/workflows/codexdd-045-3f42b-medium-optimized-cache-probe.yml"]
+    paths:
+      [".github/workflows/codexdd-045-3f42b-medium-optimized-cache-probe.yml"]
 permissions:
   contents: read
 jobs:
@@ -106,7 +107,7 @@ jobs:
           $pathSha = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($shaBytes)).ToLowerInvariant()
           Write-Host "BAZEL_ACTION_PATH_SHA256=$pathSha"
           "path_sha=$pathSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          
+
           $bazel = (Get-Command bazel).Source
           if (-not (Test-Path -LiteralPath $bazel)) { throw 'Pinned Bazelisk not found' }
           $version = (& bazel --version | Out-String).Trim()
@@ -340,4 +341,3 @@ jobs:
           path: ${{ runner.temp }}/codexdd045-3f42b-config/*.log
           if-no-files-found: warn
           retention-days: 3
-

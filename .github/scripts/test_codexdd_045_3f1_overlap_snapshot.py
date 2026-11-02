@@ -163,9 +163,7 @@ class FourWayOverlapReceipt(unittest.TestCase):
     def test_security_owner_graph_not_implicitly_promoted(self):
         for path, reviewed in SECURE_BLOBS.items():
             with self.subTest(path=path):
-                self.assertEqual(
-                    git("hash-object", path).decode().strip(), reviewed
-                )
+                self.assertEqual(git("hash-object", path).decode().strip(), reviewed)
         self.assertEqual(
             git("hash-object", "codex-rs/deny.toml").decode().strip(),
             SECURE_DENY,

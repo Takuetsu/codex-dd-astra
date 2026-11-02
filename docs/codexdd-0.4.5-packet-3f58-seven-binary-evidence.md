@@ -10,12 +10,12 @@ The final seven-program archive was independently reopened, exactly seven PE EXE
 
 **Two newly built pairs:**
 
-| File | Bytes | SHA-256 |
-|---|---:|---|
-| `codex-windows-sandbox-service.exe` | 55,867,392 | `7738934e39ce451f15f342b4ce65710aaab192e5c29fca7707c05d20c523e2ac` |
+| File                                |       Bytes | SHA-256                                                            |
+| ----------------------------------- | ----------: | ------------------------------------------------------------------ |
+| `codex-windows-sandbox-service.exe` |  55,867,392 | `7738934e39ce451f15f342b4ce65710aaab192e5c29fca7707c05d20c523e2ac` |
 | `codex-windows-sandbox-service.pdb` | 165,584,896 | `13f2abafd1a312bfb69e1310124796a99af7cff83850bba457dce8ba7e58fc6b` |
-| `codex-responses-api-proxy.exe` | 5,852,672 | `690d0e855464135a197e2e6cca08d7da3f63c3a76aab405f1b934eb05866b6a6` |
-| `codex-responses-api-proxy.pdb` | 21,147,648 | `e001827c2562b87241f70ad1b9722d1d829b5d8468a6fb15f0f63e54eecb8d6d` |
+| `codex-responses-api-proxy.exe`     |   5,852,672 | `690d0e855464135a197e2e6cca08d7da3f63c3a76aab405f1b934eb05866b6a6` |
+| `codex-responses-api-proxy.pdb`     |  21,147,648 | `e001827c2562b87241f70ad1b9722d1d829b5d8468a6fb15f0f63e54eecb8d6d` |
 
 Complete file metadata and all 10 original member hashes are in `docs/upstream-candidates/codexdd-045-3f58-seven-program-windows-evidence.json`; `test_codexdd_045_3f58_seven_binary_evidence.py` guards the original baseline and new four hashes with exact source SHA/approval status. Evidence was read from the **actual GitHub job log and artifact metadata**; this receipt is not a claim of a second independent local download/rehash.
 
@@ -23,4 +23,4 @@ Complete file metadata and all 10 original member hashes are in `docs/upstream-c
 
 **Completed:** seven-program optimized unsigned Windows x64 developer bundle with PDB integrity.
 
-**NOT completed:** seven-path semantic signoff, remaining 65 owner source reviews, 109 formal owner acceptances, Microsoft code signing, voice DLL closure, timestamped installer, update/rollback, or final 21-stage Daniel-CL suite. The original 109-path canonical owner matrix remains `PENDING_OWNER_REVIEW / NOT_ACCEPTED`. The three Bazel owner entries have new *evidence*, not authorization. No 0.4.5 production install, signing, publishing or merge.
+**NOT completed:** seven-path semantic signoff, remaining 65 owner source reviews, 109 formal owner acceptances, Microsoft code signing, voice DLL closure, timestamped installer, update/rollback, or final 21-stage Daniel-CL suite. The original 109-path canonical owner matrix remains `PENDING_OWNER_REVIEW / NOT_ACCEPTED`. The three Bazel owner entries have new _evidence_, not authorization. No 0.4.5 production install, signing, publishing or merge.

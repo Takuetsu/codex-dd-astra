@@ -4,7 +4,10 @@ name: CodexDD 0.4.5 recover real optimized Windows CLI PDB then combined package
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: [".github/workflows/codexdd-045-3f48-optimized-cli-and-combined-retry.yml"]
+    paths:
+      [
+        ".github/workflows/codexdd-045-3f48-optimized-cli-and-combined-retry.yml",
+      ]
 permissions:
   contents: read
 jobs:
@@ -86,7 +89,6 @@ jobs:
               "$($matches[1])=$($matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             }
           }
-
 
       - name: Restore previously completed core Rust action cache, skip repeating core seed and finish
         id: cache
