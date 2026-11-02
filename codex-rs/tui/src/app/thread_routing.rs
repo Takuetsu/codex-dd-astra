@@ -14,7 +14,6 @@ use codex_app_server_protocol::ThreadStartedNotification;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
 use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::WarningNotification;
 use codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
@@ -757,10 +756,8 @@ impl App {
                     .active_turn_id_for_thread(thread_id)
                     .await
                     .unwrap_or_default();
-                let (thread_event_tx, thread_event_store) = {
-                    let channel = self.ensure_thread_channel(thread_id);
-                    (channel.sender.clone(), Arc::clone(&channel.store))
-                };
+                let thread_event_store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
+                let app_event_tx = self.app_event_tx.clone();
                 self.reset_backtrack_state();
                 if !turn_id.is_empty() {
                     let mut store = thread_event_store.lock().await;
@@ -796,23 +793,10 @@ impl App {
                                     continue;
                                 }
                                 tracing::warn!(error = %error, "turn/interrupt failed in TUI");
-                                let notification =
-                                    ServerNotification::Warning(WarningNotification {
-                                        thread_id: Some(thread_id.to_string()),
-                                        message: format!("Failed to interrupt turn: {error}"),
-                                    });
-                                let should_send = {
-                                    let mut store = thread_event_store.lock().await;
-                                    store.push_notification_ref(&notification);
-                                    store.active
-                                };
-                                if should_send
-                                    && let Err(error) = thread_event_tx.send(
-                                        ThreadBufferedEvent::Notification(Box::new(notification)),
-                                    )
-                                {
-                                    tracing::warn!(error = %error, "thread event channel closed");
-                                }
+                                app_event_tx.send(AppEvent::ThreadInterruptWarning {
+                                    thread_id,
+                                    message: format!("Failed to interrupt turn: {error}"),
+                                });
                                 break;
                             }
                         }
