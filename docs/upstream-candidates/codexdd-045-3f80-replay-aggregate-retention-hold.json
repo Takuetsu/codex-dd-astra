@@ -10,7 +10,9 @@
     "replay_policy_path": "codex-rs/tui/src/app/thread_event_buffer.rs",
     "replay_policy_blob": "0e01361aae2ae0a2b5e1bb191d7eec289d1779d2",
     "capacity_constants_path": "codex-rs/tui/src/app.rs",
-    "capacity_blob": "2c4ef89f8aef22193ae8d5f57996a948db987659"
+    "capacity_blob": "2c4ef89f8aef22193ae8d5f57996a948db987659",
+    "pending_replay_policy_path": "codex-rs/tui/src/app/pending_interactive_replay.rs",
+    "pending_replay_policy_blob": "cdbc8512fabe55cb509146dc9a3193d4b77086bf"
   },
   "verified_source_bounds": {
     "per_live_event_serialized_bytes": 2097152,
@@ -28,10 +30,12 @@
     "thread_events.rs: ensure_live_event_budget returns a serialized per-event result, used by live queue; it does not enforce total replay retention",
     "thread_event_buffer.rs: evict_overflowing_events only checks buffer.length and aggregated AgentMessageDelta bytes",
     "thread_events.rs: snapshot clones the retained replay events and the session/turns, causing transient memory amplification",
-    "thread_events.rs: raw response items and realtime audio/SDP are excluded from the replay buffer before push; this is necessary but not sufficient for all other rich event payloads"
+    "thread_events.rs: raw response items and realtime audio/SDP are excluded from the replay buffer before push; this is necessary but not sufficient for all other rich event payloads",
+    "pending_interactive_replay.rs: note_evicted_server_request removes the request from pending approval/input bookkeeping when the corresponding replay buffer event is evicted; a simple byte cap with the existing FIFO eviction rule can prematurely forget inactive-thread prompts"
   ],
   "impact": "Multiple individually legal rich notifications, request payloads or completed items may accumulate beyond any stated per-thread aggregate replay byte ceiling. Do not infer one from the 2 MiB live event limit.",
   "requirements_before_owner_acceptance": [
+    "Exercise pending interactive approval/elicitation/user-input preservation under inactive-thread replay retention pressure; an eviction policy must either retain the protected request or surface an explicit fail-closed error rather than silently forgetting a pending prompt",
     "Define and enforce an explicit aggregate retained-byte budget for all replay event variants, with bounded counting that does not allocate a second copy of large event payloads",
     "Keep ordered live delivery and fail-closed overflow semantics intact; do not silently discard trusted approvals, tool permission requests, terminal events or adaptive terminal signals",
     "Demonstrate correct accounting for coalesced delta text, replay filtering/session refresh, per-event eviction and thread switch snapshots",
@@ -44,5 +48,6 @@
   "native_proof_for_aggregate_retention": "NOT_AVAILABLE",
   "formal_owner_approval": false,
   "release_approved": false,
-  "notes": "Risk evidence only; does not modify runtime or waive the existing 13-path semantic hold ledger."
+  "notes": "Risk evidence only; does not modify runtime or waive the existing 13-path semantic hold ledger.",
+  "additional_risk": "Current FIFO capacity eviction can already clear pending-request tracking via note_evicted_server_request. Increasing eviction frequency for a new byte budget without an authority-preserving policy could worsen an existing prompt-loss scenario."
 }
