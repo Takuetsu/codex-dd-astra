@@ -1861,6 +1861,9 @@ impl App {
 
         let mut disconnected = false;
         loop {
+            // A frame and a thread detach both own the receiver: service the
+            // capped FIFO during draining, not only at the top of the event loop.
+            self.flush_pending_live_thread_events()?;
             match rx.try_recv() {
                 Ok(event) => {
                     self.handle_thread_event_now_recovering_file_changes(event)
