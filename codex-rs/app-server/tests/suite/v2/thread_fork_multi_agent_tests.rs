@@ -190,9 +190,8 @@ async fn workflow_state_update_preserves_authorized_top_level_cli_mutation() -> 
         .await;
     let error = stale_write.expect_err("stale workflow source turn must be rejected");
     assert!(
-        format!("{error:#}").contains(
-            "workflow state update source turn does not match current thread lifecycle"
-        ),
+        format!("{error:#}")
+            .contains("workflow state update source turn does not match current thread lifecycle"),
         "unexpected error: {error:#}"
     );
 
