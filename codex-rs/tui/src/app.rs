@@ -301,8 +301,11 @@ use self::thread_events::*;
 const EXTERNAL_EDITOR_HINT: &str = "Save and close external editor to continue.";
 const THREAD_EVENT_CHANNEL_CAPACITY: usize = 32768;
 // Keep the app-server producer bounded: its consumer runs on the same TUI task.
-const THREAD_EVENT_LIVE_CAPACITY: usize = 512;
-const THREAD_EVENT_PENDING_LIMIT: usize = 64;
+// Limit both event count and individual payload size; queue count alone does not
+// bound retained voice/audio, request, or history bytes.
+const THREAD_EVENT_LIVE_CAPACITY: usize = 64;
+const THREAD_EVENT_PENDING_LIMIT: usize = 16;
+const THREAD_EVENT_MAX_WIRE_BYTES: usize = 2 * 1024 * 1024;
 
 enum ThreadInteractiveRequest {
     AppLink(AppLinkViewParams),
