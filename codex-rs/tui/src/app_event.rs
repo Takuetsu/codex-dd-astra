@@ -479,6 +479,12 @@ pub(crate) enum AppEvent {
         prompt: UserMessage,
     },
 
+    /// Route an asynchronous interrupt warning back through the one TUI ingress.
+    /// A separate bounded-channel sender would otherwise overtake deferred terminals.
+    ThreadInterruptWarning {
+        thread_id: ThreadId,
+        message: String,
+    },
     /// Deliver a synthetic history lookup response to a specific thread channel.
     ThreadHistoryEntryResponse {
         thread_id: ThreadId,
