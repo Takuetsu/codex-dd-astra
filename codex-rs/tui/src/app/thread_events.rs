@@ -932,20 +932,24 @@ mod tests {
             )))
             .expect("start queued");
         channel
-            .queue_live_event(ThreadBufferedEvent::Request(Box::new(exec_approval_request(
-                thread_id,
-                "turn-feedback",
-                "tool-feedback",
-                /*approval_id*/ None,
-            ))))
+            .queue_live_event(ThreadBufferedEvent::Request(Box::new(
+                exec_approval_request(
+                    thread_id,
+                    "turn-feedback",
+                    "tool-feedback",
+                    /*approval_id*/ None,
+                ),
+            )))
             .expect("approval deferred");
         channel
-            .queue_live_event(ThreadBufferedEvent::FeedbackSubmission(FeedbackThreadEvent {
-                category: FeedbackCategory::Bug,
-                include_logs: false,
-                feedback_audience: FeedbackAudience::External,
-                result: Ok("uploaded".to_string()),
-            }))
+            .queue_live_event(ThreadBufferedEvent::FeedbackSubmission(
+                FeedbackThreadEvent {
+                    category: FeedbackCategory::Bug,
+                    include_logs: false,
+                    feedback_audience: FeedbackAudience::External,
+                    result: Ok("uploaded".to_string()),
+                },
+            ))
             .expect("feedback remains after approval");
         channel
             .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
