@@ -204,9 +204,15 @@ impl TurnRequestProcessor {
 
     pub(crate) async fn thread_workflow_state_update(
         &self,
+        request_id: &ConnectionRequestId,
         params: ThreadWorkflowStateUpdateParams,
     ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
         let (_, thread) = self.load_thread(&params.thread_id).await?;
+        // Persisting a workflow checkpoint is a direct thread mutation. Do not
+        // let a client modify the durable authority of a V2 spawned sub-agent
+        // through this RPC when ordinary direct input is forbidden.
+        self.ensure_direct_input_allowed(request_id, thread.as_ref())
+            .await?;
         let item = match params.operation {
             ThreadWorkflowStateOperation::SetReadyForOwnerQa => {
                 codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(params.source_turn_id)
