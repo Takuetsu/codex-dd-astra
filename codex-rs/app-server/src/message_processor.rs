@@ -1657,7 +1657,7 @@ impl MessageProcessor {
             }
             ClientRequest::ThreadWorkflowStateUpdate { params, .. } => {
                 self.turn_processor
-                    .thread_workflow_state_update(params)
+                    .thread_workflow_state_update(&request_id, params)
                     .await
             }
             ClientRequest::TurnSteer { params, .. } => {
