@@ -7,6 +7,7 @@
 
 use super::*;
 use std::borrow::Cow;
+use std::io::Write;
 
 #[derive(Debug, Clone)]
 pub(super) struct ThreadEventSnapshot {
@@ -24,6 +25,87 @@ pub(super) enum ThreadBufferedEvent {
     Request(Box<ServerRequest>),
     HistoryEntryResponse(HistoryLookupResponse),
     FeedbackSubmission(FeedbackThreadEvent),
+}
+
+/// The live channel has a bounded event count. Its event payloads must be
+/// bounded too: voice/audio chunks and rich turn completions can be much larger
+/// than an ordinary notification. This sink measures serialized wire bytes
+/// without allocating a second copy of large audio or request payloads.
+#[derive(Default)]
+struct LivePayloadCounter {
+    bytes: usize,
+}
+
+impl LivePayloadCounter {
+    fn account(&mut self, additional: usize) -> std::io::Result<()> {
+        let remaining = THREAD_EVENT_MAX_WIRE_BYTES.saturating_sub(self.bytes);
+        if additional > remaining {
+            return Err(std::io::Error::other("live event payload exceeds byte limit"));
+        }
+        self.bytes += additional;
+        Ok(())
+    }
+}
+
+impl Write for LivePayloadCounter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.account(buf.len())?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn serialized_live_event_bytes<T: serde::Serialize>(value: &T) -> Result<usize> {
+    let mut counter = LivePayloadCounter::default();
+    serde_json::to_writer(&mut counter, value).map_err(|error| {
+        color_eyre::eyre::eyre!(
+            "cannot enqueue oversized or invalid live event (max {} bytes): {error}",
+            THREAD_EVENT_MAX_WIRE_BYTES
+        )
+    })?;
+    Ok(counter.bytes)
+}
+
+fn ensure_live_event_budget(event: &ThreadBufferedEvent) -> Result<()> {
+    match event {
+        ThreadBufferedEvent::Notification(notification) => {
+            serialized_live_event_bytes(notification.as_ref()).map(|_| ())
+        }
+        ThreadBufferedEvent::Request(request) => {
+            serialized_live_event_bytes(request.as_ref()).map(|_| ())
+        }
+        ThreadBufferedEvent::HistoryEntryResponse(history) => {
+            // History cursors have fixed-size numeric state. Count text with
+            // proper JSON escaping and reserve per-entry bookkeeping overhead.
+            let mut counter = LivePayloadCounter::default();
+            match history {
+                HistoryLookupResponse::Entry { entry, .. } => {
+                    counter.account(256)?;
+                    serde_json::to_writer(&mut counter, entry)?;
+                }
+                HistoryLookupResponse::Batch { entries, .. } => {
+                    counter.account(256)?;
+                    for entry in entries {
+                        counter.account(128)?;
+                        serde_json::to_writer(&mut counter, &entry.entry)?;
+                    }
+                }
+                HistoryLookupResponse::BatchError { .. } => counter.account(256)?,
+            }
+            Ok(())
+        }
+        ThreadBufferedEvent::FeedbackSubmission(feedback) => {
+            let mut counter = LivePayloadCounter::default();
+            counter.account(256)?;
+            match &feedback.result {
+                Ok(message) | Err(message) => serde_json::to_writer(&mut counter, message)?,
+            }
+            Ok(())
+        }
+    }
 }
 
 fn is_voice_handoff_item(item: &ThreadItem) -> bool {
@@ -589,6 +671,22 @@ pub(super) struct ThreadEventChannel {
 }
 
 impl ThreadEventChannel {
+    pub(super) fn ensure_notification_budget(notification: &ServerNotification) -> Result<()> {
+        serialized_live_event_bytes(notification).map(|_| ())
+    }
+
+    pub(super) fn ensure_request_budget(request: &ServerRequest) -> Result<()> {
+        serialized_live_event_bytes(request).map(|_| ())
+    }
+
+    pub(super) fn ensure_history_budget(event: &HistoryLookupResponse) -> Result<()> {
+        ensure_live_event_budget(&ThreadBufferedEvent::HistoryEntryResponse(event.clone()))
+    }
+
+    pub(super) fn ensure_feedback_budget(event: &FeedbackThreadEvent) -> Result<()> {
+        ensure_live_event_budget(&ThreadBufferedEvent::FeedbackSubmission(event.clone()))
+    }
+
     pub(super) fn has_pending_live(&self) -> bool {
         !self.pending_live.is_empty()
     }
@@ -598,6 +696,7 @@ impl ThreadEventChannel {
     /// approval, terminal and completion messages. The main loop pauses ingress until
     /// it frees capacity and drains the bounded FIFO.
     pub(super) fn queue_live_event(&mut self, event: ThreadBufferedEvent) -> Result<()> {
+        ensure_live_event_budget(&event)?;
         let event = if self.pending_live.is_empty() {
             match self.sender.try_send(event) {
                 Ok(()) => return Ok(()),
@@ -981,6 +1080,58 @@ mod tests {
                 if matches!(n.as_ref(), ServerNotification::TurnCompleted(_))
         ));
         assert!(!channel.has_pending_live());
+    }
+
+    #[test]
+    fn live_queue_rejects_oversized_voice_audio_before_buffering_without_silent_drop() {
+        let thread_id = ThreadId::new();
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+        let too_large = "A".repeat(THREAD_EVENT_MAX_WIRE_BYTES + 1);
+        let audio = ServerNotification::ThreadRealtimeOutputAudioDelta(
+            ThreadRealtimeOutputAudioDeltaNotification {
+                thread_id: thread_id.to_string(),
+                audio: ThreadRealtimeAudioChunk {
+                    data: too_large,
+                    sample_rate: 24_000,
+                    num_channels: 1,
+                    samples_per_channel: None,
+                    item_id: None,
+                },
+            },
+        );
+        let err = channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(audio)));
+        assert!(err.is_err(), "oversized realtime chunks must fail closed");
+        assert!(!channel.has_pending_live());
+        let receiver = channel.receiver.as_mut().expect("receiver retained");
+        assert!(matches!(receiver.try_recv(), Err(mpsc::error::TryRecvError::Empty)));
+    }
+
+    #[test]
+    fn live_queue_limits_oversized_history_without_rejecting_small_history() {
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+        let huge = HistoryLookupResponse::Entry {
+            offset: 0,
+            log_id: 0,
+            entry: Some("H".repeat(THREAD_EVENT_MAX_WIRE_BYTES + 1)),
+        };
+        assert!(channel
+            .queue_live_event(ThreadBufferedEvent::HistoryEntryResponse(huge))
+            .is_err());
+        let small = HistoryLookupResponse::Entry {
+            offset: 0,
+            log_id: 0,
+            entry: Some("safe cached prompt".to_string()),
+        };
+        channel
+            .queue_live_event(ThreadBufferedEvent::HistoryEntryResponse(small))
+            .expect("small history remains deliverable");
+        assert!(matches!(
+            channel.receiver.as_mut().expect("receiver").try_recv(),
+            Ok(ThreadBufferedEvent::HistoryEntryResponse(HistoryLookupResponse::Entry {
+                entry: Some(_),
+                ..
+            }))
+        ));
     }
 
     #[test]
