@@ -319,7 +319,15 @@
     ],
     "obvious_missing_required_fields": 0,
     "scope": "static named-variant and destructuring patterns only; not a Rust compiler or exhaustive Rust parser",
-    "native_compilation": "STILL_UNVERIFIED",
-    "note": "Six top-level suite Rust sources and 14 shared helper Rust sources examined; the zsh test suite is a directory, not a zsh.rs file. The 164-file V2 scan checked constructors/patterns against all 16 ResponseItem variants and selected read/list/content items."
+    "native_compilation": "PENDING",
+    "note": "Six top-level suite Rust sources and 14 shared helper Rust sources examined; the zsh test suite is a directory, not a zsh.rs file. The 164-file V2 scan checked constructors/patterns against all 16 ResponseItem variants and selected read/list/content items.",
+    "fixture_regression_test": ".github/scripts/test_codexdd_045_3f80_local_validation.py",
+    "fixture_regression_variants": [
+      "ResponseItem::Message",
+      "ContentItem::OutputText",
+      "ThreadReadResponse"
+    ],
+    "synthetic_scanner_examples_validated": true,
+    "python_fixture_suite_run_against_full_repo": false
   }
 }
