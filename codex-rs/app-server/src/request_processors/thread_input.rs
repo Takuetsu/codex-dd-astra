@@ -35,3 +35,32 @@ pub(super) async fn ensure_direct_input_allowed(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use codex_protocol::ThreadId;
+
+    #[test]
+    fn v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue() {
+        let spawned = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
+            parent_thread_id: ThreadId::new(),
+            depth: 1,
+            agent_path: None,
+            agent_nickname: None,
+            agent_role: Some("implementation".to_string()),
+        });
+        assert!(
+            !can_accept_direct_input(Some(MultiAgentVersion::V2), &spawned),
+            "a V2 spawned sub-agent must not accept direct authority mutations"
+        );
+        assert!(
+            can_accept_direct_input(None, &spawned),
+            "legacy non-V2 agents retain their established direct-input path"
+        );
+        assert!(
+            can_accept_direct_input(Some(MultiAgentVersion::V2), &SessionSource::Cli),
+            "ordinary top-level CLI clients retain direct input"
+        );
+    }
+}
