@@ -91,6 +91,8 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
         role: "assistant".to_string(),
         content: vec![ContentItem::OutputText {
             text: injected_text.to_string(),
+            annotations: None,
+            logprobs: None,
         }],
         phase: None,
         status: None,
