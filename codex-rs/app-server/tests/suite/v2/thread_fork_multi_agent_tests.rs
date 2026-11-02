@@ -175,6 +175,27 @@ async fn workflow_state_update_preserves_authorized_top_level_cli_mutation() -> 
         })
         .await?;
 
+    // A delayed worker response from an earlier turn cannot overwrite a newer
+    // completed turn's workflow authority, even on the subscribed connection.
+    let stale_write: Result<ThreadWorkflowStateUpdateResponse> = mcp
+        .request(|request_id| ClientRequest::ThreadWorkflowStateUpdate {
+            request_id,
+            params: ThreadWorkflowStateUpdateParams {
+                thread_id: thread.id.clone(),
+                operation: ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+                source_turn_id: Some("stale-prior-turn".to_string()),
+                adaptive_state: None,
+            },
+        })
+        .await;
+    let error = stale_write.expect_err("stale workflow source turn must be rejected");
+    assert!(
+        format!("{error:#}").contains(
+            "workflow state update source turn does not match current thread lifecycle"
+        ),
+        "unexpected error: {error:#}"
+    );
+
     // The new direct-input gate must reject V2 spawned sub-agent mutations
     // without blocking the legitimate top-level owner connection.
     let _: ThreadWorkflowStateUpdateResponse = mcp
