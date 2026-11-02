@@ -239,5 +239,32 @@
     "native_tests_started": 0,
     "format_only_remediation_committed": true,
     "corrected_native_retest": "PENDING"
+  },
+  "local_native_compile_triage": {
+    "tested_head": "c26a1653de228f2b71949ac486d927ecb3865bfc",
+    "source_gate": "PASS",
+    "previous_library_selectors_passed": [
+      "workflow_mutation_rejects_foreign_and_unsubscribed_connections",
+      "workflow_mutation_rejects_stale_source_turn_without_blocking_valid_or_cold_resume",
+      "v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue"
+    ],
+    "test_all_compile": "FAILED_BEFORE_TEST_EXECUTION",
+    "compiler_errors_reported": 60,
+    "compiler_warnings_reported": 26,
+    "observed_error_codes": [
+      "E0063",
+      "E0027"
+    ],
+    "observed_fixtures": [
+      "ResponseItem::Message missing status/encrypted_content",
+      "ThreadReadResponse destructuring missing read_state"
+    ],
+    "source_only_compatibility_commit": "ff58a25c74859f9ddd82f844be4ef3997c49f424",
+    "changed_files_in_repair": 8,
+    "known_fixture_compatibility_edits": 18,
+    "full_compiler_log": "LOCAL_ONLY_NOT_YET_AVAILABLE",
+    "complete_test_all_compile": "NOT_YET_VERIFIED",
+    "ci_triggered": false,
+    "prior_three_unit_results_not_transferable_to_new_head": true
   }
 }
