@@ -30,6 +30,14 @@ The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd1
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
 
+## Incremental source QA after the 60-error compiler failure
+
+A lightweight test at `.github/scripts/test_codexdd_045_3f80_local_validation.py` now includes a source-scanning check for the precise preexisting app-server fixture incompatibilities observed in the prior Windows compilation: missing `status`/`encrypted_content` in `ResponseItem::Message`, missing `annotations`/`logprobs` in `ContentItem::OutputText`, and `ThreadReadResponse` destructures missing `read_state`. It scans the app-server V2, suite, and shared test-helper Rust files and fails if those required fields disappear from an explicitly constructed/pattern-matched value.
+
+The scanner helper was exercised on synthetic valid, partial-match and invalid missing-field examples without running Rust. Existing real code was separately inspected through the GitHub API. **These are static source checks, not a green compiled test binary or CI receipt.** The Python check is not a new dependency of the Windows acceptance runner and will not block it on absent Python.
+
+The replay memory audit additionally identifies a distinct interaction hazard: count-based replay eviction invokes `note_evicted_server_request`, which removes pending approval/elicitation/user-input tracking. A new byte-retention budget must preserve or explicitly fail closed on those requests, not silently evict them. See `docs/upstream-candidates/codexdd-045-3f80-replay-aggregate-retention-hold.json` for the source-bound P0 review criteria. The existing 13 unaccepted Core/TUI paths and all native release gates remain unchanged.
+
 ## 3F.80 automated recovery and source-only fixture audit
 
 The first implementation of the local diagnostic reporter was found to contain an accidental duplicated script tail and an unterminated regex. Repaired on isolated 3F.80 commit `5bc71fe592e758f45fe956014836274c1541e2ab`, removing the duplicate and restoring a structurally balanced runner. The replacement runs source pins/Rustfmt first, attempts the aggregate app-server `--test all --no-run` compilation once, captures every compiler error/location in a digest, and only then runs the five focused tests. This is a **source-level audit only**; the repaired script has not been executed on Daniel-CL.
