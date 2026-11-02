@@ -15,6 +15,9 @@ use codex_app_server_protocol::ThreadHistoryMode;
 use codex_app_server_protocol::ThreadResumeParams;
 use codex_app_server_protocol::ThreadResumeResponse;
 use codex_app_server_protocol::ThreadStartParams;
+use codex_app_server_protocol::ThreadWorkflowStateOperation;
+use codex_app_server_protocol::ThreadWorkflowStateUpdateParams;
+use codex_app_server_protocol::ThreadWorkflowStateUpdateResponse;
 use codex_app_server_protocol::TurnStartParams;
 use codex_app_server_protocol::UserInput;
 use codex_features::Feature;
@@ -147,5 +150,44 @@ async fn fork_before_first_turn_preserves_model_selected_multi_agent_version(
         multi_agent_namespaces,
         vec![vec!["collaboration"], vec!["collaboration"]]
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_state_update_preserves_authorized_top_level_cli_mutation() -> Result<()> {
+    let server = create_mock_responses_server_repeating_assistant("Done").await;
+    let codex_home = TempDir::new()?;
+    MockResponsesConfig::new(&server.uri()).write(codex_home.path())?;
+    let mut mcp = TestAppServer::builder()
+        .with_codex_home(codex_home.path())
+        .build_initialized()
+        .await?;
+
+    let thread = mcp.start_thread(ThreadStartParams::default()).await?.thread;
+    let completed = mcp
+        .start_turn_and_wait_for_completion(TurnStartParams {
+            thread_id: thread.id.clone(),
+            input: vec![UserInput::Text {
+                text: "Workflow checkpoint".to_string(),
+                text_elements: Vec::new(),
+            }],
+            ..Default::default()
+        })
+        .await?;
+
+    // The new direct-input gate must reject V2 spawned sub-agent mutations
+    // without blocking the legitimate top-level owner connection.
+    let _: ThreadWorkflowStateUpdateResponse = mcp
+        .request(|request_id| ClientRequest::ThreadWorkflowStateUpdate {
+            request_id,
+            params: ThreadWorkflowStateUpdateParams {
+                thread_id: thread.id,
+                operation: ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+                source_turn_id: Some(completed.turn.id),
+                adaptive_state: None,
+            },
+        })
+        .await?;
+    mcp.shutdown_gracefully().await?;
     Ok(())
 }
