@@ -31,10 +31,15 @@ class FormatterFollowup(unittest.TestCase):
                 actual = subprocess.check_output(
                     ["git", "show", "HEAD:" + path], cwd=ROOT
                 )
-                formatter_sha = subprocess.check_output(
-                    ["git", "hash-object", "--stdin"], cwd=ROOT,
-                    input=expected.encode("utf-8"),
-                ).decode("ascii").strip()
+                formatter_sha = (
+                    subprocess.check_output(
+                        ["git", "hash-object", "--stdin"],
+                        cwd=ROOT,
+                        input=expected.encode("utf-8"),
+                    )
+                    .decode("ascii")
+                    .strip()
+                )
                 self.assertEqual(formatter_sha, row["formatted_blob"])
                 current = subprocess.check_output(
                     ["git", "rev-parse", "HEAD:" + path], cwd=ROOT, text=True

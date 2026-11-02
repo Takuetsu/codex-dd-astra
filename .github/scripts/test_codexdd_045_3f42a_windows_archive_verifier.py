@@ -1,4 +1,5 @@
 """Source-only unit coverage of fail-closed Windows Bazel release tar validation."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -63,14 +64,20 @@ class WindowsArchiveGuard(unittest.TestCase):
 
     def test_unknown_executable_is_a_hard_failure(self):
         build_tar(self.path, sorted(verify.REQUIRED_FILES) + ["unexpected.exe"])
-        with self.assertRaisesRegex(verify.ArchiveValidationError, "Unexpected combined archive file"):
+        with self.assertRaisesRegex(
+            verify.ArchiveValidationError, "Unexpected combined archive file"
+        ):
             verify.inspect_archive(self.path)
 
     def test_non_pe_or_non_pdb_content_is_rejected(self):
         for name in ("codex.exe", "codex.pdb"):
             with self.subTest(name=name):
-                build_tar(self.path, sorted(verify.REQUIRED_FILES), {name: b"WRONG" * 2000})
-                with self.assertRaisesRegex(verify.ArchiveValidationError, "Not a Windows PE|Not an MSVC PDB"):
+                build_tar(
+                    self.path, sorted(verify.REQUIRED_FILES), {name: b"WRONG" * 2000}
+                )
+                with self.assertRaisesRegex(
+                    verify.ArchiveValidationError, "Not a Windows PE|Not an MSVC PDB"
+                ):
                     verify.inspect_archive(self.path)
 
     def test_traversal_is_rejected_before_extraction(self):
@@ -84,7 +91,9 @@ class WindowsArchiveGuard(unittest.TestCase):
             m.type = tarfile.SYMTYPE
             m.linkname = "/c/secret"
             tf.addfile(m)
-        with self.assertRaisesRegex(verify.ArchiveValidationError, "Unexpected special"):
+        with self.assertRaisesRegex(
+            verify.ArchiveValidationError, "Unexpected special"
+        ):
             verify.inspect_archive(self.path)
 
     def test_release_source_manifest_and_cache_contract_stay_pinned(self):
@@ -111,10 +120,15 @@ class WindowsArchiveGuard(unittest.TestCase):
             "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462",
         }.items():
             with self.subTest(path=path):
-                self.assertEqual(subprocess.check_output(
-                    ["git", "rev-parse", "HEAD:" + path], cwd=ROOT, text=True
-                ).strip(), expected)
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
+                self.assertEqual(
+                    subprocess.check_output(
+                        ["git", "rev-parse", "HEAD:" + path], cwd=ROOT, text=True
+                    ).strip(),
+                    expected,
+                )
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
 
 
 if __name__ == "__main__":

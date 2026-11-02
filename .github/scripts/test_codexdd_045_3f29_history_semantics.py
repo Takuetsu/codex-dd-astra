@@ -10,7 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 NORMALIZE = "codex-rs/core/src/context_manager/normalize.rs"
 HISTORY = "codex-rs/core/src/context_manager/history_tests.rs"
-CONFLICTS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
+CONFLICTS = (
+    ROOT
+    / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-original-direct-conflicts.json"
+)
 SOURCE_PINS = {
     NORMALIZE: "4ca88c6a668e9896df06ca81940a0e41e357898d",
     HISTORY: "4f8415b4ce3f3994d4fe8eb87bcbd22e6588848d",
@@ -62,9 +65,9 @@ class HistoryRecoveryForkSemantics(unittest.TestCase):
 
     def test_normalizer_preserves_local_nonpanic_and_unrelated_orphan_guards(self):
         source = (ROOT / NORMALIZE).read_text(encoding="utf-8")
-        custom = source.split("ResponseItem::CustomToolCall { id, call_id, .. }", 1)[1].split(
-            "// LocalShellCall is represented", 1
-        )[0]
+        custom = source.split("ResponseItem::CustomToolCall { id, call_id, .. }", 1)[
+            1
+        ].split("// LocalShellCall is represented", 1)[0]
         shell = source.split("// LocalShellCall is represented", 1)[1].split(
             "            _ => {}", 1
         )[0]

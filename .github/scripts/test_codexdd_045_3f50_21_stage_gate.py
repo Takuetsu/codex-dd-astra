@@ -1,4 +1,5 @@
 """3F.50: final Daniel-CL 21-stage launcher must fail closed before expensive work."""
+
 from __future__ import annotations
 
 import re
@@ -6,8 +7,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-LAUNCHER = (ROOT / 'scripts/codexdd-045-run-final-21.ps1').read_text(encoding='utf-8')
-RELEASE = (ROOT / 'scripts/codexdd-test-release.ps1').read_text(encoding='utf-8')
+LAUNCHER = (ROOT / "scripts/codexdd-045-run-final-21.ps1").read_text(encoding="utf-8")
+RELEASE = (ROOT / "scripts/codexdd-test-release.ps1").read_text(encoding="utf-8")
 
 
 class NativeReleaseGate(unittest.TestCase):
@@ -15,10 +16,10 @@ class NativeReleaseGate(unittest.TestCase):
         names = re.findall(r'New-CodexDDValidationStage -Name "([^"]+)"', RELEASE)
         self.assertEqual(len(names), 21)
         self.assertEqual(len(set(names)), 21)
-        self.assertIn('diff-check', names)
-        self.assertIn('cli-release-build', names)
-        self.assertIn('tui-daemon-startup-tests', names)
-        self.assertIn('cli-daemon-startup-tests', names)
+        self.assertIn("diff-check", names)
+        self.assertIn("cli-release-build", names)
+        self.assertIn("tui-daemon-startup-tests", names)
+        self.assertIn("cli-daemon-startup-tests", names)
         self.assertIn('Invoke-CodexDDValidationProfile -Profile "release"', RELEASE)
 
     def test_no_release_profile_without_frozen_source_and_all_semantics(self):
@@ -61,5 +62,5 @@ class NativeReleaseGate(unittest.TestCase):
         self.assertNotIn("Set-ExecutionPolicy Unrestricted", LAUNCHER)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

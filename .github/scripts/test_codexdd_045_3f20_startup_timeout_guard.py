@@ -7,7 +7,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "codex-rs/tui/src/app/startup.rs"
-LEDGER = ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
+LEDGER = (
+    ROOT / "docs/upstream-candidates/codexdd-045-reviewed-semantic-corrections.json"
+)
 OLD = """        if self.chat_widget.has_active_modal() && self.startup_protected_input_boundary {
             tui.discard_pending_input_before_interactive_screen()?;
             self.startup_pending_protected_request = false;
@@ -40,15 +42,15 @@ NEW = """        if self.chat_widget.has_active_modal() && self.startup_protecte
 
 
 def oid(raw: bytes) -> str:
-    return subprocess.check_output(
-        ["git", "hash-object", "--stdin"], cwd=ROOT, input=raw
-    ).decode("ascii").strip()
+    return (
+        subprocess.check_output(["git", "hash-object", "--stdin"], cwd=ROOT, input=raw)
+        .decode("ascii")
+        .strip()
+    )
 
 
 def git(*args: str) -> str:
-    return subprocess.check_output(
-        ["git", *args], cwd=ROOT
-    ).decode("ascii").strip()
+    return subprocess.check_output(["git", *args], cwd=ROOT).decode("ascii").strip()
 
 
 class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
@@ -56,10 +58,16 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
         data = json.loads(LEDGER.read_text(encoding="utf-8"))
         self.assertEqual(data["contract_version"], 1)
         self.assertEqual(len(data["paths"]), 3)
-        item = next(r for r in data["paths"] if r["path"] == "codex-rs/tui/src/app/startup.rs")
+        item = next(
+            r for r in data["paths"] if r["path"] == "codex-rs/tui/src/app/startup.rs"
+        )
         self.assertEqual(item["path"], "codex-rs/tui/src/app/startup.rs")
-        self.assertEqual(item["before_blob"], "3b111def463e2f52b4786b7a6db8c6e3aa7954f7")
-        self.assertEqual(item["timeout_recovery_blob"], "f092c3cf69b8302609f975ee2931e8fd15aa6797")
+        self.assertEqual(
+            item["before_blob"], "3b111def463e2f52b4786b7a6db8c6e3aa7954f7"
+        )
+        self.assertEqual(
+            item["timeout_recovery_blob"], "f092c3cf69b8302609f975ee2931e8fd15aa6797"
+        )
         self.assertEqual(item["after_blob"], "e51254ea2f16f2a356670413ae29c9de0d002e9d")
         self.assertEqual(
             item["official_163_blob"], "4c329f378702414c3c17cc31802c778a8dbb2266"
@@ -67,8 +75,10 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
         # Reconstruct the historical timeout-quarantine source from the current
         # candidate by reversing the three exact 3F.32 upstream additions.
         followup = json.loads(
-            (ROOT / "docs/upstream-candidates/codexdd-045-3f32-startup-restoration-edits.json")
-            .read_text(encoding="utf-8")
+            (
+                ROOT
+                / "docs/upstream-candidates/codexdd-045-3f32-startup-restoration-edits.json"
+            ).read_text(encoding="utf-8")
         )
         source = SOURCE.read_text(encoding="utf-8")
         self.assertEqual(oid(source.encode("utf-8")), followup["after_blob"])
@@ -88,18 +98,16 @@ class OriginalUpstreamStartupSafetyRestored(unittest.TestCase):
         self.assertEqual(oid(before.encode("utf-8")), item["before_blob"])
         self.assertEqual(item["release_status"], "NOT_ACCEPTED")
 
-    def test_startup_color_probe_and_pending_input_guards_still_consult_quarantine(self):
+    def test_startup_color_probe_and_pending_input_guards_still_consult_quarantine(
+        self,
+    ):
         source = SOURCE.read_text(encoding="utf-8")
+        self.assertIn("&& !self.startup_pending_protected_request", source)
+        self.assertIn("&& !app.startup_pending_protected_request", source)
+        self.assertIn("Err(err) if err.kind() == std::io::ErrorKind::TimedOut", source)
         self.assertIn(
-            "&& !self.startup_pending_protected_request", source
+            "Ok(()) => self.startup_pending_protected_request = false", source
         )
-        self.assertIn(
-            "&& !app.startup_pending_protected_request", source
-        )
-        self.assertIn(
-            "Err(err) if err.kind() == std::io::ErrorKind::TimedOut", source
-        )
-        self.assertIn("Ok(()) => self.startup_pending_protected_request = false", source)
         self.assertIn("Err(err) => return Err(err.into())", source)
         self.assertEqual(
             (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"

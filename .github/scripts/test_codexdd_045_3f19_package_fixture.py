@@ -12,7 +12,10 @@ def main() -> None:
     if not archive.is_file() or archive.stat().st_size < 80:
         raise SystemExit("Missing or empty fixture tar.gz")
     expected = {
-        "fixture_codex.exe": (b"CodexDD synthetic nonrelease executable fixture\n", 0o755),
+        "fixture_codex.exe": (
+            b"CodexDD synthetic nonrelease executable fixture\n",
+            0o755,
+        ),
         "fixture_codex.pdb": (b"CodexDD synthetic nonrelease symbol fixture\n", 0o644),
     }
     with tarfile.open(archive, "r:gz") as tar:

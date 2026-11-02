@@ -122,7 +122,9 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
         # All dependency owners must remain on the reviewed secure graph;
         # no vulnerable 0.5.x crypto-bigint is permitted in any target.
         self.assertEqual(
-            sorted(version for name, version in self.packages if name == "crypto-bigint"),
+            sorted(
+                version for name, version in self.packages if name == "crypto-bigint"
+            ),
             ["0.7.10"],
         )
         for name, version in (
@@ -147,9 +149,24 @@ class NativeWindowsLockAcceptance(unittest.TestCase):
         # Exact Git revisions rather than floating Git refs or registry-only
         # substitutions are required for the reviewed encryption and KEM owners.
         for name, url, rev, version in (
-            ("age", "https://github.com/str4d/rage", "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f", "0.12.1"),
-            ("age-core", "https://github.com/str4d/rage", "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f", "0.12.0"),
-            ("clatter", "https://github.com/jmlepisto/clatter", "9a8d15c4f80d5911ca0403aa22e0de99ea59df08", "3.0.0"),
+            (
+                "age",
+                "https://github.com/str4d/rage",
+                "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f",
+                "0.12.1",
+            ),
+            (
+                "age-core",
+                "https://github.com/str4d/rage",
+                "b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f",
+                "0.12.0",
+            ),
+            (
+                "clatter",
+                "https://github.com/jmlepisto/clatter",
+                "9a8d15c4f80d5911ca0403aa22e0de99ea59df08",
+                "3.0.0",
+            ),
         ):
             with self.subTest(name=name):
                 self.assertEqual(

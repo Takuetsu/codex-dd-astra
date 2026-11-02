@@ -29,7 +29,10 @@ class ReconnectSnapshotVersionNoticeFixture(unittest.TestCase):
         current = git("cat-file", "blob", "HEAD:" + SRC)
         self.assertEqual(oid(current), LATEST)
         latest = json.loads(
-            (ROOT / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json").read_text(encoding="utf-8")
+            (
+                ROOT
+                / "docs/upstream-candidates/codexdd-045-3f38-native-two-failure-test-edits.json"
+            ).read_text(encoding="utf-8")
         )["edits"][0]
         before, after = latest["before"].encode(), latest["after"].encode()
         self.assertEqual(current.count(after), 1)
@@ -58,10 +61,18 @@ class ReconnectSnapshotVersionNoticeFixture(unittest.TestCase):
         self.assertIn(
             "app.local_settings.tui.show_server_version_notice = true;", target[:900]
         )
-        self.assertEqual(s.count("app.local_settings.tui.show_server_version_notice = true;"), 1)
-        self.assertIn('assert_snapshot!(\n                "unavailable_conversation",', target)
-        reconnect = (ROOT / "codex-rs/tui/src/app/reconnect.rs").read_text(encoding="utf-8")
-        self.assertIn("if !self.local_settings.tui.show_server_version_notice", reconnect)
+        self.assertEqual(
+            s.count("app.local_settings.tui.show_server_version_notice = true;"), 1
+        )
+        self.assertIn(
+            'assert_snapshot!(\n                "unavailable_conversation",', target
+        )
+        reconnect = (ROOT / "codex-rs/tui/src/app/reconnect.rs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "if !self.local_settings.tui.show_server_version_notice", reconnect
+        )
         self.assertIn("self.chat_widget.add_server_version_warning(notice);", reconnect)
 
     def test_security_and_production_are_not_promoted(self):
@@ -73,9 +84,16 @@ class ReconnectSnapshotVersionNoticeFixture(unittest.TestCase):
             "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs": "2460017301fa1c57480e1092e7ce69413aa7867e",
         }.items():
             with self.subTest(path=path):
-                self.assertEqual(git("rev-parse", "HEAD:" + path).decode().strip(), expected)
-        self.assertEqual((ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4")
-        self.assertEqual((ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(), "rust-v0.162.0")
+                self.assertEqual(
+                    git("rev-parse", "HEAD:" + path).decode().strip(), expected
+                )
+        self.assertEqual(
+            (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
+        )
+        self.assertEqual(
+            (ROOT / "codex-rs/upstream-codex-release.txt").read_text().strip(),
+            "rust-v0.162.0",
+        )
 
 
 if __name__ == "__main__":

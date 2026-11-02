@@ -9,7 +9,10 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OVERLAPS = ROOT / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
+OVERLAPS = (
+    ROOT
+    / "docs/upstream-candidates/codexdd-upstream-rust-v0.163.0-overlap-source-receipt.json"
+)
 MATRIX = ROOT / "docs/upstream-candidates/codexdd-045-109-semantic-owner-matrix.json"
 PREFIX = "codex-rs/app-server-protocol/schema/typescript/"
 FILES = (PREFIX + "ServerNotification.ts", PREFIX + "ServerNotificationEnvelope.ts")
@@ -22,15 +25,19 @@ OFFICIAL = {
 
 
 def oid(blob: bytes) -> str:
-    return subprocess.check_output(
-        ["git", "hash-object", "--stdin"], cwd=ROOT, input=blob
-    ).decode("ascii").strip()
+    return (
+        subprocess.check_output(["git", "hash-object", "--stdin"], cwd=ROOT, input=blob)
+        .decode("ascii")
+        .strip()
+    )
 
 
 def at_head(path: str) -> str:
-    return subprocess.check_output(
-        ["git", "rev-parse", "HEAD:" + path], cwd=ROOT
-    ).decode("ascii").strip()
+    return (
+        subprocess.check_output(["git", "rev-parse", "HEAD:" + path], cwd=ROOT)
+        .decode("ascii")
+        .strip()
+    )
 
 
 class GeneratedNotificationAdditiveCompatibility(unittest.TestCase):
@@ -53,11 +60,14 @@ class GeneratedNotificationAdditiveCompatibility(unittest.TestCase):
                 self.assertEqual(row["release_status"], "NOT_ACCEPTED")
                 self.assertEqual(detail["semantic_signoff"], "NOT_GRANTED")
                 self.assertEqual(
-                    detail["review_kind"], "generated_notification_additive_source_provenance"
+                    detail["review_kind"],
+                    "generated_notification_additive_source_provenance",
                 )
                 self.assertEqual(detail["generator_native_evidence_run"], 40598386099)
                 self.assertEqual(detail["baseline_upstream_163_blob"], OFFICIAL[path])
-                self.assertEqual(self.overlaps[path]["official_163_blob"], OFFICIAL[path])
+                self.assertEqual(
+                    self.overlaps[path]["official_163_blob"], OFFICIAL[path]
+                )
                 self.assertEqual(detail["current_blob"], row["current_blob"])
                 data = (ROOT / path).read_bytes()
                 self.assertEqual(oid(data), row["current_blob"])
@@ -84,7 +94,9 @@ class GeneratedNotificationAdditiveCompatibility(unittest.TestCase):
         self.assertEqual(
             (ROOT / "codex-rs/codexdd-version.txt").read_text().strip(), "0.4.4"
         )
-        self.assertTrue(all(r["release_status"] == "NOT_ACCEPTED" for r in self.matrix["paths"]))
+        self.assertTrue(
+            all(r["release_status"] == "NOT_ACCEPTED" for r in self.matrix["paths"])
+        )
 
 
 if __name__ == "__main__":

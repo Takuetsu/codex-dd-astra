@@ -1,4 +1,5 @@
 """Cheap static guard for GitHub Actions exact-key staged Bazel action cache."""
+
 from __future__ import annotations
 import subprocess
 import unittest
@@ -56,9 +57,14 @@ class CacheProbeContract(unittest.TestCase):
         self.assertNotIn("workflow_dispatch:", s)
         self.assertNotIn("push: [main]", s)
         self.assertNotIn("actions/upload-release-asset", s)
-        self.assertEqual(subprocess.check_output([
-            "git", "rev-parse", "HEAD:codex-rs/config/Cargo.toml"
-        ], cwd=ROOT, text=True).strip(), "b4be94bb585c6757234299a78f8b42a02b3d2017")
+        self.assertEqual(
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD:codex-rs/config/Cargo.toml"],
+                cwd=ROOT,
+                text=True,
+            ).strip(),
+            "b4be94bb585c6757234299a78f8b42a02b3d2017",
+        )
 
 
 if __name__ == "__main__":
