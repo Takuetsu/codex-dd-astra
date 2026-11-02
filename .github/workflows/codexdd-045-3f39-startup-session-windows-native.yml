@@ -4,7 +4,8 @@ name: CodexDD 0.4.5 Windows eight startup/session policy-reconciled selectors (N
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: [".github/workflows/codexdd-045-3f39-startup-session-windows-native.yml"]
+    paths:
+      [".github/workflows/codexdd-045-3f39-startup-session-windows-native.yml"]
 permissions:
   contents: read
 jobs:

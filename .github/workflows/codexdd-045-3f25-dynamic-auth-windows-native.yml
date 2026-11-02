@@ -4,7 +4,8 @@ name: CodexDD 0.4.5 Windows TUI dynamic auth and history matrix native (NONRELEA
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: [".github/workflows/codexdd-045-3f25-dynamic-auth-windows-native.yml"]
+    paths:
+      [".github/workflows/codexdd-045-3f25-dynamic-auth-windows-native.yml"]
 permissions:
   contents: read
 jobs:
@@ -24,7 +25,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-          # Fetch bounded ancestors for immutable pre-restoration Git object; 
+          # Fetch bounded ancestors for immutable pre-restoration Git object;
           # no full-history fetch on this large repository.
           fetch-depth: 8
       - name: Verify reviewed source identity and security constraints

@@ -4,7 +4,7 @@
 
 ## Real optimized Windows evidence (now complete)
 
-[3F.48 run #40922368730](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40922368730) completed successfully in approximately 3h46m. CLI/PDB were verified and uploaded *before* the combined archive compilation. The combined target compiled successfully; its independent second verifier confirmed exactly **five Windows PE executables + five MSVC PDB files** and SHA-256 inventory. Binary bytes and actual SHA-256 digests of all ten members are frozen in `docs/upstream-candidates/codexdd-045-windows-distribution-contract.json`.
+[3F.48 run #40922368730](https://github.com/Takuetsu/codex-dd-astra/actions/runs/40922368730) completed successfully in approximately 3h46m. CLI/PDB were verified and uploaded _before_ the combined archive compilation. The combined target compiled successfully; its independent second verifier confirmed exactly **five Windows PE executables + five MSVC PDB files** and SHA-256 inventory. Binary bytes and actual SHA-256 digests of all ten members are frozen in `docs/upstream-candidates/codexdd-045-windows-distribution-contract.json`.
 
 Combined `runtime_package_combined.tar.gz` SHA-256:
 `ce6bd0115fc0f46c1d861517221b2f898e763bfa7e539bb672a26bdb2eeaeb8e`.

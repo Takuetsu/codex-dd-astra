@@ -8,10 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       approve_expensive:
-        description: 'Type AUTHORIZE_NONRELEASE_045_EXPENSIVE_WINDOWS_STAGING'
+        description: "Type AUTHORIZE_NONRELEASE_045_EXPENSIVE_WINDOWS_STAGING"
         type: string
         required: true
-        default: 'NO'
+        default: "NO"
 permissions:
   contents: read
 jobs:

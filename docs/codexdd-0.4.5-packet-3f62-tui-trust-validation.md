@@ -3,6 +3,7 @@
 Baseline: 3F.61 accepted 14 Core and 18 TUI native **test selectors**, not 109 owner approvals. This PR changes Rust source and must pass a new exact-SHA Windows run.
 
 Restored pending native validation:
+
 - app.rs — startup modal input quarantine, rendered selection before normal input, preserve pending modal state on terminal drain timeout
 - thread_routing.rs — same fail-closed modal drain after thread attachment
 - event_dispatch.rs — managed daemon verification before opening daemon/warnings menu

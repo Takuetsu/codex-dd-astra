@@ -20,4 +20,4 @@ The exact source bytes/hunks are pinned in `docs/upstream-candidates/codexdd-045
 
 The 3F.55 signoff ledger now records **44 evidence-submitted, 65 source/behavior queued, 0 formally accepted** paths. These seven are source-evidence-ready only; they still require native tests and explicit accountable owner decisions. The canonical owner matrix remains `109 PENDING_OWNER_REVIEW / NOT_ACCEPTED`. The final 21-stage release profile remains blocked by design.
 
-This packet contains *no product code changes* and must not be confused with the 3F.56 Windows bundle run (an independent, unsigned developer distribution build based on earlier exact optimized source). Production remains CodexDD 0.4.4.
+This packet contains _no product code changes_ and must not be confused with the 3F.56 Windows bundle run (an independent, unsigned developer distribution build based on earlier exact optimized source). Production remains CodexDD 0.4.4.

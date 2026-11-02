@@ -3,7 +3,10 @@ name: CodexDD 0.4.5 checkpointed optimized Windows CLI PDB combined package (NON
 on:
   push:
     branches: [dd/codexdd-v0.4.5-109-overlap-semantic-review]
-    paths: [".github/workflows/codexdd-045-3f47-optimized-windows-cli-pdb-archive.yml"]
+    paths:
+      [
+        ".github/workflows/codexdd-045-3f47-optimized-windows-cli-pdb-archive.yml",
+      ]
 permissions:
   contents: read
 jobs:
