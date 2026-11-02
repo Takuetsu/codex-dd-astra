@@ -303,12 +303,13 @@
     "non_delta_replay_total_byte_cap": "ABSENT",
     "release_impact": "DO_NOT_WAIVE_OR_PROMOTE_FROM_3F76_GREEN_EVIDENCE",
     "formal_ledger_count_unchanged": 13,
-    "native_proof": "PENDING"
+    "native_proof": "PENDING",
+    "pending_request_eviction_hazard": "note_evicted_server_request removes pending approval/input bookkeeping when a replay-buffer request is evicted; a naive aggregate byte cap may worsen this"
   },
   "expanded_static_type_audit": {
     "files_v2": 164,
     "common_helper_files": 14,
-    "root_suite_modules": 7,
+    "root_suite_modules": 6,
     "response_item_variants_checked": 16,
     "additional_types": [
       "ContentItem::OutputText",
@@ -318,6 +319,7 @@
     ],
     "obvious_missing_required_fields": 0,
     "scope": "static named-variant and destructuring patterns only; not a Rust compiler or exhaustive Rust parser",
-    "native_compilation": "STILL_UNVERIFIED"
+    "native_compilation": "STILL_UNVERIFIED",
+    "note": "Six top-level suite Rust sources and 14 shared helper Rust sources examined; the zsh test suite is a directory, not a zsh.rs file. The 164-file V2 scan checked constructors/patterns against all 16 ResponseItem variants and selected read/list/content items."
   }
 }
