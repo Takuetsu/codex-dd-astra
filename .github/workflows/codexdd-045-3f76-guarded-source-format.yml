@@ -1,0 +1,120 @@
+# NONRELEASE: cheap formatting and source guards only, not Windows native acceptance.
+name: CodexDD 0.4.5 3F.76 bounded event payload source preflight (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f76-bounded-payload-and-switch]
+    paths: [".github/workflows/codexdd-045-3f76-guarded-source-format.yml"]
+permissions:
+  contents: read
+jobs:
+  guarded-format:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '8505fcd8d274f21a6cd86dce1079d2ccce90436a'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: true
+      - name: Require exact candidate and unchanged security ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '8505fcd8d274f21a6cd86dce1079d2ccce90436a'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("codex-rs/tui/src")
+          app=(root/"app.rs").read_text()
+          channel=(root/"app/thread_events.rs").read_text()
+          routing=(root/"app/thread_routing.rs").read_text()
+          tests=(root/"app/tests.rs").read_text()
+          assert "THREAD_EVENT_MAX_WIRE_BYTES: usize = 2 * 1024 * 1024;" in app
+          assert "THREAD_EVENT_LIVE_CAPACITY: usize = 64;" in app
+          assert "THREAD_EVENT_PENDING_LIMIT: usize = 16;" in app
+          assert "THREAD_EVENT_PENDING_PRIMARY_LIMIT: usize = 128;" in app
+          assert "serialized_live_event_bytes" in channel and "queue_live_event" in channel
+          assert "ensure_notification_budget(&notification)?" in routing
+          assert "ensure_request_budget(&request)?" in routing
+          assert "ensure_history_budget(&event)?" in routing
+          assert "live_queue_rejects_oversized_voice_audio_before_buffering_without_silent_drop" in channel
+          assert "live_queue_limits_oversized_history_without_rejecting_small_history" in channel
+          assert "oversized_live_notification_is_rejected_before_replay_is_mutated" in tests
+          assert "inactive_thread_overflow_does_not_starve_foreground_or_block_switch" in tests
+          assert "pre_session_thread_staging_is_bounded_and_fails_closed" in tests
+          ledger=json.loads(Path("docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json").read_text())
+          assert ledger["approved_owner_count"]==0 and len(ledger["pending_native_or_semantic_restoration"])==13
+          print("PASS: source identity, payload bounds, negative selectors, unchanged security and owners")
+          PY
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Cheap Rustfmt on exact source, no compilation
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          cargo fmt --all -- --check
+      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+        with:
+          run_install: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+      - name: Prettier format checks for existing and new CI YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm run format:fix
+          pnpm run format
+          git diff --check
+      - name: Verify bounded source edit scope and emit exact formatted YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+          names=set(subprocess.check_output(["git","diff","--name-only"],text=True).splitlines())
+          rust={
+            "codex-rs/tui/src/app.rs",
+            "codex-rs/tui/src/app/thread_events.rs",
+            "codex-rs/tui/src/app/thread_routing.rs",
+            "codex-rs/tui/src/app/background_requests.rs",
+            "codex-rs/tui/src/app/tests.rs",
+          }
+          yaml={
+            ".github/workflows/codexdd-045-3f73-bounded-fifo-windows-native.yml",
+            ".github/workflows/codexdd-045-3f75-bounded-queue-compile-fix-preflight.yml",
+            ".github/workflows/codexdd-045-3f76-guarded-source-format.yml",
+          }
+          if not names <= rust|yaml:
+            raise SystemExit("Unsafe formatter scope: "+repr(sorted(names-(rust|yaml))))
+          print("VERIFIED_FORMAT_FILES",json.dumps(sorted(names)))
+          for name in sorted(names & yaml):
+            print("FORMATTED_YAML_JSON",json.dumps({"path":name,"content":Path(name).read_text()}))
+          print("FORMATTER_ONLY_SCOPE_PASS")
+          PY
+      - name: Publish only behavior-preserving Rustfmt edits to draft source branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='dd/codexdd-v0.4.5-3f76-bounded-payload-and-switch'
+          remote="$(git ls-remote origin "refs/heads/$branch" | awk '{print $1}')"
+          test "$remote" = "$GITHUB_SHA"
+          if ! git diff --quiet -- codex-rs/tui/src/; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -u -- codex-rs/tui/src/
+            git diff --cached --check
+            git commit -m "style(0.4.5): format bounded payload and saturated switch source only"
+            git push origin "HEAD:refs/heads/$branch"
+          fi
+          echo 'Nonrelease source preflight passed; formatted workflow YAML requires GitHub-side write permissions.'
