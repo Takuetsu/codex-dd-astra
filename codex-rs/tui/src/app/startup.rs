@@ -1271,6 +1271,10 @@ See the Codex keymap documentation for supported actions and examples."
                 }
                 // Replay queues history and operations. A buffered closure must not switch
                 // widgets before those app events have been applied.
+                if let Err(err) = app.flush_pending_live_thread_events() {
+                    break Err(err);
+                }
+                let live_event_backpressure = app.has_pending_live_thread_events();
                 let has_pending_app_events = !app_event_rx.is_empty();
                 let initial_session_header_pending = waiting_for_initial_session_header
                     && app.primary_session_configured.is_some()
@@ -1301,7 +1305,7 @@ See the Codex keymap documentation for supported actions and examples."
                         }
                         AppRunControl::Continue
                     }
-                    Some(event) = app_event_rx.recv() => {
+                    Some(event) = app_event_rx.recv(), if !live_event_backpressure => {
                         let is_initial_session_header = matches!(
                             &event,
                             AppEvent::InsertHistoryCell(cell)
@@ -1332,10 +1336,12 @@ See the Codex keymap documentation for supported actions and examples."
                         } else {
                             None
                         }
-                    }, if App::should_handle_active_thread_events(
+                    }, if (App::should_handle_active_thread_events(
                         waiting_for_initial_session_configured,
                         app.active_thread_rx.is_some()
-                    ) && !has_pending_app_events && !app.reconnect.offline => {
+                    ) || (live_event_backpressure && app.active_thread_rx.is_some()))
+                        && (!has_pending_app_events || live_event_backpressure)
+                        && (!app.reconnect.offline || live_event_backpressure) => {
                         if let Some(event) = active {
                             if let Err(err) = app.handle_active_thread_event(tui, &mut app_server, event).await {
                                 break Err(err);
@@ -1346,6 +1352,7 @@ See the Codex keymap documentation for supported actions and examples."
                         AppRunControl::Continue
                     }
                     event = tui_events.next(), if app.pending_thread_switch_resets == 0
+                        && !live_event_backpressure
                         && (app.reconnect.offline || !block_terminal_input_for_pending_startup_events) => {
                         if let Some(event) = event {
                             if (matches!(
@@ -1361,7 +1368,7 @@ See the Codex keymap documentation for supported actions and examples."
                                 && app
                                     .active_thread_rx
                                     .as_ref()
-                                    .is_none_or(tokio::sync::mpsc::UnboundedReceiver::is_empty)
+                                    .is_none_or(tokio::sync::mpsc::Receiver::is_empty)
                                 && !app.pending_primary_events.iter().any(|event| {
                                     matches!(event, ThreadBufferedEvent::Request(_))
                                 })
@@ -1379,6 +1386,7 @@ See the Codex keymap documentation for supported actions and examples."
                         }
                     }
                     app_server_event = app_server.next_event(), if listen_for_app_server_events && !app.reconnect.offline
+                        && !live_event_backpressure
                         && (matches!(app.app_server_target, AppServerTarget::Embedded) || !has_pending_app_events) => {
                         match app_server_event {
                             Some(event) => app.handle_app_server_event(&app_server, event).await,
