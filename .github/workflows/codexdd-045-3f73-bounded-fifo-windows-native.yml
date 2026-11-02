@@ -3,7 +3,8 @@ name: CodexDD 0.4.5 3F.75 FIFO compile fix Windows native acceptance (NONRELEASE
 on:
   push:
     branches: [dd/codexdd-v0.4.5-3f73-bounded-fifo-live-queue]
-    paths: [".github/workflows/codexdd-045-3f73-bounded-fifo-windows-native.yml"]
+    paths:
+      [".github/workflows/codexdd-045-3f73-bounded-fifo-windows-native.yml"]
 permissions:
   contents: read
 

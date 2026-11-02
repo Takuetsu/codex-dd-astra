@@ -3,7 +3,10 @@ name: CodexDD 0.4.5 3F.75 compile repair cheap source (NONRELEASE)
 on:
   push:
     branches: [dd/codexdd-v0.4.5-3f73-bounded-fifo-live-queue]
-    paths: [".github/workflows/codexdd-045-3f75-bounded-queue-compile-fix-preflight.yml"]
+    paths:
+      [
+        ".github/workflows/codexdd-045-3f75-bounded-queue-compile-fix-preflight.yml",
+      ]
 permissions:
   contents: read
 jobs:
