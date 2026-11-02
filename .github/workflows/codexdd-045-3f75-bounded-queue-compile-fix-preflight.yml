@@ -1,0 +1,95 @@
+# NONRELEASE; no build/test and no owner signoff, only source-guarded Rust formatting.
+name: CodexDD 0.4.5 3F.75 compile repair cheap source (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f73-bounded-fifo-live-queue]
+    paths:
+      [
+        ".github/workflows/codexdd-045-3f75-bounded-queue-compile-fix-preflight.yml",
+      ]
+permissions:
+  contents: read
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '3b5491400085d5e5b7f452a5d8f123efa8becd62'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: true
+      - name: Exact repaired source and unchanged security / release boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '3b5491400085d5e5b7f452a5d8f123efa8becd62'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          test -z "$(git status --porcelain --untracked-files=no)"
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("codex-rs/tui/src")
+          background=(root/"app/background_requests.rs").read_text()
+          dispatcher=(root/"app/event_dispatch.rs").read_text()
+          tests=(root/"app/tests.rs").read_text()
+          events=(root/"app/thread_events.rs").read_text()
+          assert "sender.send(ThreadBufferedEvent::FeedbackSubmission" not in background
+          assert "queue_live_event(ThreadBufferedEvent::FeedbackSubmission(event))?" in background
+          assert "self.enqueue_thread_feedback_event(thread_id, event).await?;" in background
+          assert "self.handle_feedback_submitted(origin_thread_id, category, include_logs, result)\n                    .await?;" in dispatcher
+          assert "UnboundedReceiver::is_empty" not in tests
+          assert "mpsc::Receiver::is_empty" in tests
+          assert "let mut side_channel = ThreadEventChannel::new(" in tests
+          assert "side_channel\n        .queue_live_event(" in tests
+          assert "saturated_queue_preserves_feedback_between_approval_and_completion" in events
+          assert events.count("mpsc::unbounded_channel()")==0
+          assert "queue_live_event" in events
+          print("SOURCE_MATCH: all three observed E0308/E0631/E0599 changes repaired")
+          PY
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Format repair only; no compilation or expensive CI
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          cargo fmt --all -- --check
+      - name: Verify rustfmt cannot affect security/behavior or other files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          python3 - <<'PY'
+          import subprocess
+          names=set(subprocess.check_output(["git","diff","--name-only"],text=True).splitlines())
+          permitted={
+              "codex-rs/tui/src/app/background_requests.rs",
+              "codex-rs/tui/src/app/event_dispatch.rs",
+              "codex-rs/tui/src/app/tests.rs",
+              "codex-rs/tui/src/app/thread_events.rs",
+          }
+          if not names <= permitted:
+              raise SystemExit("Unexpected formatter changes: "+str(sorted(names-permitted)))
+          print("PASS: formatter limited to TUI candidate call sites:",sorted(names))
+          PY
+      - name: Publish formatting-only Rust edits, if any
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='dd/codexdd-v0.4.5-3f73-bounded-fifo-live-queue'
+          remote="$(git ls-remote origin "refs/heads/$branch" | awk '{print $1}')"
+          test "$remote" = "$GITHUB_SHA"
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -u -- codex-rs/tui/src/app/
+            git diff --cached --check
+            git commit -m "style(0.4.5): format bounded FIFO compile repair without behavior edits"
+            git push origin "HEAD:refs/heads/$branch"
+          fi
+          echo 'Cheap source preflight complete; native test evidence still required.'

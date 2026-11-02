@@ -672,22 +672,21 @@ impl App {
         &mut self,
         thread_id: ThreadId,
         event: FeedbackThreadEvent,
-    ) {
-        let (sender, store) = {
-            let channel = self.ensure_thread_channel(thread_id);
-            (channel.sender.clone(), Arc::clone(&channel.store))
-        };
-
+    ) -> Result<()> {
+        let store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
         let should_send = {
             let mut guard = store.lock().await;
             guard.push_buffered_event(ThreadBufferedEvent::FeedbackSubmission(event.clone()));
             guard.active
         };
 
-        if should_send && let Err(err) = sender.send(ThreadBufferedEvent::FeedbackSubmission(event))
-        {
-            tracing::warn!("thread {thread_id} event channel closed: {err}");
+        // The foreground owner must serialize feedback with notifications and approvals;
+        // sending directly to a bounded sender could overtake its deferred FIFO.
+        if should_send {
+            self.ensure_thread_channel(thread_id)
+                .queue_live_event(ThreadBufferedEvent::FeedbackSubmission(event))?;
         }
+        Ok(())
     }
 
     pub(super) async fn handle_feedback_submitted(
@@ -696,7 +695,7 @@ impl App {
         category: FeedbackCategory,
         include_logs: bool,
         result: Result<String, String>,
-    ) {
+    ) -> Result<()> {
         let event = FeedbackThreadEvent {
             category,
             include_logs,
@@ -704,10 +703,11 @@ impl App {
             result,
         };
         if let Some(thread_id) = origin_thread_id {
-            self.enqueue_thread_feedback_event(thread_id, event).await;
+            self.enqueue_thread_feedback_event(thread_id, event).await?;
         } else {
             self.handle_feedback_thread_event(event);
         }
+        Ok(())
     }
 
     /// Process the completed MCP inventory fetch: clear the loading spinner, then

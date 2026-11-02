@@ -14,7 +14,6 @@ use codex_app_server_protocol::ThreadStartedNotification;
 use codex_app_server_protocol::TurnInterruptParams;
 use codex_app_server_protocol::TurnInterruptResponse;
 use codex_app_server_protocol::UserInput;
-use codex_app_server_protocol::WarningNotification;
 use codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER;
@@ -119,6 +118,53 @@ impl App {
             .or_insert_with(|| ThreadEventChannel::new(THREAD_EVENT_CHANNEL_CAPACITY))
     }
 
+    pub(super) fn has_pending_live_thread_events(&self) -> bool {
+        self.thread_event_channels
+            .values()
+            .any(ThreadEventChannel::has_pending_live)
+    }
+
+    /// Run only from the TUI owner event loop, before accepting more incoming events.
+    pub(super) fn flush_pending_live_thread_events(&mut self) -> Result<()> {
+        for channel in self.thread_event_channels.values_mut() {
+            channel.flush_pending_live()?;
+        }
+        Ok(())
+    }
+
+    /// A channel must be drained before detaching its active receiver. This loop also
+    /// flushes the capped overflow, so no pending approval or terminal is stranded on
+    /// the previously active thread when the user switches conversations.
+    pub(super) async fn drain_active_thread_events_before_detach(&mut self) -> Result<()> {
+        let Some(mut rx) = self.active_thread_rx.take() else {
+            return Ok(());
+        };
+        let result = async {
+            loop {
+                self.flush_pending_live_thread_events()?;
+                match rx.try_recv() {
+                    Ok(event) => {
+                        self.handle_thread_event_now_recovering_file_changes(event)
+                            .await;
+                    }
+                    Err(TryRecvError::Empty) => {
+                        if self.has_pending_live_thread_events() {
+                            return Err(color_eyre::eyre::eyre!(
+                                "detaching active thread with undeliverable live events"
+                            ));
+                        }
+                        break;
+                    }
+                    Err(TryRecvError::Disconnected) => break,
+                }
+            }
+            Ok(())
+        }
+        .await;
+        self.active_thread_rx = Some(rx);
+        result
+    }
+
     pub(super) async fn set_thread_active(&mut self, thread_id: ThreadId, active: bool) {
         if let Some(channel) = self.thread_event_channels.get_mut(&thread_id) {
             let mut store = channel.store.lock().await;
@@ -162,10 +208,7 @@ impl App {
     pub(super) async fn activate_thread_for_replay(
         &mut self,
         thread_id: ThreadId,
-    ) -> Option<(
-        mpsc::UnboundedReceiver<ThreadBufferedEvent>,
-        ThreadEventSnapshot,
-    )> {
+    ) -> Option<(mpsc::Receiver<ThreadBufferedEvent>, ThreadEventSnapshot)> {
         let channel = self.thread_event_channels.get_mut(&thread_id)?;
         let receiver = channel.receiver.take()?;
         let mut store = channel.store.lock().await;
@@ -711,10 +754,8 @@ impl App {
                     .active_turn_id_for_thread(thread_id)
                     .await
                     .unwrap_or_default();
-                let (thread_event_tx, thread_event_store) = {
-                    let channel = self.ensure_thread_channel(thread_id);
-                    (channel.sender.clone(), Arc::clone(&channel.store))
-                };
+                let thread_event_store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
+                let app_event_tx = self.app_event_tx.clone();
                 self.reset_backtrack_state();
                 if !turn_id.is_empty() {
                     let mut store = thread_event_store.lock().await;
@@ -750,23 +791,10 @@ impl App {
                                     continue;
                                 }
                                 tracing::warn!(error = %error, "turn/interrupt failed in TUI");
-                                let notification =
-                                    ServerNotification::Warning(WarningNotification {
-                                        thread_id: Some(thread_id.to_string()),
-                                        message: format!("Failed to interrupt turn: {error}"),
-                                    });
-                                let should_send = {
-                                    let mut store = thread_event_store.lock().await;
-                                    store.push_notification_ref(&notification);
-                                    store.active
-                                };
-                                if should_send
-                                    && let Err(error) = thread_event_tx.send(
-                                        ThreadBufferedEvent::Notification(Box::new(notification)),
-                                    )
-                                {
-                                    tracing::warn!(error = %error, "thread event channel closed");
-                                }
+                                app_event_tx.send(AppEvent::ThreadInterruptWarning {
+                                    thread_id,
+                                    message: format!("Failed to interrupt turn: {error}"),
+                                });
                                 break;
                             }
                         }
@@ -1327,10 +1355,7 @@ impl App {
         let is_turn_started = matches!(notification, ServerNotification::TurnStarted(_));
         let is_thread_closed = matches!(notification, ServerNotification::ThreadClosed(_));
         let notification_status_change = SideParentStatusChange::for_notification(&notification);
-        let (sender, store) = {
-            let channel = self.ensure_thread_channel(thread_id);
-            (channel.sender.clone(), Arc::clone(&channel.store))
-        };
+        let store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
         let (mut notification, previous_pending_status, pending_status, turn_stopped) = {
             let mut guard = store.lock().await;
             if guard.session.is_none()
@@ -1390,10 +1415,9 @@ impl App {
             self.app_event_tx.send(AppEvent::SettingsSelectionSettled);
         }
 
-        if let Some(notification) = notification
-            && let Err(err) = sender.send(ThreadBufferedEvent::Notification(Box::new(notification)))
-        {
-            tracing::warn!("thread {thread_id} event channel closed: {err}");
+        if let Some(notification) = notification {
+            self.ensure_thread_channel(thread_id)
+                .queue_live_event(ThreadBufferedEvent::Notification(Box::new(notification)))?;
         }
         if let Some(status) = pending_status {
             self.set_side_parent_status(thread_id, Some(status));
@@ -1489,10 +1513,7 @@ impl App {
         } else {
             None
         };
-        let (sender, store) = {
-            let channel = self.ensure_thread_channel(thread_id);
-            (channel.sender.clone(), Arc::clone(&channel.store))
-        };
+        let store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
 
         let (should_send, pending_status) = {
             let mut guard = store.lock().await;
@@ -1502,9 +1523,8 @@ impl App {
         let request_status = SideParentStatus::for_request(&request);
 
         if should_send {
-            if let Err(err) = sender.send(ThreadBufferedEvent::Request(Box::new(request))) {
-                tracing::warn!("thread {thread_id} event channel closed: {err}");
-            }
+            self.ensure_thread_channel(thread_id)
+                .queue_live_event(ThreadBufferedEvent::Request(Box::new(request)))?;
         } else if self.active_side_parent_thread_id().is_none()
             && let Some(request) = inactive_interactive_request
         {
@@ -1522,10 +1542,7 @@ impl App {
         thread_id: ThreadId,
         event: HistoryLookupResponse,
     ) -> Result<()> {
-        let (sender, store) = {
-            let channel = self.ensure_thread_channel(thread_id);
-            (channel.sender.clone(), Arc::clone(&channel.store))
-        };
+        let store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
 
         let should_send = {
             let mut guard = store.lock().await;
@@ -1539,10 +1556,9 @@ impl App {
             should_send
         };
 
-        if should_send
-            && let Err(err) = sender.send(ThreadBufferedEvent::HistoryEntryResponse(event))
-        {
-            tracing::warn!("thread {thread_id} event channel closed: {err}");
+        if should_send {
+            self.ensure_thread_channel(thread_id)
+                .queue_live_event(ThreadBufferedEvent::HistoryEntryResponse(event))?;
         }
         Ok(())
     }

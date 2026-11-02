@@ -91,6 +91,7 @@ impl App {
                     | AppEvent::BeginThreadSwitchHistoryReplayBuffer
                     | AppEvent::EndInitialHistoryReplayBuffer
                     | AppEvent::FatalExitRequest(_)
+                    | AppEvent::ThreadInterruptWarning { .. }
             )
         {
             return Ok(AppRunControl::Continue);
@@ -841,9 +842,25 @@ impl App {
                 self.chat_widget.set_queue_autosend_suppressed(/*suppressed*/ true);
                 self.abort_thread_event_listener(thread_id);
                 if let Some(mut rx) = self.active_thread_rx.take() {
-                    while let Ok(event) = rx.try_recv() {
-                        if let ThreadBufferedEvent::Notification(notification) = event {
-                            self.chat_widget.handle_server_notification(*notification, Some(ReplayKind::ThreadSnapshot));
+                    loop {
+                        self.flush_pending_live_thread_events()?;
+                        match rx.try_recv() {
+                            Ok(ThreadBufferedEvent::Notification(notification)) => {
+                                self.chat_widget.handle_server_notification(
+                                    *notification,
+                                    Some(ReplayKind::ThreadSnapshot),
+                                );
+                            }
+                            Ok(_) => {}
+                            Err(TryRecvError::Empty) => {
+                                if self.has_pending_live_thread_events() {
+                                    return Err(color_eyre::eyre::eyre!(
+                                        "cannot revert while protected thread events are pending"
+                                    ));
+                                }
+                                break;
+                            }
+                            Err(TryRecvError::Disconnected) => break,
                         }
                     }
                 }
@@ -1287,6 +1304,16 @@ impl App {
             }
             AppEvent::SubmitThreadOp { thread_id, op } => {
                 self.submit_thread_op(app_server, thread_id, op).await?;
+            }
+            AppEvent::ThreadInterruptWarning { thread_id, message } => {
+                self.enqueue_thread_notification(
+                    thread_id,
+                    ServerNotification::Warning(codex_app_server_protocol::WarningNotification {
+                        thread_id: Some(thread_id.to_string()),
+                        message,
+                    }),
+                )
+                .await?;
             }
             AppEvent::ThreadHistoryEntryResponse { thread_id, event } => {
                 self.enqueue_thread_history_entry_response(thread_id, event)
@@ -2402,7 +2429,7 @@ impl App {
                 result,
             } => {
                 self.handle_feedback_submitted(origin_thread_id, category, include_logs, result)
-                    .await;
+                    .await?;
             }
             AppEvent::LaunchExternalEditor => {
                 if self.chat_widget.external_editor_state() == ExternalEditorState::Active {

@@ -300,6 +300,9 @@ use self::thread_events::*;
 
 const EXTERNAL_EDITOR_HINT: &str = "Save and close external editor to continue.";
 const THREAD_EVENT_CHANNEL_CAPACITY: usize = 32768;
+// Keep the app-server producer bounded: its consumer runs on the same TUI task.
+const THREAD_EVENT_LIVE_CAPACITY: usize = 512;
+const THREAD_EVENT_PENDING_LIMIT: usize = 64;
 
 enum ThreadInteractiveRequest {
     AppLink(AppLinkViewParams),
@@ -636,7 +639,7 @@ pub(crate) struct App {
     side_threads: HashMap<ThreadId, SideThreadState>,
     abandoned_side_threads: HashSet<ThreadId>,
     active_thread_id: Option<ThreadId>,
-    active_thread_rx: Option<mpsc::UnboundedReceiver<ThreadBufferedEvent>>,
+    active_thread_rx: Option<mpsc::Receiver<ThreadBufferedEvent>>,
     primary_thread_id: Option<ThreadId>,
     last_subagent_backfill_attempt: Option<ThreadId>,
     primary_session_configured: Option<ThreadSessionState>,
