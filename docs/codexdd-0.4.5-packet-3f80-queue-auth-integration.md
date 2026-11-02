@@ -9,13 +9,13 @@
 - Related stacked PR #79 (source head `4697ff07f250dc455d386875907545a07fefd147`) passed [general blocking CI #41493020504](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41493020504): all six jobs green, including Windows adaptive validation and blob-size checks. **This CI run does not validate this integrated head.**
 - This branch adds exactly five changed app-server files, transplanted by their exact Git blob identities from the previously isolated 3F.78 authority branch plus the 3F.79 real-transport negative. No TUI source modifications in the integration commit.
 
-| Integrated path | Exact Git blob SHA |
-| --- | --- |
-| `codex-rs/app-server/src/message_processor.rs` | `70254edbb6f9431f2ed33c254c38d886cea0027c` |
-| `codex-rs/app-server/src/request_processors/thread_input.rs` | `9aafd51739a2ece039cd4020475436699b8e6554` |
-| `codex-rs/app-server/src/request_processors/turn_processor.rs` | `07b4440fb54c991af8de403e424df3547030fd62` |
-| `codex-rs/app-server/tests/suite/v2/thread_fork_multi_agent_tests.rs` | `7791eef4cd21460b8d35657532f97da3db6a644c` |
-| `codex-rs/app-server/tests/suite/v2/connection_handling_websocket.rs` | `221dc33a25aeb16aec4fa505bee88546d1979195` |
+Exact preserved source blobs:
+
+- `message_processor.rs`: `70254edbb6f9431f2ed33c254c38d886cea0027c`
+- `request_processors/thread_input.rs`: `9aafd51739a2ece039cd4020475436699b8e6554`
+- `request_processors/turn_processor.rs`: `07b4440fb54c991af8de403e424df3547030fd62`
+- `tests/suite/v2/thread_fork_multi_agent_tests.rs`: `7791eef4cd21460b8d35657532f97da3db6a644c`
+- `tests/suite/v2/connection_handling_websocket.rs`: `221dc33a25aeb16aec4fa505bee88546d1979195`
 
 ## Security behaviors that must be demonstrated
 
