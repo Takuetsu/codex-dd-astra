@@ -673,6 +673,7 @@ impl App {
         thread_id: ThreadId,
         event: FeedbackThreadEvent,
     ) -> Result<()> {
+        ThreadEventChannel::ensure_feedback_budget(&event)?;
         let store = Arc::clone(&self.ensure_thread_channel(thread_id).store);
         let should_send = {
             let mut guard = store.lock().await;
