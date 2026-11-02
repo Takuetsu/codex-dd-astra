@@ -1082,16 +1082,26 @@ async fn inactive_thread_overflow_does_not_starve_foreground_or_block_switch() -
     app.thread_event_channels.insert(inactive, channel);
     app.activate_thread_channel(foreground).await;
 
-    assert!(!app.has_pending_live_thread_events(),
-        "an inactive channel with a saved receiver must not disable all terminal input");
+    assert!(
+        !app.has_pending_live_thread_events(),
+        "an inactive channel with a saved receiver must not disable all terminal input"
+    );
     app.flush_pending_live_thread_events()?;
-    assert!(app.thread_event_channels.get(&inactive).unwrap().has_pending_live());
+    assert!(
+        app.thread_event_channels
+            .get(&inactive)
+            .unwrap()
+            .has_pending_live()
+    );
 
     app.store_active_thread_receiver().await;
     app.active_thread_id = None;
     app.activate_thread_channel(inactive).await;
     assert!(app.has_pending_live_thread_events());
-    let mut rx = app.active_thread_rx.take().expect("inactive thread receiver activated");
+    let mut rx = app
+        .active_thread_rx
+        .take()
+        .expect("inactive thread receiver activated");
     for i in 0..3 {
         app.flush_pending_live_thread_events()?;
         let ThreadBufferedEvent::Notification(n) = rx.try_recv()? else {
@@ -1119,12 +1129,18 @@ async fn oversized_live_notification_is_rejected_before_replay_is_mutated() -> R
         message: "oversized".repeat(THREAD_EVENT_MAX_WIRE_BYTES / 8 + 1),
     });
 
-    assert!(app.enqueue_thread_notification(thread_id, oversized).await.is_err());
+    assert!(
+        app.enqueue_thread_notification(thread_id, oversized)
+            .await
+            .is_err()
+    );
     let channel = app.thread_event_channels.get(&thread_id).unwrap();
     assert!(!channel.has_pending_live());
     assert!(channel.receiver.as_ref().unwrap().is_empty());
-    assert!(channel.store.lock().await.buffer.is_empty(),
-        "reject the event before copying its payload into replay");
+    assert!(
+        channel.store.lock().await.buffer.is_empty(),
+        "reject the event before copying its payload into replay"
+    );
     Ok(())
 }
 
@@ -1149,8 +1165,14 @@ async fn pre_session_thread_staging_is_bounded_and_fails_closed() -> Result<()> 
             },
         ))
         .await;
-    assert!(rejected.is_err(), "startup ingress must not grow without limit");
-    assert_eq!(app.pending_primary_events.len(), THREAD_EVENT_PENDING_PRIMARY_LIMIT);
+    assert!(
+        rejected.is_err(),
+        "startup ingress must not grow without limit"
+    );
+    assert_eq!(
+        app.pending_primary_events.len(),
+        THREAD_EVENT_PENDING_PRIMARY_LIMIT
+    );
     Ok(())
 }
 

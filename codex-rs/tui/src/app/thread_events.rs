@@ -40,7 +40,9 @@ impl LivePayloadCounter {
     fn account(&mut self, additional: usize) -> std::io::Result<()> {
         let remaining = THREAD_EVENT_MAX_WIRE_BYTES.saturating_sub(self.bytes);
         if additional > remaining {
-            return Err(std::io::Error::other("live event payload exceeds byte limit"));
+            return Err(std::io::Error::other(
+                "live event payload exceeds byte limit",
+            ));
         }
         self.bytes += additional;
         Ok(())
@@ -1111,7 +1113,10 @@ mod tests {
         assert!(err.is_err(), "oversized realtime chunks must fail closed");
         assert!(!channel.has_pending_live());
         let receiver = channel.receiver.as_mut().expect("receiver retained");
-        assert!(matches!(receiver.try_recv(), Err(mpsc::error::TryRecvError::Empty)));
+        assert!(matches!(
+            receiver.try_recv(),
+            Err(mpsc::error::TryRecvError::Empty)
+        ));
     }
 
     #[test]
@@ -1122,9 +1127,11 @@ mod tests {
             log_id: 0,
             entry: Some("H".repeat(THREAD_EVENT_MAX_WIRE_BYTES + 1)),
         };
-        assert!(channel
-            .queue_live_event(ThreadBufferedEvent::HistoryEntryResponse(huge))
-            .is_err());
+        assert!(
+            channel
+                .queue_live_event(ThreadBufferedEvent::HistoryEntryResponse(huge))
+                .is_err()
+        );
         let small = HistoryLookupResponse::Entry {
             offset: 0,
             log_id: 0,
@@ -1135,10 +1142,9 @@ mod tests {
             .expect("small history remains deliverable");
         assert!(matches!(
             channel.receiver.as_mut().expect("receiver").try_recv(),
-            Ok(ThreadBufferedEvent::HistoryEntryResponse(HistoryLookupResponse::Entry {
-                entry: Some(_),
-                ..
-            }))
+            Ok(ThreadBufferedEvent::HistoryEntryResponse(
+                HistoryLookupResponse::Entry { entry: Some(_), .. }
+            ))
         ));
     }
 
