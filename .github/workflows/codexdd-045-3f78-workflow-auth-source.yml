@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'b32885010561184f3bb24e6db68a475a98b02f03'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'ba3a74c0d295b40756141ae2554bd5def9b6cc80'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'b32885010561184f3bb24e6db68a475a98b02f03'
+          test "$(git rev-parse HEAD^)" = 'ba3a74c0d295b40756141ae2554bd5def9b6cc80'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
           python3 - <<'PY'
@@ -35,6 +35,9 @@ jobs:
           assert "self.ensure_direct_input_allowed(request_id, thread.as_ref())" in handler
           assert "thread_workflow_state_update(&request_id, params)" in dispatch
           assert "v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue" in policy
+          suite=Path("codex-rs/app-server/tests/suite/v2/thread_fork_multi_agent_tests.rs").read_text()
+          assert "workflow_state_update_preserves_authorized_top_level_cli_mutation" in suite
+          assert "ThreadWorkflowStateOperation::SetReadyForOwnerQa" in suite
           ledger=json.loads(Path("docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json").read_text())
           assert ledger["approved_owner_count"]==0 and len(ledger["pending_native_or_semantic_restoration"])==13
           print("PASS: workflow mutation handler enforces V2 direct-input gate; owner holds unchanged")
