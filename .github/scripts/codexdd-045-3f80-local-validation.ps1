@@ -108,6 +108,20 @@ try {
         if ($LASTEXITCODE -ne 0 -or $lockBlob -cne $expectedLock) {
             throw ('Unreviewed Cargo.lock identity: ' + $lockBlob)
         }
+        $securitySources = @{
+            'codex-rs/Cargo.toml' = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+            'codex-rs/deny.toml' = 'f282c7c55d05201e308e60804f85754c8522d462'
+        }
+        foreach ($protectedPath in $securitySources.Keys) {
+            $actual = (& git rev-parse ('HEAD:' + $protectedPath) | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or $actual -cne $securitySources[$protectedPath]) {
+                throw ('Unreviewed protected security file: ' + $protectedPath)
+            }
+        }
+        $upstream = (& git show 'HEAD:codex-rs/upstream-codex-release.txt' | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $upstream -cne 'rust-v0.162.0') {
+            throw ('Unexpected upstream release marker: ' + $upstream)
+        }
         $version = (& git show 'HEAD:codex-rs/codexdd-version.txt' | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or $version -cne '0.4.4') {
             throw 'Production version changed; refusing nonrelease acceptance'
