@@ -2429,7 +2429,7 @@ impl App {
                 result,
             } => {
                 self.handle_feedback_submitted(origin_thread_id, category, include_logs, result)
-                    .await;
+                    .await?;
             }
             AppEvent::LaunchExternalEditor => {
                 if self.chat_widget.external_editor_state() == ExternalEditorState::Active {
