@@ -1,8 +1,8 @@
 # NONRELEASE. One source-bound Windows native acceptance after the green 3F.73 cheap source gate.
-name: CodexDD 0.4.5 3F.75 FIFO compile fix Windows native acceptance (NONRELEASE)
+name: CodexDD 0.4.5 3F.76 bounded payload Windows native acceptance (NONRELEASE)
 on:
   push:
-    branches: [dd/codexdd-v0.4.5-3f73-bounded-fifo-live-queue]
+    branches: [dd/codexdd-v0.4.5-3f76-bounded-payload-and-switch]
     paths:
       [".github/workflows/codexdd-045-3f73-bounded-fifo-windows-native.yml"]
 permissions:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'c676a5da87b2f2e45dcc2bcad980827479bf4640'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == 'e239b13581b510e1aeca3b00ff0d343932c13519'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 'c676a5da87b2f2e45dcc2bcad980827479bf4640'
+          test "$(git rev-parse HEAD^)" = 'e239b13581b510e1aeca3b00ff0d343932c13519'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
           python3 - <<'PY'
@@ -34,25 +34,40 @@ jobs:
           startup=(root/"app/startup.rs").read_text()
           app=(root/"app.rs").read_text()
           assert "mpsc::unbounded_channel()" not in events
-          assert "THREAD_EVENT_LIVE_CAPACITY: usize = 512;" in app
-          assert "THREAD_EVENT_PENDING_LIMIT: usize = 64;" in app
+          assert "THREAD_EVENT_LIVE_CAPACITY: usize = 64;" in app
+          assert "THREAD_EVENT_PENDING_LIMIT: usize = 16;" in app
           assert "queue_live_event" in routing and "flush_pending_live_thread_events" in startup
           assert "live_event_backpressure" in startup
           assert "ThreadInterruptWarning" in (root/"app_event.rs").read_text()
+          assert "THREAD_EVENT_MAX_WIRE_BYTES: usize = 2 * 1024 * 1024;" in app
+          assert "THREAD_EVENT_PENDING_PRIMARY_LIMIT: usize = 128;" in app
+          assert "ensure_notification_budget(&notification)?" in routing
+          assert "ensure_history_budget(&event)?" in routing
+          assert "serialized_live_event_bytes" in events
           tests=[
             "live_thread_event_queue_keeps_adaptive_terminal_before_turn_completed_past_replay_capacity",
             "saturated_queue_retains_fifo_approval_and_completion_once",
             "saturated_queue_count_remains_bounded_and_fifo_over_repeated_drains",
             "bounded_live_queue_fails_closed_if_owner_task_would_overflow",
             "saturated_queue_preserves_feedback_between_approval_and_completion",
+            "live_queue_rejects_oversized_voice_audio_before_buffering_without_silent_drop",
+            "live_queue_limits_oversized_history_without_rejecting_small_history",
           ]
           for test in tests:
             assert len(re.findall(r"\bfn\s+"+test+r"\s*\(",events))==1,test
+          app_tests=(root/"app/tests.rs").read_text()
+          for test in [
+            "enqueue_thread_event_does_not_block_when_channel_full",
+            "inactive_thread_overflow_does_not_starve_foreground_or_block_switch",
+            "oversized_live_notification_is_rejected_before_replay_is_mutated",
+            "pre_session_thread_staging_is_bounded_and_fails_closed",
+          ]:
+            assert len(re.findall(r"\bfn\s+"+test+r"\s*\(",app_tests))==1,test
           spec=json.loads(Path("docs/upstream-candidates/codexdd-045-3f68-native-test-cases.json").read_text())
           formal=json.loads(Path("docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json").read_text())
           assert spec["expected_tui"]==25==len(spec["cases"]["tui"])
           assert formal["approved_owner_count"]==0 and len(formal["pending_native_or_semantic_restoration"])==13
-          print("PASS: 25 existing + 4 bounded FIFO native selector identities; no security/owner waiver")
+          print("PASS: 25 trust + 11 bounded FIFO/payload selector identities; no owner waiver")
           PY
           git diff --check
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
@@ -132,7 +147,7 @@ jobs:
             }
           } finally { Pop-Location }
           Write-Host 'PASS: PRECOMPILE_TUI_LIB'
-      - name: Run prior 25 Windows trust tests and 5 true new queue regressions
+      - name: Run prior 25 Windows trust tests and 11 true queue/payload regressions
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
@@ -146,7 +161,13 @@ jobs:
             'saturated_queue_retains_fifo_approval_and_completion_once',
             'saturated_queue_count_remains_bounded_and_fifo_over_repeated_drains',
             'bounded_live_queue_fails_closed_if_owner_task_would_overflow',
-            'saturated_queue_preserves_feedback_between_approval_and_completion'
+            'saturated_queue_preserves_feedback_between_approval_and_completion',
+            'live_queue_rejects_oversized_voice_audio_before_buffering_without_silent_drop',
+            'live_queue_limits_oversized_history_without_rejecting_small_history',
+            'enqueue_thread_event_does_not_block_when_channel_full',
+            'inactive_thread_overflow_does_not_starve_foreground_or_block_switch',
+            'oversized_live_notification_is_rejected_before_replay_is_mutated',
+            'pre_session_thread_staging_is_bounded_and_fails_closed'
           )
           $cases=@()
           Push-Location codex-rs
@@ -164,24 +185,24 @@ jobs:
             }
           } finally { Pop-Location }
           $receipt=[ordered]@{
-            kind='CODEXDD_045_3F73_BOUNDED_FIFO_NONRELEASE'
+            kind='CODEXDD_045_3F76_BOUNDED_PAYLOAD_NONRELEASE'
             tested_head=$env:GITHUB_SHA
             prior_tui_selectors=25
-            new_fifo_selectors=5
+            new_fifo_selectors=11
             cases=@($cases)
             failures=@($failed)
             release_approved=$false
             formal_owner_approvals=0
             done_utc=[DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
           }
-          $receipt | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $logRoot '3f73-receipt.json') -Encoding utf8
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $logRoot '3f76-receipt.json') -Encoding utf8
           if($failed.Count -gt 0){throw ('Native acceptance red: '+($failed -join ', '))}
-          Write-Host 'CODEXDD_045_3F75_NATIVE=PASS_30_OF_30_NONRELEASE'
+          Write-Host 'CODEXDD_045_3F76_NATIVE=PASS_36_OF_36_NONRELEASE'
       - name: Always upload source-bound logs and acceptance receipt
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: codexdd045-3f75-fifo-native-evidence
+          name: codexdd045-3f76-payload-native-evidence
           path: native-evidence/*
           if-no-files-found: warn
           compression-level: 3
