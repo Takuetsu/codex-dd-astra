@@ -220,5 +220,17 @@
     "websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections"
   ],
   "validated_integrated_native_test_count": 0,
-  "integrated_head_release_approved": false
+  "integrated_head_release_approved": false,
+  "pr79_ancestry": {
+    "pr_head": "4697ff07f250dc455d386875907545a07fefd147",
+    "merge_base": "a887ce0769bdc0c45626766a459923e4ba918bff",
+    "behind_commits": 1,
+    "pr79_only_changes": [
+      ".github/workflows/codexdd-045-3f73-bounded-fifo-windows-native.yml",
+      ".github/workflows/codexdd-045-3f75-bounded-queue-compile-fix-preflight.yml"
+    ],
+    "pr79_only_runtime_rust_changes": 0,
+    "workflow_history_preserved": true,
+    "merge_reconciliation_required": true
+  }
 }
