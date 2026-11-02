@@ -579,24 +579,69 @@ fn file_change_item_changes(
 
 #[derive(Debug)]
 pub(super) struct ThreadEventChannel {
-    /// Live delivery must preserve app-server FIFO order even when the TUI falls behind.
-    ///
-    /// Replay retention stays bounded independently in `store`; making this queue unbounded
-    /// avoids spawning competing overflow tasks that can reorder a trusted terminal behind
-    /// the matching `TurnCompleted` notification.
-    pub(super) sender: mpsc::UnboundedSender<ThreadBufferedEvent>,
-    pub(super) receiver: Option<mpsc::UnboundedReceiver<ThreadBufferedEvent>>,
+    /// Bounded live delivery is independent of replay snapshot retention.
+    /// Saturation is deferred on this owner task, never on competing spawned send tasks.
+    pub(super) sender: mpsc::Sender<ThreadBufferedEvent>,
+    pub(super) receiver: Option<mpsc::Receiver<ThreadBufferedEvent>>,
     pub(super) store: Arc<Mutex<ThreadEventStore>>,
+    pending_live: VecDeque<ThreadBufferedEvent>,
     attachment: ThreadEventAttachment,
 }
 
 impl ThreadEventChannel {
+    pub(super) fn has_pending_live(&self) -> bool {
+        !self.pending_live.is_empty()
+    }
+
+    /// The TUI's app-server ingress and live receiver run on the same task. Never await
+    /// a full queue or spawn competing overflow sends: both can deadlock or reorder
+    /// approval, terminal and completion messages. The main loop pauses ingress until
+    /// it frees capacity and drains the bounded FIFO.
+    pub(super) fn queue_live_event(&mut self, event: ThreadBufferedEvent) -> Result<()> {
+        let event = if self.pending_live.is_empty() {
+            match self.sender.try_send(event) {
+                Ok(()) => return Ok(()),
+                Err(mpsc::error::TrySendError::Full(event)) => event,
+                Err(mpsc::error::TrySendError::Closed(_)) => {
+                    return Err(color_eyre::eyre::eyre!("live thread-event receiver closed"));
+                }
+            }
+        } else {
+            event
+        };
+        if self.pending_live.len() >= THREAD_EVENT_PENDING_LIMIT {
+            return Err(color_eyre::eyre::eyre!(
+                "live thread-event overflow exhausted; refusing to silently drop a trusted event"
+            ));
+        }
+        self.pending_live.push_back(event);
+        Ok(())
+    }
+
+    pub(super) fn flush_pending_live(&mut self) -> Result<()> {
+        while let Some(event) = self.pending_live.pop_front() {
+            match self.sender.try_send(event) {
+                Ok(()) => {}
+                Err(mpsc::error::TrySendError::Full(event)) => {
+                    self.pending_live.push_front(event);
+                    return Ok(());
+                }
+                Err(mpsc::error::TrySendError::Closed(event)) => {
+                    self.pending_live.push_front(event);
+                    return Err(color_eyre::eyre::eyre!("live thread-event receiver closed"));
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn new(capacity: usize) -> Self {
-        let (sender, receiver) = mpsc::unbounded_channel();
+        let (sender, receiver) = mpsc::channel(capacity.clamp(1, THREAD_EVENT_LIVE_CAPACITY));
         Self {
             sender,
             receiver: Some(receiver),
             store: Arc::new(Mutex::new(ThreadEventStore::new(capacity))),
+            pending_live: VecDeque::new(),
             attachment: ThreadEventAttachment::Live,
         }
     }
@@ -619,13 +664,14 @@ impl ThreadEventChannel {
         session: ThreadSessionState,
         turns: Vec<Turn>,
     ) -> Self {
-        let (sender, receiver) = mpsc::unbounded_channel();
+        let (sender, receiver) = mpsc::channel(capacity.clamp(1, THREAD_EVENT_LIVE_CAPACITY));
         Self {
             sender,
             receiver: Some(receiver),
             store: Arc::new(Mutex::new(ThreadEventStore::new_with_session(
                 capacity, session, turns,
             ))),
+            pending_live: VecDeque::new(),
             attachment: ThreadEventAttachment::Live,
         }
     }
@@ -658,6 +704,7 @@ mod tests {
     use codex_app_server_protocol::ThreadRealtimeAudioChunk;
     use codex_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
     use codex_app_server_protocol::TurnCompletedNotification;
+    use codex_app_server_protocol::WarningNotification;
     use codex_app_server_protocol::TurnStartedNotification;
     use codex_app_server_protocol::UserInput;
     use codex_config::types::ApprovalsReviewer;
@@ -759,27 +806,124 @@ mod tests {
         let completed = turn_completed_notification(thread_id, turn_id, TurnStatus::Completed);
 
         channel
-            .sender
-            .send(ThreadBufferedEvent::Notification(Box::new(terminal)))
+            .queue_live_event(ThreadBufferedEvent::Notification(Box::new(terminal)))
             .expect("terminal notification should enqueue");
         channel
-            .sender
-            .send(ThreadBufferedEvent::Notification(Box::new(completed)))
-            .expect("completion notification should enqueue without waiting for a drain");
+            .queue_live_event(ThreadBufferedEvent::Notification(Box::new(completed)))
+            .expect("completion retains its source position while live receiver is full");
+        assert!(channel.has_pending_live());
 
         assert!(matches!(
-            receiver.recv().await,
-            Some(ThreadBufferedEvent::Notification(notification))
+            receiver.try_recv(),
+            Ok(ThreadBufferedEvent::Notification(notification))
                 if matches!(
                     notification.as_ref(),
                     ServerNotification::AdaptiveRuntimeSignal(_)
                 )
         ));
+        channel.flush_pending_live().expect("flush source-order overflow");
+        assert!(!channel.has_pending_live());
         assert!(matches!(
-            receiver.recv().await,
-            Some(ThreadBufferedEvent::Notification(notification))
+            receiver.try_recv(),
+            Ok(ThreadBufferedEvent::Notification(notification))
                 if matches!(notification.as_ref(), ServerNotification::TurnCompleted(_))
         ));
+    }
+
+    #[test]
+    fn saturated_queue_retains_fifo_approval_and_completion_once() {
+        let thread_id = ThreadId::new();
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+        let mut rx = channel.receiver.take().expect("receiver");
+        let events = [
+            ThreadBufferedEvent::Notification(Box::new(ServerNotification::Warning(
+                WarningNotification {
+                    thread_id: Some(thread_id.to_string()),
+                    message: "first output".to_string(),
+                },
+            ))),
+            ThreadBufferedEvent::Request(Box::new(exec_approval_request(
+                thread_id,
+                "source-turn",
+                "approval",
+                Some("approval"),
+            ))),
+            ThreadBufferedEvent::Notification(Box::new(turn_completed_notification(
+                thread_id,
+                "source-turn",
+                TurnStatus::Completed,
+            ))),
+        ];
+        for event in events {
+            channel.queue_live_event(event).expect("bounded admission");
+        }
+        assert_eq!(channel.pending_live.len(), 2);
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::Notification(n))
+                if matches!(n.as_ref(), ServerNotification::Warning(_))
+        ));
+        channel.flush_pending_live().expect("flush approval");
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::Request(r))
+                if matches!(r.as_ref(), ServerRequest::CommandExecutionRequestApproval { .. })
+        ));
+        channel.flush_pending_live().expect("flush completion");
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(ThreadBufferedEvent::Notification(n))
+                if matches!(n.as_ref(), ServerNotification::TurnCompleted(_))
+        ));
+        assert!(!channel.has_pending_live());
+        assert!(matches!(rx.try_recv(), Err(mpsc::error::TryRecvError::Empty)));
+    }
+
+    #[test]
+    fn saturated_queue_count_remains_bounded_and_fifo_over_repeated_drains() {
+        let thread_id = ThreadId::new();
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 2);
+        let mut rx = channel.receiver.take().expect("receiver");
+        for seq in 0..16 {
+            channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                ServerNotification::Warning(WarningNotification {
+                    thread_id: Some(thread_id.to_string()),
+                    message: format!("ordered-{seq}"),
+                }),
+            ))).expect("bounded admission");
+        }
+        assert_eq!(channel.pending_live.len(), 14);
+        for seq in 0..16 {
+            let event = rx.try_recv().expect("queued FIFO event");
+            let ThreadBufferedEvent::Notification(n) = event else {
+                panic!("expected warning event");
+            };
+            let ServerNotification::Warning(warning) = *n else {
+                panic!("expected warning notification");
+            };
+            assert_eq!(warning.message, format!("ordered-{seq}"));
+            channel.flush_pending_live().expect("release next permit in FIFO");
+        }
+        assert!(!channel.has_pending_live());
+        assert!(matches!(rx.try_recv(), Err(mpsc::error::TryRecvError::Empty)));
+    }
+
+    #[test]
+    fn bounded_live_queue_fails_closed_if_owner_task_would_overflow() {
+        let thread_id = ThreadId::new();
+        let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+        for seq in 0..=THREAD_EVENT_PENDING_LIMIT {
+            channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                ServerNotification::Warning(WarningNotification {
+                    thread_id: Some(thread_id.to_string()),
+                    message: format!("event-{seq}"),
+                }),
+            ))).expect("one channel slot and bounded deferred capacity");
+        }
+        assert!(channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+            turn_completed_notification(thread_id, "turn", TurnStatus::Completed),
+        ))).is_err(), "overflow must not report a lost terminal as successful");
+        assert_eq!(channel.pending_live.len(), THREAD_EVENT_PENDING_LIMIT);
     }
 
     fn hook_started_notification(thread_id: ThreadId, turn_id: &str) -> ServerNotification {
