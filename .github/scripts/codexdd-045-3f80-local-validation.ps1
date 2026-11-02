@@ -75,7 +75,7 @@ try {
     if ($env:OS -ne 'Windows_NT' -or $env:COMPUTERNAME -ine 'DANIEL-CL') {
         throw 'Run only on the canonical Windows host Daniel-CL'
     }
-    if (-not $root.StartsWith('E:\codexdd', [System.StringComparison]::OrdinalIgnoreCase)) {
+    if ($root -ine 'E:\codexdd' -and -not $root.StartsWith('E:\codexdd\', [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Expected an isolated worktree inside E:\codexdd'
     }
     if ($LogRoot.StartsWith(
@@ -146,15 +146,15 @@ try {
             )
             $env:CARGO_TERM_COLOR = 'never'
             foreach ($test in $selectors) {
-                $args = @('test', '--locked', '-p', 'codex-app-server')
+                $cargoArguments = @('test', '--locked', '-p', 'codex-app-server')
                 if ($test.binary -eq 'lib') {
-                    $args += '--lib'
+                    $cargoArguments += '--lib'
                 }
                 else {
-                    $args += @('--test', 'all')
+                    $cargoArguments += @('--test', 'all')
                 }
-                $args += @($test.selector, '--', '--test-threads=1')
-                Invoke-CargoStage -Stage $test.selector -Arguments $args -SingleTest $true
+                $cargoArguments += @($test.selector, '--', '--test-threads=1')
+                Invoke-CargoStage -Stage $test.selector -Arguments $cargoArguments -SingleTest $true
             }
             if (@($nativeCases).Count -ne 5) {
                 throw 'Missing focused native test cases'
@@ -189,7 +189,7 @@ finally {
         native_cases = @($nativeCases)
         result = $(if ($exitCode -eq 0) { 'PASS_NONRELEASE' } else { 'FAIL' })
         error = $failure
-        formal_owner_approvals = 0
+        formal_owner_approvals = $(if ($sourceGatePassed) { 0 } else { $null })
         release_approved = $false
         elapsed_seconds = [Math]::Round($started.Elapsed.TotalSeconds, 1)
         done_utc = $done
