@@ -26,6 +26,16 @@ Current integrated app-server source blobs (the guard and test blobs differ from
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
 
+## Automated Daniel-CL local acceptance (no GitHub CI)
+
+Run only within a clean, isolated `E:\\codexdd` worktree on Daniel-CL, checked out to `dd/codexdd-v0.4.5-3f80-queue-auth-integrated`. The entrypoint verifies the branch, Git head, protected Cargo lock, unchanged production version, 13 unwaived owner holds and Rustfmt **before** attempting any native tests. It neither updates files nor triggers CI:
+
+```powershell
+& .\.github\scripts\codexdd-045-3f80-local-validation.ps1 -Mode Native
+```
+
+For cheap-only validation without compiling, use `-Mode Source`. Pass `-ExpectedHead <40-character SHA>` to reject a wrong checkout; pass `-LogRoot <writable-folder>` to place full logs and the `3f80-local-receipt.json` in a separate directory, including on a Stonks-accessible share. Both modes report elapsed time, exact commit and completion UTC; failures return a nonzero process exit code and cannot silently report a missing test as green.
+
 ## Cheap, nonmutating Windows preflight (Daniel-CL isolated E:\\codexdd worktree)
 
 Do not run GitHub Actions or publish a new PR until this exact source passes the locally available inexpensive gates. Use the verified branch head, not a working-tree approximation.
