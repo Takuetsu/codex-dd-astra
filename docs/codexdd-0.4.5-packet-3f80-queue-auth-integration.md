@@ -14,8 +14,8 @@ Current integrated app-server source blobs (the guard and test blobs differ from
 - `message_processor.rs`: `70254edbb6f9431f2ed33c254c38d886cea0027c`
 - `request_processors/thread_input.rs`: `9aafd51739a2ece039cd4020475436699b8e6554`
 - `request_processors/turn_processor.rs`: `ae25bb6106f534e32f113306562d523757e504df`
-- `tests/suite/v2/thread_fork_multi_agent_tests.rs`: `eb95243d2b4183982fef0102071991113ade1e28`
-- `tests/suite/v2/connection_handling_websocket.rs`: `221dc33a25aeb16aec4fa505bee88546d1979195`
+- `tests/suite/v2/thread_fork_multi_agent_tests.rs`: `9b7820809c376c2aba83e65e04ed8f58347ee6bb`
+- `tests/suite/v2/connection_handling_websocket.rs`: `f5c6fbb91e6e034ed950272143b5ee87423517d2`
 
 ## PR #79 ancestry and controlled merge reconciliation
 
@@ -29,6 +29,10 @@ The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd1
 4. Reject a stale supplied `source_turn_id` when the app-server knows a newer active or terminal turn, while preserving explicit `None` and cold-resumed lifecycle behavior.
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
+
+## Rustfmt remediation after initial Daniel-CL preflight
+
+Initial source-only Rustfmt at `951c4c97a5a722ddb5f6da16c342b4d62c9994` returned exit code 1 with exactly two reported differences: long WebSocket test signature and stale-turn assertion wrapping. These two format-only corrections were committed on the nonrelease branch. The validator now prints `RUSTFMT_DIFF` context and the full log path on failure. **The corrected head still requires a new Daniel-CL source preflight and native receipt**; do not treat this note as a pass.
 
 ## Automated Daniel-CL local acceptance (no GitHub CI)
 
