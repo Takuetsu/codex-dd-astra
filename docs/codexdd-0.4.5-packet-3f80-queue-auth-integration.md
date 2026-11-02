@@ -17,6 +17,10 @@ Current integrated app-server source blobs (the guard and test blobs differ from
 - `tests/suite/v2/thread_fork_multi_agent_tests.rs`: `eb95243d2b4183982fef0102071991113ade1e28`
 - `tests/suite/v2/connection_handling_websocket.rs`: `221dc33a25aeb16aec4fa505bee88546d1979195`
 
+## PR #79 ancestry and controlled merge reconciliation
+
+The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd147` diverge at `a887ce0769bdc0c45626766a459923e4ba918bff`. The PR #79-only commit modifies two NONRELEASE CI workflow YAML files (`3f73-bounded-fifo-windows-native.yml` and `3f75-bounded-queue-compile-fix-preflight.yml`); there are **no PR #79-only runtime Rust changes**. The separate 3F.76 Windows acceptance intentionally uses its own exact source pin and 36 selectors. Preserve historical workflow/receipt identities rather than overwriting a 36-case test workflow with the older PR snapshot. Reconcile these workflow-only differences before a final stacked PR merge, only after integrated native validation.
+
 ## Security behaviors that must be demonstrated
 
 1. Reject a `thread/workflowState/update` mutation on a multi-agent V2 spawned subagent. Do not change legacy or top-level CLI behavior.
