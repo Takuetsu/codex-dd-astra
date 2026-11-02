@@ -93,6 +93,8 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
             text: injected_text.to_string(),
         }],
         phase: None,
+        status: None,
+        encrypted_content: None,
         internal_chat_message_metadata_passthrough: None,
     };
     let developer_item = |text: &str| ResponseItem::Message {
@@ -102,6 +104,8 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
             text: text.to_string(),
         }],
         phase: None,
+        status: None,
+        encrypted_content: None,
         internal_chat_message_metadata_passthrough: None,
     };
     let injected_developer_item = developer_item("Injected developer context");
@@ -566,6 +570,8 @@ async fn thread_inject_items_adds_raw_response_items_after_a_turn() -> Result<()
             text: "Injected after first turn".to_string(),
         }],
         phase: None,
+        status: None,
+        encrypted_content: None,
         internal_chat_message_metadata_passthrough: None,
     };
     let injected_value = serde_json::to_value(&injected_item)?;

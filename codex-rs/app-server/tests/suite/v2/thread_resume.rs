@@ -1393,7 +1393,7 @@ async fn thread_resume_preserves_acknowledged_model_effort_and_approvals_reviewe
                 include_turns: false,
             })
             .await?;
-        let ThreadReadResponse { thread: read } =
+        let ThreadReadResponse { thread: read, .. } =
             timeout(DEFAULT_READ_TIMEOUT, mcp.read_response(read_id)).await??;
         assert_eq!(read.cwd.as_path(), persisted_cwd);
 
@@ -4950,6 +4950,8 @@ async fn thread_resume_rejects_history_when_thread_is_running() -> Result<()> {
                     text: "history override".to_string(),
                 }],
                 phase: None,
+                status: None,
+                encrypted_content: None,
                 internal_chat_message_metadata_passthrough: None,
             }]),
             ..Default::default()
@@ -6079,6 +6081,8 @@ async fn thread_resume_supports_history_and_overrides() -> Result<()> {
             text: history_text.to_string(),
         }],
         phase: None,
+        status: None,
+        encrypted_content: None,
         internal_chat_message_metadata_passthrough: None,
     }];
 
