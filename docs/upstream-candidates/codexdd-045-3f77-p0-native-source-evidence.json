@@ -1,0 +1,148 @@
+{
+  "contract_version": 1,
+  "kind": "CODEXDD_045_P0_EVIDENCE_RECONCILIATION_NOT_SIGNOFF",
+  "baseline_release": "0.4.4",
+  "original_ledger": "docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json",
+  "validated_candidate_sha": "a887ce0769bdc0c45626766a459923e4ba918bff",
+  "native_receipts": [
+    {
+      "run_id": 41087104607,
+      "group": "Core/TUI",
+      "green_src_sha": "ccec79f9dca3035562fe72c55961eea8f73a414d",
+      "cases": 32
+    },
+    {
+      "run_id": 41222090944,
+      "group": "TUI",
+      "green_src_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "cases": 25
+    },
+    {
+      "run_id": 41485364981,
+      "group": "TUI bounded FIFO",
+      "green_src_sha": "a887ce0769bdc0c45626766a459923e4ba918bff",
+      "cases": 30,
+      "artifact_id": 13162907944
+    }
+  ],
+  "comparison": {
+    "identical_to_prior_green_source": 9,
+    "changed_tui_paths_retested_green": 4,
+    "total_p0": 13
+  },
+  "paths": [
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "validated_blob_sha": "583447f35eaba564771771813bd4d897cb6b73de",
+      "prior_green_source_sha": "ccec79f9dca3035562fe72c55961eea8f73a414d",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "core_authority_history"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "validated_blob_sha": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
+      "prior_green_source_sha": "ccec79f9dca3035562fe72c55961eea8f73a414d",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "core_authority_history"
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "validated_blob_sha": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
+      "prior_green_source_sha": "ccec79f9dca3035562fe72c55961eea8f73a414d",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "core_authority_history"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "validated_blob_sha": "422870dba8b5a3b36994a598380c93f58760ad1b",
+      "prior_green_source_sha": "ccec79f9dca3035562fe72c55961eea8f73a414d",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "core_authority_history"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "validated_blob_sha": "097c87856c1a8688515f0d2ce861d99fd9f2cdaf",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "CHANGED_TUI_SOURCE_30_TEST_NATIVE_GREEN",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "validated_blob_sha": "4728d5f16b8d99168799705c6525d3cc794a0afe",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "validated_blob_sha": "98ab0359d6ed6026154b70f7f1061a385c08744b",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "CHANGED_TUI_SOURCE_30_TEST_NATIVE_GREEN",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "validated_blob_sha": "6f6a16b70436bcdcf90cfb42fb67b6467f19c181",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "CHANGED_TUI_SOURCE_30_TEST_NATIVE_GREEN",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "validated_blob_sha": "13f68801abb88ad29347650a84511956d02540c1",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "CHANGED_TUI_SOURCE_30_TEST_NATIVE_GREEN",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "validated_blob_sha": "db8a394b652fd18d61807a8b656e6b7463f07521",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "validated_blob_sha": "bb747507416e7712fe4ff5832446783c0127994e",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "validated_blob_sha": "2a5f08c359b1ec82c67e9eeba4aa9ba274629741",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "validated_blob_sha": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+      "prior_green_source_sha": "177158cde0ebbabd62b637f79aea25d50fdb41d6",
+      "source_identity": "IDENTICAL_TO_PRIOR_GREEN_NATIVE_SOURCE",
+      "owner_status": "PENDING_SIGNOFF",
+      "runtime_owner": "tui_adaptive_daemon"
+    }
+  ],
+  "explicit_remaining_negatives": [
+    "Per-payload byte and replay memory envelope under large audio/history (3F.76 changes are not yet native validated)",
+    "Saturated app-server shutdown, reconnect and live side-thread switch with pending protected requests",
+    "App-server cross-client and stale source-turn mutation RPC rejection",
+    "Actual Windows daemon/WSL lifecycle voice start/stop beyond focused TUI selector set"
+  ],
+  "formal_owner_approvals": 0,
+  "release_approved": false,
+  "notes": "Artifact is evidence linkage only. It cannot mutate 109-path owner ledger, sign off paths, merge, or release."
+}
