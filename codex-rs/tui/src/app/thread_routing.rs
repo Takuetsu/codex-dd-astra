@@ -144,7 +144,8 @@ impl App {
                 self.flush_pending_live_thread_events()?;
                 match rx.try_recv() {
                     Ok(event) => {
-                        self.handle_thread_event_now_recovering_file_changes(event).await;
+                        self.handle_thread_event_now_recovering_file_changes(event)
+                            .await;
                     }
                     Err(TryRecvError::Empty) => {
                         if self.has_pending_live_thread_events() {
@@ -207,10 +208,7 @@ impl App {
     pub(super) async fn activate_thread_for_replay(
         &mut self,
         thread_id: ThreadId,
-    ) -> Option<(
-        mpsc::Receiver<ThreadBufferedEvent>,
-        ThreadEventSnapshot,
-    )> {
+    ) -> Option<(mpsc::Receiver<ThreadBufferedEvent>, ThreadEventSnapshot)> {
         let channel = self.thread_event_channels.get_mut(&thread_id)?;
         let receiver = channel.receiver.take()?;
         let mut store = channel.store.lock().await;

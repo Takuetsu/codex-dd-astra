@@ -704,9 +704,9 @@ mod tests {
     use codex_app_server_protocol::ThreadRealtimeAudioChunk;
     use codex_app_server_protocol::ThreadRealtimeOutputAudioDeltaNotification;
     use codex_app_server_protocol::TurnCompletedNotification;
-    use codex_app_server_protocol::WarningNotification;
     use codex_app_server_protocol::TurnStartedNotification;
     use codex_app_server_protocol::UserInput;
+    use codex_app_server_protocol::WarningNotification;
     use codex_config::types::ApprovalsReviewer;
     use codex_protocol::models::PermissionProfile;
     use pretty_assertions::assert_eq;
@@ -821,7 +821,9 @@ mod tests {
                     ServerNotification::AdaptiveRuntimeSignal(_)
                 )
         ));
-        channel.flush_pending_live().expect("flush source-order overflow");
+        channel
+            .flush_pending_live()
+            .expect("flush source-order overflow");
         assert!(!channel.has_pending_live());
         assert!(matches!(
             receiver.try_recv(),
@@ -876,7 +878,10 @@ mod tests {
                 if matches!(n.as_ref(), ServerNotification::TurnCompleted(_))
         ));
         assert!(!channel.has_pending_live());
-        assert!(matches!(rx.try_recv(), Err(mpsc::error::TryRecvError::Empty)));
+        assert!(matches!(
+            rx.try_recv(),
+            Err(mpsc::error::TryRecvError::Empty)
+        ));
     }
 
     #[test]
@@ -885,12 +890,14 @@ mod tests {
         let mut channel = ThreadEventChannel::new(/*capacity*/ 2);
         let mut rx = channel.receiver.take().expect("receiver");
         for seq in 0..16 {
-            channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
-                ServerNotification::Warning(WarningNotification {
-                    thread_id: Some(thread_id.to_string()),
-                    message: format!("ordered-{seq}"),
-                }),
-            ))).expect("bounded admission");
+            channel
+                .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                    ServerNotification::Warning(WarningNotification {
+                        thread_id: Some(thread_id.to_string()),
+                        message: format!("ordered-{seq}"),
+                    }),
+                )))
+                .expect("bounded admission");
         }
         assert_eq!(channel.pending_live.len(), 14);
         for seq in 0..16 {
@@ -902,10 +909,15 @@ mod tests {
                 panic!("expected warning notification");
             };
             assert_eq!(warning.message, format!("ordered-{seq}"));
-            channel.flush_pending_live().expect("release next permit in FIFO");
+            channel
+                .flush_pending_live()
+                .expect("release next permit in FIFO");
         }
         assert!(!channel.has_pending_live());
-        assert!(matches!(rx.try_recv(), Err(mpsc::error::TryRecvError::Empty)));
+        assert!(matches!(
+            rx.try_recv(),
+            Err(mpsc::error::TryRecvError::Empty)
+        ));
     }
 
     #[test]
@@ -913,16 +925,23 @@ mod tests {
         let thread_id = ThreadId::new();
         let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
         for seq in 0..=THREAD_EVENT_PENDING_LIMIT {
-            channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
-                ServerNotification::Warning(WarningNotification {
-                    thread_id: Some(thread_id.to_string()),
-                    message: format!("event-{seq}"),
-                }),
-            ))).expect("one channel slot and bounded deferred capacity");
+            channel
+                .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                    ServerNotification::Warning(WarningNotification {
+                        thread_id: Some(thread_id.to_string()),
+                        message: format!("event-{seq}"),
+                    }),
+                )))
+                .expect("one channel slot and bounded deferred capacity");
         }
-        assert!(channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
-            turn_completed_notification(thread_id, "turn", TurnStatus::Completed),
-        ))).is_err(), "overflow must not report a lost terminal as successful");
+        assert!(
+            channel
+                .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+                    turn_completed_notification(thread_id, "turn", TurnStatus::Completed),
+                )))
+                .is_err(),
+            "overflow must not report a lost terminal as successful"
+        );
         assert_eq!(channel.pending_live.len(), THREAD_EVENT_PENDING_LIMIT);
     }
 
