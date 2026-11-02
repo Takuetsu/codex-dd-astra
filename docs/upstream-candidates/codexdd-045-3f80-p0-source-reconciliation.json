@@ -205,8 +205,8 @@
   "integration_runtime_changes_only_app_server": true,
   "current_guarded_workflow_source": {
     "processor_blob": "ae25bb6106f534e32f113306562d523757e504df",
-    "integration_rpc_test_blob": "eb95243d2b4183982fef0102071991113ade1e28",
-    "websocket_test_blob": "221dc33a25aeb16aec4fa505bee88546d1979195",
+    "integration_rpc_test_blob": "9b7820809c376c2aba83e65e04ed8f58347ee6bb",
+    "websocket_test_blob": "f5c6fbb91e6e034ed950272143b5ee87423517d2",
     "source_turn_freshness": "REJECT_OLDER_WHEN_ACTIVE_OR_LAST_TERMINAL_KNOWN",
     "cold_resume_without_observed_lifecycle": "COMPATIBILITY_PRESERVED_REQUIRES_FURTHER_OWNER_REVIEW",
     "status": "SOURCE_AUDIT_PASS_NATIVE_UNVERIFIED"
@@ -232,5 +232,12 @@
     "pr79_only_runtime_rust_changes": 0,
     "workflow_history_preserved": true,
     "merge_reconciliation_required": true
+  },
+  "last_observed_local_preflight": {
+    "tested_head": "951c4c97a5a722ddb5b5f6dda16c342b4d62c9994",
+    "result": "FAIL_SOURCE_RUSTFMT_ONLY",
+    "native_tests_started": 0,
+    "format_only_remediation_committed": true,
+    "corrected_native_retest": "PENDING"
   }
 }
