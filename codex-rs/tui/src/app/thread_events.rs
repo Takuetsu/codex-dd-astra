@@ -69,6 +69,36 @@ fn serialized_live_event_bytes<T: serde::Serialize>(value: &T) -> Result<usize> 
     Ok(counter.bytes)
 }
 
+fn ensure_history_live_event_budget(history: &HistoryLookupResponse) -> Result<()> {
+    // History cursors have fixed-size numeric state. Count text with
+    // correct JSON escaping and reserve per-entry bookkeeping overhead.
+    let mut counter = LivePayloadCounter::default();
+    match history {
+        HistoryLookupResponse::Entry { entry, .. } => {
+            counter.account(256)?;
+            serde_json::to_writer(&mut counter, entry)?;
+        }
+        HistoryLookupResponse::Batch { entries, .. } => {
+            counter.account(256)?;
+            for entry in entries {
+                counter.account(128)?;
+                serde_json::to_writer(&mut counter, &entry.entry)?;
+            }
+        }
+        HistoryLookupResponse::BatchError { .. } => counter.account(256)?,
+    }
+    Ok(())
+}
+
+fn ensure_feedback_live_event_budget(feedback: &FeedbackThreadEvent) -> Result<()> {
+    let mut counter = LivePayloadCounter::default();
+    counter.account(256)?;
+    match &feedback.result {
+        Ok(message) | Err(message) => serde_json::to_writer(&mut counter, message)?,
+    }
+    Ok(())
+}
+
 fn ensure_live_event_budget(event: &ThreadBufferedEvent) -> Result<()> {
     match event {
         ThreadBufferedEvent::Notification(notification) => {
@@ -78,32 +108,10 @@ fn ensure_live_event_budget(event: &ThreadBufferedEvent) -> Result<()> {
             serialized_live_event_bytes(request.as_ref()).map(|_| ())
         }
         ThreadBufferedEvent::HistoryEntryResponse(history) => {
-            // History cursors have fixed-size numeric state. Count text with
-            // proper JSON escaping and reserve per-entry bookkeeping overhead.
-            let mut counter = LivePayloadCounter::default();
-            match history {
-                HistoryLookupResponse::Entry { entry, .. } => {
-                    counter.account(256)?;
-                    serde_json::to_writer(&mut counter, entry)?;
-                }
-                HistoryLookupResponse::Batch { entries, .. } => {
-                    counter.account(256)?;
-                    for entry in entries {
-                        counter.account(128)?;
-                        serde_json::to_writer(&mut counter, &entry.entry)?;
-                    }
-                }
-                HistoryLookupResponse::BatchError { .. } => counter.account(256)?,
-            }
-            Ok(())
+            ensure_history_live_event_budget(history)
         }
         ThreadBufferedEvent::FeedbackSubmission(feedback) => {
-            let mut counter = LivePayloadCounter::default();
-            counter.account(256)?;
-            match &feedback.result {
-                Ok(message) | Err(message) => serde_json::to_writer(&mut counter, message)?,
-            }
-            Ok(())
+            ensure_feedback_live_event_budget(feedback)
         }
     }
 }
@@ -680,11 +688,11 @@ impl ThreadEventChannel {
     }
 
     pub(super) fn ensure_history_budget(event: &HistoryLookupResponse) -> Result<()> {
-        ensure_live_event_budget(&ThreadBufferedEvent::HistoryEntryResponse(event.clone()))
+        ensure_history_live_event_budget(event)
     }
 
     pub(super) fn ensure_feedback_budget(event: &FeedbackThreadEvent) -> Result<()> {
-        ensure_live_event_budget(&ThreadBufferedEvent::FeedbackSubmission(event.clone()))
+        ensure_feedback_live_event_budget(event)
     }
 
     pub(super) fn has_pending_live(&self) -> bool {
