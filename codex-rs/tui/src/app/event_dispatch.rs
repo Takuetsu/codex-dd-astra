@@ -91,6 +91,7 @@ impl App {
                     | AppEvent::BeginThreadSwitchHistoryReplayBuffer
                     | AppEvent::EndInitialHistoryReplayBuffer
                     | AppEvent::FatalExitRequest(_)
+                    | AppEvent::ThreadInterruptWarning { .. }
             )
         {
             return Ok(AppRunControl::Continue);
@@ -1303,6 +1304,16 @@ impl App {
             }
             AppEvent::SubmitThreadOp { thread_id, op } => {
                 self.submit_thread_op(app_server, thread_id, op).await?;
+            }
+            AppEvent::ThreadInterruptWarning { thread_id, message } => {
+                self.enqueue_thread_notification(
+                    thread_id,
+                    ServerNotification::Warning(codex_app_server_protocol::WarningNotification {
+                        thread_id: Some(thread_id.to_string()),
+                        message,
+                    }),
+                )
+                .await?;
             }
             AppEvent::ThreadHistoryEntryResponse { thread_id, event } => {
                 self.enqueue_thread_history_entry_response(thread_id, event)
