@@ -65,7 +65,29 @@ function Invoke-CargoStage {
         }
     }
     if (-not $passed) {
-        Write-Host ((Get-Content -LiteralPath $log -Tail 60) -join [Environment]::NewLine)
+        if ($Stage -eq 'source-rustfmt') {
+            # Rustfmt on stable can emit hundreds of known nightly-only
+            # imports_granularity warnings. Show actual diffs, not that noise.
+            $diffs = @(Select-String -LiteralPath $log -Pattern '^Diff in ' -Context 0,12)
+            if ($diffs.Count -gt 0) {
+                foreach ($diff in ($diffs | Select-Object -First 20)) {
+                    Write-Host ('RUSTFMT_DIFF: ' + $diff.Line)
+                    foreach ($line in $diff.Context.PostContext) {
+                        Write-Host $line
+                    }
+                }
+            }
+            else {
+                Get-Content -LiteralPath $log |
+                    Where-Object { $_ -notmatch 'imports_granularity = Item' } |
+                    Select-Object -Last 60 |
+                    ForEach-Object { Write-Host $_ }
+            }
+        }
+        else {
+            Write-Host ((Get-Content -LiteralPath $log -Tail 60) -join [Environment]::NewLine)
+        }
+        Write-Host ('FULL_STAGE_LOG: ' + $log)
         throw ('FAILED: ' + $Stage + ' exit=' + $code + ' one_passed=' + $onePassed)
     }
     Write-Host ('PASS: ' + $Stage)
