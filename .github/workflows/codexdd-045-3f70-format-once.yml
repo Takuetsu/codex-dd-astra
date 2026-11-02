@@ -1,0 +1,98 @@
+# NONRELEASE deterministic formatter repair, not an acceptance test or a release gate.
+# 3F.70: local Daniel-CL is unavailable from this GitHub-only chat surface;
+# owner requested repair of the known 47-Python + one Bazel fmt-check failure.
+# Run once, from the exact guarded preparation commit, with no production Rust changes.
+name: CodexDD 0.4.5 3F.70 exact format-only repair (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f70-format-local-gate]
+    paths: [".github/workflows/codexdd-045-3f70-format-once.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  generate-verified-format:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '90d4aaa8ba56517703dc051baf7721b992787267'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact frozen draft candidate, not release
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/codexdd-v0.4.5-3f69-safe-ci-repair
+          fetch-depth: 2
+          persist-credentials: true
+
+      - name: Verify frozen candidate and clean worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'aea11360a477a57159142f932f2ea01f0d075a83'
+          test -z "$(git status --porcelain --untracked-files=no)"
+
+      - name: Set up exact pinned Python formatter dependencies
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.3"
+
+      - name: Install DotSlash for the pinned Bazel formatter
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+
+      - name: Apply actual Ruff and Buildifier formatting, then verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --frozen --project scripts ruff format .
+          dotslash tools/buildifier -mode=fix -lint=off bazel/rules/testing/runtime_archive_fixture/BUILD.bazel
+          uv run --frozen --project scripts ruff format --check .
+          dotslash tools/buildifier -mode=check -lint=off bazel/rules/testing/runtime_archive_fixture/BUILD.bazel
+          git diff --check
+
+      - name: Refuse semantic edits, unanticipated paths or incomplete repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ast
+          import pathlib
+          import subprocess
+
+          def git(*args):
+              return subprocess.check_output(["git", *args])
+
+          raw = git("diff", "--name-only", "--diff-filter=AM", "-z")
+          files = [x.decode() for x in raw.split(b"\0") if x]
+          bazel = "bazel/rules/testing/runtime_archive_fixture/BUILD.bazel"
+          if len(files) != 48 or bazel not in files:
+              raise SystemExit(f"Unsafe formatter scope: expected 47 Python + 1 Bazel, got {len(files)}: {files}")
+          for path in files:
+              if path == bazel:
+                  continue
+              if not path.endswith(".py") or not path.startswith((".github/scripts/", "scripts/")):
+                  raise SystemExit(f"Formatter touched unapproved path: {path}")
+              before = git("show", f"HEAD:{path}")
+              after = pathlib.Path(path).read_bytes()
+              if ast.dump(ast.parse(before), include_attributes=False) != ast.dump(
+                  ast.parse(after), include_attributes=False
+              ):
+                  raise SystemExit(f"Formatter changed Python syntax tree: {path}")
+          print("FORMAT_ONLY_VERIFIED: 47 Python ASTs unchanged, one Bazel BUILD layout-only change.")
+          PY
+
+      - name: Commit and push format-only fix to draft PR 78
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='aea11360a477a57159142f932f2ea01f0d075a83'
+          remote="$(git ls-remote origin refs/heads/dd/codexdd-v0.4.5-3f69-safe-ci-repair | awk '{print $1}')"
+          test "$remote" = "$expected"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- .github/scripts scripts bazel/rules/testing/runtime_archive_fixture/BUILD.bazel
+          git diff --cached --check
+          git commit -m "style(0.4.5): format 47 Python and Bazel fixtures for general CI"
+          git push origin HEAD:refs/heads/dd/codexdd-v0.4.5-3f69-safe-ci-repair
+          echo "Formatting changes pushed to draft PR #78; no release or merge."
