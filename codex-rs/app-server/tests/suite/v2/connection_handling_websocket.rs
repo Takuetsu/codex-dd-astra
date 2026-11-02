@@ -132,14 +132,13 @@ async fn websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connect
     let owner_thread = start_thread(&mut owner, /*id*/ 3).await?;
     let foreign_thread = start_thread(&mut foreign, /*id*/ 4).await?;
     assert_ne!(owner_thread, foreign_thread);
-    let params = serde_json::to_value(
-        codex_app_server_protocol::ThreadWorkflowStateUpdateParams {
-            thread_id: owner_thread.clone(),
-            operation: codex_app_server_protocol::ThreadWorkflowStateOperation::Clear,
-            source_turn_id: None,
-            adaptive_state: None,
-        },
-    )?;
+    let mutation = codex_app_server_protocol::ThreadWorkflowStateUpdateParams {
+        thread_id: owner_thread.clone(),
+        operation: codex_app_server_protocol::ThreadWorkflowStateOperation::Clear,
+        source_turn_id: None,
+        adaptive_state: None,
+    };
+    let params = serde_json::to_value(mutation)?;
     let method = "thread/workflowState/update";
 
     // A valid subscription to some other thread does not authorize this write.
