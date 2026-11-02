@@ -1,0 +1,132 @@
+# 3F.72 NONRELEASE: exact-source, 37-path Prettier formatting repair only.
+# Purpose: clean the final repo-checks formatting gate after Ruff/Buildifier passed.
+# No runtime Rust modifications, owner approvals, release or production changes.
+name: CodexDD 0.4.5 3F.72 verified Prettier repair (NONRELEASE)
+on:
+  push:
+    branches: [dd/codexdd-v0.4.5-3f72-prettier-once]
+    paths: [".github/workflows/codexdd-045-3f72-prettier-once.yml"]
+permissions:
+  contents: read
+jobs:
+  format-only:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.event.before == '775b82fdf9f67b73dabd28a5d4620f18be1008bc'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: dd/codexdd-v0.4.5-3f69-safe-ci-repair
+          fetch-depth: 2
+          persist-credentials: true
+      - name: Require exact reviewed candidate and clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '775b82fdf9f67b73dabd28a5d4620f18be1008bc'
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+        with:
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+      - name: Install exact frozen formatter dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+      - name: Format and check existing Markdown/YAML with repository Prettier
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run format:fix
+          pnpm run format
+          python3 .github/scripts/check_codexdd_prettier_baseline.py
+          git diff --check
+      - name: Refuse all nonformat or unexpected paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          expected = set("""docs/codexdd-0.4.5-packet-3f28-bounded-optimized-rust-cache.md
+          docs/codexdd-0.4.5-packet-3f31-optimized-rust-evidence-reconciliation.md
+          docs/codexdd-0.4.5-packet-3f34-daybreak-websocket-test-restoration.md
+          docs/codexdd-0.4.5-packet-3f35b-combined-windows-native.md
+          docs/codexdd-0.4.5-packet-3f38-native-policy-test-reconciliation.md
+          docs/codexdd-0.4.5-packet-3f40a-core-history-reconciliation.md
+          docs/codexdd-0.4.5-packet-3f40b-core-history-native.md
+          docs/codexdd-0.4.5-packet-3f41a-windows-package-source-inventory.md
+          docs/codexdd-0.4.5-packet-3f42-optimized-windows-build-strategy.md
+          docs/codexdd-0.4.5-packet-3f43-manual-optimized-release-plan.md
+          docs/codexdd-0.4.5-packet-3f45b-corrected-cache-checkpoint.md
+          docs/codexdd-0.4.5-packet-3f48-actual-cli-success-but-verifier-red.md
+          docs/codexdd-0.4.5-packet-3f50-release-closure-preparation.md
+          docs/codexdd-0.4.5-packet-3f51-schema-protocol-core-tui-semantic-audit.md
+          docs/codexdd-0.4.5-packet-3f55-formal-owner-reviews.md
+          docs/codexdd-0.4.5-packet-3f57-cli-state-owner-review.md
+          docs/codexdd-0.4.5-packet-3f58-seven-binary-evidence.md
+          docs/codexdd-0.4.5-packet-3f62-tui-trust-validation.md
+          docs/codexdd-0.4.5-packet-3f63-removed-upstream-negative-regressions.md
+          docs/codexdd-0.4.5-packet-3f64-realtime-shutdown.md
+          docs/codexdd-0.4.5-packet-3f66-disconnected-active-input.md
+          docs/codexdd-0.4.5-packet-3f68-consolidated-native-acceptance.md
+          .github/workflows/codexdd-045-3f25-dynamic-auth-windows-native.yml
+          .github/workflows/codexdd-045-3f33-startup-lifecycle-windows-native.yml
+          .github/workflows/codexdd-045-3f35b-startup-session-windows-native.yml
+          .github/workflows/codexdd-045-3f37-startup-session-windows-native.yml
+          .github/workflows/codexdd-045-3f39-startup-session-windows-native.yml
+          .github/workflows/codexdd-045-3f40b-core-history-windows-native.yml
+          .github/workflows/codexdd-045-3f41a-windows-package-source-audit.yml
+          .github/workflows/codexdd-045-3f42a-release-cache-design-audit.yml
+          .github/workflows/codexdd-045-3f42b-medium-optimized-cache-probe.yml
+          .github/workflows/codexdd-045-3f43-manual-optimized-windows.yml
+          .github/workflows/codexdd-045-3f44-salvage-optimized-cache.yml
+          .github/workflows/codexdd-045-3f45b-optimized-cache-restore-proof.yml
+          .github/workflows/codexdd-045-3f46-historical-optimized-cache-evidence.yml
+          .github/workflows/codexdd-045-3f47-optimized-windows-cli-pdb-archive.yml
+          .github/workflows/codexdd-045-3f48-optimized-cli-and-combined-retry.yml""".splitlines())
+          found = {
+              s.decode()
+              for s in subprocess.check_output(
+                  ["git", "diff", "--name-only", "--diff-filter=AM", "-z"]
+              ).split(b"\0")
+              if s
+          }
+          if len(expected) != 37 or found != expected:
+              raise SystemExit(f"Prettier altered unexpected paths; expected 37, found {len(found)}: {sorted(found ^ expected)}")
+          docs, flows = 0, 0
+          for path in sorted(found):
+              before = subprocess.check_output(["git", "show", f"HEAD:{path}"]).decode()
+              after = Path(path).read_text()
+              if path.startswith("docs/") and path.endswith(".md"):
+                  docs += 1
+                  if before.count("\x60\x60\x60") != after.count("\x60\x60\x60"):
+                      raise SystemExit(f"Markdown code-fence count changed: {path}")
+              elif path.startswith(".github/workflows/") and path.endswith(".yml"):
+                  flows += 1
+              else:
+                  raise SystemExit(f"Refusing unknown path: {path}")
+          if (docs, flows) != (22, 15):
+              raise SystemExit(f"Unexpected format file classes: {docs=} {flows=}")
+          print("PRETTIER_ONLY_VERIFIED: exactly 22 Markdown + 15 YAML, no other changed paths.")
+          PY
+      - name: Publish exact formatting-only commit to draft PR #78
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='775b82fdf9f67b73dabd28a5d4620f18be1008bc'
+          remote="$(git ls-remote origin refs/heads/dd/codexdd-v0.4.5-3f69-safe-ci-repair | awk '{print $1}')"
+          test "$remote" = "$expected"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u -- docs/ .github/workflows/
+          git diff --cached --check
+          git commit -m "style(0.4.5): apply Prettier to 22 review docs and 15 CI fixtures"
+          git push origin HEAD:refs/heads/dd/codexdd-v0.4.5-3f69-safe-ci-repair
+          echo "Format-only commit complete; release and semantic approvals remain gated."
