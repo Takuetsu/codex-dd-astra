@@ -1099,7 +1099,7 @@ async fn active_thread_drain_yields_after_frame_deadline_without_dropping_events
     assert!(
         app.active_thread_rx
             .as_ref()
-            .is_some_and(tokio::sync::mpsc::UnboundedReceiver::is_empty),
+            .is_some_and(tokio::sync::mpsc::Receiver::is_empty),
         "the next foreground frame should deliver the preserved notification"
     );
     assert_eq!(
@@ -1126,14 +1126,13 @@ async fn selected_side_thread_close_is_handled_by_foreground_event_owner() -> Re
         .await?;
 
     let side_thread_id = ThreadId::new();
-    let side_channel = ThreadEventChannel::new(/*capacity*/ 1);
+    let mut side_channel = ThreadEventChannel::new(/*capacity*/ 1);
     side_channel.store.lock().await.set_session(
         test_thread_session(side_thread_id, app.config.cwd.to_path_buf()),
         Vec::new(),
     );
     side_channel
-        .sender
-        .send(ThreadBufferedEvent::Notification(Box::new(
+        .queue_live_event(ThreadBufferedEvent::Notification(Box::new(
             thread_closed_notification(side_thread_id),
         )))
         .expect("closed side-thread notification should queue in its saved receiver");
@@ -7512,7 +7511,7 @@ async fn feedback_submission_stages_logs_cleans_up_and_emits_error_history_cell(
         /*include_logs*/ true,
         Err("boom".to_string()),
     )
-    .await;
+    .await?;
 
     let cell = match app_event_rx.try_recv() {
         Ok(AppEvent::InsertHistoryCell(cell)) => cell,
@@ -7558,7 +7557,8 @@ async fn feedback_submission_for_inactive_thread_replays_into_origin_thread() {
         /*include_logs*/ true,
         Ok("uploaded-thread".to_string()),
     )
-    .await;
+    .await
+    .expect("inactive thread feedback should be retained in its replay store");
 
     assert_matches!(
         app_event_rx.try_recv(),
