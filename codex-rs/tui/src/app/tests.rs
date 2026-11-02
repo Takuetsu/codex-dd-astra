@@ -1108,6 +1108,53 @@ async fn inactive_thread_overflow_does_not_starve_foreground_or_block_switch() -
 }
 
 #[tokio::test]
+async fn oversized_live_notification_is_rejected_before_replay_is_mutated() -> Result<()> {
+    let mut app = make_test_app().await;
+    let thread_id = ThreadId::new();
+    app.thread_event_channels
+        .insert(thread_id, ThreadEventChannel::new(/*capacity*/ 1));
+    app.set_thread_active(thread_id, /*active*/ true).await;
+    let oversized = ServerNotification::Warning(codex_app_server_protocol::WarningNotification {
+        thread_id: Some(thread_id.to_string()),
+        message: "oversized".repeat(THREAD_EVENT_MAX_WIRE_BYTES / 8 + 1),
+    });
+
+    assert!(app.enqueue_thread_notification(thread_id, oversized).await.is_err());
+    let channel = app.thread_event_channels.get(&thread_id).unwrap();
+    assert!(!channel.has_pending_live());
+    assert!(channel.receiver.as_ref().unwrap().is_empty());
+    assert!(channel.store.lock().await.buffer.is_empty(),
+        "reject the event before copying its payload into replay");
+    Ok(())
+}
+
+#[tokio::test]
+async fn pre_session_thread_staging_is_bounded_and_fails_closed() -> Result<()> {
+    let mut app = make_test_app().await;
+    assert!(app.primary_thread_id.is_none());
+    for i in 0..THREAD_EVENT_PENDING_PRIMARY_LIMIT {
+        app.enqueue_primary_thread_notification(ServerNotification::Warning(
+            codex_app_server_protocol::WarningNotification {
+                thread_id: None,
+                message: format!("startup-{i}"),
+            },
+        ))
+        .await?;
+    }
+    let rejected = app
+        .enqueue_primary_thread_notification(ServerNotification::Warning(
+            codex_app_server_protocol::WarningNotification {
+                thread_id: None,
+                message: "overflowing-startup".to_string(),
+            },
+        ))
+        .await;
+    assert!(rejected.is_err(), "startup ingress must not grow without limit");
+    assert_eq!(app.pending_primary_events.len(), THREAD_EVENT_PENDING_PRIMARY_LIMIT);
+    Ok(())
+}
+
+#[tokio::test]
 async fn active_thread_drain_yields_after_frame_deadline_without_dropping_events() -> Result<()> {
     let mut app = make_test_app().await;
     app.startup_protected_input_boundary = true;
