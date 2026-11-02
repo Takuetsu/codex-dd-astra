@@ -266,5 +266,32 @@
     "complete_test_all_compile": "NOT_YET_VERIFIED",
     "ci_triggered": false,
     "prior_three_unit_results_not_transferable_to_new_head": true
+  },
+  "nonrelease_static_compiler_recovery": {
+    "known_original_windows_failure": "60 Rust E0027/E0063 errors on c26a1653; three unit selectors earlier passed, integration binary failed compilation",
+    "test_only_fixture_repair_head": "273699bfbf6073e6f4fa7d56b8c9469aa6254488",
+    "scoped_v2_files_audited": 164,
+    "mismatch_patterns_audited": [
+      "ResponseItem::Message status/encrypted_content",
+      "ResponseItem::FunctionCall status/encryption/namespace fields",
+      "ResponseItem::Reasoning encrypted_content",
+      "ResponseItem::LocalShellCall encrypted_content",
+      "ResponseItem::ToolSearchCall status/encrypted_content",
+      "ResponseItem::CustomToolCall status/encryption/namespace",
+      "ContentItem::OutputText annotations/logprobs",
+      "ContentItem::InputImage detail",
+      "ThreadReadResponse read_state",
+      "ThreadListResponse read_states"
+    ],
+    "remaining_obvious_pattern_hits": 0,
+    "scan_is_exhaustive_compiler_proof": false,
+    "runner_corruption_fixed_commit": "5bc71fe592e758f45fe956014836274c1541e2ab",
+    "runner_structural_regression_file": ".github/scripts/test_codexdd_045_3f80_local_validation.py",
+    "runner_integrated_compile_before_native_tests": true,
+    "runner_retains_compiler_errors_and_full_log": true,
+    "runner_executed_on_daniel_cl_at_new_head": false,
+    "local_green_new_head": false,
+    "ci_triggered": false,
+    "full_release_accepted": false
   }
 }
