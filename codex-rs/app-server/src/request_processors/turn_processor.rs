@@ -223,6 +223,23 @@ impl TurnRequestProcessor {
                 "workflow state update requires a subscribed thread connection".to_string(),
             ));
         }
+        if let Some(source_turn_id) = params.source_turn_id.as_deref() {
+            // A stale event from an earlier turn must not rewrite newer durable
+            // workflow authority. A cold-resumed thread can have no observed
+            // lifecycle yet; retain that existing restore compatibility.
+            let thread_state = self.thread_state_manager.thread_state(thread_id).await;
+            let thread_state = thread_state.lock().await;
+            if !workflow_mutation_matches_known_turn(
+                source_turn_id,
+                thread_state.active_turn_id(),
+                thread_state.last_terminal_turn_id.as_deref(),
+            ) {
+                return Err(invalid_request(
+                    "workflow state update source turn does not match current thread lifecycle"
+                        .to_string(),
+                ));
+            }
+        }
         let item = match params.operation {
             ThreadWorkflowStateOperation::SetReadyForOwnerQa => {
                 codex_rollout::WorkflowStateItem::set_ready_for_owner_qa(params.source_turn_id)
@@ -1787,6 +1804,20 @@ impl TurnRequestProcessor {
     }
 }
 
+/// A supplied source turn cannot be older than the lifecycle currently known
+/// to the app-server. Cold-loaded threads may not have a listener turn yet;
+/// their existing checkpoint restoration semantics must continue to work.
+fn workflow_mutation_matches_known_turn(
+    source_turn_id: &str,
+    active_turn_id: Option<&str>,
+    last_terminal_turn_id: Option<&str>,
+) -> bool {
+    !source_turn_id.trim().is_empty()
+        && active_turn_id
+            .or(last_terminal_turn_id)
+            .is_none_or(|expected| expected == source_turn_id)
+}
+
 /// Snapshot checks may not grant authority: the active requesting transport
 /// must itself still be subscribed to the exact target thread.
 fn workflow_mutation_is_authorized_connection(
@@ -1799,6 +1830,37 @@ fn workflow_mutation_is_authorized_connection(
 #[cfg(test)]
 mod workflow_mutation_authority_tests {
     use super::*;
+
+    #[test]
+    fn workflow_mutation_rejects_stale_source_turn_without_blocking_valid_or_cold_resume() {
+        assert!(!workflow_mutation_matches_known_turn(
+            "old-turn",
+            Some("active-turn"),
+            Some("old-turn"),
+        ));
+        assert!(!workflow_mutation_matches_known_turn(
+            "old-turn",
+            None,
+            Some("completed-newer-turn"),
+        ));
+        assert!(workflow_mutation_matches_known_turn(
+            "active-turn",
+            Some("active-turn"),
+            Some("old-turn"),
+        ));
+        assert!(workflow_mutation_matches_known_turn(
+            "completed-newer-turn",
+            None,
+            Some("completed-newer-turn"),
+        ));
+        assert!(workflow_mutation_matches_known_turn(
+            "cold-resume-turn",
+            None,
+            None,
+        ));
+        assert!(!workflow_mutation_matches_known_turn("", None, None));
+        assert!(!workflow_mutation_matches_known_turn("   ", None, None));
+    }
 
     #[test]
     fn workflow_mutation_rejects_foreign_and_unsubscribed_connections() {
