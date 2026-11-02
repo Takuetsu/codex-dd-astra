@@ -1040,15 +1040,70 @@ async fn enqueue_thread_event_does_not_block_when_channel_full() -> Result<()> {
         .take()
         .expect("missing receiver");
 
-    time::timeout(Duration::from_millis(50), rx.recv())
-        .await
-        .expect("timed out waiting for first event")
-        .expect("channel closed unexpectedly");
-    time::timeout(Duration::from_millis(50), rx.recv())
-        .await
-        .expect("timed out waiting for second event")
-        .expect("channel closed unexpectedly");
+    assert!(matches!(
+        time::timeout(Duration::from_millis(50), rx.recv())
+            .await
+            .expect("timed out waiting for first event"),
+        Some(ThreadBufferedEvent::Notification(notification))
+            if matches!(notification.as_ref(), ServerNotification::ThreadClosed(_))
+    ));
+    // The second event was deferred when the bounded channel filled. An old
+    // unbounded-channel test awaited it without releasing the ordered backlog.
+    app.ensure_thread_channel(thread_id).flush_pending_live()?;
+    assert!(matches!(
+        time::timeout(Duration::from_millis(50), rx.recv())
+            .await
+            .expect("timed out waiting for second event"),
+        Some(ThreadBufferedEvent::Notification(notification))
+            if matches!(notification.as_ref(), ServerNotification::ThreadClosed(_))
+    ));
+    assert!(!app.ensure_thread_channel(thread_id).has_pending_live());
 
+    Ok(())
+}
+
+#[tokio::test]
+async fn inactive_thread_overflow_does_not_starve_foreground_or_block_switch() -> Result<()> {
+    let mut app = make_test_app().await;
+    let foreground = ThreadId::new();
+    let inactive = ThreadId::new();
+    app.thread_event_channels
+        .insert(foreground, ThreadEventChannel::new(/*capacity*/ 1));
+    let mut channel = ThreadEventChannel::new(/*capacity*/ 1);
+    for i in 0..3 {
+        channel.queue_live_event(ThreadBufferedEvent::Notification(Box::new(
+            ServerNotification::Warning(codex_app_server_protocol::WarningNotification {
+                thread_id: Some(inactive.to_string()),
+                message: format!("saved-{i}"),
+            }),
+        )))?;
+    }
+    assert!(channel.has_pending_live());
+    app.thread_event_channels.insert(inactive, channel);
+    app.activate_thread_channel(foreground).await;
+
+    assert!(!app.has_pending_live_thread_events(),
+        "an inactive channel with a saved receiver must not disable all terminal input");
+    app.flush_pending_live_thread_events()?;
+    assert!(app.thread_event_channels.get(&inactive).unwrap().has_pending_live());
+
+    app.store_active_thread_receiver().await;
+    app.active_thread_id = None;
+    app.activate_thread_channel(inactive).await;
+    assert!(app.has_pending_live_thread_events());
+    let mut rx = app.active_thread_rx.take().expect("inactive thread receiver activated");
+    for i in 0..3 {
+        app.flush_pending_live_thread_events()?;
+        let ThreadBufferedEvent::Notification(n) = rx.try_recv()? else {
+            panic!("expected ordered saved notification");
+        };
+        let ServerNotification::Warning(n) = *n else {
+            panic!("expected saved warning");
+        };
+        assert_eq!(n.message, format!("saved-{i}"));
+    }
+    app.active_thread_rx = Some(rx);
+    assert!(!app.has_pending_live_thread_events());
     Ok(())
 }
 
