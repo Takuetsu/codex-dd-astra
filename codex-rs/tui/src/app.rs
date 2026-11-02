@@ -305,6 +305,8 @@ const THREAD_EVENT_CHANNEL_CAPACITY: usize = 32768;
 // bound retained voice/audio, request, or history bytes.
 const THREAD_EVENT_LIVE_CAPACITY: usize = 64;
 const THREAD_EVENT_PENDING_LIMIT: usize = 16;
+// Startup events have no attached live receiver; cap this separate staging queue.
+const THREAD_EVENT_PENDING_PRIMARY_LIMIT: usize = 128;
 const THREAD_EVENT_MAX_WIRE_BYTES: usize = 2 * 1024 * 1024;
 
 enum ThreadInteractiveRequest {
