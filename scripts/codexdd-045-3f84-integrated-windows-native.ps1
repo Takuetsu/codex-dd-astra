@@ -56,8 +56,8 @@ function Invoke-CargoStage {
 }
 
 if ($env:OS -ne 'Windows_NT') { throw 'Requires native Windows on Daniel-CL' }
-if (@($ResumeAfterStackOverflow, $SnapshotRetest, $FinalizeSnapshotReceipt |
-    Where-Object { [bool]$_ }).Count -gt 1) {
+if (($ResumeAfterStackOverflow -and ($SnapshotRetest -or $FinalizeSnapshotReceipt)) -or
+    ($SnapshotRetest -and $FinalizeSnapshotReceipt)) {
     throw 'Select only one retry mode'
 }
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
