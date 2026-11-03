@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = '8212d2a447a0bd6b4f54381b47d052f650e555de'
+          test "$(git rev-parse HEAD^)" = 'cccc30b3110627fc0a6dbdb8ed9742e5884c6047'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
           test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
@@ -84,7 +84,7 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Unexpected Windows source commit' }
-          if ((git rev-parse HEAD^).Trim() -cne '8212d2a447a0bd6b4f54381b47d052f650e555de') { throw 'Wrong integrated source parent' }
+          if ((git rev-parse HEAD^).Trim() -cne 'cccc30b3110627fc0a6dbdb8ed9742e5884c6047') { throw 'Wrong integrated source parent' }
           if ((git rev-parse HEAD:codex-rs/Cargo.lock).Trim() -cne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Protected Cargo.lock drift' }
           if ((git rev-parse HEAD:codex-rs/Cargo.toml).Trim() -cne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Protected workspace manifest drift' }
           if ((git rev-parse HEAD:codex-rs/deny.toml).Trim() -cne 'f282c7c55d05201e308e60804f85754c8522d462') { throw 'Protected security policy drift' }
@@ -158,7 +158,7 @@ jobs:
             [ordered]@{
               kind='CODEXDD_045_3F80_WINDOWS_INTEGRATED_COMPILE_NONRELEASE'
               tested_head=$env:GITHUB_SHA
-              source_parent='8212d2a447a0bd6b4f54381b47d052f650e555de'
+              source_parent='cccc30b3110627fc0a6dbdb8ed9742e5884c6047'
               platform='windows-2022'
               compile_only=$true
               compile_exit_code=$status
@@ -178,6 +178,7 @@ jobs:
           $receipt=Join-Path $out '3f81-auth-native-receipt.json'
           $watch=[Diagnostics.Stopwatch]::StartNew()
           $results=@()
+          $failedNames=@()
           $passed=$false
           $failureReason=''
           $cases=@(
@@ -212,13 +213,18 @@ jobs:
                 }
                 Write-Host ('NATIVE_CASE: '+$name+' exit='+$code+' one_passed='+$onePassed)
                 if (-not $ok) {
+                  $failedNames+= $name
                   Get-Content -LiteralPath $log -Tail 100 | ForEach-Object { Write-Host $_ }
-                  throw ('Native authorization test failed: '+$name)
+                  # Keep testing other independent selectors; report all red cases
+                  # after the five-case matrix completes. Do not waive any failures.
                 }
               }
             }
             finally { Pop-Location }
             if ($results.Count -ne 5) { throw 'Not all five selectors executed' }
+            if ($failedNames.Count -gt 0) {
+              throw ('Native authorization test failures: '+($failedNames -join ', '))
+            }
             $passed=$true
             Write-Host 'CODEXDD_045_3F81_NATIVE_AUTH=PASS_5_OF_5_NONRELEASE'
           }
@@ -231,7 +237,7 @@ jobs:
             [ordered]@{
               kind='CODEXDD_045_3F81_WINDOWS_NATIVE_AUTH_NONRELEASE'
               tested_head=$env:GITHUB_SHA
-              source_parent='8212d2a447a0bd6b4f54381b47d052f650e555de'
+              source_parent='cccc30b3110627fc0a6dbdb8ed9742e5884c6047'
               previous_compile_run_id=41650547740
               previous_compiled_head='ee570f802e3943b4efab14ce79300220ebf916c1'
               cases=@($results)
