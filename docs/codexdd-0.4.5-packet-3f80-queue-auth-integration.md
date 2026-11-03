@@ -30,6 +30,12 @@ The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd1
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
 
+## Verified integrated Windows compile — November 3, 2026
+
+Run [41650547740](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41650547740) completed successfully on source head `ee570f802e3943b4efab14ce79300220ebf916c1`. Both `cheap-source` (source pins, formal holds, Python fixture regressions, Rustfmt) and `windows-compile` passed. The exact `cargo test --locked -p codex-app-server --test all --no-run` compiler exit code was **0**, and artifact **13238866457** preserves the compiler log and nonrelease receipt. This clears the previously observed 60-error/40-error test fixture **compilation** blocker.
+
+**Do not treat this as an executed test pass.** The five guarded workflow authorization selectors, including the positive RPC and negative real-WebSocket checks, still require source-bound native execution. This document's earlier failed compiler records are retained as historical evidence. All 13 P0 Core/TUI owner decisions remain pending, and production remains 0.4.4.
+
 ## Incremental source QA after the 60-error compiler failure
 
 A lightweight test at `.github/scripts/test_codexdd_045_3f80_local_validation.py` now includes a source-scanning check for the precise preexisting app-server fixture incompatibilities observed in the prior Windows compilation: missing `status`/`encrypted_content` in `ResponseItem::Message`, missing `annotations`/`logprobs` in `ContentItem::OutputText`, and `ThreadReadResponse` destructures missing `read_state`. It scans the app-server V2, suite, and shared test-helper Rust files and fails if those required fields disappear from an explicitly constructed/pattern-matched value.
