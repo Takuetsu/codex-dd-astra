@@ -150,15 +150,17 @@ try {
         $index += 1
     }
     $total = ($results | Measure-Object -Property Passed -Sum).Sum
+    $priorGroupSource = $null
+    if ($ResumeAfterStackOverflow) {
+        $priorGroupSource = '7a150508a9a25eeb06237ce3cb110f7bb3444317'
+    }
     $receipt = [pscustomobject]@{
         kind = 'codexdd_045_3f84_windows_native_nonrelease'
         source_head = $head
         utc = (Get-Date).ToUniversalTime().ToString('o')
         executed_passed = $total
         resumed_prior_native_groups = [bool]$ResumeAfterStackOverflow
-        prior_native_group_source = if ($ResumeAfterStackOverflow) {
-            '7a150508a9a25eeb06237ce3cb110f7bb3444317'
-        } else { $null }
+        prior_native_group_source = $priorGroupSource
         test_thread_stack_bytes = [int]$env:RUST_MIN_STACK
         stages = @($results)
         release_approved = $false
