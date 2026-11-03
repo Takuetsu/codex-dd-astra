@@ -1,0 +1,80 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f85_core_negative_owner_review_nonrelease",
+  "source_branch": "dd/codexdd-v0.4.5-3f85-core-negatives",
+  "parent_3f84_head": "131c4954cfd493eb05bb2694c98275bd8c810a50",
+  "test_only_change_head": "970b364d65ed6d61238eb4eae69d8c1dc99b3cbf",
+  "source_outcome": "SOURCE_PREPARED_UNVALIDATED",
+  "release_approved": false,
+  "formal_owner_signoffs": 0,
+  "formal_review_paths": 109,
+  "high_risk_holds_remaining": {
+    "core": 4,
+    "tui": 9,
+    "total": 13
+  },
+  "prior_local_evidence": {
+    "platform": "Daniel-CL native Windows",
+    "tui_replay_3f83": {
+      "status": "4_TESTS_GREEN_REPORTED_BY_USER_SCREENSHOT",
+      "compilation": "PASS_REPORTED_BY_USER"
+    },
+    "tui_integration_3f84": {
+      "status": "SELECTED_TESTS_PASSED_ACROSS_LOCAL_RUNS_NOT_FINAL_RELEASE_ACCEPTANCE",
+      "tests_06_to_19": "14 per-case successes shown across previous run; head 3d48af2a0087a3e14b0bb49813233f02ba6f0996",
+      "tests_20_to_22": "3 passed on candidate source at head 3651c1af743c26e7af3d31f6de90dd04839d4733",
+      "local_verified_receipt": "E:\\codexdd\\logs\\045-3f84\\snapshot-partial-receipt.json",
+      "receipt_stdout": "3F.84 PARTIAL LOG RECEIPT VERIFIED: 3/3 selected tests",
+      "receipt_verifier_head": "131c4954cfd493eb05bb2694c98275bd8c810a50",
+      "safety_limit": "User-provided local screenshots and logs are not a canonical GitHub-hosted unified run or independent owner approval",
+      "full_final_3f84_on_a_single_head": "PENDING"
+    }
+  },
+  "core_review": [
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "risk": "TERMINAL_TOOL_CHOICE_REQUIRES_GENUINE_CURRENT_SIGNAL",
+      "existing_test": "client::tests::validation_terminalization_requests_required_tool_choice",
+      "existing_contract": "Required tool_choice on exact terminalization turn; auto after a matching signal or on ordinary turns",
+      "added_negative_cases": [
+        "Unrelated function name containing report_adaptive_signal is not treated as the signal",
+        "A function output without its matching signal call does not disable required tool choice",
+        "A trigger suffix/lookalike does not force tool_choice"
+      ],
+      "new_test_path": "codex-rs/core/src/client_tests.rs",
+      "candidate_status": "NEW_NEGATIVES_ADDED_BUT_NOT_COMPILED_OR_EXECUTED",
+      "remaining_blocker": "Repeated-turn history and no duplicate report_adaptive_signal behavior require source-bound native proof; manual owner signoff pending"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "risk": "FORK_PRIVATE_WORKFLOW_STATE",
+      "existing_test": "thread_manager::tests::child_workflow_snapshot_preserves_adaptive_state",
+      "source_witness": "append_child_workflow_state_snapshot copies RestoredWorkflowState::Adaptive with source_turn_id",
+      "candidate_status": "SOURCE_INSPECTED_NO_OWNER_APPROVAL",
+      "remaining_blocker": "Proof a fork cannot reuse live authority, pending approvals or permission from source thread when preserving durable adaptive state"
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "risk": "TOOL_MODE_ESCALATION",
+      "existing_test": "tools::spec_plan::tests::codexdd_protected_turns_force_direct_tools_without_widening_other_turns",
+      "source_witness": "effective_tool_mode overrides CodeModeOnly for three controller-marked phases",
+      "candidate_status": "SOURCE_INSPECTED_NO_OWNER_APPROVAL",
+      "remaining_blocker": "Native negative for write-tool escape and provenance of controller-origin turn trigger"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "risk": "VALIDATOR_EXPOSURE_SCOPE",
+      "existing_test": "tools::spec_plan::tests::codexdd_validation_runner_is_visible_only_during_mechanical_validation",
+      "source_witness": "run_codexdd_validation registered as DirectModelOnly only for exact mechanical_validation trigger",
+      "candidate_status": "SOURCE_INSPECTED_NO_OWNER_APPROVAL",
+      "remaining_blocker": "Runtime validator invocation outside authority/scope, forged trigger and allowed source path negatives"
+    }
+  ],
+  "required_validation_sequence": [
+    "On Daniel-CL isolated 3F.85 worktree run cargo fmt --all -- --check and targeted codex-core library negative test before any CI",
+    "Only if native local tests green, extend focused Core fork/tool authorization negative tests",
+    "Do not close 13 owner holds from source witnesses or one selected green test",
+    "Full 21-stage Daniel-CL release suite and seven-program Windows distribution remain pending"
+  ],
+  "production_version": "0.4.4"
+}
