@@ -30,6 +30,14 @@ The current 3F.80 branch and PR #79 head `4697ff07f250dc455d386875907545a07fefd1
 5. Preserve ordered, fail-closed TUI delivery and the 3F.76 payload limit, startup staging cap, and thread-switch controls; do not let a successful authorization test substitute for the earlier 36 case suite.
 6. Do not infer a *total replay-store memory cap* from the 2 MiB per-event limit. The separate replay snapshot still allows many events; review aggregate retained bytes and voice/history replay separately before formal path acceptance.
 
+## 3F.81 Windows native authorization — exact failure and repair
+
+GitHub Actions run [41656502070](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41656502070) on commit `de7aa61c2df4be433970be01478c84f96a432242` passed source pins, Rustfmt, app-server integration binary compilation and **three of five** native authorization selectors, each exactly once. Its fourth test, `workflow_state_update_preserves_authorized_top_level_cli_mutation`, panicked inside the shared `TestAppServer::request` success-only helper when the server correctly returned JSON-RPC error `workflow state update source turn does not match current thread lifecycle` for a deliberate stale mutation. That test incorrectly expected `request()` to yield an ordinary `Err` on an RPC error. The fifth WebSocket selector was **not executed**.
+
+Test-only commit `8abce084733cf0229fb8b9d865b0b45ac2d57f9f` corrects the test to send the expected-invalid request using `send_request`, then read and assert the JSON-RPC error with `read_stream_until_error_message`. The subsequent valid current-turn RPC remains typed and must still succeed. Server authorization production logic, protected dependency graph and the 13 formal high-risk owner holds were not changed.
+
+For the next nonrelease 3F.81 workflow, run all five selectors despite an individual red result and report every failed test in the final receipt. This prevents a single failing selector from concealing an independent WebSocket failure. A green compilation is not native test acceptance; a green 5/5 run is still not formal Core/TUI owner signoff.
+
 ## Verified integrated Windows compile — November 3, 2026
 
 Run [41650547740](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41650547740) completed successfully on source head `ee570f802e3943b4efab14ce79300220ebf916c1`. Both `cheap-source` (source pins, formal holds, Python fixture regressions, Rustfmt) and `windows-compile` passed. The exact `cargo test --locked -p codex-app-server --test all --no-run` compiler exit code was **0**, and artifact **13238866457** preserves the compiler log and nonrelease receipt. This clears the previously observed 60-error/40-error test fixture **compilation** blocker.
