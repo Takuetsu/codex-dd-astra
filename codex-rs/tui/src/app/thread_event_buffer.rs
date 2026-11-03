@@ -1,12 +1,12 @@
 //! Bounded replay-buffer policy for per-thread app-server events.
 
 use super::ServerNotification;
+use super::ServerRequest;
+use super::THREAD_EVENT_REPLAY_MAX_WIRE_BYTES;
 use super::ThreadBufferedEvent;
 use super::ThreadEventStore;
 use super::retained_replay_event_bytes;
 use super::serialized_live_event_bytes;
-use super::THREAD_EVENT_REPLAY_MAX_WIRE_BYTES;
-use super::ServerRequest;
 use color_eyre::Result;
 use std::borrow::Cow;
 
@@ -81,22 +81,17 @@ impl ThreadEventStore {
     }
 
     pub(super) fn recount_retained_replay_bytes(&mut self) {
-        self.retained_replay_wire_bytes = self
-            .buffer
-            .iter()
-            .fold(0usize, |total, event| {
-                total.saturating_add(retained_replay_event_bytes(event))
-            });
+        self.retained_replay_wire_bytes = self.buffer.iter().fold(0usize, |total, event| {
+            total.saturating_add(retained_replay_event_bytes(event))
+        });
         self.buffered_agent_message_delta_bytes = self
             .buffer
             .iter()
             .filter_map(|event| match event {
-                ThreadBufferedEvent::Notification(notification) => {
-                    match notification.as_ref() {
-                        ServerNotification::AgentMessageDelta(delta) => Some(delta.delta.len()),
-                        _ => None,
-                    }
-                }
+                ThreadBufferedEvent::Notification(notification) => match notification.as_ref() {
+                    ServerNotification::AgentMessageDelta(delta) => Some(delta.delta.len()),
+                    _ => None,
+                },
                 _ => None,
             })
             .fold(0usize, usize::saturating_add);

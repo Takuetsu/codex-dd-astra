@@ -267,7 +267,10 @@ fn retained_replay_byte_budget_evicts_old_messages_but_keeps_pending_approval() 
         serde_json::to_value(request).expect("original request serializes")
     );
     assert!(store.has_pending_thread_approvals());
-    assert!(store.buffer.len() < 13, "ordinary old messages should be evicted");
+    assert!(
+        store.buffer.len() < 13,
+        "ordinary old messages should be evicted"
+    );
 }
 
 #[test]
@@ -299,7 +302,10 @@ fn unresolved_request_retention_exhaustion_fails_before_mutating_approval_state(
         accepted += 1;
     }
 
-    assert!(rejected, "aggregate protected requests must hit a retention cap");
+    assert!(
+        rejected,
+        "aggregate protected requests must hit a retention cap"
+    );
     assert!(accepted > 1);
     assert_eq!(store.pending_replay_requests().len(), accepted);
     assert!(store.has_pending_thread_approvals());
@@ -313,14 +319,9 @@ fn unresolved_request_retention_exhaustion_fails_before_mutating_approval_state(
             thread_id: thread_id.to_string(),
         },
     ));
-    let mut next = exec_approval_request(
-        thread_id,
-        "turn-next",
-        "item-next",
-        Some("approval-next"),
-    );
-    let ServerRequest::CommandExecutionRequestApproval { request_id, params } = &mut next
-    else {
+    let mut next =
+        exec_approval_request(thread_id, "turn-next", "item-next", Some("approval-next"));
+    let ServerRequest::CommandExecutionRequestApproval { request_id, params } = &mut next else {
         panic!("expected exec approval");
     };
     *request_id = AppServerRequestId::Integer(99);

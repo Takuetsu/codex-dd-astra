@@ -129,9 +129,7 @@ fn retained_replay_event_bytes(event: &ThreadBufferedEvent) -> usize {
         ThreadBufferedEvent::Notification(notification) => {
             serialized_live_event_bytes(notification.as_ref())
         }
-        ThreadBufferedEvent::Request(request) => {
-            serialized_live_event_bytes(request.as_ref())
-        }
+        ThreadBufferedEvent::Request(request) => serialized_live_event_bytes(request.as_ref()),
         ThreadBufferedEvent::HistoryEntryResponse(history) => history_live_event_bytes(history),
         ThreadBufferedEvent::FeedbackSubmission(feedback) => feedback_live_event_bytes(feedback),
     };
