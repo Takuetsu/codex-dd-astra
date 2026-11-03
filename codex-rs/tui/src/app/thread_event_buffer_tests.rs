@@ -114,7 +114,7 @@ fn thread_event_store_coalesces_only_adjacent_matching_agent_message_deltas() {
             serde_json::to_value(delta("turn-2", "item-2", "next"))
                 .expect("delta should serialize"),
             serde_json::to_value(other_thread_delta).expect("delta should serialize"),
-            serde_json::to_value(approval).expect("request should serialize"),
+            serde_json::to_value(approval.clone()).expect("request should serialize"),
             serde_json::to_value(delta("turn-2", "item-2", "after approval"))
                 .expect("delta should serialize"),
         ]
