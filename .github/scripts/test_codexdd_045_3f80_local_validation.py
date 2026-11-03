@@ -66,6 +66,10 @@ FIXTURE_FIELDS = {
     "ResponseItem::Message": ("status", "encrypted_content"),
     "ContentItem::OutputText": ("annotations", "logprobs"),
     "ThreadReadResponse": ("read_state",),
+    "ThreadListParams": ("excluded_thread_ids",),
+    "EnvironmentAddParams": ("websocket_request_id",),
+    "TurnToolOutput": ("retain",),
+    "RealtimeVoicesList": ("v3",),
 }
 
 
