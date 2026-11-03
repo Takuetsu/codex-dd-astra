@@ -92,7 +92,7 @@ try {
         @{ Stage = '05-live-thread-events'; Filter = 'app::thread_events::tests' }
     )
     if ($SnapshotRetest) {
-        Write-Host 'PARTIAL RETEST: skip previous module groups (not counted for new source)' 
+        Write-Host 'PARTIAL RETEST: skip previous module groups (not counted for new source)'
     }
     elseif ($ResumeAfterStackOverflow) {
         # The previous run reached selector 06, so 03-05 passed on the exact same
