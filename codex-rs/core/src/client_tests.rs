@@ -526,6 +526,58 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
     )?;
     assert_eq!(after_signal.tool_choice, "auto");
 
+    // A similarly named tool must not suppress required terminalization.
+    let mut unrelated_call = prompt_after_signal;
+    let Some(ResponseItem::FunctionCall { name, .. }) = unrelated_call.input.first_mut() else {
+        panic!("expected a recorded function call");
+    };
+    *name = "report_adaptive_signal_not_real".to_string();
+    let unrelated = client.build_responses_request(
+        &unrelated_call,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+        /*include_internal*/ false,
+    )?;
+    assert_eq!(unrelated.tool_choice, "required");
+
+    // Function outputs alone do not prove the terminal signal was invoked.
+    let tool_result_only = Prompt {
+        input: vec![ResponseItem::from(ResponseInputItem::FunctionCallOutput {
+            call_id: "adaptive-signal-call".to_string(),
+            output: FunctionCallOutputPayload::from_text("ready".to_string()),
+        })],
+        ..Prompt::default()
+    };
+    let tool_result = client.build_responses_request(
+        &tool_result_only,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+        /*include_internal*/ false,
+    )?;
+    assert_eq!(tool_result.tool_choice, "required");
+
+    // Trigger equality is exact. A near-match must not force model tool calls.
+    responses_metadata.turn_trigger = Some(format!(
+        "{}_untrusted",
+        codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER
+    ));
+    let near_match = client.build_responses_request(
+        &prompt,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+        /*include_internal*/ false,
+    )?;
+    assert_eq!(near_match.tool_choice, "auto");
+
     responses_metadata.turn_trigger = None;
     let ordinary = client.build_responses_request(
         &prompt,
