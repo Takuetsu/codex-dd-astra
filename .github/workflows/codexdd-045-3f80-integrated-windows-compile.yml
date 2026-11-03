@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = 'd6cc3782675e4aef2a645412c39877b66305e4db'
+          test "$(git rev-parse HEAD^)" = '4e6d0c906a4bd8d111aff0bf7f2b9566bce3b8b3'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
           test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
@@ -84,7 +84,7 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Unexpected Windows source commit' }
-          if ((git rev-parse HEAD^).Trim() -cne 'd6cc3782675e4aef2a645412c39877b66305e4db') { throw 'Wrong integrated source parent' }
+          if ((git rev-parse HEAD^).Trim() -cne '4e6d0c906a4bd8d111aff0bf7f2b9566bce3b8b3') { throw 'Wrong integrated source parent' }
           if ((git rev-parse HEAD:codex-rs/Cargo.lock).Trim() -cne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Protected Cargo.lock drift' }
           if ((git rev-parse HEAD:codex-rs/Cargo.toml).Trim() -cne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Protected workspace manifest drift' }
           if ((git rev-parse HEAD:codex-rs/deny.toml).Trim() -cne 'f282c7c55d05201e308e60804f85754c8522d462') { throw 'Protected security policy drift' }
@@ -158,7 +158,7 @@ jobs:
             [ordered]@{
               kind='CODEXDD_045_3F80_WINDOWS_INTEGRATED_COMPILE_NONRELEASE'
               tested_head=$env:GITHUB_SHA
-              source_parent='d6cc3782675e4aef2a645412c39877b66305e4db'
+              source_parent='4e6d0c906a4bd8d111aff0bf7f2b9566bce3b8b3'
               platform='windows-2022'
               compile_only=$true
               compile_exit_code=$status
