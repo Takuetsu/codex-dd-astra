@@ -328,6 +328,16 @@
       "ThreadReadResponse"
     ],
     "synthetic_scanner_examples_validated": true,
-    "python_fixture_suite_run_against_full_repo": false
+    "python_fixture_suite_run_against_full_repo": false,
+    "fixture_regression_hardening": {
+      "source_path": ".github/scripts/test_codexdd_045_3f80_local_validation.py",
+      "issue": "Old struct-rest heuristic could mistake top-level Rust ranges or commented '..' as a rest pattern, masking missing field errors; shorthand patterns were not recognized",
+      "fix": "Comma-delimited outer-field parser tracks nested delimiters, strings, line/block comments and supports shorthand fields. Struct-rest requires its own top-level field.",
+      "synthetic_examples_passed_locally": true,
+      "synthetic_rust_build_performed": false,
+      "committed_regression_cases": 8,
+      "fixture_scan_on_full_branch_after_hardening": "NOT_YET_EXECUTED",
+      "runtime_changes_in_this_packet": false
+    }
   }
 }
