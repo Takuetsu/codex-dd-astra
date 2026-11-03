@@ -195,7 +195,7 @@
     }
   ],
   "additional_native_gates": [
-    "3F.80 integrated app-server five source-bound native unit/RPC/WebSocket selectors and Rustfmt on Daniel-CL",
+    "3F.81 integrated app-server five source-bound Windows native authorization selectors: PASS on GitHub Windows Server 2022 head 7b07d2c (not Daniel-CL local release suite)",
     "Full integrated TUI/app-server behavior revalidation",
     "Separate aggregate replay retained-byte review",
     "Native daemon/WSL/voice lifecycle and secure Seven-program Windows distribution",
@@ -209,7 +209,9 @@
     "websocket_test_blob": "f5c6fbb91e6e034ed950272143b5ee87423517d2",
     "source_turn_freshness": "REJECT_OLDER_WHEN_ACTIVE_OR_LAST_TERMINAL_KNOWN",
     "cold_resume_without_observed_lifecycle": "COMPATIBILITY_PRESERVED_REQUIRES_FURTHER_OWNER_REVIEW",
-    "status": "SOURCE_FIX_REQUIRES_NEW_NATIVE_EXECUTION"
+    "status": "PASS_5_OF_5_WINDOWS_GITHUB_NONRELEASE",
+    "accepted_native_head": "7b07d2cd3d7f841a2542ab794d6ba979d4992589",
+    "accepted_native_run_id": 41662986165
   },
   "native_local_entrypoint": ".github/scripts/codexdd-045-3f80-local-validation.ps1",
   "required_local_native_selectors": [
@@ -219,7 +221,7 @@
     "workflow_state_update_preserves_authorized_top_level_cli_mutation",
     "websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections"
   ],
-  "validated_integrated_native_test_count": 0,
+  "validated_integrated_native_test_count": 5,
   "integrated_head_release_approved": false,
   "pr79_ancestry": {
     "pr_head": "4697ff07f250dc455d386875907545a07fefd147",
@@ -376,5 +378,52 @@
     "successfully_executed_native_authorization_selectors_at_repaired_head": 0,
     "release_approved": false,
     "formal_owner_approvals": 0
+  },
+  "latest_windows_auth_native_success": {
+    "status": "PASS_5_OF_5_SOURCE_PINNED_NONRELEASE",
+    "run_id": 41662986165,
+    "run_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41662986165",
+    "tested_head": "7b07d2cd3d7f841a2542ab794d6ba979d4992589",
+    "platform": "windows-2022",
+    "cheap_source": "PASS",
+    "rustfmt": "PASS",
+    "integrated_app_server_compile_exit_code": 0,
+    "executed_native_regression_count": 5,
+    "exactly_one_passed_each": true,
+    "executed_selectors": [
+      {
+        "selector": "workflow_mutation_rejects_foreign_and_unsubscribed_connections",
+        "exit_code": 0,
+        "exactly_one_passed": true
+      },
+      {
+        "selector": "workflow_mutation_rejects_stale_source_turn_without_blocking_valid_or_cold_resume",
+        "exit_code": 0,
+        "exactly_one_passed": true
+      },
+      {
+        "selector": "v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue",
+        "exit_code": 0,
+        "exactly_one_passed": true
+      },
+      {
+        "selector": "workflow_state_update_preserves_authorized_top_level_cli_mutation",
+        "exit_code": 0,
+        "exactly_one_passed": true
+      },
+      {
+        "selector": "websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections",
+        "exit_code": 0,
+        "exactly_one_passed": true
+      }
+    ],
+    "artifact_id": 13244783790,
+    "artifact_name": "codexdd045-3f81-auth-windows-native-evidence",
+    "verified_git_hub_job_log": true,
+    "owner_approvals_changed": false,
+    "formal_owner_approvals": 0,
+    "remaining_p0_holds": 13,
+    "release_approved": false,
+    "caveat": "Green app-server workflow authority only. Separate TUI replay-byte and pending-request eviction review, 13 P0 owners, full Windows distribution and Daniel-CL release suite remain required."
   }
 }
