@@ -205,11 +205,11 @@
   "integration_runtime_changes_only_app_server": true,
   "current_guarded_workflow_source": {
     "processor_blob": "ae25bb6106f534e32f113306562d523757e504df",
-    "integration_rpc_test_blob": "9b7820809c376c2aba83e65e04ed8f58347ee6bb",
+    "integration_rpc_test_blob": "1c7a38c2edecaeae6b22d06d38843cf2f8767570",
     "websocket_test_blob": "f5c6fbb91e6e034ed950272143b5ee87423517d2",
     "source_turn_freshness": "REJECT_OLDER_WHEN_ACTIVE_OR_LAST_TERMINAL_KNOWN",
     "cold_resume_without_observed_lifecycle": "COMPATIBILITY_PRESERVED_REQUIRES_FURTHER_OWNER_REVIEW",
-    "status": "SOURCE_AUDIT_PASS_NATIVE_UNVERIFIED"
+    "status": "SOURCE_FIX_REQUIRES_NEW_NATIVE_EXECUTION"
   },
   "native_local_entrypoint": ".github/scripts/codexdd-045-3f80-local-validation.ps1",
   "required_local_native_selectors": [
@@ -357,5 +357,24 @@
     "owner_approval_count": 0,
     "production_marker": "0.4.4",
     "caveat": "A successfully compiled integrated test binary is not a five-case authorization execution pass and does not clear 13 formal Core/TUI holds"
+  },
+  "latest_windows_auth_native_attempt": {
+    "run_id": 41656502070,
+    "tested_head": "de7aa61c2df4be433970be01478c84f96a432242",
+    "artifact_id": 13241970684,
+    "platform": "windows-2022",
+    "cheap_source": "PASS",
+    "integrated_app_server_compile": "PASS",
+    "first_three_library_selectors": "PASS_EXACTLY_ONCE_EACH",
+    "positive_rpc_selector": "FAIL_TEST_FIXTURE_RESPONSE_ONLY_HELPER_EXPECTS_SUCCESS_WHEN_SERVER_REJECTS_STALE_TURN",
+    "websocket_negative_selector": "NOT_REACHED",
+    "authorization_server_rejected_stale_turn": true,
+    "server_error": "workflow state update source turn does not match current thread lifecycle",
+    "test_only_repair_commit": "8abce084733cf0229fb8b9d865b0b45ac2d57f9f",
+    "repair": "Replace typed success-only request() with send_request() and read_stream_until_error_message() for expected negative, leave successful current-turn RPC unchanged.",
+    "successfully_executed_native_authorization_selectors_at_old_head": 3,
+    "successfully_executed_native_authorization_selectors_at_repaired_head": 0,
+    "release_approved": false,
+    "formal_owner_approvals": 0
   }
 }
