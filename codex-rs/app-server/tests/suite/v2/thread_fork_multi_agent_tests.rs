@@ -8,6 +8,7 @@ use app_test_support::write_models_cache_with_models;
 use codex_app_server_protocol::ApprovalsReviewer;
 use codex_app_server_protocol::AskForApproval;
 use codex_app_server_protocol::ClientRequest;
+use codex_app_server_protocol::RequestId;
 use codex_app_server_protocol::SandboxMode;
 use codex_app_server_protocol::ThreadForkParams;
 use codex_app_server_protocol::ThreadForkResponse;
@@ -177,22 +178,23 @@ async fn workflow_state_update_preserves_authorized_top_level_cli_mutation() -> 
 
     // A delayed worker response from an earlier turn cannot overwrite a newer
     // completed turn's workflow authority, even on the subscribed connection.
-    let stale_write: Result<ThreadWorkflowStateUpdateResponse> = mcp
-        .request(|request_id| ClientRequest::ThreadWorkflowStateUpdate {
-            request_id,
-            params: ThreadWorkflowStateUpdateParams {
+    let stale_request_id = mcp
+        .send_request(
+            "thread/workflowState/update",
+            Some(serde_json::to_value(ThreadWorkflowStateUpdateParams {
                 thread_id: thread.id.clone(),
                 operation: ThreadWorkflowStateOperation::SetReadyForOwnerQa,
                 source_turn_id: Some("stale-prior-turn".to_string()),
                 adaptive_state: None,
-            },
-        })
-        .await;
-    let error = stale_write.expect_err("stale workflow source turn must be rejected");
-    assert!(
-        format!("{error:#}")
-            .contains("workflow state update source turn does not match current thread lifecycle"),
-        "unexpected error: {error:#}"
+            })?),
+        )
+        .await?;
+    let rejected = mcp
+        .read_stream_until_error_message(RequestId::Integer(stale_request_id))
+        .await?;
+    assert_eq!(
+        rejected.error.message,
+        "workflow state update source turn does not match current thread lifecycle"
     );
 
     // The new direct-input gate must reject V2 spawned sub-agent mutations
