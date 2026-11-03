@@ -1,6 +1,20 @@
 # CodexDD 0.4.5 — packet 3F.80: integrated bounded queue and workflow authority (NONRELEASE)
 
-**Status:** Source integration prepared; fresh integrated-head Rustfmt, compiled tests and owner acceptance **NOT YET VERIFIED**. Never treat earlier green runs as validation of this new head.
+**Status:** 3F.81 source-pinned Windows native authorization acceptance **GREEN (5/5)** at `7b07d2cd3d7f841a2542ab794d6ba979d4992589` (nonrelease). All **13 formal Core/TUI owner holds remain open**; aggregate TUI replay memory and pending approval retention, full local release suite, Windows distribution and installer remain unapproved.
+
+## 3F.81 PASS — five executed native Windows authorization regressions
+
+GitHub [nonrelease run 41662986165](https://github.com/Takuetsu/codex-dd-astra/actions/runs/41662986165) completed **success** on source commit `7b07d2cd3d7f841a2542ab794d6ba979d4992589`. The cheap-source job (source identities, Python fixture regressions, Rustfmt) and native Windows job both passed. The app-server integration test binary compiled with exit 0; **all five** focused selectors executed with exit 0 and a single passing test per selector:
+
+1. `workflow_mutation_rejects_foreign_and_unsubscribed_connections`
+2. `workflow_mutation_rejects_stale_source_turn_without_blocking_valid_or_cold_resume`
+3. `v2_spawned_agent_rejects_direct_workflow_mutations_but_regular_threads_continue`
+4. `workflow_state_update_preserves_authorized_top_level_cli_mutation`
+5. `websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections`
+
+Source-bound artifact **13244783790** (`codexdd045-3f81-auth-windows-native-evidence`) contains the compile and per-case logs, plus a nonrelease receipt. The old 3/5 failure remains documented below only as historical triage; its success-only helper was corrected in a test-only commit. No app-server production authorization logic was weakened to obtain the green result.
+
+**Scope limit:** This clears the five-case 3F.81 Windows app-server authorization gate only. It is **not** a release acceptance, a 13-owner semantic signoff, a total replay-store memory guarantee, native verification of all Core/TUI behavior, or the 21-stage release suite on Daniel-CL. The later documentation-only commits do not change the source blobs covered by the green run.
 
 ## Exact-source lineage
 
