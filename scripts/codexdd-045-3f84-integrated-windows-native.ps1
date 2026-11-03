@@ -6,7 +6,8 @@ param(
     [string]$ExpectedHead,
     [string]$LogDir = 'E:\codexdd\logs\045-3f84',
     [switch]$ResumeAfterStackOverflow,
-    [switch]$SnapshotRetest
+    [switch]$SnapshotRetest,
+    [switch]$FinalizeSnapshotReceipt
 )
 
 Set-StrictMode -Version Latest
@@ -55,7 +56,8 @@ function Invoke-CargoStage {
 }
 
 if ($env:OS -ne 'Windows_NT') { throw 'Requires native Windows on Daniel-CL' }
-if ($ResumeAfterStackOverflow -and $SnapshotRetest) {
+if (@($ResumeAfterStackOverflow, $SnapshotRetest, $FinalizeSnapshotReceipt |
+    Where-Object { [bool]$_ }).Count -gt 1) {
     throw 'Select only one retry mode'
 }
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -69,6 +71,64 @@ try {
     if ($LASTEXITCODE -ne 0 -or $dirty) { throw 'Candidate worktree must be clean' }
     & git diff --check '38800f17744cc600d31b308e17a22ff2462ed013' HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Git diff check failed' }
+    if ($FinalizeSnapshotReceipt) {
+        # The only changes since the successful 20-22 execution were to this
+        # PowerShell runner. Require identical Rust sources before reusing logs.
+        $testedHead = '3651c1af743c26e7af3d31f6de90dd04839d4733'
+        & git diff --quiet $testedHead HEAD -- codex-rs
+        if ($LASTEXITCODE -ne 0) { throw 'Rust source changed since test execution' }
+
+        $verifiedCases = @(
+            @{ Index = 20; Name = 'app_server_thread_replacement_clears_previous_transcript_before_replay' },
+            @{ Index = 21; Name = 'snapshot_thread_switch_discards_queued_previous_history' },
+            @{ Index = 22; Name = 'active_history_batch_is_delivered_without_replay_buffering' }
+        )
+        $verified = New-Object 'System.Collections.Generic.List[object]'
+        foreach ($case in $verifiedCases) {
+            $stage = ('{0:D2}-{1}' -f $case.Index, $case.Name)
+            $out = Join-Path $LogDir ($stage + '-stdout.log')
+            $err = Join-Path $LogDir ($stage + '-stderr.log')
+            if (-not (Test-Path -LiteralPath $out) -or
+                -not (Test-Path -LiteralPath $err)) {
+                throw ('Missing native test evidence: ' + $stage)
+            }
+            $combined = (Get-Content -LiteralPath $out -Raw) +
+                (Get-Content -LiteralPath $err -Raw)
+            $exactTestName = 'app::tests::' + $case.Name
+            $testPassPattern = 'test\s+' + [regex]::Escape($exactTestName) +
+                '\s+\.\.\.\s+ok'
+            if ($combined -notmatch $testPassPattern -or
+                $combined -notmatch 'test result: ok\.\s+1 passed;\s+0 failed;') {
+                throw ('Exact native test has no proven green result: ' + $stage)
+            }
+            $verified.Add([pscustomobject]@{
+                Stage = $stage
+                Status = 'PASS_REUSED_IDENTICAL_RUST_SOURCE'
+                Passed = 1
+                Stdout = $out
+                Stderr = $err
+            })
+        }
+        $receipt = [pscustomobject]@{
+            kind = 'codexdd_045_3f84_snapshot_retest_partial_nonrelease'
+            source_head = $head
+            tested_rust_source_head = $testedHead
+            utc = (Get-Date).ToUniversalTime().ToString('o')
+            executed_passed = 3
+            reused_existing_logs = $true
+            partial_retest_only = $true
+            test_thread_stack_bytes = [int]$env:RUST_MIN_STACK
+            stages = $verified.ToArray()
+            release_approved = $false
+        }
+        $receiptFile = Join-Path $LogDir 'snapshot-partial-receipt.json'
+        $receipt | ConvertTo-Json -Depth 6 |
+            Set-Content -LiteralPath $receiptFile -Encoding UTF8
+        Write-Host '3F.84 PARTIAL LOG RECEIPT VERIFIED: 3/3 selected tests' -ForegroundColor Green
+        Write-Host ('Receipt: ' + $receiptFile)
+        return
+    }
+
     $cargo = Get-Command cargo.exe -ErrorAction Stop
 
     Invoke-CargoStage -Stage '01-rustfmt' -Arguments @('fmt', '--all', '--', '--check')
@@ -171,7 +231,10 @@ try {
         ) -ExpectTests $true
         $index += 1
     }
-    $total = ($results | Measure-Object -Property Passed -Sum).Sum
+    $total = 0
+    foreach ($stageResult in $results) {
+        $total += [int]$stageResult.Passed
+    }
     $priorGroupSource = $null
     if ($ResumeAfterStackOverflow) {
         $priorGroupSource = '7a150508a9a25eeb06237ce3cb110f7bb3444317'
@@ -189,7 +252,7 @@ try {
         resumed_prior_native_groups = [bool]$ResumeAfterStackOverflow
         prior_native_group_source = $priorGroupSource
         test_thread_stack_bytes = [int]$env:RUST_MIN_STACK
-        stages = @($results)
+        stages = $results.ToArray()
         release_approved = $false
     }
     $receipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $LogDir 'receipt.json') -Encoding UTF8
