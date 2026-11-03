@@ -134,12 +134,7 @@ fn thread_event_store_coalesces_only_adjacent_matching_agent_message_deltas() {
     assert_eq!(
         snapshot_events(&store),
         vec![
-            serde_json::to_value(delta(
-                "turn-2",
-                "item-2",
-                &format!("after approval{exact_limit}"),
-            ))
-            .expect("delta should serialize"),
+            serde_json::to_value(approval.clone()).expect("approval should serialize"),
             serde_json::to_value(delta("turn-2", "item-2", "🙂")).expect("delta should serialize"),
             serde_json::to_value(delta("turn-2", "item-2", &full_chunk))
                 .expect("delta should serialize"),
@@ -149,7 +144,7 @@ fn thread_event_store_coalesces_only_adjacent_matching_agent_message_deltas() {
             serde_json::to_value(delta("turn-2", "item-2", "🙂")).expect("delta should serialize"),
         ]
     );
-    assert!(!store.has_pending_thread_approvals());
+    assert!(store.has_pending_thread_approvals());
 
     let mut store = ThreadEventStore::new(/*capacity*/ THREAD_EVENT_CHANNEL_CAPACITY);
     store.push_request(exec_approval_request(
@@ -168,18 +163,26 @@ fn thread_event_store_coalesces_only_adjacent_matching_agent_message_deltas() {
 
     assert_eq!(
         snapshot_events(&store),
-        (1..65)
-            .map(|chunk| {
-                serde_json::to_value(delta(
-                    "turn-budget",
-                    "item-budget",
-                    &format!("{chunk:08}").repeat(MAX_COALESCED_AGENT_MESSAGE_DELTA_BYTES / 8),
-                ))
-                .expect("delta should serialize")
-            })
-            .collect::<Vec<_>>()
+        std::iter::once(
+            serde_json::to_value(exec_approval_request(
+                thread_id,
+                "turn-budget",
+                "approval-budget",
+                /*approval_id*/ None,
+            ))
+            .expect("approval should serialize"),
+        )
+        .chain((1..65).map(|chunk| {
+            serde_json::to_value(delta(
+                "turn-budget",
+                "item-budget",
+                &format!("{chunk:08}").repeat(MAX_COALESCED_AGENT_MESSAGE_DELTA_BYTES / 8),
+            ))
+            .expect("delta should serialize")
+        }))
+        .collect::<Vec<_>>()
     );
-    assert!(!store.has_pending_thread_approvals());
+    assert!(store.has_pending_thread_approvals());
 
     let mut store = ThreadEventStore::new(/*capacity*/ 4);
     store.push_notification(turn_started_notification(thread_id, "turn-oversized"));
@@ -218,4 +221,149 @@ fn thread_event_store_coalesces_only_adjacent_matching_agent_message_deltas() {
         ]
     );
     assert!(store.has_pending_thread_approvals());
+}
+
+#[test]
+fn retained_replay_byte_budget_evicts_old_messages_but_keeps_pending_approval() {
+    let thread_id = ThreadId::new();
+    let mut store = ThreadEventStore::new(/*capacity*/ 128);
+    let request = exec_approval_request(thread_id, "turn-approval", "item-approval", None);
+    store
+        .push_request_checked(request.clone())
+        .expect("initial approval fits");
+
+    for index in 0..12 {
+        let event: ServerNotification = serde_json::from_value(serde_json::json!({
+            "method": "item/completed",
+            "params": {
+                "threadId": thread_id.to_string(),
+                "turnId": format!("turn-{index}"),
+                "completedAtMs": 0,
+                "item": {
+                    "type": "agentMessage",
+                    "id": format!("item-{index}"),
+                    "text": "x".repeat(1024 * 1024),
+                    "phase": null,
+                    "memoryCitation": null,
+                    "delivery": null,
+                    "questions": null
+                }
+            }
+        }))
+        .expect("valid large agent notification");
+        ThreadEventChannel::ensure_notification_budget(&event)
+            .expect("each individual event is below live byte cap");
+        store.push_notification(event);
+        assert!(
+            store.retained_replay_wire_bytes <= THREAD_EVENT_REPLAY_MAX_WIRE_BYTES,
+            "aggregate replay payload must remain bounded after each event"
+        );
+    }
+
+    let pending = store.pending_replay_requests();
+    assert_eq!(pending.len(), 1);
+    assert_eq!(
+        serde_json::to_value(&pending[0]).expect("pending request serializes"),
+        serde_json::to_value(request).expect("original request serializes")
+    );
+    assert!(store.has_pending_thread_approvals());
+    assert!(store.buffer.len() < 13, "ordinary old messages should be evicted");
+}
+
+#[test]
+fn unresolved_request_retention_exhaustion_fails_before_mutating_approval_state() {
+    let thread_id = ThreadId::new();
+    let mut store = ThreadEventStore::new(/*capacity*/ 128);
+    let mut rejected = false;
+    let mut accepted = 0usize;
+
+    for index in 0..16 {
+        let mut request = exec_approval_request(
+            thread_id,
+            &format!("turn-{index}"),
+            &format!("item-{index}"),
+            Some(&format!("approval-{index}")),
+        );
+        let ServerRequest::CommandExecutionRequestApproval { request_id, params } = &mut request
+        else {
+            panic!("expected exec approval");
+        };
+        *request_id = AppServerRequestId::Integer(index);
+        params.command = Some("x".repeat(1024 * 1024));
+        ThreadEventChannel::ensure_request_budget(&request)
+            .expect("each request fits the per-event ingress cap");
+        if store.push_request_checked(request).is_err() {
+            rejected = true;
+            break;
+        }
+        accepted += 1;
+    }
+
+    assert!(rejected, "aggregate protected requests must hit a retention cap");
+    assert!(accepted > 1);
+    assert_eq!(store.pending_replay_requests().len(), accepted);
+    assert!(store.has_pending_thread_approvals());
+    assert!(store.retained_replay_wire_bytes <= THREAD_EVENT_REPLAY_MAX_WIRE_BYTES);
+
+    // Resolving one request makes its old replay entry evictable; further
+    // requests must not require dropping any still-pending approval.
+    store.push_notification(ServerNotification::ServerRequestResolved(
+        codex_app_server_protocol::ServerRequestResolvedNotification {
+            request_id: AppServerRequestId::Integer(0),
+            thread_id: thread_id.to_string(),
+        },
+    ));
+    let mut next = exec_approval_request(
+        thread_id,
+        "turn-next",
+        "item-next",
+        Some("approval-next"),
+    );
+    let ServerRequest::CommandExecutionRequestApproval { request_id, params } = &mut next
+    else {
+        panic!("expected exec approval");
+    };
+    *request_id = AppServerRequestId::Integer(99);
+    params.command = Some("x".repeat(1024 * 1024));
+    store
+        .push_request_checked(next)
+        .expect("resolved request should free enough replay capacity");
+    assert_eq!(store.pending_replay_requests().len(), accepted);
+    assert!(store.retained_replay_wire_bytes <= THREAD_EVENT_REPLAY_MAX_WIRE_BYTES);
+}
+
+#[test]
+fn refresh_recounts_replay_bytes_after_stripping_replayed_message_text() {
+    let thread_id = ThreadId::new();
+    let mut store = ThreadEventStore::new(/*capacity*/ 16);
+    let event: ServerNotification = serde_json::from_value(serde_json::json!({
+        "method": "item/completed",
+        "params": {
+            "threadId": thread_id.to_string(),
+            "turnId": "turn-question",
+            "completedAtMs": 0,
+            "item": {
+                "type": "agentMessage",
+                "id": "question",
+                "text": "x".repeat(1024 * 1024),
+                "phase": null,
+                "memoryCitation": null,
+                "delivery": null,
+                "questions": [{"title": "Choose?", "options": null}]
+            }
+        }
+    }))
+    .expect("valid live question");
+    store.push_notification(event);
+    let before = store.retained_replay_wire_bytes;
+    store.rebase_buffer_after_session_refresh();
+    assert!(store.retained_replay_wire_bytes < before);
+    assert_eq!(
+        store.retained_replay_wire_bytes,
+        store
+            .buffer
+            .iter()
+            .map(retained_replay_event_bytes)
+            .sum::<usize>()
+    );
 }

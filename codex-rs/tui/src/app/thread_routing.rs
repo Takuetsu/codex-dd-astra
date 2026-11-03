@@ -1527,7 +1527,7 @@ impl App {
 
         let (should_send, pending_status) = {
             let mut guard = store.lock().await;
-            guard.push_request(request.clone());
+            guard.push_request_checked(request.clone())?;
             (guard.active, guard.side_parent_pending_status())
         };
         let request_status = SideParentStatus::for_request(&request);

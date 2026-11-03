@@ -9,6 +9,9 @@ use super::*;
 use std::borrow::Cow;
 use std::io::Write;
 
+// Bounds serialized replay payload per thread; the separate live queue has its own byte gate.
+const THREAD_EVENT_REPLAY_MAX_WIRE_BYTES: usize = 8 * 1024 * 1024;
+
 #[derive(Debug, Clone)]
 pub(super) struct ThreadEventSnapshot {
     pub(super) session: Option<ThreadSessionState>,
@@ -71,7 +74,7 @@ fn serialized_live_event_bytes<T: serde::Serialize>(value: &T) -> Result<usize> 
     Ok(counter.bytes)
 }
 
-fn ensure_history_live_event_budget(history: &HistoryLookupResponse) -> Result<()> {
+fn history_live_event_bytes(history: &HistoryLookupResponse) -> Result<usize> {
     // History cursors have fixed-size numeric state. Count text with
     // correct JSON escaping and reserve per-entry bookkeeping overhead.
     let mut counter = LivePayloadCounter::default();
@@ -89,16 +92,16 @@ fn ensure_history_live_event_budget(history: &HistoryLookupResponse) -> Result<(
         }
         HistoryLookupResponse::BatchError { .. } => counter.account(256)?,
     }
-    Ok(())
+    Ok(counter.bytes)
 }
 
-fn ensure_feedback_live_event_budget(feedback: &FeedbackThreadEvent) -> Result<()> {
+fn feedback_live_event_bytes(feedback: &FeedbackThreadEvent) -> Result<usize> {
     let mut counter = LivePayloadCounter::default();
     counter.account(256)?;
     match &feedback.result {
         Ok(message) | Err(message) => serde_json::to_writer(&mut counter, message)?,
     }
-    Ok(())
+    Ok(counter.bytes)
 }
 
 fn ensure_live_event_budget(event: &ThreadBufferedEvent) -> Result<()> {
@@ -110,12 +113,29 @@ fn ensure_live_event_budget(event: &ThreadBufferedEvent) -> Result<()> {
             serialized_live_event_bytes(request.as_ref()).map(|_| ())
         }
         ThreadBufferedEvent::HistoryEntryResponse(history) => {
-            ensure_history_live_event_budget(history)
+            history_live_event_bytes(history).map(|_| ())
         }
         ThreadBufferedEvent::FeedbackSubmission(feedback) => {
-            ensure_feedback_live_event_budget(feedback)
+            feedback_live_event_bytes(feedback).map(|_| ())
         }
     }
+}
+
+// Invalid or oversized events must never count as zero retained bytes. The normal
+// ingress path already rejects events over its 2 MiB per-event limit; the fallback
+// here forces legacy/unvalidated events to be evicted instead of hiding their cost.
+fn retained_replay_event_bytes(event: &ThreadBufferedEvent) -> usize {
+    let measured = match event {
+        ThreadBufferedEvent::Notification(notification) => {
+            serialized_live_event_bytes(notification.as_ref())
+        }
+        ThreadBufferedEvent::Request(request) => {
+            serialized_live_event_bytes(request.as_ref())
+        }
+        ThreadBufferedEvent::HistoryEntryResponse(history) => history_live_event_bytes(history),
+        ThreadBufferedEvent::FeedbackSubmission(feedback) => feedback_live_event_bytes(feedback),
+    };
+    measured.unwrap_or(THREAD_EVENT_REPLAY_MAX_WIRE_BYTES.saturating_add(1))
 }
 
 fn is_voice_handoff_item(item: &ThreadItem) -> bool {
@@ -167,6 +187,7 @@ pub(super) struct ThreadEventStore {
     pub(super) capacity: usize,
     pub(super) active: bool,
     pub(super) buffered_agent_message_delta_bytes: usize,
+    pub(super) retained_replay_wire_bytes: usize,
     delegated_turns: VecDeque<String>,
     recap_progress: recap::RecapProgress,
 }
@@ -212,6 +233,7 @@ impl ThreadEventStore {
             capacity,
             active: false,
             buffered_agent_message_delta_bytes: 0,
+            retained_replay_wire_bytes: 0,
             delegated_turns: VecDeque::new(),
             recap_progress: recap::RecapProgress::default(),
         }
@@ -236,7 +258,9 @@ impl ThreadEventStore {
 
     pub(super) fn rebase_buffer_after_session_refresh(&mut self) {
         self.buffer.retain_mut(Self::event_survives_session_refresh);
-        self.buffered_agent_message_delta_bytes = 0;
+        // The retained questions have their text cleared by the rebase, so replay
+        // accounting must be rebuilt from the exact post-refresh entries.
+        self.recount_retained_replay_bytes();
     }
 
     pub(super) fn set_turns(&mut self, turns: Vec<Turn>) {
@@ -690,11 +714,11 @@ impl ThreadEventChannel {
     }
 
     pub(super) fn ensure_history_budget(event: &HistoryLookupResponse) -> Result<()> {
-        ensure_history_live_event_budget(event)
+        history_live_event_bytes(event).map(|_| ())
     }
 
     pub(super) fn ensure_feedback_budget(event: &FeedbackThreadEvent) -> Result<()> {
-        ensure_feedback_live_event_budget(event)
+        feedback_live_event_bytes(event).map(|_| ())
     }
 
     pub(super) fn has_pending_live(&self) -> bool {
