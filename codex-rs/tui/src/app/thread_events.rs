@@ -10,7 +10,7 @@ use std::borrow::Cow;
 use std::io::Write;
 
 // Bounds serialized replay payload per thread; the separate live queue has its own byte gate.
-const THREAD_EVENT_REPLAY_MAX_WIRE_BYTES: usize = 8 * 1024 * 1024;
+pub(super) const THREAD_EVENT_REPLAY_MAX_WIRE_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Debug, Clone)]
 pub(super) struct ThreadEventSnapshot {
@@ -63,7 +63,7 @@ impl Write for LivePayloadCounter {
     }
 }
 
-fn serialized_live_event_bytes<T: serde::Serialize>(value: &T) -> Result<usize> {
+pub(super) fn serialized_live_event_bytes<T: serde::Serialize>(value: &T) -> Result<usize> {
     let mut counter = LivePayloadCounter::default();
     serde_json::to_writer(&mut counter, value).map_err(|error| {
         color_eyre::eyre::eyre!(
@@ -124,7 +124,7 @@ fn ensure_live_event_budget(event: &ThreadBufferedEvent) -> Result<()> {
 // Invalid or oversized events must never count as zero retained bytes. The normal
 // ingress path already rejects events over its 2 MiB per-event limit; the fallback
 // here forces legacy/unvalidated events to be evicted instead of hiding their cost.
-fn retained_replay_event_bytes(event: &ThreadBufferedEvent) -> usize {
+pub(super) fn retained_replay_event_bytes(event: &ThreadBufferedEvent) -> usize {
     let measured = match event {
         ThreadBufferedEvent::Notification(notification) => {
             serialized_live_event_bytes(notification.as_ref())

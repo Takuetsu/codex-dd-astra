@@ -1,5 +1,6 @@
 use super::*;
 use crate::app::THREAD_EVENT_CHANNEL_CAPACITY;
+use crate::app::ThreadEventChannel;
 use crate::app::Turn;
 use crate::app::TurnStatus;
 use crate::test_support::PathBufExt;
