@@ -1,0 +1,251 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f82_p0_owner_ready_coverage_audit_NONRELEASE",
+  "source_acceptance_head": "7b07d2cd3d7f841a2542ab794d6ba979d4992589",
+  "source_lineage_branch": "dd/codexdd-v0.4.5-3f80-queue-auth-integrated",
+  "native_windows_evidence": [
+    {
+      "run_id": 41493119662,
+      "head": "7b5485f4bb3f764099d927338dd29a40f30e6364",
+      "cases_passed": 36,
+      "scope": "TUI same source blobs as integration"
+    },
+    {
+      "run_id": 41662986165,
+      "head": "7b07d2cd3d7f841a2542ab794d6ba979d4992589",
+      "cases_passed": 5,
+      "scope": "app-server authorization, not complete TUI/Core"
+    }
+  ],
+  "formal_109_path_owner_signoffs": 0,
+  "high_risk_owner_holds_remaining": 13,
+  "records": [
+    {
+      "path": "codex-rs/core/src/client.rs",
+      "owner": "core_authority_history",
+      "exact_tui_or_core_source_blob": "583447f35eaba564771771813bd4d897cb6b73de",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "Responses tool_choice forced to required when terminalization trigger set and signal has not already fired"
+      ],
+      "source_pinned_3f76_windows_selectors": [],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Source-only review",
+      "next_specific_blocker": "Negative repeated/false-positive terminal trigger and no duplicate report_adaptive_signal regression still required"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "owner": "core_authority_history",
+      "exact_tui_or_core_source_blob": "88fa659a3c45839d9a3dce6b6a39e6e47795f103",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "ForkHistory.workflow_state and copied persisted fork state"
+      ],
+      "source_pinned_3f76_windows_selectors": [],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Source-only review",
+      "next_specific_blocker": "Prove a fork cannot inherit active authority or pending permission from source thread"
+    },
+    {
+      "path": "codex-rs/core/src/tools/mod.rs",
+      "owner": "core_authority_history",
+      "exact_tui_or_core_source_blob": "2a05e28de35348b79e02d80e4bdd8c3381b88279",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "effective_tool_mode returns Direct for trusted reconnaissance/implementation/mechanical validation turn triggers"
+      ],
+      "source_pinned_3f76_windows_selectors": [],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Source-only review",
+      "next_specific_blocker": "Guard controller-only turn triggers and prove no write tool escape from reconnaissance/mechanical validation"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "owner": "core_authority_history",
+      "exact_tui_or_core_source_blob": "422870dba8b5a3b36994a598380c93f58760ad1b",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "CodexDDValidationHandler only exposed on mechanical-validation turn trigger"
+      ],
+      "source_pinned_3f76_windows_selectors": [],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Source-only review",
+      "next_specific_blocker": "Prove lifecycle validator is inaccessible on non-mechanical turns and honors scope/authority"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "2c4ef89f8aef22193ae8d5f57996a948db987659",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "bounded live mpsc and modal dispatch paths in 3F.76"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "startup_modal_quarantine_only_blocks_protected_input",
+        "plan_menu_allows_transcript_wheel_scrolling_and_keeps_keyboard_ownership",
+        "configured_ctrl_space_submit_wins_over_transcript_selection"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Representative TUI input ownership regressions passed",
+      "next_specific_blocker": "Complete modal and offline active-view parity, including disconnected routing"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "4728d5f16b8d99168799705c6525d3cc794a0afe",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "refresh_in_memory_config_from_disk_updates_live_widget_preferences",
+        "session_picker_view",
+        "resume_cwd"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "refresh_in_memory_config_from_disk_updates_live_widget_preferences"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Live preference propagation covered by an existing green native test",
+      "next_specific_blocker": "Review upstream session picker/resume persistence semantics and additional test coverage"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "98ab0359d6ed6026154b70f7f1061a385c08744b",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "verify_managed_daemon",
+        "RealtimeConversationStop",
+        "constrain_api_key_models"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff",
+        "api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Daemon confirmation and API key model popup boundaries have targeted green tests",
+      "next_specific_blocker": "Dedicated realtime stop/reconnect and managed daemon verification parity still needed"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "55e242a5c3a07662e14dab41565b38caaeba774e",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "background_resolution_keeps_matching_foreground_user_input_visible"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "background_resolution_keeps_matching_foreground_user_input_visible"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Matching foreground input regression present and source-pinned Windows native test passed",
+      "next_specific_blocker": "Review remaining dropped reconnect and request tests; confirm input ownership equivalence"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_routing.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "0fbd0f3771aaca19632172bab9f74c9bc6ccc808",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "queue_live_event",
+        "flush_pending_live",
+        "ThreadEventChannel"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "3F.76 11 bounded queue/payload/switch selectors"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Bounded live FIFO and per-event byte budget green on 3F.76 source",
+      "next_specific_blocker": "No total replay retained byte bound. Capacity evictions can forget outstanding approvals. Do not owner-approve before preserving pending interactive state under pressure"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "db8a394b652fd18d61807a8b656e6b7463f07521",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "thread_workflow_state_update",
+        "ThreadWorkflowStateUpdateParams",
+        "thread_unsubscribe"
+      ],
+      "source_pinned_3f76_windows_selectors": [],
+      "source_pinned_3f81_auth_selectors": [
+        "3F.81 all five app-server authorization selectors"
+      ],
+      "current_evidence_disposition": "Server authorization and WebSocket transport acceptance green, but not a TUI caller-equivalence test",
+      "next_specific_blocker": "TUI restored state, ownership/connection rotation, and cold-resume behavior require client-level source-bound tests"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "bb747507416e7712fe4ff5832446783c0127994e",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "daybreak_feature_enabled",
+        "daybreak_account_eligible",
+        "daybreak_turn_eligible"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Feature and program eligibility logic present; related API-key popup native test green",
+      "next_specific_blocker": "Review source of account authority, program enrollment restrictions, and deliberate feature disable paths"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "2a5f08c359b1ec82c67e9eeba4aa9ba274629741",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "#[path = \"tests/terminal_program_status.rs\"]",
+        "mod terminal_program_status;"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "session_status_follows_existing_lifecycle_state",
+        "session_status_detail_uses_only_foreground_activity"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Source module registration and two targeted native tests restored/present; owner must confirm upstream behavioral equivalence",
+      "next_specific_blocker": "Formally compare official 0.163 behavior and owner-signoff; do not treat test registration as complete TUI terminal behavior acceptance"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "owner": "tui_adaptive_daemon",
+      "exact_tui_or_core_source_blob": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+      "formal_owner_decision": "PENDING_SIGNOFF",
+      "native_release_acceptance": "NOT_COMPLETE",
+      "source_witnesses": [
+        "Daybreak slash tests and paste/image test coverage present"
+      ],
+      "source_pinned_3f76_windows_selectors": [
+        "slash_daybreak_offers_an_application_when_unavailable"
+      ],
+      "source_pinned_3f81_auth_selectors": [],
+      "current_evidence_disposition": "Daybreak disabled case green",
+      "next_specific_blocker": "Dedicated API-key positive/negative program gate plus Windows image paste/Shift+Insert parity still needed"
+    }
+  ],
+  "core_p0_remain": 4,
+  "tui_p0_remain": 9,
+  "false_green_guard": "Source witness or native test pass is not formal owner approval, upstream semantic parity or release acceptance",
+  "major_unresolved_technical_risk": "Aggregate replay byte budget and preservation/fail-closed treatment of pending interactive requests during eviction; see 3F.80 replay hold",
+  "next_acceptance_sequence": [
+    "Review source-equivalent upstream tests and restore genuinely missing cases",
+    "Design explicit bounded replay retained-byte accounting without silently dropping pending requests or exposing private voice data",
+    "Add source-bound Windows native regressions for replay pressure, incomplete approvals, active-view transitions and snapshot",
+    "Complete Core forced terminal/tool exposure/fork private state native negatives",
+    "Obtain independent formal owner signoff for each of 13 holds, then do full Daniel-CL 21-stage release suite and distribution"
+  ],
+  "release_approved": false
+}
