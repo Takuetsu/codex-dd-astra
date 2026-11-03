@@ -1712,7 +1712,7 @@ impl App {
                         .await?;
                 }
                 ThreadBufferedEvent::FeedbackSubmission(event) => {
-                    self.enqueue_thread_feedback_event(thread_id, event).await;
+                    self.enqueue_thread_feedback_event(thread_id, event).await?;
                 }
             }
         }
