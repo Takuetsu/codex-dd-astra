@@ -6883,6 +6883,11 @@ async fn app_server_thread_replacement_clears_previous_transcript_before_replay(
         .join("\n");
     assert!(!rendered.contains("Previous thread transcript"));
     assert!(!rendered.contains("Previous queued history"));
+    // Snapshot checks transcript isolation, not the Codex binary version. Confirm
+    // the actual build banner before normalizing only its changing version text.
+    let version_banner = format!("OpenAI Codex (v{})", env!("CARGO_PKG_VERSION"));
+    assert!(rendered.contains(&version_banner));
+    let rendered = rendered.replacen(&version_banner, "OpenAI Codex (v0.0.0)", 1);
     assert_snapshot!(rendered);
     app_server.shutdown().await?;
     Ok(())
