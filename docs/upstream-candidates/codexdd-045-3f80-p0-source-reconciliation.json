@@ -339,5 +339,23 @@
       "fixture_scan_on_full_branch_after_hardening": "NOT_YET_EXECUTED",
       "runtime_changes_in_this_packet": false
     }
+  },
+  "latest_integrated_windows_compile": {
+    "status": "PASS_SOURCE_PINNED_NONRELEASE",
+    "run_id": 41650547740,
+    "run_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41650547740",
+    "tested_source_head": "ee570f802e3943b4efab14ce79300220ebf916c1",
+    "conclusion": "success",
+    "cheap_source": "PASS",
+    "rustfmt": "PASS",
+    "app_server_test_all_compile_exit_code": 0,
+    "app_server_test_all_native_execution": "NOT_RUN_COMPILE_ONLY",
+    "windows_runner": "windows-2022",
+    "artifact_id": 13238866457,
+    "artifact_name": "codexdd045-3f80-integrated-windows-compile-evidence",
+    "nonrelease": true,
+    "owner_approval_count": 0,
+    "production_marker": "0.4.4",
+    "caveat": "A successfully compiled integrated test binary is not a five-case authorization execution pass and does not clear 13 formal Core/TUI holds"
   }
 }
