@@ -38,10 +38,11 @@ function Invoke-CargoStage {
     $passed = 0
     if ($ExpectTests) {
         $text = (Get-Content -LiteralPath $out -Raw) + (Get-Content -LiteralPath $err -Raw)
-        if ($text -notmatch 'test result: ok\.\s+([1-9][0-9]*) passed;\s+0 failed;') {
+        $testSummary = [regex]::Match($text, 'test result: ok\.\s+([1-9][0-9]*) passed;\s+0 failed;')
+        if (-not $testSummary.Success) {
             throw ("FAILED: " + $Stage + " did not execute nonzero passing tests")
         }
-        $passed = [int]$Matches[1]
+        $passed = [int]$testSummary.Groups[1].Value
     }
     $results.Add([pscustomobject]@{ Stage = $Stage; Status = 'PASS'; Passed = $passed; Stdout = $out; Stderr = $err })
     Write-Host ('PASS: ' + $Stage + ' | selected tests: ' + $passed) -ForegroundColor Green
