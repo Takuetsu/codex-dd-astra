@@ -96,15 +96,38 @@ def _brace_body(text: str, open_brace: int) -> str:
 
 
 def _outer_fields(body: str) -> tuple[set[str], bool]:
-    fields: set[str] = set()
+    """Parse top-level Rust struct fields (not nested values or comments).
+
+    Struct-rest must be its own top-level comma-delimited field. A range
+    expression, nested .. or a comment containing .. must not exempt a
+    constructor from missing-field validation. Handle shorthand patterns too.
+    """
+    segments: list[str] = []
+    token: list[str] = []
     depth = 0
     in_string = False
     escaped = False
-    has_rest = False
+    line_comment = False
+    block_comment = False
     i = 0
     while i < len(body):
         char = body[i]
+        following = body[i + 1] if i + 1 < len(body) else ""
+        if line_comment:
+            if char == "\n":
+                line_comment = False
+                token.append(char)
+            i += 1
+            continue
+        if block_comment:
+            if char == "*" and following == "/":
+                block_comment = False
+                i += 2
+                continue
+            i += 1
+            continue
         if in_string:
+            token.append(char)
             if escaped:
                 escaped = False
             elif char == "\\":
@@ -113,18 +136,38 @@ def _outer_fields(body: str) -> tuple[set[str], bool]:
                 in_string = False
         elif char == '"':
             in_string = True
+            token.append(char)
+        elif char == "/" and following == "/":
+            line_comment = True
+            i += 2
+            continue
+        elif char == "/" and following == "*":
+            block_comment = True
+            i += 2
+            continue
         elif char in "{[(":
             depth += 1
+            token.append(char)
         elif char in "}])":
             depth -= 1
-        elif depth == 0:
-            if body.startswith("..", i):
-                has_rest = True
-            match = re.match(r"([A-Za-z_]\w*)\s*:", body[i:])
-            if match and (i == 0 or not (body[i - 1].isalnum() or body[i - 1] == "_")):
-                fields.add(match.group(1))
-                i += len(match.group(0)) - 1
+            token.append(char)
+        elif char == "," and depth == 0:
+            segments.append("".join(token).strip())
+            token = []
+        else:
+            token.append(char)
         i += 1
+    segments.append("".join(token).strip())
+
+    fields: set[str] = set()
+    has_rest = False
+    for segment in segments:
+        if segment.startswith(".."):
+            has_rest = True
+            continue
+        match = re.match(r"(?:ref\s+)?(?:mut\s+)?([A-Za-z_]\w*)\s*(?::|$)", segment)
+        if match:
+            fields.add(match.group(1))
     return fields, has_rest
 
 
@@ -182,6 +225,28 @@ class ThreeF80ValidatorSourceTests(unittest.TestCase):
         self.assertLess(s.index("integration-compile"), s.index("foreach ($test in $selectors)"))
         self.assertIn("'--test', 'all', '--no-run'", s)
         self.assertEqual(s.count("@{ selector = '"), 5)
+
+    def test_fixture_parser_does_not_hide_missing_fields(self) -> None:
+        cases = {
+            "thread: old": ({"thread"}, False),
+            "thread: old, ..": ({"thread"}, True),
+            "thread, read_state": ({"thread", "read_state"}, False),
+            "thread: 0..2": ({"thread"}, False),
+            "thread: old, // ..\n": ({"thread"}, False),
+            "thread: Some(Foo { .. })": ({"thread"}, False),
+            'thread: format!("{{escaped}}")': ({"thread"}, False),
+            "thread: old, /* .. */ read_state: None": (
+                {"thread", "read_state"},
+                False,
+            ),
+        }
+        for body, expected in cases.items():
+            with self.subTest(body=body):
+                self.assertEqual(_outer_fields(body), expected)
+        self.assertEqual(
+            _outer_fields(_brace_body("let ThreadReadResponse { thread } = value;", "let ThreadReadResponse { thread } = value;".index("{"))),
+            ({"thread"}, False),
+        )
 
     def test_legacy_appserver_fixtures_match_current_optional_fields(self) -> None:
         errors, seen = _fixture_compatibility_errors()
