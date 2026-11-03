@@ -4,7 +4,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$ExpectedHead,
-    [string]$LogDir = 'E:\codexdd\logs\045-3f84'
+    [string]$LogDir = 'E:\codexdd\logs\045-3f84',
+    [switch]$ResumeAfterStackOverflow
 )
 
 Set-StrictMode -Version Latest
@@ -13,6 +14,10 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $cargoRoot = Join-Path $repoRoot 'codex-rs'
 $results = New-Object 'System.Collections.Generic.List[object]'
 $started = [System.Diagnostics.Stopwatch]::StartNew()
+# Match the verified Windows native CI test-thread stack configuration.
+# This changes test harness threads only; it does not alter production runtime stacks.
+$env:RUST_MIN_STACK = '16777216'
+
 
 function Invoke-CargoStage {
     param(
@@ -71,10 +76,48 @@ try {
         @{ Stage = '04-interactive-state'; Filter = 'app::pending_interactive_replay::tests' },
         @{ Stage = '05-live-thread-events'; Filter = 'app::thread_events::tests' }
     )
-    foreach ($group in $groups) {
-        Invoke-CargoStage -Stage $group.Stage -Arguments @(
-            'test', '--locked', '-p', 'codex-tui', '--lib', $group.Filter
-        ) -ExpectTests $true
+    if ($ResumeAfterStackOverflow) {
+        # The previous run reached selector 06, so 03-05 passed on the exact same
+        # Rust tree. Do not reuse logs if ANY Rust source changed since that run.
+        $previousRunHead = '7a150508a9a25eeb06237ce3cb110f7bb3444317'
+        & git diff --exit-code $previousRunHead HEAD -- codex-rs
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Cannot resume: Rust code or dependency inputs changed since prior run'
+        }
+        foreach ($group in $groups) {
+            $out = Join-Path $LogDir ($group.Stage + '-stdout.log')
+            $err = Join-Path $LogDir ($group.Stage + '-stderr.log')
+            if (-not (Test-Path -LiteralPath $out) -or
+                -not (Test-Path -LiteralPath $err)) {
+                throw ('Cannot resume: prior stage evidence missing: ' + $group.Stage)
+            }
+            $logText = (Get-Content -LiteralPath $out -Raw) +
+                (Get-Content -LiteralPath $err -Raw)
+            $priorMatch = [regex]::Match(
+                $logText,
+                'test result: ok\.\s+([1-9][0-9]*) passed;\s+0 failed;'
+            )
+            if (-not $priorMatch.Success) {
+                throw ('Cannot resume: prior stage not proven green: ' + $group.Stage)
+            }
+            $casesPassed = [int]$priorMatch.Groups[1].Value
+            $results.Add([pscustomobject]@{
+                Stage = $group.Stage
+                Status = 'PASS_REUSED_IDENTICAL_RUST_SOURCE'
+                Passed = $casesPassed
+                Stdout = $out
+                Stderr = $err
+            })
+            Write-Host ('PASS previously: ' + $group.Stage +
+                ' | cases: ' + $casesPassed) -ForegroundColor Green
+        }
+    }
+    else {
+        foreach ($group in $groups) {
+            Invoke-CargoStage -Stage $group.Stage -Arguments @(
+                'test', '--locked', '-p', 'codex-tui', '--lib', $group.Filter
+            ) -ExpectTests $true
+        }
     }
 
     # Exact UI-level path validation: every selector must execute one real test.
@@ -112,6 +155,11 @@ try {
         source_head = $head
         utc = (Get-Date).ToUniversalTime().ToString('o')
         executed_passed = $total
+        resumed_prior_native_groups = [bool]$ResumeAfterStackOverflow
+        prior_native_group_source = if ($ResumeAfterStackOverflow) {
+            '7a150508a9a25eeb06237ce3cb110f7bb3444317'
+        } else { $null }
+        test_thread_stack_bytes = [int]$env:RUST_MIN_STACK
         stages = @($results)
         release_approved = $false
     }
