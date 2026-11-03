@@ -306,6 +306,7 @@ async fn thread_inject_items_adds_raw_response_items_to_thread_history(
                 name: "send_message_to_thread".to_string(),
                 namespace: Some("codex_app".to_string()),
                 output: FunctionCallOutputBody::Text("Start a delegated turn.".to_string()),
+                retain: false,
             })),
             ..Default::default()
         })

@@ -404,6 +404,7 @@ async fn paginated_stored_thread_routes_projected_turns() -> Result<()> {
 
     let list_id = mcp
         .send_thread_list_request(ThreadListParams {
+            excluded_thread_ids: None,
             originators: None,
             cursor: None,
             limit: Some(50),
@@ -1134,6 +1135,7 @@ async fn thread_list_includes_store_thread_without_rollout_path() -> Result<()> 
         .request(ClientRequest::ThreadList {
             request_id: RequestId::Integer(1),
             params: ThreadListParams {
+                excluded_thread_ids: None,
                 originators: None,
                 cursor: None,
                 limit: Some(10),
@@ -1515,6 +1517,7 @@ async fn paginated_thread_name_set_is_reflected_in_read_list_and_metadata_resume
     // List should also surface the name.
     let list_id = mcp
         .send_thread_list_request(ThreadListParams {
+            excluded_thread_ids: None,
             originators: None,
             cursor: None,
             limit: Some(50),

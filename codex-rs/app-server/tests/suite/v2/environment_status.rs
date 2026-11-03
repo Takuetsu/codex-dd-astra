@@ -168,6 +168,7 @@ async fn add_environment(
         auth_bearer_token: None,
         environment_id: environment_id.to_string(),
         exec_server_url: exec_server_url.to_string(),
+        websocket_request_id: None,
         connect_timeout_ms: None,
     };
     let add_request_id = app_server
