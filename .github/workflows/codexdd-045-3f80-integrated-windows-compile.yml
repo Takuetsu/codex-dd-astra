@@ -1,0 +1,181 @@
+# NONRELEASE: one-time integrated 3F.80 Windows app-server suite compile.
+# Trigger only when this workflow file is added/changed. No publication or promotion.
+name: CodexDD 0.4.5 3F.80 integrated Windows app-server compile (NONRELEASE)
+run-name: 3F.80 integrated app-server Windows compile (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f80-queue-auth-integrated
+    paths:
+      - .github/workflows/codexdd-045-3f80-integrated-windows-compile.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f80-compile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Pin exact integrated source and retain nonrelease owner holds
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = '2bf6ba7cbbefc05bd957adb28a264c984ebe14df'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(cat codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('.')
+          formal=json.loads((base/'docs/upstream-candidates/codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          assert formal['approved_owner_count'] == 0
+          assert len(formal['pending_native_or_semantic_restoration']) == 13
+          src=(base/'codex-rs/app-server/src/request_processors/turn_processor.rs').read_text()
+          assert 'workflow_mutation_matches_known_turn(' in src
+          assert 'subscribed_connection_ids(thread_id)' in src
+          tests=(base/'codex-rs/app-server/tests/suite/v2/connection_handling_websocket.rs').read_text()
+          assert 'websocket_workflow_state_write_rejects_foreign_and_unsubscribed_connections' in tests
+          assert (base/'.github/scripts/test_codexdd_045_3f80_local_validation.py').is_file()
+          print('SOURCE_PIN_PASS_NONRELEASE')
+          PY
+          git diff --check
+      - name: Cheap regression checks for validator and legacy fixtures
+        shell: bash
+        run: python3 -m unittest discover -s .github/scripts -p test_codexdd_045_3f80_local_validation.py -v
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Cheap Rust formatting check (no compilation)
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-compile:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 110
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      RUST_MIN_STACK: "16777216"
+      CARGO_TERM_COLOR: "never"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact source and protected security identities
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Unexpected Windows source commit' }
+          if ((git rev-parse HEAD^).Trim() -cne '2bf6ba7cbbefc05bd957adb28a264c984ebe14df') { throw 'Wrong integrated source parent' }
+          if ((git rev-parse HEAD:codex-rs/Cargo.lock).Trim() -cne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Protected Cargo.lock drift' }
+          if ((git rev-parse HEAD:codex-rs/Cargo.toml).Trim() -cne 'cfebd9b784ef9ff027b274aa9f7101c9c2496613') { throw 'Protected workspace manifest drift' }
+          if ((git rev-parse HEAD:codex-rs/deny.toml).Trim() -cne 'f282c7c55d05201e308e60804f85754c8522d462') { throw 'Protected security policy drift' }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -cne '0.4.4') { throw 'Unexpected production promotion' }
+          if (git status --porcelain --untracked-files=no) { throw 'Dirty tracked source' }
+      - name: Configure bounded Windows scratch, logs, and long paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base=Join-Path $env:RUNNER_TEMP 'codexdd045-3f80-compile'
+          New-Item -ItemType Directory -Force -Path (Join-Path $base 'target'),(Join-Path $base 'tmp'),'native-evidence' | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $base 'target')"
+            "TEMP=$(Join-Path $base 'tmp')"
+            "TMP=$(Join-Path $base 'tmp')"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore cargo sources (avoid oversized build caches)
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile integrated app-server tests once, capture all diagnostics
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=$env:GITHUB_WORKSPACE
+          $out=Join-Path $root 'native-evidence'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $log=Join-Path $out 'app-server-test-all-compile.log'
+          $digest=Join-Path $out 'compiler-errors.txt'
+          $receipt=Join-Path $out '3f80-integrated-compile-receipt.json'
+          $watch=[Diagnostics.Stopwatch]::StartNew()
+          $status=1
+          $errorLines=@()
+          try {
+            Push-Location (Join-Path $root 'codex-rs')
+            try {
+              & cmd.exe /d /c ('cargo test --locked -p codex-app-server --test all --no-run > "'+$log+'" 2>&1')
+              $status=[int]$LASTEXITCODE
+            } finally { Pop-Location }
+            $lines=@(Get-Content -LiteralPath $log)
+            $errorLines=@($lines | Where-Object { $_ -match '^error(\[E[0-9]+\])?:|^\s*-->\s+.*:\d+:\d+' })
+            if ($errorLines.Count -eq 0 -and $status -ne 0) {
+              $errorLines=@($lines | Select-Object -Last 100)
+            }
+            $errorLines | Set-Content -LiteralPath $digest -Encoding utf8
+            Write-Host ('COMPILE_EXIT_CODE: '+$status)
+            Write-Host ('ERROR_AND_LOCATION_LINES: '+$errorLines.Count)
+            Write-Host ('COMPILER_ERROR_DIGEST: '+$digest)
+            Write-Host ('FULL_COMPILE_LOG: '+$log)
+            if ($status -ne 0) {
+              Write-Host (($errorLines | Select-Object -First 100) -join [Environment]::NewLine)
+              throw 'Integrated app-server Windows test binary did not compile'
+            }
+            Write-Host 'CODEXDD_045_3F80_WINDOWS_INTEGRATED_COMPILE=PASS_NONRELEASE'
+          }
+          finally {
+            $watch.Stop()
+            [ordered]@{
+              kind='CODEXDD_045_3F80_WINDOWS_INTEGRATED_COMPILE_NONRELEASE'
+              tested_head=$env:GITHUB_SHA
+              source_parent='2bf6ba7cbbefc05bd957adb28a264c984ebe14df'
+              platform='windows-2022'
+              compile_only=$true
+              compile_exit_code=$status
+              passed=($status -eq 0)
+              formal_owner_approvals=0
+              release_approved=$false
+              elapsed_seconds=[Math]::Round($watch.Elapsed.TotalSeconds,1)
+              done_utc=[DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $receipt -Encoding utf8
+            Write-Host ('COMPILE_RECEIPT: '+$receipt)
+          }
+      - name: Always upload exact-source native compiler log and receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f80-integrated-windows-compile-evidence
+          path: native-evidence/*
+          if-no-files-found: warn
+          compression-level: 3
+          retention-days: 7
