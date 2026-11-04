@@ -689,6 +689,29 @@ async fn codexdd_protected_turns_force_direct_tools_without_widening_other_turns
 }
 
 #[tokio::test]
+async fn codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation() {
+    // String similarity is not enough to authorize a privileged lifecycle phase.
+    // This covers the registry/mode boundary, not the upstream provenance of
+    // the trusted turn metadata (which remains a separate owner review hold).
+    for real_marker in [
+        codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER,
+        codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER,
+        codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER,
+    ] {
+        let forged_marker = format!("{real_marker}_untrusted");
+        let plan = probe(move |turn| {
+            set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+            turn.turn_metadata_state.set_turn_trigger(forged_marker);
+        })
+        .await;
+        assert_eq!(plan.tool_mode, ToolMode::CodeModeOnly);
+        plan.assert_visible_lacks(&["run_codexdd_validation"]);
+        plan.assert_registered_lacks(&["run_codexdd_validation"]);
+        plan.assert_visible_contains(&[codex_code_mode::PUBLIC_TOOL_NAME]);
+    }
+}
+
+#[tokio::test]
 async fn reviewer_tool_policy_exclude_optional_core_tools() {
     let (mut session, mut turn) = make_session_and_context().await;
     session.tool_policy = Arc::new(codex_guardian_reviewer::reviewer_tool_policy());
