@@ -1,0 +1,106 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f90_windows_reconnect_end_to_end_nonrelease",
+  "status": "CROSS_PLATFORM_NAVIGATION_RECONNECT_SOURCE_READY_WINDOWS_NATIVE_PENDING",
+  "candidate_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
+  "baseline_commit": "eec4fee2aebfa15b18e3b3f2837b3e9b655003dd",
+  "parent_green_run": 41885892676,
+  "parent_green_selected_tui_tests": 20,
+  "baseline_production": "0.4.4",
+  "release_approved": false,
+  "formal_owner_signoffs": 0,
+  "remaining_high_risk_tui_review_holds": 9,
+  "remaining_high_risk_core_review_holds": 4,
+  "source_sha_map": {
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "7e64b8b8935ac3eefca63f53937757f38f7cb34a",
+    "codex-rs/tui/src/app/tests/active_reconnect_tests.rs": "078ffc77b2d271ad0d642f5266462040ce83d3e9",
+    "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
+    "codex-rs/tui/src/app/tests.rs": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
+    "codex-rs/tui/src/app/reconnect.rs": "97e8d65d11f1722955e17ddf92080a9b00191fef",
+    "codex-rs/tui/src/app_server_session.rs": "db8a394b652fd18d61807a8b656e6b7463f07521",
+    "codex-rs/tui/src/lib.rs": "f45b01a668998d817abec91313f425f2fa6a9ad7",
+    "codex-rs/tui/src/app.rs": "2c4ef89f8aef22193ae8d5f57996a948db987659",
+    "codex-rs/tui/src/app/thread_events.rs": "4ee8f4a0446c8c0cfd41dd234457a299c89d242c",
+    "codex-rs/tui/src/app/thread_event_buffer.rs": "1857941dba71f611256dc9e782b9b9c428fecaec",
+    "codex-rs/tui/Cargo.toml": "ea0894b3e1d3777f4c598727b03199c1f69cbd05",
+    "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+    "codex-rs/Cargo.lock": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+    "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462"
+  },
+  "test_cases": [
+    {
+      "number": 1,
+      "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
+      "selector": "app::tests::navigation_reconnect::reconnect_daemon_command_center_after_connection_replacement_without_a_conversation",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 2,
+      "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+      "selector": "app::tests::active_reconnect::reconnect_restores_history_permissions_and_resumes_unsent_input",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 3,
+      "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+      "selector": "app::tests::active_reconnect::reconnect_reconciles_offscreen_pending_profile_before_restoring_permissions",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 4,
+      "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+      "selector": "app::tests::active_reconnect::reconnect_exhaustion_and_unknown_initial_thread_stay_offline",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 5,
+      "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+      "selector": "app::tests::active_reconnect::reconnect_allows_slow_hydration_but_bounds_a_stalled_server",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 6,
+      "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+      "selector": "app::tests::active_reconnect::reconnect_restores_launch_reviewer_without_a_profile_override",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 7,
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "selector": "app::tests::disconnect::lost_mutation_reply_preserves_work_without_resubmitting",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    },
+    {
+      "number": 8,
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "selector": "app::tests::disconnect::lost_initial_thread_reply_keeps_startup_draft_offline",
+      "status": "NOT_YET_EXECUTED_ON_3F90"
+    }
+  ],
+  "source_change": {
+    "paths": [
+      "codex-rs/tui/src/app/tests.rs",
+      "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs"
+    ],
+    "summary": "Run command-center/daemon reconnect over real loopback WebSockets on Windows and Unix; remove Unix-only module gate, replace UnixListener with TcpListener, use successive WebSocket connections at a stable endpoint",
+    "conditions": [
+      "Simulate unexpected disconnect after an in-flight command center refresh",
+      "Preserve unsent composer/rename input and cached conversation history",
+      "Reject stale notification, obsolete refresh and duplicate replay events",
+      "Retain selected thread, reconcile changed server permissions on reconnect",
+      "Restore model, user inputs and safe queued work only when permitted",
+      "Maintain child thread and permission isolation during recovery",
+      "Handle unavailable previous thread without replaying unsafe mutations",
+      "Track interrupted Windows sandbox setup and require user restart"
+    ],
+    "transport_limit": "TCP WebSocket simulates actual protocol socket reconnection at the same endpoint, but does not prove OS-level named-pipe/Unix domain socket rebinding or a real installed daemon process restart"
+  },
+  "scope_limits": [
+    "Source/Windows test harness only, no app release or daemon deployment",
+    "Native results for selected selectors do not authorize four Core or nine TUI owner reviews",
+    "No merge, no 0.4.5 production installation",
+    "Full 21-stage Daniel-CL and seven-program Windows distribution still pending"
+  ],
+  "gate": "Cheap source guard and Rustfmt before one Windows-native job; run 8 exact selectors and require 1 passed/0 failed each with bounded per-case timeout",
+  "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]"
+}
