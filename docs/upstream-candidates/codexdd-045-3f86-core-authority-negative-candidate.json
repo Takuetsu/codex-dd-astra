@@ -1,0 +1,36 @@
+{
+  "kind": "codexdd_045_3f86_core_authority_negative_candidate_nonrelease",
+  "status": "SOURCE_ONLY_NOT_NATIVE_VALIDATED",
+  "parent_green_3f85": {
+    "run_id": 41711890851,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41711890851",
+    "head": "0ff928c93828e5fdb9b043655ab665290deb4393",
+    "conclusion": "success",
+    "selected_core_test": "validation_terminalization_requests_required_tool_choice",
+    "selected_test_result": "1 passed, 0 failed"
+  },
+  "candidate_reviews": [
+    {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "selector": "codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation",
+      "goal": "near-match reconnaissance, implementation and mechanical-validation triggers must not enable direct mode or validator exposure",
+      "not_proven": "Trusted turn-trigger provenance, actual native run"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "selector": "forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive",
+      "goal": "empty and unsupported fork-restored workflow state must never create adaptive-role state",
+      "not_proven": "Live fork authority, inherited permission and pending-approval isolation"
+    }
+  ],
+  "review_holds": {
+    "core": 4,
+    "tui": 9,
+    "total": 13,
+    "formal_owner_signoffs": 0
+  },
+  "source_graph_change": "No Cargo dependencies, production marker, authorization runtime code or release packages modified",
+  "required_gate": "Cheap local Daniel-CL source formatting and 2 targeted Core native tests; only then expensive CI, owner signoffs remain pending",
+  "production_version": "0.4.4",
+  "release_approved": false
+}
