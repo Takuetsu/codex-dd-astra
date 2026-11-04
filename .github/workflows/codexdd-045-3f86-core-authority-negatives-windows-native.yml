@@ -1,0 +1,169 @@
+# NONRELEASE: source-pinned, two-selector 3F.86 Core authority acceptance.
+# A cheap source/format gate must pass before native Windows compilation starts.
+name: CodexDD 0.4.5 3F.86 Core authority negatives (NONRELEASE)
+run-name: 3F.86 two Core authority negatives on Windows (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f86-core-negatives
+    paths:
+      - .github/workflows/codexdd-045-3f86-core-negative-windows-native.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f86-core-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify frozen candidate, security graph and protected production version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f86-core-negatives'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan_tests.rs)" = '87dbba0f486786f92d787fb8dca3eb161ab3ddbe'
+          test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager_tests.rs)" = '73fdc78f51f10075804fbccbec0b8f4a4b73f4b7'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check HEAD^ HEAD
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          ledger = json.loads(Path('docs/upstream-candidates/codexdd-045-3f86-core-authority-negative-candidate.json').read_text())
+          assert ledger['release_approved'] is False
+          assert ledger['review_holds']['formal_owner_signoffs'] == 0
+          assert ledger['review_holds']['total'] == 13
+          cases = [
+              ('codex-rs/core/src/tools/spec_plan_tests.rs', 'codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation'),
+              ('codex-rs/core/src/thread_manager_tests.rs', 'forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive'),
+          ]
+          for source, selector in cases:
+              assert Path(source).read_text().count('fn ' + selector + '(') == 1
+          print('3F86_SOURCE_GUARD_PASS: exact selectors, no dependency drift, no signoff')
+          PY
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt check only (no compilation)
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 110
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Keep the 3F.85 source-acceptance ancestor available for the
+          # guard's short branch-ancestor range check. The original depth 2 failed
+          # before native compilation with "fatal: bad object".
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Configure bounded Windows logs and Cargo scratch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-3f86'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore Cargo sources only (no oversized target cache)
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute two exact Core authority native regression tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cases = @(
+            'tools::spec_plan::tests::codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation',
+            'thread_manager::tests::forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive'
+          )
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $results=New-Object 'System.Collections.Generic.List[object]'
+          $index=0
+          foreach ($case in $cases) {
+            $index++
+            $stdout=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stdout.log")
+            $stderr=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stderr.log")
+            Write-Host "BEGIN Core native case $($index): $case"
+            $arguments=@('test','--locked','-p','codex-core','--lib',$case,'--','--exact','--nocapture')
+            $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stdout -Tail 60 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
+              throw "Core native case $($index) failed with exit $($proc.ExitCode)"
+            }
+            $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
+            if (-not [regex]::IsMatch($output, 'test result: ok\.\s+1 passed;\s+0 failed;')) {
+              throw "Core native case $($index) did not execute exactly one test"
+            }
+            $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
+            if (-not [regex]::IsMatch($output,$pattern)) {
+              throw "Core native case $($index) missing matching passing test name"
+            }
+            $results.Add([pscustomobject]@{Selector=$case;Passed=1;Stdout=$stdout;Stderr=$stderr})
+            Write-Host "PASS Core native case $($index): $case" -ForegroundColor Green
+          }
+          $receipt=[pscustomobject]@{
+            kind='codexdd045_3f86_core_authority_native_nonrelease'
+            source_head=$env:GITHUB_SHA
+            utc=(Get-Date).ToUniversalTime().ToString('o')
+            passed=2
+            failed=0
+            selectors=$results.ToArray()
+            release_approved=$false
+            formal_owner_signoffs=0
+          }
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f86-receipt.json -Encoding utf8
+          Write-Host '3F.86 CORE NEGATIVES GREEN: 2/2' -ForegroundColor Green
+      - name: Preserve focused native logs and nonrelease receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f86-core-authority-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14
