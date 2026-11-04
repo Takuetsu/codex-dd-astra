@@ -18,7 +18,12 @@ fn normalize_reconnect_snapshot_path(rendered: String) -> String {
     // stable without masking any other content, permissions or routing changes.
     #[cfg(windows)]
     {
-        rendered.replace(r"C:\tmp\project", "/tmp/project")
+        // The left-hand task-group column is sized from the original Windows
+        // path. Shift the two extra path-width cells into its trailing padding
+        // so the right-hand task details column stays aligned in the snapshot.
+        rendered
+            .replace(r"C:\tmp\project  2", "/tmp/project  2  ")
+            .replace(r"C:\tmp\project", "/tmp/project")
     }
     #[cfg(not(windows))]
     {
