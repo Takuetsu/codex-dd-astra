@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f90_windows_reconnect_end_to_end_nonrelease",
-  "status": "PORTABLE_SNAPSHOT_RUSTFMT_CORRECTED_RETEST_PENDING",
+  "status": "SNAPSHOT_COLUMN_ALIGNMENT_FIXED_AGGREGATE_NATIVE_RETRY_PENDING",
   "candidate_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
   "baseline_commit": "eec4fee2aebfa15b18e3b3f2837b3e9b655003dd",
   "parent_green_run": 41885892676,
@@ -12,7 +12,7 @@
   "remaining_high_risk_tui_review_holds": 9,
   "remaining_high_risk_core_review_holds": 4,
   "source_sha_map": {
-    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "5b5544c2b914327e7e2c0b91c1737efaff35fbaa",
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "6e7bf006705d71d620e2695086123ce6b1d12f88",
     "codex-rs/tui/src/app/tests/active_reconnect_tests.rs": "078ffc77b2d271ad0d642f5266462040ce83d3e9",
     "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
     "codex-rs/tui/src/app/tests.rs": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
@@ -101,7 +101,7 @@
     "No merge, no 0.4.5 production installation",
     "Full 21-stage Daniel-CL and seven-program Windows distribution still pending"
   ],
-  "gate": "Exact source and dependency pins, preserved owner holds, check all four portable snapshots, Rustfmt, then one native Windows no-run compile and eight exact reconnect selectors with 4-minute per-case limits.",
+  "gate": "Cheap source/format and fixed-width snapshot fixture check before expensive Windows compilation. Run all eight native reconnect tests even if one fails; preserve per-selector evidence then fail entire job if failed!=0, zero matched, or timeout. Formal approvals remain zero.",
   "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]",
   "attempts": [
     {
@@ -157,6 +157,21 @@
       "failure_detail": "Rustfmt demanded multiline wrapping for all four portable reconnect snapshot calls. No native compilation or tests ran. Applied formatter's exact diff to source.",
       "native_tests_executed": 0,
       "native_tests_passed": 0
+    },
+    {
+      "run_id": 41931703527,
+      "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41931703527",
+      "tested_head": "b9774f58b0c0e082f17788aaf00c04be2e30a7c7",
+      "cheap_source": "success",
+      "native": "Windows compilation passed; first reconnect test failed before testing reconnection assertion",
+      "failure_detail": "Snapshot path normalized but 2-cell width difference shifted second column on task row. Original Windows C:\\tmp\\project path is 2 characters longer than /tmp/project; normalization now moves two spaces into task-group padding, leaves all other fields unchanged.",
+      "native_tests_executed": 1,
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "artifact": {
+        "id": 13373486036,
+        "sha256": "cc2cd1de13aed81bc2f50ae670e103360fd0fea547bbdf11f4995911aea1b301"
+      }
     }
   ]
 }
