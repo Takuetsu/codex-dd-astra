@@ -1,0 +1,118 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f88_tui_replay_authority_review_NONRELEASE",
+  "status": "SOURCE_AUDIT_COMPLETE_NATIVE_SELECTED_TESTS_PENDING",
+  "candidate_branch": "dd/codexdd-v0.4.5-3f88-tui-replay-authority",
+  "base_3f87_head": "01f853ccf5e327e4008b9743c72c25859fa59a0a",
+  "parent_core_green_run": 41854019600,
+  "parent_core_draft_pr": 80,
+  "production_version": "0.4.4",
+  "release_approved": false,
+  "formal_owner_signoffs": 0,
+  "tui_high_risk_owner_holds_before": 9,
+  "tui_high_risk_owner_holds_after": 9,
+  "candidate_review_paths": [
+    "codex-rs/tui/src/app/thread_routing.rs",
+    "codex-rs/tui/src/app.rs",
+    "codex-rs/tui/src/app_server_session.rs"
+  ],
+  "source_identity": {
+    "codex-rs/tui/src/app.rs": "2c4ef89f8aef22193ae8d5f57996a948db987659",
+    "codex-rs/tui/src/app/thread_routing.rs": "fbca3e0e7efa0f11385297027c12b6a5d96a8632",
+    "codex-rs/tui/src/app/tests.rs": "d7f541ced9d91f184a7de3a527a55c804b62a672",
+    "codex-rs/tui/src/app_server_session.rs": "db8a394b652fd18d61807a8b656e6b7463f07521",
+    "codex-rs/tui/src/app/thread_events.rs": "4ee8f4a0446c8c0cfd41dd234457a299c89d242c",
+    "codex-rs/tui/src/app/thread_event_buffer.rs": "1857941dba71f611256dc9e782b9b9c428fecaec",
+    "codex-rs/tui/src/app/thread_event_buffer_tests.rs": "5b3aa1c6e156748975356ecffeeada3dee97752c",
+    "codex-rs/tui/src/app/pending_interactive_replay.rs": "cdbc8512fabe55cb509146dc9a3193d4b77086bf",
+    "codex-rs/tui/Cargo.toml": "ea0894b3e1d3777f4c598727b03199c1f69cbd05",
+    "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+    "codex-rs/Cargo.lock": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+    "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462",
+    "codex-rs/codexdd-version.txt": "6f2743d65dc06508954334e88edb660bf8efea20"
+  },
+  "review_findings": [
+    {
+      "risk": "Aggregate transcript replay byte retention",
+      "finding": "Current ThreadEventStore evicts old noninteractive events on count, delta and aggregate wire-byte limits; previous 3F.82 review coverage points to a stale thread_routing source blob",
+      "native_gate": "retained_replay_byte_budget_evicts_old_messages_but_keeps_pending_approval",
+      "owner_signoff": "PENDING"
+    },
+    {
+      "risk": "Outstanding approvals under replay pressure",
+      "finding": "push_request_checked preflights incoming interactive requests against both per-event and retained replay budgets; unresolved requests cannot be evicted to make room, so an over-cap request returns an explicit error",
+      "native_gate": "unresolved_request_retention_exhaustion_fails_before_mutating_approval_state",
+      "owner_signoff": "PENDING"
+    },
+    {
+      "risk": "Active/inactive thread ownership and live FIFO",
+      "finding": "Live thread event channel is capped, preserves FIFO under saturation, and supports pending inactive-thread approval replay. Requires current-head Windows native reproduction",
+      "native_gate": "inactive_thread_overflow_does_not_starve_foreground_or_block_switch",
+      "owner_signoff": "PENDING"
+    },
+    {
+      "risk": "Cold-resume state and policy parity",
+      "finding": "TUI app-server resume preserves server-side authority settings rather than silently overriding them; current native test proves one representative rejoin path only, not full reconnect/cold-resume acceptance",
+      "native_gate": "thread_resume_params_can_rejoin_without_overriding_existing_settings",
+      "owner_signoff": "PENDING"
+    }
+  ],
+  "native_selectors": [
+    {
+      "test_path": "codex-rs/tui/src/app/thread_event_buffer_tests.rs",
+      "selector": "app::thread_event_buffer::tests::retained_replay_byte_budget_evicts_old_messages_but_keeps_pending_approval"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/thread_event_buffer_tests.rs",
+      "selector": "app::thread_event_buffer::tests::unresolved_request_retention_exhaustion_fails_before_mutating_approval_state"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/thread_event_buffer_tests.rs",
+      "selector": "app::thread_event_buffer::tests::refresh_recounts_replay_bytes_after_stripping_replayed_message_text"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/pending_interactive_replay.rs",
+      "selector": "app::pending_interactive_replay::tests::thread_event_snapshot_drops_resolved_exec_approval_after_server_resolution"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/pending_interactive_replay.rs",
+      "selector": "app::pending_interactive_replay::tests::thread_event_snapshot_drops_pending_approvals_when_turn_completes"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/thread_events.rs",
+      "selector": "app::thread_events::tests::saturated_queue_retains_fifo_approval_and_completion_once"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/thread_events.rs",
+      "selector": "app::thread_events::tests::live_queue_rejects_oversized_voice_audio_before_buffering_without_silent_drop"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::inactive_thread_overflow_does_not_starve_foreground_or_block_switch"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::inactive_thread_approval_bubbles_into_active_view"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::resolved_buffered_approval_does_not_become_actionable_after_drain"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::replay_thread_snapshot_restores_draft_and_queued_input"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app_server_session.rs",
+      "selector": "app_server_session::tests::thread_resume_params_can_rejoin_without_overriding_existing_settings"
+    }
+  ],
+  "required_next": "Source-pinned cheap check; then exact 12 TUI Windows native tests. Only after native evidence may update review dispositions; no owner approval or release inferred.",
+  "scope_limits": [
+    "No 0.4.5 promotion",
+    "No generated distribution or releases",
+    "No automatic merge",
+    "No claim nine remaining TUI holds completed",
+    "No replacement for full 21-stage Daniel-CL acceptance"
+  ]
+}
