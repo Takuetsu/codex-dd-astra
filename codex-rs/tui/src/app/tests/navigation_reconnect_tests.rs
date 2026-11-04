@@ -305,7 +305,10 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
         if previous_thread.is_none() && !overview_initialized {
             assert_snapshot!(
                 "daemon_command_center_reconnecting",
-                normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 100))
+                normalize_reconnect_snapshot_path(render_bottom_popup(
+                    &app.chat_widget,
+                    /*width*/ 100
+                ))
             );
             app.agents_overview
                 .view_state
@@ -315,7 +318,10 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
                 Some("Reconnect failed — agent list is stale; relaunch to retry");
             assert_snapshot!(
                 "daemon_command_center_failed",
-                normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 100))
+                normalize_reconnect_snapshot_path(render_bottom_popup(
+                    &app.chat_widget,
+                    /*width*/ 100
+                ))
             );
         }
         let connected = reconnect(
@@ -412,7 +418,10 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
             assert!(history.contains("Unsubmitted title: Keep this task draft!"));
             assert_snapshot!(
                 "daemon_command_center_vanished_rename",
-                normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 100))
+                normalize_reconnect_snapshot_path(render_bottom_popup(
+                    &app.chat_widget,
+                    /*width*/ 100
+                ))
             );
             app.handle_tui_event(
                 &mut tui,
@@ -476,7 +485,10 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
                 "reconnected_unavailable_conversation",
                 format!(
                     "{content}\n{}",
-                    normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 80))
+                    normalize_reconnect_snapshot_path(render_bottom_popup(
+                        &app.chat_widget,
+                        /*width*/ 80
+                    ))
                 )
             );
 
