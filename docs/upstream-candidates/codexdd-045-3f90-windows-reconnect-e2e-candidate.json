@@ -101,6 +101,23 @@
     "No merge, no 0.4.5 production installation",
     "Full 21-stage Daniel-CL and seven-program Windows distribution still pending"
   ],
-  "gate": "Cheap source guard and Rustfmt before one Windows-native job; run 8 exact selectors and require 1 passed/0 failed each with bounded per-case timeout",
-  "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]"
+  "gate": "First compile cargo test --locked -p codex-tui --lib --no-run once with a dedicated extended build budget; only then run eight exact selected test cases with individual bounded test budgets. CI must fail for compile error, timeout, zero-match, native test assertion, or missing evidence.",
+  "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]",
+  "attempts": [
+    {
+      "run_id": 41914435469,
+      "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41914435469",
+      "tested_head": "65958cec39ff0c7a9bd86ed8e1bea80c32350845",
+      "cheap_source": "success",
+      "windows_native": "runner_timeout_during_first_cold_build",
+      "failure_detail": "First cargo test selector used a 10-minute combined build-and-execution timeout. Cargo was still compiling dependency crates when killed, before any tests could execute.",
+      "source_assertion_failures": 0,
+      "cases_passed": 0,
+      "cases_executed": 0,
+      "artifact": {
+        "id": 13363589153,
+        "sha256": "6f01634a7ef2a06d293c38e692511e13188b92550a5df85303678a8c08744153"
+      }
+    }
+  ]
 }
