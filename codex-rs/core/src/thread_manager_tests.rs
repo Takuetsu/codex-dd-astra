@@ -385,7 +385,10 @@ async fn forked_thread_cannot_reuse_parent_session_approval_or_permission_grant(
         .tool_approvals
         .lock()
         .await
-        .put(approval_key, codex_protocol::protocol::ReviewDecision::ApprovedForSession);
+        .put(
+            approval_key,
+            codex_protocol::protocol::ReviewDecision::ApprovedForSession,
+        );
     let parent_grant = codex_protocol::models::AdditionalPermissionProfile {
         network: Some(codex_protocol::models::NetworkPermissions {
             enabled: Some(true),
@@ -454,7 +457,10 @@ async fn forked_thread_cannot_reuse_parent_session_approval_or_permission_grant(
         .granted_permissions_by_environment_id;
     assert!(!Arc::ptr_eq(parent_grants, fork_grants));
     assert_eq!(
-        parent_grants.lock().expect("parent grants lock").get("primary"),
+        parent_grants
+            .lock()
+            .expect("parent grants lock")
+            .get("primary"),
         Some(&parent_grant)
     );
     assert!(

@@ -717,12 +717,11 @@ async fn codexdd_client_forged_exact_turn_trigger_cannot_expose_privileged_core_
     // but it cannot claim a controller-authorized lifecycle phase.
     let plan = probe(|turn| {
         set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
-        turn.turn_metadata_state.set_responsesapi_client_metadata(
-            std::collections::HashMap::from([(
+        turn.turn_metadata_state
+            .set_responsesapi_client_metadata(std::collections::HashMap::from([(
                 "turn_trigger".to_string(),
                 codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
-            )]),
-        );
+            )]));
         assert!(turn.turn_metadata_state.current_turn_trigger().is_none());
     })
     .await;

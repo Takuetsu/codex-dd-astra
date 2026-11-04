@@ -1074,8 +1074,10 @@ impl ModelClient {
         // a previous turn. That call must not satisfy this turn's terminalization
         // requirement. Count only calls stamped by the harness with the active
         // turn ID; untagged historical calls cannot prove current authority.
-        let terminalization_signal_already_called =
-            responses_metadata.turn_id.as_deref().is_some_and(|current_turn_id| {
+        let terminalization_signal_already_called = responses_metadata
+            .turn_id
+            .as_deref()
+            .is_some_and(|current_turn_id| {
                 prompt.input.iter().any(|item| {
                     matches!(
                         item,

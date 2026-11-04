@@ -537,7 +537,8 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
     let Some(ResponseItem::FunctionCall {
         internal_chat_message_metadata_passthrough: Some(metadata),
         ..
-    }) = previous_turn_signal.input.first_mut() else {
+    }) = previous_turn_signal.input.first_mut()
+    else {
         panic!("expected stamped signal call");
     };
     metadata.turn_id = Some("previous-worker-turn".to_string());
@@ -558,7 +559,8 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
     let Some(ResponseItem::FunctionCall {
         internal_chat_message_metadata_passthrough,
         ..
-    }) = untagged_signal.input.first_mut() else {
+    }) = untagged_signal.input.first_mut()
+    else {
         panic!("expected signal call");
     };
     *internal_chat_message_metadata_passthrough = None;
