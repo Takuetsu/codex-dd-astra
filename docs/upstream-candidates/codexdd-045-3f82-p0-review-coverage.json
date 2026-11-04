@@ -27,6 +27,12 @@
       "head": "0bba2b4c5a2f646169273856b4d0da8f8e9e72b4",
       "cases_passed": 12,
       "scope": "TUI replay/approval authority, 8MiB byte budget and pending-request fail-closed Windows native tests"
+    },
+    {
+      "run_id": 41885892676,
+      "head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+      "cases_passed": 20,
+      "scope": "TUI session, config, disconnect, program eligibility, paste, voice, cold-resume and approval selected Windows native regressions, with formal holds unchanged"
     }
   ],
   "formal_109_path_owner_signoffs": 0,
@@ -131,14 +137,15 @@
         "configured_ctrl_space_submit_wins_over_transcript_selection"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "3F.88 source-pinned TUI replay/approval authority tests 12/12 passed, including inactive-thread approval and restored queued input",
-      "next_specific_blocker": "More offline modal, program eligibility, input and reconnect parity; 3F.89 selected native suite pending",
+      "current_evidence_disposition": "3F.88 12/12 and 3F.89 20/20 TUI Windows source-bound native regressions green: inactive-thread replay, disconnect/modal and transcript ownership",
+      "next_specific_blocker": "Formal owner approval plus managed-daemon reconnect/cold-resume behavior beyond selected native cases",
       "current_candidate_source_blob": "2c4ef89f8aef22193ae8d5f57996a948db987659",
       "current_native_test_evidence": {
-        "run_id": 41869900824,
-        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41869900824",
-        "status": "SELECTED_WINDOWS_NATIVE_GREEN",
-        "formal_owner_signoff": false
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
       }
     },
     {
@@ -156,8 +163,16 @@
         "refresh_in_memory_config_from_disk_updates_live_widget_preferences"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "Live preference propagation covered by an existing green native test",
-      "next_specific_blocker": "Review upstream session picker/resume persistence semantics and additional test coverage"
+      "current_evidence_disposition": "3F.89 Windows cases 1-3 verified live preferences, session network policy and same-CWD resume fallback",
+      "next_specific_blocker": "Formal owner signoff and full session picker/persistence parity",
+      "current_candidate_source_blob": "4728d5f16b8d99168799705c6525d3cc794a0afe",
+      "current_native_test_evidence": {
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
+      }
     },
     {
       "path": "codex-rs/tui/src/app/event_dispatch.rs",
@@ -175,8 +190,16 @@
         "api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "Daemon confirmation and API key model popup boundaries have targeted green tests",
-      "next_specific_blocker": "Dedicated realtime stop/reconnect and managed daemon verification parity still needed"
+      "current_evidence_disposition": "3F.89 Windows native reconnect voice retirement, request modal ownership and API-key catalog gating selected tests green",
+      "next_specific_blocker": "Formal owner signoff and daemon process lifecycle / live reconnect acceptance",
+      "current_candidate_source_blob": "98ab0359d6ed6026154b70f7f1061a385c08744b",
+      "current_native_test_evidence": {
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
+      }
     },
     {
       "path": "codex-rs/tui/src/app/tests.rs",
@@ -191,8 +214,16 @@
         "background_resolution_keeps_matching_foreground_user_input_visible"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "Matching foreground input regression present and source-pinned Windows native test passed",
-      "next_specific_blocker": "Review remaining dropped reconnect and request tests; confirm input ownership equivalence"
+      "current_evidence_disposition": "3F.89 native selected tests green for account gating, server-only CWD, replayed approvals, interrupted input, program capabilities and feature policy",
+      "next_specific_blocker": "Formal owner signoff, missed request flows and full end-to-end reconnect parity",
+      "current_candidate_source_blob": "d7f541ced9d91f184a7de3a527a55c804b62a672",
+      "current_native_test_evidence": {
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
+      }
     },
     {
       "path": "codex-rs/tui/src/app/thread_routing.rs",
@@ -209,14 +240,15 @@
         "3F.76 11 bounded queue/payload/switch selectors"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "3F.88 current source has explicit 8MiB aggregate retained replay byte cap and unresolved-request preflight; Windows tests passed for eviction and fail-closed approval retention",
-      "next_specific_blocker": "Current head source-bound integration owner approval and more live reconnect/pending-state equivalence; do not assume review signoff",
+      "current_evidence_disposition": "3F.88 protected pending request and 8MiB byte limits 12/12 green; 3F.89 disconnect + transcript / pending approval replay tests 20/20 green",
+      "next_specific_blocker": "Formal owner signoff and integrated connection-rotation with pending requests",
       "current_candidate_source_blob": "fbca3e0e7efa0f11385297027c12b6a5d96a8632",
       "current_native_test_evidence": {
-        "run_id": 41869900824,
-        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41869900824",
-        "status": "SELECTED_WINDOWS_NATIVE_GREEN",
-        "formal_owner_signoff": false
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
       }
     },
     {
@@ -234,14 +266,15 @@
       "source_pinned_3f81_auth_selectors": [
         "3F.81 all five app-server authorization selectors"
       ],
-      "current_evidence_disposition": "3F.88 selected TUI session rejoin policy and replay state test passed; previous 3F.81 app-server authorization tests also green",
-      "next_specific_blocker": "Full client-level connection-rotation, cold-resume and remote-ownership equivalence plus formal signoff",
+      "current_evidence_disposition": "3F.88 rejoin policy and 3F.89 persisted adaptive fork restoration + server-owned session CWD native selected tests green",
+      "next_specific_blocker": "Formal owner signoff and full client/server cold resume / remote ownership parity",
       "current_candidate_source_blob": "db8a394b652fd18d61807a8b656e6b7463f07521",
       "current_native_test_evidence": {
-        "run_id": 41869900824,
-        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41869900824",
-        "status": "SELECTED_WINDOWS_NATIVE_GREEN",
-        "formal_owner_signoff": false
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
       }
     },
     {
@@ -259,8 +292,16 @@
         "api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "Feature and program eligibility logic present; related API-key popup native test green",
-      "next_specific_blocker": "Review source of account authority, program enrollment restrictions, and deliberate feature disable paths"
+      "current_evidence_disposition": "3F.89 selected green tests for API-key model catalog, Daybreak disabled fallback and queued settings; source remains reviewable",
+      "next_specific_blocker": "Formal owner signoff, positive authorized program enrollment and negative API-key program eligibility",
+      "current_candidate_source_blob": "bb747507416e7712fe4ff5832446783c0127994e",
+      "current_native_test_evidence": {
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
+      }
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests.rs",
@@ -277,8 +318,16 @@
         "session_status_detail_uses_only_foreground_activity"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "Source module registration and two targeted native tests restored/present; owner must confirm upstream behavioral equivalence",
-      "next_specific_blocker": "Formally compare official 0.163 behavior and owner-signoff; do not treat test registration as complete TUI terminal behavior acceptance"
+      "current_evidence_disposition": "3F.89 source-bound tests 20/20 green for chatwidget slash commands and settings; existing test registration checked",
+      "next_specific_blocker": "Formal upstream terminal behavior equivalence owner review; Windows clipboard/Shift+Insert acceptance",
+      "current_candidate_source_blob": "2a5f08c359b1ec82c67e9eeba4aa9ba274629741",
+      "current_native_test_evidence": {
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
+      }
     },
     {
       "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
@@ -293,8 +342,16 @@
         "slash_daybreak_offers_an_application_when_unavailable"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "Daybreak disabled case green",
-      "next_specific_blocker": "Dedicated API-key positive/negative program gate plus Windows image paste/Shift+Insert parity still needed"
+      "current_evidence_disposition": "3F.89 selected Windows native tests green for slash Daybreak unavailable, image-paste buffering and queued settings selection",
+      "next_specific_blocker": "Formal owner signoff and dedicated positive/negative program gate + Windows Shift+Insert paste",
+      "current_candidate_source_blob": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+      "current_native_test_evidence": {
+        "run_id": 41885892676,
+        "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+        "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+        "selected_tests_green": 20,
+        "owner_approval": false
+      }
     }
   ],
   "core_p0_remain": 4,
@@ -302,10 +359,11 @@
   "false_green_guard": "Source witness or native test pass is not formal owner approval, upstream semantic parity or release acceptance",
   "major_unresolved_technical_risk": "Historical 3F.82 replay byte-cap hold mitigated on newer 3F.88 source and 12/12 native evidence; remaining high-risk TUI parity, live reconnect and owner approval not closed.",
   "next_acceptance_sequence": [
-    "3F.87 four Core source reviews and 12/12 selected Windows native regressions complete; formal owner signoffs still pending",
-    "3F.88 replay aggregate-byte budget and protected unresolved approvals source-bound native acceptance 12/12 complete; no owner-signoff inference",
-    "3F.89 selected TUI disconnected modal, resume/config, program eligibility, Windows paste and realtime parity validation pending",
-    "Obtain independent formal owner decisions for all 13 review holds, then 109-path approvals, integrated Daniel-CL 21-stage suite and Windows distribution"
+    "3F.87 four Core source reviews and 12/12 selected native regressions green; draft PR #80, formal owner signoffs pending",
+    "3F.88 12/12 TUI replay/approval selected Windows native tests green",
+    "3F.89 20/20 TUI session/program selected Windows native tests green after replacing Unix-only selector; 9 TUI owner holds unchanged",
+    "Review remaining TUI 0.163 behavior: end-to-end reconnect, platform-specific Shift+Insert, real account program enrollment, request ownership and 109-path formal signoffs",
+    "Then the single-head Daniel-CL 21-stage Windows release acceptance, seven-program distribution and production promotion, if approved"
   ],
   "release_approved": false
 }
