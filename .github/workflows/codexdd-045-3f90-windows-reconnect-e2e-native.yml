@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e'
-          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs)" = '2d84640b2929bc327cd0b2b2c2701837a319dd14'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs)" = '10b81e8e1ffb138f7676ca5b53aeb19ad11b5b81'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/active_reconnect_tests.rs)" = '078ffc77b2d271ad0d642f5266462040ce83d3e9'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/disconnect_tests.rs)" = '662967de32dc64517b250dc180baafd1da4dd36a'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests.rs)" = '2c2c256f2dac830cb28cb4d322eecf05e62ba7f8'
@@ -50,7 +50,7 @@ jobs:
           import json
           from pathlib import Path
           ledger=json.loads(Path('docs/upstream-candidates/codexdd-045-3f90-windows-reconnect-e2e-candidate.json').read_text())
-          assert ledger['status'] == 'SOURCE_ASYNC_SEND_FIXED_REVALIDATION_PENDING'
+          assert ledger['status'] == 'SNAPSHOT_PATH_PORTABILITY_PATCHED_NATIVE_RETEST_PENDING'
           assert ledger['release_approved'] is False
           assert ledger['formal_owner_signoffs'] == 0
           assert ledger['remaining_high_risk_tui_review_holds'] == 9
@@ -67,6 +67,8 @@ jobs:
           assert 'AppServerTarget::LocalDaemon' in nav
           assert 'UnixListener' not in nav
           assert 'channel.sender.send(event).await?;' in nav
+          assert 'rendered.replace(r"C:\\tmp\\project", "/tmp/project")' in nav
+          assert nav.count('normalize_reconnect_snapshot_path(render_bottom_popup(') == 4
           assert 'channel.sender.send(event)?;' not in nav
           for case in ledger['test_cases']:
               lines=Path(case['path']).read_text().splitlines()
