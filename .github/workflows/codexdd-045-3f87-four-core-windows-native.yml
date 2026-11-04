@@ -1,7 +1,7 @@
-# NONRELEASE: source-pinned, source-pinned 3F.87 Core authority acceptance.
+# NONRELEASE: source-pinned 3F.87 Core high-risk review acceptance.
 # A cheap source/format gate must pass before native Windows compilation starts.
 name: CodexDD 0.4.5 3F.87 four Core high-risk reviews (NONRELEASE)
-run-name: 3F.87 two four Core high-risk reviews on Windows (NONRELEASE)
+run-name: 3F.87 four Core high-risk reviews on Windows (NONRELEASE)
 on:
   push:
     branches:
@@ -30,13 +30,13 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f87-core-closure'
-          test "$(git rev-parse HEAD:codex-rs/core/src/client.rs)" = '032a326e27d7528b6ff3b7afaafe3063cbfb8c35'
-          test "$(git rev-parse HEAD:codex-rs/core/src/client_tests.rs)" = 'e637eeb9227046cf9f7b5ee7b54085d288e66c82'
+          test "$(git rev-parse HEAD:codex-rs/core/src/client.rs)" = 'fd31526911888ebb21adbef2a09c9a0703130bdf'
+          test "$(git rev-parse HEAD:codex-rs/core/src/client_tests.rs)" = 'b202107965419a15609c2e67bbd479d6bf4645f4'
           test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager.rs)" = '88fa659a3c45839d9a3dce6b6a39e6e47795f103'
-          test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager_tests.rs)" = '83f20b3d202c56588020dd406c55d18e2e3a2453'
+          test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager_tests.rs)" = 'e8d154996f7780d8e5cb49e25aa05e3d4167858a'
           test "$(git rev-parse HEAD:codex-rs/core/src/tools/mod.rs)" = '2a05e28de35348b79e02d80e4bdd8c3381b88279'
           test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan.rs)" = '422870dba8b5a3b36994a598380c93f58760ad1b'
-          test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan_tests.rs)" = 'f03c5f62462db9df333f55a15137783de21f0004'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan_tests.rs)" = '472daddb742180e5f44239f10e2a23e11dbd8aab'
           test "$(git rev-parse HEAD:codex-rs/core/src/tools/handlers/codexdd_validation.rs)" = 'ded4dafcfabbac1cb722fa53f79561878d1bfac9'
           test "$(git rev-parse HEAD:codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs)" = '5adee7b4cf388d97efe5ef9975bc748088ed5185'
           test "$(git rev-parse HEAD:codex-rs/core/src/turn_metadata_tests.rs)" = '34abb036fb9749212ba7b502b17ed922de6a5b8d'
