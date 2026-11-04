@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f90_windows_reconnect_end_to_end_nonrelease",
-  "status": "CROSS_PLATFORM_NAVIGATION_RECONNECT_SOURCE_READY_WINDOWS_NATIVE_PENDING",
+  "status": "SOURCE_ASYNC_SEND_FIXED_REVALIDATION_PENDING",
   "candidate_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
   "baseline_commit": "eec4fee2aebfa15b18e3b3f2837b3e9b655003dd",
   "parent_green_run": 41885892676,
@@ -12,7 +12,7 @@
   "remaining_high_risk_tui_review_holds": 9,
   "remaining_high_risk_core_review_holds": 4,
   "source_sha_map": {
-    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "7e64b8b8935ac3eefca63f53937757f38f7cb34a",
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "2d84640b2929bc327cd0b2b2c2701837a319dd14",
     "codex-rs/tui/src/app/tests/active_reconnect_tests.rs": "078ffc77b2d271ad0d642f5266462040ce83d3e9",
     "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
     "codex-rs/tui/src/app/tests.rs": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
@@ -101,7 +101,7 @@
     "No merge, no 0.4.5 production installation",
     "Full 21-stage Daniel-CL and seven-program Windows distribution still pending"
   ],
-  "gate": "First compile cargo test --locked -p codex-tui --lib --no-run once with a dedicated extended build budget; only then run eight exact selected test cases with individual bounded test budgets. CI must fail for compile error, timeout, zero-match, native test assertion, or missing evidence.",
+  "gate": "Source SHA guard, Rustfmt, and exact async sender await assertion must pass before isolated Windows cold compilation (65-minute budget), then eight selected tests each with four-minute limit and positive 1/1 result evidence; owner signoffs remain zero.",
   "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]",
   "attempts": [
     {
@@ -117,6 +117,20 @@
       "artifact": {
         "id": 13363589153,
         "sha256": "6f01634a7ef2a06d293c38e692511e13188b92550a5df85303678a8c08744153"
+      }
+    },
+    {
+      "run_id": 41918797238,
+      "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41918797238",
+      "tested_head": "3d8aa094fce023234584e057629574eb155d0516",
+      "cheap_source": "success",
+      "windows_native": "rust_compilation_error_E0277",
+      "failure_detail": "After cold compilation the previously Unix-only navigation reconnect harness failed to compile: tui/src/app/tests/navigation_reconnect_tests.rs:590 invoked async channel.sender.send(event)? without await. Source repaired to channel.sender.send(event).await?.",
+      "native_tests_executed": 0,
+      "tests_passed": 0,
+      "artifact": {
+        "id": 13367801942,
+        "sha256": "fc6c4948b87706efe4b34a3185814e7dab4bb077a19b3b3757f6addcce0d6831"
       }
     }
   ]
