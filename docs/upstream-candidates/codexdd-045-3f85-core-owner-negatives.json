@@ -4,7 +4,7 @@
   "source_branch": "dd/codexdd-v0.4.5-3f85-core-negatives",
   "parent_3f84_head": "131c4954cfd493eb05bb2694c98275bd8c810a50",
   "test_only_change_head": "970b364d65ed6d61238eb4eae69d8c1dc99b3cbf",
-  "source_outcome": "SOURCE_PREPARED_UNVALIDATED",
+  "source_outcome": "CORE_TERMINALIZATION_SELECTED_NEGATIVES_NATIVE_GREEN_OWNER_REVIEW_OPEN",
   "release_approved": false,
   "formal_owner_signoffs": 0,
   "formal_review_paths": 109,
@@ -42,8 +42,8 @@
         "A trigger suffix/lookalike does not force tool_choice"
       ],
       "new_test_path": "codex-rs/core/src/client_tests.rs",
-      "candidate_status": "NEW_NEGATIVES_ADDED_BUT_NOT_COMPILED_OR_EXECUTED",
-      "remaining_blocker": "Repeated-turn history and no duplicate report_adaptive_signal behavior require source-bound native proof; manual owner signoff pending"
+      "candidate_status": "3F85_NATIVE_WINDOWS_SELECTED_TEST_1_OF_1_GREEN_OWNER_HOLD_OPEN",
+      "remaining_blocker": "Selected 3F.85 terminalization and false-positive negatives passed; further repeated-turn and no-duplicate-signal authority proof and formal owner signoff pending."
     },
     {
       "path": "codex-rs/core/src/thread_manager.rs",
@@ -71,10 +71,32 @@
     }
   ],
   "required_validation_sequence": [
-    "On Daniel-CL isolated 3F.85 worktree run cargo fmt --all -- --check and targeted codex-core library negative test before any CI",
-    "Only if native local tests green, extend focused Core fork/tool authorization negative tests",
-    "Do not close 13 owner holds from source witnesses or one selected green test",
-    "Full 21-stage Daniel-CL release suite and seven-program Windows distribution remain pending"
+    "3F.85 native selector and source guards: COMPLETE for exact source 0ff928c93828e5fdb9b043655ab665290deb4393",
+    "Complete 3 remaining Core high-risk source/behavior reviews with negative runtime evidence, keeping formal owner approval open",
+    "Continue 9 open high-risk TUI holds and full source-bound 3F.84 acceptance on one head",
+    "Run full Daniel-CL 21-stage Windows release suite and seven-program distribution only after holds and local validations pass"
   ],
-  "production_version": "0.4.4"
+  "production_version": "0.4.4",
+  "github_windows_evidence": {
+    "run_id": 41711890851,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41711890851",
+    "source_head": "0ff928c93828e5fdb9b043655ab665290deb4393",
+    "status": "completed",
+    "conclusion": "success",
+    "completed_at_utc": "2026-11-03T20:57:28Z",
+    "cheap_source": "success",
+    "rustfmt": "success",
+    "windows_native": "success",
+    "native_selector": "validation_terminalization_requests_required_tool_choice",
+    "selected_test_count": 1,
+    "passed": 1,
+    "failed": 0,
+    "native_log_receipt": "3F.85 CORE TERMINALIZATION NATIVE GREEN: 1/1",
+    "artifact": {
+      "id": 13269633692,
+      "name": "codexdd045-3f85-core-terminalization-nonrelease",
+      "sha256": "8eb990c04f27392996abb89500584a612680927452aca493248d09e056275163"
+    },
+    "source_scope": "3 additional negative assertions within existing Core selector; no production edit, no merge, no release approval"
+  }
 }
