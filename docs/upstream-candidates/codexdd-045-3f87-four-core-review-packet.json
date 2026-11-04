@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f87_four_core_security_review_NONRELEASE",
-  "status": "RUSTFMT_PATCHED_NATIVE_RETRY_PENDING",
+  "status": "FOUR_CORE_SOURCE_REVIEWS_NATIVE_GREEN_AWAITING_OWNER_SIGNOFF",
   "baseline_branch": "dd/codexdd-v0.4.5-3f86-core-authority-negatives",
   "baseline_head": "17ab3cb3ed183f8a5f80f3e6ec28837163c735ee",
   "candidate_branch": "dd/codexdd-v0.4.5-3f87-core-closure",
@@ -38,8 +38,8 @@
       "tests": [
         "client::tests::validation_terminalization_requests_required_tool_choice"
       ],
-      "remaining": "Validate native behavior for same-turn, earlier-turn, unrelated and untagged calls; verify streaming tool turns retain expected metadata",
-      "technical_review": "SOURCE_COMPLETE",
+      "remaining": "Native selected regression passed; broader validation still needed: behavior for same-turn, earlier-turn, unrelated and untagged calls; verify streaming tool turns retain expected metadata",
+      "technical_review": "SOURCE_REVIEW_AND_SELECTED_NATIVE_GREEN",
       "owner_decision": "PENDING_SIGNOFF"
     },
     {
@@ -54,8 +54,8 @@
         "thread_manager::tests::child_workflow_snapshot_preserves_adaptive_state",
         "thread_manager::tests::forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive"
       ],
-      "remaining": "Validate native live fork, grant isolation and existing preserved workflow continuation; review app-server request identity separately",
-      "technical_review": "SOURCE_COMPLETE",
+      "remaining": "Native selected regression passed; broader validation still needed: live fork, grant isolation and existing preserved workflow continuation; review app-server request identity separately",
+      "technical_review": "SOURCE_REVIEW_AND_SELECTED_NATIVE_GREEN",
       "owner_decision": "PENDING_SIGNOFF"
     },
     {
@@ -72,7 +72,7 @@
         "turn_metadata::tests::turn_metadata_state_ignores_client_reserved_metadata_before_start"
       ],
       "remaining": "Verify no write capability bypass via sandbox/approval policy and controller authenticity in full integrated workflow",
-      "technical_review": "SOURCE_COMPLETE",
+      "technical_review": "SOURCE_REVIEW_AND_SELECTED_NATIVE_GREEN",
       "owner_decision": "PENDING_SIGNOFF"
     },
     {
@@ -87,7 +87,7 @@
         "tools::handlers::codexdd_validation::tests::validation_handler_rejects_nonmechanical_and_lookalike_turns"
       ],
       "remaining": "Verify selected native tests and full existing validator profile/path/exit-code regressions",
-      "technical_review": "SOURCE_COMPLETE",
+      "technical_review": "SOURCE_REVIEW_AND_SELECTED_NATIVE_GREEN",
       "owner_decision": "PENDING_SIGNOFF"
     }
   ],
@@ -108,7 +108,27 @@
       "head": "cc8bf55171595fa4517c0ed204e0adacfb0836b5",
       "status": "CHEAP_SOURCE_PASSED_RUSTFMT_FAILED",
       "windows_status": "SKIPPED",
-      "reason": "six rustfmt 1.95-only source whitespace adjustments"
+      "reason": "Rustfmt differences at six diff locations across four Rust source/test files; fixed before successful native run."
+    },
+    "accepted_windows_evidence": {
+      "run_id": 41854019600,
+      "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41854019600",
+      "tested_head": "2bf1da3cdf8b593fbdbcaba5201948521bab4903",
+      "completed_at_utc": "2026-11-04T15:45:55Z",
+      "conclusion": "success",
+      "cheap_source": "success",
+      "rustfmt": "success",
+      "windows_native": "success",
+      "passed": 12,
+      "failed": 0,
+      "stdout_terminal": "3F.87 CORE REVIEW TESTS GREEN: 12/12",
+      "artifact": {
+        "id": 13339343105,
+        "name": "codexdd045-3f87-four-core-review-nonrelease",
+        "sha256": "0b482205fe02204bf7f66ef1148dab7561dc4ed4cebfe6eb26eee9fda67b8138",
+        "expires_at": "2026-11-18T15:45:47Z"
+      },
+      "caveat": "Twelve selected Core tests passed; formal 109-path owner approvals, other Core paths, TUI high-risk holds and 21-stage release acceptance are still outstanding."
     }
   }
 }
