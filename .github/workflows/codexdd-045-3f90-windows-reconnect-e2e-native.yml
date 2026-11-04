@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e'
-          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs)" = '5b5544c2b914327e7e2c0b91c1737efaff35fbaa'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs)" = '6e7bf006705d71d620e2695086123ce6b1d12f88'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/active_reconnect_tests.rs)" = '078ffc77b2d271ad0d642f5266462040ce83d3e9'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/disconnect_tests.rs)" = '662967de32dc64517b250dc180baafd1da4dd36a'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests.rs)" = '2c2c256f2dac830cb28cb4d322eecf05e62ba7f8'
@@ -50,7 +50,7 @@ jobs:
           import json
           from pathlib import Path
           ledger=json.loads(Path('docs/upstream-candidates/codexdd-045-3f90-windows-reconnect-e2e-candidate.json').read_text())
-          assert ledger['status'] == 'PORTABLE_SNAPSHOT_RUSTFMT_CORRECTED_RETEST_PENDING'
+          assert ledger['status'] == 'SNAPSHOT_COLUMN_ALIGNMENT_FIXED_AGGREGATE_NATIVE_RETRY_PENDING'
           assert ledger['release_approved'] is False
           assert ledger['formal_owner_signoffs'] == 0
           assert ledger['remaining_high_risk_tui_review_holds'] == 9
@@ -67,7 +67,12 @@ jobs:
           assert 'AppServerTarget::LocalDaemon' in nav
           assert 'UnixListener' not in nav
           assert 'channel.sender.send(event).await?;' in nav
-          assert 'rendered.replace(r"C:\\tmp\\project", "/tmp/project")' in nav
+          assert '.replace(r"C:\\tmp\\project  2", "/tmp/project  2  ")' in nav
+          assert '.replace(r"C:\\tmp\\project", "/tmp/project")' in nav
+          # Preserve both task-column alignment and detail text when normalizing paths.
+          row='  C:\\tmp\\project  2                                       │ Selected task'
+          normalized=row.replace('C:\\tmp\\project  2','/tmp/project  2  ').replace('C:\\tmp\\project','/tmp/project')
+          assert normalized == '  /tmp/project  2                                         │ Selected task'
           assert nav.count('normalize_reconnect_snapshot_path(render_bottom_popup(') == 4
           assert 'channel.sender.send(event)?;' not in nav
           for case in ledger['test_cases']:
@@ -186,51 +191,61 @@ jobs:
           $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
           $results=New-Object 'System.Collections.Generic.List[object]'
           $index=0
+          $failures=0
           foreach ($case in $cases) {
             $index++
             $stdout=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stdout.log")
             $stderr=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stderr.log")
             Write-Host "BEGIN 3F.90 reconnect case $($index): $case"
             $arguments=@('test','--locked','-p','codex-tui','--lib',$case,'--','--exact','--nocapture')
+            $reason=$null
             $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
             try {
               if (-not $proc.WaitForExit(240000)) {
                 $proc.Kill($true)
                 $proc.WaitForExit()
-                Get-Content $stdout -Tail 50 -ErrorAction SilentlyContinue
-                Get-Content $stderr -Tail 80 -ErrorAction SilentlyContinue
-                throw "Reconnect case $($index) exceeded four-minute test execution limit after compilation"
-              }
-              if ($proc.ExitCode -ne 0) {
-                Get-Content $stdout -Tail 80 -ErrorAction SilentlyContinue
-                Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
-                throw "Reconnect case $($index) failed with exit $($proc.ExitCode)"
+                $reason="Case $($index) exceeded four-minute execution limit"
+              } elseif ($proc.ExitCode -ne 0) {
+                $reason="Case $($index) failed with exit $($proc.ExitCode)"
               }
             } finally {
               $proc.Dispose()
             }
-            $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
-            if (-not [regex]::IsMatch($output, 'test result: ok\.\s+1 passed;\s+0 failed;')) {
-              throw "TUI case $($index) did not execute exactly one test"
+            if (-not $reason) {
+              $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
+              if (-not [regex]::IsMatch($output, 'test result: ok\.\s+1 passed;\s+0 failed;')) {
+                $reason="Case $($index) did not execute exactly one passing test"
+              } else {
+                $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
+                if (-not [regex]::IsMatch($output,$pattern)) {
+                  $reason="Case $($index) missing matching passing selector name"
+                }
+              }
             }
-            $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
-            if (-not [regex]::IsMatch($output,$pattern)) {
-              throw "TUI case $($index) missing matching passing test name"
+            if ($reason) {
+              $failures++
+              Write-Host "FAILED 3F.90 reconnect case $($index): $reason" -ForegroundColor Red
+              Get-Content $stdout -Tail 70 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 90 -ErrorAction SilentlyContinue
+              $results.Add([pscustomobject]@{Selector=$case;Passed=0;Reason=$reason;Stdout=$stdout;Stderr=$stderr})
+              continue
             }
-            $results.Add([pscustomobject]@{Selector=$case;Passed=1;Stdout=$stdout;Stderr=$stderr})
+            $results.Add([pscustomobject]@{Selector=$case;Passed=1;Reason=$null;Stdout=$stdout;Stderr=$stderr})
             Write-Host "PASS 3F.90 reconnect case $($index): $case" -ForegroundColor Green
           }
           $receipt=[pscustomobject]@{
             kind='codexdd045_3f90_windows_reconnect_e2e_native_nonrelease'
             source_head=$env:GITHUB_SHA
             utc=(Get-Date).ToUniversalTime().ToString('o')
-            passed=$results.Count
-            failed=0
+            passed=($results.Count - $failures)
+            failed=$failures
             selectors=$results.ToArray()
             release_approved=$false
             formal_owner_signoffs=0
           }
           $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f90-receipt.json -Encoding utf8
+          Write-Host "3F.90 WINDOWS RECONNECT SUMMARY: $($results.Count - $failures)/$($cases.Count) passed, $failures failed"
+          if ($failures -ne 0) { throw "3F.90 reconnect suite failed $failures/$($cases.Count) cases; inspect per-case artifacts" }
           Write-Host "3F.90 WINDOWS RECONNECT TESTS GREEN: $($results.Count)/$($cases.Count)" -ForegroundColor Green
       - name: Preserve focused native logs and nonrelease receipt
         if: always()
