@@ -5,9 +5,9 @@ run-name: 3F.86 two Core authority negatives on Windows (NONRELEASE)
 on:
   push:
     branches:
-      - dd/codexdd-v0.4.5-3f86-core-negatives
+      - dd/codexdd-v0.4.5-3f86-core-authority-negatives
     paths:
-      - .github/workflows/codexdd-045-3f86-core-negative-windows-native.yml
+      - .github/workflows/codexdd-045-3f86-core-authority-negatives-windows-native.yml
 permissions:
   contents: read
 concurrency:
@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f86-core-negatives'
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f86-core-authority-negatives'
           test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan_tests.rs)" = '87dbba0f486786f92d787fb8dca3eb161ab3ddbe'
           test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager_tests.rs)" = '73fdc78f51f10075804fbccbec0b8f4a4b73f4b7'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
