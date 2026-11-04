@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f90_windows_reconnect_end_to_end_nonrelease",
-  "status": "SNAPSHOT_PATH_PORTABILITY_PATCHED_NATIVE_RETEST_PENDING",
+  "status": "PORTABLE_SNAPSHOT_RUSTFMT_CORRECTED_RETEST_PENDING",
   "candidate_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
   "baseline_commit": "eec4fee2aebfa15b18e3b3f2837b3e9b655003dd",
   "parent_green_run": 41885892676,
@@ -12,7 +12,7 @@
   "remaining_high_risk_tui_review_holds": 9,
   "remaining_high_risk_core_review_holds": 4,
   "source_sha_map": {
-    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "10b81e8e1ffb138f7676ca5b53aeb19ad11b5b81",
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "5b5544c2b914327e7e2c0b91c1737efaff35fbaa",
     "codex-rs/tui/src/app/tests/active_reconnect_tests.rs": "078ffc77b2d271ad0d642f5266462040ce83d3e9",
     "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
     "codex-rs/tui/src/app/tests.rs": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
@@ -101,7 +101,7 @@
     "No merge, no 0.4.5 production installation",
     "Full 21-stage Daniel-CL and seven-program Windows distribution still pending"
   ],
-  "gate": "Cheap source/lockfile and Rustfmt gate with exact snapshot path normalization check, then Windows no-run compile once (65-minute max), followed by all eight exact reconnect cases with positive one-test evidence and four-minute per-case timeout. No owner signoffs inferred.",
+  "gate": "Exact source and dependency pins, preserved owner holds, check all four portable snapshots, Rustfmt, then one native Windows no-run compile and eight exact reconnect selectors with 4-minute per-case limits.",
   "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]",
   "attempts": [
     {
@@ -147,6 +147,16 @@
         "id": 13369931256,
         "sha256": "ec6b2e2f6b242a05858e71821cdec14ceb9ab7bfca4758be303613fb0d45926f"
       }
+    },
+    {
+      "run_id": 41931519869,
+      "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41931519869",
+      "tested_head": "b0645016275d211d0fd1fe20a25e34136abba7a8",
+      "cheap_source": "source integrity success; Rustfmt failed on four line wraps",
+      "windows_native": "skipped",
+      "failure_detail": "Rustfmt demanded multiline wrapping for all four portable reconnect snapshot calls. No native compilation or tests ran. Applied formatter's exact diff to source.",
+      "native_tests_executed": 0,
+      "native_tests_passed": 0
     }
   ]
 }
