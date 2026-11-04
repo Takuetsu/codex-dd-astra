@@ -1070,12 +1070,24 @@ impl ModelClient {
             }
         }
         let client_metadata = responses_metadata.client_metadata(include_internal);
-        let terminalization_signal_already_called = prompt.input.iter().any(|item| {
-            matches!(
-                item,
-                ResponseItem::FunctionCall { name, .. } if name == "report_adaptive_signal"
-            )
-        });
+        // A restored conversation can contain a report_adaptive_signal call from
+        // a previous turn. That call must not satisfy this turn's terminalization
+        // requirement. Count only calls stamped by the harness with the active
+        // turn ID; untagged historical calls cannot prove current authority.
+        let terminalization_signal_already_called =
+            responses_metadata.turn_id.as_deref().is_some_and(|current_turn_id| {
+                prompt.input.iter().any(|item| {
+                    matches!(
+                        item,
+                        ResponseItem::FunctionCall {
+                            name,
+                            internal_chat_message_metadata_passthrough: Some(metadata),
+                            ..
+                        } if name == "report_adaptive_signal"
+                            && metadata.turn_id.as_deref() == Some(current_turn_id)
+                    )
+                })
+            });
         let tool_choice = if responses_metadata.turn_trigger.as_deref()
             == Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
             && !terminalization_signal_already_called
