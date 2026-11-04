@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f87_four_core_security_review_NONRELEASE",
-  "status": "SOURCE_REVIEW_DONE_NATIVE_ACCEPTANCE_PENDING",
+  "status": "RUSTFMT_PATCHED_NATIVE_RETRY_PENDING",
   "baseline_branch": "dd/codexdd-v0.4.5-3f86-core-authority-negatives",
   "baseline_head": "17ab3cb3ed183f8a5f80f3e6ec28837163c735ee",
   "candidate_branch": "dd/codexdd-v0.4.5-3f87-core-closure",
@@ -30,7 +30,7 @@
   "four_core_review": [
     {
       "path": "codex-rs/core/src/client.rs",
-      "source_blob": "032a326e27d7528b6ff3b7afaafe3063cbfb8c35",
+      "source_blob": "fd31526911888ebb21adbef2a09c9a0703130bdf",
       "severity": "high",
       "risk": "An earlier report_adaptive_signal in restored context can incorrectly disable required terminalization on a later turn",
       "finding": "Existing check searched all prompt.input without matching the current turn; source changed to require a harness-stamped current-turn id",
@@ -102,6 +102,13 @@
       "missing signed-off owner review"
     ],
     "release_conditions": "Four Core high-risk path technical review and owner signoff, nine TUI holds, complete 21-stage Daniel-CL suite, seven-program Windows distribution",
-    "ci_policy": "Cheap source gate before expensive Windows native job; no automatic merge/install"
+    "ci_policy": "Cheap source gate before expensive Windows native job; no automatic merge/install",
+    "first_attempt": {
+      "run_id": 41853411517,
+      "head": "cc8bf55171595fa4517c0ed204e0adacfb0836b5",
+      "status": "CHEAP_SOURCE_PASSED_RUSTFMT_FAILED",
+      "windows_status": "SKIPPED",
+      "reason": "six rustfmt 1.95-only source whitespace adjustments"
+    }
   }
 }
