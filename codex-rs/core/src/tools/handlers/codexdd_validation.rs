@@ -17,6 +17,7 @@ use crate::tools::handlers::ExecCommandHandlerOptions;
 use crate::tools::handlers::resolve_tool_environment;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
+use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
 use codex_protocol::items::DynamicToolCallItem;
 use codex_protocol::items::DynamicToolCallStatus;
 use codex_protocol::items::TurnItem;
@@ -29,6 +30,12 @@ use serde::Serialize;
 use serde_json::json;
 
 const TOOL_NAME: &str = "run_codexdd_validation";
+
+// Defense in depth: tool-router visibility is turn-scoped, but a stale or
+// directly dispatched invocation must not bypass the trusted lifecycle phase.
+fn validation_turn_is_authorized(trigger: Option<&str>) -> bool {
+    trigger == Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+}
 const CONTRACT_VERSION: u64 = 1;
 const EVENT_PREFIX: &str = "CODEXDD_VALIDATION_JSON ";
 const MAX_RETAINED_RUNS_PER_REPOSITORY: usize = 20;
@@ -178,6 +185,15 @@ impl CodexDDValidationHandler {
         &self,
         invocation: ToolInvocation,
     ) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
+        let turn_trigger = codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+            invocation.turn.turn_metadata_state.as_ref(),
+        );
+        if !validation_turn_is_authorized(turn_trigger.as_deref()) {
+            return Err(FunctionCallError::RespondToModel(
+                "run_codexdd_validation is permitted only in a trusted Mechanical Validation turn"
+                    .to_string(),
+            ));
+        }
         let ToolPayload::Function { arguments } = &invocation.payload else {
             return Err(FunctionCallError::RespondToModel(
                 "run_codexdd_validation received unsupported payload".to_string(),

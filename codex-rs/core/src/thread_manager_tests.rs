@@ -357,6 +357,122 @@ fn forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive() {
     assert!(snapshot.source_turn_id.is_none());
 }
 
+#[tokio::test]
+async fn forked_thread_cannot_reuse_parent_session_approval_or_permission_grant() {
+    // Persisted workflow history may be copied, but live permission grants and
+    // cached "approved for session" decisions must stay with the parent.
+    let temp_dir = tempdir().expect("tempdir");
+    let mut config = test_config().await;
+    config.codex_home = temp_dir.path().join("codex-home").abs();
+    config.cwd = config.codex_home.abs();
+    std::fs::create_dir_all(&config.codex_home).expect("create codex home");
+
+    let manager = ThreadManager::with_models_provider_and_home_for_tests(
+        CodexAuth::from_api_key("dummy"),
+        config.model_provider.clone(),
+        config.codex_home.to_path_buf(),
+        Arc::new(codex_exec_server::EnvironmentManager::default_for_tests()),
+    );
+    let parent = manager
+        .start_thread(StartThreadOptions::new(config.clone()))
+        .await
+        .expect("start parent thread");
+    let approval_key = "parent-only-tool-approval";
+    parent
+        .thread
+        .session
+        .services
+        .tool_approvals
+        .lock()
+        .await
+        .put(
+            approval_key,
+            codex_protocol::protocol::ReviewDecision::ApprovedForSession,
+        );
+    let parent_grant = codex_protocol::models::AdditionalPermissionProfile {
+        network: Some(codex_protocol::models::NetworkPermissions {
+            enabled: Some(true),
+        }),
+        file_system: None,
+    };
+    parent
+        .thread
+        .session
+        .services
+        .granted_permissions_by_environment_id
+        .lock()
+        .expect("parent grants lock")
+        .insert("primary".to_string(), parent_grant.clone());
+
+    let history = InitialHistory::Resumed(ResumedHistory {
+        history_revision: None,
+        conversation_id: parent.thread_id,
+        history: Arc::new(vec![RolloutItem::ResponseItem(
+            user_msg("review the parent task").into(),
+        )]),
+        rollout_path: None,
+    });
+    let fork = manager
+        .fork_thread_from_history(
+            ForkSnapshot::Interrupted,
+            StartThreadOptions::new(config),
+            history,
+        )
+        .await
+        .expect("fork source history");
+
+    assert_ne!(fork.thread_id, parent.thread_id);
+    assert!(!Arc::ptr_eq(&parent.thread.session, &fork.thread.session));
+    assert_eq!(
+        parent
+            .thread
+            .session
+            .services
+            .tool_approvals
+            .lock()
+            .await
+            .get(&approval_key),
+        Some(codex_protocol::protocol::ReviewDecision::ApprovedForSession)
+    );
+    assert_eq!(
+        fork.thread
+            .session
+            .services
+            .tool_approvals
+            .lock()
+            .await
+            .get(&approval_key),
+        None,
+        "fork must ask again instead of inheriting session approval"
+    );
+    let parent_grants = &parent
+        .thread
+        .session
+        .services
+        .granted_permissions_by_environment_id;
+    let fork_grants = &fork
+        .thread
+        .session
+        .services
+        .granted_permissions_by_environment_id;
+    assert!(!Arc::ptr_eq(parent_grants, fork_grants));
+    assert_eq!(
+        parent_grants
+            .lock()
+            .expect("parent grants lock")
+            .get("primary"),
+        Some(&parent_grant)
+    );
+    assert!(
+        fork_grants.lock().expect("fork grants lock").is_empty(),
+        "fork must not inherit granted network or filesystem permissions"
+    );
+
+    manager
+        .shutdown_all_threads_bounded(Duration::from_secs(10))
+        .await;
+}
+
 /// Controls without a custom allocation policy still produce distinct thread identifiers.
 #[test]
 fn thread_id_generator_defaults_to_standard_ids() {

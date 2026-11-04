@@ -511,7 +511,12 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
             arguments: "{}".to_string(),
             encrypted_function_args: None,
             call_id: "adaptive-signal-call".to_string(),
-            internal_chat_message_metadata_passthrough: None,
+            internal_chat_message_metadata_passthrough: Some(
+                codex_protocol::models::InternalChatMessageMetadataPassthrough {
+                    turn_id: Some("terminalization-turn".to_string()),
+                    ..Default::default()
+                },
+            ),
         }],
         ..Prompt::default()
     };
@@ -525,6 +530,50 @@ fn validation_terminalization_requests_required_tool_choice() -> anyhow::Result<
         /*include_internal*/ false,
     )?;
     assert_eq!(after_signal.tool_choice, "auto");
+
+    // A prior turn's genuine signal must not suppress this turn's required
+    // terminal signal, even when old calls remain in the restored prompt.
+    let mut previous_turn_signal = prompt_after_signal.clone();
+    let Some(ResponseItem::FunctionCall {
+        internal_chat_message_metadata_passthrough: Some(metadata),
+        ..
+    }) = previous_turn_signal.input.first_mut()
+    else {
+        panic!("expected stamped signal call");
+    };
+    metadata.turn_id = Some("previous-worker-turn".to_string());
+    let previous_turn = client.build_responses_request(
+        &previous_turn_signal,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+        /*include_internal*/ false,
+    )?;
+    assert_eq!(previous_turn.tool_choice, "required");
+
+    // Untagged records from legacy history are not proof of a signal in the
+    // active turn; requiring a call is safer than trusting another turn's call.
+    let mut untagged_signal = prompt_after_signal.clone();
+    let Some(ResponseItem::FunctionCall {
+        internal_chat_message_metadata_passthrough,
+        ..
+    }) = untagged_signal.input.first_mut()
+    else {
+        panic!("expected signal call");
+    };
+    *internal_chat_message_metadata_passthrough = None;
+    let untagged = client.build_responses_request(
+        &untagged_signal,
+        &model,
+        /*effort*/ None,
+        codex_protocol::config_types::ReasoningSummary::None,
+        /*service_tier*/ None,
+        &responses_metadata,
+        /*include_internal*/ false,
+    )?;
+    assert_eq!(untagged.tool_choice, "required");
 
     // A similarly named tool must not suppress required terminalization.
     let mut unrelated_call = prompt_after_signal;

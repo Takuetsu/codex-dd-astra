@@ -1,0 +1,190 @@
+# NONRELEASE: source-pinned 3F.87 Core high-risk review acceptance.
+# A cheap source/format gate must pass before native Windows compilation starts.
+name: CodexDD 0.4.5 3F.87 four Core high-risk reviews (NONRELEASE)
+run-name: 3F.87 four Core high-risk reviews on Windows (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f87-core-closure
+    paths:
+      - .github/workflows/codexdd-045-3f87-four-core-windows-native.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f87-core-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Verify frozen candidate, security graph and protected production version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f87-core-closure'
+          test "$(git rev-parse HEAD:codex-rs/core/src/client.rs)" = 'fd31526911888ebb21adbef2a09c9a0703130bdf'
+          test "$(git rev-parse HEAD:codex-rs/core/src/client_tests.rs)" = 'b202107965419a15609c2e67bbd479d6bf4645f4'
+          test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager.rs)" = '88fa659a3c45839d9a3dce6b6a39e6e47795f103'
+          test "$(git rev-parse HEAD:codex-rs/core/src/thread_manager_tests.rs)" = 'e8d154996f7780d8e5cb49e25aa05e3d4167858a'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/mod.rs)" = '2a05e28de35348b79e02d80e4bdd8c3381b88279'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan.rs)" = '422870dba8b5a3b36994a598380c93f58760ad1b'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/spec_plan_tests.rs)" = '472daddb742180e5f44239f10e2a23e11dbd8aab'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/handlers/codexdd_validation.rs)" = 'ded4dafcfabbac1cb722fa53f79561878d1bfac9'
+          test "$(git rev-parse HEAD:codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs)" = '5adee7b4cf388d97efe5ef9975bc748088ed5185'
+          test "$(git rev-parse HEAD:codex-rs/core/src/turn_metadata_tests.rs)" = '34abb036fb9749212ba7b502b17ed922de6a5b8d'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check 17ab3cb3ed183f8a5f80f3e6ec28837163c735ee HEAD
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          ledger=json.loads(Path('docs/upstream-candidates/codexdd-045-3f87-four-core-review-packet.json').read_text())
+          assert ledger['release_approved'] is False
+          assert ledger['formal_owner_signoffs'] == 0
+          assert ledger['reviewed_core_paths'] == 4
+          assert ledger['high_risk_holds_unchanged'] == 13
+          cases=[
+            ('codex-rs/core/src/client_tests.rs','validation_terminalization_requests_required_tool_choice'),
+            ('codex-rs/core/src/thread_manager_tests.rs','forked_thread_cannot_reuse_parent_session_approval_or_permission_grant'),
+            ('codex-rs/core/src/tools/spec_plan_tests.rs','codexdd_client_forged_exact_turn_trigger_cannot_expose_privileged_core_tools'),
+            ('codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs','validation_handler_rejects_nonmechanical_and_lookalike_turns'),
+          ]
+          for path,name in cases:
+            assert Path(path).read_text().count('fn '+name+'(') == 1
+          assert 'turn_id.as_deref() == Some(current_turn_id)' in Path('codex-rs/core/src/client.rs').read_text()
+          assert 'validation_turn_is_authorized(turn_trigger.as_deref())' in Path('codex-rs/core/src/tools/handlers/codexdd_validation.rs').read_text()
+          print('3F87_SOURCE_GUARD_PASS: four Core reviews, exact source, owner holds remain')
+          PY
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt check only (no compilation)
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 110
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Retain the 3F.86 acceptance ancestor for source-bound review.
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Configure bounded Windows logs and Cargo scratch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-3f87'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore Cargo sources only (no oversized target cache)
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute all four Core review regressions on Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cases = @(
+            'client::tests::validation_terminalization_requests_required_tool_choice',
+            'thread_manager::tests::forked_thread_cannot_reuse_parent_session_approval_or_permission_grant',
+            'thread_manager::tests::child_workflow_snapshot_preserves_adaptive_state',
+            'thread_manager::tests::forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive',
+            'tools::spec_plan::tests::codexdd_client_forged_exact_turn_trigger_cannot_expose_privileged_core_tools',
+            'tools::spec_plan::tests::codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation',
+            'tools::spec_plan::tests::codexdd_protected_turns_force_direct_tools_without_widening_other_turns',
+            'tools::spec_plan::tests::codexdd_validation_runner_is_visible_only_during_mechanical_validation',
+            'tools::handlers::codexdd_validation::tests::validation_handler_rejects_nonmechanical_and_lookalike_turns',
+            'tools::handlers::codexdd_validation::tests::native_exit_consistency_refuses_fake_pass_and_missing_process_exit',
+            'turn_metadata::tests::turn_metadata_state_ignores_client_reserved_metadata_before_start',
+            'thread_manager::tests::fork_internal_session_uses_only_the_selected_history'
+          )
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $results=New-Object 'System.Collections.Generic.List[object]'
+          $index=0
+          foreach ($case in $cases) {
+            $index++
+            $stdout=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stdout.log")
+            $stderr=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stderr.log")
+            Write-Host "BEGIN 3F.87 Core case $($index): $case"
+            $arguments=@('test','--locked','-p','codex-core','--lib',$case,'--','--exact','--nocapture')
+            $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stdout -Tail 60 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
+              throw "Core case $($index) failed with exit $($proc.ExitCode)"
+            }
+            $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
+            if (-not [regex]::IsMatch($output, 'test result: ok\.\s+1 passed;\s+0 failed;')) {
+              throw "Core case $($index) did not execute exactly one test"
+            }
+            $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
+            if (-not [regex]::IsMatch($output,$pattern)) {
+              throw "Core case $($index) missing matching passing test name"
+            }
+            $results.Add([pscustomobject]@{Selector=$case;Passed=1;Stdout=$stdout;Stderr=$stderr})
+            Write-Host "PASS 3F.87 Core case $($index): $case" -ForegroundColor Green
+          }
+          $receipt=[pscustomobject]@{
+            kind='codexdd045_3f87_four_core_reviews_native_nonrelease'
+            source_head=$env:GITHUB_SHA
+            utc=(Get-Date).ToUniversalTime().ToString('o')
+            passed=$results.Count
+            failed=0
+            selectors=$results.ToArray()
+            release_approved=$false
+            formal_owner_signoffs=0
+          }
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f87-receipt.json -Encoding utf8
+          Write-Host "3F.87 CORE REVIEW TESTS GREEN: $($results.Count)/$($cases.Count)" -ForegroundColor Green
+      - name: Preserve focused native logs and nonrelease receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f87-four-core-review-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14

@@ -4,6 +4,29 @@ use std::fs;
 use tempfile::tempdir;
 
 #[test]
+fn validation_handler_rejects_nonmechanical_and_lookalike_turns() {
+    // The model-visible registry is not an execution authorization boundary.
+    // A stale or direct dispatch must recheck its actual trusted turn marker.
+    assert!(!validation_turn_is_authorized(None));
+    for marker in [
+        codex_protocol::CODEXDD_ADAPTIVE_RECONNAISSANCE_TURN_TRIGGER,
+        codex_protocol::CODEXDD_ADAPTIVE_IMPLEMENTATION_TURN_TRIGGER,
+        codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER,
+        "mechanical_validation_untrusted",
+        "",
+    ] {
+        assert!(
+            !validation_turn_is_authorized(Some(marker)),
+            "nonmechanical marker must never authorize execution: {marker}"
+        );
+    }
+    let mechanical = codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+    assert!(validation_turn_is_authorized(Some(mechanical)));
+    let forged = format!("{mechanical}_untrusted");
+    assert!(!validation_turn_is_authorized(Some(&forged)));
+}
+
+#[test]
 fn profiles_map_to_fixed_scripts_and_bounded_timeouts() {
     assert_eq!(
         [
