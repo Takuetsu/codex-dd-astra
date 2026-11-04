@@ -1,0 +1,199 @@
+# NONRELEASE: source-pinned 3F.89 TUI session/program parity acceptance.
+# A cheap source/format gate must pass before native Windows compilation starts.
+name: CodexDD 0.4.5 3F.89 TUI session/program parity (NONRELEASE)
+run-name: 3F.89 TUI session/program parity on Windows (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f89-tui-session-program-parity
+    paths:
+      - .github/workflows/codexdd-045-3f89-tui-session-program-parity-windows-native.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f89-tui-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Verify frozen candidate, security graph and protected production version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f89-tui-session-program-parity'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/config_persistence.rs)" = '4728d5f16b8d99168799705c6525d3cc794a0afe'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/disconnect_tests.rs)" = '662967de32dc64517b250dc180baafd1da4dd36a'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/key_chords.rs)" = '6c1321ad5262def0af21bc1377885def1cb2a397'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/realtime_requests.rs)" = 'cb8c448549d1b3ef270a05f41350949769060489'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests.rs)" = 'd7f541ced9d91f184a7de3a527a55c804b62a672'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/tests/slash_commands.rs)" = '416331e8bfc09a22032f40f4d910e7dc0b71359e'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app_server_session.rs)" = 'db8a394b652fd18d61807a8b656e6b7463f07521'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app.rs)" = '2c4ef89f8aef22193ae8d5f57996a948db987659'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/event_dispatch.rs)" = '98ab0359d6ed6026154b70f7f1061a385c08744b'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/thread_routing.rs)" = 'fbca3e0e7efa0f11385297027c12b6a5d96a8632'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/settings.rs)" = 'bb747507416e7712fe4ff5832446783c0127994e'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/tests.rs)" = '2a5f08c359b1ec82c67e9eeba4aa9ba274629741'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/thread_events.rs)" = '4ee8f4a0446c8c0cfd41dd234457a299c89d242c'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/thread_event_buffer.rs)" = '1857941dba71f611256dc9e782b9b9c428fecaec'
+          test "$(git rev-parse HEAD:codex-rs/tui/Cargo.toml)" = 'ea0894b3e1d3777f4c598727b03199c1f69cbd05'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check de1ba00e59b564853c38d9c288fba0fce5a11b9a HEAD
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          ledger=json.loads(Path('docs/upstream-candidates/codexdd-045-3f89-tui-session-program-parity-candidate.json').read_text())
+          assert ledger['release_approved'] is False
+          assert ledger['formal_owner_signoffs'] == 0
+          assert ledger['tui_owner_holds_remaining'] == 9
+          assert ledger['source_base_sha'] == 'de1ba00e59b564853c38d9c288fba0fce5a11b9a'
+          assert ledger['status'] == 'SOURCE_AUDITED_NATIVE_SELECTION_PENDING'
+          assert len(ledger['native_selectors']) == 20
+          for case in ledger['native_selectors']:
+              source=Path(case['test_path']).read_text()
+              selector=case['selector'].rsplit('::',1)[-1]
+              assert source.count('fn ' + selector + '(') == 1, selector
+          print('3F89_SOURCE_GUARD_PASS: 20 selectors and exact TUI source; owner holds unchanged')
+          PY
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt check only (no compilation)
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 110
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Retain the 3F.87 acceptance ancestor for source-bound review.
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Configure bounded Windows logs and Cargo scratch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-3f89-tui'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore Cargo sources only (no oversized target cache)
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute all TUI session/program parity regressions on Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cases = @(
+            'app::config_persistence::tests::refresh_in_memory_config_from_disk_updates_live_widget_preferences',
+            'app::config_persistence::tests::new_session_and_config_rebuilds_keep_the_live_application_network_policy',
+            'app::config_persistence::tests::rebuild_config_for_resume_or_fallback_uses_current_config_on_same_cwd_error',
+            'app::tests::disconnect::disconnected_command_center_keeps_input_and_blocks_actions',
+            'app::tests::disconnect::disconnected_config_panel_keeps_input',
+            'app::tests::disconnect::remote_disconnect_retires_voice_before_reconnecting',
+            'app::tests::key_chords::legacy_terminal_preserves_image_paste_without_reading_clipboard',
+            'app::tests::key_chords::physical_chords_route_list_and_mixed_request_input_modals',
+            'app::tests::realtime_requests::shutdown_stops_backend_voice_once_through_app_server',
+            'app::tests::api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account',
+            'app::tests::remote_resume_keeps_server_only_cwd_out_of_local_config',
+            'chatwidget::tests::slash_commands::slash_daybreak_offers_an_application_when_unavailable',
+            'chatwidget::tests::slash_commands::legacy_image_paste_ignores_buffered_press_until_other_input',
+            'app_server_session::tests::detached_fork_restores_persisted_adaptive_workflow_state',
+            'app::tests::replayed_interrupted_turn_restores_queued_input_to_composer',
+            'app::tests::selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children',
+            'app::tests::update_feature_flags_disabling_guardian_clears_review_policy_and_restores_default',
+            'app::tests::app_server_thread_replacement_clears_previous_transcript_before_replay',
+            'chatwidget::tests::slash_commands::queued_settings_selection_applies_before_next_input',
+            'app::tests::replayed_file_change_approval_recovers_snapshot_changes'
+          )
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $results=New-Object 'System.Collections.Generic.List[object]'
+          $index=0
+          foreach ($case in $cases) {
+            $index++
+            $stdout=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stdout.log")
+            $stderr=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stderr.log")
+            Write-Host "BEGIN 3F.89 TUI case $($index): $case"
+            $arguments=@('test','--locked','-p','codex-tui','--lib',$case,'--','--exact','--nocapture')
+            $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stdout -Tail 60 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
+              throw "TUI case $($index) failed with exit $($proc.ExitCode)"
+            }
+            $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
+            if (-not [regex]::IsMatch($output, 'test result: ok\.\s+1 passed;\s+0 failed;')) {
+              throw "TUI case $($index) did not execute exactly one test"
+            }
+            $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
+            if (-not [regex]::IsMatch($output,$pattern)) {
+              throw "TUI case $($index) missing matching passing test name"
+            }
+            $results.Add([pscustomobject]@{Selector=$case;Passed=1;Stdout=$stdout;Stderr=$stderr})
+            Write-Host "PASS 3F.89 TUI case $($index): $case" -ForegroundColor Green
+          }
+          $receipt=[pscustomobject]@{
+            kind='codexdd045_3f89_tui_session_program_native_nonrelease'
+            source_head=$env:GITHUB_SHA
+            utc=(Get-Date).ToUniversalTime().ToString('o')
+            passed=$results.Count
+            failed=0
+            selectors=$results.ToArray()
+            release_approved=$false
+            formal_owner_signoffs=0
+          }
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f89-receipt.json -Encoding utf8
+          Write-Host "3F.89 TUI SESSION PROGRAM TESTS GREEN: $($results.Count)/$($cases.Count)" -ForegroundColor Green
+      - name: Preserve focused native logs and nonrelease receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f89-tui-session-program-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14
