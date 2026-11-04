@@ -58,7 +58,7 @@
     },
     {
       "test_path": "codex-rs/tui/src/app/tests/key_chords.rs",
-      "selector": "app::tests::key_chords::legacy_terminal_preserves_image_paste_without_reading_clipboard"
+      "selector": "app::tests::key_chords::vim_escape_recovery_preserves_enhanced_terminals_and_altgr"
     },
     {
       "test_path": "codex-rs/tui/src/app/tests/key_chords.rs",
@@ -151,8 +151,22 @@
     "Some selected regression tests are representative and do not prove full upstream 0.163 TUI behavioral equivalence",
     "API-key positive eligibility and Shift+Insert Windows paste parity may require new dedicated negatives",
     "Reconnecting a managed daemon and cold-resume TUI caller equivalence require more than unit tests",
-    "Formal owner approvals must be granted independently and remain unchanged"
+    "Formal owner approvals must be granted independently and remain unchanged",
+    "Unix-only legacy terminal image paste test remains Unix-specific; 3F.89 Windows run substitutes a platform-compatible AltGr / enhanced terminal input test."
   ],
-  "gate": "Cheap source integrity, exact test selectors and Rustfmt before one Windows native job; each selector must execute exactly one passing test",
-  "no_merge_no_release": true
+  "gate": "Cheap exact source integrity and Rustfmt, plus static per-selector Windows cfg eligibility; Windows native must execute 20 exact selectors and prove 1/1 pass each.",
+  "no_merge_no_release": true,
+  "first_attempt": {
+    "run_id": 41877236552,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41877236552",
+    "head": "aef2477008859ffbcd769c407ba1374edbf45378",
+    "cheap_source": "success",
+    "windows_native": "failed_after_six_passes",
+    "native_tests_proven_green": 6,
+    "test_7": "ZERO_MATCHED_TESTS_CFG_UNIX_ON_WINDOWS",
+    "not_run_cases": "8-20",
+    "artifact_id": 13348924131,
+    "artifact_sha256": "ca4df7c26f5a683195f561bcb6069880e7ec872f46fc81bcbac9147153817453",
+    "failure_scope": "Selector provisioning only: Unix-only test was accidentally selected for Windows; no Rust compile or assertion failure"
+  }
 }
