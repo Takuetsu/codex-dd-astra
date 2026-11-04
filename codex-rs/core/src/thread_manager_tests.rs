@@ -325,6 +325,38 @@ fn child_workflow_snapshot_preserves_adaptive_state() {
     );
 }
 
+#[test]
+fn forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive() {
+    // Empty restored workflow state must not synthesize any child authority.
+    let empty = append_child_workflow_state_snapshot(
+        InitialHistory::Forked(Vec::new()),
+        codex_history::RestoredWorkflowState::None,
+    );
+    let InitialHistory::Forked(items) = empty else {
+        panic!("expected forked child history");
+    };
+    assert!(items.is_empty());
+
+    // Unsupported restored state is an explicit sentinel, not a repair role,
+    // continuation permission or synthetic adaptive authority.
+    let unsupported = append_child_workflow_state_snapshot(
+        InitialHistory::Forked(Vec::new()),
+        codex_history::RestoredWorkflowState::Unsupported,
+    );
+    let InitialHistory::Forked(items) = unsupported else {
+        panic!("expected forked child history");
+    };
+    let [RolloutItem::WorkflowState(snapshot)] = items.as_slice() else {
+        panic!("unsupported restore must append exactly one state marker");
+    };
+    assert_eq!(
+        snapshot.operation,
+        codex_history::WorkflowStateOperation::Unsupported
+    );
+    assert!(snapshot.adaptive_state.is_none());
+    assert!(snapshot.source_turn_id.is_none());
+}
+
 /// Controls without a custom allocation policy still produce distinct thread identifiers.
 #[test]
 fn thread_id_generator_defaults_to_standard_ids() {
