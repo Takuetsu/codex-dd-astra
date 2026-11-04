@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f89_tui_session_program_reconnect_parity_NONRELEASE",
-  "status": "SOURCE_AUDITED_NATIVE_SELECTION_PENDING",
+  "status": "TWENTY_WINDOWS_TUI_SELECTED_REGRESSIONS_GREEN_OWNER_SIGNOFF_PENDING",
   "source_base_branch": "dd/codexdd-v0.4.5-3f88-tui-replay-authority",
   "source_base_sha": "de1ba00e59b564853c38d9c288fba0fce5a11b9a",
   "source_test_baseline_sha": "0bba2b4c5a2f646169273856b4d0da8f8e9e72b4",
@@ -120,7 +120,7 @@
         "codex-rs/tui/src/app/config_persistence.rs"
       ],
       "topic": "Persist live preferences, feature-policy updates, modal state and app commands through same-CWD resume/rebuild",
-      "decision": "SELECTED_TEST_PENDING"
+      "decision": "SELECTED_NATIVE_TESTS_GREEN_FORMAL_OWNER_SIGNOFF_PENDING"
     },
     {
       "paths": [
@@ -128,14 +128,14 @@
         "codex-rs/tui/src/app/tests.rs"
       ],
       "topic": "Disconnected modal ownership, queued user input and active-thread state",
-      "decision": "SELECTED_TEST_PENDING"
+      "decision": "SELECTED_NATIVE_TESTS_GREEN_FORMAL_OWNER_SIGNOFF_PENDING"
     },
     {
       "paths": [
         "codex-rs/tui/src/app_server_session.rs"
       ],
       "topic": "Cold-resume policy and restored adaptive workflow state isolation",
-      "decision": "SELECTED_TEST_PENDING"
+      "decision": "SELECTED_NATIVE_TESTS_GREEN_FORMAL_OWNER_SIGNOFF_PENDING"
     },
     {
       "paths": [
@@ -144,7 +144,7 @@
         "codex-rs/tui/src/chatwidget/tests/slash_commands.rs"
       ],
       "topic": "Program eligibility/API-key model popup, slash Daybreak disabled fallback, legacy image paste and queued settings",
-      "decision": "SELECTED_TEST_PENDING"
+      "decision": "SELECTED_NATIVE_TESTS_GREEN_FORMAL_OWNER_SIGNOFF_PENDING"
     }
   ],
   "known_gaps": [
@@ -154,7 +154,7 @@
     "Formal owner approvals must be granted independently and remain unchanged",
     "Unix-only legacy terminal image paste test remains Unix-specific; 3F.89 Windows run substitutes a platform-compatible AltGr / enhanced terminal input test."
   ],
-  "gate": "Cheap exact source integrity and Rustfmt, plus static per-selector Windows cfg eligibility; Windows native must execute 20 exact selectors and prove 1/1 pass each.",
+  "gate": "PASS at 3F.89 run 41885892676: 20 exact Windows TUI selectors green; owner approvals, cold-resume acceptance and 21-stage release suite still outstanding.",
   "no_merge_no_release": true,
   "first_attempt": {
     "run_id": 41877236552,
@@ -168,5 +168,25 @@
     "artifact_id": 13348924131,
     "artifact_sha256": "ca4df7c26f5a683195f561bcb6069880e7ec872f46fc81bcbac9147153817453",
     "failure_scope": "Selector provisioning only: Unix-only test was accidentally selected for Windows; no Rust compile or assertion failure"
+  },
+  "windows_native_evidence": {
+    "run_id": 41885892676,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
+    "head": "a2be1c80c7b0b42af682695697a565b67eca4373",
+    "conclusion": "success",
+    "completed_at_utc": "2026-11-04T18:57:01Z",
+    "cheap_source": "success",
+    "rustfmt": "success",
+    "windows_native": "success",
+    "exact_selected_tests_passed": 20,
+    "failed": 0,
+    "stdout": "3F.89 TUI SESSION PROGRAM TESTS GREEN: 20/20",
+    "artifact": {
+      "id": 13354731556,
+      "name": "codexdd045-3f89-tui-session-program-nonrelease",
+      "sha256": "07cf7ddc61d1731d225427bae7d4413ccf042c24142e6961619b4a438536fea0",
+      "expires_at_utc": "2026-11-18T18:56:53Z"
+    },
+    "limits": "Green for 20 selected tests at source head only; no full-release suite, no merged program, and zero formal owner approvals"
   }
 }
