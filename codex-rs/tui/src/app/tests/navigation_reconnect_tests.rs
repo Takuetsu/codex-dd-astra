@@ -12,6 +12,20 @@ use codex_app_server_client::AppServerEvent;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
+fn normalize_reconnect_snapshot_path(rendered: String) -> String {
+    // The simulated project is the same path on both platforms, but Windows
+    // converts it to C:\\tmp\\project. Keep the original snapshot assertions
+    // stable without masking any other content, permissions or routing changes.
+    #[cfg(windows)]
+    {
+        rendered.replace(r"C:\tmp\project", "/tmp/project")
+    }
+    #[cfg(not(windows))]
+    {
+        rendered
+    }
+}
+
 #[tokio::test]
 async fn reconnect_daemon_command_center_after_connection_replacement_without_a_conversation()
 -> Result<()> {
@@ -291,7 +305,7 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
         if previous_thread.is_none() && !overview_initialized {
             assert_snapshot!(
                 "daemon_command_center_reconnecting",
-                render_bottom_popup(&app.chat_widget, /*width*/ 100)
+                normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 100))
             );
             app.agents_overview
                 .view_state
@@ -301,7 +315,7 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
                 Some("Reconnect failed — agent list is stale; relaunch to retry");
             assert_snapshot!(
                 "daemon_command_center_failed",
-                render_bottom_popup(&app.chat_widget, /*width*/ 100)
+                normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 100))
             );
         }
         let connected = reconnect(
@@ -398,7 +412,7 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
             assert!(history.contains("Unsubmitted title: Keep this task draft!"));
             assert_snapshot!(
                 "daemon_command_center_vanished_rename",
-                render_bottom_popup(&app.chat_widget, /*width*/ 100)
+                normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 100))
             );
             app.handle_tui_event(
                 &mut tui,
@@ -462,7 +476,7 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
                 "reconnected_unavailable_conversation",
                 format!(
                     "{content}\n{}",
-                    render_bottom_popup(&app.chat_widget, /*width*/ 80)
+                    normalize_reconnect_snapshot_path(render_bottom_popup(&app.chat_widget, /*width*/ 80))
                 )
             );
 
