@@ -1,0 +1,158 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f89_tui_session_program_reconnect_parity_NONRELEASE",
+  "status": "SOURCE_AUDITED_NATIVE_SELECTION_PENDING",
+  "source_base_branch": "dd/codexdd-v0.4.5-3f88-tui-replay-authority",
+  "source_base_sha": "de1ba00e59b564853c38d9c288fba0fce5a11b9a",
+  "source_test_baseline_sha": "0bba2b4c5a2f646169273856b4d0da8f8e9e72b4",
+  "parent_green_run": 41869900824,
+  "tui_owner_holds_remaining": 9,
+  "formal_owner_signoffs": 0,
+  "release_approved": false,
+  "production_version": "0.4.4",
+  "source_identity": {
+    "codex-rs/tui/src/app/config_persistence.rs": "4728d5f16b8d99168799705c6525d3cc794a0afe",
+    "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
+    "codex-rs/tui/src/app/tests/key_chords.rs": "6c1321ad5262def0af21bc1377885def1cb2a397",
+    "codex-rs/tui/src/app/tests/realtime_requests.rs": "cb8c448549d1b3ef270a05f41350949769060489",
+    "codex-rs/tui/src/app/tests.rs": "d7f541ced9d91f184a7de3a527a55c804b62a672",
+    "codex-rs/tui/src/chatwidget/tests/slash_commands.rs": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+    "codex-rs/tui/src/app_server_session.rs": "db8a394b652fd18d61807a8b656e6b7463f07521",
+    "codex-rs/tui/src/app.rs": "2c4ef89f8aef22193ae8d5f57996a948db987659",
+    "codex-rs/tui/src/app/event_dispatch.rs": "98ab0359d6ed6026154b70f7f1061a385c08744b",
+    "codex-rs/tui/src/app/thread_routing.rs": "fbca3e0e7efa0f11385297027c12b6a5d96a8632",
+    "codex-rs/tui/src/chatwidget/settings.rs": "bb747507416e7712fe4ff5832446783c0127994e",
+    "codex-rs/tui/src/chatwidget/tests.rs": "2a5f08c359b1ec82c67e9eeba4aa9ba274629741",
+    "codex-rs/tui/src/app/thread_events.rs": "4ee8f4a0446c8c0cfd41dd234457a299c89d242c",
+    "codex-rs/tui/src/app/thread_event_buffer.rs": "1857941dba71f611256dc9e782b9b9c428fecaec",
+    "codex-rs/tui/Cargo.toml": "ea0894b3e1d3777f4c598727b03199c1f69cbd05",
+    "codex-rs/Cargo.toml": "cfebd9b784ef9ff027b274aa9f7101c9c2496613",
+    "codex-rs/Cargo.lock": "13bc15ff844e93dfaf7777c73bb7313b35bb3b81",
+    "codex-rs/deny.toml": "f282c7c55d05201e308e60804f85754c8522d462",
+    "codex-rs/codexdd-version.txt": "6f2743d65dc06508954334e88edb660bf8efea20"
+  },
+  "native_selectors": [
+    {
+      "test_path": "codex-rs/tui/src/app/config_persistence.rs",
+      "selector": "app::config_persistence::tests::refresh_in_memory_config_from_disk_updates_live_widget_preferences"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/config_persistence.rs",
+      "selector": "app::config_persistence::tests::new_session_and_config_rebuilds_keep_the_live_application_network_policy"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/config_persistence.rs",
+      "selector": "app::config_persistence::tests::rebuild_config_for_resume_or_fallback_uses_current_config_on_same_cwd_error"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "selector": "app::tests::disconnect::disconnected_command_center_keeps_input_and_blocks_actions"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "selector": "app::tests::disconnect::disconnected_config_panel_keeps_input"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "selector": "app::tests::disconnect::remote_disconnect_retires_voice_before_reconnecting"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/key_chords.rs",
+      "selector": "app::tests::key_chords::legacy_terminal_preserves_image_paste_without_reading_clipboard"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/key_chords.rs",
+      "selector": "app::tests::key_chords::physical_chords_route_list_and_mixed_request_input_modals"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/realtime_requests.rs",
+      "selector": "app::tests::realtime_requests::shutdown_stops_backend_voice_once_through_app_server"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::remote_resume_keeps_server_only_cwd_out_of_local_config"
+    },
+    {
+      "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "selector": "chatwidget::tests::slash_commands::slash_daybreak_offers_an_application_when_unavailable"
+    },
+    {
+      "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "selector": "chatwidget::tests::slash_commands::legacy_image_paste_ignores_buffered_press_until_other_input"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app_server_session.rs",
+      "selector": "app_server_session::tests::detached_fork_restores_persisted_adaptive_workflow_state"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::replayed_interrupted_turn_restores_queued_input_to_composer"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::selected_and_resumed_threads_use_server_capability_for_v1_and_v2_children"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::update_feature_flags_disabling_guardian_clears_review_policy_and_restores_default"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::app_server_thread_replacement_clears_previous_transcript_before_replay"
+    },
+    {
+      "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "selector": "chatwidget::tests::slash_commands::queued_settings_selection_applies_before_next_input"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::replayed_file_change_approval_recovers_snapshot_changes"
+    }
+  ],
+  "review_scope": [
+    {
+      "paths": [
+        "codex-rs/tui/src/app.rs",
+        "codex-rs/tui/src/app/config_persistence.rs"
+      ],
+      "topic": "Persist live preferences, feature-policy updates, modal state and app commands through same-CWD resume/rebuild",
+      "decision": "SELECTED_TEST_PENDING"
+    },
+    {
+      "paths": [
+        "codex-rs/tui/src/app/event_dispatch.rs",
+        "codex-rs/tui/src/app/tests.rs"
+      ],
+      "topic": "Disconnected modal ownership, queued user input and active-thread state",
+      "decision": "SELECTED_TEST_PENDING"
+    },
+    {
+      "paths": [
+        "codex-rs/tui/src/app_server_session.rs"
+      ],
+      "topic": "Cold-resume policy and restored adaptive workflow state isolation",
+      "decision": "SELECTED_TEST_PENDING"
+    },
+    {
+      "paths": [
+        "codex-rs/tui/src/chatwidget/settings.rs",
+        "codex-rs/tui/src/chatwidget/tests.rs",
+        "codex-rs/tui/src/chatwidget/tests/slash_commands.rs"
+      ],
+      "topic": "Program eligibility/API-key model popup, slash Daybreak disabled fallback, legacy image paste and queued settings",
+      "decision": "SELECTED_TEST_PENDING"
+    }
+  ],
+  "known_gaps": [
+    "Some selected regression tests are representative and do not prove full upstream 0.163 TUI behavioral equivalence",
+    "API-key positive eligibility and Shift+Insert Windows paste parity may require new dedicated negatives",
+    "Reconnecting a managed daemon and cold-resume TUI caller equivalence require more than unit tests",
+    "Formal owner approvals must be granted independently and remain unchanged"
+  ],
+  "gate": "Cheap source integrity, exact test selectors and Rustfmt before one Windows native job; each selector must execute exactly one passing test",
+  "no_merge_no_release": true
+}
