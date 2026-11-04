@@ -1,6 +1,6 @@
 {
   "kind": "codexdd_045_3f86_core_authority_negative_candidate_nonrelease",
-  "status": "SOURCE_ONLY_NOT_NATIVE_VALIDATED",
+  "status": "TWO_CORE_NATIVE_REGRESSIONS_GREEN_OWNER_REVIEW_OPEN",
   "parent_green_3f85": {
     "run_id": 41711890851,
     "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41711890851",
@@ -14,13 +14,15 @@
       "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
       "selector": "codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation",
       "goal": "near-match reconnaissance, implementation and mechanical-validation triggers must not enable direct mode or validator exposure",
-      "not_proven": "Trusted turn-trigger provenance, actual native run"
+      "not_proven": "Metadata provenance and capability restrictions outside registry exposure remain unreviewed; formal owner signoff pending",
+      "native_status": "PASS_3F86_SOURCE_BOUND_1_SELECTOR"
     },
     {
       "path": "codex-rs/core/src/thread_manager_tests.rs",
       "selector": "forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive",
       "goal": "empty and unsupported fork-restored workflow state must never create adaptive-role state",
-      "not_proven": "Live fork authority, inherited permission and pending-approval isolation"
+      "not_proven": "Live-fork authority, pending approvals and permission inheritance isolation remain unreviewed; formal owner signoff pending",
+      "native_status": "PASS_3F86_SOURCE_BOUND_1_SELECTOR"
     }
   ],
   "review_holds": {
@@ -30,7 +32,32 @@
     "formal_owner_signoffs": 0
   },
   "source_graph_change": "No Cargo dependencies, production marker, authorization runtime code or release packages modified",
-  "required_gate": "Cheap local Daniel-CL source formatting and 2 targeted Core native tests; only then expensive CI, owner signoffs remain pending",
+  "required_gate": "3F.86 native tests COMPLETE for tested head; continue wider Core/TUI authority reviews and full 21-stage Daniel-CL release suite before promotion",
   "production_version": "0.4.4",
-  "release_approved": false
+  "release_approved": false,
+  "core_native_evidence": {
+    "run_id": 41844333674,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41844333674",
+    "tested_head": "3167bcc0107043a087915d13c8e7b9ddfee66760",
+    "status": "completed",
+    "conclusion": "success",
+    "completed_at_utc": "2026-11-04T14:42:42Z",
+    "cheap_source": "success",
+    "rustfmt": "success",
+    "windows_native": "success",
+    "passed": 2,
+    "failed": 0,
+    "stdout": "3F.86 CORE NEGATIVES GREEN: 2/2",
+    "selectors": [
+      "tools::spec_plan::tests::codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validation",
+      "thread_manager::tests::forked_workflow_snapshot_without_adaptive_authority_remains_nonadaptive"
+    ],
+    "artifact": {
+      "id": 13333940829,
+      "name": "codexdd045-3f86-core-authority-nonrelease",
+      "sha256": "f25e52d54b7f2e9925cc07de5b4ce88951cb44b48090a618f65e09e231842a9f",
+      "expires_at": "2026-11-18T14:42:36Z"
+    },
+    "scope": "Two native regression selectors only; no merge, release, production change or formal path owner signoff."
+  }
 }
