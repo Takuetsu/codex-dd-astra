@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f88_tui_replay_authority_review_NONRELEASE",
-  "status": "SOURCE_AUDIT_COMPLETE_NATIVE_SELECTED_TESTS_PENDING",
+  "status": "TWELVE_TUI_NATIVE_TESTS_GREEN_OWNER_SIGNOFF_PENDING",
   "candidate_branch": "dd/codexdd-v0.4.5-3f88-tui-replay-authority",
   "base_3f87_head": "01f853ccf5e327e4008b9743c72c25859fa59a0a",
   "parent_core_green_run": 41854019600,
@@ -36,25 +36,29 @@
       "risk": "Aggregate transcript replay byte retention",
       "finding": "Current ThreadEventStore evicts old noninteractive events on count, delta and aggregate wire-byte limits; previous 3F.82 review coverage points to a stale thread_routing source blob",
       "native_gate": "retained_replay_byte_budget_evicts_old_messages_but_keeps_pending_approval",
-      "owner_signoff": "PENDING"
+      "owner_signoff": "PENDING",
+      "native_status": "SELECTED_TEST_PASSED"
     },
     {
       "risk": "Outstanding approvals under replay pressure",
       "finding": "push_request_checked preflights incoming interactive requests against both per-event and retained replay budgets; unresolved requests cannot be evicted to make room, so an over-cap request returns an explicit error",
       "native_gate": "unresolved_request_retention_exhaustion_fails_before_mutating_approval_state",
-      "owner_signoff": "PENDING"
+      "owner_signoff": "PENDING",
+      "native_status": "SELECTED_TEST_PASSED"
     },
     {
       "risk": "Active/inactive thread ownership and live FIFO",
       "finding": "Live thread event channel is capped, preserves FIFO under saturation, and supports pending inactive-thread approval replay. Requires current-head Windows native reproduction",
       "native_gate": "inactive_thread_overflow_does_not_starve_foreground_or_block_switch",
-      "owner_signoff": "PENDING"
+      "owner_signoff": "PENDING",
+      "native_status": "SELECTED_TEST_PASSED"
     },
     {
       "risk": "Cold-resume state and policy parity",
       "finding": "TUI app-server resume preserves server-side authority settings rather than silently overriding them; current native test proves one representative rejoin path only, not full reconnect/cold-resume acceptance",
       "native_gate": "thread_resume_params_can_rejoin_without_overriding_existing_settings",
-      "owner_signoff": "PENDING"
+      "owner_signoff": "PENDING",
+      "native_status": "SELECTED_TEST_PASSED"
     }
   ],
   "native_selectors": [
@@ -107,12 +111,33 @@
       "selector": "app_server_session::tests::thread_resume_params_can_rejoin_without_overriding_existing_settings"
     }
   ],
-  "required_next": "Source-pinned cheap check; then exact 12 TUI Windows native tests. Only after native evidence may update review dispositions; no owner approval or release inferred.",
+  "required_next": "Review remaining TUI cold-resume, modal/event ownership, settings/program enrollment, startup and Windows paste semantics; keep all 9 TUI owner holds pending formal decisions.",
   "scope_limits": [
     "No 0.4.5 promotion",
     "No generated distribution or releases",
     "No automatic merge",
     "No claim nine remaining TUI holds completed",
     "No replacement for full 21-stage Daniel-CL acceptance"
-  ]
+  ],
+  "windows_native_evidence": {
+    "run_id": 41869900824,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41869900824",
+    "tested_head": "0bba2b4c5a2f646169273856b4d0da8f8e9e72b4",
+    "completed_at_utc": "2026-11-04T17:15:54Z",
+    "conclusion": "success",
+    "cheap_source": "success",
+    "rustfmt": "success",
+    "windows_native": "success",
+    "exact_test_count": 12,
+    "passed": 12,
+    "failed": 0,
+    "terminal_stdout": "3F.88 TUI REPLAY AUTHORITY TESTS GREEN: 12/12",
+    "artifact": {
+      "id": 13345809243,
+      "name": "codexdd045-3f88-tui-replay-authority-nonrelease",
+      "sha256": "6b61c5d1a446030d747ac3a4baaa64852454677ef1023ebb486a823c05481212",
+      "expires_at_utc": "2026-11-18T17:15:46Z"
+    },
+    "scope": "Source-bound selected Windows regressions only, not owner-equivalence signoff, merge, promotion or full Daniel-CL suite"
+  }
 }
