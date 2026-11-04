@@ -87,7 +87,7 @@ jobs:
   windows-native:
     needs: cheap-source
     runs-on: windows-2022
-    timeout-minutes: 110
+    timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_PROFILE_DEV_DEBUG: "0"
@@ -134,7 +134,37 @@ jobs:
       - uses: ./.github/actions/setup-rusty-v8
         with:
           target: x86_64-pc-windows-msvc
-      - name: Execute all Windows reconnect end-to-end regressions on Windows
+      - name: Compile TUI unit test binary before enforcing test timeouts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $cwd=Join-Path $env:GITHUB_WORKSPACE 'codex-rs'
+          $stdout=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\compile-stdout.log'
+          $stderr=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\compile-stderr.log'
+          Write-Host 'BEGIN 3F.90 single cold Windows compilation (no tests executed)'
+          $arguments=@('test','--locked','-p','codex-tui','--lib','--no-run')
+          $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory $cwd -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          try {
+            if (-not $proc.WaitForExit(3900000)) {
+              $proc.Kill($true)
+              $proc.WaitForExit()
+              Get-Content $stdout -Tail 40 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
+              throw '3F.90 cold TUI test compilation exceeded 65 minutes; tests never started'
+            }
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stdout -Tail 60 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 150 -ErrorAction SilentlyContinue
+              throw "3F.90 Windows TUI compile failed with exit $($proc.ExitCode)"
+            }
+            Get-Content $stderr -Tail 14 -ErrorAction SilentlyContinue
+            Write-Host '3F.90 WINDOWS TEST COMPILATION GREEN (no tests yet)' -ForegroundColor Green
+          } finally {
+            $proc.Dispose()
+          }
+      - name: Execute eight exact reconnect cases after compilation
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -160,12 +190,12 @@ jobs:
             $arguments=@('test','--locked','-p','codex-tui','--lib',$case,'--','--exact','--nocapture')
             $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
             try {
-              if (-not $proc.WaitForExit(600000)) {
+              if (-not $proc.WaitForExit(240000)) {
                 $proc.Kill($true)
                 $proc.WaitForExit()
                 Get-Content $stdout -Tail 50 -ErrorAction SilentlyContinue
                 Get-Content $stderr -Tail 80 -ErrorAction SilentlyContinue
-                throw "Reconnect case $($index) exceeded ten-minute execution limit"
+                throw "Reconnect case $($index) exceeded four-minute test execution limit after compilation"
               }
               if ($proc.ExitCode -ne 0) {
                 Get-Content $stdout -Tail 80 -ErrorAction SilentlyContinue
