@@ -712,6 +712,27 @@ async fn codexdd_near_match_turn_triggers_do_not_unlock_direct_mode_or_validatio
 }
 
 #[tokio::test]
+async fn codexdd_client_forged_exact_turn_trigger_cannot_expose_privileged_core_tools() {
+    // The reserved turn-trigger field can arrive in client-supplied metadata,
+    // but it cannot claim a controller-authorized lifecycle phase.
+    let plan = probe(|turn| {
+        set_features(turn, &[Feature::CodeMode, Feature::CodeModeOnly]);
+        turn.turn_metadata_state.set_responsesapi_client_metadata(
+            std::collections::HashMap::from([(
+                "turn_trigger".to_string(),
+                codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+            )]),
+        );
+        assert!(turn.turn_metadata_state.current_turn_trigger().is_none());
+    })
+    .await;
+    assert_eq!(plan.tool_mode, ToolMode::CodeModeOnly);
+    plan.assert_registered_lacks(&["run_codexdd_validation"]);
+    plan.assert_visible_lacks(&["run_codexdd_validation"]);
+    plan.assert_visible_contains(&[codex_code_mode::PUBLIC_TOOL_NAME]);
+}
+
+#[tokio::test]
 async fn reviewer_tool_policy_exclude_optional_core_tools() {
     let (mut session, mut turn) = make_session_and_context().await;
     session.tool_policy = Arc::new(codex_guardian_reviewer::reviewer_tool_policy());
