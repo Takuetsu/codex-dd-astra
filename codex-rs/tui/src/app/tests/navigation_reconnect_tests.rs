@@ -13,12 +13,12 @@ use pretty_assertions::assert_eq;
 use serde_json::json;
 
 #[tokio::test]
-async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conversation()
+async fn reconnect_daemon_command_center_after_connection_replacement_without_a_conversation()
 -> Result<()> {
     use super::super::agents_overview::AGENTS_OVERVIEW_VIEW_ID;
     use codex_app_server_protocol::Thread;
     use codex_app_server_protocol::ThreadStatus;
-    use tokio::net::UnixListener;
+    use tokio::net::TcpListener;
 
     // Losing an optional, previously opened thread must not strand the command center either.
     for (previous_thread, changed_child_permissions, overview_initialized) in [
@@ -162,12 +162,10 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
         app.agents_overview.refresh_pending = true;
         let refresh = tokio::spawn(std::future::pending::<()>());
         app.agents_overview.refresh_task = Some(refresh.abort_handle());
-        let directory = tempfile::tempdir()?;
-        let socket_path = directory.path().join("daemon.sock");
-        let listener = UnixListener::bind(&socket_path)?;
-        let endpoint = crate::RemoteAppServerEndpoint::UnixSocket {
-            socket_path: codex_utils_absolute_path::AbsolutePathBuf::try_from(socket_path.clone())?,
-        };
+        // A loopback WebSocket exercises the same remote daemon protocol on
+        // Windows and Unix. New connections simulate a replaced daemon session.
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let endpoint = crate::resolve_remote_addr(&format!("ws://{}", listener.local_addr()?))?;
         app.app_server_target = AppServerTarget::LocalDaemon {
             allow_embedded_fallback: true,
             endpoint: endpoint.clone(),
@@ -190,7 +188,6 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
             .map(|id| make_thread(id, "Recovered task", ThreadStatus::NotLoaded))
             .transpose()?;
         let server = tokio::spawn(async move {
-            let mut listener = listener;
             let mut methods = Vec::new();
             let mut child_opened = false;
             for connection in 0..(2 + usize::from(previous_thread.is_some())) {
@@ -242,11 +239,6 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
                         method => panic!("unexpected daemon reconnect request: {method}"),
                     }
                 })).await?);
-                if connection == 0 {
-                    drop(listener);
-                    std::fs::remove_file(&socket_path)?;
-                    listener = UnixListener::bind(&socket_path)?;
-                }
             }
             Ok::<_, color_eyre::Report>(methods)
         });

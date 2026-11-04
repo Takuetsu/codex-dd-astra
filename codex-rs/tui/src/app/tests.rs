@@ -10350,6 +10350,7 @@ async fn start_config_write_test_app_server(app: &App) -> Result<AppServerSessio
 #[path = "tests/active_reconnect_tests.rs"]
 mod active_reconnect;
 
-#[cfg(unix)]
+// The command-center reconnect harness uses loopback WebSockets on all
+// platforms, including Windows, to catch daemon recovery regressions.
 #[path = "tests/navigation_reconnect_tests.rs"]
 mod navigation_reconnect;
