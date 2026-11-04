@@ -63,8 +63,20 @@ jobs:
           for case in ledger['native_selectors']:
               source=Path(case['test_path']).read_text()
               selector=case['selector'].rsplit('::',1)[-1]
-              assert source.count('fn ' + selector + '(') == 1, selector
-          print('3F89_SOURCE_GUARD_PASS: 20 selectors and exact TUI source; owner holds unchanged')
+              lines=source.splitlines()
+              locations=[i for i,line in enumerate(lines) if 'fn ' + selector + '(' in line]
+              assert len(locations) == 1, selector
+              attributes='\n'.join(lines[max(0, locations[0]-5):locations[0]])
+              excluded=(
+                  '#[cfg(unix)]',
+                  '#[cfg(target_os = "macos")]',
+                  '#[cfg(not(windows))]',
+                  '#[cfg(not(target_os = "windows"))]',
+              )
+              assert not any(marker in attributes for marker in excluded), (
+                  'Windows selector is excluded by platform cfg: ' + case['selector']
+              )
+          print('3F89_SOURCE_GUARD_PASS: 20 Windows-eligible selectors; owner holds unchanged')
           PY
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
@@ -136,7 +148,7 @@ jobs:
             'app::tests::disconnect::disconnected_command_center_keeps_input_and_blocks_actions',
             'app::tests::disconnect::disconnected_config_panel_keeps_input',
             'app::tests::disconnect::remote_disconnect_retires_voice_before_reconnecting',
-            'app::tests::key_chords::legacy_terminal_preserves_image_paste_without_reading_clipboard',
+            'app::tests::key_chords::vim_escape_recovery_preserves_enhanced_terminals_and_altgr',
             'app::tests::key_chords::physical_chords_route_list_and_mixed_request_input_modals',
             'app::tests::realtime_requests::shutdown_stops_backend_voice_once_through_app_server',
             'app::tests::api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account',
