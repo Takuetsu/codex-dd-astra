@@ -75,7 +75,7 @@ jobs:
           row='  C:\\tmp\\project  2                                       │ Selected task'
           normalized=row.replace('C:\\tmp\\project  2','/tmp/project  2  ').replace('C:\\tmp\\project','/tmp/project')
           assert normalized == '  /tmp/project  2                                         │ Selected task'
-          assert nav.count('normalize_reconnect_snapshot_path(render_bottom_popup(') == 4
+          assert nav.count('normalize_reconnect_snapshot_path(render_bottom_popup(') == 5
           assert '"daemon_command_center_vanished_rename_windows"' in nav
           assert '#[cfg(windows)]\n            assert_snapshot!(\n                "daemon_command_center_vanished_rename_windows"' in nav
           assert '#[cfg(not(windows))]\n            assert_snapshot!(\n                "daemon_command_center_vanished_rename"' in nav
