@@ -800,3 +800,8 @@ pub(super) async fn drain_history(
             .collect::<Vec<_>>(),
     ))
 }
+
+// 3F.95 exercises the interactive TUI against a real killed-and-restarted
+// app-server child process. This is separate from 3F.94's blocked updater.
+#[path = "real_process_reconnect_tests.rs"]
+mod real_process;

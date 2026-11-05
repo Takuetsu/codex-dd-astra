@@ -1,0 +1,242 @@
+# NONRELEASE 3F.95: actual app-server child PID restart + production TUI reconnect.
+# This does NOT run the 3F.94 managed Windows CLI supervisor/updater, and
+# never weakens Windows token/socket/job-object security.
+name: CodexDD 0.4.5 3F.95 real-process TUI reconnect (NONRELEASE)
+run-name: 3F.95 Windows TUI reconnect after real app-server process restart (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f95-tui-real-process-reconnect
+    paths:
+      - .github/workflows/codexdd-045-3f95-tui-real-app-server-reconnect-windows.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f95-tui-real-process
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Verify source-only 3F.95 changes, accepted 3F.93 baseline and release holds
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f95-tui-real-process-reconnect'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/real_process_reconnect_tests.rs)" = '54e4622307235d063ab441254a6d887fafad5c1e'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/active_reconnect_tests.rs)" = '21b5998e82494bdd169ef66774b554709e87e61f'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/reconnect.rs)" = '97e8d65d11f1722955e17ddf92080a9b00191fef'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app_server_session.rs)" = 'db8a394b652fd18d61807a8b656e6b7463f07521'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app_server_connection.rs)" = 'ac3ab1cb2cd4980ce795b63204d2ab65616c93e9'
+          test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/v2/daemon_update_recovery.rs)" = '9103d8fae8c029c6f917d27f7bbbcf005e9924a7'
+          test "$(git rev-parse HEAD:codex-rs/tui/Cargo.toml)" = 'ea0894b3e1d3777f4c598727b03199c1f69cbd05'
+          test "$(git rev-parse HEAD:codex-rs/app-server/Cargo.toml)" = '0ef30505cc5e78102d8bfb64e18adaf0e0ad008b'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check b8effbfd79bb638d5df980a6a962ee2e6f85559d HEAD
+          python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          root=Path('docs/upstream-candidates')
+          d=json.loads((root/'codexdd-045-3f95-real-tui-process-reconnect-candidate.json').read_text())
+          approvals=json.loads((root/'codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          p0=json.loads((root/'codexdd-045-3f92-p0-current-source-review-packet.json').read_text())
+          changed=set(subprocess.check_output(['git','diff','--name-only',
+             'b8effbfd79bb638d5df980a6a962ee2e6f85559d','HEAD'],text=True).splitlines())
+          expected={
+            'codex-rs/tui/src/app/tests/real_process_reconnect_tests.rs',
+            'codex-rs/tui/src/app/tests/active_reconnect_tests.rs',
+            'docs/upstream-candidates/codexdd-045-3f95-real-tui-process-reconnect-candidate.json',
+            '.github/workflows/codexdd-045-3f95-tui-real-app-server-reconnect-windows.yml',
+          }
+          assert changed==expected,(changed,expected)
+          assert d['status']=='SOURCE_PREPARED_WINDOWS_NATIVE_PENDING'
+          assert d['baseline_head']=='b8effbfd79bb638d5df980a6a962ee2e6f85559d'
+          assert d['files']['test_blob']=='54e4622307235d063ab441254a6d887fafad5c1e'
+          assert d['files']['module_blob']=='21b5998e82494bdd169ef66774b554709e87e61f'
+          assert d['release_approved'] is False and d['production_version']=='0.4.4'
+          assert d['formal_owner_signoffs']==0
+          assert d['remaining_high_risk_core_review_holds']==4
+          assert d['remaining_high_risk_tui_review_holds']==9
+          assert len(d['cases'])==1
+          assert d['independent_prior_acceptance']['run_id']==42060527099
+          assert d['independent_prior_acceptance']['real_app_server_process_cases_passed']==3
+          assert d['independent_prior_acceptance']['separate_3f94']['real_supervisor_native_cases_passed']==0
+          assert approvals['approved_owner_count']==0 and len(approvals['paths'])==109
+          assert all(x['formal_owner_decision']=='PENDING_SIGNOFF' for x in approvals['paths'])
+          assert p0['high_risk_owner_holds']==13
+          test=Path(d['files']['test']).read_text()
+          parent=Path(d['files']['module']).read_text()
+          symbol=d['cases'][0]['selector'].rsplit('::',1)[-1]
+          assert test.count('async fn '+symbol+'(')==1
+          assert '#[path = "real_process_reconnect_tests.rs"]\nmod real_process;' in parent
+          for marker in ('spawn_real_app_server(&home, &socket)',
+                         'original.kill().await?', 'successor.kill().await?',
+                         'app.begin_reconnect()', 'app.finish_reconnect(',
+                         'drain_history(', 'AppServerTarget::Remote',
+                         'CODEXDD_3F95_APP_SERVER_BIN', 'UNDEFINED_SENTINEL_THAT_MUST_NOT_BE_PRESENT'):
+            if marker.startswith('UNDEFINED_'):
+              assert marker not in test
+            else:
+              assert marker in test, marker
+          assert 'auto_update' not in test and 'Start-Process' not in test
+          print('3F.95 SOURCE GREEN: real app-server PID replacement + interactive TUI reconnect, no production changes, 0/109 approvals')
+          PY
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt check before native Windows build
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 140
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Configure bounded build directories, source identity and logs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'cd95'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @("CARGO_TARGET_DIR=$target","TEMP=$temp","TMP=$temp","CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE") |
+            Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Windows long paths setup failed' }
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore Cargo source cache only
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile real app-server executable and TUI test binary once
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Tested source HEAD mismatch' }
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $cwd=Join-Path $env:GITHUB_WORKSPACE 'codex-rs'
+          $builds=@(
+            @{Name='appserver'; Args=@('build','--locked','-p','codex-app-server','--bin','codex-app-server')},
+            @{Name='tui'; Args=@('test','--locked','-p','codex-tui','--lib','--no-run')}
+          )
+          foreach ($build in $builds) {
+            $out=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\compile-"+$build.Name+"-stdout.log")
+            $err=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\compile-"+$build.Name+"-stderr.log")
+            Write-Host "BEGIN 3F.95 native compile: $($build.Name)"
+            $proc=Start-Process -FilePath $cargo -ArgumentList $build.Args -WorkingDirectory $cwd -NoNewWindow -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
+            try {
+              if (-not $proc.WaitForExit(4200000)) {
+                $proc.Kill($true)
+                $proc.WaitForExit()
+                Get-Content $err -Tail 120 -ErrorAction SilentlyContinue
+                throw "3F.95 $($build.Name) compile exceeded 70 minutes; no runtime cases executed"
+              }
+              if ($proc.ExitCode -ne 0) {
+                Get-Content $out -Tail 60 -ErrorAction SilentlyContinue
+                Get-Content $err -Tail 160 -ErrorAction SilentlyContinue
+                throw "3F.95 $($build.Name) compile failed: $($proc.ExitCode)"
+              }
+            } finally { $proc.Dispose() }
+            Write-Host "3F.95 $($build.Name) NATIVE COMPILE GREEN" -ForegroundColor Green
+          }
+          $exe=Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+            throw '3F.95 real app-server child executable missing'
+          }
+      - name: Execute one exact TUI reconnect case across two real OS app-server processes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source changed after compilation' }
+          $env:CODEXDD_3F95_APP_SERVER_BIN=Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $env:CODEXDD_3F95_APP_SERVER_BIN -PathType Leaf)) {
+            throw '3F.95 real app-server executable unavailable'
+          }
+          $case='app::tests::active_reconnect::real_process::real_daemon_process_restart_restores_tui_history_and_unsent_draft'
+          $out=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\3f95-tui-real-process-stdout.log'
+          $err=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\3f95-tui-real-process-stderr.log'
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $args=@('test','--locked','-p','codex-tui','--lib',$case,'--','--exact','--nocapture','--test-threads=1')
+          $proc=Start-Process -FilePath $cargo -ArgumentList $args -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
+          $reason=$null
+          try {
+            if (-not $proc.WaitForExit(480000)) {
+              $proc.Kill($true)
+              $proc.WaitForExit()
+              $reason='3F.95 real TUI process test exceeded 8-minute timeout'
+            } elseif ($proc.ExitCode -ne 0) {
+              $reason="3F.95 native test failed with exit $($proc.ExitCode)"
+            }
+          } finally { $proc.Dispose() }
+          $output=(Get-Content $out -Raw -ErrorAction SilentlyContinue)+(Get-Content $err -Raw -ErrorAction SilentlyContinue)
+          if (-not $reason) {
+            if (-not [regex]::IsMatch($output,'test result: ok\.\s+1 passed;\s+0 failed;')) {
+              $reason='3F.95 did not report exactly one passing native test'
+            } elseif (-not [regex]::IsMatch($output,'test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok')) {
+              $reason='3F.95 exact real-process TUI selector was not reported as passing'
+            }
+          }
+          $receipt=[pscustomobject]@{
+            kind='codexdd045_3f95_real_app_server_process_tui_reconnect_nonrelease'
+            source_head=$env:GITHUB_SHA
+            selector=$case
+            utc=(Get-Date).ToUniversalTime().ToString('o')
+            passed=($null -eq $reason)
+            failure_reason=$reason
+            release_approved=$false
+            formal_owner_signoffs=0
+            production_version='0.4.4'
+          }
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f95-receipt.json -Encoding utf8
+          if ($reason) {
+            Get-Content $out -Tail 125 -ErrorAction SilentlyContinue
+            Get-Content $err -Tail 140 -ErrorAction SilentlyContinue
+            throw $reason
+          }
+          Write-Host '3F.95 WINDOWS REAL OS APP-SERVER RESTART + TUI RECONNECT GREEN: 1/1' -ForegroundColor Green
+      - name: Preserve NONRELEASE native process logs and receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f95-real-tui-process-reconnect-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14

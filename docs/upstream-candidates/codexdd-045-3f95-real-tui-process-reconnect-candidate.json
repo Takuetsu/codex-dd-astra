@@ -1,0 +1,61 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f95_tui_real_daemon_process_reconnect_nonrelease",
+  "status": "SOURCE_PREPARED_WINDOWS_NATIVE_PENDING",
+  "candidate_branch": "dd/codexdd-v0.4.5-3f95-tui-real-process-reconnect",
+  "baseline_branch": "dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume",
+  "baseline_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+  "release_approved": false,
+  "production_version": "0.4.4",
+  "formal_owner_signoffs": 0,
+  "remaining_high_risk_core_review_holds": 4,
+  "remaining_high_risk_tui_review_holds": 9,
+  "independent_prior_acceptance": {
+    "stage": "3F.93",
+    "run_id": 42060527099,
+    "exact_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+    "status": "success",
+    "real_app_server_process_cases_passed": 3,
+    "separate_3f94": {
+      "status": "BLOCKED_HOSTED_JOB_OBJECT_BREAKAWAY",
+      "source_audit_run": 42097465527,
+      "real_supervisor_native_cases_passed": 0,
+      "manual_environment_required": true
+    }
+  },
+  "files": {
+    "test": "codex-rs/tui/src/app/tests/real_process_reconnect_tests.rs",
+    "test_blob": "54e4622307235d063ab441254a6d887fafad5c1e",
+    "module": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
+    "module_blob": "21b5998e82494bdd169ef66774b554709e87e61f",
+    "workflow": ".github/workflows/codexdd-045-3f95-tui-real-app-server-reconnect-windows.yml"
+  },
+  "cases": [
+    {
+      "selector": "app::tests::active_reconnect::real_process::real_daemon_process_restart_restores_tui_history_and_unsent_draft",
+      "expectations": [
+        "Spawn the real compiled codex-app-server executable in a test-owned CODEX_HOME via codex-uds socket",
+        "Use actual remote AppServerSession and typed thread/read + thread/loaded/list to prove first PID is healthy and saved history readable",
+        "Terminate first OS PID abruptly; keep an actual TUI App and its unsent draft alive through the disconnect",
+        "Spawn replacement PID using same persisted rollout; use TUI's production reconnect() and finish_reconnect() paths",
+        "Assert original thread remains selected, offline state clears, historic user message renders, unsubmitted draft is not posted, no synthetic UserTurn operation emitted",
+        "Kill test-owned replacement; no live daemon CLI supervisor or updater is touched"
+      ]
+    }
+  ],
+  "native_evidence": "NOT_RUN",
+  "native_requirements": {
+    "source": "Only test module + registration + workflow + ledger changed; exact Cargo.lock/deny/version pins and existing high-risk owner holds",
+    "cheap": "Source integrity, no-review-promotion and Cargo fmt check on Linux before Windows Cargo",
+    "windows": "windows-2022 hosted runner is allowed only for child-process app-server, which already passed 3F.93; never attempt PID-managed CLI supervisor or job breakaway",
+    "build": "Build locked production codex-app-server binary and TUI unit test binary once, then one exact selector with timeout and capture all logs",
+    "evidence": "Fail if any test did not run exactly once and pass; write nonrelease receipt and upload logs"
+  },
+  "limitations": [
+    "Real app-server OS process boundary and real TUI reconnect state path, but not the installed/auto-update PID-managed supervisor",
+    "Uses a test-owned UnixSocket transport (Windows named pipe) as an explicit remote endpoint to isolate interactive behavior; no proof of the privileged local daemon socket discovery/security handshake",
+    "No physical terminal keyboard or PTY rendering; verifies actual TUI app input state and text rendered via Ratatui test backend",
+    "Not 21-stage local release acceptance and does not grant 109-path owner approval",
+    "No production code, dependency or security policy changes; production stays on 0.4.4"
+  ]
+}
