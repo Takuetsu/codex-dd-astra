@@ -35,9 +35,9 @@ $serial = 0
 function Assert-Condition([bool]$condition, [string]$description) {
   if (-not $condition) { throw "3F.94 assertion failed: $description" }
 }
-function Set-IsolatedHome([string]$home) {
-  $env:CODEX_HOME = $home
-  $env:CODEX_SQLITE_HOME = $home
+function Set-IsolatedHome([string]$sandboxHome) {
+  $env:CODEX_HOME = $sandboxHome
+  $env:CODEX_SQLITE_HOME = $sandboxHome
 }
 function Install-TestBinary([string]$target) {
   New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
@@ -47,17 +47,17 @@ function Install-TestBinary([string]$target) {
     Copy-Item -LiteralPath $exe -Destination $target -ErrorAction Stop
   }
 }
-function Set-Updater([string]$home, [bool]$enabled) {
-  $settings = Join-Path $home 'app-server-daemon\settings.json'
+function Set-Updater([string]$sandboxHome, [bool]$enabled) {
+  $settings = Join-Path $sandboxHome 'app-server-daemon\settings.json'
   New-Item -ItemType Directory -Path (Split-Path $settings -Parent) -Force | Out-Null
   @{
     shutdownGraceSeconds = 0
     updater = @{ autoUpdateEnabled = $enabled; updateIntervalMinutes = 1440 }
   } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $settings -Encoding utf8
 }
-function Invoke-Daemon([string]$home, [string]$action) {
+function Invoke-Daemon([string]$sandboxHome, [string]$action) {
   $script:serial++
-  Set-IsolatedHome $home
+  Set-IsolatedHome $sandboxHome
   $out = Join-Path $env:GITHUB_WORKSPACE ("native-evidence\3f94-" + $script:serial + '-' + $action + '.out')
   $err = Join-Path $env:GITHUB_WORKSPACE ("native-evidence\3f94-" + $script:serial + '-' + $action + '.err')
   $child = Start-Process -FilePath $exe -ArgumentList @('app-server','daemon',$action) -PassThru -NoNewWindow -RedirectStandardOutput $out -RedirectStandardError $err
@@ -65,7 +65,7 @@ function Invoke-Daemon([string]$home, [string]$action) {
     if (-not $child.WaitForExit(90000)) {
       $child.Kill($true)
       $child.WaitForExit()
-      throw "3F.94 daemon $action timed out in isolated home $home"
+      throw "3F.94 daemon $action timed out in isolated home $sandboxHome"
     }
     $status = $child.ExitCode
   } finally {
@@ -82,8 +82,8 @@ function Invoke-Daemon([string]$home, [string]$action) {
   Write-Host ("3F.94 DAEMON {0}: {1}" -f $action, $json.status)
   return $json
 }
-function Read-ManagedPid([string]$home, [string]$filename) {
-  $file = Join-Path $home ("app-server-daemon\" + $filename)
+function Read-ManagedPid([string]$sandboxHome, [string]$filename) {
+  $file = Join-Path $sandboxHome ("app-server-daemon\" + $filename)
   Assert-Condition (Test-Path -LiteralPath $file -PathType Leaf) "missing PID record $file"
   $record = Get-Content -LiteralPath $file -Raw | ConvertFrom-Json
   Assert-Condition ([long]$record.pid -gt 0) "$filename has no PID"
@@ -94,7 +94,7 @@ function Read-ManagedPid([string]$home, [string]$filename) {
   }
   $id = [int]$record.pid
   Assert-Condition ($null -ne (Get-Process -Id $id -ErrorAction SilentlyContinue)) "$filename process $id is not running"
-  $script:owned.Add([pscustomobject]@{home=$home; pid=$id}) | Out-Null
+  $script:owned.Add([pscustomobject]@{home=$sandboxHome; pid=$id}) | Out-Null
   return $id
 }
 function Test-Case([string]$label, [scriptblock]$body) {
@@ -112,61 +112,61 @@ function Test-Case([string]$label, [scriptblock]$body) {
 
 try {
   Test-Case 'dedicated-managed-daemon-pid-restart-and-stop' {
-    $home = Join-Path $base 'dedicated'
-    $managed = Join-Path $home 'packages\app-server-daemon\current\bin\codex.exe'
+    $sandboxHome = Join-Path $base 'dedicated'
+    $managed = Join-Path $sandboxHome 'packages\app-server-daemon\current\bin\codex.exe'
     Install-TestBinary $managed
-    Set-Updater $home $false
-    $first = Invoke-Daemon $home 'start'
+    Set-Updater $sandboxHome $false
+    $first = Invoke-Daemon $sandboxHome 'start'
     Assert-Condition ($first.status -eq 'started') 'dedicated first start must launch'
-    $pid1 = Read-ManagedPid $home 'daemon.pid'
+    $pid1 = Read-ManagedPid $sandboxHome 'daemon.pid'
     Assert-Condition ($first.backend -eq 'pid') 'dedicated start must own PID backend'
     Assert-Condition ($first.managedCodexPath -eq $managed) 'dedicated start must use isolated package'
-    $second = Invoke-Daemon $home 'start'
+    $second = Invoke-Daemon $sandboxHome 'start'
     Assert-Condition ($second.status -eq 'alreadyRunning') 'dedicated duplicate start must not launch'
-    Assert-Condition ((Read-ManagedPid $home 'daemon.pid') -eq $pid1) 'duplicate start changed daemon PID'
-    $version = Invoke-Daemon $home 'version'
+    Assert-Condition ((Read-ManagedPid $sandboxHome 'daemon.pid') -eq $pid1) 'duplicate start changed daemon PID'
+    $version = Invoke-Daemon $sandboxHome 'version'
     Assert-Condition ($version.status -eq 'running' -and $version.backend -eq 'pid') 'dedicated version not healthy'
     Assert-Condition (-not [string]::IsNullOrEmpty($version.appServerVersion)) 'daemon did not answer real control socket'
-    $restarted = Invoke-Daemon $home 'restart'
+    $restarted = Invoke-Daemon $sandboxHome 'restart'
     Assert-Condition ($restarted.status -eq 'restarted') 'dedicated restart rejected'
-    $pid2 = Read-ManagedPid $home 'daemon.pid'
+    $pid2 = Read-ManagedPid $sandboxHome 'daemon.pid'
     Assert-Condition ($pid2 -ne $pid1) 'dedicated restart reused daemon PID'
-    Assert-Condition (-not (Test-Path (Join-Path $home 'app-server-daemon\daemon-updater.pid'))) 'disabled updater launched'
-    $stopped = Invoke-Daemon $home 'stop'
+    Assert-Condition (-not (Test-Path (Join-Path $sandboxHome 'app-server-daemon\daemon-updater.pid'))) 'disabled updater launched'
+    $stopped = Invoke-Daemon $sandboxHome 'stop'
     Assert-Condition ($stopped.status -eq 'stopped') 'dedicated daemon failed to stop'
-    Assert-Condition (-not (Test-Path (Join-Path $home 'app-server-daemon\daemon.pid'))) 'stale dedicated PID record after stop'
+    Assert-Condition (-not (Test-Path (Join-Path $sandboxHome 'app-server-daemon\daemon.pid'))) 'stale dedicated PID record after stop'
     Write-Host "3F.94 dedicated process lifecycle GREEN: old=$pid1 successor=$pid2"
   }
 
   Test-Case 'stable-legacy-updater-survives-restart-and-obeys-disable' {
-    $home = Join-Path $base 'legacy-stable'
+    $sandboxHome = Join-Path $base 'legacy-stable'
     $release = '0.0.0-x86_64-pc-windows-msvc'
-    $standalone = Join-Path $home 'packages\standalone'
+    $standalone = Join-Path $sandboxHome 'packages\standalone'
     $releaseDir = Join-Path $standalone ("releases\" + $release)
     $managed = Join-Path $releaseDir 'bin\codex.exe'
     Install-TestBinary $managed
     New-Item -ItemType Junction -Path (Join-Path $standalone 'current') -Target $releaseDir -ErrorAction Stop | Out-Null
     Set-Content -LiteralPath (Join-Path $standalone 'auto-update-version') -Value $release -Encoding utf8 -NoNewline
-    Set-Updater $home $true
-    Set-Content -LiteralPath (Join-Path $home 'app-server-daemon\app-server.stderr.log') -Value '' -Encoding utf8
-    $started = Invoke-Daemon $home 'start'
+    Set-Updater $sandboxHome $true
+    Set-Content -LiteralPath (Join-Path $sandboxHome 'app-server-daemon\app-server.stderr.log') -Value '' -Encoding utf8
+    $started = Invoke-Daemon $sandboxHome 'start'
     Assert-Condition ($started.status -eq 'started' -and $started.backend -eq 'pid') 'legacy managed daemon did not start'
-    $pid1 = Read-ManagedPid $home 'app-server.pid'
-    $updater1 = Read-ManagedPid $home 'app-server-updater.pid'
+    $pid1 = Read-ManagedPid $sandboxHome 'app-server.pid'
+    $updater1 = Read-ManagedPid $sandboxHome 'app-server-updater.pid'
     Assert-Condition ($pid1 -ne $updater1) 'daemon and updater cannot be the same process'
-    $restarted = Invoke-Daemon $home 'restart'
+    $restarted = Invoke-Daemon $sandboxHome 'restart'
     Assert-Condition ($restarted.status -eq 'restarted') 'legacy restart not accepted'
-    $pid2 = Read-ManagedPid $home 'app-server.pid'
-    $updater2 = Read-ManagedPid $home 'app-server-updater.pid'
+    $pid2 = Read-ManagedPid $sandboxHome 'app-server.pid'
+    $updater2 = Read-ManagedPid $sandboxHome 'app-server-updater.pid'
     Assert-Condition ($pid2 -ne $pid1) 'legacy restart did not replace daemon process'
     Assert-Condition ($updater2 -eq $updater1) 'updater unexpectedly replaced on ordinary daemon restart'
-    Assert-Condition ((Invoke-Daemon $home 'version').status -eq 'running') 'legacy successor did not answer control socket'
-    Set-Updater $home $false
-    Assert-Condition ((Invoke-Daemon $home 'restart').status -eq 'restarted') 'restart with updater disabled failed'
-    Assert-Condition (-not (Test-Path (Join-Path $home 'app-server-daemon\app-server-updater.pid'))) 'updater PID retained despite disabled preference'
+    Assert-Condition ((Invoke-Daemon $sandboxHome 'version').status -eq 'running') 'legacy successor did not answer control socket'
+    Set-Updater $sandboxHome $false
+    Assert-Condition ((Invoke-Daemon $sandboxHome 'restart').status -eq 'restarted') 'restart with updater disabled failed'
+    Assert-Condition (-not (Test-Path (Join-Path $sandboxHome 'app-server-daemon\app-server-updater.pid'))) 'updater PID retained despite disabled preference'
     Assert-Condition ($null -eq (Get-Process -Id $updater1 -ErrorAction SilentlyContinue)) 'disabled updater process remains alive'
-    Assert-Condition ((Invoke-Daemon $home 'stop').status -eq 'stopped') 'legacy daemon stop failed'
-    Assert-Condition (-not (Test-Path (Join-Path $home 'app-server-daemon\app-server.pid'))) 'legacy PID record survived stop'
+    Assert-Condition ((Invoke-Daemon $sandboxHome 'stop').status -eq 'stopped') 'legacy daemon stop failed'
+    Assert-Condition (-not (Test-Path (Join-Path $sandboxHome 'app-server-daemon\app-server.pid'))) 'legacy PID record survived stop'
     Write-Host "3F.94 updater lifecycle GREEN: old=$pid1 successor=$pid2 updater=$updater1 disabled=true"
   }
 
@@ -183,11 +183,11 @@ try {
   Assert-Condition ($results.Count -eq 2 -and @($results | Where-Object { $_.passed }).Count -eq 2) 'expected two passing process cases'
   Write-Host '3F.94 REAL WINDOWS SUPERVISOR / UPDATER TESTS GREEN: 2/2'
 } finally {
-  foreach ($home in @((Join-Path $base 'dedicated'), (Join-Path $base 'legacy-stable'))) {
-    if (Test-Path $home) {
+  foreach ($sandboxHome in @((Join-Path $base 'dedicated'), (Join-Path $base 'legacy-stable'))) {
+    if (Test-Path $sandboxHome) {
       try {
-        Set-IsolatedHome $home
-        $null = Invoke-Daemon $home 'stop'
+        Set-IsolatedHome $sandboxHome
+        $null = Invoke-Daemon $sandboxHome 'stop'
       } catch {
         Write-Host "3F.94 cleanup daemon stop: $($_.Exception.Message)"
       }

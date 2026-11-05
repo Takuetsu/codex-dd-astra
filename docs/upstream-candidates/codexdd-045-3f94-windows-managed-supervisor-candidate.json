@@ -21,7 +21,7 @@
   "source_change": {
     "kind": "one isolated GitHub Windows process acceptance script, one dedicated source-pinned GitHub workflow and nonrelease evidence documents",
     "script_path": ".github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1",
-    "script_blob": "2dd20c39270c53e3274191071768418b0b497136",
+    "script_blob": "dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13",
     "no_production_source_changes": true,
     "no_cargo_lock_or_security_changes": true
   },
@@ -48,5 +48,17 @@
     "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
     "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
   ],
-  "ci_result": "NOT_YET_RUN"
+  "ci_result": "NOT_YET_RUN",
+  "failed_attempts": [
+    {
+      "run_id": 42064776537,
+      "stage": "windows-native script / first process case",
+      "source_checks": "passed",
+      "native_windows_cli_compilation": "passed",
+      "process_cases_executed": 0,
+      "root_cause": "PowerShell case-insensitive reserved automatic $HOME collides with test-local $home variables/parameter names",
+      "production_bug_observed": false
+    }
+  ],
+  "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS"
 }

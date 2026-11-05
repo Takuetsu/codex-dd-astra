@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f94-windows-managed-supervisor'
-          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = '2dd20c39270c53e3274191071768418b0b497136'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = 'dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
@@ -56,7 +56,7 @@ jobs:
             'docs/upstream-candidates/codexdd-045-3f93-real-daemon-cold-resume-candidate.json',
           },changed
           assert p['status']=='SOURCE_PREPARED_CHEAP_AND_NATIVE_WINDOWS_PENDING'
-          assert p['source_change']['script_blob']=='2dd20c39270c53e3274191071768418b0b497136'
+          assert p['source_change']['script_blob']=='dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13'
           assert p['baseline_head']=='b8effbfd79bb638d5df980a6a962ee2e6f85559d'
           assert p['release_approved'] is False and p['formal_owner_signoffs']==0
           assert p['production_version']=='0.4.4'
@@ -69,6 +69,9 @@ jobs:
           assert all(r['formal_owner_decision']=='PENDING_SIGNOFF' for r in f['paths'])
           assert m['high_risk_owner_holds']==13
           script=Path('.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1').read_text()
+          import re
+          assert not re.search(r'\$home\b', script, re.I), 'PowerShell reserved `$HOME` used as a variable/parameter'
+          assert script.count('$sandboxHome') >= 35, 'Missing explicit sandbox-home variable'
           assert len(p['cases'])==2
           assert all("Test-Case '"+c['selector']+"'" in script for c in p['cases'])
           assert "GITHUB_ACTIONS" in script and "Set-IsolatedHome $home" in script
