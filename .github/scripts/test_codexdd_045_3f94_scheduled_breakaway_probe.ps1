@@ -39,19 +39,28 @@ try {
   $arguments="-NoProfile -NonInteractive -File " + ('"' + $testPath + '"') + " -SandboxPath " + ('"' + $sandbox + '"')
   $action=New-ScheduledTaskAction -Execute $pwsh -Argument $arguments -WorkingDirectory $sandbox
   $settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-  $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddHours(1)
+  $trigger=New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(25)
   $null=Register-ScheduledTask -TaskName $taskName -User $account -Password $passwordPlain -Action $action -Settings $settings -Trigger $trigger -RunLevel Limited -Force -ErrorAction Stop
   $registered=$true
   $passwordPlain=$null
+  $initial = Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction Stop
+  Write-Host "3F.94 SCHEDULED TASK ARMED: NextRunTime=$($initial.NextRunTime) LastRunTime=$($initial.LastRunTime)"
   Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
   $path=Join-Path $sandbox 'breakaway-result.json'
-  $deadline=(Get-Date).AddSeconds(105)
+  $deadline=(Get-Date).AddSeconds(110)
+  $lastState=''
   while ((Get-Date) -lt $deadline -and -not (Test-Path -LiteralPath $path -PathType Leaf)) {
+    $state=(Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue).State
+    if ($null -ne $state -and "$state" -cne $lastState) {
+      $lastState="$state"
+      Write-Host "3F.94 SCHEDULED TASK STATE: $lastState"
+    }
     Start-Sleep -Milliseconds 500
   }
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
     $info=Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue
-    throw "No child receipt; Task Scheduler last result: $($info.LastTaskResult)"
+    $task=Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    throw "No child receipt; Task Scheduler state=$($task.State), result=$($info.LastTaskResult), last-run=$($info.LastRunTime), next-run=$($info.NextRunTime)"
   }
   $receipt=Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -ErrorAction Stop
   $details=$receipt | ConvertTo-Json -Depth 5

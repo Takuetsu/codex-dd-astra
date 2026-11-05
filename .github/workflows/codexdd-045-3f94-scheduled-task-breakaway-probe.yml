@@ -29,7 +29,7 @@ jobs:
           $ErrorActionPreference='Stop'
           if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Probe is not on expected source' }
           if ((git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1).Trim() -cne '2b90840564dffb234f9df2618b2f13d61874ef77') { throw 'Breakaway child source changed' }
-          if ((git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1).Trim() -cne '02dce24e1ba294b0c694f111530eb4a196bfdaeb') { throw 'Scheduled-task source changed' }
+          if ((git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1).Trim() -cne '7a5418f4778a520f85eacc676cd5980e50c30d1b') { throw 'Scheduled-task source changed' }
           if ((git rev-parse HEAD:codex-rs/app-server-daemon/src/backend/windows.rs).Trim() -cne '1cc1889712a5daa85642739bc9d17869967f8ac5') { throw 'Native daemon Windows policy changed' }
           if ((git rev-parse HEAD:codex-rs/Cargo.lock).Trim() -cne '13bc15ff844e93dfaf7777c73bb7313b35bb3b81') { throw 'Dependency lock changed' }
           if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Production version changed' }

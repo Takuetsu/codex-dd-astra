@@ -135,10 +135,20 @@
     "status": "PROBE_PENDING",
     "method": "Task Scheduler service spawns isolated temporary nonadministrator account; a suspended cmd.exe is created with production-equivalent DETACHED_PROCESS | CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB and always terminated",
     "script": "test_codexdd_045_3f94_scheduled_breakaway_probe.ps1",
-    "script_blob": "02dce24e1ba294b0c694f111530eb4a196bfdaeb",
+    "script_blob": "7a5418f4778a520f85eacc676cd5980e50c30d1b",
     "child_blob": "2b90840564dffb234f9df2618b2f13d61874ef77",
     "build_performed": false,
     "production_changes": false,
-    "reason": "Do not compile 20 minutes until detached-launch capability is proven"
+    "reason": "Do not compile 20 minutes until detached-launch capability is proven",
+    "first_run": {
+      "run_id": 42093737009,
+      "conclusion": "failure",
+      "cheap_source_parser": "passed",
+      "task_child_executed": false,
+      "task_status_result": 267011,
+      "interpretation": "Task had not run; no detached-launch capability conclusion",
+      "native_windows_build": "NOT_RUN"
+    },
+    "retry": "SHORT_ONCE_TRIGGER_25_SECONDS_PLUS_ON_DEMAND_WITH_STATE_REPORTING"
   }
 }
