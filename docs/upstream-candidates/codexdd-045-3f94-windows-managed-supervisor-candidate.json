@@ -56,7 +56,7 @@
     "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
     "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
   ],
-  "ci_result": "STRICT_PRIVATE_SOCKET_ACL_PREFLIGHT_GREEN_WINDOWS_NATIVE_PENDING",
+  "ci_result": "HOSTED_WINDOWS_JOB_BLOCKS_BREAKAWAY_SCHEDULED_TASK_PROBE_PENDING",
   "failed_attempts": [
     {
       "run_id": 42064776537,
@@ -92,6 +92,18 @@
       "root_cause": "Test harness Set-Updater precreated app-server-daemon directory with inherited broad Windows DACL, violating user-only private socket directory requirement",
       "security_policy": "PRESERVED",
       "process_cases_passed": 0
+    },
+    {
+      "run_id": 42088594628,
+      "stage": "Windows native executable compiled, task harness started but launch denied",
+      "source_checks": "passed",
+      "windows_identity": "passed",
+      "secure_socket_acl": "passed",
+      "windows_native_cli_compilation": "passed",
+      "real_daemon_start": "blocked",
+      "reason": "GitHub Windows runner job disallows detached CREATE_BREAKAWAY_FROM_JOB; Windows Access denied (5), explicitly classified as DetachedLaunchRestricted by production",
+      "production_security_policy": "PRESERVED",
+      "process_cases_passed": 0
     }
   ],
   "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS",
@@ -118,5 +130,15 @@
     "actual_windows_process_token": "NONADMIN",
     "private_acl_verified": "OWNER_ONLY_PROTECTED_EXACT_ONE_OICI_FA_ACE",
     "native_compile": "NOT_RUN"
+  },
+  "scheduled_task_breakaway_capability": {
+    "status": "PROBE_PENDING",
+    "method": "Task Scheduler service spawns isolated temporary nonadministrator account; a suspended cmd.exe is created with production-equivalent DETACHED_PROCESS | CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB and always terminated",
+    "script": "test_codexdd_045_3f94_scheduled_breakaway_probe.ps1",
+    "script_blob": "02dce24e1ba294b0c694f111530eb4a196bfdaeb",
+    "child_blob": "2b90840564dffb234f9df2618b2f13d61874ef77",
+    "build_performed": false,
+    "production_changes": false,
+    "reason": "Do not compile 20 minutes until detached-launch capability is proven"
   }
 }
