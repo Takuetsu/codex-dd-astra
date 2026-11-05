@@ -1,0 +1,52 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f94_managed_windows_supervisor_updater_process_nonrelease",
+  "status": "SOURCE_PREPARED_CHEAP_AND_NATIVE_WINDOWS_PENDING",
+  "baseline_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+  "candidate_branch": "dd/codexdd-v0.4.5-3f94-windows-managed-supervisor",
+  "production_version": "0.4.4",
+  "release_approved": false,
+  "formal_owner_signoffs": 0,
+  "high_risk_review_holds": {
+    "core": 4,
+    "tui": 9
+  },
+  "accepted_prior_native_windows": {
+    "stage": "3F.93",
+    "run_id": 42060527099,
+    "source_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+    "cases_passed": 3,
+    "cases_failed": 0
+  },
+  "source_change": {
+    "kind": "one isolated GitHub Windows process acceptance script, one dedicated source-pinned GitHub workflow and nonrelease evidence documents",
+    "script_path": ".github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1",
+    "script_blob": "2dd20c39270c53e3274191071768418b0b497136",
+    "no_production_source_changes": true,
+    "no_cargo_lock_or_security_changes": true
+  },
+  "cases": [
+    {
+      "selector": "dedicated-managed-daemon-pid-restart-and-stop",
+      "evidence_requirements": "Real compiled Windows codex.exe under isolated CODEX_HOME; real daemon start idempotency, real UDS version response, PID change on restart, graceful stop and no updater on pinned dedicated package"
+    },
+    {
+      "selector": "stable-legacy-updater-survives-restart-and-obeys-disable",
+      "evidence_requirements": "Synthetic stable release junction and auto-update marker entirely within isolated CODEX_HOME; actual updater PID and app-server PID distinct; updater survives daemon restart; disabling auto updates stops updater and leaves no updater PID"
+    }
+  ],
+  "native_requirements": [
+    "Build one native Windows x86_64-pc-windows-msvc codex-cli executable using the locked current source",
+    "Execute PowerShell syntax parser before native build and assert exact script blob and nonrelease release restrictions",
+    "Never run on Daniel-CL, never invoke live installation; isolated GITHUB_RUNNER_TEMP CODEX_HOME and temporary package",
+    "Time-bounded daemon lifecycle invocations, write per-case stdout/stderr logs and receipt artifact, fail unless 2/2 pass",
+    "Do not infer safety from PID alone in forced cleanup; verify process executable resides under isolated test home"
+  ],
+  "limitation": [
+    "Uses a locally compiled Codex CLI in fixture packages, not the user's installed 0.4.4 binary",
+    "Does not attempt online updater install or package migration/production auto-update",
+    "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
+    "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
+  ],
+  "ci_result": "NOT_YET_RUN"
+}

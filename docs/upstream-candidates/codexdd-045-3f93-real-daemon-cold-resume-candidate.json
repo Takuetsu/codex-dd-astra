@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f93_real_daemon_process_restart_and_cold_resume_nonrelease",
-  "status": "SOURCE_PREPARED_WINDOWS_PROCESS_NATIVE_PENDING",
+  "status": "THREE_REAL_WINDOWS_DAEMON_PROCESS_TESTS_GREEN_NONRELEASE",
   "baseline_branch": "dd/codexdd-v0.4.5-3f92-p0-evidence-reconcile",
   "baseline_head": "bee75ef0f3185ac34295b7c9dc33b052b39e6149",
   "candidate_branch": "dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume",
@@ -33,14 +33,31 @@
   ],
   "transport_scope": "Windows OS named-pipe-backed UnixSocket/WebSocket via codex_uds; actual codex-app-server child binaries, not loopback-TCP simulated daemon",
   "process_scope": "Production codex-app-server executable in --managed-daemon mode, isolated CODEX_HOME per test, process kill/wait, restart and persistent rollout; not the external CLI updater/supervisor",
-  "native_evidence": "NOT_YET_RUN",
+  "native_evidence": {
+    "run_id": 42060527099,
+    "exact_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+    "conclusion": "success",
+    "cheap_source": "success",
+    "windows_native": "success",
+    "windows_compile": "success",
+    "selected_cases_passed": 3,
+    "selected_cases_failed": 0,
+    "receipt": {
+      "id": 13432678312,
+      "name": "codexdd045-3f93-real-daemon-process-nonrelease",
+      "sha256": "a1aa6923d4769b7ebe02c658c85b99dae72ed9c13e8cafa971a89eb00c78472a",
+      "expires_utc": "2026-11-19T16:21:07Z"
+    },
+    "owner_signoffs": 0
+  },
   "preflight": "Strict source blob pins, cargo lock/deny, branch-only change list, 0/109 owner approvals, AST PowerShell parse and cargo fmt check on cheap Ubuntu runner before Windows compilation",
   "native_requirement": "One Windows codex-app-server integration binary compiled with --test all; run three exact selectors requiring one test pass each and timeout-bound logs; overall failure if any miss/failure",
   "scope_limits": [
     "Does not yet prove Windows PID-managed updater process upgrade/relaunch, actual installed CodexDD binary, or TUI visual redraw",
     "Does not prove packet-level reconnect over a lost TUI connection for pending request; 3F.90 TCP WebSocket harness covers that separately",
     "Selected native tests do not grant formal owner approvals or certify 21-stage local release suite",
-    "No change to 0.4.4 production, no merge or install without owner signoffs and final source acceptance"
+    "No change to 0.4.4 production, no merge or install without owner signoffs and final source acceptance",
+    "3F.93 Windows proof green 3/3 on exact pre-3F.94 head; 3F.94 managed supervisor testing is separate and not accepted by this evidence"
   ],
   "first_attempt": {
     "run_id": 42060280852,
