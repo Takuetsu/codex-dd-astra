@@ -227,7 +227,10 @@ async fn abrupt_daemon_process_loss_requires_explicit_cold_resume() -> Result<()
     // graceful shutdown RPC. No recovery snapshot is written by this exit.
     server.kill().await?;
     let exit = server.wait().await?;
-    assert!(!exit.success(), "forced termination unexpectedly exited cleanly");
+    assert!(
+        !exit.success(),
+        "forced termination unexpectedly exited cleanly"
+    );
     drop(first_client);
     assert!(
         !recovery_file.exists(),

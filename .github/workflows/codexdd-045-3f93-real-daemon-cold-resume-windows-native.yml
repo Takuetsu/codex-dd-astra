@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume'
-          test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/v2/daemon_update_recovery.rs)" = '158b6286e6f3f2e5b3f525c53f81a8ae45bb1b64'
+          test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/v2/daemon_update_recovery.rs)" = '9103d8fae8c029c6f917d27f7bbbcf005e9924a7'
           test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/v2/mod.rs)" = '75855aad4dd971c9908115d649f6023c8f063871'
           test "$(git rev-parse HEAD:codex-rs/app-server/tests/all.rs)" = 'fdf98aa9455bffb74f4dc11df6d237aa948248ef'
           test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/mod.rs)" = '09c40493f6c5a699e9691673b2854c41ae90b977'
@@ -55,7 +55,7 @@ jobs:
           },changed
           assert doc['status'] == 'SOURCE_PREPARED_WINDOWS_PROCESS_NATIVE_PENDING'
           assert doc['baseline_head'] == 'bee75ef0f3185ac34295b7c9dc33b052b39e6149'
-          assert doc['source_change']['candidate_blob'] == '158b6286e6f3f2e5b3f525c53f81a8ae45bb1b64'
+          assert doc['source_change']['candidate_blob'] == '9103d8fae8c029c6f917d27f7bbbcf005e9924a7'
           assert doc['release_approved'] is False and doc['formal_109_path_signoffs'] == 0
           assert doc['high_risk_core_owner_holds'] == 4 and doc['high_risk_tui_owner_holds'] == 9
           assert formal['approved_owner_count'] == 0 and len(formal['paths']) == 109
