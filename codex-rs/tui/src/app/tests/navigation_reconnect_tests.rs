@@ -421,8 +421,20 @@ async fn reconnect_daemon_command_center_after_connection_replacement_without_a_
         if previous_thread.is_some() {
             let history = drain_history(&mut app, &mut tui, &mut session, &mut events).await?;
             assert!(history.contains("Unsubmitted title: Keep this task draft!"));
+            // The command-center footer deliberately differs by platform:
+            // Windows shows navigation help while the Unix fixture carries a
+            // daemon-version notice. Keep full, independent golden snapshots.
+            #[cfg(not(windows))]
             assert_snapshot!(
                 "daemon_command_center_vanished_rename",
+                normalize_reconnect_snapshot_path(render_bottom_popup(
+                    &app.chat_widget,
+                    /*width*/ 100
+                ))
+            );
+            #[cfg(windows)]
+            assert_snapshot!(
+                "daemon_command_center_vanished_rename_windows",
                 normalize_reconnect_snapshot_path(render_bottom_popup(
                     &app.chat_widget,
                     /*width*/ 100
