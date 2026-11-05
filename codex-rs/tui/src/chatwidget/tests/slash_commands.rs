@@ -2248,7 +2248,9 @@ async fn api_key_daybreak_revocation_drops_program_authority() {
             chat.daybreak_turn_eligible(chat.daybreak_enabled),
             chat.daybreak_enabled,
         ),
-        Ok(Some(codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue))
+        Ok(Some(
+            codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue
+        ))
     );
 
     // A capability from the OpenAI provider is never authority on another backend.
@@ -2270,10 +2272,7 @@ async fn api_key_daybreak_revocation_drops_program_authority() {
     chat.set_daybreak_enabled(true);
     assert!(chat.daybreak_account_eligible());
     chat.update_account_state(
-        None,
-        None,
-        /*has_chatgpt_account*/ false,
-        /*has_codex_backend_auth*/ false,
+        None, None, /*has_chatgpt_account*/ false, /*has_codex_backend_auth*/ false,
     );
     assert!(!chat.daybreak_account_eligible());
     assert!(!chat.daybreak_turn_eligible(true));

@@ -14,7 +14,7 @@
   "source_change_scope": "Test-only regression; no runtime, dependency graph, version marker, installer, security policy, or formal approvals changed",
   "test_only_rust_source": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
   "old_blob": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
-  "new_blob": "ee81e4844d7973a58bb240e799ce5e60d148a372",
+  "new_blob": "aebc98352f9bc204f6186ec98606eb24a4e14312",
   "tests": [
     {
       "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
@@ -55,5 +55,13 @@
     "Six selected Windows test cases are not the full 21-stage local release suite",
     "Neither the 13 high-risk owner decisions nor formal 109-path signoffs are granted by CI"
   ],
-  "release_holds_unchanged": true
+  "release_holds_unchanged": true,
+  "preflight_correction": {
+    "previous_run_id": 42037724890,
+    "failed_job": "cheap-source",
+    "cause": "rustfmt expected only two line-wrap changes",
+    "runtime_changed": false,
+    "windows_tests_executed": false,
+    "changed_code": "format-only, exact rustfmt diff"
+  }
 }

@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f91-program-auth-paste'
-          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/tests/slash_commands.rs)" = 'ee81e4844d7973a58bb240e799ce5e60d148a372'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/tests/slash_commands.rs)" = 'aebc98352f9bc204f6186ec98606eb24a4e14312'
           test "$(git rev-parse HEAD:codex-rs/tui/src/daybreak.rs)" = 'a47a837b33ea19bbaa66e8762884135651e4eea5'
           test "$(git rev-parse HEAD:codex-rs/tui/src/daybreak_tests.rs)" = '1d1b7bf45854d7bc9c9521fb219a71180fd6ec97'
           test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/settings.rs)" = 'bb747507416e7712fe4ff5832446783c0127994e'
@@ -57,7 +57,7 @@ jobs:
           assert ledger['formal_owner_signoffs'] == 0
           assert ledger['core_high_risk_owner_holds'] == 4
           assert ledger['tui_high_risk_owner_holds'] == 9
-          assert ledger['new_blob'] == 'ee81e4844d7973a58bb240e799ce5e60d148a372'
+          assert ledger['new_blob'] == 'aebc98352f9bc204f6186ec98606eb24a4e14312'
           assert len(ledger['tests']) == 6
           changed=set(subprocess.check_output([
               'git','diff','--name-only','4816f28ada7d0275cc4431a5731d1271cc0d27a2','HEAD'
