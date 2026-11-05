@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f90_windows_reconnect_end_to_end_nonrelease",
-  "status": "SNAPSHOT_COLUMN_ALIGNMENT_FIXED_AGGREGATE_NATIVE_RETRY_PENDING",
+  "status": "PLATFORM_SPECIFIC_RECONNECT_GOLDENS_ADDED_NATIVE_RETEST_PENDING",
   "candidate_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
   "baseline_commit": "eec4fee2aebfa15b18e3b3f2837b3e9b655003dd",
   "parent_green_run": 41885892676,
@@ -12,7 +12,7 @@
   "remaining_high_risk_tui_review_holds": 9,
   "remaining_high_risk_core_review_holds": 4,
   "source_sha_map": {
-    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "6e7bf006705d71d620e2695086123ce6b1d12f88",
+    "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs": "b3913f006e7e0647809d6714bcfd1510a5554eed",
     "codex-rs/tui/src/app/tests/active_reconnect_tests.rs": "078ffc77b2d271ad0d642f5266462040ce83d3e9",
     "codex-rs/tui/src/app/tests/disconnect_tests.rs": "662967de32dc64517b250dc180baafd1da4dd36a",
     "codex-rs/tui/src/app/tests.rs": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
@@ -101,7 +101,7 @@
     "No merge, no 0.4.5 production installation",
     "Full 21-stage Daniel-CL and seven-program Windows distribution still pending"
   ],
-  "gate": "Cheap source/format and fixed-width snapshot fixture check before expensive Windows compilation. Run all eight native reconnect tests even if one fails; preserve per-selector evidence then fail entire job if failed!=0, zero matched, or timeout. Formal approvals remain zero.",
+  "gate": "Source, dependency, Windows and Unix snapshot blob pins, unchanged owner holds, Rustfmt before expensive Windows test; run all eight reconnect tests and retain per-test results, failing the overall workflow for any assertion/zero match/timeout.",
   "expected_bottlenecks": "Platform-specific snapshots, Windows WebSocket disconnect timing, or tests formerly excluded by #[cfg(unix)]",
   "attempts": [
     {
@@ -172,6 +172,34 @@
         "id": 13373486036,
         "sha256": "cc2cd1de13aed81bc2f50ae670e103360fd0fea547bbdf11f4995911aea1b301"
       }
+    },
+    {
+      "run_id": 41937750642,
+      "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41937750642",
+      "tested_head": "0d6dc746a1d67bfb383f9e4a37744cc224a29b5c",
+      "cheap_source": "success",
+      "windows_compilation": "success",
+      "native_tests_executed": 8,
+      "native_tests_passed": 7,
+      "native_tests_failed": 1,
+      "failed_selector": "app::tests::navigation_reconnect::reconnect_daemon_command_center_after_connection_replacement_without_a_conversation",
+      "failure_detail": "Windows test case 1 advanced past initial path/column normalization; a later command-center golden snapshot expected the Unix daemon-version footer, while actual Windows rendered navigation help. Tests 2-8 all passed.",
+      "artifact": {
+        "id": 13376606142,
+        "sha256": "d791153532f3625b40b381b502460c8c8cad3e167407de456fd1321f3038ed83"
+      }
     }
-  ]
+  ],
+  "snapshots": {
+    "unix": {
+      "path": "codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__navigation_reconnect__daemon_command_center_vanished_rename.snap",
+      "sha": "a8997b370eeb543ee849f29f437c6144a1439f82",
+      "expected_footer": "Service v2.0.0 ≠ Codex CLI v0.0.0 · /daemon"
+    },
+    "windows": {
+      "path": "codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__navigation_reconnect__daemon_command_center_vanished_rename_windows.snap",
+      "sha": "9961d398a5903ae1a891b0360c9058e473a373dd",
+      "expected_footer": "? help  esc back  ↑/↓ move  enter open  n new"
+    }
+  }
 }
