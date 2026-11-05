@@ -1,0 +1,53 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f93_real_daemon_process_restart_and_cold_resume_nonrelease",
+  "status": "SOURCE_PREPARED_WINDOWS_PROCESS_NATIVE_PENDING",
+  "baseline_branch": "dd/codexdd-v0.4.5-3f92-p0-evidence-reconcile",
+  "baseline_head": "bee75ef0f3185ac34295b7c9dc33b052b39e6149",
+  "candidate_branch": "dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume",
+  "production_version": "0.4.4",
+  "release_approved": false,
+  "formal_109_path_signoffs": 0,
+  "high_risk_core_owner_holds": 4,
+  "high_risk_tui_owner_holds": 9,
+  "parent_source_evidence_run": 42059061192,
+  "source_change": {
+    "scope": "One cross-platform app-server integration test added; production code, package dependencies, security graph, release/installer and owner decisions unchanged",
+    "path": "codex-rs/app-server/tests/suite/v2/daemon_update_recovery.rs",
+    "previous_blob": "019d327bbb8b837cabf9178b70e421e326989de0",
+    "candidate_blob": "9103d8fae8c029c6f917d27f7bbbcf005e9924a7"
+  },
+  "test_cases": [
+    {
+      "selector": "suite::v2::daemon_update_recovery::managed_restart_resumes_loaded_threads_and_goal_without_client",
+      "objective": "Two real codex-app-server processes with --managed-daemon, drain active turn and hand off saved state; recover pending goal automatically without a client; verify model, history, dynamic tool and idle thread"
+    },
+    {
+      "selector": "suite::v2::daemon_update_recovery::abrupt_daemon_process_loss_requires_explicit_cold_resume",
+      "objective": "Force-terminate real app-server PID without the graceful recovery file; reconnect replacement process; assert no unapproved automatic thread loading; explicit cold resume returns original persisted history and loaded status"
+    },
+    {
+      "selector": "suite::v2::daemon_update_recovery::managed_force_shutdown_exits_with_active_work",
+      "objective": "Real managed process receives repeated shutdown requests while active and stops without running indefinite work"
+    }
+  ],
+  "transport_scope": "Windows OS named-pipe-backed UnixSocket/WebSocket via codex_uds; actual codex-app-server child binaries, not loopback-TCP simulated daemon",
+  "process_scope": "Production codex-app-server executable in --managed-daemon mode, isolated CODEX_HOME per test, process kill/wait, restart and persistent rollout; not the external CLI updater/supervisor",
+  "native_evidence": "NOT_YET_RUN",
+  "preflight": "Strict source blob pins, cargo lock/deny, branch-only change list, 0/109 owner approvals, AST PowerShell parse and cargo fmt check on cheap Ubuntu runner before Windows compilation",
+  "native_requirement": "One Windows codex-app-server integration binary compiled with --test all; run three exact selectors requiring one test pass each and timeout-bound logs; overall failure if any miss/failure",
+  "scope_limits": [
+    "Does not yet prove Windows PID-managed updater process upgrade/relaunch, actual installed CodexDD binary, or TUI visual redraw",
+    "Does not prove packet-level reconnect over a lost TUI connection for pending request; 3F.90 TCP WebSocket harness covers that separately",
+    "Selected native tests do not grant formal owner approvals or certify 21-stage local release suite",
+    "No change to 0.4.4 production, no merge or install without owner signoffs and final source acceptance"
+  ],
+  "first_attempt": {
+    "run_id": 42060280852,
+    "conclusion": "failure",
+    "cheap_source": "source_integrity_and_powershell_AST_passed_rustfmt_failed",
+    "native_compilation": "NOT_RUN",
+    "selected_tests_executed": 0,
+    "repair": "Exact rustfmt multiline assertion only"
+  }
+}

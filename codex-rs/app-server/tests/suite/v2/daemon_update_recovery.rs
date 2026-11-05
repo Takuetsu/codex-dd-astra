@@ -187,6 +187,113 @@ async fn managed_restart_resumes_loaded_threads_and_goal_without_client() -> Res
 }
 
 #[tokio::test]
+async fn abrupt_daemon_process_loss_requires_explicit_cold_resume() -> Result<()> {
+    let home = TempDir::new()?;
+    create_config_toml(home.path(), "http://127.0.0.1:1", "never")?;
+    let thread_id = app_test_support::create_fake_rollout(
+        home.path(),
+        "2026-09-01T12-00-00",
+        "2026-09-01T12:00:00Z",
+        "Saved task",
+        Some("mock_provider"),
+        /*git_info*/ None,
+    )?;
+    let socket = home.path().join("control/server.sock");
+    let recovery_file = daemon_recovery_file_path(home.path());
+    let mut server = spawn_server(home.path(), &socket)?;
+    let mut first_client = connect_default_daemon_client(&socket).await?;
+
+    let initial = request(
+        &mut first_client,
+        /*id*/ 2,
+        "thread/resume",
+        json!({"threadId":thread_id}),
+    )
+    .await?;
+    assert_eq!(initial["thread"]["id"], thread_id);
+    let before = request(
+        &mut first_client,
+        /*id*/ 3,
+        "thread/read",
+        json!({"threadId":thread_id,"includeTurns":true}),
+    )
+    .await?;
+    assert!(
+        before["thread"]["turns"].to_string().contains("Saved task"),
+        "expected persisted history before process termination: {before}"
+    );
+
+    // This is an OS-level process termination, not the managed daemon's
+    // graceful shutdown RPC. No recovery snapshot is written by this exit.
+    server.kill().await?;
+    let exit = server.wait().await?;
+    assert!(
+        !exit.success(),
+        "forced termination unexpectedly exited cleanly"
+    );
+    drop(first_client);
+    assert!(
+        !recovery_file.exists(),
+        "forced process loss must not synthesize a graceful-recovery snapshot"
+    );
+
+    let mut successor = spawn_server(home.path(), &socket)?;
+    let mut second_client = connect_default_daemon_client(&socket).await?;
+    let loaded_before = request(
+        &mut second_client,
+        /*id*/ 2,
+        "thread/loaded/list",
+        json!({}),
+    )
+    .await?;
+    assert!(
+        !loaded_before["data"]
+            .as_array()
+            .context("loaded thread IDs")?
+            .contains(&json!(thread_id)),
+        "a cold daemon must not silently adopt previously loaded work"
+    );
+
+    let resumed = request(
+        &mut second_client,
+        /*id*/ 3,
+        "thread/resume",
+        json!({"threadId":thread_id}),
+    )
+    .await?;
+    assert_eq!(resumed["thread"]["id"], thread_id);
+    let after = request(
+        &mut second_client,
+        /*id*/ 4,
+        "thread/read",
+        json!({"threadId":thread_id,"includeTurns":true}),
+    )
+    .await?;
+    assert_eq!(after["thread"]["id"], before["thread"]["id"]);
+    assert!(
+        after["thread"]["turns"].to_string().contains("Saved task"),
+        "explicit cold resume lost the persisted history: {after}"
+    );
+    let loaded_after = request(
+        &mut second_client,
+        /*id*/ 5,
+        "thread/loaded/list",
+        json!({}),
+    )
+    .await?;
+    assert!(
+        loaded_after["data"]
+            .as_array()
+            .context("loaded thread IDs after resume")?
+            .contains(&json!(thread_id)),
+        "explicit cold resume must make the thread available to the live daemon"
+    );
+    request_shutdown(&successor, &socket).await?;
+    wait_success(&mut successor).await?;
+    Ok(())
+}
+
+#[tokio::test]
 async fn managed_force_shutdown_exits_with_active_work() -> Result<()> {
     let home = TempDir::new()?;
     let (_release_response, response_gate) = oneshot::channel();

@@ -1,0 +1,262 @@
+# NONRELEASE: actual codex-app-server child process restart/cold resume on Windows.
+name: CodexDD 0.4.5 3F.93 real daemon cold resume (NONRELEASE)
+run-name: 3F.93 Windows real daemon process restart and cold resume (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume
+    paths:
+      - .github/workflows/codexdd-045-3f93-real-daemon-cold-resume-windows-native.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f93-process
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Pin exact test, dependency, release holds and three Windows-eligible cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume'
+          test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/v2/daemon_update_recovery.rs)" = '9103d8fae8c029c6f917d27f7bbbcf005e9924a7'
+          test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/v2/mod.rs)" = '75855aad4dd971c9908115d649f6023c8f063871'
+          test "$(git rev-parse HEAD:codex-rs/app-server/tests/all.rs)" = 'fdf98aa9455bffb74f4dc11df6d237aa948248ef'
+          test "$(git rev-parse HEAD:codex-rs/app-server/tests/suite/mod.rs)" = '09c40493f6c5a699e9691673b2854c41ae90b977'
+          test "$(git rev-parse HEAD:codex-rs/app-server/src/main.rs)" = '4119cedfe413005e165ca8b00b86699dabe4458a'
+          test "$(git rev-parse HEAD:codex-rs/app-server/Cargo.toml)" = '0ef30505cc5e78102d8bfb64e18adaf0e0ad008b'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check bee75ef0f3185ac34295b7c9dc33b052b39e6149 HEAD
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          root=Path('docs/upstream-candidates')
+          doc=json.loads((root/'codexdd-045-3f93-real-daemon-cold-resume-candidate.json').read_text())
+          formal=json.loads((root/'codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          packet=json.loads((root/'codexdd-045-3f92-p0-current-source-review-packet.json').read_text())
+          changed=set(subprocess.check_output(['git','diff','--name-only','bee75ef0f3185ac34295b7c9dc33b052b39e6149','HEAD'],text=True).splitlines())
+          assert changed == {
+              'codex-rs/app-server/tests/suite/v2/daemon_update_recovery.rs',
+              'docs/upstream-candidates/codexdd-045-3f93-real-daemon-cold-resume-candidate.json',
+              '.github/workflows/codexdd-045-3f93-real-daemon-cold-resume-windows-native.yml',
+          },changed
+          assert doc['status'] == 'SOURCE_PREPARED_WINDOWS_PROCESS_NATIVE_PENDING'
+          assert doc['baseline_head'] == 'bee75ef0f3185ac34295b7c9dc33b052b39e6149'
+          assert doc['source_change']['candidate_blob'] == '9103d8fae8c029c6f917d27f7bbbcf005e9924a7'
+          assert doc['release_approved'] is False and doc['formal_109_path_signoffs'] == 0
+          assert doc['high_risk_core_owner_holds'] == 4 and doc['high_risk_tui_owner_holds'] == 9
+          assert formal['approved_owner_count'] == 0 and len(formal['paths']) == 109
+          assert all(r['formal_owner_decision'] == 'PENDING_SIGNOFF' for r in formal['paths'])
+          assert packet['high_risk_owner_holds'] == 13
+          src=Path(doc['source_change']['path']).read_text()
+          assert src.count('async fn abrupt_daemon_process_loss_requires_explicit_cold_resume()') == 1
+          assert 'server.kill().await?;' in src
+          assert '.arg("--managed-daemon")' in src
+          assert 'cargo_bin("codex-app-server")' in src
+          assert len(doc['test_cases']) == 3
+          for case in doc['test_cases']:
+              selector=case['selector']
+              assert selector.startswith('suite::v2::daemon_update_recovery::')
+              assert src.count('async fn '+selector.rsplit('::',1)[-1]+'(') == 1
+          print('3F93 SOURCE GREEN: production app-server process + 3 selectors, no release/owner promotion')
+          PY
+      - name: Parse Windows PowerShell syntax before cold Cargo build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $lines=@(Get-Content '.github/workflows/codexdd-045-3f93-real-daemon-cold-resume-windows-native.yml')
+          $count=0
+          for ($i=0; $i -lt $lines.Count-1; $i++) {
+            if ($lines[$i] -ne '        shell: pwsh' -or $lines[$i+1] -ne '        run: |') { continue }
+            $count++
+            $source=[System.Collections.Generic.List[string]]::new()
+            for ($j=$i+2; $j -lt $lines.Count; $j++) {
+              $line=$lines[$j]
+              if ($line.Length -eq 0) { $source.Add(''); continue }
+              if (-not $line.StartsWith('          ')) { break }
+              $source.Add($line.Substring(10))
+            }
+            $tokens=$null
+            $parseErrors=$null
+            [void][System.Management.Automation.Language.Parser]::ParseInput(
+              ($source -join [Environment]::NewLine), [ref]$tokens, [ref]$parseErrors
+            )
+            if ($parseErrors.Count -ne 0) {
+              $parseErrors | ForEach-Object { Write-Host $_ }
+              throw "PowerShell syntax invalid in block $count"
+            }
+          }
+          if ($count -ne 4) { throw "Expected 4 PowerShell blocks, got $count" }
+          Write-Host "3F.93 POWERSHELL AST GREEN: $count blocks"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Cheap Rustfmt check (no compilation)
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Prepare isolated Cargo scratch and evidence
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-3f93-process'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore dependency sources only
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile app-server integration test binary and real app-server child once
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $stdout=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\compile-stdout.log'
+          $stderr=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\compile-stderr.log'
+          $arguments=@('test','--locked','-p','codex-app-server','--test','all','--no-run')
+          $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          try {
+            if (-not $proc.WaitForExit(4200000)) {
+              $proc.Kill($true)
+              $proc.WaitForExit()
+              Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
+              throw 'App-server Windows cold compile exceeded 70 minutes, tests not started'
+            }
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stdout -Tail 60 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 140 -ErrorAction SilentlyContinue
+              throw "Windows app-server compilation failed with exit $($proc.ExitCode)"
+            }
+            Write-Host '3F.93 APP-SERVER WINDOWS COMPILE GREEN' -ForegroundColor Green
+          } finally {
+            $proc.Dispose()
+          }
+      - name: Execute three exact Windows daemon-process and cold-resume tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cases=@(
+            'suite::v2::daemon_update_recovery::managed_restart_resumes_loaded_threads_and_goal_without_client',
+            'suite::v2::daemon_update_recovery::abrupt_daemon_process_loss_requires_explicit_cold_resume',
+            'suite::v2::daemon_update_recovery::managed_force_shutdown_exits_with_active_work'
+          )
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $results=New-Object 'System.Collections.Generic.List[object]'
+          $index=0
+          $failures=0
+          foreach ($case in $cases) {
+            $index++
+            $stdout=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stdout.log")
+            $stderr=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stderr.log")
+            Write-Host "BEGIN 3F.93 case $($index): $case"
+            $arguments=@('test','--locked','-p','codex-app-server','--test','all',$case,'--','--exact','--nocapture','--test-threads=1')
+            $reason=$null
+            $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            try {
+              if (-not $proc.WaitForExit(420000)) {
+                $proc.Kill($true)
+                $proc.WaitForExit()
+                $reason="Case $($index) exceeded 7-minute execution limit"
+              } elseif ($proc.ExitCode -ne 0) {
+                $reason="Case $($index) failed with exit $($proc.ExitCode)"
+              }
+            } finally {
+              $proc.Dispose()
+            }
+            if (-not $reason) {
+              $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
+              if (-not [regex]::IsMatch($output,'test result: ok\.\s+1 passed;\s+0 failed;')) {
+                $reason="Case $($index) did not execute exactly one passing test"
+              } else {
+                $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
+                if (-not [regex]::IsMatch($output,$pattern)) {
+                  $reason="Case $($index) had no matching passing test name"
+                }
+              }
+            }
+            if ($reason) {
+              $failures++
+              Write-Host "FAILED 3F.93 case $($index): $reason" -ForegroundColor Red
+              Get-Content $stdout -Tail 95 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 120 -ErrorAction SilentlyContinue
+            } else {
+              Write-Host "PASS 3F.93 case $($index): $case" -ForegroundColor Green
+            }
+            $results.Add([pscustomobject]@{Selector=$case;Passed=($null -eq $reason);Reason=$reason;Stdout=$stdout;Stderr=$stderr})
+          }
+          $receipt=[pscustomobject]@{
+            kind='codexdd045_3f93_real_daemon_windows_process_native_nonrelease'
+            source_head=$env:GITHUB_SHA
+            utc=(Get-Date).ToUniversalTime().ToString('o')
+            passed=($results.Count-$failures)
+            failed=$failures
+            selectors=$results.ToArray()
+            release_approved=$false
+            formal_owner_signoffs=0
+          }
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f93-receipt.json -Encoding utf8
+          Write-Host "3F.93 REAL DAEMON PROCESS SUMMARY: $($results.Count-$failures)/$($cases.Count) passed, $failures failed"
+          if ($failures -ne 0) { throw "Real daemon-process tests failed: $failures" }
+          Write-Host "3F.93 REAL DAEMON PROCESS TESTS GREEN: $($results.Count)/$($cases.Count)" -ForegroundColor Green
+      - name: Upload process logs and NONRELEASE receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f93-real-daemon-process-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14
