@@ -85,8 +85,13 @@ if ([DdTokenElevation]::Query() -ne 0) {
   throw 'TokenElevation is nonzero: managed app-server would correctly reject this launcher'
 }
 Write-Host ('3F.94 RESTRICTED WINDOWS TOKEN GREEN: ' + $identity.Name)
-if ($ProbeOnly) { Write-Host '3F.94 NONADMIN PREFLIGHT GREEN'; exit 0 }
+if ($ProbeOnly) {
+  Set-Content -LiteralPath (Join-Path $SandboxPath 'standard-token-attestation.txt') -Value 'NONADMIN_TOKEN_ELEVATION_0' -Encoding UTF8
+  Write-Host '3F.94 NONADMIN PREFLIGHT GREEN'
+  exit 0
+}
 & (Join-Path $SandboxPath 'supervisor-test.ps1')
+Set-Content -LiteralPath (Join-Path $SandboxPath 'standard-token-attestation.txt') -Value 'NONADMIN_TOKEN_ELEVATION_0_PROCESS_TEST_COMPLETED' -Encoding UTF8
 Write-Host '3F.94 STANDARD USER SUPERVISOR TEST SCRIPT COMPLETED'
 '@ | Set-Content -LiteralPath $runnerScript -Encoding UTF8
 
@@ -114,7 +119,14 @@ Write-Host '3F.94 STANDARD USER SUPERVISOR TEST SCRIPT COMPLETED'
 
   if (Test-Path -LiteralPath $childOut) { Get-Content -LiteralPath $childOut -Tail 100 -ErrorAction SilentlyContinue }
   if (Test-Path -LiteralPath $childErr) { Get-Content -LiteralPath $childErr -Tail 100 -ErrorAction SilentlyContinue }
-  if ($code -ne 0) { throw "3F.94 standard Windows process exited $code" }
+  if ($null -ne $code -and $code -ne 0) { throw "3F.94 standard Windows process exited $code" }
+  $attestationPath = Join-Path $sandbox 'standard-token-attestation.txt'
+  if (-not (Test-Path -LiteralPath $attestationPath -PathType Leaf)) {
+    throw 'Missing standard-user child attestation: process failed or exited before completing its token checks'
+  }
+  $attestation = (Get-Content -LiteralPath $attestationPath -Raw).Trim()
+  $expected = if ($ProbeOnly) { 'NONADMIN_TOKEN_ELEVATION_0' } else { 'NONADMIN_TOKEN_ELEVATION_0_PROCESS_TEST_COMPLETED' }
+  if ($attestation -cne $expected) { throw "Unexpected standard-user attestation: $attestation" }
 
   if ($ProbeOnly) {
     Write-Host '3F.94 REAL NONADMIN WINDOWS ACCOUNT PREFLIGHT GREEN'
