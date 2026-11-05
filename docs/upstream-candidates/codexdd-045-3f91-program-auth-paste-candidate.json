@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f91_api_key_program_and_windows_paste_negative_nonrelease",
-  "status": "SOURCE_PREPARED_WINDOWS_NATIVE_NOT_YET_EXECUTED",
+  "status": "SIX_WINDOWS_NATIVE_TESTS_GREEN_OWNER_SIGNOFF_PENDING",
   "baseline_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
   "baseline_head": "4816f28ada7d0275cc4431a5731d1271cc0d27a2",
   "prior_green_native_run": 41946677766,
@@ -85,7 +85,27 @@
   "preflight_parser_gate": {
     "tool": "PowerShell AST Parser.ParseInput on ubuntu-24.04",
     "scope": "All four workflow pwsh run blocks, non-executing source syntax validation",
-    "status": "ADDED_NOT_YET_EXECUTED",
+    "status": "GREEN_RUN_42048159350",
     "reason": "Reject PowerShell syntax errors before slow Windows Cargo build"
+  },
+  "windows_native_evidence": {
+    "run_id": 42048159350,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/42048159350",
+    "tested_head": "9da35a5f84e1f28f09f8a8273f32f8ab3fa65239",
+    "conclusion": "success",
+    "selected_cases_passed": 6,
+    "failed": 0,
+    "cheap_source": "success",
+    "windows_native": "success",
+    "windows_compilation": "success",
+    "powershell_ast_preflight": "success",
+    "artifact": {
+      "id": 13425774349,
+      "name": "codexdd045-3f91-program-auth-paste-nonrelease",
+      "sha256": "c729176b3d20566fe1e1782cd8829a0971b0002483f19324a27f0a1df0e8f859",
+      "expires_at_utc": "2026-11-19T15:09:00Z"
+    },
+    "release_approved": false,
+    "formal_owner_signoffs": 0
   }
 }
