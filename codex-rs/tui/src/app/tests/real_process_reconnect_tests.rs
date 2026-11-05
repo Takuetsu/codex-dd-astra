@@ -24,9 +24,11 @@ use tokio::time::timeout;
 fn spawn_real_app_server(home: &Path, socket: &Path) -> Result<Child> {
     let binary = std::env::var_os("CODEXDD_3F95_APP_SERVER_BIN")
         .map(PathBuf::from)
-        .ok_or_else(|| color_eyre::eyre::eyre!(
-            "3F.95 requires CODEXDD_3F95_APP_SERVER_BIN pointing to a compiled codex-app-server"
-        ))?;
+        .ok_or_else(|| {
+            color_eyre::eyre::eyre!(
+                "3F.95 requires CODEXDD_3F95_APP_SERVER_BIN pointing to a compiled codex-app-server"
+            )
+        })?;
     if !binary.is_file() {
         color_eyre::eyre::bail!("3F.95 compiled app-server binary is missing");
     }
@@ -95,7 +97,9 @@ stream_max_retries = 0
     })
     .await?;
     let mut session = AppServerSession::new(client, ThreadParamsMode::Remote);
-    let before = session.thread_read(thread_id, /*include_turns*/ true).await?;
+    let before = session
+        .thread_read(thread_id, /*include_turns*/ true)
+        .await?;
     assert!(
         format!("{:?}", before.turns).contains(saved_message),
         "3F.95 original real daemon did not read persisted conversation"
@@ -128,7 +132,10 @@ stream_max_retries = 0
 
     original.kill().await?;
     let old_exit = original.wait().await?;
-    assert!(!old_exit.success(), "3F.95 original was not forcibly terminated");
+    assert!(
+        !old_exit.success(),
+        "3F.95 original was not forcibly terminated"
+    );
     assert!(app.begin_reconnect());
     assert!(app.reconnect.offline);
     let draft_offline = app.chat_widget.composer_text_with_pending();
@@ -139,7 +146,10 @@ stream_max_retries = 0
 
     let mut successor = spawn_real_app_server(&home, &socket)?;
     let successor_pid = successor.id().expect("real successor app-server PID");
-    assert_ne!(original_pid, successor_pid, "restart must replace the OS PID");
+    assert_ne!(
+        original_pid, successor_pid,
+        "restart must replace the OS PID"
+    );
     let mut tui = crate::tui::test_support::make_test_tui()?;
     let connected = timeout(
         Duration::from_secs(60),
@@ -163,7 +173,10 @@ stream_max_retries = 0
     )
     .await?;
 
-    assert!(!app.reconnect.offline, "TUI remained offline after real restart");
+    assert!(
+        !app.reconnect.offline,
+        "TUI remained offline after real restart"
+    );
     assert_eq!(app.current_displayed_thread_id(), Some(thread_id));
     assert_eq!(
         app.chat_widget.composer_text_with_pending(),
@@ -180,7 +193,9 @@ stream_max_retries = 0
             .any(|op| matches!(op, AppCommand::UserTurn { .. })),
         "cold reconnect must not manufacture or resubmit a user turn"
     );
-    let after = session.thread_read(thread_id, /*include_turns*/ true).await?;
+    let after = session
+        .thread_read(thread_id, /*include_turns*/ true)
+        .await?;
     assert!(
         format!("{:?}", after.turns).contains(saved_message),
         "successor lost the original persisted rollout"

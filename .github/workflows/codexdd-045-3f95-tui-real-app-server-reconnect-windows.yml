@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f95-tui-real-process-reconnect'
-          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/real_process_reconnect_tests.rs)" = '54e4622307235d063ab441254a6d887fafad5c1e'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/real_process_reconnect_tests.rs)" = '35ef80fa52e027fed165fada83ace0827bffbb07'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/active_reconnect_tests.rs)" = '21b5998e82494bdd169ef66774b554709e87e61f'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app/reconnect.rs)" = '97e8d65d11f1722955e17ddf92080a9b00191fef'
           test "$(git rev-parse HEAD:codex-rs/tui/src/app_server_session.rs)" = 'db8a394b652fd18d61807a8b656e6b7463f07521'
@@ -62,7 +62,7 @@ jobs:
           assert changed==expected,(changed,expected)
           assert d['status']=='SOURCE_PREPARED_WINDOWS_NATIVE_PENDING'
           assert d['baseline_head']=='b8effbfd79bb638d5df980a6a962ee2e6f85559d'
-          assert d['files']['test_blob']=='54e4622307235d063ab441254a6d887fafad5c1e'
+          assert d['files']['test_blob']=='35ef80fa52e027fed165fada83ace0827bffbb07'
           assert d['files']['module_blob']=='21b5998e82494bdd169ef66774b554709e87e61f'
           assert d['release_approved'] is False and d['production_version']=='0.4.4'
           assert d['formal_owner_signoffs']==0

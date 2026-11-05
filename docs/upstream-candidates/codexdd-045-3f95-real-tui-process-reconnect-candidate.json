@@ -25,7 +25,7 @@
   },
   "files": {
     "test": "codex-rs/tui/src/app/tests/real_process_reconnect_tests.rs",
-    "test_blob": "54e4622307235d063ab441254a6d887fafad5c1e",
+    "test_blob": "35ef80fa52e027fed165fada83ace0827bffbb07",
     "module": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
     "module_blob": "21b5998e82494bdd169ef66774b554709e87e61f",
     "workflow": ".github/workflows/codexdd-045-3f95-tui-real-app-server-reconnect-windows.yml"
@@ -57,5 +57,13 @@
     "No physical terminal keyboard or PTY rendering; verifies actual TUI app input state and text rendered via Ratatui test backend",
     "Not 21-stage local release acceptance and does not grant 109-path owner approval",
     "No production code, dependency or security policy changes; production stays on 0.4.4"
-  ]
+  ],
+  "first_attempt": {
+    "run_id": 42098957620,
+    "conclusion": "failure",
+    "cheap_source": "pass",
+    "rustfmt": "failed",
+    "windows_native": "not_run",
+    "correction": "format-only six local Rustfmt diffs"
+  }
 }
