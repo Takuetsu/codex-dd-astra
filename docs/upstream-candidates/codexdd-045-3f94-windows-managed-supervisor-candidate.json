@@ -47,7 +47,8 @@
     "Never run on Daniel-CL, never invoke live installation; isolated GITHUB_RUNNER_TEMP CODEX_HOME and temporary package",
     "Time-bounded daemon lifecycle invocations, write per-case stdout/stderr logs and receipt artifact, fail unless 2/2 pass",
     "Do not infer safety from PID alone in forced cleanup; verify process executable resides under isolated test home",
-    "Nonadmin Windows user identity gate must pass on GitHub runner before compiling; invoke real CLI under isolated non-elevated token and verify signed token-elevation receipt"
+    "Nonadmin Windows user identity gate must pass on GitHub runner before compiling; invoke real CLI under isolated non-elevated token and verify signed token-elevation receipt",
+    "Reject improper shared/private socket ACLs; use actual Windows CreateDirectoryW owner-only SDDL in isolated standard-user fixture, with independent Windows GetSecurityInfo validation in the daemon"
   ],
   "limitation": [
     "Uses a locally compiled Codex CLI in fixture packages, not the user's installed 0.4.4 binary",
@@ -55,7 +56,7 @@
     "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
     "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
   ],
-  "ci_result": "SECURE_WINDOWS_ACL_FIXTURE_PREPARED_CHEAP_PROBE_PENDING",
+  "ci_result": "STRICT_PRIVATE_SOCKET_ACL_PREFLIGHT_GREEN_WINDOWS_NATIVE_PENDING",
   "failed_attempts": [
     {
       "run_id": 42064776537,
@@ -104,12 +105,18 @@
     "source_launcher_blob": "e48dd9aabb8572eb5e6acb523df4f1ceb4ca3345"
   },
   "private_directory_preflight": {
-    "status": "PROBE_PENDING",
+    "status": "GREEN_RUN_42088176970",
     "requirements": [
       "Create private directory under restricted user with exact SDDL O:<user SID>D:P(A;OICI;FA;;;<user SID>) at creation, not repair",
       "Validate owner SID, protected ACL, exactly one inheritable FullControl ACE",
       "Verify in cheap Windows identity probe before Windows native CLI compilation"
     ],
-    "standalone_runner_result": "NOT_YET_RUN"
+    "standalone_runner_result": "NOT_YET_RUN",
+    "run_id": 42088176970,
+    "tested_head": "353b35f104cba8b6dcd549a55ffdf311ea8936e0",
+    "conclusion": "success",
+    "actual_windows_process_token": "NONADMIN",
+    "private_acl_verified": "OWNER_ONLY_PROTECTED_EXACT_ONE_OICI_FA_ACE",
+    "native_compile": "NOT_RUN"
   }
 }

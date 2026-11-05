@@ -29,9 +29,10 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f94-windows-managed-supervisor'
-          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = 'dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13'
-          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1)" = 'e48dd9aabb8572eb5e6acb523df4f1ceb4ca3345'
-          test "$(git rev-parse HEAD:.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml)" = '86a3fe86be6d0ba62a2d818a8d9e318f84a593fe'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = 'a97dfe96498d6b0d2f2817c369e8dba0b08ec062'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1)" = 'bd699bccff15821f152d0866b01b264417de318e'
+          test "$(git rev-parse HEAD:.github/scripts/codexdd_045_3f94_private_directory.ps1)" = '01036d9e3582f3b5c4d6462921b782467157a246'
+          test "$(git rev-parse HEAD:.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml)" = '32fcd5630358de4d3eeb77f301d861961cf30c79'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
           test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
           test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
@@ -53,6 +54,7 @@ jobs:
           changed=set(subprocess.check_output(['git','diff','--name-only','b8effbfd79bb638d5df980a6a962ee2e6f85559d','HEAD'],text=True).splitlines())
           assert changed == {
             '.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1',
+            '.github/scripts/codexdd_045_3f94_private_directory.ps1',
             '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1',
             '.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml',
             '.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml',
@@ -85,6 +87,12 @@ jobs:
           assert 'TokenElevation is nonzero' in launcher and 'NONADMIN_TOKEN_ELEVATION_0' in launcher
           assert 'Start-Process -FilePath $pwsh' in launcher and '-Credential $credential' in launcher
           assert 'standard-token-attestation.txt' in launcher
+          assert 'New-DDPrivateDaemonDirectory -sandboxHome $sandboxHome' in script
+          assert 'codexdd_045_3f94_private_directory.ps1' in script and 'codexdd_045_3f94_private_directory.ps1' in launcher
+          private=Path('.github/scripts/codexdd_045_3f94_private_directory.ps1').read_text()
+          assert 'CreateDirectoryW' in private and 'D:P(A;OICI;FA;;;' in private
+          assert 'GetAccessRules($true, $false' in private and 'AreAccessRulesProtected' in private
+          assert 'FileSystemRights]::FullControl' in private and 'GetOwner([Security.Principal.SecurityIdentifier])' in private
           print('3F.94 CHEAP SOURCE GREEN: Windows managed lifecycle test only; 13 holds, 0/109 approvals')
           PY
       - name: Validate Windows harness and all four inline PowerShell blocks
@@ -105,6 +113,13 @@ jobs:
             [ref]$tokens, [ref]$errors
           )
           if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Host $_ }; throw 'Nonadmin Windows launcher parse failed' }
+          $tokens=$null
+          $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path '.github/scripts/codexdd_045_3f94_private_directory.ps1').Path,
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Host $_ }; throw 'Strict private Windows socket directory fixture parse failed' }
           $lines=@(Get-Content '.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml')
           $count=0
           for ($i=0; $i -lt $lines.Count-1; $i++) {
