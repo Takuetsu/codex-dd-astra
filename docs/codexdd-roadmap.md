@@ -1,5 +1,26 @@
 # CodexDD roadmap
 
+## CURRENT — 0.4.6 Agent Reliability & Completion (owner-selected 2026-11-05)
+
+**Status: PLANNING HANDOFF READY / Phase 3A.1 NEXT. No 0.4.6 runtime implementation, release, install, PR or CI is authorized by the documentation alone.**
+
+- 0.4.6 is the explicitly selected active reliability milestone; 0.4.5 is intentionally **FROZEN NONRELEASE**. Do not finish 0.4.5 first, merge its draft PRs, or run its halted update/daemon/TUI workflows. Freeze checkpoint: `a69ce2ee19a50b834bc116246f94940bef8b8806`.
+- GitHub production source baseline: `dd/astra-policy-v2` @ `b25550dcb2c6e84a84074b603086c9db6f32a63b` (product family 0.4.4). The exact installed binary SHA on any active Windows host must be independently confirmed before attributing live agent incidents to this source.
+- New version development branch: `dd/codexdd-v0.4.6-agent-reliability`, branched from `dd/codexdd-044-active-agent-stability-triage-20261105` checkpoint `8cee2c8a7d6ef7ebfaa65569dcd86b3ad263de41`. Read the **live branch HEAD** and never assume a prior source SHA is still current.
+- Milestone design and exact scope/packet/test contracts: [CodexDD 0.4.6 Agent Reliability & Completion](codexdd-0.4.6-agent-reliability-design.md).
+- New-conversation prompt: [CodexDD 0.4.6 New Thread Handoff](codexdd-0.4.6-new-thread-handoff.md).
+- Canonical incidents: `codex-dd — Upcoming Version Backlog` in connected Google Drive, current 2026-11-04, plus the [0.4.4 active agent stability triage](codexdd-0.4.4-active-agent-stability-triage-2026-11-05.md). Separate observation from root-cause inference.
+- **P0 required:** (1) full-gate truthful evidence-bound terminalization (DD-BL-005/007), (2) source/worktree/role/native profile preflight (DD-BL-006), (3) no-progress adaptive loop suppression (DD-BL-007), (4) narrowly authorized non-source operations/benchmark routing rather than fake source mechanical-validation transitions.
+- **P1 conditional:** confirmed in-capacity worker-spawn defects, provider `tool_choice` incompatibilities and first-assignment role/preflight UX. Do not blindly raise concurrency caps or expand provider surface without exact-version proof.
+- No 0.4.5 upstream/dependency/daemon/CLI release migration. Preserve all role/security/permission/sandbox/elevation controls and 13 high-risk 0.4.5 review holds + 0/109 formal owner approvals.
+- **Immediate 3A.1:** read-only baseline/source/evidence audit and a durable Git handoff checkpoint. Numbered work packets per [work packet standard](codexdd-major-phase-work-packet-standard.md); local cheap Windows validation on **Daniel-CL before GitHub CI**. No Rust build/CI for docs-only setup.
+- Future 0.4.6 release requires exact-head focused Windows proofs, real operator-context agent soak, independent QA, performance comparison, final native full release profile, explicit owner merge/install decisions, and rollback. Production stays 0.4.4 until that process succeeds.
+- Release numbering is deliberate: 0.4.6 can succeed 0.4.4 while unfinished 0.4.5 remains shelved; if 0.4.6 ships first, forward-port 0.4.5 features into a future version rather than overwriting 0.4.6.
+
+**Everything below this heading is preserved as historical roadmap context. Older status labels such as "0.4.4 IN DEVELOPMENT," "0.4.3 NEXT" and "0.4.2 deployed" are superseded for current planning.**
+
+---
+
 ## Current DD-BL-006 priority — CodexDD 0.4.4 (2026-10-12)
 
 - **0.4.3 upstream integration:** PR #52 merged at `d8ad52cc223362a03f4dc5b40ec51695b3c48936` with tracked upstream `rust-v0.162.0` and product identity `0.4.3`. This GitHub merge does not itself prove a later production installation.
