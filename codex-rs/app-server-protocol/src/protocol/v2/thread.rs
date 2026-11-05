@@ -1770,6 +1770,15 @@ pub struct ThreadAdaptiveWorkflowState {
     pub paused_by_user: bool,
     pub worker_role: String,
     pub authorized_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub assignment_task_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub authorized_source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub authorized_source_sha: Option<String>,
     pub worker_assignment_locked: bool,
     pub workflow_terminal: Option<String>,
 }

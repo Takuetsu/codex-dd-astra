@@ -151,7 +151,10 @@ fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
                 authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
-                worker_assignment_locked: true,
+                assignment_task_kind: None,
+                authorized_source_root: None,
+                authorized_source_sha: None,
+worker_assignment_locked: true,
                 workflow_terminal: Some("ready_for_validation".to_string()),
             },
             Some("turn-43".to_string()),
@@ -247,7 +250,10 @@ fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
         paused_by_user: false,
         worker_role: "repair".to_string(),
         authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
-        worker_assignment_locked: true,
+        assignment_task_kind: None,
+        authorized_source_root: None,
+        authorized_source_sha: None,
+worker_assignment_locked: true,
         workflow_terminal: Some("ready_for_validation".to_string()),
     };
     let adaptive = RolloutItem::WorkflowState(WorkflowStateItem::set_adaptive_state(

@@ -199,6 +199,12 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub worker_role: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authorized_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assignment_task_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorized_source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorized_source_sha: Option<String>,
     pub worker_assignment_locked: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workflow_terminal: Option<String>,

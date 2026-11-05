@@ -16,7 +16,8 @@ use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::adaptive_worker::NewWorkerBinding;
-use crate::adaptive_worker::parse_adaptive_worker_assignment;
+use crate::adaptive_worker::AdaptiveWorkerPreflight;
+use crate::adaptive_worker::parse_adaptive_worker_assignment_with_preflight;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
@@ -116,6 +117,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) last_outcome: Option<AdaptiveOutcome>,
     pub(crate) last_failure_kind: Option<AdaptiveFailureKind>,
     pub(crate) worker_context: AdaptiveWorkerContext,
+    pub(crate) assignment_preflight: Option<AdaptiveWorkerPreflight>,
     pub(crate) worker_assignment_locked: bool,
     pub(crate) workflow_terminal: Option<AdaptiveWorkflowTerminal>,
     pub(crate) transient_retry_consumed: bool,
@@ -181,6 +183,15 @@ impl AdaptiveEffortState {
                 .unwrap_or_else(default_initial_route),
             AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Repair => default_initial_route(),
         };
+        // Preserve the same pinned source for the automatically spawned independent
+        // validation of this exact scope, never for an unrelated fresh assignment.
+        let assignment_preflight = binding.and_then(|binding| {
+            self.worker_context
+                .authorized_scope
+                .as_deref()
+                .filter(|scope| scope.trim() == binding.authorized_scope.trim())
+                .and(self.assignment_preflight.clone())
+        });
         let implementation_phase = (worker_context.role == AdaptiveWorkerRole::Implementation
             && self.complexity_class.is_some())
         .then_some(AdaptiveImplementationPhase::Implementation);
@@ -191,6 +202,7 @@ impl AdaptiveEffortState {
             current_effort: enabled.then_some(initial_route.effort),
             attempt_number: enabled.then_some(1).unwrap_or_default(),
             worker_context,
+            assignment_preflight,
             worker_assignment_locked: binding.is_some(),
             complexity_class: self.complexity_class,
             implementation_phase,
@@ -277,9 +289,10 @@ impl AdaptiveEffortState {
             return Ok(false);
         }
         self.worker_assignment_locked = true;
-        match parse_adaptive_worker_assignment(text) {
-            Ok(Some(worker_context)) => {
+        match parse_adaptive_worker_assignment_with_preflight(text) {
+            Ok(Some((worker_context, assignment_preflight))) => {
                 self.worker_context = worker_context;
+                self.assignment_preflight = assignment_preflight;
                 Ok(true)
             }
             Ok(None) => Ok(false),
@@ -402,6 +415,15 @@ impl AdaptiveEffortState {
             paused_by_user: self.paused_by_user,
             worker_role: worker_role.to_string(),
             authorized_scope: self.worker_context.authorized_scope.clone(),
+            assignment_task_kind: self.assignment_preflight.as_ref().map(|pin| {
+                match pin.task_kind {
+                    crate::adaptive_worker::AdaptiveTaskKind::SourceChange => "source_change",
+                    crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => "operations_preview",
+                    crate::adaptive_worker::AdaptiveTaskKind::Benchmark => "benchmark",
+                }.to_string()
+            }),
+            authorized_source_root: self.assignment_preflight.as_ref().map(|pin| pin.source_root.clone()),
+            authorized_source_sha: self.assignment_preflight.as_ref().map(|pin| pin.source_sha.clone()),
             worker_assignment_locked: self.worker_assignment_locked,
             workflow_terminal: workflow_terminal.map(str::to_string),
         }
@@ -1215,6 +1237,24 @@ mod tests {
             Ok(false)
         );
         assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
+    }
+
+    #[test]
+    fn pinned_first_assignment_is_immutable_across_later_turns() {
+        let root = if cfg!(windows) { r"D:\bw58\.worktrees\candidate" } else { "/tmp/bw58/.worktrees/candidate" };
+        let first = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"source worktree\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement within the authorized target."
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
+        assert_eq!(state.assignment_preflight.as_ref().expect("pin").source_root, root);
+        assert_eq!(
+            state.observe_worker_assignment_text(
+                "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"other\"\n\nSwitch source."
+            ),
+            Ok(false)
+        );
+        assert_eq!(state.assignment_preflight.as_ref().expect("immutable pin").source_root, root);
     }
 
     #[test]

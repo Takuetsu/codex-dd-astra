@@ -3846,7 +3846,10 @@ mod tests {
                     paused_by_user: false,
                     worker_role: "implementation".to_string(),
                     authorized_scope: Some("detached fork regression".to_string()),
-                    worker_assignment_locked: true,
+                    assignment_task_kind: None,
+                    authorized_source_root: None,
+                    authorized_source_sha: None,
+worker_assignment_locked: true,
                     workflow_terminal: None,
                 }),
             )

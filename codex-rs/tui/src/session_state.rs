@@ -279,6 +279,11 @@ fn apply_persisted_adaptive_workflow_state(
         );
     }
 
+    let assignment_preflight = crate::adaptive_worker::validated_assignment_preflight(
+        state.assignment_task_kind.as_deref(),
+        state.authorized_source_root.as_deref(),
+        state.authorized_source_sha.as_deref(),
+    )?;
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -305,6 +310,7 @@ fn apply_persisted_adaptive_workflow_state(
             role: worker_role,
             authorized_scope: state.authorized_scope,
         },
+        assignment_preflight,
         worker_assignment_locked: state.worker_assignment_locked,
         workflow_terminal,
         transient_retry_consumed: false,
@@ -400,7 +406,10 @@ mod tests {
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
                 authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
-                worker_assignment_locked: true,
+                assignment_task_kind: None,
+                authorized_source_root: None,
+                authorized_source_sha: None,
+worker_assignment_locked: true,
                 workflow_terminal: Some("ready_for_validation".to_string()),
             },
             Some("turn-6".to_string()),
@@ -466,7 +475,10 @@ mod tests {
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
                     authorized_scope: Some("bounded scope".to_string()),
-                    worker_assignment_locked: true,
+                    assignment_task_kind: None,
+                    authorized_source_root: None,
+                    authorized_source_sha: None,
+worker_assignment_locked: true,
                     workflow_terminal: Some(persisted.to_string()),
                 },
                 Some("terminal-turn".to_string()),
@@ -500,7 +512,10 @@ mod tests {
                 paused_by_user: true,
                 worker_role: "validation".to_string(),
                 authorized_scope: Some("independent validation".to_string()),
-                worker_assignment_locked: true,
+                assignment_task_kind: None,
+                authorized_source_root: None,
+                authorized_source_sha: None,
+worker_assignment_locked: true,
                 workflow_terminal: None,
             },
             None,
@@ -542,7 +557,10 @@ mod tests {
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
                     authorized_scope: Some("family restore compatibility".to_string()),
-                    worker_assignment_locked: true,
+                    assignment_task_kind: None,
+                    authorized_source_root: None,
+                    authorized_source_sha: None,
+worker_assignment_locked: true,
                     workflow_terminal: None,
                 },
                 None,
@@ -754,4 +772,55 @@ mod codexdd_complexity_persistence_regression {
         assert_eq!(adaptive.last_outcome, None);
         assert_eq!(adaptive.last_failure_kind, None);
     }
+
+    #[test]
+    fn source_pins_restore_and_partial_pins_are_rejected() {
+        let root = if cfg!(windows) { r"C:\approved\candidate" } else { "/tmp/approved/candidate" };
+        let json = format!(r#"{{
+            "enabled": true,
+            "starting_family": "astra",
+            "current_family": "sol",
+            "current_effort": "medium",
+            "attempt_number": 2,
+            "paused_by_user": false,
+            "worker_role": "implementation",
+            "authorized_scope": "pinned test",
+            "worker_assignment_locked": true,
+            "workflow_terminal": null,
+            "complexity_class": "standard",
+            "implementation_phase": "implementation",
+            "assignment_task_kind": "source_change",
+            "authorized_source_root": {},
+            "authorized_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }}"#, serde_json::to_string(root).expect("json path"));
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_str(&json).expect("valid snapshot");
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect("pinned source must survive restart");
+        let pin = adaptive.assignment_preflight.expect("restored pin");
+        assert_eq!(pin.source_root, root);
+        assert_eq!(pin.source_sha, "a".repeat(40));
+        assert_eq!(pin.task_kind, crate::adaptive_worker::AdaptiveTaskKind::SourceChange);
+
+        let invalid: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(serde_json::json!({
+                "enabled": true,
+                "starting_family": "astra",
+                "current_family": "sol",
+                "current_effort": "medium",
+                "attempt_number": 2,
+                "paused_by_user": false,
+                "worker_role": "implementation",
+                "authorized_scope": "partial pin",
+                "worker_assignment_locked": true,
+                "workflow_terminal": null,
+                "authorized_source_root": root,
+            })).expect("JSON schema accepts old optionality");
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, invalid, None)
+            .expect_err("incomplete source pin must fail closed")
+            .contains("source_root and source_sha together"));
+    }
+
 }

@@ -305,6 +305,23 @@ impl ChatWidget {
             }
         };
         let signal_kind = envelope.signal_kind;
+        if accepted && signal_kind == AdaptiveRuntimeSignalKind::MechanicalValidation {
+            if let Err(blocker) = crate::adaptive_worker::preflight_mechanical_target(
+                self.adaptive_effort.assignment_preflight.as_ref(),
+                self.config.cwd.as_path(),
+            ) {
+                self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+                    source_turn_id: source_turn_id.to_string(),
+                });
+                self.adaptive_effort.last_outcome =
+                    Some(crate::adaptive_policy::AdaptiveOutcome::Unknown);
+                self.adaptive_effort.last_failure_kind =
+                    Some(crate::adaptive_policy::AdaptiveFailureKind::OwnerDecision);
+                self.add_info_message(blocker, None);
+                self.latch_workflow_terminal(source_turn_id, AdaptiveWorkflowTerminal::Blocked);
+                return true;
+            }
+        }
         self.adaptive_effort.pending_signal = Some(if accepted {
             AdaptivePendingSignal::Consumed {
                 source_turn_id: source_turn_id.to_string(),
@@ -842,6 +859,41 @@ mod tests {
         );
         assert_eq!(chat.adaptive_effort.pending_attempt, None);
         assert!(!chat.maybe_submit_adaptive_successor());
+    }
+
+    #[tokio::test]
+    async fn pinned_benchmark_refuses_mechanical_transition_before_tool_execution() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        let turn_id = "pinned-benchmark-no-mechanical";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded benchmark".to_string());
+        chat.adaptive_effort.assignment_preflight = Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
+            task_kind: crate::adaptive_worker::AdaptiveTaskKind::Benchmark,
+            source_root: "not-used-in-benchmark-rejection".to_string(),
+            source_sha: "a".repeat(40),
+        });
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+        chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Pending(
+            AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::MechanicalValidation,
+                evidence_refs: Vec::new(),
+                diagnostic_note: None,
+            },
+        ));
+        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(
+            chat.adaptive_effort.implementation_phase,
+            Some(AdaptiveImplementationPhase::Implementation)
+        );
     }
 
     #[tokio::test]
