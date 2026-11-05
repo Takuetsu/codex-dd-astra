@@ -62,7 +62,7 @@ jobs:
             'docs/upstream-candidates/codexdd-045-3f93-real-daemon-cold-resume-candidate.json',
           },changed
           assert p['status']=='SOURCE_PREPARED_CHEAP_AND_NATIVE_WINDOWS_PENDING'
-          assert p['source_change']['script_blob']=='dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13'
+          assert p['source_change']['script_blob']=='a97dfe96498d6b0d2f2817c369e8dba0b08ec062', p['source_change']['script_blob']
           assert p['baseline_head']=='b8effbfd79bb638d5df980a6a962ee2e6f85559d'
           assert p['release_approved'] is False and p['formal_owner_signoffs']==0
           assert p['production_version']=='0.4.4'
