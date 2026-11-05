@@ -36,6 +36,7 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $sandbox $sub) -Force | Out-Null
   }
   Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE '.github\scripts\test_codexdd_045_3f94_windows_managed_supervisor.ps1') -Destination (Join-Path $sandbox 'supervisor-test.ps1') -ErrorAction Stop
+  Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE '.github\scripts\codexdd_045_3f94_private_directory.ps1') -Destination (Join-Path $sandbox 'codexdd_045_3f94_private_directory.ps1') -ErrorAction Stop
   if (-not $ProbeOnly) {
     if (-not $env:CARGO_TARGET_DIR) { throw 'Missing source-exact compiled Cargo CLI directory' }
     $exe = Join-Path $env:CARGO_TARGET_DIR 'debug\codex.exe'
@@ -85,6 +86,11 @@ if ([DdTokenElevation]::Query() -ne 0) {
   throw 'TokenElevation is nonzero: managed app-server would correctly reject this launcher'
 }
 Write-Host ('3F.94 RESTRICTED WINDOWS TOKEN GREEN: ' + $identity.Name)
+. (Join-Path $SandboxPath 'codexdd_045_3f94_private_directory.ps1')
+$fixtureHome = Join-Path $SandboxPath 'secure-socket-probe'
+New-Item -ItemType Directory -Path $fixtureHome -Force | Out-Null
+New-DDPrivateDaemonDirectory -sandboxHome $fixtureHome
+Write-Host '3F.94 STRICT SOCKET ACL PREFLIGHT GREEN'
 if ($ProbeOnly) {
   Set-Content -LiteralPath (Join-Path $SandboxPath 'standard-token-attestation.txt') -Value 'NONADMIN_TOKEN_ELEVATION_0' -Encoding UTF8
   Write-Host '3F.94 NONADMIN PREFLIGHT GREEN'

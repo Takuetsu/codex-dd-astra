@@ -15,6 +15,7 @@ $exe = Join-Path $env:CARGO_TARGET_DIR 'debug\codex.exe'
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
   throw "3F.94 cannot find the locally compiled Codex executable: $exe"
 }
+. (Join-Path $PSScriptRoot 'codexdd_045_3f94_private_directory.ps1')
 
 $originalHome = [Environment]::GetEnvironmentVariable('CODEX_HOME')
 $originalSqlite = [Environment]::GetEnvironmentVariable('CODEX_SQLITE_HOME')
@@ -49,7 +50,7 @@ function Install-TestBinary([string]$target) {
 }
 function Set-Updater([string]$sandboxHome, [bool]$enabled) {
   $settings = Join-Path $sandboxHome 'app-server-daemon\settings.json'
-  New-Item -ItemType Directory -Path (Split-Path $settings -Parent) -Force | Out-Null
+  New-DDPrivateDaemonDirectory -sandboxHome $sandboxHome
   @{
     shutdownGraceSeconds = 0
     updater = @{ autoUpdateEnabled = $enabled; updateIntervalMinutes = 1440 }

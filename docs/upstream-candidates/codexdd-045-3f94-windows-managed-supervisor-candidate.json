@@ -21,9 +21,15 @@
   "source_change": {
     "kind": "Nonrelease Windows managed supervisor test, source-bound workflow, ephemeral standard-user launcher, inexpensive identity probe and ledger changes only; zero production code/dependency changes",
     "script_path": ".github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1",
-    "script_blob": "dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13",
+    "script_blob": "a97dfe96498d6b0d2f2817c369e8dba0b08ec062",
     "no_production_source_changes": true,
-    "no_cargo_lock_or_security_changes": true
+    "no_cargo_lock_or_security_changes": true,
+    "acl_fixture_helper": {
+      "path": ".github/scripts/codexdd_045_3f94_private_directory.ps1",
+      "blob": "01036d9e3582f3b5c4d6462921b782467157a246",
+      "purpose": "Create user-owned, protected, single ACE private Windows socket directory at creation time with production-matching SDDL; never weaken production verification"
+    },
+    "launcher_blob": "bd699bccff15821f152d0866b01b264417de318e"
   },
   "cases": [
     {
@@ -49,7 +55,7 @@
     "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
     "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
   ],
-  "ci_result": "NATIVE_WINDOWS_RETEST_PENDING_AFTER_NONADMIN_PREFLIGHT_GREEN",
+  "ci_result": "SECURE_WINDOWS_ACL_FIXTURE_PREPARED_CHEAP_PROBE_PENDING",
   "failed_attempts": [
     {
       "run_id": 42064776537,
@@ -75,6 +81,16 @@
       "result": "failed",
       "identity_check": "passed",
       "root_cause": "PowerShell Start-Process -Credential did not return an ExitCode despite completed child; replaced with required child attestation marker"
+    },
+    {
+      "run_id": 42081364964,
+      "result": "failed",
+      "stage": "windows-native / first actual standard-user daemon start",
+      "native_windows_cli_compile": "passed",
+      "windows_identity": "passed",
+      "root_cause": "Test harness Set-Updater precreated app-server-daemon directory with inherited broad Windows DACL, violating user-only private socket directory requirement",
+      "security_policy": "PRESERVED",
+      "process_cases_passed": 0
     }
   ],
   "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS",
@@ -86,5 +102,14 @@
     "actual_account_type": "ephemeral_local_nonadministrator",
     "run_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/42081044874",
     "source_launcher_blob": "e48dd9aabb8572eb5e6acb523df4f1ceb4ca3345"
+  },
+  "private_directory_preflight": {
+    "status": "PROBE_PENDING",
+    "requirements": [
+      "Create private directory under restricted user with exact SDDL O:<user SID>D:P(A;OICI;FA;;;<user SID>) at creation, not repair",
+      "Validate owner SID, protected ACL, exactly one inheritable FullControl ACE",
+      "Verify in cheap Windows identity probe before Windows native CLI compilation"
+    ],
+    "standalone_runner_result": "NOT_YET_RUN"
   }
 }
