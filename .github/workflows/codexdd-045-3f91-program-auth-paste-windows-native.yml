@@ -1,0 +1,269 @@
+# NONRELEASE: source-pinned API-key program authority + Windows clipboard regression.
+# Cheap source and Rustfmt validation must pass before the native Windows job runs.
+name: CodexDD 0.4.5 3F.91 program authority and paste (NONRELEASE)
+run-name: 3F.91 Windows program authorization and paste (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f91-program-auth-paste
+    paths:
+      - .github/workflows/codexdd-045-3f91-program-auth-paste-windows-native.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f91-program-auth
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Verify protected source and nonrelease evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f91-program-auth-paste'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/tests/slash_commands.rs)" = 'aebc98352f9bc204f6186ec98606eb24a4e14312'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/daybreak.rs)" = 'a47a837b33ea19bbaa66e8762884135651e4eea5'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/daybreak_tests.rs)" = '1d1b7bf45854d7bc9c9521fb219a71180fd6ec97'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/settings.rs)" = 'bb747507416e7712fe4ff5832446783c0127994e'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/chatwidget/tests.rs)" = '2a5f08c359b1ec82c67e9eeba4aa9ba274629741'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests.rs)" = '2c2c256f2dac830cb28cb4d322eecf05e62ba7f8'
+          test "$(git rev-parse HEAD:codex-rs/tui/src/app/tests/key_chords.rs)" = '6c1321ad5262def0af21bc1377885def1cb2a397'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check 4816f28ada7d0275cc4431a5731d1271cc0d27a2 HEAD
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          p=Path('docs/upstream-candidates')
+          prior=json.loads((p/'codexdd-045-3f90-windows-reconnect-e2e-candidate.json').read_text())
+          assert prior['status'] == 'EIGHT_WINDOWS_NATIVE_RECONNECT_TESTS_GREEN_OWNER_SIGNOFF_PENDING'
+          e=prior['windows_native_evidence']
+          assert e['run_id'] == 41946677766 and e['tested_head'] == '4816f28ada7d0275cc4431a5731d1271cc0d27a2'
+          assert e['conclusion'] == 'success' and e['exact_selectors_passed'] == 8 and e['failed'] == 0
+          assert all(case['status'] == 'PASSED_WINDOWS_NATIVE_3F90' for case in prior['test_cases'])
+          ledger=json.loads((p/'codexdd-045-3f91-program-auth-paste-candidate.json').read_text())
+          assert ledger['status'] == 'SOURCE_PREPARED_WINDOWS_NATIVE_NOT_YET_EXECUTED'
+          assert ledger['release_approved'] is False
+          assert ledger['formal_owner_signoffs'] == 0
+          assert ledger['core_high_risk_owner_holds'] == 4
+          assert ledger['tui_high_risk_owner_holds'] == 9
+          assert ledger['new_blob'] == 'aebc98352f9bc204f6186ec98606eb24a4e14312'
+          assert len(ledger['tests']) == 6
+          changed=set(subprocess.check_output([
+              'git','diff','--name-only','4816f28ada7d0275cc4431a5731d1271cc0d27a2','HEAD'
+          ], text=True).splitlines())
+          allowed={
+              'codex-rs/tui/src/chatwidget/tests/slash_commands.rs',
+              'docs/upstream-candidates/codexdd-045-3f90-windows-reconnect-e2e-candidate.json',
+              'docs/upstream-candidates/codexdd-045-3f91-program-auth-paste-candidate.json',
+              '.github/workflows/codexdd-045-3f91-program-auth-paste-windows-native.yml',
+          }
+          assert changed == allowed, (changed, allowed)
+          for case in ledger['tests']:
+              lines=Path(case['test_path']).read_text().splitlines()
+              sym=case['selector'].split('::')[-1]
+              hits=[i for i,line in enumerate(lines) if 'fn '+sym+'(' in line]
+              assert len(hits) == 1, case['selector']
+              attr='\n'.join(lines[max(0,hits[0]-5):hits[0]])
+              for excluded in ('#[cfg(unix)]','#[cfg(not(windows))]','#[cfg(not(target_os = "windows"))]'):
+                  assert excluded not in attr, (case['selector'],excluded)
+          print('3F91 SOURCE GUARD GREEN: 6 native cases, 3F90 evidence, security and owner holds intact')
+          PY
+      - name: Parse all native PowerShell blocks before Windows compilation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lines = @(Get-Content '.github/workflows/codexdd-045-3f91-program-auth-paste-windows-native.yml')
+          $count = 0
+          for ($i = 0; $i -lt $lines.Count - 1; $i++) {
+            if ($lines[$i] -ne '        shell: pwsh' -or $lines[$i + 1] -ne '        run: |') {
+              continue
+            }
+            $count++
+            $source = [System.Collections.Generic.List[string]]::new()
+            for ($j = $i + 2; $j -lt $lines.Count; $j++) {
+              $line = $lines[$j]
+              if ($line.Length -eq 0) {
+                $source.Add('')
+                continue
+              }
+              if (-not $line.StartsWith('          ')) {
+                break
+              }
+              $source.Add($line.Substring(10))
+            }
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseInput(
+              ($source -join [Environment]::NewLine), [ref]$tokens, [ref]$parseErrors
+            )
+            if ($parseErrors.Count -ne 0) {
+              foreach ($parseError in $parseErrors) {
+                Write-Host ("Invalid PowerShell block {0}: {1}" -f $count, $parseError)
+              }
+              throw "PowerShell parser rejected block $count before Windows native compilation"
+            }
+          }
+          if ($count -ne 4) {
+            throw "Expected 4 PowerShell steps (one syntax guard and three Windows native), found $count"
+          }
+          Write-Host "3F91 POWERSHELL PARSER GREEN: $count blocks"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt check only
+        shell: bash
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  windows-native:
+    needs: cheap-source
+    runs-on: windows-2022
+    timeout-minutes: 110
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Configure bounded test scratch and evidence
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'codexdd045-3f91-program'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "TEMP=$temp"
+            "TMP=$temp"
+            "CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE"
+          ) | Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+        with:
+          components: rustfmt
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore Cargo dependency sources only
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile source-bound Windows TUI test binary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $stdout=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\compile-stdout.log'
+          $stderr=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\compile-stderr.log'
+          $proc=Start-Process -FilePath $cargo -ArgumentList @('test','--locked','-p','codex-tui','--lib','--no-run') -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          try {
+            if (-not $proc.WaitForExit(3900000)) {
+              $proc.Kill($true)
+              $proc.WaitForExit()
+              Get-Content $stderr -Tail 100 -ErrorAction SilentlyContinue
+              throw 'Cold Windows TUI compilation exceeded 65 minutes'
+            }
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stderr -Tail 120 -ErrorAction SilentlyContinue
+              throw "Windows TUI compilation failed with exit $($proc.ExitCode)"
+            }
+            Write-Host '3F.91 WINDOWS COMPILATION GREEN' -ForegroundColor Green
+          } finally {
+            $proc.Dispose()
+          }
+      - name: Execute six exact Windows regressions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Source SHA mismatch' }
+          $cases=@(
+            'chatwidget::tests::slash_commands::api_key_daybreak_revocation_drops_program_authority',
+            'chatwidget::tests::slash_commands::copy_shortcut_can_be_remapped',
+            'chatwidget::tests::slash_commands::slash_daybreak_offers_an_application_when_unavailable',
+            'app::tests::api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account',
+            'daybreak::tests::turn_program_uses_catalog_and_preserves_legacy_models',
+            'app::tests::key_chords::vim_escape_recovery_preserves_enhanced_terminals_and_altgr'
+          )
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $results=New-Object 'System.Collections.Generic.List[object]'
+          $index=0
+          foreach ($case in $cases) {
+            $index++
+            $stdout=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stdout.log")
+            $stderr=Join-Path $env:GITHUB_WORKSPACE ("native-evidence\case-$index-stderr.log")
+            Write-Host "BEGIN 3F.91 case $($index): $case"
+            $arguments=@('test','--locked','-p','codex-tui','--lib',$case,'--','--exact','--nocapture')
+            $proc=Start-Process -FilePath $cargo -ArgumentList $arguments -WorkingDirectory (Join-Path $env:GITHUB_WORKSPACE 'codex-rs') -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            try {
+              if (-not $proc.WaitForExit(240000)) {
+                $proc.Kill($true)
+                $proc.WaitForExit()
+                throw "Case $($index) exceeded 4-minute timeout"
+              }
+              if ($proc.ExitCode -ne 0) {
+                Get-Content $stdout -Tail 60 -ErrorAction SilentlyContinue
+                Get-Content $stderr -Tail 90 -ErrorAction SilentlyContinue
+                throw "Case $($index) failed with exit $($proc.ExitCode)"
+              }
+            } finally {
+              $proc.Dispose()
+            }
+            $output=(Get-Content $stdout -Raw)+(Get-Content $stderr -Raw)
+            if (-not [regex]::IsMatch($output,'test result: ok\.\s+1 passed;\s+0 failed;')) {
+              throw "Case $($index) did not execute exactly one passing test"
+            }
+            $pattern='test\s+'+[regex]::Escape($case)+'\s+\.\.\.\s+ok'
+            if (-not [regex]::IsMatch($output,$pattern)) {
+              throw "Case $($index) missing passing selector"
+            }
+            $results.Add([pscustomobject]@{Selector=$case;Passed=1;Stdout=$stdout;Stderr=$stderr})
+            Write-Host "PASS 3F.91 case $($index): $case" -ForegroundColor Green
+          }
+          $receipt=[pscustomobject]@{
+            kind='codexdd045_3f91_program_auth_paste_windows_native_nonrelease'
+            source_head=$env:GITHUB_SHA
+            utc=(Get-Date).ToUniversalTime().ToString('o')
+            passed=$results.Count
+            failed=0
+            selectors=$results.ToArray()
+            release_approved=$false
+            formal_owner_signoffs=0
+          }
+          $receipt | ConvertTo-Json -Depth 5 | Set-Content native-evidence/3f91-receipt.json -Encoding utf8
+          Write-Host "3F.91 WINDOWS PROGRAM/PASTE TESTS GREEN: $($results.Count)/$($cases.Count)" -ForegroundColor Green
+      - name: Preserve native logs and source-specific nonrelease receipt
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f91-program-auth-paste-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14
