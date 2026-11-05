@@ -1,6 +1,6 @@
 # 3F.94 NONRELEASE: create an ephemeral standard Windows user on an isolated GitHub runner.
 # Production daemon's Windows token-elevation policy is never altered.
-param([switch]$ProbeOnly)
+param([switch]$ProbeOnly,[switch]$ProbeBreakaway)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -37,7 +37,8 @@ try {
   }
   Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE '.github\scripts\test_codexdd_045_3f94_windows_managed_supervisor.ps1') -Destination (Join-Path $sandbox 'supervisor-test.ps1') -ErrorAction Stop
   Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE '.github\scripts\codexdd_045_3f94_private_directory.ps1') -Destination (Join-Path $sandbox 'codexdd_045_3f94_private_directory.ps1') -ErrorAction Stop
-  if (-not $ProbeOnly) {
+  Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE '.github\scripts\test_codexdd_045_3f94_breakaway_child.ps1') -Destination (Join-Path $sandbox 'probe-breakaway-child.ps1') -ErrorAction Stop
+  if (-not $ProbeOnly -and -not $ProbeBreakaway) {
     if (-not $env:CARGO_TARGET_DIR) { throw 'Missing source-exact compiled Cargo CLI directory' }
     $exe = Join-Path $env:CARGO_TARGET_DIR 'debug\codex.exe'
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Missing native compiled executable $exe" }
@@ -45,7 +46,7 @@ try {
   }
   $runnerScript = Join-Path $sandbox 'runner.ps1'
   @'
-param([string]$SandboxPath, [switch]$ProbeOnly)
+param([string]$SandboxPath, [switch]$ProbeOnly,[switch]$ProbeBreakaway)
 $ErrorActionPreference = 'Stop'
 $env:GITHUB_ACTIONS = 'true'
 $env:RUNNER_OS = 'Windows'
@@ -91,8 +92,21 @@ $fixtureHome = Join-Path $SandboxPath 'secure-socket-probe'
 New-Item -ItemType Directory -Path $fixtureHome -Force | Out-Null
 New-DDPrivateDaemonDirectory -sandboxHome $fixtureHome
 Write-Host '3F.94 STRICT SOCKET ACL PREFLIGHT GREEN'
-if ($ProbeOnly) {
-  Set-Content -LiteralPath (Join-Path $SandboxPath 'standard-token-attestation.txt') -Value 'NONADMIN_TOKEN_ELEVATION_0' -Encoding UTF8
+if ($ProbeBreakaway) {
+  & (Join-Path $SandboxPath 'probe-breakaway-child.ps1') -SandboxPath $SandboxPath
+  if (-not $?) { throw '3F.94 suspended detached process probe returned failure' }
+  $capability=Join-Path $SandboxPath 'breakaway-result.json'
+  if (-not (Test-Path -LiteralPath $capability -PathType Leaf)) { throw '3F.94 missing breakaway child receipt' }
+  $testResult=Get-Content -LiteralPath $capability -Raw | ConvertFrom-Json
+  if ($testResult.detached_launch_possible -ne $true -or $testResult.token_elevated -ne 0 -or
+      $testResult.breakaway_error_code -ne 0 -or $testResult.production_security_changed -ne $false) {
+    throw '3F.94 restricted Windows child cannot safely launch a detached process'
+  }
+  Write-Host '3F.94 NONADMIN SUSPENDED BREAKAWAY CAPABILITY GREEN'
+}
+if ($ProbeOnly -or $ProbeBreakaway) {
+  $attestationValue = if ($ProbeBreakaway) { 'NONADMIN_TOKEN_ELEVATION_0_BREAKAWAY_OK' } else { 'NONADMIN_TOKEN_ELEVATION_0' }
+  Set-Content -LiteralPath (Join-Path $SandboxPath 'standard-token-attestation.txt') -Value $attestationValue -Encoding UTF8
   Write-Host '3F.94 NONADMIN PREFLIGHT GREEN'
   exit 0
 }
@@ -111,10 +125,11 @@ Write-Host '3F.94 STANDARD USER SUPERVISOR TEST SCRIPT COMPLETED'
   $quotedSandbox = '"' + $sandbox + '"'
   $args = @('-NoProfile','-NonInteractive','-File',$quotedRunner,'-SandboxPath',$quotedSandbox)
   if ($ProbeOnly) { $args += '-ProbeOnly' }
+  if ($ProbeBreakaway) { $args += '-ProbeBreakaway' }
   $pwsh = (Get-Command pwsh.exe -ErrorAction Stop).Source
   $child = Start-Process -FilePath $pwsh -ArgumentList $args -Credential $credential -LoadUserProfile -WorkingDirectory $sandbox -PassThru -RedirectStandardOutput $childOut -RedirectStandardError $childErr
   try {
-    $limit = if ($ProbeOnly) { 60000 } else { 900000 }
+    $limit = if ($ProbeOnly -or $ProbeBreakaway) { 60000 } else { 900000 }
     if (-not $child.WaitForExit($limit)) {
       $child.Kill()
       $child.WaitForExit()
@@ -131,10 +146,18 @@ Write-Host '3F.94 STANDARD USER SUPERVISOR TEST SCRIPT COMPLETED'
     throw 'Missing standard-user child attestation: process failed or exited before completing its token checks'
   }
   $attestation = (Get-Content -LiteralPath $attestationPath -Raw).Trim()
-  $expected = if ($ProbeOnly) { 'NONADMIN_TOKEN_ELEVATION_0' } else { 'NONADMIN_TOKEN_ELEVATION_0_PROCESS_TEST_COMPLETED' }
+  $expected = if ($ProbeBreakaway) { 'NONADMIN_TOKEN_ELEVATION_0_BREAKAWAY_OK' } elseif ($ProbeOnly) { 'NONADMIN_TOKEN_ELEVATION_0' } else { 'NONADMIN_TOKEN_ELEVATION_0_PROCESS_TEST_COMPLETED' }
   if ($attestation -cne $expected) { throw "Unexpected standard-user attestation: $attestation" }
 
-  if ($ProbeOnly) {
+  if ($ProbeBreakaway) {
+    $capability=Join-Path $sandbox 'breakaway-result.json'
+    if (-not (Test-Path -LiteralPath $capability -PathType Leaf)) { throw '3F.94 breakaway proof absent' }
+    $proof=Get-Content -LiteralPath $capability -Raw | ConvertFrom-Json
+    if ($proof.detached_launch_possible -ne $true -or $proof.breakaway_error_code -ne 0 -or $proof.token_elevated -ne 0) {
+      throw '3F.94 breakaway proof did not pass required Windows job limits'
+    }
+    Write-Host '3F.94 REAL NONADMIN WINDOWS DETACHED PROCESS CAPABILITY GREEN'
+  } elseif ($ProbeOnly) {
     Write-Host '3F.94 REAL NONADMIN WINDOWS ACCOUNT PREFLIGHT GREEN'
   } else {
     $receiptPath = Join-Path $sandbox 'native-evidence\3f94-windows-supervisor-receipt.json'

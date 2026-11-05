@@ -1,12 +1,24 @@
 # NONRELEASE 3F.94: two isolated actual Codex Windows managed supervisor/updater process cases.
 name: CodexDD 0.4.5 3F.94 Windows managed supervisor (NONRELEASE)
 run-name: 3F.94 Native Windows daemon lifecycle and updater (NONRELEASE)
+# Do NOT run this on GitHub-hosted Windows runners: they disallow the
+# CREATE_BREAKAWAY_FROM_JOB required by production daemon security.
+# A dedicated, disposable, unrestricted self-hosted Windows VM must be
+# registered with label codexdd-disposable-win before explicit opt-in.
+# Default is NO RUN. To test from this non-default candidate branch, an
+# administrator must explicitly set CODEXDD_3F94_ISOLATED_VM_READY=true.
 on:
   push:
     branches:
       - dd/codexdd-v0.4.5-3f94-windows-managed-supervisor
     paths:
       - .github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml
+  workflow_dispatch:
+    inputs:
+      nonrelease_acknowledgement:
+        description: "Type ISOLATED_WINDOWS_VM to acknowledge NONRELEASE use of a disposable Windows runner"
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -15,7 +27,7 @@ concurrency:
 
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra'
+    if: github.repository == 'Takuetsu/codex-dd-astra' && vars.CODEXDD_3F94_ISOLATED_VM_READY == 'true' && (github.event_name == 'push' || inputs.nonrelease_acknowledgement == 'ISOLATED_WINDOWS_VM')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -30,7 +42,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f94-windows-managed-supervisor'
           test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = 'a97dfe96498d6b0d2f2817c369e8dba0b08ec062'
-          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1)" = 'bd699bccff15821f152d0866b01b264417de318e'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1)" = 'abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1)" = '2b90840564dffb234f9df2618b2f13d61874ef77'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1)" = '7a5418f4778a520f85eacc676cd5980e50c30d1b'
           test "$(git rev-parse HEAD:.github/scripts/codexdd_045_3f94_private_directory.ps1)" = '01036d9e3582f3b5c4d6462921b782467157a246'
           test "$(git rev-parse HEAD:.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml)" = '32fcd5630358de4d3eeb77f301d861961cf30c79'
           test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
@@ -56,13 +70,18 @@ jobs:
             '.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1',
             '.github/scripts/codexdd_045_3f94_private_directory.ps1',
             '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1',
+            '.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1',
+            '.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1',
+            '.github/workflows/codexdd-045-3f94-scheduled-task-breakaway-probe.yml',
+            '.github/workflows/codexdd-045-3f94-blocked-source-audit.yml',
             '.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml',
             '.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml',
             'docs/upstream-candidates/codexdd-045-3f94-windows-managed-supervisor-candidate.json',
             'docs/upstream-candidates/codexdd-045-3f93-real-daemon-cold-resume-candidate.json',
           },changed
-          assert p['status']=='SOURCE_PREPARED_CHEAP_AND_NATIVE_WINDOWS_PENDING'
+          assert p['status']=='NATIVE_ACCEPTANCE_BLOCKED_HOSTED_WINDOWS_DEDICATED_RUNNER_REQUIRED'
           assert p['source_change']['script_blob']=='a97dfe96498d6b0d2f2817c369e8dba0b08ec062', p['source_change']['script_blob']
+          assert p['source_change']['launcher_blob']=='abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0'
           assert p['baseline_head']=='b8effbfd79bb638d5df980a6a962ee2e6f85559d'
           assert p['release_approved'] is False and p['formal_owner_signoffs']==0
           assert p['production_version']=='0.4.4'
@@ -87,6 +106,8 @@ jobs:
           assert 'TokenElevation is nonzero' in launcher and 'NONADMIN_TOKEN_ELEVATION_0' in launcher
           assert 'Start-Process -FilePath $pwsh' in launcher and '-Credential $credential' in launcher
           assert 'standard-token-attestation.txt' in launcher
+          assert 'ProbeBreakaway' in launcher and 'breakaway-result.json' in launcher
+          assert 'test_codexdd_045_3f94_breakaway_child.ps1' in launcher
           assert 'New-DDPrivateDaemonDirectory -sandboxHome $sandboxHome' in script
           assert 'codexdd_045_3f94_private_directory.ps1' in script and 'codexdd_045_3f94_private_directory.ps1' in launcher
           private=Path('.github/scripts/codexdd_045_3f94_private_directory.ps1').read_text()
@@ -144,22 +165,22 @@ jobs:
 
   windows-identity:
     needs: cheap-source
-    runs-on: windows-2022
+    runs-on: [self-hosted, Windows, X64, codexdd-disposable-win]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Prove real Windows standard-user TokenElevation is zero
+      - name: Preflight nonadmin identity, private socket and detached breakaway without compiling
         shell: powershell
         run: |
           $ErrorActionPreference='Stop'
-          & '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1' -ProbeOnly
-          if (-not $?) { throw 'Windows nonadmin identity preflight did not succeed' }
+          & '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1' -ProbeOnly -ProbeBreakaway
+          if (-not $?) { throw '3F.94 restricted Windows account cannot safely detach: do NOT compile' }
 
   windows-native:
     needs: [cheap-source, windows-identity]
-    runs-on: windows-2022
+    runs-on: [self-hosted, Windows, X64, codexdd-disposable-win]
     timeout-minutes: 125
     env:
       CARGO_INCREMENTAL: "0"

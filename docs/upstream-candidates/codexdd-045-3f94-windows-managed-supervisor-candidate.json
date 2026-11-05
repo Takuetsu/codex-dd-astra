@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f94_managed_windows_supervisor_updater_process_nonrelease",
-  "status": "SOURCE_PREPARED_CHEAP_AND_NATIVE_WINDOWS_PENDING",
+  "status": "NATIVE_ACCEPTANCE_BLOCKED_HOSTED_WINDOWS_DEDICATED_RUNNER_REQUIRED",
   "baseline_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
   "candidate_branch": "dd/codexdd-v0.4.5-3f94-windows-managed-supervisor",
   "production_version": "0.4.4",
@@ -29,7 +29,19 @@
       "blob": "01036d9e3582f3b5c4d6462921b782467157a246",
       "purpose": "Create user-owned, protected, single ACE private Windows socket directory at creation time with production-matching SDDL; never weaken production verification"
     },
-    "launcher_blob": "bd699bccff15821f152d0866b01b264417de318e"
+    "launcher_blob": "abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0",
+    "tested_no_auto_hosted_compilation_workflow": {
+      "path": ".github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml",
+      "blob": "2b13362801f20642facb3c217c8cbf4e7339418c",
+      "trigger": "push_or_workflow_dispatch_only_with_explicit_repository_flag",
+      "runs_on": "self-hosted Windows X64 codexdd-disposable-win",
+      "requires_input": {
+        "nonrelease_acknowledgement": "ISOLATED_WINDOWS_VM"
+      },
+      "first_gate": "real nonadmin process token + strict socket directory ACL + suspended breakaway flags",
+      "release_approval": false,
+      "requires_repository_variable": "CODEXDD_3F94_ISOLATED_VM_READY=true"
+    }
   },
   "cases": [
     {
@@ -54,9 +66,10 @@
     "Uses a locally compiled Codex CLI in fixture packages, not the user's installed 0.4.4 binary",
     "Does not attempt online updater install or package migration/production auto-update",
     "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
-    "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
+    "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff",
+    "Neither hosted native attempts nor Task Scheduler probe grant release acceptance: 0/2 real managed Windows supervisor cases passed; avoid repeating 20-minute hosted compiles"
   ],
-  "ci_result": "HOSTED_WINDOWS_JOB_BLOCKS_BREAKAWAY_SCHEDULED_TASK_PROBE_PENDING",
+  "ci_result": "HOSTED_RUNNER_DETACHED_JOB_OBJECT_DENIED_TASK_SCHEDULER_NOT_LAUNCHED_NATIVE_CASES_ZERO_OF_TWO",
   "failed_attempts": [
     {
       "run_id": 42064776537,
@@ -104,6 +117,29 @@
       "reason": "GitHub Windows runner job disallows detached CREATE_BREAKAWAY_FROM_JOB; Windows Access denied (5), explicitly classified as DetachedLaunchRestricted by production",
       "production_security_policy": "PRESERVED",
       "process_cases_passed": 0
+    },
+    {
+      "run_id": 42093737009,
+      "result": "failure",
+      "stage": "cheap Task Scheduler process capability preflight",
+      "task_registered": true,
+      "child_executed": false,
+      "last_task_result": 267011,
+      "meaning": "Task has not run; cannot determine detached-launch capability",
+      "native_windows_compilation": "NOT_RUN"
+    },
+    {
+      "run_id": 42094227471,
+      "result": "failure",
+      "stage": "cheap scheduled-task process capability retry",
+      "task_registered": true,
+      "task_state": "Ready",
+      "last_task_result": 267011,
+      "last_run_time": "1999-11-30",
+      "trigger_time": "2026-11-05 19:29:29 runner time",
+      "child_executed": false,
+      "meaning": "Task remained Ready and never ran even after scheduled time; no detached-launch evidence",
+      "native_windows_compilation": "NOT_RUN"
     }
   ],
   "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS",
@@ -132,7 +168,7 @@
     "native_compile": "NOT_RUN"
   },
   "scheduled_task_breakaway_capability": {
-    "status": "PROBE_PENDING",
+    "status": "INCONCLUSIVE_SCHEDULED_CHILD_NEVER_EXECUTED_2_OF_2",
     "method": "Task Scheduler service spawns isolated temporary nonadministrator account; a suspended cmd.exe is created with production-equivalent DETACHED_PROCESS | CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB and always terminated",
     "script": "test_codexdd_045_3f94_scheduled_breakaway_probe.ps1",
     "script_blob": "7a5418f4778a520f85eacc676cd5980e50c30d1b",
@@ -149,6 +185,41 @@
       "interpretation": "Task had not run; no detached-launch capability conclusion",
       "native_windows_build": "NOT_RUN"
     },
-    "retry": "SHORT_ONCE_TRIGGER_25_SECONDS_PLUS_ON_DEMAND_WITH_STATE_REPORTING"
+    "retry": "CLOSED_NO_MORE_GITHUB_HOSTED_SCHEDULER_ATTEMPTS",
+    "second_run": {
+      "run_id": 42094227471,
+      "conclusion": "failure",
+      "cheap_source_parser": "passed",
+      "registered": "yes",
+      "task_state": "Ready",
+      "task_status_result": 267011,
+      "task_started": false,
+      "conclusion_boundary": "Do not infer breakaway support or rejection from an unrun task"
+    }
+  },
+  "native_acceptance_resume_gate": {
+    "pr": 84,
+    "selected_cases": 2,
+    "passed": 0,
+    "required_environment": "Dedicated disposable, correctly isolated native Windows 64-bit environment; not Daniel-CL or an installed production host",
+    "security_requirements": [
+      "Native TokenElevation=0",
+      "Owner-only protected Windows daemon socket ACL",
+      "CREATE_SUSPENDED | DETACHED_PROCESS | CREATE_BREAKAWAY_FROM_JOB probe passes and suspended test process reaped",
+      "No production installation; source-pinned locked build; per-case results and logs; exit with 2/2 only"
+    ],
+    "github_manual_workflow": "codexdd-045-3f94-managed-supervisor-windows-native.yml",
+    "workflow_dispatch_requires": "nonrelease_acknowledgement=ISOLATED_WINDOWS_VM",
+    "runner_labels": [
+      "self-hosted",
+      "Windows",
+      "X64",
+      "codexdd-disposable-win"
+    ],
+    "remaining_blocker": "GitHub-hosted Windows worker's job object denies required breakaway; scheduled task never started. An unrestricted environment must pass cheap breakaway gate before native compilation.",
+    "status": "WAITING_FOR_SAFE_DETACHED_PROCESS_ENVIRONMENT",
+    "manual_daniel_cl_action_now": false,
+    "automatic_expensive_ci_disabled": true,
+    "github_repository_opt_in_variable": "CODEXDD_3F94_ISOLATED_VM_READY=true"
   }
 }

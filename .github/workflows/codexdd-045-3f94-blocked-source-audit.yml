@@ -1,0 +1,121 @@
+# CodexDD 0.4.5 3F.94 NONRELEASE: cheap blocked-native evidence only.
+# Never start a 20-minute hosted Windows compile on an unsafe job-object runner.
+name: CodexDD 0.4.5 3F.94 Windows environment hold (NONRELEASE)
+run-name: 3F.94 Verify Windows native acceptance HOLD, no hosted build
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f94-windows-managed-supervisor
+    paths:
+      - .github/workflows/codexdd-045-3f94-blocked-source-audit.yml
+      - .github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml
+      - docs/upstream-candidates/codexdd-045-3f94-windows-managed-supervisor-candidate.json
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f94-host-blocked-source
+  cancel-in-progress: false
+
+jobs:
+  cheap-hold-audit:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 30
+          persist-credentials: false
+      - name: Pin source and explicitly preserved release/security boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f94-windows-managed-supervisor'
+          test "$(git rev-parse HEAD:.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml)" = '2b13362801f20642facb3c217c8cbf4e7339418c'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1)" = 'abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1)" = '2b90840564dffb234f9df2618b2f13d61874ef77'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = 'a97dfe96498d6b0d2f2817c369e8dba0b08ec062'
+          test "$(git rev-parse HEAD:codex-rs/app-server-daemon/src/backend/windows.rs)" = '1cc1889712a5daa85642739bc9d17869967f8ac5'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          git diff --check b8effbfd79bb638d5df980a6a962ee2e6f85559d HEAD
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          root=Path('docs/upstream-candidates')
+          ledger=json.loads((root/'codexdd-045-3f94-windows-managed-supervisor-candidate.json').read_text())
+          formal=json.loads((root/'codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          prev=json.loads((root/'codexdd-045-3f93-real-daemon-cold-resume-candidate.json').read_text())
+          packet=json.loads((root/'codexdd-045-3f92-p0-current-source-review-packet.json').read_text())
+          main=Path('.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml').read_text()
+          changed=set(subprocess.check_output(['git','diff','--name-only',
+              'b8effbfd79bb638d5df980a6a962ee2e6f85559d','HEAD'],text=True).splitlines())
+          allowed={
+             '.github/scripts/codexdd_045_3f94_private_directory.ps1',
+             '.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1',
+             '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1',
+             '.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1',
+             '.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1',
+             '.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml',
+             '.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml',
+             '.github/workflows/codexdd-045-3f94-scheduled-task-breakaway-probe.yml',
+             '.github/workflows/codexdd-045-3f94-blocked-source-audit.yml',
+             'docs/upstream-candidates/codexdd-045-3f93-real-daemon-cold-resume-candidate.json',
+             'docs/upstream-candidates/codexdd-045-3f94-windows-managed-supervisor-candidate.json',
+          }
+          assert changed == allowed,(changed,allowed)
+          assert ledger['status']=='NATIVE_ACCEPTANCE_BLOCKED_HOSTED_WINDOWS_DEDICATED_RUNNER_REQUIRED'
+          assert ledger['production_version']=='0.4.4' and ledger['release_approved'] is False
+          assert ledger['formal_owner_signoffs']==0 and ledger['high_risk_review_holds']=={'core':4,'tui':9}
+          assert len(ledger['cases'])==2 and ledger['native_acceptance_resume_gate']['passed']==0
+          assert ledger['ci_result']=='HOSTED_RUNNER_DETACHED_JOB_OBJECT_DENIED_TASK_SCHEDULER_NOT_LAUNCHED_NATIVE_CASES_ZERO_OF_TWO'
+          assert ledger['source_change']['launcher_blob']=='abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0'
+          assert ledger['source_change']['tested_no_auto_hosted_compilation_workflow']['blob']=='2b13362801f20642facb3c217c8cbf4e7339418c'
+          assert ledger['native_acceptance_resume_gate']['manual_daniel_cl_action_now'] is False
+          assert ledger['native_acceptance_resume_gate']['automatic_expensive_ci_disabled'] is True
+          assert formal['approved_owner_count']==0 and len(formal['paths'])==109
+          assert all(x['formal_owner_decision']=='PENDING_SIGNOFF' for x in formal['paths'])
+          assert packet['high_risk_owner_holds']==13
+          assert prev['native_evidence']['run_id']==42060527099
+          assert prev['native_evidence']['selected_cases_passed']==3
+          assert prev['native_evidence']['selected_cases_failed']==0
+          assert len(ledger['failed_attempts']) >= 7
+          assert ledger['scheduled_task_breakaway_capability']['second_run']['run_id']==42094227471
+          assert ledger['scheduled_task_breakaway_capability']['second_run']['task_started'] is False
+          assert ledger['scheduled_task_breakaway_capability']['status']=='INCONCLUSIVE_SCHEDULED_CHILD_NEVER_EXECUTED_2_OF_2'
+          assert '\n  workflow_dispatch:\n' in main
+          assert '\n  push:\n' in main
+          assert "vars.CODEXDD_3F94_ISOLATED_VM_READY == 'true'" in main
+          assert ledger['native_acceptance_resume_gate']['github_repository_opt_in_variable']=='CODEXDD_3F94_ISOLATED_VM_READY=true'
+          assert 'inputs.nonrelease_acknowledgement' in main
+          assert main.count('runs-on: [self-hosted, Windows, X64, codexdd-disposable-win]')==2
+          assert ' -ProbeOnly -ProbeBreakaway' in main
+          assert 'runs-on: windows-2022' not in main
+          assert 'cargo' + ' build' not in Path('.github/workflows/codexdd-045-3f94-blocked-source-audit.yml').read_text()
+          print('3F.94 CHEAP SOURCE GREEN: hosted Windows restricted; 0/2 native cases; exact source and 13 owner holds preserved. No compile triggered.')
+          PY
+      - name: Parse Windows harnesses and manual workflow scripts without running them
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $sources=@(
+            '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1',
+            '.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1',
+            '.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1',
+            '.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1',
+            '.github/scripts/codexdd_045_3f94_private_directory.ps1'
+          )
+          foreach ($src in $sources) {
+            $tokens=$null
+            $parseErrors=$null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $src).Path,[ref]$tokens,[ref]$parseErrors
+            )
+            if ($parseErrors.Count -ne 0) {
+              $parseErrors | ForEach-Object { Write-Host $_ }
+              throw "3F.94 invalid PowerShell: $src"
+            }
+          }
+          Write-Host '3F.94 POWERHELL SYNTAX GREEN: five Windows test scripts; no execution'
