@@ -1,0 +1,37 @@
+# NONRELEASE: cheap Windows identity/capability probe before compiling Codex CLI.
+# Managed daemon correctly rejects an elevated GitHub-hosted runner.
+name: CodexDD 0.4.5 3F.94 standard-user Windows probe (NONRELEASE)
+run-name: 3F.94 Windows restricted user token preflight (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f94-windows-managed-supervisor
+    paths:
+      - .github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f94-identity-probe
+  cancel-in-progress: false
+jobs:
+  windows-identity:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Verify isolated identity launcher and unchanged release security
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1).Trim() -cne '087dbd21d88ba4d7dd37b15553885ca61c036507') { throw 'Windows standard-user launcher source changed' }
+          if ((git rev-parse HEAD:codex-rs/app-server-daemon/src/backend/windows.rs).Trim() -cne '1cc1889712a5daa85642739bc9d17869967f8ac5') { throw 'Production Windows daemon policy changed' }
+          if ((Get-Content codex-rs/codexdd-version.txt -Raw).Trim() -ne '0.4.4') { throw 'Unexpected production marker' }
+      - name: Spawn genuine restricted standard-user Windows process
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1' -ProbeOnly
+          if (-not $?) { throw 'Restricted user preflight failed' }
