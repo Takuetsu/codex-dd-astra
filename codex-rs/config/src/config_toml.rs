@@ -1083,8 +1083,14 @@ task_kind = "benchmark"
         .expect("typed startup Worker authority");
         let worker = cfg.adaptive_worker.expect("worker");
         assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
-        assert_eq!(worker.source_root.as_deref(), Some(r"C:\approved\candidate"));
-        assert_eq!(worker.source_sha.as_deref(), Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+        assert_eq!(
+            worker.source_root.as_deref(),
+            Some(r"C:\approved\candidate")
+        );
+        assert_eq!(
+            worker.source_sha.as_deref(),
+            Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        );
         assert_eq!(worker.task_kind.as_deref(), Some("benchmark"));
     }
 

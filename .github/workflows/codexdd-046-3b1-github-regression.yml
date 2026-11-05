@@ -113,7 +113,7 @@ jobs:
 
   windows-rust:
     name: Windows TUI 3B.1 compile and focused regression tests
-    needs: source-contract
+    needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 90
     env:

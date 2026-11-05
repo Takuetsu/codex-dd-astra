@@ -58,7 +58,9 @@ pub(crate) fn validated_assignment_preflight(
         Some("operations_preview") => AdaptiveTaskKind::OperationsPreview,
         Some("benchmark") => AdaptiveTaskKind::Benchmark,
         Some(other) => {
-            return Err(format!("invalid Worker task_kind '{other}'; expected source_change, operations_preview or benchmark"));
+            return Err(format!(
+                "invalid Worker task_kind '{other}'; expected source_change, operations_preview or benchmark"
+            ));
         }
     };
     match (source_root, source_sha) {
@@ -109,12 +111,17 @@ pub(crate) fn preflight_mechanical_target(
         format!("SETUP_BLOCKED: cannot resolve authorized worktree {} ({err}); preserve the candidate.", binding.source_root)
     })?;
     let actual_root = observed_root.canonicalize().map_err(|err| {
-        format!("SETUP_BLOCKED: cannot resolve native selected worktree {} ({err}); no validation ran.", observed_root.display())
+        format!(
+            "SETUP_BLOCKED: cannot resolve native selected worktree {} ({err}); no validation ran.",
+            observed_root.display()
+        )
     })?;
     if actual_root != expected_root {
         return Err(format!(
             "SETUP_BLOCKED: native Git root {} differs from authorized {} at SHA {}. Keep the owner's milestone-root launch convention; bind the approved worktree before validation. No validation ran.",
-            actual_root.display(), expected_root.display(), binding.source_sha
+            actual_root.display(),
+            expected_root.display(),
+            binding.source_sha
         ));
     }
     let git = |args: &[&str]| -> Result<String, String> {
@@ -124,32 +131,42 @@ pub(crate) fn preflight_mechanical_target(
         if !output.status.success() {
             return Err(format!(
                 "SETUP_BLOCKED: Git read-only preflight failed in {} (status {}). No validation ran.",
-                actual_root.display(), output.status
+                actual_root.display(),
+                output.status
             ));
         }
-        String::from_utf8(output.stdout)
-            .map_err(|_| "SETUP_BLOCKED: Git returned non-UTF8 preflight data; no validation ran.".to_string())
+        String::from_utf8(output.stdout).map_err(|_| {
+            "SETUP_BLOCKED: Git returned non-UTF8 preflight data; no validation ran.".to_string()
+        })
     };
     let git_root = git(&["rev-parse", "--show-toplevel"])?;
-    let verified_git_root = Path::new(git_root.trim()).canonicalize()
-        .map_err(|err| format!("SETUP_BLOCKED: Git-selected root cannot be resolved ({err}); no validation ran."))?;
+    let verified_git_root = Path::new(git_root.trim()).canonicalize().map_err(|err| {
+        format!("SETUP_BLOCKED: Git-selected root cannot be resolved ({err}); no validation ran.")
+    })?;
     if verified_git_root != actual_root {
         return Err(format!(
             "SETUP_BLOCKED: Git reports root {} but the native root is {}; no validation ran.",
-            verified_git_root.display(), actual_root.display()
+            verified_git_root.display(),
+            actual_root.display()
         ));
     }
     let current_sha = git(&["rev-parse", "HEAD"])?;
     if !current_sha.trim().eq_ignore_ascii_case(&binding.source_sha) {
         return Err(format!(
             "SETUP_BLOCKED: selected worktree {} has SHA {} but authorized candidate is {}; no validation ran.",
-            actual_root.display(), current_sha.trim(), binding.source_sha
+            actual_root.display(),
+            current_sha.trim(),
+            binding.source_sha
         ));
     }
-    if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?.trim().is_empty() {
+    if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?
+        .trim()
+        .is_empty()
+    {
         return Err(format!(
             "SETUP_BLOCKED: authorized source {} at {} has staged/unstaged/untracked changes. Preserve all edits; no exact-SHA validation receipt can be claimed.",
-            actual_root.display(), binding.source_sha
+            actual_root.display(),
+            binding.source_sha
         ));
     }
     Ok(())
@@ -328,10 +345,13 @@ pub(crate) fn parse_adaptive_worker_assignment_with_preflight(
         parsed.adaptive_worker.source_root.as_deref(),
         parsed.adaptive_worker.source_sha.as_deref(),
     )?;
-    Ok(Some((AdaptiveWorkerContext {
-        role,
-        authorized_scope: Some(authorized_scope.to_string()),
-    }, preflight)))
+    Ok(Some((
+        AdaptiveWorkerContext {
+            role,
+            authorized_scope: Some(authorized_scope.to_string()),
+        },
+        preflight,
+    )))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -524,20 +544,28 @@ mod tests {
 
     #[test]
     fn pinned_authority_classifies_benchmark_and_rejects_partial_binding() {
-        let root = if cfg!(windows) { r"D:\bw58\.worktrees\candidate" } else { "/tmp/bw58/.worktrees/candidate" };
+        let root = if cfg!(windows) {
+            r"D:\bw58\.worktrees\candidate"
+        } else {
+            "/tmp/bw58/.worktrees/candidate"
+        };
         let sha = "a".repeat(40);
         let input = format!(
             "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"benchmark case\"\nsource_root = '{root}'\nsource_sha = \"{sha}\"\ntask_kind = \"benchmark\"\n\nMeasure safely."
         );
         let (context, binding) = parse_adaptive_worker_assignment_with_preflight(&input)
-            .expect("parsed").expect("bound");
+            .expect("parsed")
+            .expect("bound");
         assert_eq!(context.role, AdaptiveWorkerRole::Implementation);
         let binding = binding.expect("pin");
         assert_eq!(binding.source_root, root);
         assert_eq!(binding.source_sha, sha);
         assert_eq!(binding.task_kind, AdaptiveTaskKind::Benchmark);
-        assert!(preflight_mechanical_target(Some(&binding), Path::new(root))
-            .expect_err("not source work").contains("SETUP_BLOCKED"));
+        assert!(
+            preflight_mechanical_target(Some(&binding), Path::new(root))
+                .expect_err("not source work")
+                .contains("SETUP_BLOCKED")
+        );
         for (kind, root, sha) in [
             (Some("benchmark"), None, None),
             (None, Some(root), None),
@@ -557,32 +585,72 @@ mod tests {
         let milestone = temp.path().join("milestone");
         fs::create_dir(&milestone).expect("milestone");
         let git = |root: &Path, args: &[&str]| -> String {
-            let output = Command::new("git").arg("-C").arg(root).args(args)
-                .output().expect("git installed");
-            assert!(output.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&output.stderr));
+            let output = Command::new("git")
+                .arg("-C")
+                .arg(root)
+                .args(args)
+                .output()
+                .expect("git installed");
+            assert!(
+                output.status.success(),
+                "git {args:?}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
             String::from_utf8(output.stdout).expect("utf8")
         };
         git(&milestone, &["init"]);
-        git(&milestone, &["-c", "user.name=CodexDD Test", "-c", "user.email=codexdd@example.test",
-            "commit", "--allow-empty", "-m", "baseline"]);
+        git(
+            &milestone,
+            &[
+                "-c",
+                "user.name=CodexDD Test",
+                "-c",
+                "user.email=codexdd@example.test",
+                "commit",
+                "--allow-empty",
+                "-m",
+                "baseline",
+            ],
+        );
         let nested = milestone.join(".worktrees").join("candidate");
-        git(&milestone, &["worktree", "add", "--detach", nested.to_str().expect("utf8"), "HEAD"]);
+        git(
+            &milestone,
+            &[
+                "worktree",
+                "add",
+                "--detach",
+                nested.to_str().expect("utf8"),
+                "HEAD",
+            ],
+        );
         let binding = AdaptiveWorkerPreflight {
             task_kind: AdaptiveTaskKind::SourceChange,
             source_root: nested.display().to_string(),
             source_sha: git(&nested, &["rev-parse", "HEAD"]).trim().to_string(),
         };
-        assert!(preflight_mechanical_target(Some(&binding), &milestone)
-            .expect_err("wrong selected root").contains("differs from authorized"));
+        assert!(
+            preflight_mechanical_target(Some(&binding), &milestone)
+                .expect_err("wrong selected root")
+                .contains("differs from authorized")
+        );
         assert_eq!(preflight_mechanical_target(Some(&binding), &nested), Ok(()));
         let mut wrong_sha = binding.clone();
         wrong_sha.source_sha = "f".repeat(40);
-        assert!(preflight_mechanical_target(Some(&wrong_sha), &nested)
-            .expect_err("wrong SHA").contains("authorized candidate"));
+        assert!(
+            preflight_mechanical_target(Some(&wrong_sha), &nested)
+                .expect_err("wrong SHA")
+                .contains("authorized candidate")
+        );
         fs::write(nested.join("candidate.txt"), "preserve me").expect("write");
         git(&nested, &["add", "candidate.txt"]);
-        assert!(preflight_mechanical_target(Some(&binding), &nested)
-            .expect_err("staged candidate").contains("Preserve all edits"));
-        assert_eq!(fs::read_to_string(nested.join("candidate.txt")).expect("read"), "preserve me");
+        assert!(
+            preflight_mechanical_target(Some(&binding), &nested)
+                .expect_err("staged candidate")
+                .contains("Preserve all edits")
+        );
+        assert_eq!(
+            fs::read_to_string(nested.join("candidate.txt")).expect("read"),
+            "preserve me"
+        );
     }
 }

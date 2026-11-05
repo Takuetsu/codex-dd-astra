@@ -797,8 +797,13 @@ mod codexdd_complexity_persistence_regression {
 
     #[test]
     fn source_pins_restore_and_partial_pins_are_rejected() {
-        let root = if cfg!(windows) { r"C:\approved\candidate" } else { "/tmp/approved/candidate" };
-        let json = format!(r#"{{
+        let root = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let json = format!(
+            r#"{{
             "enabled": true,
             "starting_family": "astra",
             "current_family": "sol",
@@ -814,7 +819,9 @@ mod codexdd_complexity_persistence_regression {
             "assignment_task_kind": "source_change",
             "authorized_source_root": {},
             "authorized_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        }}"#, serde_json::to_string(root).expect("json path"));
+        }}"#,
+            serde_json::to_string(root).expect("json path")
+        );
         let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
             serde_json::from_str(&json).expect("valid snapshot");
         let mut adaptive = AdaptiveEffortState::default();
@@ -823,7 +830,10 @@ mod codexdd_complexity_persistence_regression {
         let pin = adaptive.assignment_preflight.expect("restored pin");
         assert_eq!(pin.source_root, root);
         assert_eq!(pin.source_sha, "a".repeat(40));
-        assert_eq!(pin.task_kind, crate::adaptive_worker::AdaptiveTaskKind::SourceChange);
+        assert_eq!(
+            pin.task_kind,
+            crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        );
 
         let invalid: codex_history::AdaptiveWorkflowStateSnapshot =
             serde_json::from_value(serde_json::json!({
@@ -838,34 +848,45 @@ mod codexdd_complexity_persistence_regression {
                 "worker_assignment_locked": true,
                 "workflow_terminal": null,
                 "authorized_source_root": root,
-            })).expect("JSON schema accepts old optionality");
+            }))
+            .expect("JSON schema accepts old optionality");
         let mut adaptive = AdaptiveEffortState::default();
-        assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, invalid, None)
-            .expect_err("incomplete source pin must fail closed")
-            .contains("source_root and source_sha together"));
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut adaptive, invalid, None)
+                .expect_err("incomplete source pin must fail closed")
+                .contains("source_root and source_sha together")
+        );
 
         let unlocked: codex_history::AdaptiveWorkflowStateSnapshot =
             serde_json::from_str(&json.replace(
                 "\"worker_assignment_locked\": true",
                 "\"worker_assignment_locked\": false",
-            )).expect("snapshot is readable");
+            ))
+            .expect("snapshot is readable");
         let mut adaptive = AdaptiveEffortState::default();
-        assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, unlocked, None)
-            .expect_err("unlocked pin must never become restart authority")
-            .contains("requires locked Worker role"));
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut adaptive, unlocked, None)
+                .expect_err("unlocked pin must never become restart authority")
+                .contains("requires locked Worker role")
+        );
 
-        let incompatible: codex_history::AdaptiveWorkflowStateSnapshot =
-            serde_json::from_str(&json.replace(
-                "\"assignment_task_kind\": \"source_change\"",
-                "\"assignment_task_kind\": \"benchmark\"",
-            ).replace(
-                "\"implementation_phase\": \"implementation\"",
-                "\"implementation_phase\": \"mechanical_validation\"",
-            )).expect("snapshot is readable");
+        let incompatible: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            &json
+                .replace(
+                    "\"assignment_task_kind\": \"source_change\"",
+                    "\"assignment_task_kind\": \"benchmark\"",
+                )
+                .replace(
+                    "\"implementation_phase\": \"implementation\"",
+                    "\"implementation_phase\": \"mechanical_validation\"",
+                ),
+        )
+        .expect("snapshot is readable");
         let mut adaptive = AdaptiveEffortState::default();
-        assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, incompatible, None)
-            .expect_err("benchmark cannot resume source mechanical phase")
-            .contains("cannot restore protected MechanicalValidation"));
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut adaptive, incompatible, None)
+                .expect_err("benchmark cannot resume source mechanical phase")
+                .contains("cannot restore protected MechanicalValidation")
+        );
     }
-
 }

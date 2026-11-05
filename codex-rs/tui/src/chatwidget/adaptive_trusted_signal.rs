@@ -869,14 +869,17 @@ mod tests {
         chat.thread_id = Some(thread_id);
         chat.dispatch_adaptive_command("astra");
         chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
-        chat.adaptive_effort.worker_context.authorized_scope = Some("bounded benchmark".to_string());
-        chat.adaptive_effort.assignment_preflight = Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
-            task_kind: crate::adaptive_worker::AdaptiveTaskKind::Benchmark,
-            source_root: "not-used-in-benchmark-rejection".to_string(),
-            source_sha: "a".repeat(40),
-        });
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("bounded benchmark".to_string());
+        chat.adaptive_effort.assignment_preflight =
+            Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
+                task_kind: crate::adaptive_worker::AdaptiveTaskKind::Benchmark,
+                source_root: "not-used-in-benchmark-rejection".to_string(),
+                source_sha: "a".repeat(40),
+            });
         chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
-        chat.adaptive_effort.implementation_phase = Some(AdaptiveImplementationPhase::Implementation);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
         chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Pending(
             AdaptiveRuntimeSignalEnvelope {
                 source_turn_id: turn_id.to_string(),

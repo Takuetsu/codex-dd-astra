@@ -13,10 +13,10 @@ pub(crate) use crate::adaptive_policy::AdaptiveFailureKind;
 pub(crate) use crate::adaptive_policy::AdaptiveFamily;
 pub(crate) use crate::adaptive_policy::AdaptiveOutcome;
 use crate::adaptive_worker::AdaptiveWorkerContext;
+use crate::adaptive_worker::AdaptiveWorkerPreflight;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::adaptive_worker::NewWorkerBinding;
-use crate::adaptive_worker::AdaptiveWorkerPreflight;
 use crate::adaptive_worker::parse_adaptive_worker_assignment_with_preflight;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
@@ -420,12 +420,21 @@ impl AdaptiveEffortState {
             assignment_task_kind: self.assignment_preflight.as_ref().map(|pin| {
                 match pin.task_kind {
                     crate::adaptive_worker::AdaptiveTaskKind::SourceChange => "source_change",
-                    crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => "operations_preview",
+                    crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => {
+                        "operations_preview"
+                    }
                     crate::adaptive_worker::AdaptiveTaskKind::Benchmark => "benchmark",
-                }.to_string()
+                }
+                .to_string()
             }),
-            authorized_source_root: self.assignment_preflight.as_ref().map(|pin| pin.source_root.clone()),
-            authorized_source_sha: self.assignment_preflight.as_ref().map(|pin| pin.source_sha.clone()),
+            authorized_source_root: self
+                .assignment_preflight
+                .as_ref()
+                .map(|pin| pin.source_root.clone()),
+            authorized_source_sha: self
+                .assignment_preflight
+                .as_ref()
+                .map(|pin| pin.source_sha.clone()),
             worker_assignment_locked: self.worker_assignment_locked,
             workflow_terminal: workflow_terminal.map(str::to_string),
         }
@@ -1253,7 +1262,10 @@ mod tests {
         );
         let mut state = AdaptiveEffortState::default();
         assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
-        let expected = state.assignment_preflight.clone().expect("first assignment pin");
+        let expected = state
+            .assignment_preflight
+            .clone()
+            .expect("first assignment pin");
 
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
         assert_eq!(state.assignment_preflight.as_ref(), Some(&expected));
@@ -1268,20 +1280,38 @@ mod tests {
 
     #[test]
     fn pinned_first_assignment_is_immutable_across_later_turns() {
-        let root = if cfg!(windows) { r"D:\bw58\.worktrees\candidate" } else { "/tmp/bw58/.worktrees/candidate" };
+        let root = if cfg!(windows) {
+            r"D:\bw58\.worktrees\candidate"
+        } else {
+            "/tmp/bw58/.worktrees/candidate"
+        };
         let first = format!(
             "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"source worktree\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement within the authorized target."
         );
         let mut state = AdaptiveEffortState::default();
         assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
-        assert_eq!(state.assignment_preflight.as_ref().expect("pin").source_root, root);
+        assert_eq!(
+            state
+                .assignment_preflight
+                .as_ref()
+                .expect("pin")
+                .source_root,
+            root
+        );
         assert_eq!(
             state.observe_worker_assignment_text(
                 "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"other\"\n\nSwitch source."
             ),
             Ok(false)
         );
-        assert_eq!(state.assignment_preflight.as_ref().expect("immutable pin").source_root, root);
+        assert_eq!(
+            state
+                .assignment_preflight
+                .as_ref()
+                .expect("immutable pin")
+                .source_root,
+            root
+        );
     }
 
     #[test]
