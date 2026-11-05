@@ -1,0 +1,198 @@
+# CodexDD 0.4.6 Phase 3B.1 — nonproduction, source-matched GitHub verification.
+# No release publishing, installation, runner-controlled worktree changes, or production merge.
+name: CodexDD 0.4.6 3B.1 GitHub regression
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-agent-reliability
+    paths:
+      - .github/workflows/codexdd-046-3b1-github-regression.yml
+      - codex-rs/config/src/config_toml.rs
+      - codex-rs/tui/src/adaptive_worker.rs
+      - codex-rs/tui/src/app_server_session.rs
+      - codex-rs/tui/src/session_state.rs
+      - codex-rs/tui/src/chatwidget/adaptive_effort.rs
+      - codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs
+      - codex-rs/history/src/lib.rs
+      - codex-rs/history/src/tests.rs
+      - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+      - codex-rs/app-server/src/request_processors/turn_processor.rs
+      - docs/regression-fixtures/codexdd-046-agent-reliability-cases.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-046-3b1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-contract:
+    name: 3B.1 source and regression-contract preflight
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact WIP source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Require exact branch, SHA and nonproduction baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.6-agent-reliability'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          git merge-base --is-ancestor b25550dcb2c6e84a84074b603086c9db6f32a63b HEAD
+      - name: Check scoped 25-case fixture and source integration (nonexecuting)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          fixture = json.loads(Path("docs/regression-fixtures/codexdd-046-agent-reliability-cases.json").read_text(encoding="utf-8"))
+          cases = fixture["cases"]
+          assert len(cases) == 25
+          assert len({case["id"] for case in cases}) == 25
+          assert sum(case["priority"] == "P0" for case in cases) == 21
+          assert sum(case["priority"] == "P1_conditional" for case in cases) == 4
+          required = {
+              "codex-rs/tui/src/adaptive_worker.rs": (
+                  "preflight_mechanical_target",
+                  "configured_worker_binding",
+                  "pinned_worktree_identity_rejects_wrong_root_sha_and_dirty_edits",
+              ),
+              "codex-rs/tui/src/chatwidget/adaptive_effort.rs": (
+                  "let assignment_preflight = self.assignment_preflight.clone()",
+                  "source_pin_survives_adaptive_activation_and_new_model_route",
+              ),
+              "codex-rs/tui/src/app_server_session.rs": (
+                  "configured_worker_binding",
+                  "worker_assignment_locked = lock_assignment",
+              ),
+              "codex-rs/tui/src/session_state.rs": (
+                  "persisted pinned source requires locked Worker role",
+                  "cannot restore protected MechanicalValidation",
+              ),
+              "codex-rs/history/src/lib.rs": ("pub authorized_source_sha: Option<String>",),
+              "codex-rs/app-server-protocol/src/protocol/v2/thread.rs": ("pub authorized_source_sha: Option<String>",),
+          }
+          for path, markers in required.items():
+              content = Path(path).read_text(encoding="utf-8")
+              for marker in markers:
+                  assert marker in content, f"{path}: missing {marker}"
+          print("Source markers and 25-case contract shape PASS (not an executable Rust test).")
+          PY
+      - name: Assert read-only checkout and unchanged Cargo lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+
+  rust-format:
+    name: Rustfmt 3B.1 source review
+    needs: source-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Validate Rust formatting without edits
+        working-directory: codex-rs
+        shell: bash
+        run: cargo fmt -- --config imports_granularity=Item --check
+
+  windows-rust:
+    name: Windows TUI 3B.1 compile and focused regression tests
+    needs: source-contract
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact branch without repository write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Configure isolated Windows workspace without Dev Drive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Make DotSlash reachable from Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile TUI with new Worker and persisted protocol tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          cargo check --locked -p codex-tui --lib --tests
+          if ($LASTEXITCODE -ne 0) { throw '3B.1 Windows TUI compile failed' }
+      - name: Execute 3B.1 executable Worker and persistence regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filters = @(
+            'pinned_',
+            'source_pin_survives_adaptive_activation_and_new_model_route',
+            'source_pins_restore_and_partial_pins_are_rejected',
+            'startup_worker_authority_is_checked_before_any_thread_starts'
+          )
+          foreach ($filter in $filters) {
+            Write-Host "::group::Cargo test filter $filter"
+            $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              $listing | Out-Host
+              throw "Cannot enumerate Rust tests: $filter"
+            }
+            if (($listing -join "`n") -notmatch '[1-9][0-9]* tests?, 0 benchmarks') {
+              $listing | Out-Host
+              throw "No test discovered for filter: $filter"
+            }
+            & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2
+            if ($LASTEXITCODE -ne 0) { throw "Rust regression failed: $filter" }
+            Write-Host "::endgroup::"
+          }
+      - name: Report no release or installation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host 'GitHub source verification only. No deployment, install, release or production merge.'
