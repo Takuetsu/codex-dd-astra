@@ -155,6 +155,32 @@ pub(crate) fn preflight_mechanical_target(
     Ok(())
 }
 
+/// Validate immutable startup-config Worker binding before starting a thread.
+/// A configured scope cannot be replaced by a later first-message header.
+pub(crate) fn configured_worker_binding(
+    binding: &AdaptiveWorkerConfigToml,
+) -> Result<(AdaptiveWorkerContext, Option<AdaptiveWorkerPreflight>), String> {
+    let context = AdaptiveWorkerContext::from(binding.clone());
+    let preflight = validated_assignment_preflight(
+        binding.task_kind.as_deref(),
+        binding.source_root.as_deref(),
+        binding.source_sha.as_deref(),
+    )?;
+    if preflight.is_some()
+        && (context.role == AdaptiveWorkerRole::Unspecified
+            || context
+                .authorized_scope
+                .as_deref()
+                .is_none_or(|scope| scope.trim().is_empty()))
+    {
+        return Err(
+            "SETUP_BLOCKED: pinned startup Worker requires a bound role and nonempty authorized_scope"
+                .to_string(),
+        );
+    }
+    Ok((context, preflight))
+}
+
 impl From<AdaptiveWorkerConfigToml> for AdaptiveWorkerContext {
     fn from(binding: AdaptiveWorkerConfigToml) -> Self {
         let role = match binding.role {
@@ -455,6 +481,45 @@ mod tests {
         ] {
             assert!(parse_adaptive_worker_assignment(input).is_err(), "{input}");
         }
+    }
+
+    #[test]
+    fn startup_worker_authority_is_checked_before_any_thread_starts() {
+        let pin = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let config = AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("approved isolated candidate".to_string()),
+            source_root: Some(pin.to_string()),
+            source_sha: Some("A".repeat(40)),
+            task_kind: Some("benchmark".to_string()),
+        };
+        let (context, preflight) = configured_worker_binding(&config).expect("valid startup pin");
+        assert_eq!(context.role, AdaptiveWorkerRole::Implementation);
+        let pinned = preflight.expect("pinned");
+        assert_eq!(pinned.source_root, pin);
+        assert_eq!(pinned.source_sha, "a".repeat(40));
+        assert_eq!(pinned.task_kind, AdaptiveTaskKind::Benchmark);
+        for role in [
+            AdaptiveWorkerRoleToml::Unspecified,
+            AdaptiveWorkerRoleToml::Validation,
+        ] {
+            let mut blocked = config.clone();
+            blocked.role = role;
+            if role == AdaptiveWorkerRoleToml::Validation {
+                blocked.source_sha = None;
+            }
+            assert!(
+                configured_worker_binding(&blocked).is_err(),
+                "invalid startup source authority must not start a thread"
+            );
+        }
+        let mut unscoped = config.clone();
+        unscoped.authorized_scope = None;
+        assert!(configured_worker_binding(&unscoped).is_err());
     }
 
     #[test]

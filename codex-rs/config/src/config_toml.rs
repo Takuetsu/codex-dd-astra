@@ -176,6 +176,14 @@ pub enum AdaptiveWorkerRoleToml {
 pub struct AdaptiveWorkerConfigToml {
     pub role: AdaptiveWorkerRoleToml,
     pub authorized_scope: Option<String>,
+    /// Optional exact checkout anchor, bound at startup before model turns.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_sha: Option<String>,
+    /// Bounded task classifier, never a new permission/Worker role.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_kind: Option<String>,
 }
 
 /// Base config deserialized from ~/.codex/config.toml.
@@ -1055,6 +1063,29 @@ authorized_scope = "codex-rs/config"
             .expect("Worker authority must be retained");
         assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
         assert_eq!(worker.authorized_scope.as_deref(), Some("codex-rs/config"));
+        assert_eq!(worker.source_root, None);
+        assert_eq!(worker.source_sha, None);
+        assert_eq!(worker.task_kind, None);
+    }
+
+    #[test]
+    fn adaptive_worker_config_accepts_bound_source_and_task_kind() {
+        let cfg: ConfigToml = toml::from_str(
+            r#"
+[adaptive_worker]
+role = "implementation"
+authorized_scope = "isolated benchmark"
+source_root = "C:\\approved\\candidate"
+source_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+task_kind = "benchmark"
+"#,
+        )
+        .expect("typed startup Worker authority");
+        let worker = cfg.adaptive_worker.expect("worker");
+        assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
+        assert_eq!(worker.source_root.as_deref(), Some(r"C:\approved\candidate"));
+        assert_eq!(worker.source_sha.as_deref(), Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+        assert_eq!(worker.task_kind.as_deref(), Some("benchmark"));
     }
 
     #[test]

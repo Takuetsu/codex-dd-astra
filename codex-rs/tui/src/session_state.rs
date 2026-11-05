@@ -284,6 +284,28 @@ fn apply_persisted_adaptive_workflow_state(
         state.authorized_source_root.as_deref(),
         state.authorized_source_sha.as_deref(),
     )?;
+    if let Some(preflight) = assignment_preflight.as_ref() {
+        if !state.worker_assignment_locked
+            || worker_role == AdaptiveWorkerRole::Unspecified
+            || state
+                .authorized_scope
+                .as_deref()
+                .is_none_or(|scope| scope.trim().is_empty())
+        {
+            return Err(
+                "persisted pinned source requires locked Worker role and nonempty scope"
+                    .to_string(),
+            );
+        }
+        if implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
+            && preflight.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        {
+            return Err(
+                "persisted operations/benchmark task cannot restore protected MechanicalValidation"
+                    .to_string(),
+            );
+        }
+    }
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -409,7 +431,7 @@ mod tests {
                 assignment_task_kind: None,
                 authorized_source_root: None,
                 authorized_source_sha: None,
-worker_assignment_locked: true,
+                worker_assignment_locked: true,
                 workflow_terminal: Some("ready_for_validation".to_string()),
             },
             Some("turn-6".to_string()),
@@ -478,7 +500,7 @@ worker_assignment_locked: true,
                     assignment_task_kind: None,
                     authorized_source_root: None,
                     authorized_source_sha: None,
-worker_assignment_locked: true,
+                    worker_assignment_locked: true,
                     workflow_terminal: Some(persisted.to_string()),
                 },
                 Some("terminal-turn".to_string()),
@@ -515,7 +537,7 @@ worker_assignment_locked: true,
                 assignment_task_kind: None,
                 authorized_source_root: None,
                 authorized_source_sha: None,
-worker_assignment_locked: true,
+                worker_assignment_locked: true,
                 workflow_terminal: None,
             },
             None,
@@ -560,7 +582,7 @@ worker_assignment_locked: true,
                     assignment_task_kind: None,
                     authorized_source_root: None,
                     authorized_source_sha: None,
-worker_assignment_locked: true,
+                    worker_assignment_locked: true,
                     workflow_terminal: None,
                 },
                 None,
@@ -821,6 +843,29 @@ mod codexdd_complexity_persistence_regression {
         assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, invalid, None)
             .expect_err("incomplete source pin must fail closed")
             .contains("source_root and source_sha together"));
+
+        let unlocked: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_str(&json.replace(
+                "\"worker_assignment_locked\": true",
+                "\"worker_assignment_locked\": false",
+            )).expect("snapshot is readable");
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, unlocked, None)
+            .expect_err("unlocked pin must never become restart authority")
+            .contains("requires locked Worker role"));
+
+        let incompatible: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_str(&json.replace(
+                "\"assignment_task_kind\": \"source_change\"",
+                "\"assignment_task_kind\": \"benchmark\"",
+            ).replace(
+                "\"implementation_phase\": \"implementation\"",
+                "\"implementation_phase\": \"mechanical_validation\"",
+            )).expect("snapshot is readable");
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(apply_persisted_adaptive_workflow_state(&mut adaptive, incompatible, None)
+            .expect_err("benchmark cannot resume source mechanical phase")
+            .contains("cannot restore protected MechanicalValidation"));
     }
 
 }

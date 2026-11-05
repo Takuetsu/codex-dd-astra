@@ -1845,6 +1845,14 @@ pub(crate) async fn start_thread_with_request_handle(
     thread_tool_transport: ThreadToolTransport,
     launch_choices: StartupLaunchChoices,
 ) -> Result<AppServerStartedThread> {
+    // Validate configured authority *before* the app-server thread/start RPC.
+    // The first user message must never override a launcher-bound Worker.
+    let startup_binding = config
+        .adaptive_worker
+        .as_ref()
+        .map(crate::adaptive_worker::configured_worker_binding)
+        .transpose()
+        .map_err(anyhow::Error::msg)?;
     let request_id = RequestId::String(format!("startup-thread-start-{}", Uuid::new_v4()));
     let mut params = thread_start_params_from_config(
         &config,
@@ -1866,8 +1874,15 @@ pub(crate) async fn start_thread_with_request_handle(
         started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
             .await?;
     started.task_tools_available = task_tools_available;
-    if let Some(binding) = config.adaptive_worker.clone() {
-        started.session.adaptive_effort.worker_context = binding.into();
+    if let Some((context, preflight)) = startup_binding {
+        // An explicitly configured role or scope is immutable; an intentionally
+        // unspecified empty startup role remains eligible for its first header.
+        let lock_assignment = context.role
+            != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
+            || context.authorized_scope.is_some();
+        started.session.adaptive_effort.worker_context = context;
+        started.session.adaptive_effort.assignment_preflight = preflight;
+        started.session.adaptive_effort.worker_assignment_locked = lock_assignment;
     }
     Ok(started)
 }
@@ -3849,7 +3864,7 @@ mod tests {
                     assignment_task_kind: None,
                     authorized_source_root: None,
                     authorized_source_sha: None,
-worker_assignment_locked: true,
+                    worker_assignment_locked: true,
                     workflow_terminal: None,
                 }),
             )

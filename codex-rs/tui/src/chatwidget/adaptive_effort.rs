@@ -302,6 +302,7 @@ impl AdaptiveEffortState {
 
     fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
         let worker_context = self.worker_context.clone();
+        let assignment_preflight = self.assignment_preflight.clone();
         let worker_assignment_locked = self.worker_assignment_locked
             || worker_context.role != AdaptiveWorkerRole::Unspecified
             || worker_context.authorized_scope.is_some();
@@ -329,6 +330,7 @@ impl AdaptiveEffortState {
             last_outcome: None,
             last_failure_kind: None,
             worker_context,
+            assignment_preflight,
             worker_assignment_locked,
             workflow_terminal,
             transient_retry_consumed: false,
@@ -1237,6 +1239,31 @@ mod tests {
             Ok(false)
         );
         assert_eq!(state.worker_context, AdaptiveWorkerContext::default());
+    }
+
+    #[test]
+    fn source_pin_survives_adaptive_activation_and_new_model_route() {
+        let root = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let first = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"pinned source\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement against the approved checkout."
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
+        let expected = state.assignment_preflight.clone().expect("first assignment pin");
+
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+        assert_eq!(state.assignment_preflight.as_ref(), Some(&expected));
+        assert!(state.worker_assignment_locked);
+        state.activate_adaptive_family(AdaptiveFamily::Sol61, false);
+        assert_eq!(state.assignment_preflight.as_ref(), Some(&expected));
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("pinned source")
+        );
     }
 
     #[test]
