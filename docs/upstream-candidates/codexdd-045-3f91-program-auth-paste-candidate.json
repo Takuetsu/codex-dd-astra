@@ -1,0 +1,59 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f91_api_key_program_and_windows_paste_negative_nonrelease",
+  "status": "SOURCE_PREPARED_WINDOWS_NATIVE_NOT_YET_EXECUTED",
+  "baseline_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
+  "baseline_head": "4816f28ada7d0275cc4431a5731d1271cc0d27a2",
+  "prior_green_native_run": 41946677766,
+  "prior_green_native_cases": 8,
+  "production_version": "0.4.4",
+  "release_approved": false,
+  "formal_owner_signoffs": 0,
+  "core_high_risk_owner_holds": 4,
+  "tui_high_risk_owner_holds": 9,
+  "source_change_scope": "Test-only regression; no runtime, dependency graph, version marker, installer, security policy, or formal approvals changed",
+  "test_only_rust_source": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+  "old_blob": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+  "new_blob": "ee81e4844d7973a58bb240e799ce5e60d148a372",
+  "tests": [
+    {
+      "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "selector": "chatwidget::tests::slash_commands::api_key_daybreak_revocation_drops_program_authority"
+    },
+    {
+      "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "selector": "chatwidget::tests::slash_commands::copy_shortcut_can_be_remapped"
+    },
+    {
+      "test_path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+      "selector": "chatwidget::tests::slash_commands::slash_daybreak_offers_an_application_when_unavailable"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests.rs",
+      "selector": "app::tests::api_key_model_popup_waits_for_filtered_catalog_and_ignores_changed_account"
+    },
+    {
+      "test_path": "codex-rs/tui/src/daybreak_tests.rs",
+      "selector": "daybreak::tests::turn_program_uses_catalog_and_preserves_legacy_models"
+    },
+    {
+      "test_path": "codex-rs/tui/src/app/tests/key_chords.rs",
+      "selector": "app::tests::key_chords::vim_escape_recovery_preserves_enhanced_terminals_and_altgr"
+    }
+  ],
+  "safety_claims": [
+    "Positive API-key Daybreak is selected only with an OpenAI provider and both feature controls",
+    "Another provider cannot inherit a previously selected Daybreak program",
+    "Revoking API-key access-program forwarding removes enabled turn authority and UI action",
+    "Signed-out account cannot inherit the prior API-key Daybreak authorization",
+    "Windows Shift+Insert and Ctrl+Shift+V are proven by pre-existing native keyboard regression",
+    "Raw API-key catalog responses cannot bypass per-thread capability filtering"
+  ],
+  "validation_gate": "Source pins and cheap Rustfmt first; then exactly six named codex-tui Windows native selectors, each with 1 test passed, 0 failed, nonzero exit forbidden",
+  "known_limits": [
+    "No installed daemon process restart; 3F.90 used TCP loopback and Windows native TUI tests",
+    "Six selected Windows test cases are not the full 21-stage local release suite",
+    "Neither the 13 high-risk owner decisions nor formal 109-path signoffs are granted by CI"
+  ],
+  "release_holds_unchanged": true
+}

@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f90_windows_reconnect_end_to_end_nonrelease",
-  "status": "PLATFORM_SPECIFIC_RECONNECT_GOLDENS_ADDED_NATIVE_RETEST_PENDING",
+  "status": "EIGHT_WINDOWS_NATIVE_RECONNECT_TESTS_GREEN_OWNER_SIGNOFF_PENDING",
   "candidate_branch": "dd/codexdd-v0.4.5-3f90-windows-reconnect-e2e",
   "baseline_commit": "eec4fee2aebfa15b18e3b3f2837b3e9b655003dd",
   "parent_green_run": 41885892676,
@@ -32,49 +32,49 @@
       "number": 1,
       "path": "codex-rs/tui/src/app/tests/navigation_reconnect_tests.rs",
       "selector": "app::tests::navigation_reconnect::reconnect_daemon_command_center_after_connection_replacement_without_a_conversation",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 2,
       "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
       "selector": "app::tests::active_reconnect::reconnect_restores_history_permissions_and_resumes_unsent_input",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 3,
       "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
       "selector": "app::tests::active_reconnect::reconnect_reconciles_offscreen_pending_profile_before_restoring_permissions",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 4,
       "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
       "selector": "app::tests::active_reconnect::reconnect_exhaustion_and_unknown_initial_thread_stay_offline",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 5,
       "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
       "selector": "app::tests::active_reconnect::reconnect_allows_slow_hydration_but_bounds_a_stalled_server",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 6,
       "path": "codex-rs/tui/src/app/tests/active_reconnect_tests.rs",
       "selector": "app::tests::active_reconnect::reconnect_restores_launch_reviewer_without_a_profile_override",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 7,
       "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
       "selector": "app::tests::disconnect::lost_mutation_reply_preserves_work_without_resubmitting",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     },
     {
       "number": 8,
       "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
       "selector": "app::tests::disconnect::lost_initial_thread_reply_keeps_startup_draft_offline",
-      "status": "NOT_YET_EXECUTED_ON_3F90"
+      "status": "PASSED_WINDOWS_NATIVE_3F90"
     }
   ],
   "source_change": {
@@ -201,5 +201,24 @@
       "sha": "9961d398a5903ae1a891b0360c9058e473a373dd",
       "expected_footer": "? help  esc back  ↑/↓ move  enter open  n new"
     }
+  },
+  "windows_native_evidence": {
+    "run_id": 41946677766,
+    "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41946677766",
+    "tested_head": "4816f28ada7d0275cc4431a5731d1271cc0d27a2",
+    "conclusion": "success",
+    "completed_at_utc": "2026-11-05T01:33:29Z",
+    "cheap_source": "success",
+    "windows_native": "success",
+    "compile": "success",
+    "exact_selectors_passed": 8,
+    "failed": 0,
+    "artifacts": {
+      "id": 13380690241,
+      "name": "codexdd045-3f90-windows-reconnect-nonrelease",
+      "sha256": "fa04ad4ea8e7b85db56f0b3302cebf721629ee30fab9ea9c978c09d1ce2136f1",
+      "expires_at_utc": "2026-11-19T01:33:22Z"
+    },
+    "scope": "Windows TCP-WebSocket reconnect and selected tests only; 13 high-risk owner holds and full production gates unchanged"
   }
 }

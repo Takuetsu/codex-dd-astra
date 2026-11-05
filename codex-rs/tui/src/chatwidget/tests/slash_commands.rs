@@ -2216,6 +2216,71 @@ async fn slash_copy_picker_remains_available_from_parent_owned_threads() {
 }
 
 #[tokio::test]
+async fn api_key_daybreak_revocation_drops_program_authority() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+    chat.config.model_provider_id = "openai".into();
+    let mut model = crate::test_support::TEST_MODEL_PRESETS[0].clone();
+    model.available_access_programs = Some(codex_protocol::openai_models::ModelAccessPrograms {
+        cyber: vec![
+            codex_protocol::turn_input::CyberAccessProgram::Standard,
+            codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue,
+        ],
+    });
+    let model_id = model.model.clone();
+    let models = vec![model];
+    chat.model_catalog = std::sync::Arc::new(ModelCatalog::new(models.clone()));
+    chat.update_account_state(
+        Some(StatusAccountDisplay::ApiKey),
+        None,
+        /*has_chatgpt_account*/ false,
+        /*has_codex_backend_auth*/ true,
+    );
+    chat.set_feature_enabled(Feature::CliDaybreak, true);
+    chat.set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, true);
+    chat.set_daybreak_enabled(true);
+    assert!(chat.daybreak_enabled);
+    assert!(chat.daybreak_account_eligible());
+    assert!(chat.daybreak_turn_eligible(chat.daybreak_enabled));
+    assert_eq!(
+        crate::daybreak::program_for_turn(
+            &models,
+            &model_id,
+            chat.daybreak_turn_eligible(chat.daybreak_enabled),
+            chat.daybreak_enabled,
+        ),
+        Ok(Some(codex_protocol::turn_input::CyberAccessProgram::DaybreakBlue))
+    );
+
+    // A capability from the OpenAI provider is never authority on another backend.
+    chat.config.model_provider_id = "other-provider".into();
+    assert!(!chat.daybreak_turn_eligible(true));
+    assert!(crate::daybreak::program_for_turn(&models, &model_id, false, true).is_err());
+    chat.config.model_provider_id = "openai".into();
+
+    // Revoking API-key forwarding immediately revokes the enabled program.
+    chat.set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, false);
+    assert!(!chat.daybreak_enabled);
+    assert!(!chat.daybreak_account_eligible());
+    assert!(!chat.daybreak_turn_eligible(true));
+    assert!(chat.daybreak_command_description().is_none());
+    assert!(crate::daybreak::program_for_turn(&models, &model_id, false, true).is_err());
+
+    // Reauthorizing an API key does not grant access to a signed-out identity.
+    chat.set_feature_enabled(Feature::ApiKeyCyberAccessPrograms, true);
+    chat.set_daybreak_enabled(true);
+    assert!(chat.daybreak_account_eligible());
+    chat.update_account_state(
+        None,
+        None,
+        /*has_chatgpt_account*/ false,
+        /*has_codex_backend_auth*/ false,
+    );
+    assert!(!chat.daybreak_account_eligible());
+    assert!(!chat.daybreak_turn_eligible(true));
+    assert!(crate::daybreak::program_for_turn(&models, &model_id, false, true).is_err());
+}
+
+#[tokio::test]
 async fn slash_daybreak_offers_an_application_when_unavailable() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.set_feature_enabled(Feature::CliDaybreak, /*enabled*/ true);
