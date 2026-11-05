@@ -1,0 +1,269 @@
+# NONRELEASE 3F.94: two isolated actual Codex Windows managed supervisor/updater process cases.
+name: CodexDD 0.4.5 3F.94 Windows managed supervisor (NONRELEASE)
+run-name: 3F.94 Native Windows daemon lifecycle and updater (NONRELEASE)
+# Do NOT run this on GitHub-hosted Windows runners: they disallow the
+# CREATE_BREAKAWAY_FROM_JOB required by production daemon security.
+# A dedicated, disposable, unrestricted self-hosted Windows VM must be
+# registered with label codexdd-disposable-win before explicit opt-in.
+# Default is NO RUN. To test from this non-default candidate branch, an
+# administrator must explicitly set CODEXDD_3F94_ISOLATED_VM_READY=true.
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f94-windows-managed-supervisor
+    paths:
+      - .github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml
+  workflow_dispatch:
+    inputs:
+      nonrelease_acknowledgement:
+        description: "Type ISOLATED_WINDOWS_VM to acknowledge NONRELEASE use of a disposable Windows runner"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f94-native-supervisor
+  cancel-in-progress: false
+
+jobs:
+  cheap-source:
+    if: github.repository == 'Takuetsu/codex-dd-astra' && vars.CODEXDD_3F94_ISOLATED_VM_READY == 'true' && (github.event_name == 'push' || inputs.nonrelease_acknowledgement == 'ISOLATED_WINDOWS_VM')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Prove exact isolated source, signed-off holds unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f94-windows-managed-supervisor'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1)" = 'a97dfe96498d6b0d2f2817c369e8dba0b08ec062'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1)" = 'abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1)" = '2b90840564dffb234f9df2618b2f13d61874ef77'
+          test "$(git rev-parse HEAD:.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1)" = '7a5418f4778a520f85eacc676cd5980e50c30d1b'
+          test "$(git rev-parse HEAD:.github/scripts/codexdd_045_3f94_private_directory.ps1)" = '01036d9e3582f3b5c4d6462921b782467157a246'
+          test "$(git rev-parse HEAD:.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml)" = '32fcd5630358de4d3eeb77f301d861961cf30c79'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(git rev-parse HEAD:codex-rs/app-server-daemon/src/backend/pid.rs)" = 'fce30642d59e6f3b00ffc5242412f0709032a1be'
+          test "$(git rev-parse HEAD:codex-rs/app-server-daemon/src/lib.rs)" = 'bc3cf057bc8b39dfec1e67dfd4fb0a736f41a61f'
+          test "$(git rev-parse HEAD:codex-rs/cli/Cargo.toml)" = '608921c370a184c0c465e5cf079be947f0a9664a'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(cat codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          git merge-base --is-ancestor b8effbfd79bb638d5df980a6a962ee2e6f85559d HEAD
+          git diff --check b8effbfd79bb638d5df980a6a962ee2e6f85559d HEAD
+          python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          root=Path('docs/upstream-candidates')
+          p=json.loads((root/'codexdd-045-3f94-windows-managed-supervisor-candidate.json').read_text())
+          a=json.loads((root/'codexdd-045-3f93-real-daemon-cold-resume-candidate.json').read_text())
+          f=json.loads((root/'codexdd-045-3f55-formal-owner-approvals.json').read_text())
+          m=json.loads((root/'codexdd-045-3f92-p0-current-source-review-packet.json').read_text())
+          changed=set(subprocess.check_output(['git','diff','--name-only','b8effbfd79bb638d5df980a6a962ee2e6f85559d','HEAD'],text=True).splitlines())
+          assert changed == {
+            '.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1',
+            '.github/scripts/codexdd_045_3f94_private_directory.ps1',
+            '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1',
+            '.github/scripts/test_codexdd_045_3f94_breakaway_child.ps1',
+            '.github/scripts/test_codexdd_045_3f94_scheduled_breakaway_probe.ps1',
+            '.github/workflows/codexdd-045-3f94-scheduled-task-breakaway-probe.yml',
+            '.github/workflows/codexdd-045-3f94-blocked-source-audit.yml',
+            '.github/workflows/codexdd-045-3f94-nonadmin-probe-windows.yml',
+            '.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml',
+            'docs/upstream-candidates/codexdd-045-3f94-windows-managed-supervisor-candidate.json',
+            'docs/upstream-candidates/codexdd-045-3f93-real-daemon-cold-resume-candidate.json',
+          },changed
+          assert p['status']=='NATIVE_ACCEPTANCE_BLOCKED_HOSTED_WINDOWS_DEDICATED_RUNNER_REQUIRED'
+          assert p['source_change']['script_blob']=='a97dfe96498d6b0d2f2817c369e8dba0b08ec062', p['source_change']['script_blob']
+          assert p['source_change']['launcher_blob']=='abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0'
+          assert p['baseline_head']=='b8effbfd79bb638d5df980a6a962ee2e6f85559d'
+          assert p['release_approved'] is False and p['formal_owner_signoffs']==0
+          assert p['production_version']=='0.4.4'
+          assert p['high_risk_review_holds']=={'core':4,'tui':9}
+          assert a['native_evidence']['run_id']==42060527099
+          assert a['native_evidence']['selected_cases_passed']==3
+          assert a['native_evidence']['selected_cases_failed']==0
+          assert a['native_evidence']['exact_head']==p['baseline_head']
+          assert f['approved_owner_count']==0 and len(f['paths'])==109
+          assert all(r['formal_owner_decision']=='PENDING_SIGNOFF' for r in f['paths'])
+          assert m['high_risk_owner_holds']==13
+          script=Path('.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1').read_text()
+          import re
+          assert not re.search(r'\$home\b', script, re.I), 'PowerShell reserved `$HOME` used as a variable/parameter'
+          assert script.count('$sandboxHome') >= 35, 'Missing explicit sandbox-home variable'
+          assert len(p['cases'])==2
+          assert all("Test-Case '"+c['selector']+"'" in script for c in p['cases'])
+          assert "GITHUB_ACTIONS" in script and "Set-IsolatedHome $sandboxHome" in script, "Missing isolated sandbox home setter"
+          assert "New-Item -ItemType Junction" in script and "Stop-Process -Id" in script
+          launcher=Path('.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1').read_text()
+          assert 'New-LocalUser' in launcher and 'Remove-LocalUser' in launcher
+          assert 'TokenElevation is nonzero' in launcher and 'NONADMIN_TOKEN_ELEVATION_0' in launcher
+          assert 'Start-Process -FilePath $pwsh' in launcher and '-Credential $credential' in launcher
+          assert 'standard-token-attestation.txt' in launcher
+          assert 'ProbeBreakaway' in launcher and 'breakaway-result.json' in launcher
+          assert 'test_codexdd_045_3f94_breakaway_child.ps1' in launcher
+          assert 'New-DDPrivateDaemonDirectory -sandboxHome $sandboxHome' in script
+          assert 'codexdd_045_3f94_private_directory.ps1' in script and 'codexdd_045_3f94_private_directory.ps1' in launcher
+          private=Path('.github/scripts/codexdd_045_3f94_private_directory.ps1').read_text()
+          assert 'CreateDirectoryW' in private and 'D:P(A;OICI;FA;;;' in private
+          assert 'GetAccessRules($true, $false' in private and 'AreAccessRulesProtected' in private
+          assert 'FileSystemRights]::FullControl' in private and 'GetOwner([Security.Principal.SecurityIdentifier])' in private
+          print('3F.94 CHEAP SOURCE GREEN: Windows managed lifecycle test only; 13 holds, 0/109 approvals')
+          PY
+      - name: Validate Windows harness and all four inline PowerShell blocks
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $tokens=$null
+          $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path '.github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1').Path,
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Host $_ }; throw 'Windows process script parse failed' }
+          $tokens=$null
+          $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1').Path,
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Host $_ }; throw 'Nonadmin Windows launcher parse failed' }
+          $tokens=$null
+          $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path '.github/scripts/codexdd_045_3f94_private_directory.ps1').Path,
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Host $_ }; throw 'Strict private Windows socket directory fixture parse failed' }
+          $lines=@(Get-Content '.github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml')
+          $count=0
+          for ($i=0; $i -lt $lines.Count-1; $i++) {
+            if ($lines[$i] -ne '        shell: pwsh' -or $lines[$i+1] -ne '        run: |') { continue }
+            $count++
+            $source=[System.Collections.Generic.List[string]]::new()
+            for ($j=$i+2; $j -lt $lines.Count; $j++) {
+              $line=$lines[$j]
+              if ($line.Length -eq 0) { $source.Add(''); continue }
+              if (-not $line.StartsWith('          ')) { break }
+              $source.Add($line.Substring(10))
+            }
+            $t=$null
+            $e=$null
+            [void][System.Management.Automation.Language.Parser]::ParseInput(
+               ($source -join [Environment]::NewLine), [ref]$t, [ref]$e
+            )
+            if ($e.Count -ne 0) { $e | ForEach-Object { Write-Host $_ }; throw "Invalid inline PowerShell block $count" }
+          }
+          if ($count -ne 4) { throw "Expected 4 inline PowerShell blocks; found $count" }
+          Write-Host "3F.94 POWERSHELL AST GREEN: script plus $count workflow blocks"
+
+  windows-identity:
+    needs: cheap-source
+    runs-on: [self-hosted, Windows, X64, codexdd-disposable-win]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Preflight nonadmin identity, private socket and detached breakaway without compiling
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1' -ProbeOnly -ProbeBreakaway
+          if (-not $?) { throw '3F.94 restricted Windows account cannot safely detach: do NOT compile' }
+
+  windows-native:
+    needs: [cheap-source, windows-identity]
+    runs-on: [self-hosted, Windows, X64, codexdd-disposable-win]
+    timeout-minutes: 125
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_TERM_COLOR: "never"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Configure isolated Windows build output and evidence paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'cd94'
+          $target=Join-Path $root 'target'
+          $temp=Join-Path $root 'tmp'
+          New-Item -ItemType Directory -Force $target,$temp,'native-evidence' | Out-Null
+          @("CARGO_TARGET_DIR=$target","TEMP=$temp","TMP=$temp","CODEX_REPO_ROOT=$env:GITHUB_WORKSPACE") |
+            Add-Content $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git long-path configuration failed' }
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # Rust 1.95.0
+      - uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Restore dependency sources only (no oversized target cache)
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: codexdd045-3f73-source-static
+          restore-keys: |
+            codexdd045-3f12-source-
+            codexdd045-crypto-msvc-
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile one native Codex CLI binary under locked dependency graph
+        working-directory: codex-rs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Wrong tested source' }
+          cargo metadata --locked --format-version 1 > $null
+          if ($LASTEXITCODE -ne 0) { throw 'Locked resolver check failed' }
+          $cargo=(Get-Command cargo.exe -ErrorAction Stop).Source
+          $stdout=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\codex-build-stdout.log'
+          $stderr=Join-Path $env:GITHUB_WORKSPACE 'native-evidence\codex-build-stderr.log'
+          $args=@('build','--locked','-p','codex-cli','--bin','codex')
+          $proc=Start-Process -FilePath $cargo -ArgumentList $args -WorkingDirectory (Get-Location).Path -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          try {
+            if (-not $proc.WaitForExit(5400000)) {
+              $proc.Kill($true)
+              $proc.WaitForExit()
+              Get-Content $stderr -Tail 120 -ErrorAction SilentlyContinue
+              throw '3F.94 native CLI build exceeded 90 minutes'
+            }
+            if ($proc.ExitCode -ne 0) {
+              Get-Content $stdout -Tail 70 -ErrorAction SilentlyContinue
+              Get-Content $stderr -Tail 150 -ErrorAction SilentlyContinue
+              throw "3F.94 native CLI compile failed $($proc.ExitCode)"
+            }
+            if (-not (Test-Path (Join-Path $env:CARGO_TARGET_DIR 'debug\codex.exe'))) {
+              throw '3F.94 Codex CLI executable missing after compilation'
+            }
+            Write-Host '3F.94 NATIVE WINDOWS CLI COMPILATION GREEN' -ForegroundColor Green
+          } finally { $proc.Dispose() }
+      - name: Run real daemon and updater tests inside non-elevated Windows account
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA) { throw 'Unexpected process test head' }
+          & powershell.exe -NoProfile -NonInteractive -File '.github/scripts/test_codexdd_045_3f94_nonadmin_launcher.ps1'
+          if ($LASTEXITCODE -ne 0) { throw "3F.94 standard-user Windows process harness failed: $LASTEXITCODE" }
+      - name: Preserve NONRELEASE Windows process and compilation logs
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd045-3f94-managed-supervisor-nonrelease
+          path: native-evidence/
+          if-no-files-found: warn
+          retention-days: 14

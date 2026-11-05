@@ -1,0 +1,225 @@
+{
+  "contract_version": 1,
+  "kind": "codexdd_045_3f94_managed_windows_supervisor_updater_process_nonrelease",
+  "status": "NATIVE_ACCEPTANCE_BLOCKED_HOSTED_WINDOWS_DEDICATED_RUNNER_REQUIRED",
+  "baseline_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+  "candidate_branch": "dd/codexdd-v0.4.5-3f94-windows-managed-supervisor",
+  "production_version": "0.4.4",
+  "release_approved": false,
+  "formal_owner_signoffs": 0,
+  "high_risk_review_holds": {
+    "core": 4,
+    "tui": 9
+  },
+  "accepted_prior_native_windows": {
+    "stage": "3F.93",
+    "run_id": 42060527099,
+    "source_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
+    "cases_passed": 3,
+    "cases_failed": 0
+  },
+  "source_change": {
+    "kind": "Nonrelease Windows managed supervisor test, source-bound workflow, ephemeral standard-user launcher, inexpensive identity probe and ledger changes only; zero production code/dependency changes",
+    "script_path": ".github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1",
+    "script_blob": "a97dfe96498d6b0d2f2817c369e8dba0b08ec062",
+    "no_production_source_changes": true,
+    "no_cargo_lock_or_security_changes": true,
+    "acl_fixture_helper": {
+      "path": ".github/scripts/codexdd_045_3f94_private_directory.ps1",
+      "blob": "01036d9e3582f3b5c4d6462921b782467157a246",
+      "purpose": "Create user-owned, protected, single ACE private Windows socket directory at creation time with production-matching SDDL; never weaken production verification"
+    },
+    "launcher_blob": "abf1f67d5ea3b0c8562cc7c9cc178b4517cfe7d0",
+    "tested_no_auto_hosted_compilation_workflow": {
+      "path": ".github/workflows/codexdd-045-3f94-managed-supervisor-windows-native.yml",
+      "blob": "2b13362801f20642facb3c217c8cbf4e7339418c",
+      "trigger": "push_or_workflow_dispatch_only_with_explicit_repository_flag",
+      "runs_on": "self-hosted Windows X64 codexdd-disposable-win",
+      "requires_input": {
+        "nonrelease_acknowledgement": "ISOLATED_WINDOWS_VM"
+      },
+      "first_gate": "real nonadmin process token + strict socket directory ACL + suspended breakaway flags",
+      "release_approval": false,
+      "requires_repository_variable": "CODEXDD_3F94_ISOLATED_VM_READY=true"
+    }
+  },
+  "cases": [
+    {
+      "selector": "dedicated-managed-daemon-pid-restart-and-stop",
+      "evidence_requirements": "Real compiled Windows codex.exe under isolated CODEX_HOME; real daemon start idempotency, real UDS version response, PID change on restart, graceful stop and no updater on pinned dedicated package"
+    },
+    {
+      "selector": "stable-legacy-updater-survives-restart-and-obeys-disable",
+      "evidence_requirements": "Synthetic stable release junction and auto-update marker entirely within isolated CODEX_HOME; actual updater PID and app-server PID distinct; updater survives daemon restart; disabling auto updates stops updater and leaves no updater PID"
+    }
+  ],
+  "native_requirements": [
+    "Build one native Windows x86_64-pc-windows-msvc codex-cli executable using the locked current source",
+    "Execute PowerShell syntax parser before native build and assert exact script blob and nonrelease release restrictions",
+    "Never run on Daniel-CL, never invoke live installation; isolated GITHUB_RUNNER_TEMP CODEX_HOME and temporary package",
+    "Time-bounded daemon lifecycle invocations, write per-case stdout/stderr logs and receipt artifact, fail unless 2/2 pass",
+    "Do not infer safety from PID alone in forced cleanup; verify process executable resides under isolated test home",
+    "Nonadmin Windows user identity gate must pass on GitHub runner before compiling; invoke real CLI under isolated non-elevated token and verify signed token-elevation receipt",
+    "Reject improper shared/private socket ACLs; use actual Windows CreateDirectoryW owner-only SDDL in isolated standard-user fixture, with independent Windows GetSecurityInfo validation in the daemon"
+  ],
+  "limitation": [
+    "Uses a locally compiled Codex CLI in fixture packages, not the user's installed 0.4.4 binary",
+    "Does not attempt online updater install or package migration/production auto-update",
+    "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
+    "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff",
+    "Neither hosted native attempts nor Task Scheduler probe grant release acceptance: 0/2 real managed Windows supervisor cases passed; avoid repeating 20-minute hosted compiles"
+  ],
+  "ci_result": "HOSTED_RUNNER_DETACHED_JOB_OBJECT_DENIED_TASK_SCHEDULER_NOT_LAUNCHED_NATIVE_CASES_ZERO_OF_TWO",
+  "failed_attempts": [
+    {
+      "run_id": 42064776537,
+      "stage": "windows-native script / first process case",
+      "source_checks": "passed",
+      "native_windows_cli_compilation": "passed",
+      "process_cases_executed": 0,
+      "root_cause": "PowerShell case-insensitive reserved automatic $HOME collides with test-local $home variables/parameter names",
+      "production_bug_observed": false
+    },
+    {
+      "run_id": 42071853948,
+      "stage": "windows-native process test launch",
+      "result": "failed",
+      "windows_native_cli_compile": "passed",
+      "root_cause": "GitHub-hosted Windows runner token is elevated; CodexDD correctly blocks shared managed daemon start",
+      "application_security_policy": "PRESERVED",
+      "process_tests_passed": 0
+    },
+    {
+      "run_id": 42080819525,
+      "stage": "cheap Windows standard-user probe",
+      "result": "failed",
+      "identity_check": "passed",
+      "root_cause": "PowerShell Start-Process -Credential did not return an ExitCode despite completed child; replaced with required child attestation marker"
+    },
+    {
+      "run_id": 42081364964,
+      "result": "failed",
+      "stage": "windows-native / first actual standard-user daemon start",
+      "native_windows_cli_compile": "passed",
+      "windows_identity": "passed",
+      "root_cause": "Test harness Set-Updater precreated app-server-daemon directory with inherited broad Windows DACL, violating user-only private socket directory requirement",
+      "security_policy": "PRESERVED",
+      "process_cases_passed": 0
+    },
+    {
+      "run_id": 42088594628,
+      "stage": "Windows native executable compiled, task harness started but launch denied",
+      "source_checks": "passed",
+      "windows_identity": "passed",
+      "secure_socket_acl": "passed",
+      "windows_native_cli_compilation": "passed",
+      "real_daemon_start": "blocked",
+      "reason": "GitHub Windows runner job disallows detached CREATE_BREAKAWAY_FROM_JOB; Windows Access denied (5), explicitly classified as DetachedLaunchRestricted by production",
+      "production_security_policy": "PRESERVED",
+      "process_cases_passed": 0
+    },
+    {
+      "run_id": 42093737009,
+      "result": "failure",
+      "stage": "cheap Task Scheduler process capability preflight",
+      "task_registered": true,
+      "child_executed": false,
+      "last_task_result": 267011,
+      "meaning": "Task has not run; cannot determine detached-launch capability",
+      "native_windows_compilation": "NOT_RUN"
+    },
+    {
+      "run_id": 42094227471,
+      "result": "failure",
+      "stage": "cheap scheduled-task process capability retry",
+      "task_registered": true,
+      "task_state": "Ready",
+      "last_task_result": 267011,
+      "last_run_time": "1999-11-30",
+      "trigger_time": "2026-11-05 19:29:29 runner time",
+      "child_executed": false,
+      "meaning": "Task remained Ready and never ran even after scheduled time; no detached-launch evidence",
+      "native_windows_compilation": "NOT_RUN"
+    }
+  ],
+  "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS",
+  "proven_nonadmin_windows_runner": {
+    "run_id": 42081044874,
+    "conclusion": "success",
+    "tested_head": "d5d8dd20b7bb19b96f0d032949febd2d553f6956",
+    "token_elevation": 0,
+    "actual_account_type": "ephemeral_local_nonadministrator",
+    "run_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/42081044874",
+    "source_launcher_blob": "e48dd9aabb8572eb5e6acb523df4f1ceb4ca3345"
+  },
+  "private_directory_preflight": {
+    "status": "GREEN_RUN_42088176970",
+    "requirements": [
+      "Create private directory under restricted user with exact SDDL O:<user SID>D:P(A;OICI;FA;;;<user SID>) at creation, not repair",
+      "Validate owner SID, protected ACL, exactly one inheritable FullControl ACE",
+      "Verify in cheap Windows identity probe before Windows native CLI compilation"
+    ],
+    "standalone_runner_result": "NOT_YET_RUN",
+    "run_id": 42088176970,
+    "tested_head": "353b35f104cba8b6dcd549a55ffdf311ea8936e0",
+    "conclusion": "success",
+    "actual_windows_process_token": "NONADMIN",
+    "private_acl_verified": "OWNER_ONLY_PROTECTED_EXACT_ONE_OICI_FA_ACE",
+    "native_compile": "NOT_RUN"
+  },
+  "scheduled_task_breakaway_capability": {
+    "status": "INCONCLUSIVE_SCHEDULED_CHILD_NEVER_EXECUTED_2_OF_2",
+    "method": "Task Scheduler service spawns isolated temporary nonadministrator account; a suspended cmd.exe is created with production-equivalent DETACHED_PROCESS | CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB and always terminated",
+    "script": "test_codexdd_045_3f94_scheduled_breakaway_probe.ps1",
+    "script_blob": "7a5418f4778a520f85eacc676cd5980e50c30d1b",
+    "child_blob": "2b90840564dffb234f9df2618b2f13d61874ef77",
+    "build_performed": false,
+    "production_changes": false,
+    "reason": "Do not compile 20 minutes until detached-launch capability is proven",
+    "first_run": {
+      "run_id": 42093737009,
+      "conclusion": "failure",
+      "cheap_source_parser": "passed",
+      "task_child_executed": false,
+      "task_status_result": 267011,
+      "interpretation": "Task had not run; no detached-launch capability conclusion",
+      "native_windows_build": "NOT_RUN"
+    },
+    "retry": "CLOSED_NO_MORE_GITHUB_HOSTED_SCHEDULER_ATTEMPTS",
+    "second_run": {
+      "run_id": 42094227471,
+      "conclusion": "failure",
+      "cheap_source_parser": "passed",
+      "registered": "yes",
+      "task_state": "Ready",
+      "task_status_result": 267011,
+      "task_started": false,
+      "conclusion_boundary": "Do not infer breakaway support or rejection from an unrun task"
+    }
+  },
+  "native_acceptance_resume_gate": {
+    "pr": 84,
+    "selected_cases": 2,
+    "passed": 0,
+    "required_environment": "Dedicated disposable, correctly isolated native Windows 64-bit environment; not Daniel-CL or an installed production host",
+    "security_requirements": [
+      "Native TokenElevation=0",
+      "Owner-only protected Windows daemon socket ACL",
+      "CREATE_SUSPENDED | DETACHED_PROCESS | CREATE_BREAKAWAY_FROM_JOB probe passes and suspended test process reaped",
+      "No production installation; source-pinned locked build; per-case results and logs; exit with 2/2 only"
+    ],
+    "github_manual_workflow": "codexdd-045-3f94-managed-supervisor-windows-native.yml",
+    "workflow_dispatch_requires": "nonrelease_acknowledgement=ISOLATED_WINDOWS_VM",
+    "runner_labels": [
+      "self-hosted",
+      "Windows",
+      "X64",
+      "codexdd-disposable-win"
+    ],
+    "remaining_blocker": "GitHub-hosted Windows worker's job object denies required breakaway; scheduled task never started. An unrestricted environment must pass cheap breakaway gate before native compilation.",
+    "status": "WAITING_FOR_SAFE_DETACHED_PROCESS_ENVIRONMENT",
+    "manual_daniel_cl_action_now": false,
+    "automatic_expensive_ci_disabled": true,
+    "github_repository_opt_in_variable": "CODEXDD_3F94_ISOLATED_VM_READY=true"
+  }
+}
