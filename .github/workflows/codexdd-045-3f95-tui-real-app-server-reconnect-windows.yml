@@ -3,12 +3,10 @@
 # never weakens Windows token/socket/job-object security.
 name: CodexDD 0.4.5 3F.95 real-process TUI reconnect (NONRELEASE)
 run-name: 3F.95 Windows TUI reconnect after real app-server process restart (NONRELEASE)
+# OWNER-FROZEN 2026-11-05: no push trigger; manual dispatch is inert until
+# this explicit frozen job guard is changed in an approved unfreeze commit.
 on:
-  push:
-    branches:
-      - dd/codexdd-v0.4.5-3f95-tui-real-process-reconnect
-    paths:
-      - .github/workflows/codexdd-045-3f95-tui-real-app-server-reconnect-windows.yml
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -17,7 +15,7 @@ concurrency:
 
 jobs:
   cheap-source:
-    if: github.repository == 'Takuetsu/codex-dd-astra'
+    if: ${{ false }} # 0.4.5 frozen; unfreeze requires owner-approved source change
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -101,6 +99,7 @@ jobs:
         run: cargo fmt --all -- --check
 
   windows-native:
+    if: ${{ false }} # 0.4.5 frozen; no Windows native compile
     needs: cheap-source
     runs-on: windows-2022
     timeout-minutes: 140

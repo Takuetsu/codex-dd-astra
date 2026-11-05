@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "kind": "codexdd_045_3f95_tui_real_daemon_process_reconnect_nonrelease",
-  "status": "SOURCE_PREPARED_WINDOWS_NATIVE_PENDING",
+  "status": "FROZEN_BY_OWNER_2026_11_05",
   "candidate_branch": "dd/codexdd-v0.4.5-3f95-tui-real-process-reconnect",
   "baseline_branch": "dd/codexdd-v0.4.5-3f93-real-daemon-cold-resume",
   "baseline_head": "b8effbfd79bb638d5df980a6a962ee2e6f85559d",
@@ -43,7 +43,7 @@
       ]
     }
   ],
-  "native_evidence": "NOT_RUN",
+  "native_evidence": "WINDOWS_BUILD_FAILED_TUI_TEST_NOT_EXECUTED",
   "native_requirements": {
     "source": "Only test module + registration + workflow + ledger changed; exact Cargo.lock/deny/version pins and existing high-risk owner holds",
     "cheap": "Source integrity, no-review-promotion and Cargo fmt check on Linux before Windows Cargo",
@@ -65,5 +65,24 @@
     "rustfmt": "failed",
     "windows_native": "not_run",
     "correction": "format-only six local Rustfmt diffs"
+  },
+  "frozen": {
+    "owner_directive": "Freeze 0.4.5 now. Active agent usability hotfixes take priority.",
+    "freeze_utc_date": "2026-11-05",
+    "prefreeze_test_head": "0d9effb538142fc7c0fb9f3a4dffca6d451c527b",
+    "ci_run_id": 42099189133,
+    "ci_result": "failure",
+    "cheap_source": "success",
+    "windows_app_server_build": "success",
+    "windows_tui_test_build": "failure",
+    "native_test_executed": false,
+    "compile_errors": [
+      "E0308 restore_user_message_to_composer expected UserMessage found String at real_process_reconnect_tests.rs:129",
+      "E0277 create_fake_rollout anyhow::Error not convertible into color_eyre Report at real_process_reconnect_tests.rs:77"
+    ],
+    "auto_push_disabled": true,
+    "manual_dispatch_inert": true,
+    "future_validation_requires": "Explicit owner-approved unfreeze; 0.4.4 agent-stability hotfix first",
+    "release_approved": false
   }
 }
