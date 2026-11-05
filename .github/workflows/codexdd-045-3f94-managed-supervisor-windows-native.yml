@@ -74,7 +74,7 @@ jobs:
           assert script.count('$sandboxHome') >= 35, 'Missing explicit sandbox-home variable'
           assert len(p['cases'])==2
           assert all("Test-Case '"+c['selector']+"'" in script for c in p['cases'])
-          assert "GITHUB_ACTIONS" in script and "Set-IsolatedHome $home" in script
+          assert "GITHUB_ACTIONS" in script and "Set-IsolatedHome $sandboxHome" in script, "Missing isolated sandbox home setter"
           assert "New-Item -ItemType Junction" in script and "Stop-Process -Id" in script
           print('3F.94 CHEAP SOURCE GREEN: Windows managed lifecycle test only; 13 holds, 0/109 approvals')
           PY
