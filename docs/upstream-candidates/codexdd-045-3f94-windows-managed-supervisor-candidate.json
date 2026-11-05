@@ -19,7 +19,7 @@
     "cases_failed": 0
   },
   "source_change": {
-    "kind": "one isolated GitHub Windows process acceptance script, one dedicated source-pinned GitHub workflow and nonrelease evidence documents",
+    "kind": "Nonrelease Windows managed supervisor test, source-bound workflow, ephemeral standard-user launcher, inexpensive identity probe and ledger changes only; zero production code/dependency changes",
     "script_path": ".github/scripts/test_codexdd_045_3f94_windows_managed_supervisor.ps1",
     "script_blob": "dfd50f3b1d398ee237a7ebc99fd8c3dcf863dc13",
     "no_production_source_changes": true,
@@ -40,7 +40,8 @@
     "Execute PowerShell syntax parser before native build and assert exact script blob and nonrelease release restrictions",
     "Never run on Daniel-CL, never invoke live installation; isolated GITHUB_RUNNER_TEMP CODEX_HOME and temporary package",
     "Time-bounded daemon lifecycle invocations, write per-case stdout/stderr logs and receipt artifact, fail unless 2/2 pass",
-    "Do not infer safety from PID alone in forced cleanup; verify process executable resides under isolated test home"
+    "Do not infer safety from PID alone in forced cleanup; verify process executable resides under isolated test home",
+    "Nonadmin Windows user identity gate must pass on GitHub runner before compiling; invoke real CLI under isolated non-elevated token and verify signed token-elevation receipt"
   ],
   "limitation": [
     "Uses a locally compiled Codex CLI in fixture packages, not the user's installed 0.4.4 binary",
@@ -48,7 +49,7 @@
     "Does not exercise visual TUI redraw after reconnect; separate 3F.95 target",
     "No 21-stage canonical Daniel-CL validation, secure packaged release approval or formal owner signoff"
   ],
-  "ci_result": "NOT_YET_RUN",
+  "ci_result": "NATIVE_WINDOWS_RETEST_PENDING_AFTER_NONADMIN_PREFLIGHT_GREEN",
   "failed_attempts": [
     {
       "run_id": 42064776537,
@@ -58,7 +59,32 @@
       "process_cases_executed": 0,
       "root_cause": "PowerShell case-insensitive reserved automatic $HOME collides with test-local $home variables/parameter names",
       "production_bug_observed": false
+    },
+    {
+      "run_id": 42071853948,
+      "stage": "windows-native process test launch",
+      "result": "failed",
+      "windows_native_cli_compile": "passed",
+      "root_cause": "GitHub-hosted Windows runner token is elevated; CodexDD correctly blocks shared managed daemon start",
+      "application_security_policy": "PRESERVED",
+      "process_tests_passed": 0
+    },
+    {
+      "run_id": 42080819525,
+      "stage": "cheap Windows standard-user probe",
+      "result": "failed",
+      "identity_check": "passed",
+      "root_cause": "PowerShell Start-Process -Credential did not return an ExitCode despite completed child; replaced with required child attestation marker"
     }
   ],
-  "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS"
+  "preflight_reserved_automatic_variable_guard": "REJECT_ANY_CASE_INSENSITIVE_$HOME_TOKEN_IN_POWERSHELL_HARNESS",
+  "proven_nonadmin_windows_runner": {
+    "run_id": 42081044874,
+    "conclusion": "success",
+    "tested_head": "d5d8dd20b7bb19b96f0d032949febd2d553f6956",
+    "token_elevation": 0,
+    "actual_account_type": "ephemeral_local_nonadministrator",
+    "run_url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/42081044874",
+    "source_launcher_blob": "e48dd9aabb8572eb5e6acb523df4f1ceb4ca3345"
+  }
 }
