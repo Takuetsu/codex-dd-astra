@@ -33,6 +33,18 @@
       "head": "a2be1c80c7b0b42af682695697a565b67eca4373",
       "cases_passed": 20,
       "scope": "TUI session, config, disconnect, program eligibility, paste, voice, cold-resume and approval selected Windows native regressions, with formal holds unchanged"
+    },
+    {
+      "run_id": 41946677766,
+      "head": "4816f28ada7d0275cc4431a5731d1271cc0d27a2",
+      "cases_passed": 8,
+      "scope": "3F.90 Windows reconnect E2E source-pinned selectors; no installed-daemon process restart; no owner signoff"
+    },
+    {
+      "run_id": 42048159350,
+      "head": "9da35a5f84e1f28f09f8a8273f32f8ab3fa65239",
+      "cases_passed": 6,
+      "scope": "3F.91 API-key Daybreak feature/account revocation, Windows Shift+Insert/clipboard, model catalog and input regressions; no owner signoff"
     }
   ],
   "formal_109_path_owner_signoffs": 0,
@@ -214,15 +226,18 @@
         "background_resolution_keeps_matching_foreground_user_input_visible"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "3F.89 native selected tests green for account gating, server-only CWD, replayed approvals, interrupted input, program capabilities and feature policy",
+      "current_evidence_disposition": "3F.89 native selected tests green for account gating, server-only CWD, replayed approvals, interrupted input, program capabilities and feature policy; added source-pinned 3F.90 Windows reconnect 8/8 GREEN, owner signoff still pending",
       "next_specific_blocker": "Formal owner signoff, missed request flows and full end-to-end reconnect parity",
-      "current_candidate_source_blob": "d7f541ced9d91f184a7de3a527a55c804b62a672",
+      "current_candidate_source_blob": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
       "current_native_test_evidence": {
         "run_id": 41885892676,
         "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
         "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
         "selected_tests_green": 20,
-        "owner_approval": false
+        "owner_approval": false,
+        "additional_green_run_id": 41946677766,
+        "latest_candidate_source_blob": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
+        "formal_owner_signoff": false
       }
     },
     {
@@ -342,15 +357,18 @@
         "slash_daybreak_offers_an_application_when_unavailable"
       ],
       "source_pinned_3f81_auth_selectors": [],
-      "current_evidence_disposition": "3F.89 selected Windows native tests green for slash Daybreak unavailable, image-paste buffering and queued settings selection",
+      "current_evidence_disposition": "3F.89 selected Windows native tests green for slash Daybreak unavailable, image-paste buffering and queued settings selection; added source-pinned 3F.91 Windows program/paste 6/6 GREEN, owner signoff still pending",
       "next_specific_blocker": "Formal owner signoff and dedicated positive/negative program gate + Windows Shift+Insert paste",
-      "current_candidate_source_blob": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+      "current_candidate_source_blob": "aebc98352f9bc204f6186ec98606eb24a4e14312",
       "current_native_test_evidence": {
         "run_id": 41885892676,
         "url": "https://github.com/Takuetsu/codex-dd-astra/actions/runs/41885892676",
         "source_head": "a2be1c80c7b0b42af682695697a565b67eca4373",
         "selected_tests_green": 20,
-        "owner_approval": false
+        "owner_approval": false,
+        "additional_green_run_id": 42048159350,
+        "latest_candidate_source_blob": "aebc98352f9bc204f6186ec98606eb24a4e14312",
+        "formal_owner_signoff": false
       }
     }
   ],
@@ -365,5 +383,28 @@
     "Review remaining TUI 0.163 behavior: end-to-end reconnect, platform-specific Shift+Insert, real account program enrollment, request ownership and 109-path formal signoffs",
     "Then the single-head Daniel-CL 21-stage Windows release acceptance, seven-program distribution and production promotion, if approved"
   ],
-  "release_approved": false
+  "release_approved": false,
+  "latest_3f92_reconciliation": {
+    "source_head": "9da35a5f84e1f28f09f8a8273f32f8ab3fa65239",
+    "unchanged_record_blobs": 11,
+    "updated_test_only_record_blobs": 2,
+    "source_changes": [
+      {
+        "path": "codex-rs/tui/src/app/tests.rs",
+        "from": "d7f541ced9d91f184a7de3a527a55c804b62a672",
+        "to": "2c2c256f2dac830cb28cb4d322eecf05e62ba7f8",
+        "reason": "3F.90 Windows reconnect test module registration",
+        "run_id": 41946677766
+      },
+      {
+        "path": "codex-rs/tui/src/chatwidget/tests/slash_commands.rs",
+        "from": "416331e8bfc09a22032f40f4d910e7dc0b71359e",
+        "to": "aebc98352f9bc204f6186ec98606eb24a4e14312",
+        "reason": "3F.91 test-only API-key Daybreak revocation regression",
+        "run_id": 42048159350
+      }
+    ],
+    "all_13_approval_decisions": "PENDING_SIGNOFF",
+    "release_approved": false
+  }
 }

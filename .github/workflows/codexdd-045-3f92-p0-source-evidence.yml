@@ -1,0 +1,135 @@
+# NONRELEASE: 3F.92 current-source evidence reconciliation for 13 high-risk owners.
+# Source-only, cheap gate. This workflow NEVER grants owner acceptance or releases code.
+name: CodexDD 0.4.5 3F.92 current P0 source evidence (NONRELEASE)
+run-name: 3F.92 High-risk source evidence reconciliation (NONRELEASE)
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.5-3f92-p0-evidence-reconcile
+    paths:
+      - .github/workflows/codexdd-045-3f92-p0-source-evidence.yml
+permissions:
+  contents: read
+concurrency:
+  group: codexdd045-3f92-p0-evidence
+  cancel-in-progress: false
+
+jobs:
+  source-evidence:
+    if: github.repository == 'Takuetsu/codex-dd-astra'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 25
+          persist-credentials: false
+      - name: Verify unchanged production, 13 current path blobs, evidence, and zero owner approvals
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.5-3f92-p0-evidence-reconcile'
+          test "$(cat codex-rs/codexdd-version.txt)" = '0.4.4'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.lock)" = '13bc15ff844e93dfaf7777c73bb7313b35bb3b81'
+          test "$(git rev-parse HEAD:codex-rs/deny.toml)" = 'f282c7c55d05201e308e60804f85754c8522d462'
+          test "$(git rev-parse HEAD:codex-rs/Cargo.toml)" = 'cfebd9b784ef9ff027b274aa9f7101c9c2496613'
+          git diff --check 9da35a5f84e1f28f09f8a8273f32f8ab3fa65239 HEAD
+          python3 - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          d = Path('docs/upstream-candidates')
+          def doc(name):
+              return json.loads((d / name).read_text(encoding='utf-8'))
+          def blob(path):
+              return subprocess.check_output(
+                  ['git', 'rev-parse', f'HEAD:{path}'], text=True
+              ).strip()
+          expected_changes = {
+              '.github/workflows/codexdd-045-3f92-p0-source-evidence.yml',
+              'docs/upstream-candidates/codexdd-045-3f82-p0-review-coverage.json',
+              'docs/upstream-candidates/codexdd-045-3f91-program-auth-paste-candidate.json',
+              'docs/upstream-candidates/codexdd-045-3f92-p0-current-source-review-packet.json',
+          }
+          changed = set(subprocess.check_output(
+              ['git','diff','--name-only','9da35a5f84e1f28f09f8a8273f32f8ab3fa65239','HEAD'],
+              text=True,
+          ).splitlines())
+          assert changed == expected_changes, (changed, expected_changes)
+          packet = doc('codexdd-045-3f92-p0-current-source-review-packet.json')
+          cover = doc('codexdd-045-3f82-p0-review-coverage.json')
+          ledger = doc('codexdd-045-3f91-program-auth-paste-candidate.json')
+          formal = doc('codexdd-045-3f55-formal-owner-approvals.json')
+          matrix = doc('codexdd-045-109-semantic-owner-matrix.json')
+          assert packet['baseline_head'] == '9da35a5f84e1f28f09f8a8273f32f8ab3fa65239'
+          assert packet['status'] == 'CURRENT_SOURCE_VERIFIED_EVIDENCE_GATHERED_FORMAL_OWNER_DECISION_PENDING'
+          assert packet['release_approved'] is False
+          assert packet['production_marker'] == '0.4.4'
+          assert packet['formal_109_path_signoffs'] == 0
+          assert packet['high_risk_owner_holds'] == 13
+          assert packet['review_roster'] == {'core': 4, 'tui': 9}
+          assert cover['formal_109_path_owner_signoffs'] == 0
+          assert cover['high_risk_owner_holds_remaining'] == 13
+          assert cover['core_p0_remain'] == 4 and cover['tui_p0_remain'] == 9
+          assert cover['release_approved'] is False
+          assert len(packet['high_risk_paths']) == len(cover['records']) == 13
+          indexed = {r['path']:r for r in packet['high_risk_paths']}
+          assert len(indexed) == 13
+          cover_indexed = {r['path']:r for r in cover['records']}
+          assert set(indexed) == set(cover_indexed)
+          assert sum(p['path'].startswith('codex-rs/core/') for p in indexed.values()) == 4
+          assert sum(p['path'].startswith('codex-rs/tui/') for p in indexed.values()) == 9
+          changed_paths = {p['path'] for p in packet['source_evolution']}
+          assert changed_paths == {
+              'codex-rs/tui/src/app/tests.rs',
+              'codex-rs/tui/src/chatwidget/tests/slash_commands.rs',
+          }
+          for path, p in indexed.items():
+              original = cover_indexed[path]
+              assert original['current_candidate_source_blob'] == p['source_blob']
+              assert blob(path) == p['source_blob'], path
+              assert p['formal_owner_decision'] == original['formal_owner_decision'] == 'PENDING_SIGNOFF'
+              assert p['release_acceptance'] == 'NOT_COMPLETE'
+              assert p['source_evolved_since_3f82'] == (path in changed_paths)
+          for change in packet['source_evolution']:
+              assert change['current_blob'] == blob(change['path'])
+              assert change['former_blob'] != change['current_blob']
+              assert change['native_run_id'] in (41946677766, 42048159350)
+          assert all(
+              r['formal_owner_decision'] == 'PENDING_SIGNOFF'
+              for r in cover['records']
+          )
+          assert ledger['status'] == 'SIX_WINDOWS_NATIVE_TESTS_GREEN_OWNER_SIGNOFF_PENDING'
+          assert ledger['release_approved'] is False and ledger['formal_owner_signoffs'] == 0
+          assert ledger['new_blob'] == blob(ledger['test_only_rust_source'])
+          proof = ledger['windows_native_evidence']
+          assert proof['run_id'] == 42048159350
+          assert proof['tested_head'] == packet['baseline_head']
+          assert proof['selected_cases_passed'] == 6 and proof['failed'] == 0
+          assert proof['conclusion'] == 'success'
+          assert proof['powershell_ast_preflight'] == 'success'
+          assert proof['artifact']['id'] == 13425774349
+          assert proof['artifact']['sha256'] == 'c729176b3d20566fe1e1782cd8829a0971b0002483f19324a27f0a1df0e8f859'
+          assert len(ledger['tests']) == 6
+          runs = {r['run_id']:r for r in packet['native_source_bound_runs']}
+          assert len(runs) == 5
+          for run_id, count in [(41854019600,12),(41869900824,12),(41885892676,20),
+                                (41946677766,8),(42048159350,6)]:
+              assert runs[run_id]['cases_passed'] == count
+          cover_runs = {r['run_id']:r for r in cover['native_windows_evidence']}
+          assert cover_runs[41946677766]['cases_passed'] == 8
+          assert cover_runs[42048159350]['cases_passed'] == 6
+          assert formal['required_owner_count'] == 109
+          assert formal['approved_owner_count'] == 0
+          assert formal['release_approved'] is False
+          assert len(formal['paths']) == 109
+          assert all(p['formal_owner_decision'] == 'PENDING_SIGNOFF' for p in formal['paths'])
+          assert all(p['approved_by'] is None and p['approval_utc'] is None for p in formal['paths'])
+          assert matrix['total_paths'] == 109
+          assert matrix['release_status'] == 'NOT_ACCEPTED'
+          print('3F92 CURRENT SOURCE AUDIT GREEN: 13/13 exact blobs; 2 evolved test files; 4 Core + 9 TUI holds; 0/109 owner approvals')
+          print('3F92 evidence: 3F.87 12, 3F.88 12, 3F.89 20, 3F.90 8, 3F.91 6 scoped Windows native tests')
+          print('NONRELEASE: no production source changes, owner signoffs, 21-stage release validation, merge, or install')
+          PY
