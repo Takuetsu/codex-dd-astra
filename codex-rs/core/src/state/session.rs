@@ -16,6 +16,7 @@ use crate::context_manager::ContextManager;
 use crate::context_manager::HistoryReplacement;
 use crate::session::PreviousTurnSettings;
 use crate::session::session::SessionConfiguration;
+use crate::session::worker_authority::CoreFirstWorkerAuthority;
 use crate::session::startup_prewarm::SessionStartupPrewarmHandle;
 use crate::session::time_reminder::CurrentTimeReminderState;
 use codex_history::ResponseItemEnvelope;
@@ -102,6 +103,8 @@ pub(crate) struct SessionState {
     pub(crate) active_connector_selection: HashSet<String>,
     pub(crate) pending_session_start_sources: VecDeque<codex_hooks::SessionStartSource>,
     next_turn_is_first: bool,
+    /// Locked by the first accepted user-origin Worker assignment.
+    pub(crate) first_worker_authority: CoreFirstWorkerAuthority,
 }
 
 impl SessionState {
@@ -120,7 +123,11 @@ impl SessionState {
         auto_compact_window_ids: AutoCompactWindowIds,
         history: ContextManager,
     ) -> Self {
+        let first_worker_authority = CoreFirstWorkerAuthority::from_startup(
+            session_configuration.original_config_do_not_use.adaptive_worker.clone(),
+        );
         Self {
+            first_worker_authority,
             active_disabled_plugin_ids: Vec::new(),
             session_configuration,
             base_instructions_provenance: None,

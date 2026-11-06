@@ -274,6 +274,7 @@ mod token_budget;
 pub(crate) mod turn;
 pub(crate) mod turn_context;
 mod turn_input;
+pub(crate) mod worker_authority;
 mod turn_suspension;
 mod world_state;
 use self::code_mode_warning::unsupported_code_mode_warning;
@@ -1607,6 +1608,9 @@ impl Session {
         {
             let mut state = self.state.lock().await;
             state.set_next_turn_is_first(!has_prior_user_turns);
+            if has_prior_user_turns {
+                state.first_worker_authority.lock_after_prior_user_history();
+            }
         }
         let turn_context = match conversation_history {
             InitialHistory::New | InitialHistory::Cleared => {

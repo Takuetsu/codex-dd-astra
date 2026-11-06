@@ -19,6 +19,7 @@ use super::thread_settings;
 use super::turn_context::NewTurnContextOptions;
 use super::turn_context::TurnContext;
 use crate::WithTurnExtensionData;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use crate::state::ActiveTurn;
 use crate::state::TurnState;
 use crate::tasks::RegularTask;
@@ -316,6 +317,49 @@ pub(super) async fn handle_recovery(
     result
 }
 
+/// A first Worker header is accepted only on a direct user-origin request.
+fn is_direct_user_origin(start: &TurnStartOptions) -> bool {
+    start.parent_turn_id.is_none()
+        && matches!(start.turn_trigger.as_deref(), None | Some("user"))
+}
+
+async fn prepare_first_worker_authority(
+    session: &Session,
+    input: &SubmittedTurnInput,
+    direct_user: bool,
+) -> CodexResult<Option<Option<AdaptiveWorkerConfigToml>>> {
+    if !direct_user {
+        return Ok(None);
+    }
+    let SubmittedTurnInput::UserInput { content, .. } = input else {
+        return Ok(None);
+    };
+    // Do not skip initial non-text input to discover a later authority header.
+    let first_text = match content.first() {
+        Some(UserInput::Text { text, .. }) => Some(text.as_str()),
+        _ => None,
+    };
+    session
+        .state
+        .lock()
+        .await
+        .first_worker_authority
+        .prepare(first_text)
+        .map_err(|error| CodexErr::InvalidRequest(format!("SETUP_BLOCKED: {error}")))
+}
+
+async fn accept_first_worker_authority(
+    session: &Session,
+    proposed: Option<Option<AdaptiveWorkerConfigToml>>,
+) {
+    session
+        .state
+        .lock()
+        .await
+        .first_worker_authority
+        .accept(proposed);
+}
+
 async fn start_or_steer(
     session: &Arc<Session>,
     request: WithTurnExtensionData<TurnInputRequest>,
@@ -334,6 +378,7 @@ async fn start_or_steer(
         ..
     } = request;
     let origin = UserInputOrigin::from_turn_trigger(start.turn_trigger.as_deref());
+    let direct_user = is_direct_user_origin(&start);
     let has_explicit_input = match &input {
         SubmittedTurnInput::UserInput { content, .. } => !content.is_empty(),
         SubmittedTurnInput::ResponseItem(ResponseItem::FunctionCallOutput {
@@ -347,6 +392,7 @@ async fn start_or_steer(
             ));
         }
     };
+    let proposed_worker = prepare_first_worker_authority(session, &input, direct_user).await?;
     let settings = PreparedTurnInputSettings::prepare(
         session,
         WithTurnExtensionData {
@@ -368,6 +414,7 @@ async fn start_or_steer(
         .await
     {
         Ok((turn_id, root_turn_id)) => {
+            accept_first_worker_authority(session, proposed_worker).await;
             settings.apply_steered(session, submission_id).await?;
             Ok(TurnInputSubmission::Steered {
                 turn_id,
@@ -403,6 +450,7 @@ async fn start_or_steer(
             else {
                 unreachable!("explicit user input can enter Plan mode");
             };
+            accept_first_worker_authority(session, proposed_worker).await;
             if let Some(responsesapi_client_metadata) = responsesapi_client_metadata {
                 turn_context
                     .turn_metadata_state
@@ -517,6 +565,19 @@ async fn start_if_idle(
         });
     }
 
+    let proposed_worker = if kind == TurnStartKind::User {
+        match prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await
+        {
+            Ok(proposal) => proposal,
+            Err(error) => {
+                session.clear_reserved_idle_turn(&turn_state).await;
+                return Err(error);
+            }
+        }
+    } else {
+        None
+    };
+
     let settings = match PreparedTurnInputSettings::prepare(
         session,
         WithTurnExtensionData {
@@ -549,6 +610,7 @@ async fn start_if_idle(
             return Err(error);
         }
     };
+    accept_first_worker_authority(session, proposed_worker).await;
     if let Some(responsesapi_client_metadata) = responsesapi_client_metadata {
         turn_context
             .turn_metadata_state
@@ -615,6 +677,8 @@ async fn steer(
             "only user input can steer a turn".to_string(),
         ));
     }
+    let proposed_worker =
+        prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await?;
     let settings = PreparedTurnInputSettings::prepare(
         session,
         WithTurnExtensionData {
@@ -636,6 +700,7 @@ async fn steer(
         .await
     {
         Ok((turn_id, root_turn_id)) => {
+            accept_first_worker_authority(session, proposed_worker).await;
             settings.apply_steered(session, submission_id).await?;
             Ok(TurnInputSubmission::Steered {
                 turn_id,

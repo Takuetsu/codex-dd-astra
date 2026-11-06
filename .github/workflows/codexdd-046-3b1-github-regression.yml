@@ -15,6 +15,10 @@ on:
       - codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs
       - codex-rs/core/src/tools/registry.rs
       - codex-rs/core/src/tools/registry_tests.rs
+      - codex-rs/core/src/session/worker_authority.rs
+      - codex-rs/core/src/session/turn_input.rs
+      - codex-rs/core/src/state/session.rs
+      - codex-rs/core/src/session/mod.rs
       - codex-rs/core/src/thread_manager_tests.rs
       - codex-rs/tui/src/session_state.rs
       - codex-rs/tui/src/chatwidget/adaptive_effort.rs
@@ -252,6 +256,23 @@ jobs:
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw '3B.2e shared authority parser regressions failed' }
+      - name: Execute 3B.2f Core first-message admission regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2f_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate Core Worker admission regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected three 3B.2f Core Worker regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw 'Core first-message regressions failed' }
       - name: Execute 3B.1 executable Worker and persistence regressions
         shell: pwsh
         working-directory: codex-rs
