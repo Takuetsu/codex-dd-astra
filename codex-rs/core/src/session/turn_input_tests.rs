@@ -1095,8 +1095,7 @@ async fn codexdd_046_3b2f_actual_first_core_user_turn_latches_role() {
     use codex_config::config_toml::AdaptiveWorkerRoleToml;
 
     let (session, _context, _rx) = make_session_and_context_with_rx().await;
-    let first =
-        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"test packet\"\n\nImplement.";
+    let first = "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"test packet\"\n\nImplement.";
     let submission = submit_start_only(
         &session,
         SubmittedTurnInput::UserInput {
@@ -1131,8 +1130,7 @@ async fn codexdd_046_3b2f_invalid_first_core_turn_can_retry_without_rebind() {
     use codex_config::config_toml::AdaptiveWorkerRoleToml;
 
     let (session, _context, _rx) = make_session_and_context_with_rx().await;
-    let invalid =
-        "[adaptive_worker]\nrole = \"wrong\"\nauthorized_scope = \"bad\"\n\nWork.";
+    let invalid = "[adaptive_worker]\nrole = \"wrong\"\nauthorized_scope = \"bad\"\n\nWork.";
     let first = handle(
         &session,
         TurnInputRequest::user_input(vec![UserInput::Text {
