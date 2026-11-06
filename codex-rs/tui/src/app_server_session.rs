@@ -3014,12 +3014,8 @@ mod tests {
             source_sha: Some(sha.clone()),
             task_kind: Some("source_change".to_string()),
         });
-        let local = thread_start_params_from_config(
-            &config,
-            ThreadParamsMode::Embedded,
-            None,
-            None,
-        );
+        let local =
+            thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
         let config_map = local.config.expect("launcher config map");
         let pinned = config_map
             .get("adaptive_worker")
@@ -3028,12 +3024,7 @@ mod tests {
         assert_eq!(pinned["source_sha"], serde_json::json!(sha));
         assert_eq!(pinned["task_kind"], "source_change");
 
-        let remote = thread_start_params_from_config(
-            &config,
-            ThreadParamsMode::Remote,
-            None,
-            None,
-        );
+        let remote = thread_start_params_from_config(&config, ThreadParamsMode::Remote, None, None);
         assert!(
             remote
                 .config
@@ -3049,12 +3040,8 @@ mod tests {
             source_sha: None,
             task_kind: None,
         });
-        let legacy = thread_start_params_from_config(
-            &config,
-            ThreadParamsMode::Embedded,
-            None,
-            None,
-        );
+        let legacy =
+            thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
         assert!(
             legacy
                 .config

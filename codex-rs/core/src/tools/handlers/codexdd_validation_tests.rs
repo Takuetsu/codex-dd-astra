@@ -453,7 +453,6 @@ fn path_component_sanitization_is_windows_safe() {
     assert_eq!(sanitize_path_component(""), "run");
 }
 
-
 #[test]
 fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() {
     use codex_config::config_toml::AdaptiveWorkerConfigToml;
@@ -597,7 +596,10 @@ fn native_authorized_target_keeps_legacy_unpinned_compatibility() {
     };
     let unpinned = temp.path();
     let sha = "a".repeat(40);
-    assert_eq!(validate_native_authorized_target(unpinned, None, &sha), Ok(()));
+    assert_eq!(
+        validate_native_authorized_target(unpinned, None, &sha),
+        Ok(())
+    );
     assert_eq!(
         validate_native_authorized_target(unpinned, Some(&old_binding), &sha),
         Ok(())

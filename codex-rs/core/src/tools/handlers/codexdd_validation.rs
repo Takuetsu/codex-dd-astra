@@ -581,10 +581,7 @@ fn validate_native_authorized_target(
     let Some(worker) = configured_worker else {
         return Ok(());
     };
-    if worker.source_root.is_none()
-        && worker.source_sha.is_none()
-        && worker.task_kind.is_none()
-    {
+    if worker.source_root.is_none() && worker.source_sha.is_none() && worker.task_kind.is_none() {
         return Ok(());
     }
     if !matches!(worker.task_kind.as_deref(), None | Some("source_change")) {
@@ -639,9 +636,11 @@ fn validate_native_authorized_target(
             .arg(&selected)
             .args(args)
             .output()
-            .map_err(|err| format!(
-                "SETUP_BLOCKED: cannot inspect Git for selected target ({err}). No profile ran."
-            ))?;
+            .map_err(|err| {
+                format!(
+                    "SETUP_BLOCKED: cannot inspect Git for selected target ({err}). No profile ran."
+                )
+            })?;
         if !output.status.success() {
             return Err(format!(
                 "SETUP_BLOCKED: native Git inspection failed (status {}). No profile ran.",
