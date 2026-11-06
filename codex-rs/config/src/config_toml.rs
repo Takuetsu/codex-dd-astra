@@ -241,7 +241,10 @@ pub fn parse_adaptive_worker_first_message(
         header.push('\n');
     }
     if !found_delimiter {
-        return Err("[adaptive_worker] must be followed by a blank line before the Worker assignment".to_string());
+        return Err(
+            "[adaptive_worker] must be followed by a blank line before the Worker assignment"
+                .to_string(),
+        );
     }
     if !lines.any(|line| !line.trim().is_empty()) {
         return Err("Worker assignment body must not be empty".to_string());
@@ -261,8 +264,8 @@ pub fn parse_adaptive_worker_first_message(
         source_sha: Option<String>,
         task_kind: Option<String>,
     }
-    let parsed: FirstMessageAssignment =
-        toml::from_str(&header).map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
+    let parsed: FirstMessageAssignment = toml::from_str(&header)
+        .map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
     let mut worker = AdaptiveWorkerConfigToml {
         role: parsed.adaptive_worker.role,
         authorized_scope: parsed.adaptive_worker.authorized_scope,
@@ -273,15 +276,24 @@ pub fn parse_adaptive_worker_first_message(
     if worker.role == AdaptiveWorkerRoleToml::Unspecified {
         return Err("Worker role must be implementation, validation, or repair".to_string());
     }
-    let scope = worker.authorized_scope.as_deref().unwrap_or_default().trim();
+    let scope = worker
+        .authorized_scope
+        .as_deref()
+        .unwrap_or_default()
+        .trim();
     if scope.is_empty() {
         return Err("adaptive Worker authorized_scope must not be empty".to_string());
     }
     worker.authorized_scope = Some(scope.to_string());
 
     let task_kind = worker.task_kind.as_deref().unwrap_or("source_change");
-    if !matches!(task_kind, "source_change" | "operations_preview" | "benchmark") {
-        return Err(format!("invalid Worker task_kind '{task_kind}'; expected source_change, operations_preview or benchmark"));
+    if !matches!(
+        task_kind,
+        "source_change" | "operations_preview" | "benchmark"
+    ) {
+        return Err(format!(
+            "invalid Worker task_kind '{task_kind}'; expected source_change, operations_preview or benchmark"
+        ));
     }
     match (worker.source_root.as_deref(), worker.source_sha.as_deref()) {
         (None, None) if task_kind == "source_change" => {}
@@ -289,7 +301,9 @@ pub fn parse_adaptive_worker_first_message(
             let root = root.trim();
             let sha = sha.trim();
             if !Path::new(root).is_absolute() {
-                return Err("Worker source_root must be an absolute authorized worktree path".to_string());
+                return Err(
+                    "Worker source_root must be an absolute authorized worktree path".to_string(),
+                );
             }
             if sha.len() != 40 || !sha.bytes().all(|ch| ch.is_ascii_hexdigit()) {
                 return Err("Worker source_sha must be an exact 40-character Git SHA".to_string());

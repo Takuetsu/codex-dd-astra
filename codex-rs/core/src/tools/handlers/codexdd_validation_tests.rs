@@ -786,11 +786,13 @@ fn codexdd_046_3b2e_core_first_header_decoder_does_not_grant_tool_authority() {
         binding.source_sha.as_deref(),
         Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     );
-    assert!(native_mechanical_source_authority_blocker(
-        Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER),
-        None,
-    )
-    .is_some());
+    assert!(
+        native_mechanical_source_authority_blocker(
+            Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER),
+            None,
+        )
+        .is_some()
+    );
 }
 
 #[test]
@@ -798,7 +800,9 @@ fn codexdd_046_3b2e_core_first_header_decoder_rejects_unsafe_headers() {
     use codex_config::config_toml::parse_adaptive_worker_first_message;
 
     assert_eq!(
-        parse_adaptive_worker_first_message("Normal task.\n[adaptive_worker]\nrole = \"implementation\""),
+        parse_adaptive_worker_first_message(
+            "Normal task.\n[adaptive_worker]\nrole = \"implementation\""
+        ),
         Ok(None)
     );
     for text in [
