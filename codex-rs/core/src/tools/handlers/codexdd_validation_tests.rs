@@ -729,15 +729,9 @@ fn codexdd_046_3b2d_protected_mechanical_requires_core_bound_source() {
     );
     // A pinned Validation or Repair role cannot acquire Implementation authority.
     pinned.role = AdaptiveWorkerRoleToml::Validation;
-    assert!(
-        native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned))
-            .is_some()
-    );
+    assert!(native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned)).is_some());
     pinned.role = AdaptiveWorkerRoleToml::Repair;
-    assert!(
-        native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned))
-            .is_some()
-    );
+    assert!(native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned)).is_some());
 }
 
 #[test]
