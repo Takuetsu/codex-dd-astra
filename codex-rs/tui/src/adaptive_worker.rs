@@ -243,8 +243,7 @@ pub(crate) fn parse_adaptive_worker_assignment(
 pub(crate) fn parse_adaptive_worker_assignment_with_preflight(
     text: &str,
 ) -> Result<Option<(AdaptiveWorkerContext, Option<AdaptiveWorkerPreflight>)>, String> {
-    let Some(binding) =
-        codex_config::config_toml::parse_adaptive_worker_first_message(text)?
+    let Some(binding) = codex_config::config_toml::parse_adaptive_worker_first_message(text)?
     else {
         return Ok(None);
     };
