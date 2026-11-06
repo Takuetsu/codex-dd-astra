@@ -17,6 +17,7 @@ on:
       - codex-rs/core/src/tools/registry_tests.rs
       - codex-rs/core/src/session/worker_authority.rs
       - codex-rs/core/src/session/turn_input.rs
+      - codex-rs/core/src/session/turn_input_tests.rs
       - codex-rs/core/src/state/session.rs
       - codex-rs/core/src/session/mod.rs
       - codex-rs/core/src/thread_manager_tests.rs
@@ -216,7 +217,7 @@ jobs:
             $listing | Out-Host
             throw 'Cannot enumerate 3B.2 Core regressions'
           }
-          if (($listing -join "`n") -notmatch '3 tests, 0 benchmarks') {
+          if (($listing -join "`n") -notmatch '5 tests, 0 benchmarks') {
             $listing | Out-Host
             throw 'Expected exactly three 3B.2 Core regressions'
           }
@@ -269,7 +270,7 @@ jobs:
           }
           if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
             $listing | Out-Host
-            throw 'Expected three 3B.2f Core Worker regressions'
+            throw 'Expected five 3B.2f Core Worker regressions'
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw 'Core first-message regressions failed' }
