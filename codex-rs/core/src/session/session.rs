@@ -340,6 +340,7 @@ impl SessionConfiguration {
             personality: self.step_settings.personality,
             collaboration_mode: self.step_settings.collaboration_mode.clone(),
             disabled_plugin_ids: self.disabled_plugin_ids.clone(),
+            codexdd_first_worker: None,
         }
     }
 

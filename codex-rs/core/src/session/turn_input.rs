@@ -351,12 +351,18 @@ async fn accept_first_worker_authority(
     session: &Session,
     proposed: Option<Option<AdaptiveWorkerConfigToml>>,
 ) {
-    session
-        .state
-        .lock()
-        .await
-        .first_worker_authority
-        .accept(proposed);
+    let accepted_first_binding = {
+        let mut state = session.state.lock().await;
+        state.first_worker_authority.accept(proposed)
+            && state.first_worker_authority.first_user_snapshot().is_some()
+    };
+    if accepted_first_binding
+        && let Err(error) = session.checkpoint_thread_settings().await
+    {
+        // Missing durability must never be repaired by replaying user text.
+        // The separate protected native LVO source gate remains closed.
+        tracing::warn!(%error, "first user Worker authority checkpoint failed");
+    }
 }
 
 async fn start_or_steer(

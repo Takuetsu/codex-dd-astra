@@ -18,6 +18,7 @@ on:
       - codex-rs/core/src/session/worker_authority.rs
       - codex-rs/core/src/session/turn_input.rs
       - codex-rs/core/src/session/turn_input_tests.rs
+      - codex-rs/protocol/src/protocol.rs
       - codex-rs/core/src/state/session.rs
       - codex-rs/core/src/session/mod.rs
       - codex-rs/core/src/thread_manager_tests.rs
@@ -274,6 +275,23 @@ jobs:
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw 'Core first-message regressions failed' }
+      - name: Execute 3B.2g Core Worker persistence snapshot regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2g_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate Core Worker snapshot regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly three 3B.2g Core snapshot regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw 'Core first-message snapshot regressions failed' }
       - name: Execute 3B.1 executable Worker and persistence regressions
         shell: pwsh
         working-directory: codex-rs

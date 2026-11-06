@@ -2267,6 +2267,24 @@ pub struct ThreadSettingsAppliedEvent {
     pub thread_settings: ThreadSettingsSnapshot,
 }
 
+/// Accepted first user-origin Worker authority, serialized only by Core.
+/// This is not a model-generated response or permission override.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]
+#[serde(deny_unknown_fields)]
+pub struct CodexddFirstWorkerSnapshot {
+    pub role: String,
+    pub authorized_scope: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub source_sha: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub task_kind: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema, TS)]
 pub struct ThreadSettingsSnapshot {
     pub model: String,
@@ -2296,6 +2314,10 @@ pub struct ThreadSettingsSnapshot {
     /// Thread-owned plugin selection, retained even when a plugin is unavailable.
     #[serde(default)]
     pub disabled_plugin_ids: Vec<String>,
+    /// First-accepted user Worker authority written by Core, never by model text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub codexdd_first_worker: Option<CodexddFirstWorkerSnapshot>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq, JsonSchema, TS)]

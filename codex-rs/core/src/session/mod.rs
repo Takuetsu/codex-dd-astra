@@ -1605,10 +1605,37 @@ impl Session {
             )
         };
         let has_prior_user_turns = initial_history_has_prior_user_turns(&conversation_history);
+        let saved_first_worker = if has_prior_user_turns {
+            match &conversation_history {
+                InitialHistory::Resumed(resumed) => resumed
+                    .history
+                    .iter()
+                    .rev()
+                    .find_map(|item| match item {
+                        RolloutItem::EventMsg(EventMsg::ThreadSettingsApplied(event))
+                            if event.thread_id == Some(resumed.conversation_id) =>
+                        {
+                            Some(event.thread_settings.codexdd_first_worker.clone())
+                        }
+                        _ => None,
+                    })
+                    .flatten(),
+                InitialHistory::New | InitialHistory::Cleared | InitialHistory::Forked(_) => None,
+            }
+        } else {
+            None
+        };
         {
             let mut state = self.state.lock().await;
             state.set_next_turn_is_first(!has_prior_user_turns);
             if has_prior_user_turns {
+                if let Some(snapshot) = saved_first_worker
+                    && let Err(error) = state
+                        .first_worker_authority
+                        .restore_first_user_snapshot(&snapshot)
+                {
+                    warn!(%error, "refused invalid persisted Core Worker authority");
+                }
                 state.first_worker_authority.lock_after_prior_user_history();
             }
         }
@@ -1979,11 +2006,13 @@ impl Session {
             }
             let new_config = notify_config_contributors
                 .then(|| self.build_effective_session_config(&state.session_configuration));
+            let mut snapshot = state
+                .session_configuration
+                .thread_settings_snapshot(&state.session_configuration.environments);
+            snapshot.codexdd_first_worker = state.first_worker_authority.first_user_snapshot();
             let commit = SessionSettingsCommit {
                 configuration: state.session_configuration.clone(),
-                snapshot: state
-                    .session_configuration
-                    .thread_settings_snapshot(&state.session_configuration.environments),
+                snapshot,
             };
             (
                 commit,
@@ -2027,9 +2056,11 @@ impl Session {
 
     pub(crate) async fn thread_settings_snapshot(&self) -> ThreadSettingsSnapshot {
         let state = self.state.lock().await;
-        state
+        let mut snapshot = state
             .session_configuration
-            .thread_settings_snapshot(&state.session_configuration.environments)
+            .thread_settings_snapshot(&state.session_configuration.environments);
+        snapshot.codexdd_first_worker = state.first_worker_authority.first_user_snapshot();
+        snapshot
     }
 
     pub(crate) async fn restorable_thread_settings(&self) -> CodexThreadSettingsOverrides {
