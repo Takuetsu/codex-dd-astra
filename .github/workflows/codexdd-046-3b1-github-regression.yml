@@ -11,6 +11,8 @@ on:
       - codex-rs/config/src/config_toml.rs
       - codex-rs/tui/src/adaptive_worker.rs
       - codex-rs/tui/src/app_server_session.rs
+      - codex-rs/core/src/tools/handlers/codexdd_validation.rs
+      - codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs
       - codex-rs/tui/src/session_state.rs
       - codex-rs/tui/src/chatwidget/adaptive_effort.rs
       - codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs
@@ -74,6 +76,12 @@ jobs:
               "codex-rs/tui/src/app_server_session.rs": (
                   "configured_worker_binding",
                   "worker_assignment_locked = lock_assignment",
+                  "pinned_startup_worker_source_is_transmitted_only_to_embedded_core",
+              ),
+              "codex-rs/core/src/tools/handlers/codexdd_validation.rs": (
+                  "validate_native_authorized_target",
+                  "source_identity_mismatch",
+                  "source_identity_changed",
               ),
               "codex-rs/tui/src/session_state.rs": (
                   "persisted pinned source requires locked Worker role",
@@ -165,6 +173,29 @@ jobs:
         run: |
           cargo check --locked -p codex-tui --lib --tests
           if ($LASTEXITCODE -ne 0) { throw '3B.1 Windows TUI compile failed' }
+      - name: Compile native Core LVO regression test sources
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          cargo check --locked -p codex-core --lib --tests
+          if ($LASTEXITCODE -ne 0) { throw '3B.1c Core native validation tests did not compile' }
+      - name: Execute Core native exact-target regression tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'native_authorized_target'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate Core source identity tests'
+          }
+          if (($listing -join "`n") -notmatch '2 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly two Core source identity tests'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw 'Native Core source identity regression failed' }
       - name: Execute 3B.1 executable Worker and persistence regressions
         shell: pwsh
         working-directory: codex-rs
@@ -174,7 +205,8 @@ jobs:
             'pinned_',
             'source_pin_survives_adaptive_activation_and_new_model_route',
             'source_pins_restore_and_partial_pins_are_rejected',
-            'startup_worker_authority_is_checked_before_any_thread_starts'
+            'startup_worker_authority_is_checked_before_any_thread_starts',
+            'pinned_startup_worker_source_is_transmitted_only_to_embedded_core'
           )
           foreach ($filter in $filters) {
             Write-Host "::group::Cargo test filter $filter"

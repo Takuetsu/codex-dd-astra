@@ -209,7 +209,6 @@ impl CodexDDValidationHandler {
         // Keep preflight errors as a typed, non-PASS LVO tool completion. A generic
         // tool-call exception would disappear from the native receipt registry,
         // leaving an unfinished Mechanical Validation Worker in retry pressure.
-        let profile_error = validate_repository_profile(&repository_root, args.profile).err();
         let script_path = repository_root
             .join("scripts")
             .join(args.profile.script_name());
@@ -230,7 +229,22 @@ impl CodexDDValidationHandler {
         let branch = git_info.branch;
 
         let run_id = validation_run_id(&invocation.call_id);
-        if let Some(message) = profile_error {
+        // Core is the authority for where the native LVO profile really runs.
+        // A TUI-only preflight is insufficient if the session CWD changes or
+        // differs from the delegate's execution environment.
+        let admission_error = validate_native_authorized_target(
+            &repository_root,
+            invocation.turn.config.adaptive_worker.as_ref(),
+            &head_sha,
+        )
+        .err()
+        .map(|message| ("source_identity_mismatch", message))
+        .or_else(|| {
+            validate_repository_profile(&repository_root, args.profile)
+                .err()
+                .map(|message| ("profile_unavailable", message))
+        });
+        if let Some((error_type, message)) = admission_error {
             // No repository validation script is executed, and an ERROR can never
             // become a successful work-packet receipt or repair fingerprint.
             let codex_home = invocation.turn.config.codex_home.to_path_buf();
@@ -244,7 +258,7 @@ impl CodexDDValidationHandler {
                 exit_code: 2,
                 stages: Vec::new(),
                 failed_stage: None,
-                error_type: Some("profile_unavailable".to_string()),
+                error_type: Some(error_type.to_string()),
                 message: Some(message),
                 log_path: final_log_path.display().to_string(),
             };
@@ -390,6 +404,20 @@ impl CodexDDValidationHandler {
             summary.message = Some(err.to_string());
         } else {
             enforce_native_exit_consistency(&mut summary, native_exit_code);
+            // A repository-owned script can run tests, but it must not move the
+            // candidate HEAD or dirty a pinned source and retain a PASS receipt.
+            if summary.status == "pass"
+                && let Err(message) = validate_native_authorized_target(
+                    &repository_root,
+                    invocation.turn.config.adaptive_worker.as_ref(),
+                    &head_sha,
+                )
+            {
+                summary.status = "error".to_string();
+                summary.exit_code = 2;
+                summary.error_type = Some("source_identity_changed".to_string());
+                summary.message = Some(message);
+            }
         }
 
         emit_validation_result(
@@ -537,6 +565,126 @@ fn find_active_repository_root(cwd: &Path) -> Result<PathBuf, String> {
             "CodexDD validation requires a Git worktree; no .git root was found above the active working directory. No validation was run."
                 .to_string()
         })
+}
+
+/// Fail closed when a launcher-pinned Worker asks the Core LVO handler to
+/// execute a profile against the wrong checkout. All Git commands are read-only
+/// and run against the *selected* root; the binding never selects another path.
+///
+/// Legacy unpinned Workers retain their existing admission behavior until the
+/// separate 3B.2 first-message authority bridge is implemented.
+fn validate_native_authorized_target(
+    repository_root: &Path,
+    configured_worker: Option<&codex_config::config_toml::AdaptiveWorkerConfigToml>,
+    observed_head_sha: &str,
+) -> Result<(), String> {
+    let Some(worker) = configured_worker else {
+        return Ok(());
+    };
+    if worker.source_root.is_none()
+        && worker.source_sha.is_none()
+        && worker.task_kind.is_none()
+    {
+        return Ok(());
+    }
+    if !matches!(worker.task_kind.as_deref(), None | Some("source_change")) {
+        return Err(
+            "SETUP_BLOCKED: operations/benchmark Worker cannot execute source MechanicalValidation. No profile ran."
+                .to_string(),
+        );
+    }
+    let (Some(expected_root), Some(expected_sha)) =
+        (worker.source_root.as_deref(), worker.source_sha.as_deref())
+    else {
+        return Err(
+            "SETUP_BLOCKED: native LVO requires source_root and source_sha together for a pinned Worker. No profile ran."
+                .to_string(),
+        );
+    };
+    let expected_path = Path::new(expected_root.trim());
+    let expected_sha = expected_sha.trim();
+    if !expected_path.is_absolute()
+        || expected_sha.len() != 40
+        || !expected_sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
+        return Err(
+            "SETUP_BLOCKED: native LVO source root/SHA binding is invalid. No profile ran."
+                .to_string(),
+        );
+    }
+    let selected = repository_root.canonicalize().map_err(|err| {
+        format!(
+            "SETUP_BLOCKED: cannot resolve selected native worktree {} ({err}). No profile ran.",
+            repository_root.display()
+        )
+    })?;
+    let expected = expected_path.canonicalize().map_err(|err| {
+        format!(
+            "SETUP_BLOCKED: cannot resolve authorized worktree {} ({err}). No profile ran.",
+            expected_path.display()
+        )
+    })?;
+    if selected != expected {
+        return Err(format!(
+            "SETUP_BLOCKED: native LVO selected {} but authorized target is {} at SHA {}. No profile ran.",
+            selected.display(),
+            expected.display(),
+            expected_sha
+        ));
+    }
+
+    let git = |args: &[&str]| -> Result<String, String> {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&selected)
+            .args(args)
+            .output()
+            .map_err(|err| format!(
+                "SETUP_BLOCKED: cannot inspect Git for selected target ({err}). No profile ran."
+            ))?;
+        if !output.status.success() {
+            return Err(format!(
+                "SETUP_BLOCKED: native Git inspection failed (status {}). No profile ran.",
+                output.status
+            ));
+        }
+        String::from_utf8(output.stdout).map_err(|_| {
+            "SETUP_BLOCKED: Git inspection produced non-UTF8 output. No profile ran.".to_string()
+        })
+    };
+
+    let git_root = git(&["rev-parse", "--show-toplevel"])?;
+    let verified_git_root = Path::new(git_root.trim()).canonicalize().map_err(|err| {
+        format!("SETUP_BLOCKED: cannot resolve Git-reported worktree ({err}). No profile ran.")
+    })?;
+    if verified_git_root != selected {
+        return Err(format!(
+            "SETUP_BLOCKED: Git reports {} but native LVO selected {}. No profile ran.",
+            verified_git_root.display(),
+            selected.display()
+        ));
+    }
+    let current_sha = git(&["rev-parse", "HEAD"])?;
+    if !current_sha.trim().eq_ignore_ascii_case(observed_head_sha)
+        || !current_sha.trim().eq_ignore_ascii_case(expected_sha)
+    {
+        return Err(format!(
+            "SETUP_BLOCKED: native candidate at {} has HEAD {} but authorized source SHA is {}; no profile ran.",
+            selected.display(),
+            current_sha.trim(),
+            expected_sha
+        ));
+    }
+    if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?
+        .trim()
+        .is_empty()
+    {
+        return Err(format!(
+            "SETUP_BLOCKED: native candidate {} has staged/unstaged/untracked changes. Preserve edits and checkpoint an exact candidate before validation.",
+            selected.display()
+        ));
+    }
+    Ok(())
 }
 
 fn validate_repository_profile(

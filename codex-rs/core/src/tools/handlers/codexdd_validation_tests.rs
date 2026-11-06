@@ -452,3 +452,154 @@ fn path_component_sanitization_is_windows_safe() {
     assert_eq!(sanitize_path_component("call:42/abc?x"), "call_42_abc_x");
     assert_eq!(sanitize_path_component(""), "run");
 }
+
+
+#[test]
+fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use std::process::Command;
+
+    let temp = tempdir().expect("fixture");
+    let milestone = temp.path().join("milestone");
+    fs::create_dir_all(&milestone).expect("create milestone");
+    let git = |root: &Path, args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .expect("git must be installed for preflight regression");
+        assert!(
+            output.status.success(),
+            "git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("Git response UTF8")
+    };
+    git(&milestone, &["init", "-q"]);
+    git(
+        &milestone,
+        &[
+            "-c",
+            "user.name=CodexDD Fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "source anchor",
+        ],
+    );
+    let nested = milestone.join(".worktrees").join("candidate");
+    git(
+        &milestone,
+        &[
+            "worktree",
+            "add",
+            "--detach",
+            nested.to_str().expect("UTF8 path"),
+            "HEAD",
+        ],
+    );
+    let sha = git(&nested, &["rev-parse", "HEAD"]).trim().to_string();
+    let binding = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Implementation,
+        authorized_scope: Some("approved nested candidate".to_string()),
+        source_root: Some(nested.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("source_change".to_string()),
+    };
+    assert_eq!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha),
+        Ok(())
+    );
+    assert!(
+        validate_native_authorized_target(&milestone, Some(&binding), &sha)
+            .expect_err("wrong selected root must not fall back")
+            .contains("native LVO selected")
+    );
+
+    let mut wrong_sha = binding.clone();
+    wrong_sha.source_sha = Some("f".repeat(40));
+    assert!(
+        validate_native_authorized_target(&nested, Some(&wrong_sha), &sha)
+            .expect_err("wrong candidate")
+            .contains("authorized source SHA")
+    );
+
+    let mut benchmark = binding.clone();
+    benchmark.task_kind = Some("benchmark".to_string());
+    assert!(
+        validate_native_authorized_target(&nested, Some(&benchmark), &sha)
+            .expect_err("benchmark must not enter mechanical source validation")
+            .contains("operations/benchmark Worker")
+    );
+
+    let mut incomplete = binding.clone();
+    incomplete.source_sha = None;
+    assert!(
+        validate_native_authorized_target(&nested, Some(&incomplete), &sha)
+            .expect_err("partial pin must not validate")
+            .contains("source_root and source_sha together")
+    );
+
+    fs::write(nested.join("candidate.txt"), "preserve edits").expect("fixture edits");
+    git(&nested, &["add", "candidate.txt"]);
+    assert!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha)
+            .expect_err("staged candidate cannot receive exact SHA proof")
+            .contains("Preserve edits")
+    );
+    assert_eq!(
+        fs::read_to_string(nested.join("candidate.txt")).expect("edit intact"),
+        "preserve edits"
+    );
+    git(&nested, &["reset", "--quiet", "--", "candidate.txt"]);
+    fs::remove_file(nested.join("candidate.txt")).expect("fixture cleanup");
+    assert_eq!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha),
+        Ok(())
+    );
+
+    git(
+        &nested,
+        &[
+            "-c",
+            "user.name=CodexDD Fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "new candidate HEAD",
+        ],
+    );
+    assert!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha)
+            .expect_err("post-exec SHA drift cannot retain PASS")
+            .contains("authorized source SHA")
+    );
+}
+
+#[test]
+fn native_authorized_target_keeps_legacy_unpinned_compatibility() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("fixture");
+    let old_binding = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Implementation,
+        authorized_scope: Some("legacy source work".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+    };
+    let unpinned = temp.path();
+    let sha = "a".repeat(40);
+    assert_eq!(validate_native_authorized_target(unpinned, None, &sha), Ok(()));
+    assert_eq!(
+        validate_native_authorized_target(unpinned, Some(&old_binding), &sha),
+        Ok(())
+    );
+}

@@ -2059,6 +2059,19 @@ fn config_request_overrides_from_config(
     if config.bypass_hook_trust {
         overrides.insert("bypass_hook_trust".to_string(), true.into());
     }
+    // The TUI launcher may construct an immutable Worker pin after loading
+    // config layers (for example when starting a managed nested worktree).
+    // Propagate a pinned binding to the embedded Core runtime; otherwise the
+    // native LVO handler would still use its own nearest-CWD Git root.
+    // Do not leak local host paths to a remote backend.
+    if thread_params_mode == ThreadParamsMode::Embedded
+        && let Some(binding) = config.adaptive_worker.as_ref()
+        && (binding.source_root.is_some()
+            || binding.source_sha.is_some()
+            || binding.task_kind.is_some())
+    {
+        overrides.insert("adaptive_worker".to_string(), serde_json::json!(binding));
+    }
     Some(overrides)
 }
 
@@ -2979,6 +2992,76 @@ mod tests {
                 "{message}"
             );
         }
+    }
+
+    #[tokio::test]
+    async fn pinned_startup_worker_source_is_transmitted_only_to_embedded_core() {
+        use codex_config::config_toml::AdaptiveWorkerConfigToml;
+        use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+        let temp = tempfile::tempdir().expect("tempdir");
+        let mut config = build_config(&temp).await;
+        let root = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let sha = "a".repeat(40);
+        config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("approved isolated candidate".to_string()),
+            source_root: Some(root.to_string()),
+            source_sha: Some(sha.clone()),
+            task_kind: Some("source_change".to_string()),
+        });
+        let local = thread_start_params_from_config(
+            &config,
+            ThreadParamsMode::Embedded,
+            None,
+            None,
+        );
+        let config_map = local.config.expect("launcher config map");
+        let pinned = config_map
+            .get("adaptive_worker")
+            .expect("native core must receive startup pin");
+        assert_eq!(pinned["source_root"], serde_json::json!(root));
+        assert_eq!(pinned["source_sha"], serde_json::json!(sha));
+        assert_eq!(pinned["task_kind"], "source_change");
+
+        let remote = thread_start_params_from_config(
+            &config,
+            ThreadParamsMode::Remote,
+            None,
+            None,
+        );
+        assert!(
+            remote
+                .config
+                .as_ref()
+                .is_none_or(|config| !config.contains_key("adaptive_worker")),
+            "local host source paths must not be transmitted to remote runtimes"
+        );
+
+        config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("legacy unpinned worker".to_string()),
+            source_root: None,
+            source_sha: None,
+            task_kind: None,
+        });
+        let legacy = thread_start_params_from_config(
+            &config,
+            ThreadParamsMode::Embedded,
+            None,
+            None,
+        );
+        assert!(
+            legacy
+                .config
+                .as_ref()
+                .is_none_or(|config| !config.contains_key("adaptive_worker")),
+            "old Workers must retain prior startup override behavior"
+        );
     }
 
     #[tokio::test]
