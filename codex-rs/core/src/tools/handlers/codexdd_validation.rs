@@ -242,7 +242,7 @@ impl CodexDDValidationHandler {
         .or_else(|| {
             validate_repository_profile(&repository_root, args.profile)
                 .err()
-                .map(|message| ("profile_unavailable", message))
+                .map(|message| ("profile_unavailable", format!("SETUP_BLOCKED: {message}")))
         });
         if let Some((error_type, message)) = admission_error {
             // No repository validation script is executed, and an ERROR can never
@@ -581,8 +581,29 @@ fn validate_native_authorized_target(
     let Some(worker) = configured_worker else {
         return Ok(());
     };
+    // Recheck Implementation-only tool authority at the native handler boundary.
+    // A Validation/Repair Worker must not acquire LVO access from a direct call.
+    if matches!(
+        &worker.role,
+        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+            | codex_config::config_toml::AdaptiveWorkerRoleToml::Repair
+    ) {
+        return Err(
+            "SETUP_BLOCKED: Validation/Repair Worker cannot run the Implementation-only native LVO profile. No profile ran, PASS receipt, or repair authorization was issued."
+                .to_string(),
+        );
+    }
     if worker.source_root.is_none() && worker.source_sha.is_none() && worker.task_kind.is_none() {
         return Ok(());
+    }
+    if !matches!(
+        &worker.role,
+        codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+    ) {
+        return Err(
+            "SETUP_BLOCKED: pinned native LVO requires an explicitly bound Implementation Worker role. No profile ran."
+                .to_string(),
+        );
     }
     if !matches!(worker.task_kind.as_deref(), None | Some("source_change")) {
         return Err(

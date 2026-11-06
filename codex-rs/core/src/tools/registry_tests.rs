@@ -1165,3 +1165,36 @@ fn test_invocation(
         },
     }
 }
+
+#[test]
+fn codexdd_046_3b2_mechanical_node_rust_commands_remain_bounded() {
+    for command in [
+        "npm run typecheck",
+        "npm run validation:focused",
+        "cargo check --locked -p codex-core --lib --tests",
+        "cargo test --locked -p codex-core --lib",
+        "cargo fmt -- --check",
+    ] {
+        assert!(
+            adaptive_mechanical_validation_shell_command_allowed(command),
+            "approved bounded mechanical command rejected: {command}"
+        );
+    }
+
+    for command in [
+        "npm install",
+        "npm run deploy",
+        "npm run test -- --update",
+        "cargo install ripgrep",
+        "cargo fmt",
+        "powershell.exe -NoProfile -File scripts/codexdd-test-workpacket.ps1",
+        "npm run test; git reset --hard",
+        "npm run lint > forged-pass.log",
+        "cargo check && git clean -fd",
+    ] {
+        assert!(
+            !adaptive_mechanical_validation_shell_command_allowed(command),
+            "unsafe or receipt-impersonating mechanical command allowed: {command}"
+        );
+    }
+}

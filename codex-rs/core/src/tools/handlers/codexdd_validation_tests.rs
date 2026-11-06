@@ -605,3 +605,44 @@ fn native_authorized_target_keeps_legacy_unpinned_compatibility() {
         Ok(())
     );
 }
+
+#[test]
+fn codexdd_046_3b2_native_role_gate_rejects_independent_workers() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("role fixture");
+    let sha = "a".repeat(40);
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("independent owner QA".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+    };
+    for role in [
+        AdaptiveWorkerRoleToml::Validation,
+        AdaptiveWorkerRoleToml::Repair,
+    ] {
+        worker.role = role;
+        let blocker = validate_native_authorized_target(temp.path(), Some(&worker), &sha)
+            .expect_err("independent role must not enter Implementation-only LVO");
+        assert!(blocker.starts_with("SETUP_BLOCKED:"));
+        assert!(blocker.contains("Validation/Repair Worker"));
+        assert!(blocker.contains("No profile ran"));
+    }
+
+    worker.role = AdaptiveWorkerRoleToml::Unspecified;
+    worker.source_root = Some(temp.path().display().to_string());
+    worker.source_sha = Some(sha.clone());
+    worker.task_kind = Some("source_change".to_string());
+    let blocker = validate_native_authorized_target(temp.path(), Some(&worker), &sha)
+        .expect_err("pinned source without Implementation role must fail closed");
+    assert!(blocker.contains("explicitly bound Implementation Worker"));
+
+    worker.role = AdaptiveWorkerRoleToml::Implementation;
+    worker.source_sha = None;
+    let blocker = validate_native_authorized_target(temp.path(), Some(&worker), &sha)
+        .expect_err("partial pin must never be accepted");
+    assert!(blocker.contains("source_root and source_sha together"));
+}
