@@ -699,3 +699,73 @@ fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_bloc
         );
     }
 }
+
+#[test]
+fn codexdd_046_3b2d_protected_mechanical_requires_core_bound_source() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let trigger = codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+    let legacy = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Implementation,
+        authorized_scope: Some("legacy without native pin".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+    };
+    for worker in [None, Some(&legacy)] {
+        let blocker = native_mechanical_source_authority_blocker(Some(trigger), worker)
+            .expect("missing Core binding must stop protected native validation");
+        assert!(blocker.starts_with("SETUP_BLOCKED:"));
+        assert!(blocker.contains("Core-bound"));
+        assert!(blocker.contains("No profile ran"));
+    }
+    let mut pinned = legacy;
+    pinned.source_root = Some("C:\\authorized\\worktree".to_string());
+    pinned.source_sha = Some("a".repeat(40));
+    assert_eq!(
+        native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned)),
+        None
+    );
+    // A pinned Validation or Repair role cannot acquire Implementation authority.
+    pinned.role = AdaptiveWorkerRoleToml::Validation;
+    assert!(
+        native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned))
+            .is_some()
+    );
+    pinned.role = AdaptiveWorkerRoleToml::Repair;
+    assert!(
+        native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned))
+            .is_some()
+    );
+}
+
+#[test]
+fn codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair() {
+    let trigger = codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+    let message = native_mechanical_source_authority_blocker(Some(trigger), None)
+        .expect("unbound protected validation must block");
+    let summary = native_setup_blocker_summary(
+        ValidationProfile::WorkPacket,
+        "source_authority_unavailable",
+        message,
+        Path::new("isolated-validation.log"),
+    );
+    assert_eq!(summary.status, "error");
+    assert_eq!(summary.exit_code, 2);
+    assert_eq!(summary.failed_stage, None);
+    assert!(summary.stages.is_empty());
+    assert_eq!(
+        summary.error_type.as_deref(),
+        Some("source_authority_unavailable")
+    );
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::WorkPacket, &summary),
+        None
+    );
+    assert_eq!(
+        native_mechanical_source_authority_blocker(Some("user"), None),
+        None
+    );
+    assert_eq!(native_mechanical_source_authority_blocker(None, None), None);
+}

@@ -218,6 +218,23 @@ jobs:
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw '3B.2 Core role/profile/command regressions failed' }
+      - name: Execute 3B.2d fail-closed Core source-authority regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2d_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2d Core regressions'
+          }
+          if (($listing -join "`n") -notmatch '2 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly two 3B.2d Core regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2d unbound Core authority regression failed' }
       - name: Execute 3B.1 executable Worker and persistence regressions
         shell: pwsh
         working-directory: codex-rs

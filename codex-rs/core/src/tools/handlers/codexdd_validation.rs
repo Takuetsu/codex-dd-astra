@@ -279,6 +279,16 @@ impl CodexDDValidationHandler {
         .err()
         .map(|message| ("source_identity_mismatch", message))
         .or_else(|| {
+            native_mechanical_source_authority_blocker(
+                codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+                    invocation.turn.turn_metadata_state.as_ref(),
+                )
+                .as_deref(),
+                invocation.turn.config.adaptive_worker.as_ref(),
+            )
+            .map(|message| ("source_authority_unavailable", message))
+        })
+        .or_else(|| {
             validate_repository_profile(&repository_root, args.profile)
                 .err()
                 .map(|message| ("profile_unavailable", format!("SETUP_BLOCKED: {message}")))
@@ -633,12 +643,44 @@ fn find_active_repository_root(cwd: &Path) -> Result<PathBuf, String> {
         })
 }
 
+/// The adaptive MechanicalValidation turn trigger is a protected lifecycle
+/// request, not permission to infer source authority from model text or the
+/// nearest repository. Missing Core-bound source authority is a setup blocker,
+/// never a failed test or a reason to repair another worktree. Ordinary direct
+/// LVO calls retain their legacy behavior while the trusted first-turn bridge
+/// is implemented.
+fn native_mechanical_source_authority_blocker(
+    turn_trigger: Option<&str>,
+    configured_worker: Option<&codex_config::config_toml::AdaptiveWorkerConfigToml>,
+) -> Option<String> {
+    if turn_trigger != Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {
+        return None;
+    }
+    let authorized = configured_worker.is_some_and(|worker| {
+        matches!(
+            &worker.role,
+            codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+        ) && worker
+            .source_root
+            .as_deref()
+            .is_some_and(|root| !root.trim().is_empty())
+            && worker
+                .source_sha
+                .as_deref()
+                .is_some_and(|sha| !sha.trim().is_empty())
+    });
+    (!authorized).then(|| {
+        "SETUP_BLOCKED: protected MechanicalValidation has no trusted Core-bound Implementation Worker source_root and source_sha. A TUI-only first-message pin or unbound legacy Worker cannot authorize a native profile. No profile ran, PASS receipt, or automatic source repair was issued."
+            .to_string()
+    })
+}
+
 /// Fail closed when a launcher-pinned Worker asks the Core LVO handler to
 /// execute a profile against the wrong checkout. All Git commands are read-only
 /// and run against the *selected* root; the binding never selects another path.
 ///
-/// Legacy unpinned Workers retain their existing admission behavior until the
-/// separate 3B.2 first-message authority bridge is implemented.
+/// Legacy unpinned direct LVO calls remain compatible. Protected adaptive
+/// MechanicalValidation calls are separately required to have Core authority.
 fn validate_native_authorized_target(
     repository_root: &Path,
     configured_worker: Option<&codex_config::config_toml::AdaptiveWorkerConfigToml>,
