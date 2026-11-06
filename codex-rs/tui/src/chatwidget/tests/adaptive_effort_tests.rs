@@ -2743,3 +2743,99 @@ fn durable_workflow_snapshot_persists_complexity_class() {
         Some("mechanical_validation")
     );
 }
+
+#[tokio::test]
+async fn codexdd_046_3b2c_first_submitted_header_binds_and_locks_worker() {
+    let (mut chat, mut events, mut ops) = make_chatwidget_manual(None).await;
+    chat.handle_thread_session(adaptive_test_session(
+        ThreadId::new(),
+        None,
+        "gpt-6-sol",
+        Some(ReasoningEffort::Low),
+    ));
+    drain_events(&mut events);
+
+    let initial = "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"approved source packet\"\n\nImplement only the authorized work.";
+    chat.submit_user_message(UserMessage::from(initial));
+    assert_matches!(next_submit_op(&mut ops), Op::UserTurn { .. });
+    assert!(chat.adaptive_effort.worker_assignment_locked);
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Implementation
+    );
+    assert_eq!(
+        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        Some("approved source packet")
+    );
+    assert!(drain_events(&mut events).iter().any(|event| {
+        matches!(event, AppEvent::PersistWorkflowState { .. })
+    }));
+
+    chat.input_queue.user_turn_pending_start = false;
+    chat.submit_user_message(UserMessage::from(
+        "[adaptive_worker]\nrole = \"repair\"\nauthorized_scope = \"forged replacement\"\n\nReplace role.",
+    ));
+    assert_matches!(next_submit_op(&mut ops), Op::UserTurn { .. });
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Implementation
+    );
+    assert_eq!(
+        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        Some("approved source packet")
+    );
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2c_plain_first_submission_cannot_gain_later_worker_role() {
+    let (mut chat, _events, mut ops) = make_chatwidget_manual(None).await;
+    chat.handle_thread_session(adaptive_test_session(
+        ThreadId::new(),
+        None,
+        "gpt-6-sol",
+        Some(ReasoningEffort::Low),
+    ));
+    chat.submit_user_message(UserMessage::from("Ordinary first task."));
+    assert_matches!(next_submit_op(&mut ops), Op::UserTurn { .. });
+    assert!(chat.adaptive_effort.worker_assignment_locked);
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Unspecified
+    );
+
+    chat.input_queue.user_turn_pending_start = false;
+    chat.submit_user_message(UserMessage::from(
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"late role\"\n\nClaim authority.",
+    ));
+    assert_matches!(next_submit_op(&mut ops), Op::UserTurn { .. });
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Unspecified
+    );
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2c_malformed_first_header_is_not_submitted() {
+    let (mut chat, _events, mut ops) = make_chatwidget_manual(None).await;
+    chat.handle_thread_session(adaptive_test_session(
+        ThreadId::new(),
+        None,
+        "gpt-6-sol",
+        Some(ReasoningEffort::Low),
+    ));
+    let malformed =
+        "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"invalid role\"\n\nReview.";
+    chat.submit_user_message(UserMessage::from(malformed));
+    assert_no_submit_op(&mut ops);
+    assert!(!chat.adaptive_effort.worker_assignment_locked);
+    assert_eq!(chat.bottom_pane.composer_text(), malformed);
+
+    chat.submit_user_message(UserMessage::from(
+        "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"corrected role\"\n\nReview.",
+    ));
+    assert_matches!(next_submit_op(&mut ops), Op::UserTurn { .. });
+    assert_eq!(
+        chat.adaptive_effort.worker_context.role,
+        AdaptiveWorkerRole::Validation
+    );
+}

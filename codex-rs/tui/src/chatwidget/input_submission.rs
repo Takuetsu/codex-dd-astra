@@ -229,6 +229,29 @@ impl ChatWidget {
             );
             return (false, None);
         }
+        // The first accepted interactive message is the only opportunity to
+        // establish a message-sourced Worker binding. Never grant authority
+        // from a queued answer, model continuation, a later prompt, or a
+        // preconfigured Worker that is already locked.
+        let is_first_worker_submission = source == UserMessageSource::Prompt
+            && !self.adaptive_effort.worker_assignment_locked
+            && self.turn_lifecycle.last_turn_id.is_none()
+            && !self.turn_lifecycle.agent_turn_running
+            && !self.input_queue.user_turn_pending_start;
+        if is_first_worker_submission
+            && let Err(error) =
+                crate::adaptive_worker::parse_adaptive_worker_assignment_with_preflight(
+                    &user_message.text,
+                )
+        {
+            // Malformed authority must not consume a model turn, and an
+            // unsubmitted draft cannot acquire or lock Worker permissions.
+            self.restore_user_message_to_composer(user_message);
+            self.add_error_message(format!(
+                "SETUP_BLOCKED: invalid first [adaptive_worker] assignment: {error}. Correct the retained draft before submitting."
+            ));
+            return (false, None);
+        }
         let UserMessage {
             text,
             local_images,
@@ -501,6 +524,21 @@ impl ChatWidget {
 
         if !self.submit_op(op.clone()) {
             return (false, None);
+        }
+        if is_first_worker_submission {
+            // The submitted text is exactly the text prevalidated above.
+            // Capture its authority after acceptance, not while composing,
+            // and persist the immutable first-message decision for resume.
+            if let Err(error) = self
+                .adaptive_effort
+                .observe_worker_assignment_text(&submitted_message.text)
+            {
+                tracing::error!(%error, "prevalidated Worker assignment was rejected after submit");
+                self.add_error_message(format!(
+                    "SETUP_BLOCKED: Worker assignment failed after submission: {error}"
+                ));
+            }
+            self.save_adaptive_effort_for_current_thread();
         }
         if source == UserMessageSource::Prompt {
             self.bottom_pane.clear_pending_questions();
