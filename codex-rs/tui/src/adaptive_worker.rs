@@ -2,13 +2,16 @@
 
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
-use serde::Deserialize;
 use std::path::Path;
 use std::process::Command;
 
+#[cfg(test)]
 const RAW_BRACKETED_PASTE_START: &str = "\u{1b}[200~";
+#[cfg(test)]
 const RAW_BRACKETED_PASTE_END: &str = "\u{1b}[201~";
+#[cfg(test)]
 const TEXT_BRACKETED_PASTE_START: &str = "[200~";
+#[cfg(test)]
 const TEXT_BRACKETED_PASTE_END: &str = "[201~";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -222,51 +225,6 @@ pub(crate) fn parse_new_worker_role(value: &str) -> Option<AdaptiveWorkerRole> {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct AdaptiveWorkerAssignmentDocument {
-    adaptive_worker: AdaptiveWorkerAssignmentTable,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct AdaptiveWorkerAssignmentTable {
-    role: String,
-    authorized_scope: String,
-    source_root: Option<String>,
-    source_sha: Option<String>,
-    task_kind: Option<String>,
-}
-
-fn normalize_bracketed_paste_framing(text: &str) -> (String, bool) {
-    let mut normalized = text.to_string();
-    let mut removed_leading_marker = false;
-
-    if let Some((offset, _)) = normalized
-        .char_indices()
-        .find(|(_, ch)| !ch.is_whitespace())
-    {
-        for marker in [RAW_BRACKETED_PASTE_START, TEXT_BRACKETED_PASTE_START] {
-            if normalized[offset..].starts_with(marker) {
-                normalized.replace_range(offset..offset + marker.len(), "");
-                removed_leading_marker = true;
-                break;
-            }
-        }
-    }
-
-    let trailing_non_whitespace_len = normalized.trim_end_matches(char::is_whitespace).len();
-    for marker in [RAW_BRACKETED_PASTE_END, TEXT_BRACKETED_PASTE_END] {
-        if normalized[..trailing_non_whitespace_len].ends_with(marker) {
-            let marker_start = trailing_non_whitespace_len - marker.len();
-            normalized.replace_range(marker_start..trailing_non_whitespace_len, "");
-            break;
-        }
-    }
-
-    (normalized, removed_leading_marker)
-}
-
 /// Parses the authority header on the first user-supplied Worker assignment.
 ///
 /// Authority is recognized only when the first non-blank line is exactly the
@@ -285,73 +243,17 @@ pub(crate) fn parse_adaptive_worker_assignment(
 pub(crate) fn parse_adaptive_worker_assignment_with_preflight(
     text: &str,
 ) -> Result<Option<(AdaptiveWorkerContext, Option<AdaptiveWorkerPreflight>)>, String> {
-    let (normalized, removed_leading_paste_marker) = normalize_bracketed_paste_framing(text);
-    let mut lines = normalized.lines();
-    let first_non_blank = lines.by_ref().find(|line| !line.trim().is_empty());
-    let Some(first_non_blank) = first_non_blank else {
+    let Some(binding) =
+        codex_config::config_toml::parse_adaptive_worker_first_message(text)?
+    else {
         return Ok(None);
     };
-    if first_non_blank.trim() != "[adaptive_worker]" {
-        if removed_leading_paste_marker {
-            return Err(
-                "Worker binding rejected: bracketed-paste marker detected before [adaptive_worker], but the normalized first nonblank line was not [adaptive_worker]. Retry with a clean first assignment."
-                    .to_string(),
-            );
-        }
-        return Ok(None);
-    }
-
-    let mut header = String::from("[adaptive_worker]\n");
-    let mut found_delimiter = false;
-    for line in lines.by_ref() {
-        if line.trim().is_empty() {
-            found_delimiter = true;
-            break;
-        }
-        header.push_str(line);
-        header.push('\n');
-    }
-    if !found_delimiter {
-        return Err(
-            "[adaptive_worker] must be followed by a blank line before the Worker assignment"
-                .to_string(),
-        );
-    }
-
-    let body = lines.collect::<Vec<_>>().join("\n");
-    if body.trim().is_empty() {
-        return Err("Worker assignment body must not be empty".to_string());
-    }
-
-    let parsed: AdaptiveWorkerAssignmentDocument = toml::from_str(&header)
-        .map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
-    let role = match parsed.adaptive_worker.role.as_str() {
-        "implementation" => AdaptiveWorkerRole::Implementation,
-        "validation" => AdaptiveWorkerRole::Validation,
-        "repair" => AdaptiveWorkerRole::Repair,
-        role => {
-            return Err(format!(
-                "invalid adaptive Worker role `{role}`; expected implementation, validation, or repair"
-            ));
-        }
-    };
-    let authorized_scope = parsed.adaptive_worker.authorized_scope.trim();
-    if authorized_scope.is_empty() {
-        return Err("adaptive Worker authorized_scope must not be empty".to_string());
-    }
-
     let preflight = validated_assignment_preflight(
-        parsed.adaptive_worker.task_kind.as_deref(),
-        parsed.adaptive_worker.source_root.as_deref(),
-        parsed.adaptive_worker.source_sha.as_deref(),
+        binding.task_kind.as_deref(),
+        binding.source_root.as_deref(),
+        binding.source_sha.as_deref(),
     )?;
-    Ok(Some((
-        AdaptiveWorkerContext {
-            role,
-            authorized_scope: Some(authorized_scope.to_string()),
-        },
-        preflight,
-    )))
+    Ok(Some((AdaptiveWorkerContext::from(binding), preflight)))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

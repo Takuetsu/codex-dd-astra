@@ -235,6 +235,23 @@ jobs:
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw '3B.2d unbound Core authority regression failed' }
+      - name: Execute 3B.2e shared first-Worker header Core regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2e_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate shared authority parser regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '2 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly two 3B.2e shared-parser Core regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2e shared authority parser regressions failed' }
       - name: Execute 3B.1 executable Worker and persistence regressions
         shell: pwsh
         working-directory: codex-rs
