@@ -34,10 +34,7 @@ impl CoreFirstWorkerAuthority {
         parse_adaptive_worker_first_message(first_text.unwrap_or("")).map(Some)
     }
 
-    pub(crate) fn accept(
-        &mut self,
-        proposed: Option<Option<AdaptiveWorkerConfigToml>>,
-    ) -> bool {
+    pub(crate) fn accept(&mut self, proposed: Option<Option<AdaptiveWorkerConfigToml>>) -> bool {
         if self.locked {
             return false;
         }
@@ -65,8 +62,7 @@ mod tests {
     use super::*;
     use codex_config::config_toml::AdaptiveWorkerRoleToml;
 
-    const IMPLEMENT: &str =
-        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"approved source\"\n\nImplement.";
+    const IMPLEMENT: &str = "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"approved source\"\n\nImplement.";
     const REPAIR: &str =
         "[adaptive_worker]\nrole = \"repair\"\nauthorized_scope = \"late spoof\"\n\nRepair.";
 
@@ -88,7 +84,11 @@ mod tests {
     #[test]
     fn codexdd_046_3b2f_plain_or_rejected_first_turn_is_safe() {
         let mut state = CoreFirstWorkerAuthority::default();
-        assert!(state.prepare(Some("[adaptive_worker]\nrole = \"invalid\"")).is_err());
+        assert!(
+            state
+                .prepare(Some("[adaptive_worker]\nrole = \"invalid\""))
+                .is_err()
+        );
         assert!(!state.locked());
         let plain = state.prepare(Some("Normal user prompt.")).expect("plain");
         assert_eq!(plain, Some(None));

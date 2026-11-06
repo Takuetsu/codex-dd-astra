@@ -19,10 +19,10 @@ use super::thread_settings;
 use super::turn_context::NewTurnContextOptions;
 use super::turn_context::TurnContext;
 use crate::WithTurnExtensionData;
-use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use crate::state::ActiveTurn;
 use crate::state::TurnState;
 use crate::tasks::RegularTask;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_history::CodexHarnessMetadata;
 use codex_history::ResponseItemEnvelope;
 use codex_history::UserInputOrigin;
@@ -319,8 +319,7 @@ pub(super) async fn handle_recovery(
 
 /// A first Worker header is accepted only on a direct user-origin request.
 fn is_direct_user_origin(start: &TurnStartOptions) -> bool {
-    start.parent_turn_id.is_none()
-        && matches!(start.turn_trigger.as_deref(), None | Some("user"))
+    start.parent_turn_id.is_none() && matches!(start.turn_trigger.as_deref(), None | Some("user"))
 }
 
 async fn prepare_first_worker_authority(
@@ -566,8 +565,7 @@ async fn start_if_idle(
     }
 
     let proposed_worker = if kind == TurnStartKind::User {
-        match prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await
-        {
+        match prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await {
             Ok(proposal) => proposal,
             Err(error) => {
                 session.clear_reserved_idle_turn(&turn_state).await;
