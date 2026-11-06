@@ -186,6 +186,109 @@ pub struct AdaptiveWorkerConfigToml {
     pub task_kind: Option<String>,
 }
 
+/// Decode a user-origin first-message Worker header without granting tool rights.
+/// Core must still commit an accepted first-user-turn binding separately.
+pub fn parse_adaptive_worker_first_message(
+    text: &str,
+) -> Result<Option<AdaptiveWorkerConfigToml>, String> {
+    const RAW_START: &str = "\u{1b}[200~";
+    const RAW_END: &str = "\u{1b}[201~";
+    const TEXT_START: &str = "[200~";
+    const TEXT_END: &str = "[201~";
+
+    let mut normalized = text.to_string();
+    let mut removed_leading_marker = false;
+    if let Some((offset, _)) = normalized
+        .char_indices()
+        .find(|(_, ch)| !ch.is_whitespace())
+    {
+        for marker in [RAW_START, TEXT_START] {
+            if normalized[offset..].starts_with(marker) {
+                normalized.replace_range(offset..offset + marker.len(), "");
+                removed_leading_marker = true;
+                break;
+            }
+        }
+    }
+    let trailing_non_whitespace_len = normalized.trim_end_matches(char::is_whitespace).len();
+    for marker in [RAW_END, TEXT_END] {
+        if normalized[..trailing_non_whitespace_len].ends_with(marker) {
+            let marker_start = trailing_non_whitespace_len - marker.len();
+            normalized.replace_range(marker_start..trailing_non_whitespace_len, "");
+            break;
+        }
+    }
+
+    let mut lines = normalized.lines();
+    let Some(first_non_blank) = lines.by_ref().find(|line| !line.trim().is_empty()) else {
+        return Ok(None);
+    };
+    if first_non_blank.trim() != "[adaptive_worker]" {
+        if removed_leading_marker {
+            return Err("Worker binding rejected: bracketed-paste marker detected before [adaptive_worker], but the normalized first nonblank line was not [adaptive_worker]. Retry with a clean first assignment.".to_string());
+        }
+        return Ok(None);
+    }
+
+    let mut header = String::from("[adaptive_worker]\n");
+    let mut found_delimiter = false;
+    for line in lines.by_ref() {
+        if line.trim().is_empty() {
+            found_delimiter = true;
+            break;
+        }
+        header.push_str(line);
+        header.push('\n');
+    }
+    if !found_delimiter {
+        return Err("[adaptive_worker] must be followed by a blank line before the Worker assignment".to_string());
+    }
+    if !lines.any(|line| !line.trim().is_empty()) {
+        return Err("Worker assignment body must not be empty".to_string());
+    }
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct FirstMessageAssignment {
+        adaptive_worker: AdaptiveWorkerConfigToml,
+    }
+    let parsed: FirstMessageAssignment =
+        toml::from_str(&header).map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
+    let mut worker = parsed.adaptive_worker;
+    if worker.role == AdaptiveWorkerRoleToml::Unspecified {
+        return Err("Worker role must be implementation, validation, or repair".to_string());
+    }
+    let scope = worker.authorized_scope.as_deref().unwrap_or_default().trim();
+    if scope.is_empty() {
+        return Err("adaptive Worker authorized_scope must not be empty".to_string());
+    }
+    worker.authorized_scope = Some(scope.to_string());
+
+    let task_kind = worker.task_kind.as_deref().unwrap_or("source_change");
+    if !matches!(task_kind, "source_change" | "operations_preview" | "benchmark") {
+        return Err(format!("invalid Worker task_kind '{task_kind}'; expected source_change, operations_preview or benchmark"));
+    }
+    match (worker.source_root.as_deref(), worker.source_sha.as_deref()) {
+        (None, None) if task_kind == "source_change" => {}
+        (Some(root), Some(sha)) => {
+            let root = root.trim();
+            let sha = sha.trim();
+            if !Path::new(root).is_absolute() {
+                return Err("Worker source_root must be an absolute authorized worktree path".to_string());
+            }
+            if sha.len() != 40 || !sha.bytes().all(|ch| ch.is_ascii_hexdigit()) {
+                return Err("Worker source_sha must be an exact 40-character Git SHA".to_string());
+            }
+            worker.source_root = Some(root.to_string());
+            worker.source_sha = Some(sha.to_ascii_lowercase());
+        }
+        _ => {
+            return Err("Worker target preflight requires source_root and source_sha together; operations/benchmark tasks must also bind a source".to_string());
+        }
+    }
+    Ok(Some(worker))
+}
+
 /// Base config deserialized from ~/.codex/config.toml.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
 #[schemars(deny_unknown_fields)]

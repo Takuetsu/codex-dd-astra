@@ -763,3 +763,53 @@ fn codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair() {
     );
     assert_eq!(native_mechanical_source_authority_blocker(None, None), None);
 }
+
+#[test]
+fn codexdd_046_3b2e_core_first_header_decoder_does_not_grant_tool_authority() {
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use codex_config::config_toml::parse_adaptive_worker_first_message;
+
+    let root = if cfg!(windows) {
+        r"C:\approved\candidate"
+    } else {
+        "/tmp/approved/candidate"
+    };
+    let header = format!(
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"approved source packet\"\nsource_root = '{root}'\nsource_sha = \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n\nImplement the approved source."
+    );
+    let binding = parse_adaptive_worker_first_message(&header)
+        .expect("first Worker header")
+        .expect("binding");
+    assert_eq!(binding.role, AdaptiveWorkerRoleToml::Implementation);
+    assert_eq!(binding.source_root.as_deref(), Some(root));
+    assert_eq!(
+        binding.source_sha.as_deref(),
+        Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    );
+    assert!(native_mechanical_source_authority_blocker(
+        Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER),
+        None,
+    )
+    .is_some());
+}
+
+#[test]
+fn codexdd_046_3b2e_core_first_header_decoder_rejects_unsafe_headers() {
+    use codex_config::config_toml::parse_adaptive_worker_first_message;
+
+    assert_eq!(
+        parse_adaptive_worker_first_message("Normal task.\n[adaptive_worker]\nrole = \"implementation\""),
+        Ok(None)
+    );
+    for text in [
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"scope\"\n\n",
+        "[adaptive_worker]\nrole = \"unspecified\"\nauthorized_scope = \"scope\"\n\nWork.",
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"scope\"\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nWork.",
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"scope\"\nunknown = \"unexpected\"\n\nWork.",
+    ] {
+        assert!(
+            parse_adaptive_worker_first_message(text).is_err(),
+            "unexpected Worker authority: {text}"
+        );
+    }
+}
