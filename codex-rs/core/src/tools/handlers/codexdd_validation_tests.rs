@@ -680,7 +680,11 @@ fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_bloc
         None
     );
 
-    for kind in ["source_identity_unavailable", "profile_unavailable", "source_identity_mismatch"] {
+    for kind in [
+        "source_identity_unavailable",
+        "profile_unavailable",
+        "source_identity_mismatch",
+    ] {
         let setup = native_setup_blocker_summary(
             ValidationProfile::Targeted,
             kind,
