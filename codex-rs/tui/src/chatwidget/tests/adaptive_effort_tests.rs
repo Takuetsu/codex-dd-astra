@@ -2764,12 +2764,17 @@ async fn codexdd_046_3b2c_first_submitted_header_binds_and_locks_worker() {
         AdaptiveWorkerRole::Implementation
     );
     assert_eq!(
-        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        chat.adaptive_effort
+            .worker_context
+            .authorized_scope
+            .as_deref(),
         Some("approved source packet")
     );
-    assert!(drain_events(&mut events).iter().any(|event| {
-        matches!(event, AppEvent::PersistWorkflowState { .. })
-    }));
+    assert!(
+        drain_events(&mut events)
+            .iter()
+            .any(|event| { matches!(event, AppEvent::PersistWorkflowState { .. }) })
+    );
 
     chat.input_queue.user_turn_pending_start = false;
     chat.submit_user_message(UserMessage::from(
@@ -2781,7 +2786,10 @@ async fn codexdd_046_3b2c_first_submitted_header_binds_and_locks_worker() {
         AdaptiveWorkerRole::Implementation
     );
     assert_eq!(
-        chat.adaptive_effort.worker_context.authorized_scope.as_deref(),
+        chat.adaptive_effort
+            .worker_context
+            .authorized_scope
+            .as_deref(),
         Some("approved source packet")
     );
 }
