@@ -664,9 +664,21 @@ fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_bloc
     assert_eq!(summary.status, "error");
     assert_eq!(summary.exit_code, 2);
     assert!(summary.stages.is_empty());
-    assert_eq!(summary.error_type.as_deref(), Some("repository_unavailable"));
-    assert!(summary.message.as_deref().unwrap_or_default().starts_with("SETUP_BLOCKED:"));
-    assert_eq!(validation_failure_fingerprint(ValidationProfile::WorkPacket, &summary), None);
+    assert_eq!(
+        summary.error_type.as_deref(),
+        Some("repository_unavailable")
+    );
+    assert!(
+        summary
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .starts_with("SETUP_BLOCKED:")
+    );
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::WorkPacket, &summary),
+        None
+    );
 
     for kind in ["source_identity_unavailable", "profile_unavailable", "source_identity_mismatch"] {
         let setup = native_setup_blocker_summary(
@@ -677,6 +689,9 @@ fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_bloc
         );
         assert_eq!(setup.status, "error");
         assert_eq!(setup.failed_stage, None);
-        assert_eq!(validation_failure_fingerprint(ValidationProfile::Targeted, &setup), None);
+        assert_eq!(
+            validation_failure_fingerprint(ValidationProfile::Targeted, &setup),
+            None
+        );
     }
 }

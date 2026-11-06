@@ -473,7 +473,8 @@ async fn emit_native_setup_blocker(
 ) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
     let codex_home = invocation.turn.config.codex_home.to_path_buf();
     let repo_id = repository_log_id(selected_path);
-    let log_path = persist_validation_log(&codex_home, &repo_id, run_id, message.as_bytes()).await?;
+    let log_path =
+        persist_validation_log(&codex_home, &repo_id, run_id, message.as_bytes()).await?;
     let summary = native_setup_blocker_summary(profile, error_type, message, &log_path);
     emit_validation_result(invocation, profile, run_id, branch, head_sha, &summary).await
 }
