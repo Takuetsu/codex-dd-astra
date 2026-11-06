@@ -124,7 +124,7 @@ impl SessionState {
         history: ContextManager,
     ) -> Self {
         let first_worker_authority = CoreFirstWorkerAuthority::from_startup(
-            session_configuration.original_config_do_not_use.adaptive_worker.clone(),
+            session_configuration.startup_worker_authority(),
         );
         Self {
             first_worker_authority,

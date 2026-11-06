@@ -167,6 +167,14 @@ pub(crate) struct SessionConfiguration {
 }
 
 impl SessionConfiguration {
+    /// Startup-configured Worker authority is immutable external input.
+    /// This accessor avoids exposing the legacy session config to Core state.
+    pub(crate) fn startup_worker_authority(
+        &self,
+    ) -> Option<codex_config::config_toml::AdaptiveWorkerConfigToml> {
+        self.original_config_do_not_use.adaptive_worker.clone()
+    }
+
     pub(super) fn cwd(&self) -> &AbsolutePathBuf {
         &self.legacy_fallback_cwd
     }
