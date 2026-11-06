@@ -1141,7 +1141,8 @@ async fn codexdd_046_3b2f_invalid_first_core_turn_can_retry_without_rebind() {
         "bad-first".to_string(),
     )
     .await;
-    assert!(matches!(first, Err(CodexErr::InvalidRequest(_))));
+    let first_error = first.expect_err("malformed Worker header must reject first turn");
+    assert!(first_error.to_string().contains("SETUP_BLOCKED:"));
     assert!(!session.state.lock().await.first_worker_authority.locked());
     assert!(session.active_turn.lock().await.is_none());
 
