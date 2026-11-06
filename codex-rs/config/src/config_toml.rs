@@ -250,11 +250,26 @@ pub fn parse_adaptive_worker_first_message(
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
     struct FirstMessageAssignment {
-        adaptive_worker: AdaptiveWorkerConfigToml,
+        adaptive_worker: FirstMessageWorkerTable,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct FirstMessageWorkerTable {
+        role: AdaptiveWorkerRoleToml,
+        authorized_scope: Option<String>,
+        source_root: Option<String>,
+        source_sha: Option<String>,
+        task_kind: Option<String>,
     }
     let parsed: FirstMessageAssignment =
         toml::from_str(&header).map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
-    let mut worker = parsed.adaptive_worker;
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: parsed.adaptive_worker.role,
+        authorized_scope: parsed.adaptive_worker.authorized_scope,
+        source_root: parsed.adaptive_worker.source_root,
+        source_sha: parsed.adaptive_worker.source_sha,
+        task_kind: parsed.adaptive_worker.task_kind,
+    };
     if worker.role == AdaptiveWorkerRoleToml::Unspecified {
         return Err("Worker role must be implementation, validation, or repair".to_string());
     }
