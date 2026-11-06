@@ -204,31 +204,70 @@ impl CodexDDValidationHandler {
             .cwd()
             .to_abs_path()
             .map_err(|err| FunctionCallError::RespondToModel(err.to_string()))?;
-        let repository_root = find_active_repository_root(cwd.as_path())
-            .map_err(FunctionCallError::RespondToModel)?;
-        // Keep preflight errors as a typed, non-PASS LVO tool completion. A generic
-        // tool-call exception would disappear from the native receipt registry,
-        // leaving an unfinished Mechanical Validation Worker in retry pressure.
+        let run_id = validation_run_id(&invocation.call_id);
+        // A missing Git root or unreadable Git HEAD must not evaporate into a
+        // generic rejected tool call: MechanicalValidation needs a completed,
+        // typed, non-PASS blocker rather than retry pressure.
+        let repository_root = match find_active_repository_root(cwd.as_path()) {
+            Ok(root) => root,
+            Err(message) => {
+                return emit_native_setup_blocker(
+                    &invocation,
+                    args.profile,
+                    &run_id,
+                    cwd.as_path(),
+                    &None,
+                    "unavailable",
+                    "repository_unavailable",
+                    format!("SETUP_BLOCKED: {message}"),
+                )
+                .await;
+            }
+        };
+        let git_info = match codex_git_utils::collect_git_info(&repository_root).await {
+            Some(info) => info,
+            None => {
+                return emit_native_setup_blocker(
+                    &invocation,
+                    args.profile,
+                    &run_id,
+                    &repository_root,
+                    &None,
+                    "unavailable",
+                    "source_identity_unavailable",
+                    format!(
+                        "SETUP_BLOCKED: could not verify Git branch/HEAD at selected repository {}. No validation ran or PASS receipt was issued.",
+                        repository_root.display()
+                    ),
+                )
+                .await;
+            }
+        };
+        let branch = git_info.branch;
+        let head_sha = match git_info.commit_hash {
+            Some(sha) => sha.0,
+            None => {
+                return emit_native_setup_blocker(
+                    &invocation,
+                    args.profile,
+                    &run_id,
+                    &repository_root,
+                    &branch,
+                    "unavailable",
+                    "source_identity_unavailable",
+                    format!(
+                        "SETUP_BLOCKED: selected worktree {} has no resolvable Git HEAD. No validation ran or PASS receipt was issued.",
+                        repository_root.display()
+                    ),
+                )
+                .await;
+            }
+        };
+        // Keep preflight errors as typed, non-PASS LVO tool completions. A
+        // generic exception is not a usable receipt for an unfinished Worker.
         let script_path = repository_root
             .join("scripts")
             .join(args.profile.script_name());
-
-        let git_info = codex_git_utils::collect_git_info(&repository_root)
-            .await
-            .ok_or_else(|| {
-                FunctionCallError::RespondToModel(
-                    "CodexDD validation could not resolve Git branch/HEAD metadata for the active repository"
-                        .to_string(),
-                )
-            })?;
-        let head_sha = git_info.commit_hash.map(|sha| sha.0).ok_or_else(|| {
-            FunctionCallError::RespondToModel(
-                "CodexDD validation requires a resolvable Git HEAD commit".to_string(),
-            )
-        })?;
-        let branch = git_info.branch;
-
-        let run_id = validation_run_id(&invocation.call_id);
         // Core is the authority for where the native LVO profile really runs.
         // A TUI-only preflight is insufficient if the session CWD changes or
         // differs from the delegate's execution environment.
@@ -245,30 +284,17 @@ impl CodexDDValidationHandler {
                 .map(|message| ("profile_unavailable", format!("SETUP_BLOCKED: {message}")))
         });
         if let Some((error_type, message)) = admission_error {
-            // No repository validation script is executed, and an ERROR can never
-            // become a successful work-packet receipt or repair fingerprint.
-            let codex_home = invocation.turn.config.codex_home.to_path_buf();
-            let repo_id = repository_log_id(&repository_root);
-            let final_log_path =
-                persist_validation_log(&codex_home, &repo_id, &run_id, message.as_bytes()).await?;
-            let summary = ValidationSummary {
-                contract_version: CONTRACT_VERSION,
-                profile: args.profile.contract_name().to_string(),
-                status: "error".to_string(),
-                exit_code: 2,
-                stages: Vec::new(),
-                failed_stage: None,
-                error_type: Some(error_type.to_string()),
-                message: Some(message),
-                log_path: final_log_path.display().to_string(),
-            };
-            return emit_validation_result(
+            // An unavailable native profile or wrong source cannot authorize
+            // product repair, even when the script was never attempted.
+            return emit_native_setup_blocker(
                 &invocation,
                 args.profile,
                 &run_id,
+                &repository_root,
                 &branch,
                 &head_sha,
-                &summary,
+                error_type,
+                message,
             )
             .await;
         }
@@ -429,6 +455,45 @@ impl CodexDDValidationHandler {
             &summary,
         )
         .await
+    }
+}
+
+/// Preserve a native control receipt for setup failures discovered *before*
+/// any test script runs. The log is stored outside the selected repository,
+/// including when its Git root is absent. An unavailable HEAD is never proof.
+async fn emit_native_setup_blocker(
+    invocation: &ToolInvocation,
+    profile: ValidationProfile,
+    run_id: &str,
+    selected_path: &Path,
+    branch: &Option<String>,
+    head_sha: &str,
+    error_type: &str,
+    message: String,
+) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
+    let codex_home = invocation.turn.config.codex_home.to_path_buf();
+    let repo_id = repository_log_id(selected_path);
+    let log_path = persist_validation_log(&codex_home, &repo_id, run_id, message.as_bytes()).await?;
+    let summary = native_setup_blocker_summary(profile, error_type, message, &log_path);
+    emit_validation_result(invocation, profile, run_id, branch, head_sha, &summary).await
+}
+
+fn native_setup_blocker_summary(
+    profile: ValidationProfile,
+    error_type: &str,
+    message: String,
+    log_path: &Path,
+) -> ValidationSummary {
+    ValidationSummary {
+        contract_version: CONTRACT_VERSION,
+        profile: profile.contract_name().to_string(),
+        status: "error".to_string(),
+        exit_code: 2,
+        stages: Vec::new(),
+        failed_stage: None,
+        error_type: Some(error_type.to_string()),
+        message: Some(message),
+        log_path: log_path.display().to_string(),
     }
 }
 

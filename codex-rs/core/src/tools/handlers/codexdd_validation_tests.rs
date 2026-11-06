@@ -646,3 +646,37 @@ fn codexdd_046_3b2_native_role_gate_rejects_independent_workers() {
         .expect_err("partial pin must never be accepted");
     assert!(blocker.contains("source_root and source_sha together"));
 }
+
+#[test]
+fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker() {
+    let tmp = tempdir().expect("no-git fixture");
+    let missing_git = find_active_repository_root(tmp.path())
+        .expect_err("missing repo must not select an ancestor");
+    assert!(missing_git.contains("no .git root was found"));
+
+    let summary = native_setup_blocker_summary(
+        ValidationProfile::WorkPacket,
+        "repository_unavailable",
+        format!("SETUP_BLOCKED: {missing_git}"),
+        Path::new("isolated-validation.log"),
+    );
+    assert_eq!(summary.profile, "work-packet");
+    assert_eq!(summary.status, "error");
+    assert_eq!(summary.exit_code, 2);
+    assert!(summary.stages.is_empty());
+    assert_eq!(summary.error_type.as_deref(), Some("repository_unavailable"));
+    assert!(summary.message.as_deref().unwrap_or_default().starts_with("SETUP_BLOCKED:"));
+    assert_eq!(validation_failure_fingerprint(ValidationProfile::WorkPacket, &summary), None);
+
+    for kind in ["source_identity_unavailable", "profile_unavailable", "source_identity_mismatch"] {
+        let setup = native_setup_blocker_summary(
+            ValidationProfile::Targeted,
+            kind,
+            "SETUP_BLOCKED: source/profile not ready".to_string(),
+            Path::new("isolated-validation.log"),
+        );
+        assert_eq!(setup.status, "error");
+        assert_eq!(setup.failed_stage, None);
+        assert_eq!(validation_failure_fingerprint(ValidationProfile::Targeted, &setup), None);
+    }
+}

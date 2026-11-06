@@ -18,3 +18,8 @@
 ## Validation and safeguards
 - Existing nonrelease 3B.1 GitHub run #42229580396 passed on previous source. This patch requires its own exact-head Rustfmt, Windows Core/TUI compile and focused executable tests; results are pending at this checkpoint.
 - No 0.4.5 changes, branch merge, production modification, installation, alternate role grant, standalone operations manager or release/version bump.
+
+## 3B.2b addendum (2026-11-06)
+- Previously, no-Git-root and unreadable-HEAD native profile calls returned generic tool errors without a completed LVO receipt, which risks a model continuing without an actionable terminal. They now return `repository_unavailable` or `source_identity_unavailable` `SETUP_BLOCKED` non-PASS receipts, with diagnostics stored out of tree and no failed-stage/repair fingerprint.
+- The same typed blocker helper now handles pinned-source mismatches and missing profile scripts. Three focused `codexdd_046_3b2_*` Core regressions are required in Windows Actions.
+- First-message-to-Core authority, produced candidate SHA handoff and exact real Windows Node/Rust profiles remain unimplemented or pending independent proof; do not claim packet 3B.2 complete or publish a binary.

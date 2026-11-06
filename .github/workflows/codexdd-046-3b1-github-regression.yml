@@ -210,9 +210,9 @@ jobs:
             $listing | Out-Host
             throw 'Cannot enumerate 3B.2 Core regressions'
           }
-          if (($listing -join "`n") -notmatch '2 tests, 0 benchmarks') {
+          if (($listing -join "`n") -notmatch '3 tests, 0 benchmarks') {
             $listing | Out-Host
-            throw 'Expected exactly two 3B.2 Core regressions'
+            throw 'Expected exactly three 3B.2 Core regressions'
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw '3B.2 Core role/profile/command regressions failed' }
