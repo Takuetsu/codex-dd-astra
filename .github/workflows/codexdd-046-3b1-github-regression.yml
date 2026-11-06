@@ -217,7 +217,7 @@ jobs:
             $listing | Out-Host
             throw 'Cannot enumerate 3B.2 Core regressions'
           }
-          if (($listing -join "`n") -notmatch '5 tests, 0 benchmarks') {
+          if (($listing -join "`n") -notmatch '3 tests, 0 benchmarks') {
             $listing | Out-Host
             throw 'Expected exactly three 3B.2 Core regressions'
           }
@@ -268,7 +268,7 @@ jobs:
             $listing | Out-Host
             throw 'Cannot enumerate Core Worker admission regressions'
           }
-          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+          if (($listing -join [Environment]::NewLine) -notmatch '5 tests, 0 benchmarks') {
             $listing | Out-Host
             throw 'Expected five 3B.2f Core Worker regressions'
           }
