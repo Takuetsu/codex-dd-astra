@@ -35,6 +35,9 @@ fn every_external_role_and_scope_binds_canonically() {
             AdaptiveWorkerContext::from(AdaptiveWorkerConfigToml {
                 role: external,
                 authorized_scope: Some("opaque/scope".to_string()),
+                source_root: None,
+                source_sha: None,
+                task_kind: None,
             }),
             AdaptiveWorkerContext {
                 role: expected,

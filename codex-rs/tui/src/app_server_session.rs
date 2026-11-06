@@ -1852,7 +1852,7 @@ pub(crate) async fn start_thread_with_request_handle(
         .as_ref()
         .map(crate::adaptive_worker::configured_worker_binding)
         .transpose()
-        .map_err(anyhow::Error::msg)?;
+        .map_err(|message| color_eyre::eyre::eyre!(message))?;
     let request_id = RequestId::String(format!("startup-thread-start-{}", Uuid::new_v4()));
     let mut params = thread_start_params_from_config(
         &config,

@@ -430,6 +430,9 @@ impl App {
                     }
                 },
                 authorized_scope: Some(binding.authorized_scope),
+                source_root: None,
+                source_sha: None,
+                task_kind: None,
             });
         }
         if is_new_worktree {
