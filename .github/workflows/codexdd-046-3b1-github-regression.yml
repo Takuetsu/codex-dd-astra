@@ -13,6 +13,7 @@ on:
       - codex-rs/tui/src/app_server_session.rs
       - codex-rs/core/src/tools/handlers/codexdd_validation.rs
       - codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs
+      - codex-rs/core/src/thread_manager_tests.rs
       - codex-rs/tui/src/session_state.rs
       - codex-rs/tui/src/chatwidget/adaptive_effort.rs
       - codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs
