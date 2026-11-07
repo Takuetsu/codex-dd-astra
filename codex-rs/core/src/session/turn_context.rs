@@ -1267,11 +1267,21 @@ impl Session {
             .as_ref()
             .and_then(|turn_environment| turn_environment.cwd().to_abs_path().ok())
             .unwrap_or_else(|| session_configuration.cwd().clone());
-        let per_turn_config = self.build_per_turn_config(
+        let mut per_turn_config = self.build_per_turn_config(
             &session_configuration,
             cwd.clone(),
             turn_environments.primary_workspace_roots(),
         );
+        // Bind only a Core-accepted, durably checkpointed user assignment.
+        // Launcher configuration always wins, and an uncheckpointed first turn
+        // stays unprivileged. Core's native profile checks still verify the
+        // selected canonical worktree, clean status, and exact candidate SHA.
+        if matches!(build_mode, TurnContextBuildMode::Full)
+            && per_turn_config.adaptive_worker.is_none()
+            && let Some(worker) = self.state.lock().await.first_worker_authority.runtime_binding()
+        {
+            per_turn_config.adaptive_worker = Some(worker);
+        }
         let network_permission_profile = primary_turn_environment
             .map(TurnEnvironment::permission_profile)
             .cloned()

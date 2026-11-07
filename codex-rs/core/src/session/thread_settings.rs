@@ -18,15 +18,17 @@ use tokio::sync::SemaphorePermit;
 
 impl Session {
     /// Captures and flushes current settings under the shared persistence permit.
-    pub(crate) async fn checkpoint_thread_settings(&self) -> ThreadStoreResult<()> {
+    /// No live recorder means no durable first-message authority can be granted.
+    pub(crate) async fn checkpoint_thread_settings(&self) -> ThreadStoreResult<bool> {
         let _settings_guard = acquire_persistence_lock(self).await;
-        if let Some(live_thread) = self.live_thread() {
-            live_thread
-                .append_items(&[RolloutItem::EventMsg(applied_event(self).await)])
-                .await?;
-            live_thread.flush().await?;
-        }
-        Ok(())
+        let Some(live_thread) = self.live_thread() else {
+            return Ok(false);
+        };
+        live_thread
+            .append_items(&[RolloutItem::EventMsg(applied_event(self).await)])
+            .await?;
+        live_thread.flush().await?;
+        Ok(true)
     }
 }
 

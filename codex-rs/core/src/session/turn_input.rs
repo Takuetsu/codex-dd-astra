@@ -356,10 +356,24 @@ async fn accept_first_worker_authority(
         state.first_worker_authority.accept(proposed)
             && state.first_worker_authority.first_user_snapshot().is_some()
     };
-    if accepted_first_binding && let Err(error) = session.checkpoint_thread_settings().await {
-        // Missing durability must never be repaired by replaying user text.
-        // The separate protected native LVO source gate remains closed.
-        tracing::warn!(%error, "first user Worker authority checkpoint failed");
+    if accepted_first_binding {
+        match session.checkpoint_thread_settings().await {
+            Ok(true) => {
+                session
+                    .state
+                    .lock()
+                    .await
+                    .first_worker_authority
+                    .mark_checkpointed();
+            }
+            Ok(false) => {
+                tracing::warn!("no live thread store: first Worker source remains unprivileged");
+            }
+            Err(error) => {
+                // A failed flush cannot create a native runner credential.
+                tracing::warn!(%error, "first Worker checkpoint failed; source remains blocked");
+            }
+        }
     }
 }
 

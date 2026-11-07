@@ -13,6 +13,9 @@ pub(crate) struct CoreFirstWorkerAuthority {
     binding: Option<AdaptiveWorkerConfigToml>,
     // Launcher pins are not serialized as first-message credentials.
     accepted_user_origin: bool,
+    // Only a flushed Core checkpoint (or a verified same-thread resume)
+    // can enable a subsequent native TurnContext source credential.
+    checkpointed: bool,
 }
 
 impl CoreFirstWorkerAuthority {
@@ -21,6 +24,7 @@ impl CoreFirstWorkerAuthority {
             locked: binding.is_some(),
             binding,
             accepted_user_origin: false,
+            checkpointed: false,
         }
     }
 
@@ -50,7 +54,27 @@ impl CoreFirstWorkerAuthority {
         self.accepted_user_origin = binding.is_some();
         self.binding = binding;
         self.locked = true;
+        self.checkpointed = false;
         true
+    }
+
+    /// Mark durable only after the native thread store confirmed append and flush.
+    /// No model/tool argument may call this gate.
+    pub(crate) fn mark_checkpointed(&mut self) -> bool {
+        if !self.locked || !self.accepted_user_origin || self.binding.is_none() {
+            return false;
+        }
+        self.checkpointed = true;
+        true
+    }
+
+    /// Only persisted Core user authority may reach a subsequent native turn.
+    /// Launcher-configured roles are already applied in the ordinary Config.
+    pub(crate) fn runtime_binding(&self) -> Option<AdaptiveWorkerConfigToml> {
+        if !self.locked || !self.accepted_user_origin || !self.checkpointed {
+            return None;
+        }
+        self.binding.clone()
     }
 
     /// Only accepted first-user-message bindings go into trusted Core rollout
@@ -130,6 +154,7 @@ impl CoreFirstWorkerAuthority {
         });
         self.accepted_user_origin = true;
         self.locked = true;
+        self.checkpointed = true;
         Ok(true)
     }
 
@@ -279,5 +304,31 @@ mod tests {
         };
         assert_eq!(pinned.restore_first_user_snapshot(&proposed), Ok(false));
         assert_eq!(pinned.binding(), startup.binding());
+    }
+
+    #[test]
+    fn codexdd_046_3b2h_unflushed_authority_cannot_enter_runtime() {
+        let mut first = CoreFirstWorkerAuthority::default();
+        let proposed = first.prepare(Some(IMPLEMENT)).expect("first header");
+        assert!(first.accept(proposed));
+        assert!(first.first_user_snapshot().is_some());
+        assert!(first.runtime_binding().is_none());
+        assert!(first.mark_checkpointed());
+        assert_eq!(first.runtime_binding(), first.binding().cloned());
+    }
+
+    #[test]
+    fn codexdd_046_3b2h_plain_or_launcher_authority_cannot_forge_checkpoint() {
+        let mut plain = CoreFirstWorkerAuthority::default();
+        let proposed = plain.prepare(Some("Ordinary first message")).expect("plain");
+        assert!(plain.accept(proposed));
+        assert!(!plain.mark_checkpointed());
+        assert!(plain.runtime_binding().is_none());
+
+        let mut launcher = CoreFirstWorkerAuthority::from_startup(
+            parse_adaptive_worker_first_message(REPAIR).expect("launcher binding"),
+        );
+        assert!(!launcher.mark_checkpointed());
+        assert!(launcher.runtime_binding().is_none());
     }
 }

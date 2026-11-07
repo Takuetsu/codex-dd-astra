@@ -1171,3 +1171,50 @@ async fn codexdd_046_3b2f_invalid_first_core_turn_can_retry_without_rebind() {
     drop(state);
     session.abort_all_tasks(TurnAbortReason::Interrupted).await;
 }
+
+#[tokio::test]
+async fn codexdd_046_3b2h_subsequent_turn_requires_flushed_first_source_binding() {
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let (session, _context, _rx) = make_session_and_context_with_rx().await;
+    let root = if cfg!(windows) {
+        r"C:\authorized\candidate"
+    } else {
+        "/tmp/authorized/candidate"
+    };
+    let first = format!(
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"exact source\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement."
+    );
+    let submission = submit_start_only(
+        &session,
+        SubmittedTurnInput::UserInput {
+            content: vec![UserInput::Text {
+                text: first,
+                text_elements: Vec::new(),
+            }],
+            client_id: Some("source-owner".to_string()),
+        },
+    )
+    .await;
+    assert!(matches!(submission, TurnInputSubmission::Started { .. }));
+    let before = session.new_default_turn().await;
+    assert!(before.config.adaptive_worker.is_none());
+    {
+        let mut state = session.state.lock().await;
+        assert!(state.first_worker_authority.mark_checkpointed());
+    }
+    let after = session.new_default_turn().await;
+    let binding = after
+        .config
+        .adaptive_worker
+        .as_ref()
+        .expect("durably accepted Worker authority must reach next native turn");
+    assert_eq!(binding.role, AdaptiveWorkerRoleToml::Implementation);
+    assert_eq!(binding.source_root.as_deref(), Some(root));
+    assert_eq!(
+        binding.source_sha.as_deref(),
+        Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    );
+    assert!(session.get_config().await.adaptive_worker.is_none());
+    session.abort_all_tasks(TurnAbortReason::Interrupted).await;
+}
