@@ -356,9 +356,7 @@ async fn accept_first_worker_authority(
         state.first_worker_authority.accept(proposed)
             && state.first_worker_authority.first_user_snapshot().is_some()
     };
-    if accepted_first_binding
-        && let Err(error) = session.checkpoint_thread_settings().await
-    {
+    if accepted_first_binding && let Err(error) = session.checkpoint_thread_settings().await {
         // Missing durability must never be repaired by replaying user text.
         // The separate protected native LVO source gate remains closed.
         tracing::warn!(%error, "first user Worker authority checkpoint failed");

@@ -115,7 +115,11 @@ impl CoreFirstWorkerAuthority {
             {
                 (Some(root.to_string()), Some(sha.to_ascii_lowercase()))
             }
-            _ => return Err("persisted Worker source requires exact root and 40-digit SHA".to_string()),
+            _ => {
+                return Err(
+                    "persisted Worker source requires exact root and 40-digit SHA".to_string(),
+                );
+            }
         };
         self.binding = Some(AdaptiveWorkerConfigToml {
             role,
@@ -199,16 +203,23 @@ mod tests {
     }
     #[test]
     fn codexdd_046_3b2g_first_user_snapshot_roundtrips_without_replaying_prompt() {
-        let root = if cfg!(windows) { r"C:\authorized\worktree" } else { "/tmp/authorized/worktree" };
+        let root = if cfg!(windows) {
+            r"C:\authorized\worktree"
+        } else {
+            "/tmp/authorized/worktree"
+        };
         let prompt = format!(
             "[adaptive_worker]\\nrole = \"implementation\"\\nauthorized_scope = \"source packet\"\\nsource_root = '{root}'\\nsource_sha = \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\\n\\nImplement."
         );
         let prompt = prompt.replace("\\n", "\n");
         let mut original = CoreFirstWorkerAuthority::default();
         assert!(original.accept(original.prepare(Some(&prompt)).expect("parsed")));
-        let snapshot = original.first_user_snapshot().expect("native first-user binding");
+        let snapshot = original
+            .first_user_snapshot()
+            .expect("native first-user binding");
         let serialized = serde_json::to_string(&snapshot).expect("encode");
-        let decoded: CodexddFirstWorkerSnapshot = serde_json::from_str(&serialized).expect("decode");
+        let decoded: CodexddFirstWorkerSnapshot =
+            serde_json::from_str(&serialized).expect("decode");
         let mut resumed = CoreFirstWorkerAuthority::default();
         assert_eq!(resumed.restore_first_user_snapshot(&decoded), Ok(true));
         assert_eq!(resumed.prepare(Some(REPAIR)), Ok(None));
@@ -221,7 +232,14 @@ mod tests {
         let mut snapshot = CodexddFirstWorkerSnapshot {
             role: "implementation".to_string(),
             authorized_scope: "approved source".to_string(),
-            source_root: Some(if cfg!(windows) { r"C:\source\repo" } else { "/tmp/source/repo" }.to_string()),
+            source_root: Some(
+                if cfg!(windows) {
+                    r"C:\source\repo"
+                } else {
+                    "/tmp/source/repo"
+                }
+                .to_string(),
+            ),
             source_sha: Some("a".repeat(40)),
             task_kind: Some("source_change".to_string()),
         };
@@ -239,7 +257,13 @@ mod tests {
     #[test]
     fn codexdd_046_3b2g_startup_and_plain_first_message_have_no_user_snapshot() {
         let mut plain = CoreFirstWorkerAuthority::default();
-        assert!(plain.accept(plain.prepare(Some("Ordinary first user task.")).expect("plain")));
+        assert!(
+            plain.accept(
+                plain
+                    .prepare(Some("Ordinary first user task."))
+                    .expect("plain")
+            )
+        );
         assert!(plain.first_user_snapshot().is_none());
         let startup = CoreFirstWorkerAuthority::from_startup(
             parse_adaptive_worker_first_message(IMPLEMENT).expect("launcher fixture"),
@@ -256,5 +280,4 @@ mod tests {
         assert_eq!(pinned.restore_first_user_snapshot(&proposed), Ok(false));
         assert_eq!(pinned.binding(), startup.binding());
     }
-
 }
