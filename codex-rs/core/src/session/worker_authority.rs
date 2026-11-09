@@ -699,6 +699,33 @@ mod tests {
     }
 
     #[test]
+    fn codexdd_046_3b2m_successor_snapshot_survives_cold_restore_without_reassignment() {
+        let (_tmp, mut original, requested) = candidate_fixture();
+        let proposed = original
+            .verified_candidate_snapshot(&requested)
+            .expect("verified exact successor");
+        original
+            .apply_durable_candidate(&requested, &proposed)
+            .expect("simulated completed native flush");
+        let successor = original.first_user_snapshot().expect("successor snapshot");
+        let encoded = serde_json::to_string(&successor).expect("serialize");
+        let decoded: CodexddFirstWorkerSnapshot =
+            serde_json::from_str(&encoded).expect("deserialize");
+        let mut resumed = CoreFirstWorkerAuthority::default();
+        assert_eq!(resumed.restore_first_user_snapshot(&decoded), Ok(true));
+        resumed.lock_after_prior_user_history();
+        let binding = resumed.runtime_binding().expect("restored Worker");
+        assert_eq!(binding.source_sha.as_deref(), Some(requested.candidate_sha.as_str()));
+        assert_eq!(binding.authorized_scope.as_deref(), Some("approved packet"));
+        assert_eq!(binding.role, AdaptiveWorkerRoleToml::Implementation);
+        assert_eq!(binding.source_root, original.runtime_binding().unwrap().source_root);
+        assert_eq!(resumed.prepare(Some(REPAIR)), Ok(None));
+        let mut fork = CoreFirstWorkerAuthority::default();
+        fork.lock_after_prior_user_history();
+        assert!(fork.runtime_binding().is_none());
+    }
+
+    #[test]
     fn codexdd_046_3b2i_candidate_promotion_preserves_role_and_scope() {
         let (_tmp, mut authority, request) = candidate_fixture();
         let prospective = authority

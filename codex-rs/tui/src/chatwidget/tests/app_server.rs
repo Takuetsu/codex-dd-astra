@@ -658,6 +658,127 @@ async fn invalid_url_elicitation_is_declined() {
 }
 
 #[tokio::test]
+async fn codexdd_046_3b2l_same_thread_notification_updates_tui_pin_fail_closed() {
+    let tmp = tempfile::tempdir().expect("isolated source");
+    let root = tmp.path();
+    let git = |args: &[&str]| -> String {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .expect("Git fixture");
+        assert!(
+            out.status.success(),
+            "Git fixture failure: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8(out.stdout)
+            .expect("Git output")
+            .trim()
+            .to_string()
+    };
+    git(&["init"]);
+    git(&["config", "user.email", "codexdd-regression@example.invalid"]);
+    git(&["config", "user.name", "CodexDD regression"]);
+    std::fs::write(root.join("candidate.txt"), "initial").expect("first file");
+    git(&["add", "candidate.txt"]);
+    git(&["commit", "-m", "first source"]);
+    let original_sha = git(&["rev-parse", "HEAD"]);
+    std::fs::write(root.join("candidate.txt"), "authorized successor").expect("next file");
+    git(&["add", "candidate.txt"]);
+    git(&["commit", "-m", "authorized candidate"]);
+    let candidate_sha = git(&["rev-parse", "HEAD"]);
+
+    let (mut chat, _events, _ops) = make_chatwidget_manual(Some("gpt-5.2")).await;
+    let thread_id = ThreadId::new();
+    let cwd = codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(root)
+        .expect("absolute Git root");
+    let mut session = configured_thread_session(thread_id);
+    session.cwd = cwd.clone();
+    session.adaptive_effort.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+        role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some("approved source packet".to_string()),
+    };
+    session.adaptive_effort.assignment_preflight =
+        Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
+            task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+            source_root: root.display().to_string(),
+            source_sha: original_sha.clone(),
+        });
+    session.adaptive_effort.worker_assignment_locked = true;
+    chat.handle_thread_session_quiet(session);
+    chat.codex_op_target = CodexOpTarget::AppEvent;
+
+    let mut notification = thread_settings_for_test("gpt-5.2", thread_id);
+    notification.thread_settings.cwd = cwd;
+    notification.codexdd_first_worker = Some(
+        codex_protocol::protocol::CodexddFirstWorkerSnapshot {
+            role: "implementation".to_string(),
+            authorized_scope: "approved source packet".to_string(),
+            source_root: Some(root.display().to_string()),
+            source_sha: Some(candidate_sha.clone()),
+            task_kind: Some("source_change".to_string()),
+        },
+    );
+
+    let mut foreign = notification.clone();
+    foreign.thread_id = ThreadId::new().to_string();
+    chat.handle_server_notification(
+        ServerNotification::ThreadSettingsUpdated(foreign),
+        /*replay_kind*/ None,
+    );
+    assert_eq!(
+        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        original_sha
+    );
+
+    chat.handle_server_notification(
+        ServerNotification::ThreadSettingsUpdated(notification.clone()),
+        /*replay_kind*/ None,
+    );
+    assert_eq!(
+        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        candidate_sha
+    );
+
+    let mut wrong_scope = notification.clone();
+    wrong_scope
+        .codexdd_first_worker
+        .as_mut()
+        .unwrap()
+        .authorized_scope = "unapproved work".to_string();
+    chat.handle_server_notification(
+        ServerNotification::ThreadSettingsUpdated(wrong_scope),
+        /*replay_kind*/ None,
+    );
+    assert_eq!(
+        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        candidate_sha
+    );
+
+    std::fs::write(root.join("candidate.txt"), "next revision").expect("revision");
+    git(&["add", "candidate.txt"]);
+    git(&["commit", "-m", "later candidate"]);
+    let next_sha = git(&["rev-parse", "HEAD"]);
+    std::fs::write(root.join("untracked.txt"), "preserve").expect("untracked edit");
+    let mut dirty = notification;
+    dirty.codexdd_first_worker.as_mut().unwrap().source_sha = Some(next_sha);
+    chat.handle_server_notification(
+        ServerNotification::ThreadSettingsUpdated(dirty),
+        /*replay_kind*/ None,
+    );
+    assert_eq!(
+        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        candidate_sha
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.join("untracked.txt")).expect("preserved"),
+        "preserve"
+    );
+}
+
+#[tokio::test]
 async fn thread_settings_updated_updates_visible_state_without_transcript() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.2")).await;
     set_chatgpt_auth(&mut chat);
