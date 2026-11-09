@@ -4537,6 +4537,7 @@ mod tests {
         let notification =
             ServerNotification::ThreadSettingsUpdated(v2::ThreadSettingsUpdatedNotification {
                 thread_id: "thr_123".to_string(),
+                codexdd_first_worker: None,
                 thread_settings: v2::ThreadSettings {
                     disabled_plugin_ids: Vec::new(),
                     cwd: absolute_path("/tmp/repo"),

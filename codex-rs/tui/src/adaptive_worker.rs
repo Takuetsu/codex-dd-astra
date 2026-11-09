@@ -1,6 +1,7 @@
 //! Neutral Worker assignment and workflow handoff facts for adaptive state.
 
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
+use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use std::path::Path;
 use std::process::Command;
@@ -173,6 +174,58 @@ pub(crate) fn preflight_mechanical_target(
         ));
     }
     Ok(())
+}
+
+/// Reconcile an *already persisted* Core Worker source credential delivered by
+/// the local embedded app-server. Caller must reject remote transports and
+/// verify the notification belongs to the currently selected thread.
+pub(crate) fn reconcile_core_candidate_preflight(
+    current: Option<&AdaptiveWorkerPreflight>,
+    worker: &AdaptiveWorkerContext,
+    assignment_locked: bool,
+    core: &CodexddFirstWorkerSnapshot,
+    runtime_cwd: &Path,
+) -> Result<Option<AdaptiveWorkerPreflight>, String> {
+    let Some(current) = current else {
+        // A notification never creates an initial Worker assignment.
+        return Ok(None);
+    };
+    if !assignment_locked
+        || worker.role != AdaptiveWorkerRole::Implementation
+        || core.role != "implementation"
+        || worker.authorized_scope.as_deref() != Some(core.authorized_scope.as_str())
+        || current.task_kind != AdaptiveTaskKind::SourceChange
+        || !matches!(core.task_kind.as_deref(), None | Some("source_change"))
+        || core.source_root.as_deref() != Some(current.source_root.as_str())
+    {
+        return Err("SETUP_BLOCKED: Core candidate notification cannot change Worker role, task, root, or scope".to_string());
+    }
+    let Some(candidate_sha) = core.source_sha.as_deref() else {
+        return Err("SETUP_BLOCKED: Core candidate notice lacks exact source SHA".to_string());
+    };
+    if candidate_sha.len() != 40 || !candidate_sha.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err("SETUP_BLOCKED: Core candidate notice has an invalid source SHA".to_string());
+    }
+    if candidate_sha.eq_ignore_ascii_case(&current.source_sha) {
+        return Ok(None);
+    }
+    let candidate = AdaptiveWorkerPreflight {
+        task_kind: current.task_kind,
+        source_root: current.source_root.clone(),
+        source_sha: candidate_sha.to_ascii_lowercase(),
+    };
+    // No TUI source promotion from a stale, dirty, or wrong-root checkout.
+    preflight_mechanical_target(Some(&candidate), runtime_cwd)?;
+    let descendant = Command::new("git")
+        .arg("-C")
+        .arg(&candidate.source_root)
+        .args(["merge-base", "--is-ancestor", &current.source_sha, &candidate.source_sha])
+        .status()
+        .map_err(|err| format!("SETUP_BLOCKED: cannot verify Core candidate ancestry: {err}"))?;
+    if !descendant.success() {
+        return Err("SETUP_BLOCKED: Core candidate is not a verified descendant of the TUI source pin".to_string());
+    }
+    Ok(Some(candidate))
 }
 
 /// Validate immutable startup-config Worker binding before starting a thread.
@@ -554,4 +607,113 @@ mod tests {
             "preserve me"
         );
     }
+
+    #[test]
+    fn codexdd_046_3b2k_durable_core_candidate_updates_only_source_sha() {
+        let tmp = tempfile::tempdir().expect("isolated Git fixture");
+        let root = tmp.path();
+        let git = |args: &[&str]| -> String {
+            let output = Command::new("git")
+                .arg("-C").arg(root).args(args).output().expect("Git fixture");
+            assert!(
+                output.status.success(),
+                "Git failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            String::from_utf8(output.stdout).expect("Git output").trim().to_string()
+        };
+        git(&["init"]);
+        git(&["config", "user.email", "codexdd@example.invalid"]);
+        git(&["config", "user.name", "CodexDD test"]);
+        std::fs::write(root.join("source.txt"), "first").expect("write");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "first"]);
+        let original_sha = git(&["rev-parse", "HEAD"]);
+        std::fs::write(root.join("source.txt"), "candidate").expect("write");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "candidate"]);
+        let candidate_sha = git(&["rev-parse", "HEAD"]);
+        let current = AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: root.display().to_string(),
+            source_sha: original_sha.clone(),
+        };
+        let worker = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("source review".to_string()),
+        };
+        let notice = CodexddFirstWorkerSnapshot {
+            role: "implementation".to_string(),
+            authorized_scope: "source review".to_string(),
+            source_root: Some(root.display().to_string()),
+            source_sha: Some(candidate_sha.clone()),
+            task_kind: Some("source_change".to_string()),
+        };
+        let proposed = reconcile_core_candidate_preflight(
+            Some(&current), &worker, true, &notice, root
+        ).expect("matching durable candidate").expect("new pin");
+        assert_eq!(proposed.source_sha, candidate_sha);
+        assert_eq!(current.source_sha, original_sha);
+        assert_eq!(proposed.source_root, current.source_root);
+        assert_eq!(
+            reconcile_core_candidate_preflight(Some(&proposed), &worker, true, &notice, root),
+            Ok(None)
+        );
+        assert_eq!(
+            reconcile_core_candidate_preflight(None, &worker, true, &notice, root),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3b2k_core_candidate_refuses_role_scope_and_worktree_drift() {
+        let root = if cfg!(windows) {
+            r"C:\missing\codexdd-worktree"
+        } else {
+            "/nonexistent/codexdd-worktree"
+        };
+        let current = AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: root.to_string(),
+            source_sha: "a".repeat(40),
+        };
+        let worker = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("approved packet".to_string()),
+        };
+        let notice = CodexddFirstWorkerSnapshot {
+            role: "implementation".to_string(),
+            authorized_scope: "approved packet".to_string(),
+            source_root: Some(root.to_string()),
+            source_sha: Some("b".repeat(40)),
+            task_kind: Some("source_change".to_string()),
+        };
+        let mut invalid = notice.clone();
+        invalid.authorized_scope = "other work".to_string();
+        assert!(reconcile_core_candidate_preflight(
+            Some(&current), &worker, true, &invalid, Path::new(root)
+        ).is_err());
+        invalid = notice.clone();
+        invalid.role = "repair".to_string();
+        assert!(reconcile_core_candidate_preflight(
+            Some(&current), &worker, true, &invalid, Path::new(root)
+        ).is_err());
+        invalid = notice.clone();
+        invalid.source_root = Some("/different-repository".to_string());
+        assert!(reconcile_core_candidate_preflight(
+            Some(&current), &worker, true, &invalid, Path::new(root)
+        ).is_err());
+        invalid = notice.clone();
+        invalid.source_sha = Some("broken".to_string());
+        assert!(reconcile_core_candidate_preflight(
+            Some(&current), &worker, true, &invalid, Path::new(root)
+        ).is_err());
+        assert!(reconcile_core_candidate_preflight(
+            Some(&current), &worker, false, &notice, Path::new(root)
+        ).is_err());
+        assert!(reconcile_core_candidate_preflight(
+            Some(&current), &worker, true, &notice, Path::new(root)
+        ).is_err()); // missing worktree must never grant new authority
+    }
+
 }

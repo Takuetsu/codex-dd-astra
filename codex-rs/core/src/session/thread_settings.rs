@@ -64,7 +64,7 @@ impl Session {
         snapshot.codexdd_first_worker = Some(prospective.clone());
         let msg = EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
             thread_id: Some(self.thread_id()),
-            thread_settings: snapshot,
+            thread_settings: snapshot.clone(),
         });
         live_thread
             .append_items(&[RolloutItem::EventMsg(msg)])
@@ -82,6 +82,17 @@ impl Session {
             .await
             .first_worker_authority
             .apply_durable_candidate(requested, &prospective)?;
+        // The matching embedded TUI needs a trusted Core-owned post-flush
+        // settings notification. Never emit this before native persistence
+        // succeeds; the event itself does not add another durable checkpoint.
+        self.send_event_raw_without_materializing_rollout(Event {
+            id: format!("codexdd-candidate-{}", requested.candidate_sha),
+            msg: EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
+                thread_id: Some(self.thread_id()),
+                thread_settings: snapshot,
+            }),
+        })
+        .await;
         Ok(())
     }
 }

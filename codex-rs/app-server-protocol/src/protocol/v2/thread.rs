@@ -32,6 +32,7 @@ pub use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
 pub use codex_protocol::dynamic_tools::DynamicToolSpec;
 use codex_protocol::models::ResponseItem;
 use codex_protocol::openai_models::ReasoningEffort;
+use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use codex_protocol::protocol::ThreadGoalStatus as CoreThreadGoalStatus;
 use codex_protocol::protocol::TokenUsage as CoreTokenUsage;
 use codex_protocol::protocol::TokenUsageInfo as CoreTokenUsageInfo;
@@ -330,6 +331,11 @@ pub struct ThreadSettings {
 pub struct ThreadSettingsUpdatedNotification {
     pub thread_id: String,
     pub thread_settings: ThreadSettings,
+    /// Core-owned first-user source pin. Only the matching embedded native Core
+    /// may authorize a TUI candidate transition; no external tool input is accepted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub codexdd_first_worker: Option<CodexddFirstWorkerSnapshot>,
 }
 
 #[derive(
