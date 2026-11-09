@@ -27,7 +27,9 @@ impl Session {
 
     /// Captures and flushes current settings under the shared persistence permit.
     /// No live recorder means no durable first-message authority can be granted.
-    pub(crate) async fn checkpoint_thread_settings_with_durability(&self) -> ThreadStoreResult<bool> {
+    pub(crate) async fn checkpoint_thread_settings_with_durability(
+        &self,
+    ) -> ThreadStoreResult<bool> {
         let _settings_guard = acquire_persistence_lock(self).await;
         let Some(live_thread) = self.live_thread() else {
             return Ok(false);
