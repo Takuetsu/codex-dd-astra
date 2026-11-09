@@ -14,6 +14,7 @@ use codex_app_server_protocol::ThreadResumeParams;
 use codex_app_server_protocol::ThreadResumeResponse;
 use codex_app_server_protocol::ThreadSettingsUpdatedNotification;
 use codex_app_server_protocol::ThreadStartParams;
+use codex_app_server_protocol::ThreadStartResponse;
 use codex_app_server_protocol::TurnStartParams;
 use codex_app_server_protocol::TurnStartResponse;
 use codex_app_server_protocol::UserInput;
@@ -129,14 +130,19 @@ async fn codexdd_046_3b2n_real_app_server_candidate_and_cold_resume() -> Result<
         .without_auto_env()
         .build_initialized()
         .await?;
-    let started = server
-        .start_thread(ThreadStartParams {
+    // This fixture opts out of the test harness's automatic environments.
+    // Use the raw thread/start request so the selected cwd remains the
+    // isolated Git checkout rather than invoking the auto_env wrapper.
+    let start_id = server
+        .send_thread_start_request(ThreadStartParams {
             model: Some("mock-model".to_string()),
             cwd: Some(root.display().to_string()),
             history_mode: Some(ThreadHistoryMode::Legacy),
             ..Default::default()
         })
         .await?;
+    let started: ThreadStartResponse =
+        timeout(CANDIDATE_TIMEOUT, server.read_response(start_id)).await??;
     let thread_id = started.thread.id;
     let first_message = format!(
         "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"isolated acceptance packet\"\ntask_kind = \"source_change\"\nsource_root = '{}'\nsource_sha = \"{}\"\n\nWork only in this isolated source packet.",
