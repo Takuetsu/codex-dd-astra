@@ -1,8 +1,8 @@
 //! Neutral Worker assignment and workflow handoff facts for adaptive state.
 
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
-use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
+use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use std::path::Path;
 use std::process::Command;
 
@@ -219,11 +219,19 @@ pub(crate) fn reconcile_core_candidate_preflight(
     let descendant = Command::new("git")
         .arg("-C")
         .arg(&candidate.source_root)
-        .args(["merge-base", "--is-ancestor", &current.source_sha, &candidate.source_sha])
+        .args([
+            "merge-base",
+            "--is-ancestor",
+            &current.source_sha,
+            &candidate.source_sha,
+        ])
         .status()
         .map_err(|err| format!("SETUP_BLOCKED: cannot verify Core candidate ancestry: {err}"))?;
     if !descendant.success() {
-        return Err("SETUP_BLOCKED: Core candidate is not a verified descendant of the TUI source pin".to_string());
+        return Err(
+            "SETUP_BLOCKED: Core candidate is not a verified descendant of the TUI source pin"
+                .to_string(),
+        );
     }
     Ok(Some(candidate))
 }
@@ -614,13 +622,20 @@ mod tests {
         let root = tmp.path();
         let git = |args: &[&str]| -> String {
             let output = Command::new("git")
-                .arg("-C").arg(root).args(args).output().expect("Git fixture");
+                .arg("-C")
+                .arg(root)
+                .args(args)
+                .output()
+                .expect("Git fixture");
             assert!(
                 output.status.success(),
                 "Git failed: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
-            String::from_utf8(output.stdout).expect("Git output").trim().to_string()
+            String::from_utf8(output.stdout)
+                .expect("Git output")
+                .trim()
+                .to_string()
         };
         git(&["init"]);
         git(&["config", "user.email", "codexdd@example.invalid"]);
@@ -649,9 +664,10 @@ mod tests {
             source_sha: Some(candidate_sha.clone()),
             task_kind: Some("source_change".to_string()),
         };
-        let proposed = reconcile_core_candidate_preflight(
-            Some(&current), &worker, true, &notice, root
-        ).expect("matching durable candidate").expect("new pin");
+        let proposed =
+            reconcile_core_candidate_preflight(Some(&current), &worker, true, &notice, root)
+                .expect("matching durable candidate")
+                .expect("new pin");
         assert_eq!(proposed.source_sha, candidate_sha);
         assert_eq!(current.source_sha, original_sha);
         assert_eq!(proposed.source_root, current.source_root);
@@ -690,30 +706,71 @@ mod tests {
         };
         let mut invalid = notice.clone();
         invalid.authorized_scope = "other work".to_string();
-        assert!(reconcile_core_candidate_preflight(
-            Some(&current), &worker, true, &invalid, Path::new(root)
-        ).is_err());
+        assert!(
+            reconcile_core_candidate_preflight(
+                Some(&current),
+                &worker,
+                true,
+                &invalid,
+                Path::new(root)
+            )
+            .is_err()
+        );
         invalid = notice.clone();
         invalid.role = "repair".to_string();
-        assert!(reconcile_core_candidate_preflight(
-            Some(&current), &worker, true, &invalid, Path::new(root)
-        ).is_err());
+        assert!(
+            reconcile_core_candidate_preflight(
+                Some(&current),
+                &worker,
+                true,
+                &invalid,
+                Path::new(root)
+            )
+            .is_err()
+        );
         invalid = notice.clone();
         invalid.source_root = Some("/different-repository".to_string());
-        assert!(reconcile_core_candidate_preflight(
-            Some(&current), &worker, true, &invalid, Path::new(root)
-        ).is_err());
+        assert!(
+            reconcile_core_candidate_preflight(
+                Some(&current),
+                &worker,
+                true,
+                &invalid,
+                Path::new(root)
+            )
+            .is_err()
+        );
         invalid = notice.clone();
         invalid.source_sha = Some("broken".to_string());
-        assert!(reconcile_core_candidate_preflight(
-            Some(&current), &worker, true, &invalid, Path::new(root)
-        ).is_err());
-        assert!(reconcile_core_candidate_preflight(
-            Some(&current), &worker, false, &notice, Path::new(root)
-        ).is_err());
-        assert!(reconcile_core_candidate_preflight(
-            Some(&current), &worker, true, &notice, Path::new(root)
-        ).is_err()); // missing worktree must never grant new authority
+        assert!(
+            reconcile_core_candidate_preflight(
+                Some(&current),
+                &worker,
+                true,
+                &invalid,
+                Path::new(root)
+            )
+            .is_err()
+        );
+        assert!(
+            reconcile_core_candidate_preflight(
+                Some(&current),
+                &worker,
+                false,
+                &notice,
+                Path::new(root)
+            )
+            .is_err()
+        );
+        assert!(
+            reconcile_core_candidate_preflight(
+                Some(&current),
+                &worker,
+                true,
+                &notice,
+                Path::new(root)
+            )
+            .is_err()
+        ); // missing worktree must never grant new authority
     }
-
 }
