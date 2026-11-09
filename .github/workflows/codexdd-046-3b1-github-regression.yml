@@ -324,12 +324,29 @@ jobs:
             $listing | Out-Host
             throw 'Cannot enumerate 3B.2i Core candidate-verifier regressions'
           }
-          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+          if (($listing -join [Environment]::NewLine) -notmatch '4 tests, 0 benchmarks') {
             $listing | Out-Host
-            throw 'Expected exactly three 3B.2i Core candidate-verifier tests'
+            throw 'Expected exactly four 3B.2i Core candidate-verifier tests'
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw '3B.2i read-only candidate verifier failed' }
+      - name: Execute 3B.2i-b owner-origin candidate admission regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2j_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2i-b Core input regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly three 3B.2i-b Core input regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-b owner candidate admission tests failed' }
       - name: Execute 3B.1 executable Worker and persistence regressions
         shell: pwsh
         working-directory: codex-rs

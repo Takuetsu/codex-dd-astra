@@ -16,6 +16,8 @@ use super::session::Session;
 use super::session::SessionConfiguration;
 use super::session::SessionSettingsUpdate;
 use super::thread_settings;
+use super::worker_authority::CandidateShaAuthorization;
+use super::worker_authority::parse_candidate_sha_authorization;
 use super::turn_context::NewTurnContextOptions;
 use super::turn_context::TurnContext;
 use crate::WithTurnExtensionData;
@@ -317,6 +319,56 @@ pub(super) async fn handle_recovery(
     result
 }
 
+/// A candidate authorization is an independent exact-source user instruction,
+/// never an implicit consequence of Git HEAD changing or model/tool prose.
+fn parse_candidate_submission(
+    input: &SubmittedTurnInput,
+) -> CodexResult<Option<CandidateShaAuthorization>> {
+    let SubmittedTurnInput::UserInput { content, .. } = input else {
+        return Ok(None);
+    };
+    let Some(UserInput::Text { text, .. }) = content.first() else {
+        return Ok(None);
+    };
+    let proposed = parse_candidate_sha_authorization(text)
+        .map_err(|error| CodexErr::InvalidRequest(format!("SETUP_BLOCKED: {error}")))?;
+    if proposed.is_some() && content.len() != 1 {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: candidate authorization must be a standalone text-only user instruction"
+                .to_string(),
+        ));
+    }
+    Ok(proposed)
+}
+
+async fn prepare_candidate_submission(
+    session: &Session,
+    input: &SubmittedTurnInput,
+    start: &TurnStartOptions,
+) -> CodexResult<Option<CandidateShaAuthorization>> {
+    let requested = parse_candidate_submission(input)?;
+    if requested.is_none() {
+        return Ok(None);
+    }
+    if !is_direct_user_origin(start) {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: candidate authorization requires a direct owner-origin user turn"
+                .to_string(),
+        ));
+    }
+    let state = session.state.lock().await;
+    if matches!(
+        &state.session_configuration.session_source,
+        SessionSource::SubAgent(_) | SessionSource::Internal(_)
+    ) {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: delegated or internal sessions cannot authorize candidate sources"
+                .to_string(),
+        ));
+    }
+    Ok(requested)
+}
+
 /// A first Worker header is accepted only on a direct user-origin request.
 fn is_direct_user_origin(start: &TurnStartOptions) -> bool {
     start.parent_turn_id.is_none() && matches!(start.turn_trigger.as_deref(), None | Some("user"))
@@ -382,6 +434,18 @@ async fn start_or_steer(
     request: WithTurnExtensionData<TurnInputRequest>,
     submission_id: String,
 ) -> CodexResult<TurnInputSubmission> {
+    // A source handoff must never become steering for an in-flight Worker.
+    // Route to the idle-only admission path, which reserves the turn first.
+    if parse_candidate_submission(&request.request.input)?.is_some() {
+        return start_if_idle(
+            session,
+            request,
+            submission_id,
+            TurnStartKind::User,
+            /*expected_previous_turn_id*/ None,
+        )
+        .await;
+    }
     let WithTurnExtensionData {
         request,
         turn_extension_init,
@@ -582,6 +646,18 @@ async fn start_if_idle(
         });
     }
 
+    let requested_candidate = if kind == TurnStartKind::User {
+        match prepare_candidate_submission(session, &input, &start).await {
+            Ok(requested) => requested,
+            Err(error) => {
+                session.clear_reserved_idle_turn(&turn_state).await;
+                return Err(error);
+            }
+        }
+    } else {
+        None
+    };
+
     let proposed_worker = if kind == TurnStartKind::User {
         match prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await {
             Ok(proposal) => proposal,
@@ -610,6 +686,19 @@ async fn start_if_idle(
             return Err(error);
         }
     };
+    if let Some(requested) = &requested_candidate {
+        if settings.thread_settings_update.is_some() {
+            session.clear_reserved_idle_turn(&turn_state).await;
+            return Err(CodexErr::InvalidRequest(
+                "SETUP_BLOCKED: candidate authorization cannot combine with settings changes"
+                    .to_string(),
+            ));
+        }
+        if let Err(error) = session.authorize_candidate_sha(requested).await {
+            session.clear_reserved_idle_turn(&turn_state).await;
+            return Err(CodexErr::InvalidRequest(error));
+        }
+    }
     let turn_context = match settings
         .apply_started(session, submission_id.clone(), kind)
         .await
@@ -675,6 +764,11 @@ async fn steer(
     expected_turn_id: String,
     submission_id: String,
 ) -> CodexResult<TurnInputSubmission> {
+    if parse_candidate_submission(&request.request.input)?.is_some() {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: candidate authorization cannot steer an active turn".to_string(),
+        ));
+    }
     let WithTurnExtensionData {
         request,
         turn_extension_init,

@@ -2,6 +2,7 @@
 //! with checkpoints written directly to storage.
 
 use super::session::Session;
+use super::worker_authority::CandidateShaAuthorization;
 use super::session::SessionSettingsUpdate;
 use super::step_settings::StepSettingsUpdate;
 use crate::WithTurnExtensionData;
@@ -39,6 +40,44 @@ impl Session {
             .await?;
         live_thread.flush().await?;
         Ok(true)
+    }
+    /// Bind an explicitly requested descendant only after the native thread
+    /// store appends and flushes its exact same-thread settings snapshot.
+    /// No Core/TUI execution authority is changed on validation or IO failure.
+    pub(crate) async fn authorize_candidate_sha(
+        &self,
+        requested: &CandidateShaAuthorization,
+    ) -> Result<(), String> {
+        let _settings_guard = acquire_persistence_lock(self).await;
+        let Some(live_thread) = self.live_thread() else {
+            return Err("SETUP_BLOCKED: candidate source requires a live durable thread store".to_string());
+        };
+        let prospective = {
+            let state = self.state.lock().await;
+            state.first_worker_authority.verified_candidate_snapshot(requested)?
+        };
+        let mut snapshot = self.thread_settings_snapshot().await;
+        snapshot.codexdd_first_worker = Some(prospective.clone());
+        let msg = EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
+            thread_id: Some(self.thread_id()),
+            thread_settings: snapshot,
+        });
+        live_thread
+            .append_items(&[RolloutItem::EventMsg(msg)])
+            .await
+            .map_err(|error| format!("SETUP_BLOCKED: candidate checkpoint append failed: {error}"))?;
+        live_thread
+            .flush()
+            .await
+            .map_err(|error| format!("SETUP_BLOCKED: candidate checkpoint flush failed: {error}"))?;
+        // The persistence permit excludes competing settings checkpoints.
+        // Any interrupted step after flush is recovered from the native record.
+        self.state
+            .lock()
+            .await
+            .first_worker_authority
+            .apply_durable_candidate(requested, &prospective)?;
+        Ok(())
     }
 }
 

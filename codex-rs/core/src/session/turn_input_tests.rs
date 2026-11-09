@@ -1172,6 +1172,125 @@ async fn codexdd_046_3b2f_invalid_first_core_turn_can_retry_without_rebind() {
     session.abort_all_tasks(TurnAbortReason::Interrupted).await;
 }
 
+#[test]
+fn codexdd_046_3b2j_candidate_submission_is_standalone_and_explicit() {
+    let header = format!(
+        "[codexdd_candidate]\\nprevious_sha = \"{}\"\\ncandidate_sha = \"{}\"\\n\\nAuthorize this exact reviewed candidate.",
+        "a".repeat(40),
+        "b".repeat(40)
+    )
+    .replace("\\n", "\n");
+    let input = SubmittedTurnInput::UserInput {
+        content: vec![UserInput::Text {
+            text: header.clone(),
+            text_elements: Vec::new(),
+        }],
+        client_id: Some("direct-owner".to_string()),
+    };
+    let proposal = parse_candidate_submission(&input)
+        .expect("parsed")
+        .expect("candidate");
+    assert_eq!(proposal.previous_sha, "a".repeat(40));
+    assert_eq!(proposal.candidate_sha, "b".repeat(40));
+    let with_attachment = SubmittedTurnInput::UserInput {
+        content: vec![
+            UserInput::Text {
+                text: header,
+                text_elements: Vec::new(),
+            },
+            UserInput::Text {
+                text: "extra input".to_string(),
+                text_elements: Vec::new(),
+            },
+        ],
+        client_id: None,
+    };
+    assert!(parse_candidate_submission(&with_attachment).is_err());
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2j_unbound_candidate_does_not_consume_turn() {
+    let (session, _context, _rx) = make_session_and_context_with_rx().await;
+    let header = format!(
+        "[codexdd_candidate]\nprevious_sha = \"{}\"\ncandidate_sha = \"{}\"\n\nAuthorize exact successor.",
+        "a".repeat(40),
+        "b".repeat(40)
+    );
+    let submission = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: header,
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::StartIfIdle,
+        "candidate-not-authorized".to_string(),
+    )
+    .await;
+    assert!(
+        submission.expect_err("no persisted Worker authority")
+            .to_string()
+            .contains("SETUP_BLOCKED:")
+    );
+    assert!(session.active_turn.lock().await.is_none());
+    assert!(!session.state.lock().await.first_worker_authority.locked());
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2j_candidate_cannot_steer_an_active_turn() {
+    let (session, turn_context, _rx) = make_session_and_context_with_rx().await;
+    session
+        .spawn_task(
+            Arc::clone(&turn_context),
+            Vec::new(),
+            NeverEndingTask {
+                kind: TaskKind::Regular,
+                listen_to_cancellation_token: true,
+            },
+        )
+        .await;
+    let header = format!(
+        "[codexdd_candidate]\nprevious_sha = \"{}\"\ncandidate_sha = \"{}\"\n\nAuthorize exact successor.",
+        "a".repeat(40),
+        "b".repeat(40)
+    );
+    let not_idle = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: header.clone(),
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::StartOrSteer,
+        "candidate-during-task".to_string(),
+    )
+    .await
+    .expect("idle-only admission returns a typed refusal");
+    assert!(matches!(
+        not_idle,
+        TurnInputSubmission::NotSubmitted {
+            reason: NotSubmittedReason::NotIdle
+        }
+    ));
+    let explicit_steer = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: header,
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::Steer {
+            expected_turn_id: turn_context.sub_id.clone(),
+        },
+        "candidate-explicit-steer".to_string(),
+    )
+    .await;
+    assert!(
+        explicit_steer
+            .expect_err("candidate steering must be rejected")
+            .to_string()
+            .contains("SETUP_BLOCKED:")
+    );
+    session.abort_all_tasks(TurnAbortReason::Interrupted).await;
+}
+
 #[tokio::test]
 async fn codexdd_046_3b2h_subsequent_turn_requires_flushed_first_source_binding() {
     use codex_config::config_toml::AdaptiveWorkerRoleToml;

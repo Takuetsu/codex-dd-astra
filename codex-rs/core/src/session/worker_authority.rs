@@ -7,6 +7,7 @@ use codex_config::config_toml::parse_adaptive_worker_first_message;
 use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use serde::Deserialize;
 use std::process::Command;
+use std::path::Path;
 
 /// Owner candidate intent; parsing or preflight alone does not grant authority.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -66,8 +67,6 @@ pub(crate) fn parse_candidate_sha_authorization(
     }
     Ok(Some(CandidateShaAuthorization { previous_sha, candidate_sha }))
 }
-
-use std::path::Path;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct CoreFirstWorkerAuthority {
@@ -198,6 +197,39 @@ impl CoreFirstWorkerAuthority {
         // Proposal changes only SHA. Role, scope, root and task kind stay fixed.
         snapshot.source_sha = Some(request.candidate_sha.clone());
         Ok(snapshot)
+    }
+
+    /// This method is called ONLY after a matching proposed source was
+    /// persisted and flushed by Core under the settings persistence permit.
+    /// Rejects stale proposals without changing the original Worker scope.
+    pub(crate) fn apply_durable_candidate(
+        &mut self,
+        requested: &CandidateShaAuthorization,
+        persisted: &CodexddFirstWorkerSnapshot,
+    ) -> Result<(), String> {
+        let Some(current) = self.runtime_binding() else {
+            return Err("SETUP_BLOCKED: cannot promote uncheckpointed Worker authority".to_string());
+        };
+        let Some(original) = self.first_user_snapshot() else {
+            return Err("SETUP_BLOCKED: no Core-owned first-user Worker snapshot".to_string());
+        };
+        if current.role != AdaptiveWorkerRoleToml::Implementation
+            || !matches!(current.task_kind.as_deref(), None | Some("source_change"))
+            || current.source_sha.as_deref() != Some(requested.previous_sha.as_str())
+            || requested.candidate_sha == requested.previous_sha
+            || persisted.source_sha.as_deref() != Some(requested.candidate_sha.as_str())
+            || persisted.role != original.role
+            || persisted.authorized_scope != original.authorized_scope
+            || persisted.source_root != original.source_root
+            || persisted.task_kind != original.task_kind
+        {
+            return Err("SETUP_BLOCKED: stale or scope-changing durable candidate promotion".to_string());
+        }
+        let Some(binding) = self.binding.as_mut() else {
+            return Err("SETUP_BLOCKED: missing original Worker binding".to_string());
+        };
+        binding.source_sha = Some(requested.candidate_sha.clone());
+        Ok(())
     }
 
     /// Mark durable only after the native thread store confirmed append and flush.
@@ -585,5 +617,25 @@ mod tests {
             "preserve"
         );
     }
+
+    #[test]
+    fn codexdd_046_3b2i_candidate_promotion_preserves_role_and_scope() {
+        let (_tmp, mut authority, request) = candidate_fixture();
+        let prospective = authority.verified_candidate_snapshot(&request).expect("verified");
+        let mut altered = prospective.clone();
+        altered.authorized_scope = "unapproved change".to_string();
+        assert!(authority.apply_durable_candidate(&request, &altered).is_err());
+        assert_eq!(
+            authority.runtime_binding().expect("original binding").source_sha.as_deref(),
+            Some(request.previous_sha.as_str())
+        );
+        authority.apply_durable_candidate(&request, &prospective).expect("apply flushed candidate");
+        let current = authority.runtime_binding().expect("new binding");
+        assert_eq!(current.source_sha.as_deref(), Some(request.candidate_sha.as_str()));
+        assert_eq!(current.authorized_scope.as_deref(), Some("approved packet"));
+        assert_eq!(current.role, AdaptiveWorkerRoleToml::Implementation);
+        assert!(authority.apply_durable_candidate(&request, &prospective).is_err());
+    }
+
 
 }
