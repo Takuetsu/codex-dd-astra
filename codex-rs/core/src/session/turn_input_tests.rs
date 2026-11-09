@@ -1227,7 +1227,8 @@ async fn codexdd_046_3b2j_unbound_candidate_does_not_consume_turn() {
     )
     .await;
     assert!(
-        submission.expect_err("no persisted Worker authority")
+        submission
+            .expect_err("no persisted Worker authority")
             .to_string()
             .contains("SETUP_BLOCKED:")
     );

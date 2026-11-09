@@ -2,9 +2,9 @@
 //! with checkpoints written directly to storage.
 
 use super::session::Session;
-use super::worker_authority::CandidateShaAuthorization;
 use super::session::SessionSettingsUpdate;
 use super::step_settings::StepSettingsUpdate;
+use super::worker_authority::CandidateShaAuthorization;
 use crate::WithTurnExtensionData;
 use crate::config::ConstraintResult;
 use codex_history::RolloutItem;
@@ -50,11 +50,15 @@ impl Session {
     ) -> Result<(), String> {
         let _settings_guard = acquire_persistence_lock(self).await;
         let Some(live_thread) = self.live_thread() else {
-            return Err("SETUP_BLOCKED: candidate source requires a live durable thread store".to_string());
+            return Err(
+                "SETUP_BLOCKED: candidate source requires a live durable thread store".to_string(),
+            );
         };
         let prospective = {
             let state = self.state.lock().await;
-            state.first_worker_authority.verified_candidate_snapshot(requested)?
+            state
+                .first_worker_authority
+                .verified_candidate_snapshot(requested)?
         };
         let mut snapshot = self.thread_settings_snapshot().await;
         snapshot.codexdd_first_worker = Some(prospective.clone());
@@ -65,11 +69,12 @@ impl Session {
         live_thread
             .append_items(&[RolloutItem::EventMsg(msg)])
             .await
-            .map_err(|error| format!("SETUP_BLOCKED: candidate checkpoint append failed: {error}"))?;
-        live_thread
-            .flush()
-            .await
-            .map_err(|error| format!("SETUP_BLOCKED: candidate checkpoint flush failed: {error}"))?;
+            .map_err(|error| {
+                format!("SETUP_BLOCKED: candidate checkpoint append failed: {error}")
+            })?;
+        live_thread.flush().await.map_err(|error| {
+            format!("SETUP_BLOCKED: candidate checkpoint flush failed: {error}")
+        })?;
         // The persistence permit excludes competing settings checkpoints.
         // Any interrupted step after flush is recovered from the native record.
         self.state
