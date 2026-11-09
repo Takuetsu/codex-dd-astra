@@ -9742,6 +9742,7 @@ async fn inactive_thread_settings_notification_updates_cached_collaboration_mode
 
     let notification = ThreadSettingsUpdatedNotification {
         thread_id: inactive_thread_id.to_string(),
+        codexdd_first_worker: None,
         thread_settings: ThreadSettings {
             disabled_plugin_ids: Vec::new(),
             cwd: test_absolute_path("/tmp/thread-settings"),

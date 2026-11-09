@@ -13,6 +13,7 @@ fn thread_settings_for_test(
 ) -> codex_app_server_protocol::ThreadSettingsUpdatedNotification {
     codex_app_server_protocol::ThreadSettingsUpdatedNotification {
         thread_id: thread_id.to_string(),
+        codexdd_first_worker: None,
         thread_settings: codex_app_server_protocol::ThreadSettings {
             disabled_plugin_ids: Vec::new(),
             cwd: test_path_buf("/tmp/thread-settings").abs(),
