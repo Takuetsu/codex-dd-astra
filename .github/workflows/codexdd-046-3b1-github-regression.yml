@@ -42,6 +42,8 @@ on:
       - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
       - codex-rs/app-server/src/request_processors/turn_processor.rs
       - codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs
+      - codex-rs/app-server/tests/suite/v2/mod.rs
+      - codex-rs/app-server/tests/suite/v2/codexdd_candidate_native.rs
       - docs/regression-fixtures/codexdd-046-agent-reliability-cases.json
   workflow_dispatch:
 
@@ -145,7 +147,7 @@ jobs:
     name: Windows TUI 3B.1 compile and focused regression tests
     needs: [source-contract, rust-format]
     runs-on: windows-2022
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_PROFILE_DEV_DEBUG: "0"
@@ -407,6 +409,23 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Rust regression failed: $filter" }
             Write-Host "::endgroup::"
           }
+      - name: Execute 3B.2i-e real app-server candidate and cold-resume acceptance
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2n_'
+          $listing = & cargo test --locked -p codex-app-server --test all $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate native app-server candidate acceptance'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly one native candidate-and-restart test'
+          }
+          & cargo test --locked -p codex-app-server --test all $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Real-process candidate authorization/cold-resume acceptance failed' }
       - name: Report no release or installation
         if: always()
         shell: pwsh
