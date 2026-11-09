@@ -5,6 +5,68 @@ use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_config::config_toml::parse_adaptive_worker_first_message;
 use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
+use serde::Deserialize;
+use std::process::Command;
+
+/// Owner candidate intent; parsing or preflight alone does not grant authority.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code)] // 3B.2i-a: candidate authorizer is deliberately not yet wired.
+pub(crate) struct CandidateShaAuthorization {
+    pub(crate) previous_sha: String,
+    pub(crate) candidate_sha: String,
+}
+
+/// Separate exact-owner proposal grammar. No model text can change a source pin.
+#[allow(dead_code)] // 3B.2i-a: read-only fixture pending trusted turn-input wiring.
+pub(crate) fn parse_candidate_sha_authorization(
+    text: &str,
+) -> Result<Option<CandidateShaAuthorization>, String> {
+    let mut lines = text.lines();
+    let Some(first) = lines.by_ref().find(|line| !line.trim().is_empty()) else {
+        return Ok(None);
+    };
+    if first.trim() != "[codexdd_candidate]" {
+        return Ok(None);
+    }
+    let mut header = String::from("[codexdd_candidate]\n");
+    let mut delimiter = false;
+    for line in lines.by_ref() {
+        if line.trim().is_empty() {
+            delimiter = true;
+            break;
+        }
+        header.push_str(line);
+        header.push('\n');
+    }
+    if !delimiter || !lines.any(|line| !line.trim().is_empty()) {
+        return Err("candidate authorization requires a blank line and owner instruction".to_string());
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Envelope {
+        codexdd_candidate: CandidateFields,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct CandidateFields {
+        previous_sha: String,
+        candidate_sha: String,
+    }
+    let parsed: Envelope = toml::from_str(&header)
+        .map_err(|err| format!("invalid [codexdd_candidate] header: {err}"))?;
+    let previous_sha = parsed.codexdd_candidate.previous_sha.trim().to_ascii_lowercase();
+    let candidate_sha = parsed.codexdd_candidate.candidate_sha.trim().to_ascii_lowercase();
+    for sha in [&previous_sha, &candidate_sha] {
+        if sha.len() != 40 || !sha.bytes().all(|ch| ch.is_ascii_hexdigit()) {
+            return Err("candidate authorization requires two exact 40-character Git SHAs".to_string());
+        }
+    }
+    if previous_sha == candidate_sha {
+        return Err("candidate authorization cannot silently reuse the same SHA".to_string());
+    }
+    Ok(Some(CandidateShaAuthorization { previous_sha, candidate_sha }))
+}
+
 use std::path::Path;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -56,6 +118,86 @@ impl CoreFirstWorkerAuthority {
         self.locked = true;
         self.checkpointed = false;
         true
+    }
+
+    /// Preflight an explicit same-root descendant without changing the active
+    /// binding. A later owner-origin turn must persist and flush before promotion.
+    #[allow(dead_code)] // 3B.2i-a: deliberately no authority mutation.
+    pub(crate) fn verified_candidate_snapshot(
+        &self,
+        request: &CandidateShaAuthorization,
+    ) -> Result<CodexddFirstWorkerSnapshot, String> {
+        let Some(worker) = self.runtime_binding() else {
+            return Err("SETUP_BLOCKED: no durable first-user Worker source authority".to_string());
+        };
+        if worker.role != AdaptiveWorkerRoleToml::Implementation
+            || !matches!(worker.task_kind.as_deref(), None | Some("source_change"))
+        {
+            return Err("SETUP_BLOCKED: candidate must belong to a source-changing Implementation Worker".to_string());
+        }
+        let root = worker.source_root.as_deref().ok_or_else(|| {
+            "SETUP_BLOCKED: existing Worker has no exact source root".to_string()
+        })?;
+        let previous = worker.source_sha.as_deref().ok_or_else(|| {
+            "SETUP_BLOCKED: existing Worker has no pinned source SHA".to_string()
+        })?;
+        if !previous.eq_ignore_ascii_case(&request.previous_sha) {
+            return Err("SETUP_BLOCKED: candidate request has the wrong previous source SHA".to_string());
+        }
+        let selected = Path::new(root).canonicalize().map_err(|err| {
+            format!("SETUP_BLOCKED: cannot resolve authorized worktree: {err}")
+        })?;
+        let git = |args: &[&str]| -> Result<String, String> {
+            let output = Command::new("git")
+                .arg("-C")
+                .arg(&selected)
+                .args(args)
+                .output()
+                .map_err(|err| format!("SETUP_BLOCKED: Git inspection unavailable: {err}"))?;
+            if !output.status.success() {
+                return Err(format!(
+                    "SETUP_BLOCKED: candidate Git inspection failed (status {})",
+                    output.status
+                ));
+            }
+            String::from_utf8(output.stdout)
+                .map_err(|_| "SETUP_BLOCKED: Git inspection returned non-UTF8 output".to_string())
+        };
+        let reported_root = git(&["rev-parse", "--show-toplevel"])?;
+        let reported = Path::new(reported_root.trim()).canonicalize().map_err(|err| {
+            format!("SETUP_BLOCKED: invalid Git-reported root: {err}")
+        })?;
+        if reported != selected {
+            return Err("SETUP_BLOCKED: candidate is not the exact authorized worktree".to_string());
+        }
+        let observed = git(&["rev-parse", "HEAD"])?;
+        if !observed.trim().eq_ignore_ascii_case(&request.candidate_sha) {
+            return Err(format!(
+                "SETUP_BLOCKED: observed candidate HEAD {} differs from requested {}",
+                observed.trim(), request.candidate_sha
+            ));
+        }
+        if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?
+            .trim()
+            .is_empty()
+        {
+            return Err("SETUP_BLOCKED: preserve staged, unstaged, or untracked edits; candidate is dirty".to_string());
+        }
+        let ancestry = Command::new("git")
+            .arg("-C")
+            .arg(&selected)
+            .args(["merge-base", "--is-ancestor", &request.previous_sha, &request.candidate_sha])
+            .status()
+            .map_err(|err| format!("SETUP_BLOCKED: cannot verify source ancestry: {err}"))?;
+        if !ancestry.success() {
+            return Err("SETUP_BLOCKED: candidate is not a descendant of the authorized SHA".to_string());
+        }
+        let mut snapshot = self.first_user_snapshot().ok_or_else(|| {
+            "SETUP_BLOCKED: missing original first-user authority snapshot".to_string()
+        })?;
+        // Proposal changes only SHA. Role, scope, root and task kind stay fixed.
+        snapshot.source_sha = Some(request.candidate_sha.clone());
+        Ok(snapshot)
     }
 
     /// Mark durable only after the native thread store confirmed append and flush.
@@ -333,4 +475,115 @@ mod tests {
         assert!(!launcher.mark_checkpointed());
         assert!(launcher.runtime_binding().is_none());
     }
+    fn candidate_fixture() -> (tempfile::TempDir, CoreFirstWorkerAuthority, CandidateShaAuthorization) {
+        let tmp = tempfile::tempdir().expect("temporary Git fixture");
+        let root = tmp.path();
+        let git = |args: &[&str]| -> String {
+            let output = Command::new("git")
+                .arg("-C")
+                .arg(root)
+                .args(args)
+                .output()
+                .expect("Git available");
+            assert!(
+                output.status.success(),
+                "Git fixture failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            String::from_utf8(output.stdout).expect("Git output").trim().to_string()
+        };
+        git(&["init"]);
+        git(&["config", "user.email", "codexdd-fixture@example.invalid"]);
+        git(&["config", "user.name", "CodexDD regression"]);
+        std::fs::write(root.join("candidate.txt"), "original").expect("first file");
+        git(&["add", "candidate.txt"]);
+        git(&["commit", "-m", "authorized source"]);
+        let previous_sha = git(&["rev-parse", "HEAD"]);
+        std::fs::write(root.join("candidate.txt"), "next").expect("next file");
+        git(&["add", "candidate.txt"]);
+        git(&["commit", "-m", "reviewed candidate"]);
+        let candidate_sha = git(&["rev-parse", "HEAD"]);
+        let prompt = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"approved packet\"\nsource_root = '{}'\nsource_sha = \"{}\"\n\nImplement.",
+            root.display(), previous_sha
+        );
+        let mut authority = CoreFirstWorkerAuthority::default();
+        let proposed = authority.prepare(Some(&prompt)).expect("first binding");
+        assert!(authority.accept(proposed));
+        assert!(authority.mark_checkpointed());
+        (tmp, authority, CandidateShaAuthorization { previous_sha, candidate_sha })
+    }
+
+    #[test]
+    fn codexdd_046_3b2i_candidate_header_requires_explicit_shas() {
+        assert_eq!(parse_candidate_sha_authorization("Progress update"), Ok(None));
+        assert_eq!(
+            parse_candidate_sha_authorization("[adaptive_worker]\nrole = \"implementation\""),
+            Ok(None)
+        );
+        let previous = "a".repeat(40);
+        let candidate = "b".repeat(40);
+        let header = format!(
+            "[codexdd_candidate]\nprevious_sha = \"{previous}\"\ncandidate_sha = \"{candidate}\"\n\nApprove this exact source."
+        );
+        assert_eq!(
+            parse_candidate_sha_authorization(&header).expect("valid proposal"),
+            Some(CandidateShaAuthorization {
+                previous_sha: previous.clone(),
+                candidate_sha: candidate.clone()
+            })
+        );
+        assert!(parse_candidate_sha_authorization(
+            &header.replace("candidate_sha =", "source_root = '/other'\ncandidate_sha =")
+        ).is_err());
+        assert!(parse_candidate_sha_authorization(
+            &header.replace(&candidate, &previous)
+        ).is_err());
+        assert!(parse_candidate_sha_authorization(
+            &header.replace(&candidate, "not-a-sha")
+        ).is_err());
+        assert!(parse_candidate_sha_authorization(
+            &header.replace("\n\nApprove this exact source.", "")
+        ).is_err());
+    }
+
+    #[test]
+    fn codexdd_046_3b2i_descendant_preflight_does_not_rebind() {
+        let (_tmp, authority, request) = candidate_fixture();
+        let old = authority.runtime_binding().expect("original authority");
+        let proposed = authority.verified_candidate_snapshot(&request).expect("clean descendant");
+        assert_eq!(proposed.source_sha.as_deref(), Some(request.candidate_sha.as_str()));
+        assert_eq!(proposed.source_root, old.source_root);
+        assert_eq!(proposed.authorized_scope, old.authorized_scope.unwrap());
+        assert_eq!(
+            authority.runtime_binding().expect("unchanged authority").source_sha.as_deref(),
+            Some(request.previous_sha.as_str())
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3b2i_rejects_unbound_wrong_sha_and_dirty_candidate() {
+        let (tmp, authority, request) = candidate_fixture();
+        assert!(CoreFirstWorkerAuthority::default().verified_candidate_snapshot(&request).is_err());
+        let launcher = CoreFirstWorkerAuthority::from_startup(authority.binding().cloned());
+        assert!(launcher.verified_candidate_snapshot(&request).is_err());
+        let wrong_parent = CandidateShaAuthorization {
+            previous_sha: "f".repeat(40),
+            candidate_sha: request.candidate_sha.clone(),
+        };
+        assert!(authority.verified_candidate_snapshot(&wrong_parent).is_err());
+        let wrong_head = CandidateShaAuthorization {
+            previous_sha: request.previous_sha.clone(),
+            candidate_sha: "e".repeat(40),
+        };
+        assert!(authority.verified_candidate_snapshot(&wrong_head).is_err());
+        std::fs::write(tmp.path().join("untracked.txt"), "preserve").expect("untracked file");
+        let blocker = authority.verified_candidate_snapshot(&request).expect_err("dirty candidate");
+        assert!(blocker.contains("staged, unstaged, or untracked"));
+        assert_eq!(
+            std::fs::read_to_string(tmp.path().join("untracked.txt")).expect("preserved file"),
+            "preserve"
+        );
+    }
+
 }
