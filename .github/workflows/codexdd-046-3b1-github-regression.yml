@@ -41,6 +41,7 @@ on:
       - codex-rs/history/src/tests.rs
       - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
       - codex-rs/app-server/src/request_processors/turn_processor.rs
+      - codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs
       - docs/regression-fixtures/codexdd-046-agent-reliability-cases.json
   workflow_dispatch:
 
