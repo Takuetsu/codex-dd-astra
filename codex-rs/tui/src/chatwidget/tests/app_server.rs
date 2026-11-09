@@ -712,15 +712,14 @@ async fn codexdd_046_3b2l_same_thread_notification_updates_tui_pin_fail_closed()
 
     let mut notification = thread_settings_for_test("gpt-5.2", thread_id);
     notification.thread_settings.cwd = cwd;
-    notification.codexdd_first_worker = Some(
-        codex_protocol::protocol::CodexddFirstWorkerSnapshot {
+    notification.codexdd_first_worker =
+        Some(codex_protocol::protocol::CodexddFirstWorkerSnapshot {
             role: "implementation".to_string(),
             authorized_scope: "approved source packet".to_string(),
             source_root: Some(root.display().to_string()),
             source_sha: Some(candidate_sha.clone()),
             task_kind: Some("source_change".to_string()),
-        },
-    );
+        });
 
     let mut foreign = notification.clone();
     foreign.thread_id = ThreadId::new().to_string();
@@ -729,7 +728,11 @@ async fn codexdd_046_3b2l_same_thread_notification_updates_tui_pin_fail_closed()
         /*replay_kind*/ None,
     );
     assert_eq!(
-        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        chat.adaptive_effort
+            .assignment_preflight
+            .as_ref()
+            .unwrap()
+            .source_sha,
         original_sha
     );
 
@@ -738,7 +741,11 @@ async fn codexdd_046_3b2l_same_thread_notification_updates_tui_pin_fail_closed()
         /*replay_kind*/ None,
     );
     assert_eq!(
-        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        chat.adaptive_effort
+            .assignment_preflight
+            .as_ref()
+            .unwrap()
+            .source_sha,
         candidate_sha
     );
 
@@ -753,7 +760,11 @@ async fn codexdd_046_3b2l_same_thread_notification_updates_tui_pin_fail_closed()
         /*replay_kind*/ None,
     );
     assert_eq!(
-        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        chat.adaptive_effort
+            .assignment_preflight
+            .as_ref()
+            .unwrap()
+            .source_sha,
         candidate_sha
     );
 
@@ -769,7 +780,11 @@ async fn codexdd_046_3b2l_same_thread_notification_updates_tui_pin_fail_closed()
         /*replay_kind*/ None,
     );
     assert_eq!(
-        chat.adaptive_effort.assignment_preflight.as_ref().unwrap().source_sha,
+        chat.adaptive_effort
+            .assignment_preflight
+            .as_ref()
+            .unwrap()
+            .source_sha,
         candidate_sha
     );
     assert_eq!(

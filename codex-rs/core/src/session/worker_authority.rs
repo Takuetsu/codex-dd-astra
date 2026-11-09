@@ -715,10 +715,16 @@ mod tests {
         assert_eq!(resumed.restore_first_user_snapshot(&decoded), Ok(true));
         resumed.lock_after_prior_user_history();
         let binding = resumed.runtime_binding().expect("restored Worker");
-        assert_eq!(binding.source_sha.as_deref(), Some(requested.candidate_sha.as_str()));
+        assert_eq!(
+            binding.source_sha.as_deref(),
+            Some(requested.candidate_sha.as_str())
+        );
         assert_eq!(binding.authorized_scope.as_deref(), Some("approved packet"));
         assert_eq!(binding.role, AdaptiveWorkerRoleToml::Implementation);
-        assert_eq!(binding.source_root, original.runtime_binding().unwrap().source_root);
+        assert_eq!(
+            binding.source_root,
+            original.runtime_binding().unwrap().source_root
+        );
         assert_eq!(resumed.prepare(Some(REPAIR)), Ok(None));
         let mut fork = CoreFirstWorkerAuthority::default();
         fork.lock_after_prior_user_history();
