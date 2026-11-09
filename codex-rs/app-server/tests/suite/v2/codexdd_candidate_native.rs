@@ -30,7 +30,11 @@ use tokio::time::timeout;
 const CANDIDATE_TIMEOUT: Duration = Duration::from_secs(45);
 
 fn git(root: &Path, args: &[&str]) -> Result<String> {
-    let output = Command::new("git").arg("-C").arg(root).args(args).output()?;
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()?;
     ensure!(
         output.status.success(),
         "isolated git {} failed: {}",
@@ -163,7 +167,10 @@ async fn codexdd_046_3b2n_real_app_server_candidate_and_cold_resume() -> Result<
         .await?;
     let read: ThreadReadResponse =
         timeout(CANDIDATE_TIMEOUT, server.read_response(read_id)).await??;
-    let path = read.thread.path.context("native thread rollout must exist")?;
+    let path = read
+        .thread
+        .path
+        .context("native thread rollout must exist")?;
     let thread_uuid = ThreadId::from_string(&thread_id)?;
     let (items, _, _) = RolloutRecorder::load_rollout_items(&path).await?;
     let durable_sha = items.iter().rev().find_map(|item| match item {

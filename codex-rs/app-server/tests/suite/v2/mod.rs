@@ -18,8 +18,8 @@ mod bedrock_gov_cloud;
 mod bedrock_service_tier;
 mod bedrock_setup;
 mod client_metadata;
-mod codexdd_candidate_native;
 mod code_mode_host;
+mod codexdd_candidate_native;
 mod collaboration_mode_list;
 #[cfg(unix)]
 mod command_exec;
