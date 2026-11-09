@@ -320,7 +320,9 @@ mod tests {
     #[test]
     fn codexdd_046_3b2h_plain_or_launcher_authority_cannot_forge_checkpoint() {
         let mut plain = CoreFirstWorkerAuthority::default();
-        let proposed = plain.prepare(Some("Ordinary first message")).expect("plain");
+        let proposed = plain
+            .prepare(Some("Ordinary first message"))
+            .expect("plain");
         assert!(plain.accept(proposed));
         assert!(!plain.mark_checkpointed());
         assert!(plain.runtime_binding().is_none());

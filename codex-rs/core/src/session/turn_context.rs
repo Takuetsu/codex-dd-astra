@@ -1278,7 +1278,12 @@ impl Session {
         // selected canonical worktree, clean status, and exact candidate SHA.
         if matches!(build_mode, TurnContextBuildMode::Full)
             && per_turn_config.adaptive_worker.is_none()
-            && let Some(worker) = self.state.lock().await.first_worker_authority.runtime_binding()
+            && let Some(worker) = self
+                .state
+                .lock()
+                .await
+                .first_worker_authority
+                .runtime_binding()
         {
             per_turn_config.adaptive_worker = Some(worker);
         }
