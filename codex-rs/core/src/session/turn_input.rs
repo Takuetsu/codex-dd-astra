@@ -357,7 +357,7 @@ async fn accept_first_worker_authority(
             && state.first_worker_authority.first_user_snapshot().is_some()
     };
     if accepted_first_binding {
-        match session.checkpoint_thread_settings().await {
+        match session.checkpoint_thread_settings_with_durability().await {
             Ok(true) => {
                 session
                     .state

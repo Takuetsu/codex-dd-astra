@@ -17,9 +17,17 @@ use codex_thread_store::ThreadStoreResult;
 use tokio::sync::SemaphorePermit;
 
 impl Session {
+    /// Retains the established thread-settings checkpoint API for callers that
+    /// only need a successful write or error, without exposing Worker authority.
+    pub(crate) async fn checkpoint_thread_settings(&self) -> ThreadStoreResult<()> {
+        self.checkpoint_thread_settings_with_durability()
+            .await
+            .map(|_| ())
+    }
+
     /// Captures and flushes current settings under the shared persistence permit.
     /// No live recorder means no durable first-message authority can be granted.
-    pub(crate) async fn checkpoint_thread_settings(&self) -> ThreadStoreResult<bool> {
+    pub(crate) async fn checkpoint_thread_settings_with_durability(&self) -> ThreadStoreResult<bool> {
         let _settings_guard = acquire_persistence_lock(self).await;
         let Some(live_thread) = self.live_thread() else {
             return Ok(false);
