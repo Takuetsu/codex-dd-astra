@@ -11,6 +11,12 @@ on:
       - codex-rs/config/src/config_toml.rs
       - codex-rs/tui/src/adaptive_worker.rs
       - codex-rs/tui/src/app_server_session.rs
+      - codex-rs/tui/src/app/app_server_event_targets.rs
+      - codex-rs/tui/src/app/tests.rs
+      - codex-rs/tui/src/chatwidget/tests/app_server.rs
+      - codex-rs/tui/src/chatwidget/settings.rs
+      - codex-rs/app-server/src/bespoke_event_handling.rs
+      - codex-rs/app-server-protocol/src/protocol/common.rs
       - codex-rs/core/src/agent/control_tests.rs
       - codex-rs/core/src/session/session.rs
       - codex-rs/core/src/session/thread_settings.rs
