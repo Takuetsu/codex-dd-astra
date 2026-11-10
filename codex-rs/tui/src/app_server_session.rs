@@ -2543,10 +2543,11 @@ async fn reconcile_resumed_core_worker(
     let locked = state.worker_assignment_locked;
     let core = worker.clone();
     let cwd = runtime_cwd.to_path_buf();
-    // Git IO is synchronous. Bound the async mapping so a stuck checkout
-    // cannot block TUI initialization or bypass the existing source pin.
+    // The TUI Git child has per-step deadlines and direct-child reaping.
+    // Keep an outer budget above their aggregate worst case, without
+    // accepting a source pin when either boundary fails.
     let checked = tokio::time::timeout(
-        std::time::Duration::from_secs(20),
+        std::time::Duration::from_secs(35),
         tokio::task::spawn_blocking(move || {
             crate::adaptive_worker::reconcile_core_candidate_preflight(
                 current.as_ref(),
