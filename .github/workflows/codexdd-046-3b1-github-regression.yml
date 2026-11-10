@@ -147,6 +147,7 @@ jobs:
   windows-3b2-native-focused:
     name: 3B.2i focused Windows Git-boundary, restart and TUI pin tests
     # An explicit commit-message opt-in runs only these narrow regressions.
+    # Scoped 3B.2i-g retest after Core snapshot projection fix, source/format PASS #42867935907.
     # Revalidated after exact-source and Rustfmt PASS (#42859946221) for 3B.2i-g.
     # This is neither the full Windows gate nor a production/release action.
     if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2-focused-native]')
