@@ -318,6 +318,110 @@ jobs:
           Write-Host "3B.2j focused native tests at $env:GITHUB_SHA only; no production work."
           git status --short
 
+  windows-3b2k-rust-native-profile:
+    name: 3B.2k native Windows repo-owned Rust targeted profile
+    # Explicit one-shot nonrelease smoke of the actual repository-owned PS1.
+    # Does not claim live Core tool/Worker acceptance or Node profile acceptance.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2k-native-rust]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare isolated Windows test build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2k source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2k-native-rust'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Install pinned cargo-nextest
+        uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        with:
+          tool: nextest
+      - name: Execute real Rust targeted LVO script and verify contract-v1 stages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2k-rust-targeted.log'
+          $profile = Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-targeted.ps1'
+          if (-not (Test-Path -LiteralPath $profile -PathType Leaf)) { throw 'Rust targeted profile unavailable' }
+          $ErrorActionPreference = 'Continue'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $profile 2>&1 | Tee-Object -FilePath $log
+          $nativeExit = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          $prefix = 'CODEXDD_VALIDATION_JSON '
+          $events = @(Get-Content -LiteralPath $log | Where-Object { $_.StartsWith($prefix) } | ForEach-Object {
+            $_.Substring($prefix.Length) | ConvertFrom-Json
+          })
+          $begins = @($events | Where-Object { $_.event -eq 'profile_begin' })
+          $ends = @($events | Where-Object { $_.event -eq 'profile_end' })
+          $stageBegins = @($events | Where-Object { $_.event -eq 'stage_begin' })
+          $stageEnds = @($events | Where-Object { $_.event -eq 'stage_end' })
+          if ($begins.Count -ne 1 -or $ends.Count -ne 1) { throw 'Missing or repeated profile contract terminal' }
+          if ($begins[0].contract_version -ne 1 -or $ends[0].contract_version -ne 1) { throw 'Wrong contract version' }
+          if ($begins[0].profile -ne 'targeted' -or $ends[0].profile -ne 'targeted') { throw 'Wrong native profile' }
+          if ($begins[0].stage_count -ne 3) { throw 'Expected three real Rust targeted stages' }
+          if ($stageBegins.Count -ne 3 -or $stageEnds.Count -ne 3) { throw 'Missing real stages in contract' }
+          $expected = @('diff-check', 'core-adaptive-tests', 'tui-adaptive-tests')
+          for ($i = 0; $i -lt 3; $i++) {
+            $ordinal = $i + 1
+            if ($stageBegins[$i].stage -ne $expected[$i] -or $stageEnds[$i].stage -ne $expected[$i]) {
+              throw "Wrong stage at ordinal $ordinal"
+            }
+            if ($stageBegins[$i].ordinal -ne $ordinal -or $stageEnds[$i].ordinal -ne $ordinal) {
+              throw "Wrong ordinal at $ordinal"
+            }
+            if ($stageEnds[$i].status -ne 'pass' -or $stageEnds[$i].native_exit_code -ne 0) {
+              throw "Rust native stage did not PASS: $($expected[$i])"
+            }
+          }
+          if ($nativeExit -ne 0 -or $ends[0].status -ne 'pass' -or $ends[0].exit_code -ne 0 -or $ends[0].completed_stages -ne 3) {
+            throw "Rust native targeted profile did not complete: process exit $nativeExit; contract status $($ends[0].status)"
+          }
+          Write-Host "3B.2k actual Rust targeted profile PASS: three native stages and matching exit/contract."
+      - name: Confirm no source mutation or release activity
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.2k Rust profile evidence at $env:GITHUB_SHA; no release, install or merge."
+          git status --short
+
   windows-rust:
     name: Windows TUI 3B.1 compile and focused regression tests
     # Broad Windows recompilation is a deliberate final gate, not a push-time
