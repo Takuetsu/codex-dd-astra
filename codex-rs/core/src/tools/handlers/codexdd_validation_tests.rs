@@ -221,12 +221,7 @@ exit $nativeExit
     for native_exit in [0, 7] {
         let log = temp.path().join(format!("fixture-{native_exit}.log"));
         let exit_file = temp.path().join(format!("fixture-{native_exit}.exit"));
-        let command = validation_powershell_command(
-            &repository_root,
-            &script,
-            &log,
-            &exit_file,
-        );
+        let command = validation_powershell_command(&repository_root, &script, &log, &exit_file);
         let output = Command::new("powershell.exe")
             .args(["-NoProfile", "-NonInteractive", "-Command"])
             .arg(command)
