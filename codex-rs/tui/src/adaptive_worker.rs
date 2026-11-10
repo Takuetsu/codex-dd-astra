@@ -124,7 +124,11 @@ fn run_bounded_tui_command(
                 return Err(format!(
                     "SETUP_BLOCKED: TUI Git {step} timed out after {}ms; process {}",
                     deadline.as_millis(),
-                    if terminated { "terminated" } else { "termination unconfirmed" }
+                    if terminated {
+                        "terminated"
+                    } else {
+                        "termination unconfirmed"
+                    }
                 ));
             }
             Ok(None) => thread::sleep(Duration::from_millis(25)),
@@ -135,7 +139,11 @@ fn run_bounded_tui_command(
                 }
                 return Err(format!(
                     "SETUP_BLOCKED: TUI Git {step} could not be monitored: {err}; process {}",
-                    if terminated { "terminated" } else { "termination unconfirmed" }
+                    if terminated {
+                        "terminated"
+                    } else {
+                        "termination unconfirmed"
+                    }
                 ));
             }
         }
@@ -150,7 +158,9 @@ fn run_bounded_tui_command(
         .read_to_end(&mut bytes)
         .map_err(|err| format!("SETUP_BLOCKED: TUI Git {step} output read failed: {err}"))?;
     if bytes.len() as u64 > MAX_OUTPUT {
-        return Err(format!("SETUP_BLOCKED: TUI Git {step} exceeded bounded output size"));
+        return Err(format!(
+            "SETUP_BLOCKED: TUI Git {step} exceeded bounded output size"
+        ));
     }
     let output = String::from_utf8(bytes)
         .map_err(|_| format!("SETUP_BLOCKED: TUI Git {step} returned non-UTF8 output"))?;
@@ -249,7 +259,10 @@ pub(crate) fn preflight_mechanical_target(
             binding.source_sha
         ));
     }
-    if !git("status", &["status", "--porcelain=v1", "--untracked-files=all"])?
+    if !git(
+        "status",
+        &["status", "--porcelain=v1", "--untracked-files=all"],
+    )?
         .trim()
         .is_empty()
     {
