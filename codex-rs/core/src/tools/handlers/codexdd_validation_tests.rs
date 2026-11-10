@@ -192,6 +192,84 @@ fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() 
     );
 }
 
+/// Exercise the real Windows PowerShell wrapper and actual process exit-file
+/// capture without invoking a real Worker or trusting a model-supplied receipt.
+/// Both fixture branches intentionally emit a syntactically complete PASS; the
+/// nonzero native process exit must override that apparent result.
+#[cfg(windows)]
+#[test]
+fn codexdd_046_3b2m_native_wrapper_records_real_exit_and_rejects_forged_pass() {
+    let temp = tempdir().expect("fixture root");
+    let repository_root = temp.path().join("owner's LVO test");
+    let scripts = repository_root.join("scripts");
+    fs::create_dir_all(&scripts).expect("create scripts");
+    let script = scripts.join("codexdd-test-targeted.ps1");
+    fs::write(
+        &script,
+        r#"
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_begin","profile":"targeted","stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_begin","profile":"targeted","stage":"fixture-check","ordinal":1,"stage_count":1}')
+[Console]::Error.WriteLine('native fixture stderr; not a validation event')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_end","profile":"targeted","stage":"fixture-check","ordinal":1,"status":"pass","native_exit_code":0}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_end","profile":"targeted","status":"pass","exit_code":0,"completed_stages":1}')
+$nativeExit = [int]$env:CODEXDD_FIXTURE_NATIVE_EXIT
+exit $nativeExit
+"#,
+    )
+    .expect("write isolated fixture profile");
+
+    for native_exit in [0, 7] {
+        let log = temp.path().join(format!("fixture-{native_exit}.log"));
+        let exit_file = temp.path().join(format!("fixture-{native_exit}.exit"));
+        let command = validation_powershell_command(
+            &repository_root,
+            &script,
+            &log,
+            &exit_file,
+        );
+        let output = Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command"])
+            .arg(command)
+            .env("CODEXDD_FIXTURE_NATIVE_EXIT", native_exit.to_string())
+            .output()
+            .expect("run the actual native PowerShell LVO wrapper");
+        assert_eq!(
+            output.status.code(),
+            Some(native_exit),
+            "wrapper did not preserve the native fixture exit"
+        );
+        let captured = fs::read_to_string(&log).expect("required full native LVO log");
+        assert!(captured.contains("native fixture stderr"));
+        let recorded_exit: i32 = fs::read_to_string(&exit_file)
+            .expect("required native exit sidecar")
+            .trim()
+            .parse()
+            .expect("parse recorded native exit");
+        assert_eq!(recorded_exit, native_exit);
+
+        let mut summary = parse_validation_summary(ValidationProfile::Targeted, &captured, &log)
+            .expect("fixture has valid, complete contract-v1 records");
+        // Both branches emit PASS: only the actual process exit decides whether
+        // that claim can be trusted. This is not a production test receipt.
+        assert_eq!(summary.status, "pass");
+        enforce_native_exit_consistency(&mut summary, Some(recorded_exit));
+        if native_exit == 0 {
+            assert_eq!(summary.status, "pass");
+            assert_eq!(summary.exit_code, 0);
+            assert_eq!(summary.stages.len(), 1);
+        } else {
+            assert_eq!(summary.status, "error");
+            assert_eq!(summary.exit_code, 2);
+            assert_eq!(summary.error_type.as_deref(), Some("native_exit_mismatch"));
+            assert_eq!(
+                validation_failure_fingerprint(ValidationProfile::Targeted, &summary),
+                None,
+                "forged PASS and nonzero exit must not authorize repair"
+            );
+        }
+    }
+}
+
 #[test]
 fn parser_returns_compact_pass_summary() {
     let log = concat!(
