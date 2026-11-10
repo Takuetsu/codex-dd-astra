@@ -367,9 +367,9 @@ exit 0
     };
     let handler = CodexDDValidationHandler;
     let output = tokio::time::timeout(Duration::from_secs(90), handler.handle(invocation))
-    .await
-    .expect("native tool must return a completed result")
-    .expect("real Core handler must execute disposable native profile");
+        .await
+        .expect("native tool must return a completed result")
+        .expect("real Core handler must execute disposable native profile");
     let receipt: serde_json::Value =
         serde_json::from_str(&output.log_output()).expect("structured LVO receipt");
     assert_eq!(receipt["profile"], "targeted");
