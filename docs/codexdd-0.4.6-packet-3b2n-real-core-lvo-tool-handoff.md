@@ -23,3 +23,9 @@
 ## Still required afterward
 
 A **real** independent Validator session and final owner receipt, actual private BREAKWATER Node profile in a safe isolated Windows repository checkout, actual separate running TUI/app-server cold restart, 3B.3 gate provenance, 3B.4 progress/refusal classifications, and final 3E/4 real-agent/21-stage/source-integrity acceptance. No release, merge, installation, 0.4.5 thaw or production 0.4.4 changes.
+
+## Focused Windows handoff dispatch — 2026-11-10
+
+The first 3B.2n native opt-in run [#42926791546](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42926791546) was **red at Rustfmt only**; source-contract PASS and the native Windows job SKIPPED. The Rustfmt log showed one indentation difference for the chained `tokio::time::timeout(...).await` block; no compiler error, test assertion, or runtime failure was observed.
+
+The source-only repair `f7f01a984a1c4b570d56f59a55de4cd8001f6791` passed both source-contract and exact Rustfmt in [#42927535739](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42927535739); the native test was intentionally skipped on that unmarked push. **The next opt-in push runs only the 3B.2n native Core handler fixture after the same cheap gates.** No changes to product handler, Worker privileges, repo-owned actual profiles or live game worktrees. Do not claim 3B.2n acceptance until the full Windows test is enumerated, executed and green on the resulting exact commit.
