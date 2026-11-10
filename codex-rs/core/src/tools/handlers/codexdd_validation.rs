@@ -899,8 +899,8 @@ fn validate_native_authorized_target(
         "status",
         &["status", "--porcelain=v1", "--untracked-files=all"],
     )?
-        .trim()
-        .is_empty()
+    .trim()
+    .is_empty()
     {
         return Err(format!(
             "SETUP_BLOCKED: native candidate {} has staged/unstaged/untracked changes. Preserve edits and checkpoint an exact candidate before validation.",
