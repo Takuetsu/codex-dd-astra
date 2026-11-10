@@ -31,9 +31,47 @@ Large single-run phases create unnecessary risk from:
 
 The workflow therefore optimizes for short, recoverable implementation slices rather than maximizing the amount of work attempted in one run.
 
+## 2026-11-10 process adaptation: evidence-first throughput
+
+**Applies to CodexDD work-packet execution, not runtime privilege.** BREAKWATER's approved November 10 delivery-throughput amendment and October 15 staged Workflow V3 establish these transferable process improvements. The specific BREAKWATER Z-A0.58 pause and normal-Codex-only executor are **not** CodexDD policies. The 0.4.6 milestone, its P0 requirements, 0.4.5 freeze and all owner-reserved promotion gates stay unchanged.
+
+### Compact one-outcome packet card
+
+Before editing or dispatching a costly validation, record only the information necessary to execute a narrow task:
+
+| Field | Required content |
+| --- | --- |
+| Outcome | One observable agent behavior, or one confirmed defect class to repair |
+| Identity and authority | Owner-authorized milestone/role, exact repository + branch + base/candidate SHA and environment |
+| Owner | Source subsystem or owner path; links to current governing contract and test |
+| Acceptance and focused proof | Observable acceptance criterion, focused tests, essential security/persistence negative controls, any required independent scope |
+| Exclusions | Adjacent feature/cleanup/history explicitly not included |
+| Stop and handoff | Evidence that should stop the packet, blocker classification, missing fact and next permitted action |
+
+Keep the card brief. Cite durable source/Drive records; never paste long prior-worker narratives as current authority. An already authorized packet may perform routine implementation decisions inside its scope, but may not cross an owner-reserved release, installation or scope gate.
+
+### Failure classification before repair
+
+- **A — Product:** reproducible in-scope behavior, security, source-binding or persistence failure against a current acceptance criterion. Fix the owning layer and add focused regression proof.
+- **T — Test:** stale/wrong assertion, oracle, fixture, driver or test-harness defect. Repair test ownership only after product causation is reasonably excluded; never quietly convert a real product failure to T.
+- **E — Environment:** runner, dependency, transport, access, profile, timeout or permission failure. Collect a discriminating environment observation and fix only the authorized setup layer.
+- **U — Unproven:** insufficient evidence or conflicting hypotheses. Do not infer product causation; obtain one smallest discriminating observation or report BLOCKED.
+- **B — Backlog:** unrelated future defect or enhancement. Preserve evidence for a separately authorized packet; do not absorb it into the current gate.
+
+Write OBSERVED -> EXPECTED -> smallest REPRO -> exact source/runtime identity -> EVIDENCE -> OWNING PATH -> classification/hypothesis -> smallest CHANGE -> PROOF. Red/INCOMPLETE evidence stays red until the exact failed criterion is re-established.
+
+### Circuit breaker and validation cadence
+
+- Never re-run an identical failing suite, Git status, environment setup or CI run merely to generate another receipt. Reuse valid, source-bound successful evidence when the source, profile, scope and environment facts still match.
+- **After two inconclusive/no-new-evidence attempts on the same objective, stop that loop.** Capture what is proven, what remains unknown, and one genuinely different diagnostic/owner decision. An evidence-producing failure or material changed source/environment is progress, not an automatic count against the limit. Do not bypass a safety-critical blocker.
+- During implementation and bounded repair: use the cheapest meaningful local focused proof, relevant changed formatting/compile checks and security/persistence negative controls. Repair-specific regressions are more useful than repeated full-project CI. Keep independent nonauthor verification fresh and scoped before accepting a packet/gate.
+- When an actually runnable isolated candidate is ready, an **owner-authorized** early real-agent Windows usability smoke may be labeled PRELIMINARY. Do not label it whole-milestone READY, replace independent verification, or modify live game worktrees.
+- Defer full integrated official Windows profiles, broad E2E/regression/security, native daemon/resume/F2, distribution provenance and owner release signoff until their recorded final gate. They remain **mandatory**, not optional. The Daniel-CL first/focused-before-GitHub CI policy later in this document still governs the testing environment and any GitHub-only exceptions.
+- Measure accepted working behaviors, closed P0 defects, safe blocked outcomes, unproductive repetitions and validation effort. Do not optimize the number of commits, worker launches, test minutes or model-effort claims as if these were user value.
+
 ## Work-packet sizing
 
-Each work packet should normally cover one coherent subsystem, one generator/repair task, or approximately 5-10 meaningful implementation files.
+Each work packet should normally deliver **one observable outcome or one confirmed repair class** within a coherent subsystem. Approximately 5-10 meaningful files is a safety guideline, **not** a throughput goal or justification for padding a packet.
 
 A packet should be split again when any of the following is true:
 
