@@ -3,8 +3,11 @@
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, ExitStatus, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 
 #[cfg(test)]
 const RAW_BRACKETED_PASTE_START: &str = "\u{1b}[200~";
@@ -88,6 +91,93 @@ pub(crate) fn validated_assignment_preflight(
     }
 }
 
+/// Read-only TUI Git inspection with a deadline on the actual subprocess.
+/// The outer async resume timeout alone cannot cancel a running blocking Git child.
+/// Scratch-file stdout avoids waiting for inherited pipe handles; a bounded read
+/// prevents unlimited output from an untrusted checkout. Failure never grants a pin.
+fn run_bounded_tui_command(
+    mut command: Command,
+    step: &str,
+    deadline: Duration,
+) -> Result<(ExitStatus, String), String> {
+    let output = tempfile::tempfile()
+        .map_err(|err| format!("SETUP_BLOCKED: TUI Git {step} output unavailable: {err}"))?;
+    let mut reader = output
+        .try_clone()
+        .map_err(|err| format!("SETUP_BLOCKED: TUI Git {step} output unreadable: {err}"))?;
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::from(output))
+        .stderr(Stdio::null());
+    let started = Instant::now();
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("SETUP_BLOCKED: TUI Git {step} unavailable: {err}"))?;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if started.elapsed() >= deadline => {
+                let terminated = child.kill().is_ok();
+                if terminated {
+                    let _ = child.wait();
+                }
+                return Err(format!(
+                    "SETUP_BLOCKED: TUI Git {step} timed out after {}ms; process {}",
+                    deadline.as_millis(),
+                    if terminated { "terminated" } else { "termination unconfirmed" }
+                ));
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(25)),
+            Err(err) => {
+                let terminated = child.kill().is_ok();
+                if terminated {
+                    let _ = child.wait();
+                }
+                return Err(format!(
+                    "SETUP_BLOCKED: TUI Git {step} could not be monitored: {err}; process {}",
+                    if terminated { "terminated" } else { "termination unconfirmed" }
+                ));
+            }
+        }
+    };
+    reader
+        .seek(SeekFrom::Start(0))
+        .map_err(|err| format!("SETUP_BLOCKED: TUI Git {step} output seek failed: {err}"))?;
+    const MAX_OUTPUT: u64 = 1024 * 1024;
+    let mut bytes = Vec::new();
+    reader
+        .take(MAX_OUTPUT + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|err| format!("SETUP_BLOCKED: TUI Git {step} output read failed: {err}"))?;
+    if bytes.len() as u64 > MAX_OUTPUT {
+        return Err(format!("SETUP_BLOCKED: TUI Git {step} exceeded bounded output size"));
+    }
+    let output = String::from_utf8(bytes)
+        .map_err(|_| format!("SETUP_BLOCKED: TUI Git {step} returned non-UTF8 output"))?;
+    Ok((status, output))
+}
+
+fn run_tui_git_step(
+    root: &Path,
+    step: &'static str,
+    args: &[&str],
+) -> Result<(ExitStatus, String), String> {
+    let mut command = Command::new("git");
+    command
+        .arg("--no-optional-locks")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GCM_INTERACTIVE", "Never");
+    let deadline = if step == "status" {
+        Duration::from_secs(12)
+    } else {
+        Duration::from_secs(5)
+    };
+    run_bounded_tui_command(command, step, deadline)
+}
+
 /// This local read-only pre-admission check never chooses another worktree.
 /// Child-shell Set-Location does not change the native CodexDD runtime cwd.
 pub(crate) fn preflight_mechanical_target(
@@ -128,22 +218,18 @@ pub(crate) fn preflight_mechanical_target(
             binding.source_sha
         ));
     }
-    let git = |args: &[&str]| -> Result<String, String> {
-        let output = Command::new("git")
-            .arg("-C").arg(&actual_root).args(args).output()
-            .map_err(|err| format!("SETUP_BLOCKED: cannot inspect selected worktree with Git ({err}); no validation ran."))?;
-        if !output.status.success() {
+    let git = |step: &'static str, args: &[&str]| -> Result<String, String> {
+        let (status, output) = run_tui_git_step(&actual_root, step, args)?;
+        if !status.success() {
             return Err(format!(
                 "SETUP_BLOCKED: Git read-only preflight failed in {} (status {}). No validation ran.",
                 actual_root.display(),
-                output.status
+                status
             ));
         }
-        String::from_utf8(output.stdout).map_err(|_| {
-            "SETUP_BLOCKED: Git returned non-UTF8 preflight data; no validation ran.".to_string()
-        })
+        Ok(output)
     };
-    let git_root = git(&["rev-parse", "--show-toplevel"])?;
+    let git_root = git("root", &["rev-parse", "--show-toplevel"])?;
     let verified_git_root = Path::new(git_root.trim()).canonicalize().map_err(|err| {
         format!("SETUP_BLOCKED: Git-selected root cannot be resolved ({err}); no validation ran.")
     })?;
@@ -154,7 +240,7 @@ pub(crate) fn preflight_mechanical_target(
             actual_root.display()
         ));
     }
-    let current_sha = git(&["rev-parse", "HEAD"])?;
+    let current_sha = git("head", &["rev-parse", "HEAD"])?;
     if !current_sha.trim().eq_ignore_ascii_case(&binding.source_sha) {
         return Err(format!(
             "SETUP_BLOCKED: selected worktree {} has SHA {} but authorized candidate is {}; no validation ran.",
@@ -163,7 +249,7 @@ pub(crate) fn preflight_mechanical_target(
             binding.source_sha
         ));
     }
-    if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?
+    if !git("status", &["status", "--porcelain=v1", "--untracked-files=all"])?
         .trim()
         .is_empty()
     {
@@ -216,17 +302,16 @@ pub(crate) fn reconcile_core_candidate_preflight(
     };
     // No TUI source promotion from a stale, dirty, or wrong-root checkout.
     preflight_mechanical_target(Some(&candidate), runtime_cwd)?;
-    let descendant = Command::new("git")
-        .arg("-C")
-        .arg(&candidate.source_root)
-        .args([
+    let (descendant, _) = run_tui_git_step(
+        Path::new(&candidate.source_root),
+        "ancestry",
+        &[
             "merge-base",
             "--is-ancestor",
             &current.source_sha,
             &candidate.source_sha,
-        ])
-        .status()
-        .map_err(|err| format!("SETUP_BLOCKED: cannot verify Core candidate ancestry: {err}"))?;
+        ],
+    )?;
     if !descendant.success() {
         return Err(
             "SETUP_BLOCKED: Core candidate is not a verified descendant of the TUI source pin"
@@ -772,5 +857,34 @@ mod tests {
             )
             .is_err()
         ); // missing worktree must never grant new authority
+    }
+
+    #[test]
+    fn codexdd_046_3b2r_stalled_tui_git_child_is_bounded_and_reaped() {
+        #[cfg(windows)]
+        let command = {
+            let mut command = Command::new("powershell.exe");
+            command.args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "Start-Sleep -Seconds 5",
+            ]);
+            command
+        };
+        #[cfg(not(windows))]
+        let command = {
+            let mut command = Command::new("sleep");
+            command.arg("5");
+            command
+        };
+        let error = run_bounded_tui_command(
+            command,
+            "synthetic-stall",
+            Duration::from_millis(150),
+        )
+        .expect_err("stalled child must be terminated and reaped");
+        assert!(error.contains("TUI Git synthetic-stall timed out"));
+        assert!(error.contains("process terminated"));
     }
 }
