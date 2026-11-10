@@ -268,8 +268,8 @@ pub(crate) fn preflight_mechanical_target(
         "status",
         &["status", "--porcelain=v1", "--untracked-files=all"],
     )?
-        .trim()
-        .is_empty()
+    .trim()
+    .is_empty()
     {
         return Err(format!(
             "SETUP_BLOCKED: authorized source {} at {} has staged/unstaged/untracked changes. Preserve all edits; no exact-SHA validation receipt can be claimed.",
