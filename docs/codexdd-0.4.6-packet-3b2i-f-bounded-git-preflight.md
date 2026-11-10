@@ -32,3 +32,11 @@ The manual full workflow includes the new `codexdd_046_3b2p_` timeout negative t
 4. Remove the temporary 3B2e probe warnings after root cause and real-process acceptance are established.
 
 **Non-goals:** No repairs to BREAKWATER or Cycle Vengeance, no source reset/checkout, no privilege broadening, no loosening of native source/Worker authority, no freeze thaw of 0.4.5, no production merge/install/release. The independent Windows/daemon/F2/Node/Rust final release gates remain separate.
+
+## Owner-requested focused Windows CI invocation (2026-11-10)
+
+The owner requested native Windows tests of the bounded Git subprocess and actual app-server candidate/cold-resume path. The connected GitHub tools can inspect/rerun old jobs but cannot invoke `workflow_dispatch` on the new source revision; no assistant-controlled SSH connection to Daniel-CL is available in this session. Prior owner direction explicitly kept this phase's integration work on GitHub. This is a narrowly scoped **GitHub-only test execution**, not a new release/production validation exception.
+
+To avoid a throwaway workflow or the existing 40–70-minute full-suite push loop, the existing 3B.1 workflow now has a reusable, opt-in `windows-3b2-native-focused` job. It runs only when a development branch commit contains the exact marker `[3b2-focused-native]`, after source preflight and Rustfmt. The job compiles and runs exactly the `codexdd_046_3b2p_` Core bounded-child regression and `codexdd_046_3b2n_` real-process app-server candidate/cold-resume acceptance, on `windows-2022` in a disposable checkout with repository-pinned Rust/V8 setup. The broad `windows-rust` job remains manually gated; no release or installation.
+
+If the first test passes but the real-process test fails, inspect the exact stage-specific `SETUP_BLOCKED` message before changing runtime code. A green focused result is necessary evidence but not the final Windows, security or independent Validator acceptance. Do not confuse source-format success, skipped Windows jobs or a dry-run receipt with native PASS.
