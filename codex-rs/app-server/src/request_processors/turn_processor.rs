@@ -713,6 +713,7 @@ impl TurnRequestProcessor {
             )
             .await?;
 
+        tracing::warn!("3B2e probe C0: app-server dispatch to Core");
         let submission = thread
             .start_or_steer_turn(
                 TurnInputRequest::new(input)

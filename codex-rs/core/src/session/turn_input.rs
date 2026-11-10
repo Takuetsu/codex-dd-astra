@@ -687,6 +687,7 @@ async fn start_if_idle(
         }
     };
     if let Some(requested) = &requested_candidate {
+        tracing::warn!("3B2e probe B0: entering owner-authorized candidate submission");
         if settings.thread_settings_update.is_some() {
             session.clear_reserved_idle_turn(&turn_state).await;
             return Err(CodexErr::InvalidRequest(
@@ -694,10 +695,12 @@ async fn start_if_idle(
                     .to_string(),
             ));
         }
+        tracing::warn!("3B2e probe B1: before candidate checkpoint");
         if let Err(error) = session.authorize_candidate_sha(requested).await {
             session.clear_reserved_idle_turn(&turn_state).await;
             return Err(CodexErr::InvalidRequest(error));
         }
+        tracing::warn!("3B2e probe B2: candidate checkpoint returned");
     }
     let turn_context = match settings
         .apply_started(session, submission_id.clone(), kind)

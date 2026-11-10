@@ -48,33 +48,41 @@ impl Session {
         &self,
         requested: &CandidateShaAuthorization,
     ) -> Result<(), String> {
+        tracing::warn!("3B2e probe A0: entering candidate persistence");
         let _settings_guard = acquire_persistence_lock(self).await;
+        tracing::warn!("3B2e probe A1: persistence permit acquired");
         let Some(live_thread) = self.live_thread() else {
             return Err(
                 "SETUP_BLOCKED: candidate source requires a live durable thread store".to_string(),
             );
         };
+        tracing::warn!("3B2e probe A2: before source preflight");
         let prospective = {
             let state = self.state.lock().await;
             state
                 .first_worker_authority
                 .verified_candidate_snapshot(requested)?
         };
+        tracing::warn!("3B2e probe A3: source preflight completed");
         let mut snapshot = self.thread_settings_snapshot().await;
+        tracing::warn!("3B2e probe A4: settings snapshot captured");
         snapshot.codexdd_first_worker = Some(prospective.clone());
         let msg = EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
             thread_id: Some(self.thread_id()),
             thread_settings: snapshot.clone(),
         });
+        tracing::warn!("3B2e probe A5: before native append");
         live_thread
             .append_items(&[RolloutItem::EventMsg(msg)])
             .await
             .map_err(|error| {
                 format!("SETUP_BLOCKED: candidate checkpoint append failed: {error}")
             })?;
+        tracing::warn!("3B2e probe A6: append finished, before flush");
         live_thread.flush().await.map_err(|error| {
             format!("SETUP_BLOCKED: candidate checkpoint flush failed: {error}")
         })?;
+        tracing::warn!("3B2e probe A7: native checkpoint flushed");
         // The persistence permit excludes competing settings checkpoints.
         // Any interrupted step after flush is recovered from the native record.
         self.state
@@ -82,9 +90,11 @@ impl Session {
             .await
             .first_worker_authority
             .apply_durable_candidate(requested, &prospective)?;
+        tracing::warn!("3B2e probe A8: in-memory SHA promoted");
         // The matching embedded TUI needs a trusted Core-owned post-flush
         // settings notification. Never emit this before native persistence
         // succeeds; the event itself does not add another durable checkpoint.
+        tracing::warn!("3B2e probe A9: before notification delivery");
         self.send_event_raw_without_materializing_rollout(Event {
             id: format!("codexdd-candidate-{}", requested.candidate_sha),
             msg: EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
@@ -93,6 +103,7 @@ impl Session {
             }),
         })
         .await;
+        tracing::warn!("3B2e probe A10: candidate authorization complete");
         Ok(())
     }
 }
