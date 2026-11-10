@@ -6,8 +6,16 @@ use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_config::config_toml::parse_adaptive_worker_first_message;
 use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use serde::Deserialize;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::path::Path;
 use std::process::Command;
+use std::process::ExitStatus;
+use std::process::Stdio;
+use std::thread;
+use std::time::Duration;
+use std::time::Instant;
 
 /// Owner candidate intent; parsing or preflight alone does not grant authority.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -94,6 +102,104 @@ pub(crate) struct CoreFirstWorkerAuthority {
     checkpointed: bool,
 }
 
+/// Read-only source inspection with a deadline for the actual Git child.
+/// Unlike timeout(spawn_blocking(Command::output)), this kills and reaps a
+/// blocked Git process. Redirecting stdout to a scratch file also prevents
+/// inherited pipe handles from keeping Command::output pending indefinitely.
+fn run_bounded_candidate_command(
+    mut command: Command,
+    step: &str,
+    deadline: Duration,
+) -> Result<(ExitStatus, String), String> {
+    let output = tempfile::tempfile()
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git {step} output unavailable: {err}"))?;
+    let mut reader = output
+        .try_clone()
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git {step} output unreadable: {err}"))?;
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::from(output))
+        .stderr(Stdio::null());
+    let started = Instant::now();
+    tracing::debug!(git_step = step, "candidate Git inspection started");
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git {step} unavailable: {err}"))?;
+
+    let exit = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if started.elapsed() >= deadline => {
+                let terminated = child.kill().is_ok();
+                if terminated {
+                    let _ = child.wait();
+                }
+                return Err(format!(
+                    "SETUP_BLOCKED: candidate Git {step} timed out after {}ms; process {}",
+                    deadline.as_millis(),
+                    if terminated { "terminated" } else { "termination unconfirmed" }
+                ));
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(25)),
+            Err(err) => {
+                let terminated = child.kill().is_ok();
+                if terminated {
+                    let _ = child.wait();
+                }
+                return Err(format!(
+                    "SETUP_BLOCKED: candidate Git {step} could not be monitored: {err}; process {}",
+                    if terminated { "terminated" } else { "termination unconfirmed" }
+                ));
+            }
+        }
+    };
+    tracing::debug!(
+        git_step = step,
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        "candidate Git inspection finished"
+    );
+    reader
+        .seek(SeekFrom::Start(0))
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git {step} output seek failed: {err}"))?;
+    const MAX_OUTPUT: u64 = 1024 * 1024;
+    let mut bytes = Vec::new();
+    reader
+        .take(MAX_OUTPUT + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git {step} output read failed: {err}"))?;
+    if bytes.len() as u64 > MAX_OUTPUT {
+        return Err(format!(
+            "SETUP_BLOCKED: candidate Git {step} exceeded bounded output size"
+        ));
+    }
+    let output = String::from_utf8(bytes)
+        .map_err(|_| format!("SETUP_BLOCKED: candidate Git {step} returned non-UTF8 output"))?;
+    Ok((exit, output))
+}
+
+fn run_candidate_git_step(
+    root: &Path,
+    step: &'static str,
+    args: &[&str],
+) -> Result<(ExitStatus, String), String> {
+    let mut command = Command::new("git");
+    command
+        .arg("--no-optional-locks")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GCM_INTERACTIVE", "Never");
+    // Full untracked status needs more time than metadata-only checks on
+    // large Windows source trees, but every step is bounded and fail-closed.
+    let deadline = if step == "status" {
+        Duration::from_secs(12)
+    } else {
+        Duration::from_secs(5)
+    };
+    run_bounded_candidate_command(command, step, deadline)
+}
+
 impl CoreFirstWorkerAuthority {
     pub(crate) fn from_startup(binding: Option<AdaptiveWorkerConfigToml>) -> Self {
         Self {
@@ -168,23 +274,16 @@ impl CoreFirstWorkerAuthority {
         let selected = Path::new(root)
             .canonicalize()
             .map_err(|err| format!("SETUP_BLOCKED: cannot resolve authorized worktree: {err}"))?;
-        let git = |args: &[&str]| -> Result<String, String> {
-            let output = Command::new("git")
-                .arg("-C")
-                .arg(&selected)
-                .args(args)
-                .output()
-                .map_err(|err| format!("SETUP_BLOCKED: Git inspection unavailable: {err}"))?;
-            if !output.status.success() {
+        let git = |step: &'static str, args: &[&str]| -> Result<String, String> {
+            let (status, output) = run_candidate_git_step(&selected, step, args)?;
+            if !status.success() {
                 return Err(format!(
-                    "SETUP_BLOCKED: candidate Git inspection failed (status {})",
-                    output.status
+                    "SETUP_BLOCKED: candidate Git {step} failed with status {status}"
                 ));
             }
-            String::from_utf8(output.stdout)
-                .map_err(|_| "SETUP_BLOCKED: Git inspection returned non-UTF8 output".to_string())
+            Ok(output)
         };
-        let reported_root = git(&["rev-parse", "--show-toplevel"])?;
+        let reported_root = git("root", &["rev-parse", "--show-toplevel"])?;
         let reported = Path::new(reported_root.trim())
             .canonicalize()
             .map_err(|err| format!("SETUP_BLOCKED: invalid Git-reported root: {err}"))?;
@@ -193,7 +292,7 @@ impl CoreFirstWorkerAuthority {
                 "SETUP_BLOCKED: candidate is not the exact authorized worktree".to_string(),
             );
         }
-        let observed = git(&["rev-parse", "HEAD"])?;
+        let observed = git("head", &["rev-parse", "HEAD"])?;
         if !observed.trim().eq_ignore_ascii_case(&request.candidate_sha) {
             return Err(format!(
                 "SETUP_BLOCKED: observed candidate HEAD {} differs from requested {}",
@@ -201,7 +300,7 @@ impl CoreFirstWorkerAuthority {
                 request.candidate_sha
             ));
         }
-        if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?
+        if !git("status", &["status", "--porcelain=v1", "--untracked-files=all"])?
             .trim()
             .is_empty()
         {
@@ -210,17 +309,16 @@ impl CoreFirstWorkerAuthority {
                     .to_string(),
             );
         }
-        let ancestry = Command::new("git")
-            .arg("-C")
-            .arg(&selected)
-            .args([
+        let (ancestry, _) = run_candidate_git_step(
+            &selected,
+            "ancestry",
+            &[
                 "merge-base",
                 "--is-ancestor",
                 &request.previous_sha,
                 &request.candidate_sha,
-            ])
-            .status()
-            .map_err(|err| format!("SETUP_BLOCKED: cannot verify source ancestry: {err}"))?;
+            ],
+        )?;
         if !ancestry.success() {
             return Err(
                 "SETUP_BLOCKED: candidate is not a descendant of the authorized SHA".to_string(),
@@ -598,6 +696,35 @@ mod tests {
                 candidate_sha,
             },
         )
+    }
+
+    #[test]
+    fn codexdd_046_3b2p_stalled_git_process_is_bounded_and_reaped() {
+        #[cfg(windows)]
+        let command = {
+            let mut command = Command::new("powershell.exe");
+            command.args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "Start-Sleep -Seconds 5",
+            ]);
+            command
+        };
+        #[cfg(not(windows))]
+        let command = {
+            let mut command = Command::new("sleep");
+            command.arg("5");
+            command
+        };
+        let error = run_bounded_candidate_command(
+            command,
+            "synthetic-stall",
+            Duration::from_millis(150),
+        )
+        .expect_err("a stalled child must be terminated");
+        assert!(error.contains("Git synthetic-stall timed out"));
+        assert!(error.contains("process terminated"));
     }
 
     #[test]

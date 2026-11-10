@@ -145,6 +145,9 @@ jobs:
 
   windows-rust:
     name: Windows TUI 3B.1 compile and focused regression tests
+    # Broad Windows recompilation is a deliberate final gate, not a push-time
+    # debug loop. Run focused source/format checks on normal development pushes.
+    if: github.event_name == 'workflow_dispatch'
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 120
@@ -345,6 +348,13 @@ jobs:
           }
           & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
           if ($LASTEXITCODE -ne 0) { throw '3B.2i read-only candidate verifier failed' }
+      - name: Execute 3B.2i-f bounded Git subprocess negative control
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-core --lib codexdd_046_3b2p_ -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'Bounded candidate Git child cleanup failed' }
       - name: Execute 3B.2i-b owner-origin candidate admission regressions
         shell: pwsh
         working-directory: codex-rs
