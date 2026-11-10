@@ -471,6 +471,12 @@ pub struct ThreadResumeResponse {
     pub reasoning_effort: Option<ReasoningEffort>,
     /// Effective collaboration mode. Absent when resuming from an older server.
     pub collaboration_mode: Option<CollaborationMode>,
+    /// Durable, same-thread Core Worker source authority, when restored.
+    /// The client may only reconcile this for its own embedded, unforked session.
+    /// Absent on older servers and on threads without a pinned Worker.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub codexdd_first_worker: Option<CodexddFirstWorkerSnapshot>,
     /// @deprecated Always `explicitRequestOnly`. Use `reasoningEffort` for Ultra behavior.
     #[experimental("thread/resume.multiAgentMode")]
     #[serde(default)]

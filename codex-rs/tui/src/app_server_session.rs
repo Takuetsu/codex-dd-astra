@@ -2478,7 +2478,7 @@ async fn thread_session_state_from_thread_start_response(
 async fn thread_session_state_from_thread_resume_response(
     response: &ThreadResumeResponse,
     local_settings: &LocalSettings,
-    _thread_params_mode: ThreadParamsMode,
+    thread_params_mode: ThreadParamsMode,
 ) -> Result<ThreadSessionState, String> {
     // The server owns restored rules. This legacy projection is for display only;
     // normal turns do not send it back as an execution override.
@@ -2509,7 +2509,68 @@ async fn thread_session_state_from_thread_resume_response(
     .await?;
     session.collaboration_mode = response.collaboration_mode.clone().map(Box::new);
     session.daybreak_enabled = response.thread.daybreak_enabled.unwrap_or(false);
+    // Only an embedded, same-thread Core cold resume can reconcile a previously
+    // locked TUI pin. Forks and remote responses may not acquire local Worker authority.
+    reconcile_resumed_core_worker(
+        &mut session.adaptive_effort,
+        response.codexdd_first_worker.as_ref(),
+        session.cwd.as_path(),
+        matches!(thread_params_mode, ThreadParamsMode::Embedded),
+        session.forked_from_id.is_some(),
+    )
+    .await;
     Ok(session)
+}
+
+/// Reconcile the separately persisted TUI Workflow state from the matching
+/// embedded Core's durable resume snapshot. This never creates a new Worker
+/// assignment, silently rebinds scope/root, or substitutes the current Git HEAD.
+async fn reconcile_resumed_core_worker(
+    state: &mut crate::chatwidget::adaptive_effort::AdaptiveEffortState,
+    core_worker: Option<&codex_protocol::protocol::CodexddFirstWorkerSnapshot>,
+    runtime_cwd: &std::path::Path,
+    embedded: bool,
+    forked: bool,
+) {
+    if !embedded || forked {
+        return;
+    }
+    let Some(worker) = core_worker else {
+        return;
+    };
+    let current = state.assignment_preflight.clone();
+    let context = state.worker_context.clone();
+    let locked = state.worker_assignment_locked;
+    let core = worker.clone();
+    let cwd = runtime_cwd.to_path_buf();
+    // Git IO is synchronous. Bound the async mapping so a stuck checkout
+    // cannot block TUI initialization or bypass the existing source pin.
+    let checked = tokio::time::timeout(
+        std::time::Duration::from_secs(20),
+        tokio::task::spawn_blocking(move || {
+            crate::adaptive_worker::reconcile_core_candidate_preflight(
+                current.as_ref(),
+                &context,
+                locked,
+                &core,
+                cwd.as_path(),
+            )
+        }),
+    )
+    .await;
+    match checked {
+        Ok(Ok(Ok(Some(pin)))) => state.assignment_preflight = Some(pin),
+        Ok(Ok(Ok(None))) => {}
+        Ok(Ok(Err(blocker))) => {
+            tracing::warn!(%blocker, "refusing Core candidate pin on TUI cold resume");
+        }
+        Ok(Err(error)) => {
+            tracing::warn!(%error, "Core candidate cold-resume preflight task failed");
+        }
+        Err(_) => {
+            tracing::warn!("Core candidate cold-resume preflight timed out; keeping TUI pin unchanged");
+        }
+    }
 }
 
 async fn thread_session_state_from_thread_fork_response(
@@ -4351,6 +4412,100 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant() {
+        let repo = tempfile::tempdir().expect("isolated source");
+        let root = repo.path();
+        let git = |args: &[&str]| -> String {
+            let result = std::process::Command::new("git")
+                .arg("-C")
+                .arg(root)
+                .args(args)
+                .output()
+                .expect("Git fixture");
+            assert!(
+                result.status.success(),
+                "Git failed: {}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            String::from_utf8(result.stdout)
+                .expect("Git output")
+                .trim()
+                .to_string()
+        };
+        git(&["init"]);
+        git(&["config", "user.email", "codexdd-resume@example.invalid"]);
+        git(&["config", "user.name", "CodexDD resume fixture"]);
+        std::fs::write(root.join("source.txt"), "original").expect("first file");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "first source"]);
+        let original_sha = git(&["rev-parse", "HEAD"]);
+        std::fs::write(root.join("source.txt"), "authorized successor").expect("next file");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "authorized successor"]);
+        let candidate_sha = git(&["rev-parse", "HEAD"]);
+
+        let mut state = crate::chatwidget::adaptive_effort::AdaptiveEffortState::default();
+        state.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+            role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("approved source packet".to_string()),
+        };
+        state.worker_assignment_locked = true;
+        state.assignment_preflight = Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
+            task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+            source_root: root.display().to_string(),
+            source_sha: original_sha.clone(),
+        });
+        let core = codex_protocol::protocol::CodexddFirstWorkerSnapshot {
+            role: "implementation".to_string(),
+            authorized_scope: "approved source packet".to_string(),
+            source_root: Some(root.display().to_string()),
+            source_sha: Some(candidate_sha.clone()),
+            task_kind: Some("source_change".to_string()),
+        };
+        // Remote clients, forks and absent native credentials never rebind the pin.
+        reconcile_resumed_core_worker(&mut state, Some(&core), root, false, false).await;
+        reconcile_resumed_core_worker(&mut state, Some(&core), root, true, true).await;
+        reconcile_resumed_core_worker(&mut state, None, root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            original_sha
+        );
+
+        reconcile_resumed_core_worker(&mut state, Some(&core), root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            candidate_sha
+        );
+        assert_eq!(state.worker_context.role, crate::adaptive_worker::AdaptiveWorkerRole::Implementation);
+        assert_eq!(state.worker_context.authorized_scope.as_deref(), Some("approved source packet"));
+
+        let mut invalid = core.clone();
+        invalid.authorized_scope = "other scope".to_string();
+        reconcile_resumed_core_worker(&mut state, Some(&invalid), root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            candidate_sha
+        );
+
+        std::fs::write(root.join("source.txt"), "later candidate").expect("later file");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "later candidate"]);
+        let later_sha = git(&["rev-parse", "HEAD"]);
+        std::fs::write(root.join("preserve-untracked.txt"), "user edit").expect("user edit");
+        invalid = core;
+        invalid.source_sha = Some(later_sha);
+        reconcile_resumed_core_worker(&mut state, Some(&invalid), root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            candidate_sha
+        );
+        assert_eq!(
+            std::fs::read_to_string(root.join("preserve-untracked.txt")).expect("user edit retained"),
+            "user edit"
+        );
+    }
+
+    #[tokio::test]
     async fn resume_response_restores_turns_from_thread_items() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let config = build_config(&temp_dir).await;
@@ -4359,6 +4514,7 @@ mod tests {
         let read_only_profile = PermissionProfile::read_only();
         let response = ThreadResumeResponse {
             disabled_plugin_ids: Vec::new(),
+            codexdd_first_worker: None,
             thread: codex_app_server_protocol::Thread {
                 originator: None,
                 environments: None,
@@ -4452,6 +4608,14 @@ mod tests {
             turns_backwards_cursor: None,
             items_backwards_cursor: None,
         };
+
+        // Older app-servers omit the additive Core Worker field. The resume
+        // payload must remain backward-compatible and confer no new authority.
+        let mut legacy = serde_json::to_value(&response).expect("resume JSON");
+        legacy.as_object_mut().unwrap().remove("codexddFirstWorker");
+        let decoded: ThreadResumeResponse =
+            serde_json::from_value(legacy).expect("legacy resume JSON");
+        assert!(decoded.codexdd_first_worker.is_none());
 
         let started = started_thread_from_resume_response(
             response.clone(),

@@ -4197,6 +4197,10 @@ impl ThreadRequestProcessor {
                     active_permission_profile,
                     reasoning_effort: session_configured.reasoning_effort,
                     collaboration_mode: Some(config_snapshot.collaboration_mode),
+                    codexdd_first_worker: codex_thread
+                        .restorable_thread_settings()
+                        .await
+                        .codexdd_first_worker,
                     multi_agent_mode: MultiAgentMode::ExplicitRequestOnly,
                     initial_turns_page,
                     turns_backwards_cursor,

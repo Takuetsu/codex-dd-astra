@@ -214,6 +214,16 @@ async fn codexdd_046_3b2n_real_app_server_candidate_and_cold_resume() -> Result<
     let resumed: ThreadResumeResponse =
         timeout(CANDIDATE_TIMEOUT, restarted.read_response(resume_id)).await??;
     ensure!(resumed.thread.id == thread_id);
+    let resumed_worker = resumed
+        .codexdd_first_worker
+        .as_ref()
+        .context("cold resume omitted Core-owned first Worker source snapshot")?;
+    ensure!(
+        resumed_worker.source_sha.as_deref() == Some(second_sha.as_str()),
+        "cold resume returned a stale or unrelated source credential"
+    );
+    ensure!(resumed_worker.role == "implementation");
+    ensure!(resumed_worker.authorized_scope == "isolated acceptance packet");
     let third_sha = commit_fixture(root, "authorized after cold resume")?;
     authorize_candidate(&mut restarted, &thread_id, &second_sha, &third_sha).await?;
     let (items, _, _) = RolloutRecorder::load_rollout_items(&path).await?;

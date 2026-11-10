@@ -40,6 +40,7 @@ on:
       - codex-rs/history/src/lib.rs
       - codex-rs/history/src/tests.rs
       - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+      - codex-rs/app-server/src/request_processors/thread_lifecycle.rs
       - codex-rs/app-server/src/request_processors/turn_processor.rs
       - codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs
       - codex-rs/app-server/tests/suite/v2/mod.rs
@@ -144,8 +145,8 @@ jobs:
         run: cargo fmt -- --config imports_granularity=Item --check
 
   windows-3b2-native-focused:
-    name: 3B.2i focused Windows Git-boundary and app-server restart tests
-    # An explicit commit-message opt-in runs only this pair of regressions.
+    name: 3B.2i focused Windows Git-boundary, restart and TUI pin tests
+    # An explicit commit-message opt-in runs only these narrow regressions.
     # This is neither the full Windows gate nor a production/release action.
     if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2-focused-native]')
     needs: [source-contract, rust-format]
@@ -209,6 +210,13 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & cargo test --locked -p codex-app-server --test all codexdd_046_3b2n_ -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.2i-e real-process candidate authorization or cold resume failed' }
+      - name: Test embedded TUI pin reconciliation after cold resume
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib codexdd_046_3b2q_ -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-g embedded TUI source pin reconciliation failed' }
       - name: Confirm no source mutation or release activity
         if: always()
         shell: pwsh
