@@ -58,14 +58,11 @@ impl Session {
         };
         tracing::warn!("3B2e probe A2: before source preflight");
         let worker_authority = {
-            let state = tokio::time::timeout(
-                std::time::Duration::from_secs(15),
-                self.state.lock(),
-            )
-            .await
-            .map_err(|_| {
-                "SETUP_BLOCKED: timed out acquiring Core Worker state for candidate".to_string()
-            })?;
+            let state = tokio::time::timeout(std::time::Duration::from_secs(15), self.state.lock())
+                .await
+                .map_err(|_| {
+                    "SETUP_BLOCKED: timed out acquiring Core Worker state for candidate".to_string()
+                })?;
             tracing::warn!("3B2e probe A2a: state mutex acquired");
             state.first_worker_authority.clone()
         };
