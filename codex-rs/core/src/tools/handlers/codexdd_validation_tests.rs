@@ -4,6 +4,33 @@ use std::fs;
 use tempfile::tempdir;
 
 #[test]
+fn codexdd_046_3b2s_native_lvo_git_child_timeout_is_setup_blocked_and_reaped() {
+    use std::process::Command;
+
+    #[cfg(windows)]
+    let command = {
+        let mut command = Command::new("powershell.exe");
+        command.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Start-Sleep -Seconds 5",
+        ]);
+        command
+    };
+    #[cfg(not(windows))]
+    let command = {
+        let mut command = Command::new("sleep");
+        command.arg("5");
+        command
+    };
+    let error = run_bounded_lvo_git_command(command, "synthetic-stall", Duration::from_millis(150))
+        .expect_err("stalled native LVO Git child must fail closed");
+    assert!(error.contains("SETUP_BLOCKED: native LVO Git synthetic-stall timed out"));
+    assert!(error.contains("process terminated"));
+}
+
+#[test]
 fn profiles_map_to_fixed_scripts_and_bounded_timeouts() {
     assert_eq!(
         [
