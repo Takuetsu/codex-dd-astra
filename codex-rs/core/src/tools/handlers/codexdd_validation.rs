@@ -1,8 +1,17 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
+use std::process::ExitStatus;
+use std::process::Stdio;
+use std::thread;
+use std::time::Duration;
+use std::time::Instant;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -675,6 +684,109 @@ fn native_mechanical_source_authority_blocker(
     })
 }
 
+/// Stage-bounded read-only Git inspection for native LVO target admission.
+/// A timeout around the outer tool call does not kill a blocked direct Git
+/// child. Scratch-file stdout avoids pipe-handle hangs and limits output.
+/// A failed inspection must return SETUP_BLOCKED and cannot emit a PASS.
+fn run_bounded_lvo_git_command(
+    mut command: Command,
+    step: &str,
+    deadline: Duration,
+) -> Result<(ExitStatus, String), String> {
+    let output = tempfile::tempfile()
+        .map_err(|err| format!("SETUP_BLOCKED: native LVO Git {step} output unavailable: {err}"))?;
+    let mut reader = output
+        .try_clone()
+        .map_err(|err| format!("SETUP_BLOCKED: native LVO Git {step} output unreadable: {err}"))?;
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::from(output))
+        .stderr(Stdio::null());
+    let started = Instant::now();
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("SETUP_BLOCKED: native LVO Git {step} unavailable: {err}"))?;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if started.elapsed() >= deadline => {
+                let terminated = child.kill().is_ok();
+                if terminated {
+                    let _ = child.wait();
+                }
+                return Err(format!(
+                    "SETUP_BLOCKED: native LVO Git {step} timed out after {}ms; process {}",
+                    deadline.as_millis(),
+                    if terminated {
+                        "terminated"
+                    } else {
+                        "termination unconfirmed"
+                    }
+                ));
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(25)),
+            Err(err) => {
+                let terminated = child.kill().is_ok();
+                if terminated {
+                    let _ = child.wait();
+                }
+                return Err(format!(
+                    "SETUP_BLOCKED: native LVO Git {step} could not be monitored: {err}; process {}",
+                    if terminated {
+                        "terminated"
+                    } else {
+                        "termination unconfirmed"
+                    }
+                ));
+            }
+        }
+    };
+    reader
+        .seek(SeekFrom::Start(0))
+        .map_err(|err| format!("SETUP_BLOCKED: native LVO Git {step} output seek failed: {err}"))?;
+    const MAX_OUTPUT: u64 = 1024 * 1024;
+    let mut bytes = Vec::new();
+    reader
+        .take(MAX_OUTPUT + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|err| format!("SETUP_BLOCKED: native LVO Git {step} output read failed: {err}"))?;
+    if bytes.len() as u64 > MAX_OUTPUT {
+        return Err(format!(
+            "SETUP_BLOCKED: native LVO Git {step} exceeded bounded output size"
+        ));
+    }
+    let output = String::from_utf8(bytes)
+        .map_err(|_| format!("SETUP_BLOCKED: native LVO Git {step} returned non-UTF8 output"))?;
+    Ok((status, output))
+}
+
+fn run_lvo_git_step(
+    root: &Path,
+    step: &'static str,
+    args: &[&str],
+) -> Result<String, String> {
+    let mut command = Command::new("git");
+    command
+        .arg("--no-optional-locks")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GCM_INTERACTIVE", "Never");
+    let deadline = if step == "status" {
+        Duration::from_secs(12)
+    } else {
+        Duration::from_secs(5)
+    };
+    let (status, output) = run_bounded_lvo_git_command(command, step, deadline)?;
+    if !status.success() {
+        return Err(format!(
+            "SETUP_BLOCKED: native LVO Git {step} inspection failed (status {status}). No profile ran."
+        ));
+    }
+    Ok(output)
+}
+
 /// Fail closed when a launcher-pinned Worker asks the Core LVO handler to
 /// execute a profile against the wrong checkout. All Git commands are read-only
 /// and run against the *selected* root; the binding never selects another path.
@@ -759,29 +871,9 @@ fn validate_native_authorized_target(
         ));
     }
 
-    let git = |args: &[&str]| -> Result<String, String> {
-        let output = std::process::Command::new("git")
-            .arg("-C")
-            .arg(&selected)
-            .args(args)
-            .output()
-            .map_err(|err| {
-                format!(
-                    "SETUP_BLOCKED: cannot inspect Git for selected target ({err}). No profile ran."
-                )
-            })?;
-        if !output.status.success() {
-            return Err(format!(
-                "SETUP_BLOCKED: native Git inspection failed (status {}). No profile ran.",
-                output.status
-            ));
-        }
-        String::from_utf8(output.stdout).map_err(|_| {
-            "SETUP_BLOCKED: Git inspection produced non-UTF8 output. No profile ran.".to_string()
-        })
-    };
+    let git = |step: &'static str, args: &[&str]| run_lvo_git_step(&selected, step, args);
 
-    let git_root = git(&["rev-parse", "--show-toplevel"])?;
+    let git_root = git("root", &["rev-parse", "--show-toplevel"])?;
     let verified_git_root = Path::new(git_root.trim()).canonicalize().map_err(|err| {
         format!("SETUP_BLOCKED: cannot resolve Git-reported worktree ({err}). No profile ran.")
     })?;
@@ -792,7 +884,7 @@ fn validate_native_authorized_target(
             selected.display()
         ));
     }
-    let current_sha = git(&["rev-parse", "HEAD"])?;
+    let current_sha = git("head", &["rev-parse", "HEAD"])?;
     if !current_sha.trim().eq_ignore_ascii_case(observed_head_sha)
         || !current_sha.trim().eq_ignore_ascii_case(expected_sha)
     {
@@ -803,7 +895,10 @@ fn validate_native_authorized_target(
             expected_sha
         ));
     }
-    if !git(&["status", "--porcelain=v1", "--untracked-files=all"])?
+    if !git(
+        "status",
+        &["status", "--porcelain=v1", "--untracked-files=all"],
+    )?
         .trim()
         .is_empty()
     {
