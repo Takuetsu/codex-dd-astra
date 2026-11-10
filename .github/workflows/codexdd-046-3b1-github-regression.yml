@@ -219,6 +219,20 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & cargo test --locked -p codex-tui --lib codexdd_046_3b2q_ -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.2i-g embedded TUI source pin reconciliation failed' }
+      - name: Test TUI Git subprocess timeout and direct-child reap
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2r_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.2i-h expected exactly one bounded TUI Git subprocess regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-h TUI Git child timeout/cleanup regression failed' }
       - name: Confirm no source mutation or release activity
         if: always()
         shell: pwsh
