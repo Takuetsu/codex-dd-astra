@@ -265,6 +265,127 @@ exit $nativeExit
     }
 }
 
+/// Real Core tool invocation with an independently Core-bound source pin and
+/// a tiny repository-owned native Windows test fixture. The fixture exercises
+/// admission, ExecCommandHandler delegation, native log, exact process exit,
+/// post-execution SHA check and a completed operator control receipt.
+/// It does not impersonate a production Worker or validate a real project.
+#[cfg(windows)]
+#[tokio::test]
+async fn codexdd_046_3b2t_real_core_lvo_handler_runs_trusted_pinned_fixture() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use std::sync::Arc;
+
+    let temp = tempdir().expect("isolated LVO owner root");
+    let source_root = temp.path().join("source-candidate");
+    let script_dir = source_root.join("scripts");
+    fs::create_dir_all(&script_dir).expect("create native profile root");
+    let profile = script_dir.join("codexdd-test-targeted.ps1");
+    fs::write(
+        &profile,
+        r#"
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_begin","profile":"targeted","stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_begin","profile":"targeted","stage":"isolated-source-check","ordinal":1,"stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_end","profile":"targeted","stage":"isolated-source-check","ordinal":1,"status":"pass","native_exit_code":0}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_end","profile":"targeted","status":"pass","exit_code":0,"completed_stages":1}')
+exit 0
+"#,
+    )
+    .expect("write test-only native profile");
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&source_root)
+            .args(args)
+            .output()
+            .expect("test fixture Git available");
+        assert!(
+            output.status.success(),
+            "Git fixture {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("fixture Git UTF-8")
+    };
+    git(&["init", "-q"]);
+    git(&["add", "scripts/codexdd-test-targeted.ps1"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD LVO fixture",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "-q",
+        "-m",
+        "native profile fixture source pin",
+    ]);
+    let expected_sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    let expected_root = source_root.canonicalize().expect("canonical source");
+
+    let (session, turn, _events) =
+        crate::session::tests::make_session_and_context_with_auth_and_config_and_rx(
+            codex_login::CodexAuth::from_api_key("Test API Key"),
+            Vec::new(),
+            |config| {
+                config.cwd =
+                    codex_utils_absolute_path::AbsolutePathBuf::try_from(source_root.clone())
+                        .expect("valid isolated absolute root");
+                config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+                    role: AdaptiveWorkerRoleToml::Implementation,
+                    authorized_scope: Some("isolated test-only native profile".to_string()),
+                    source_root: Some(expected_root.display().to_string()),
+                    source_sha: Some(expected_sha.clone()),
+                    task_kind: Some("source_change".to_string()),
+                });
+            },
+        )
+        .await;
+    assert!(
+        turn.config.adaptive_worker.as_ref().is_some_and(|w| w.source_sha.as_deref() == Some(expected_sha.as_str())),
+        "Core turn must retain the trusted source credential"
+    );
+    turn.turn_metadata_state.set_turn_trigger(
+        codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+    );
+    let invocation = ToolInvocation {
+        session,
+        step_context: crate::session::step_context::StepContext::for_test(Arc::clone(&turn)),
+        turn,
+        cancellation_token: tokio_util::sync::CancellationToken::new(),
+        tracker: Arc::new(tokio::sync::Mutex::new(
+            crate::turn_diff_tracker::TurnDiffTracker::new(),
+        )),
+        call_id: "3b2t-native-core-tool".to_string(),
+        tool_name: ToolName::plain(TOOL_NAME),
+        source: crate::tools::context::ToolCallSource::Direct,
+        payload: ToolPayload::Function {
+            arguments: serde_json::json!({"profile":"targeted"}).to_string(),
+        },
+    };
+    let output = tokio::time::timeout(
+        Duration::from_secs(90),
+        CodexDDValidationHandler.handle(invocation),
+    )
+    .await
+    .expect("native tool must return a completed result")
+    .expect("real Core handler must execute disposable native profile");
+    let receipt: serde_json::Value =
+        serde_json::from_str(&output.log_output()).expect("structured LVO receipt");
+    assert_eq!(receipt["profile"], "targeted");
+    assert_eq!(receipt["status"], "pass");
+    assert_eq!(receipt["exit_code"], 0);
+    assert_eq!(receipt["head_sha"], expected_sha);
+    assert_eq!(receipt["stages"].as_array().map(Vec::len), Some(1));
+    assert_eq!(receipt["stages"][0]["stage"], "isolated-source-check");
+    assert_eq!(receipt["stages"][0]["status"], "pass");
+    assert_eq!(receipt["stages"][0]["native_exit_code"], 0);
+    assert!(output.success_for_logging(), "control receipt must reflect native PASS");
+    assert!(
+        git(&["status", "--porcelain=v1", "--untracked-files=all"]).trim().is_empty(),
+        "LVO must preserve source worktree"
+    );
+}
+
 #[test]
 fn parser_returns_compact_pass_summary() {
     let log = concat!(
