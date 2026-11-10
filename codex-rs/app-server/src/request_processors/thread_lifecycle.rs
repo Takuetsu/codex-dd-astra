@@ -796,7 +796,7 @@ pub(super) async fn handle_pending_thread_resume_request(
         reasoning_effort,
         collaboration_mode: Some(collaboration_mode),
         codexdd_first_worker: conversation
-            .restorable_thread_settings()
+            .thread_settings_snapshot()
             .await
             .codexdd_first_worker,
         multi_agent_mode: MultiAgentMode::ExplicitRequestOnly,

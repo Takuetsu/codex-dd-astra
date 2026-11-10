@@ -4198,7 +4198,7 @@ impl ThreadRequestProcessor {
                     reasoning_effort: session_configured.reasoning_effort,
                     collaboration_mode: Some(config_snapshot.collaboration_mode),
                     codexdd_first_worker: codex_thread
-                        .restorable_thread_settings()
+                        .thread_settings_snapshot()
                         .await
                         .codexdd_first_worker,
                     multi_agent_mode: MultiAgentMode::ExplicitRequestOnly,
