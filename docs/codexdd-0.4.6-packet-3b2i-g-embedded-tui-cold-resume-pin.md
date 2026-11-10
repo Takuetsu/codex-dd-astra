@@ -26,3 +26,7 @@ First run only source-contract and Rustfmt push-time gates, fix any formatting-o
 A green result will **not** prove a complete live TUI + app-server subprocess end-to-end after both programs restart; follow with an isolated native TUI integration smoke and independent Validator, wrong-thread replay/drift checks, approved Windows Node/Rust mechanical-validation profiles, and final daemon/F2/distribution/21-stage gates at owner-controlled release acceptance.
 
 No live Breakwater/Cycle Vengeance worktree mutation; no new model privileges; no automatic promotion or Git HEAD inference; frozen 0.4.5 and installed 0.4.4 remain unchanged.
+
+## Focused validation activation — 2026-11-10
+
+Exact source and Rustfmt both passed for `5fb64d76b75efa74f696aa332b25cbce5b3e0bf0` in GitHub Actions [#42859946221](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42859946221). A workflow-comment-only opt-in commit now deliberately triggers the existing source-bound Windows job via `[3b2-focused-native]`. It will separately execute bounded Git child cleanup (`3b2p`), actual app-server cold restart with persisted Worker resume credential (`3b2n`), and embedded TUI resume-pin compatibility, refusal, and clean descendant checks (`3b2q`). Its Windows result is pending and must not be conflated with this lightweight source gate.
