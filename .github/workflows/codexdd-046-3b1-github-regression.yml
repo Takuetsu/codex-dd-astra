@@ -374,6 +374,28 @@ jobs:
         uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
         with:
           tool: nextest
+      - name: Verify 16 MiB profile stack and isolate native detached-fork regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $profilePaths = @(
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-targeted.ps1'),
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-workpacket.ps1'),
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-release.ps1')
+          )
+          foreach ($profilePath in $profilePaths) {
+            $contents = Get-Content -LiteralPath $profilePath -Raw
+            if ($contents -notmatch '\$env:RUST_MIN_STACK\s*=\s*"16777216"') {
+              throw "Expected 16 MiB Rust stack in repo-owned profile: $profilePath"
+            }
+          }
+          $env:RUST_MIN_STACK = '16777216'
+          $filter = 'detached_fork_restores_persisted_adaptive_workflow_state'
+          & cargo nextest run --locked -p codex-tui --lib --no-fail-fast --test-threads 1 $filter
+          if ($LASTEXITCODE -ne 0) {
+            throw '3B.2k isolated detached-fork test still fails; full Rust profile deliberately not executed'
+          }
       - name: Execute real Rust targeted LVO script and verify contract-v1 stages
         shell: pwsh
         run: |
