@@ -240,6 +240,84 @@ jobs:
           Write-Host "Focused native test at $env:GITHUB_SHA only; no install, release, or merge."
           git status --short
 
+  windows-3b2j-lvo-native:
+    name: 3B.2j focused Windows native LVO Git bound and source identity
+    # Opt-in only. Reuses exact-source checks and repo-pinned Windows setup.
+    # No broad Windows regression suite, release, installation, or source mutation.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2j-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up isolated Windows Rust compilation paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2j source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2j-native'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run bounded native LVO Git timeout and authorized source regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filters = @(
+            'codexdd_046_3b2s_',
+            'native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha'
+          )
+          foreach ($filter in $filters) {
+            $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+              throw "3B.2j expected exactly one native Core test for $filter"
+            }
+            & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture
+            if ($LASTEXITCODE -ne 0) { throw "3B.2j native Core regression failed: $filter" }
+          }
+      - name: Confirm no source mutation, merge, release, or installation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.2j focused native tests at $env:GITHUB_SHA only; no production work."
+          git status --short
+
   windows-rust:
     name: Windows TUI 3B.1 compile and focused regression tests
     # Broad Windows recompilation is a deliberate final gate, not a push-time
