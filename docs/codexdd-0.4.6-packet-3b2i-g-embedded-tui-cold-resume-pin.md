@@ -34,3 +34,15 @@ Exact source and Rustfmt both passed for `5fb64d76b75efa74f696aa332b25cbce5b3e0b
 ## Typed Core resume snapshot correction and focused Windows retest — 2026-11-10
 
 Commit `2ab9da8a1fee8932d7e0e4f83895f9971ba7b92d` changes two app-server resume paths to read `codexdd_first_worker` from `CodexThread::thread_settings_snapshot()`, not `CodexThreadSettingsOverrides`. This addresses exact compiler error E0609 from failed Windows job [#42860267704](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42860267704). Earlier bounded subprocess test (3b2p) passed 1/1; the app-server and TUI tests did not execute because the app-server compilation failed. The corrected SHA passed lightweight source and Rustfmt [#42867935907](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42867935907). A workflow-comment-only opt-in commit triggers the scoped Windows 3b2p, 3b2n and 3b2q tests; no full release run or approval is implied.
+
+## Exact-source focused native result — 2026-11-10
+
+**PASS, scoped 3B.2i-g acceptance — source `ca0374329233a216206b3b38c6b080dced526080`, [GitHub Actions #42868360986](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42868360986).** The run completed successfully (four jobs: source-contract PASS, Rustfmt PASS, focused Windows-native PASS, broad Windows TUI 3B.1 SKIPPED by design). Native Windows job `130013475046` executed all three exact test filters with an actual 1/1 result for each, not merely a successful compile:
+
+- `codexdd_046_3b2p_stalled_git_process_is_bounded_and_reaped` (Core bounded Git child): **1 pass, 0 fail**.
+- `codexdd_046_3b2n_real_app_server_candidate_and_cold_resume` (new app-server process, persisted same-thread Worker credential and second descendant authorization): **1 pass, 0 fail**.
+- `codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant` (TUI resume mapping and refusal controls): **1 pass, 0 fail**.
+
+The prior E0609 app-server compile failure at #42860267704 is superseded for this tested source by #42868360986; no additional unobserved tests are counted. **3B.2i-g focused source/native acceptance closes; broader Phase 3B.2 and 0.4.6 remain open.** Do not promote 0.4.4, merge or install based on this result.
+
+**Next bounded packet:** 3B.2i-h addresses the separately identified TUI read-only Git child lifecycle: the 20-second outer async cold-resume timeout currently does not terminate a stuck child spawned from the blocking preflight, and initial TUI preflight also uses unbounded `Command::output`. Use Core's bounded, fail-closed process pattern, add a process-timeout/reap negative and retain clean descendant, dirty, wrong-root, same-thread, fork and remote denials. Run cheap source/Rustfmt first; authorize focused native Windows test separately. Still outstanding afterward: real two-process TUI/app-server restart smoke, correct isolated Windows Node/Rust LVO profiles, independent Validator and owner-controlled final release gates.
