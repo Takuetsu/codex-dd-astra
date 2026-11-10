@@ -137,7 +137,11 @@ fn run_bounded_candidate_command(
                 return Err(format!(
                     "SETUP_BLOCKED: candidate Git {step} timed out after {}ms; process {}",
                     deadline.as_millis(),
-                    if terminated { "terminated" } else { "termination unconfirmed" }
+                    if terminated {
+                        "terminated"
+                    } else {
+                        "termination unconfirmed"
+                    }
                 ));
             }
             Ok(None) => thread::sleep(Duration::from_millis(25)),
@@ -148,7 +152,11 @@ fn run_bounded_candidate_command(
                 }
                 return Err(format!(
                     "SETUP_BLOCKED: candidate Git {step} could not be monitored: {err}; process {}",
-                    if terminated { "terminated" } else { "termination unconfirmed" }
+                    if terminated {
+                        "terminated"
+                    } else {
+                        "termination unconfirmed"
+                    }
                 ));
             }
         }
@@ -300,9 +308,12 @@ impl CoreFirstWorkerAuthority {
                 request.candidate_sha
             ));
         }
-        if !git("status", &["status", "--porcelain=v1", "--untracked-files=all"])?
-            .trim()
-            .is_empty()
+        if !git(
+            "status",
+            &["status", "--porcelain=v1", "--untracked-files=all"],
+        )?
+        .trim()
+        .is_empty()
         {
             return Err(
                 "SETUP_BLOCKED: preserve staged, unstaged, or untracked edits; candidate is dirty"
@@ -717,12 +728,9 @@ mod tests {
             command.arg("5");
             command
         };
-        let error = run_bounded_candidate_command(
-            command,
-            "synthetic-stall",
-            Duration::from_millis(150),
-        )
-        .expect_err("a stalled child must be terminated");
+        let error =
+            run_bounded_candidate_command(command, "synthetic-stall", Duration::from_millis(150))
+                .expect_err("a stalled child must be terminated");
         assert!(error.contains("Git synthetic-stall timed out"));
         assert!(error.contains("process terminated"));
     }

@@ -77,7 +77,9 @@ impl Session {
             }),
         )
         .await
-        .map_err(|_| "SETUP_BLOCKED: candidate preflight exceeded its total 35-second budget".to_string())?
+        .map_err(|_| {
+            "SETUP_BLOCKED: candidate preflight exceeded its total 35-second budget".to_string()
+        })?
         .map_err(|err| format!("SETUP_BLOCKED: candidate Git preflight task failed: {err}"))??;
         tracing::warn!("3B2e probe A3: source preflight completed");
         let mut snapshot = self.thread_settings_snapshot().await;
