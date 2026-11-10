@@ -57,12 +57,31 @@ impl Session {
             );
         };
         tracing::warn!("3B2e probe A2: before source preflight");
-        let prospective = {
-            let state = self.state.lock().await;
-            state
-                .first_worker_authority
-                .verified_candidate_snapshot(requested)?
+        let worker_authority = {
+            let state = tokio::time::timeout(
+                std::time::Duration::from_secs(15),
+                self.state.lock(),
+            )
+            .await
+            .map_err(|_| {
+                "SETUP_BLOCKED: timed out acquiring Core Worker state for candidate".to_string()
+            })?;
+            tracing::warn!("3B2e probe A2a: state mutex acquired");
+            state.first_worker_authority.clone()
         };
+        tracing::warn!("3B2e probe A2b: state mutex released; Git preflight starting");
+        // Git performs blocking process IO. Do not hold SessionState or occupy
+        // Core's async executor while inspecting an untrusted worktree.
+        let candidate = requested.clone();
+        let prospective = tokio::time::timeout(
+            std::time::Duration::from_secs(20),
+            tokio::task::spawn_blocking(move || {
+                worker_authority.verified_candidate_snapshot(&candidate)
+            }),
+        )
+        .await
+        .map_err(|_| "SETUP_BLOCKED: candidate Git preflight exceeded 20 seconds".to_string())?
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git preflight task failed: {err}"))??;
         tracing::warn!("3B2e probe A3: source preflight completed");
         let mut snapshot = self.thread_settings_snapshot().await;
         tracing::warn!("3B2e probe A4: settings snapshot captured");
