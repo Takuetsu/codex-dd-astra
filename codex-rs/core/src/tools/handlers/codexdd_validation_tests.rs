@@ -341,7 +341,10 @@ exit 0
         )
         .await;
     assert!(
-        turn.config.adaptive_worker.as_ref().is_some_and(|w| w.source_sha.as_deref() == Some(expected_sha.as_str())),
+        turn.config
+            .adaptive_worker
+            .as_ref()
+            .is_some_and(|worker| worker.source_sha.as_deref() == Some(expected_sha.as_str())),
         "Core turn must retain the trusted source credential"
     );
     turn.turn_metadata_state.set_turn_trigger(
@@ -362,10 +365,8 @@ exit 0
             arguments: serde_json::json!({"profile":"targeted"}).to_string(),
         },
     };
-    let output = tokio::time::timeout(
-        Duration::from_secs(90),
-        CodexDDValidationHandler.handle(invocation),
-    )
+    let handler = CodexDDValidationHandler;
+    let output = tokio::time::timeout(Duration::from_secs(90), handler.handle(invocation))
     .await
     .expect("native tool must return a completed result")
     .expect("real Core handler must execute disposable native profile");
@@ -379,9 +380,14 @@ exit 0
     assert_eq!(receipt["stages"][0]["stage"], "isolated-source-check");
     assert_eq!(receipt["stages"][0]["status"], "pass");
     assert_eq!(receipt["stages"][0]["native_exit_code"], 0);
-    assert!(output.success_for_logging(), "control receipt must reflect native PASS");
     assert!(
-        git(&["status", "--porcelain=v1", "--untracked-files=all"]).trim().is_empty(),
+        output.success_for_logging(),
+        "control receipt must reflect native PASS"
+    );
+    assert!(
+        git(&["status", "--porcelain=v1", "--untracked-files=all"])
+            .trim()
+            .is_empty(),
         "LVO must preserve source worktree"
     );
 }
