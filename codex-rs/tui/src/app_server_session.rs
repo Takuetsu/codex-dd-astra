@@ -2568,7 +2568,9 @@ async fn reconcile_resumed_core_worker(
             tracing::warn!(%error, "Core candidate cold-resume preflight task failed");
         }
         Err(_) => {
-            tracing::warn!("Core candidate cold-resume preflight timed out; keeping TUI pin unchanged");
+            tracing::warn!(
+                "Core candidate cold-resume preflight timed out; keeping TUI pin unchanged"
+            );
         }
     }
 }
@@ -4476,8 +4478,14 @@ mod tests {
             state.assignment_preflight.as_ref().unwrap().source_sha,
             candidate_sha
         );
-        assert_eq!(state.worker_context.role, crate::adaptive_worker::AdaptiveWorkerRole::Implementation);
-        assert_eq!(state.worker_context.authorized_scope.as_deref(), Some("approved source packet"));
+        assert_eq!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+        );
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("approved source packet")
+        );
 
         let mut invalid = core.clone();
         invalid.authorized_scope = "other scope".to_string();
@@ -4500,7 +4508,8 @@ mod tests {
             candidate_sha
         );
         assert_eq!(
-            std::fs::read_to_string(root.join("preserve-untracked.txt")).expect("user edit retained"),
+            std::fs::read_to_string(root.join("preserve-untracked.txt"))
+                .expect("user edit retained"),
             "user edit"
         );
     }
