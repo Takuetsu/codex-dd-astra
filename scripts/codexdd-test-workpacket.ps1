@@ -10,7 +10,7 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $codexRsRoot = Join-Path $repositoryRoot "codex-rs"
 
 $env:CODEX_REPO_ROOT = $repositoryRoot
-$env:RUST_MIN_STACK = "8388608"
+$env:RUST_MIN_STACK = "16777216"
 $env:NEXTEST_PROFILE = "local"
 
 $stages = @(
