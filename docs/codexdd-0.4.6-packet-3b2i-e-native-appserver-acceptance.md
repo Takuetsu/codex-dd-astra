@@ -16,3 +16,9 @@ The same branch-scoped Windows workflow now compiles and executes this single in
 - Daniel-CL final local validation remains a separate explicit owner gate
 
 0.4.5 remains frozen. No production merge or version bump.
+
+## Native Windows acceptance recorded — 2026-11-10
+
+**PASS — focused real-process acceptance.** Exact-source commit `7583e0012f16c6f06d2633908f3af7a594a71da5`; GitHub Actions [#42847772628](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42847772628), 33m12s; job `3B.2i focused Windows Git-boundary and app-server restart tests` passed. Logs confirm `codexdd_046_3b2n_real_app_server_candidate_and_cold_resume`: **1 executed, 1 passed, 0 failed**, not merely a successful build. It exercises native app-server candidate authorization, same-thread candidate notification and persisted record, a new server process, resume of the same thread, and a second successor SHA authorization in isolated temporary directories with mock model responses.
+
+**Boundary:** This is not a live TUI restart, full independent-validator profile, 21-stage/final Windows distribution acceptance, or production/release approval. Temporary 3B2e diagnostic warnings are removed in the subsequent cleanup commit without changing native authorization behavior; that post-cleanup SHA requires its own source/format check.
