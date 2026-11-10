@@ -444,6 +444,88 @@ jobs:
           Write-Host "3B.2k Rust profile evidence at $env:GITHUB_SHA; no release, install or merge."
           git status --short
 
+  windows-3b2l-validator-negative:
+    name: 3B.2l native Windows Validator and LVO refusal regressions
+    # Negative policy only; does not simulate or authorize a live independent validator.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2l-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare isolated native Windows Core test paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2l source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2l-native-validator'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows child processes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute six native Core authority and refusal checks
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filters = @(
+            'codexdd_046_3b2_native_role_gate_rejects_independent_workers',
+            'codexdd_046_3b2d_protected_mechanical_requires_core_bound_source',
+            'codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair',
+            'codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker',
+            'adaptive_validation_terminalization_allows_only_trusted_signal_tool',
+            'codexdd_046_3b2_mechanical_node_rust_commands_remain_bounded'
+          )
+          foreach ($filter in $filters) {
+            $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+              throw "3B.2l requires exactly one native Core test: $filter"
+            }
+            & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture
+            if ($LASTEXITCODE -ne 0) { throw "3B.2l native Core refusal test failed: $filter" }
+          }
+          Write-Host "3B.2l negative-policy native Windows acceptance: all six tests executed and passed."
+      - name: Confirm no source mutation, release, or installation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "Focused negative-policy test on exact $env:GITHUB_SHA; no production actions."
+          git status --short
+
   windows-rust:
     name: Windows TUI 3B.1 compile and focused regression tests
     # Broad Windows recompilation is a deliberate final gate, not a push-time
