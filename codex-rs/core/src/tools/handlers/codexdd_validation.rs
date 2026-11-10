@@ -760,11 +760,7 @@ fn run_bounded_lvo_git_command(
     Ok((status, output))
 }
 
-fn run_lvo_git_step(
-    root: &Path,
-    step: &'static str,
-    args: &[&str],
-) -> Result<String, String> {
+fn run_lvo_git_step(root: &Path, step: &'static str, args: &[&str]) -> Result<String, String> {
     let mut command = Command::new("git");
     command
         .arg("--no-optional-locks")
