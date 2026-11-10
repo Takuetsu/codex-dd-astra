@@ -25,3 +25,18 @@ In the TUI, `preflight_mechanical_target` used `Command::output()` for read-only
 4. Later separate work remains: actual live two-program TUI + app-server process restart smoke, Node/Rust repo-owned LVO profiles, independent Validator and exact-source wrong-thread/flush negatives; Phase 3B.3 gate provenance and 3B.4 progress/circuit-breaker; final owner-controlled Windows 21-stage/daemon/F2/security/distribution and release signoff.
 
 **Boundaries:** no source checkout/reset, worktree mutation, permission relaxation, model escalation, 0.4.5 thaw, release, merge, installation or change to production 0.4.4. The 3B.2i-h source commits are **not yet native validated**.
+
+## Native acceptance verified — 2026-11-10
+
+**PASS (focused 3B.2i-h); exact candidate `b5c99d3d4af3828f3c590ea3122e9d4a0b4cdde3`.** [GitHub Actions run #42878341161](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42878341161) completed successfully. Source-contract preflight and Rustfmt passed before Windows tests. Windows job `130048575651` executed and passed exactly four focused regression selectors:
+
+| Selector | Observed native Windows result |
+| --- | --- |
+| `codexdd_046_3b2p_stalled_git_process_is_bounded_and_reaped` | 1 passed; 0 failed; 0 ignored |
+| `codexdd_046_3b2n_real_app_server_candidate_and_cold_resume` | 1 passed; 0 failed; 0 ignored |
+| `codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant` | 1 passed; 0 failed; 0 ignored |
+| `codexdd_046_3b2r_stalled_tui_git_child_is_bounded_and_reaped` | 1 passed; 0 failed; 0 ignored |
+
+The new 3B.2r filter additionally enumerated exactly one test before executing it. Windows TUI 3B.1 broader compile/regression job was **skipped by design**, not counted as PASS. The preceding `c5eea24f` and `5411cc80` Rustfmt failures were corrected in this green source; those red results are historical and do not confer acceptance. Changes to this evidence file alone need no additional Rust or Windows CI.
+
+**Scoped disposition:** 3B.2i-h focused source/format/native Windows acceptance is **COMPLETE**. Direct child termination/reap is proven for the synthetic regression; process-tree cleanup and every real-world preflight corner case are not proven. Core/TUI authority, permissions, and installed version unchanged. Phase 3B.2 is still open, as are the independent Windows Node/Rust native LVO profiles, true separate-program TUI/app-server restart acceptance, independent Validator, and official release gates. No production install, merge, 0.4.5 thaw, version bump, or release authorized.
