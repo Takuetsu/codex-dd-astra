@@ -28,3 +28,20 @@ Add a separate commit-message-opt-in Windows job to the existing 0.4.6 developme
 ## What remains after this scoped gate
 
 Even if all six negative tests pass, a true independent Validator **running a separate live session**, receiving owner-controlled source-specific native evidence and reporting terminalization, remains **not proven**. Still outstanding: actual native Node profile in its isolated authorized repo; direct Core LVO tool-call source-bound happy-path; separate TUI/app-server cold restart; 3B.3 durable gate provenance; 3B.4 progress/refusal taxonomy; 3C/3E/4 comprehensive and owner-controlled acceptance. Do not release/install or claim 0.4.6 usable from unit-policy PASS.
+
+## Exact native Windows policy acceptance — 2026-11-10
+
+**PASS, 6/6 individually executed native Windows tests; exact source `c6890ca0f0d0ef5b9d4d3bb549d444bbd90d0ca8`.** [GitHub Actions #42906745243](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42906745243) completed successfully, Windows job `130147398807`. Source-contract and Rustfmt passed before the focused job; previous Windows profile and other broad jobs were **skipped by design**.
+
+Each selector was first listed with `1 test, 0 benchmarks`, then executed and returned `test result: ok. 1 passed; 0 failed`:
+
+| Selector | Native result |
+| --- | --- |
+| `codexdd_046_3b2_native_role_gate_rejects_independent_workers` | 1/1 PASS |
+| `codexdd_046_3b2d_protected_mechanical_requires_core_bound_source` | 1/1 PASS |
+| `codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair` | 1/1 PASS |
+| `codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker` | 1/1 PASS |
+| `adaptive_validation_terminalization_allows_only_trusted_signal_tool` | 1/1 PASS |
+| `codexdd_046_3b2_mechanical_node_rust_commands_remain_bounded` | 1/1 PASS |
+
+**Disposition:** 3B.2l native negative-policy test packet **COMPLETE**. This is real Windows Core policy unit coverage, **not** an independent live Validator process, actual Node profile, direct trusted Worker-to-Core LVO handler call, or full 0.4.6 release gate. No independent Worker role gained Implementation LVO authorization, no game worktree or deployed binary changed, and 0.4.5 remains frozen. Next engineering packet should focus on Core LVO execution/receipt provenance with an authorized disposable repository and a true handoff when available, without staging a fake PASS.
