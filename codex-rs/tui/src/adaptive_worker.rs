@@ -3,11 +3,16 @@
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::path::Path;
-use std::process::{Command, ExitStatus, Stdio};
+use std::process::Command;
+use std::process::ExitStatus;
+use std::process::Stdio;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use std::time::Instant;
 
 #[cfg(test)]
 const RAW_BRACKETED_PASTE_START: &str = "\u{1b}[200~";
@@ -891,12 +896,8 @@ mod tests {
             command.arg("5");
             command
         };
-        let error = run_bounded_tui_command(
-            command,
-            "synthetic-stall",
-            Duration::from_millis(150),
-        )
-        .expect_err("stalled child must be terminated and reaped");
+        let error = run_bounded_tui_command(command, "synthetic-stall", Duration::from_millis(150))
+            .expect_err("stalled child must be terminated and reaped");
         assert!(error.contains("TUI Git synthetic-stall timed out"));
         assert!(error.contains("process terminated"));
     }
