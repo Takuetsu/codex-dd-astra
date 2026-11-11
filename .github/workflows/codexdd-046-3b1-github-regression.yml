@@ -983,3 +983,91 @@ jobs:
         shell: pwsh
         run: |
           Write-Host 'GitHub source verification only. No deployment, install, release or production merge.'
+
+  windows-3b3b-native-provenance:
+    name: 3B.3b exact-source Windows Core and TUI provenance regressions
+    # Explicit owner-directed GitHub-only scoped diagnostic: isolated disposable
+    # evidence fixtures, never a real project profile or release acceptance.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b3b-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Isolate native Windows provenance fixture paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.3b wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production version baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b3b'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Validate Core native receipt source-root summary
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'operator_summary_adds_run_and_candidate_identity_without_full_log_output'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.3b expected exactly one Core operator-source-root summary test'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3b native Core source-root receipt test failed' }
+      - name: Validate six TUI evidence identity and rejection regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b3b_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '6 tests, 0 benchmarks') {
+            throw '3B.3b expected exactly six TUI provenance fixture cases'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3b TUI source and gate provenance tests failed' }
+      - name: Confirm no source mutation, install or release
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.3b exact-source synthetic fixtures at $env:GITHUB_SHA; no native project acceptance or release."
+          git status --short
