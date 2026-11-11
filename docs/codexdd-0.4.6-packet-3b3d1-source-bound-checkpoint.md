@@ -28,3 +28,7 @@ Owned source: `codex-rs/tui/src/adaptive_gate_prerequisites.rs` and `codex-rs/tu
 The previous [3B.3c.1 Windows gate #43070130453](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43070130453) is green at `9b159f54e7b5582f72b95db8e3434322dc73593b`: native 1 Core + 6 3B.3b + 4 3B.3c tests. It is not proof for this new changed source.
 
 Next: verify exact source checkpoint; check Rustfmt/source contract, then run the three new focused Windows tests and relevant earlier controls. Repair any compile or formatter problem narrowly. After that begin **3B.3d.2** app-server/rollout persistence and backward compatibility, then **3C.1** terminal admission with actual independent proof. Do not mistake source tests for full gate or release acceptance.
+
+## Native acceptance — 2026-11-11
+
+**3B.3d.1 focused native acceptance:** [GitHub Actions run #43085150999](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43085150999), head `189ae946494740c1ee4fc032a98afa480262eb96`, completed **SUCCESS**. Source-contract and Rustfmt both passed; Windows job logged Core native receipt **1/1**, 3B.3b provenance **6/6**, 3B.3c prerequisites **4/4**, and 3B.3d source-bound checkpoint/restart tests **3/3**, totaling **14/14 focused tests** with zero failures. Failed formatting runs #43078212823 and #43078311313 are superseded. The 3B.3d.1 pure checkpoint codec is accepted; the app-server/rollout persistence bridge remains **OPEN**, as do independent live Validator, actual Node service health, TUI READY admission, production/release gates.
