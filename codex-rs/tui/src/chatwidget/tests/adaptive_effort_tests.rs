@@ -569,6 +569,8 @@ fn register_evidence(
             tool_name: None,
             validation_profile: None,
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         });
 }
 
@@ -591,6 +593,8 @@ fn register_work_packet_receipt(
                 crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
             ),
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         });
 }
 
@@ -613,6 +617,8 @@ fn register_failed_validation_receipt(
             tool_name: Some(crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
             validation_profile: Some(profile.to_string()),
             validation_failure_fingerprint: Some(fingerprint.to_string()),
+            native_source_provenance: None,
+            worker_binding: None,
         });
 }
 
@@ -1052,6 +1058,8 @@ async fn workflow_signals_enforce_roles_and_native_evidence_outcomes() {
                 tool_name: None,
                 validation_profile: None,
                 validation_failure_fingerprint: None,
+                native_source_provenance: None,
+                worker_binding: None,
             });
         let before_route = (
             chat.adaptive_effort.current_family,
@@ -1869,6 +1877,8 @@ fn typed_forks_snapshot_immediate_parent_state_and_remain_independent() {
             tool_name: None,
             validation_profile: None,
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         });
     let mut child = adaptive_test_session(
         ThreadId::new(),
@@ -1978,6 +1988,8 @@ async fn evidence_receipt_is_inert_and_cannot_mutate_worker_authority() {
         tool_name: None,
         validation_profile: None,
         validation_failure_fingerprint: None,
+        native_source_provenance: None,
+        worker_binding: None,
     });
     assert_eq!(chat.adaptive_effort, expected);
     assert_matches!(
@@ -2411,6 +2423,8 @@ async fn mechanical_validation_refuses_deescalation_while_failure_pressure_is_li
             tool_name: None,
             validation_profile: None,
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         });
     chat.adaptive_effort.pending_signal = Some(pending_signal(
         source_turn_id,
@@ -2669,6 +2683,8 @@ async fn surplus_budget_cannot_turn_native_failure_pressure_into_family_jump() {
                 tool_name: None,
                 validation_profile: None,
                 validation_failure_fingerprint: None,
+                native_source_provenance: None,
+                worker_binding: None,
             });
     }
 

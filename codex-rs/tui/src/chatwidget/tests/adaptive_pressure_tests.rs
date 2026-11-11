@@ -68,6 +68,8 @@ fn register_work_packet_receipt(
                 crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
             ),
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         });
 }
 

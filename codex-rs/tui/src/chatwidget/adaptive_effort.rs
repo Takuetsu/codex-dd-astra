@@ -945,6 +945,8 @@ mod tests {
                 tool_name: None,
                 validation_profile: None,
                 validation_failure_fingerprint: None,
+                native_source_provenance: None,
+                worker_binding: None,
             });
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,
