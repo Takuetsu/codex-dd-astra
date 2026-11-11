@@ -6,6 +6,9 @@ use super::adaptive_evidence::AdaptiveEvidenceRegistry;
 use super::adaptive_evidence::AdaptiveEvidenceResolveError;
 use super::adaptive_evidence::AdaptiveSourceGateRequirement;
 use super::adaptive_evidence::record_from_item_completion;
+use super::adaptive_gate_prerequisites::AdaptiveGateLedger;
+use super::adaptive_gate_prerequisites::AdaptiveGateState;
+use super::adaptive_gate_prerequisites::AdaptiveRequiredGate;
 use super::adaptive_worker::AdaptiveTaskKind;
 use super::adaptive_worker::AdaptiveWorkerContext;
 use super::adaptive_worker::AdaptiveWorkerPreflight;
@@ -765,4 +768,211 @@ fn codexdd_046_3b3b_native_pass_without_exact_fields_cannot_bind() {
         assert!(record.native_source_provenance.is_none());
         assert!(record.worker_binding.is_none());
     }
+}
+
+
+#[test]
+fn codexdd_046_3b3c_a01_focused_pass_retains_required_full_gate() {
+    let root = tempfile::tempdir().expect("isolated root");
+    let worker = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(scoped_native_source_receipt(
+        worker,
+        root.path(),
+        SOURCE_SHA_A,
+        "targeted",
+    ));
+    let mut gates = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![
+            AdaptiveRequiredGate::SourceProfile("targeted".to_string()),
+            AdaptiveRequiredGate::SourceProfile("release".to_string()),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    )
+    .expect("explicit requirements");
+    gates
+        .observe_source_pass(
+            &registry,
+            "targeted",
+            "native-lvo-evidence",
+            worker,
+            "native-source-turn",
+            "native-run-123",
+            999,
+        )
+        .expect("focused source PASS");
+    let pending = gates.outstanding(&registry);
+    assert_eq!(pending.len(), 2);
+    assert_eq!(
+        pending[0].gate,
+        AdaptiveRequiredGate::SourceProfile("release".to_string())
+    );
+    assert_eq!(pending[0].state, AdaptiveGateState::Pending);
+    assert_eq!(
+        pending[1].gate,
+        AdaptiveRequiredGate::IndependentValidation
+    );
+    assert!(!gates.ready_for_owner_qa(&registry));
+    assert_eq!(
+        gates.observe_source_pass(
+            &registry,
+            "release",
+            "native-lvo-evidence",
+            worker,
+            "native-source-turn",
+            "native-run-123",
+            999,
+        ),
+        Err(AdaptiveEvidenceResolveError::GateScopeMismatch)
+    );
+}
+
+#[test]
+fn codexdd_046_3b3c_a02_native_source_cannot_establish_live_service_health() {
+    let root = tempfile::tempdir().expect("isolated root");
+    let worker = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(scoped_native_source_receipt(
+        worker,
+        root.path(),
+        SOURCE_SHA_A,
+        "work_packet",
+    ));
+    let mut gates = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![
+            AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+            AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4331, 4332]),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    )
+    .expect("explicit source and operations gates");
+    gates
+        .observe_source_pass(
+            &registry,
+            "work_packet",
+            "native-lvo-evidence",
+            worker,
+            "native-source-turn",
+            "native-run-123",
+            999,
+        )
+        .expect("source profile passed");
+    // Even a successful generic exec never becomes owned health evidence.
+    registry.register(record(
+        "unverified-health-exec",
+        worker,
+        "native-source-turn",
+        AdaptiveEvidenceOutcome::Success,
+    ));
+    let outstanding = gates.outstanding(&registry);
+    assert_eq!(outstanding.len(), 2);
+    assert_eq!(
+        outstanding[0].gate,
+        AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4331, 4332])
+    );
+    assert_eq!(outstanding[0].state, AdaptiveGateState::Pending);
+    assert!(!gates.ready_for_owner_qa(&registry));
+    gates
+        .mark_blocked(
+            &AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4331, 4332]),
+            "service_health_unavailable",
+        )
+        .expect("typed setup blocker");
+    assert_eq!(
+        gates.outstanding(&registry)[0].state,
+        AdaptiveGateState::Blocked("service_health_unavailable".to_string())
+    );
+}
+
+#[test]
+fn codexdd_046_3b3c_a07_implementation_pass_is_not_independent_validation() {
+    let root = tempfile::tempdir().expect("isolated root");
+    let worker = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    let source = scoped_native_source_receipt(worker, root.path(), SOURCE_SHA_A, "work_packet");
+    registry.register(source.clone());
+    let mut gates = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![
+            AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    )
+    .expect("explicit independent Validator");
+    gates
+        .observe_source_pass(
+            &registry,
+            "work_packet",
+            "native-lvo-evidence",
+            worker,
+            "native-source-turn",
+            "native-run-123",
+            999,
+        )
+        .expect("Implementation native source validation");
+    assert_eq!(
+        gates.outstanding(&registry)[0].gate,
+        AdaptiveRequiredGate::IndependentValidation
+    );
+    assert!(!gates.ready_for_owner_qa(&registry));
+
+    let mut conflicting = source;
+    conflicting
+        .native_source_provenance
+        .as_mut()
+        .expect("native source proof")
+        .source_sha = SOURCE_SHA_B.to_string();
+    assert_eq!(
+        registry.register(conflicting),
+        AdaptiveEvidenceRegistration::Conflicted
+    );
+    // Previously accepted evidence must be rechecked, not cached forever.
+    assert_eq!(gates.outstanding(&registry).len(), 2);
+}
+
+#[test]
+fn codexdd_046_3b3c_requirements_reject_missing_or_duplicate_authority() {
+    let root = tempfile::tempdir().expect("isolated root");
+    let cases = vec![
+        vec![AdaptiveRequiredGate::SourceProfile("targeted".to_string())],
+        vec![
+            AdaptiveRequiredGate::IndependentValidation,
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+        vec![
+            AdaptiveRequiredGate::SourceProfile("not-a-profile".to_string()),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+        vec![
+            AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4331, 4331]),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+        vec![
+            AdaptiveRequiredGate::OwnedRuntimeHealth(Vec::new()),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    ];
+    for requirements in cases {
+        assert!(
+            AdaptiveGateLedger::new("isolated source packet", root.path(), SOURCE_SHA_A, requirements)
+                .is_err()
+        );
+    }
+    assert!(
+        AdaptiveGateLedger::new(
+            " ",
+            root.path(),
+            SOURCE_SHA_A,
+            vec![AdaptiveRequiredGate::IndependentValidation]
+        )
+        .is_err()
+    );
 }
