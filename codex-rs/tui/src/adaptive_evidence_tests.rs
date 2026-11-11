@@ -979,7 +979,6 @@ fn codexdd_046_3b3c_requirements_reject_missing_or_duplicate_authority() {
     );
 }
 
-
 #[test]
 fn codexdd_046_3b3d_checkpoint_roundtrip_drops_all_success_authority() {
     let root = tempfile::tempdir().expect("isolated root");
@@ -1060,28 +1059,62 @@ fn codexdd_046_3b3d_rejects_cross_worker_prior_sha_and_wrong_worktree() {
         vec![AdaptiveRequiredGate::IndependentValidation],
     )
     .expect("bounded gates");
-    assert!(ledger
-        .checkpoint_for_worker(owner, AdaptiveWorkerRole::Unspecified)
-        .is_err());
+    assert!(
+        ledger
+            .checkpoint_for_worker(owner, AdaptiveWorkerRole::Unspecified)
+            .is_err()
+    );
     let checkpoint = ledger
         .checkpoint_for_worker(owner, AdaptiveWorkerRole::Validation)
         .expect("bound Worker");
     for (thread, role, expected_scope, expected_root, sha) in [
-        (other_thread, AdaptiveWorkerRole::Validation, scope, root.path(), SOURCE_SHA_A),
-        (owner, AdaptiveWorkerRole::Implementation, scope, root.path(), SOURCE_SHA_A),
-        (owner, AdaptiveWorkerRole::Validation, "foreign packet", root.path(), SOURCE_SHA_A),
-        (owner, AdaptiveWorkerRole::Validation, scope, other_root.path(), SOURCE_SHA_A),
-        (owner, AdaptiveWorkerRole::Validation, scope, root.path(), SOURCE_SHA_B),
+        (
+            other_thread,
+            AdaptiveWorkerRole::Validation,
+            scope,
+            root.path(),
+            SOURCE_SHA_A,
+        ),
+        (
+            owner,
+            AdaptiveWorkerRole::Implementation,
+            scope,
+            root.path(),
+            SOURCE_SHA_A,
+        ),
+        (
+            owner,
+            AdaptiveWorkerRole::Validation,
+            "foreign packet",
+            root.path(),
+            SOURCE_SHA_A,
+        ),
+        (
+            owner,
+            AdaptiveWorkerRole::Validation,
+            scope,
+            other_root.path(),
+            SOURCE_SHA_A,
+        ),
+        (
+            owner,
+            AdaptiveWorkerRole::Validation,
+            scope,
+            root.path(),
+            SOURCE_SHA_B,
+        ),
     ] {
-        assert!(AdaptiveGateLedger::restore_pending(
-            checkpoint.clone(),
-            thread,
-            role,
-            expected_scope,
-            expected_root,
-            sha,
-        )
-        .is_err());
+        assert!(
+            AdaptiveGateLedger::restore_pending(
+                checkpoint.clone(),
+                thread,
+                role,
+                expected_scope,
+                expected_root,
+                sha,
+            )
+            .is_err()
+        );
     }
 }
 
@@ -1127,37 +1160,45 @@ fn codexdd_046_3b3d_restores_only_valid_pending_blockers_and_fails_closed() {
 
     let mut altered = checkpoint.clone();
     altered.schema_version = 42;
-    assert!(AdaptiveGateLedger::restore_pending(
-        altered,
-        owner,
-        AdaptiveWorkerRole::Validation,
-        "isolated source packet",
-        root.path(),
-        SOURCE_SHA_A,
-    )
-    .is_err());
+    assert!(
+        AdaptiveGateLedger::restore_pending(
+            altered,
+            owner,
+            AdaptiveWorkerRole::Validation,
+            "isolated source packet",
+            root.path(),
+            SOURCE_SHA_A,
+        )
+        .is_err()
+    );
     let mut altered = checkpoint.clone();
     altered.required_gates.clear();
-    assert!(AdaptiveGateLedger::restore_pending(
-        altered,
-        owner,
-        AdaptiveWorkerRole::Validation,
-        "isolated source packet",
-        root.path(),
-        SOURCE_SHA_A,
-    )
-    .is_err());
+    assert!(
+        AdaptiveGateLedger::restore_pending(
+            altered,
+            owner,
+            AdaptiveWorkerRole::Validation,
+            "isolated source packet",
+            root.path(),
+            SOURCE_SHA_A,
+        )
+        .is_err()
+    );
     let mut altered = checkpoint.clone();
-    altered.blocked_gates.push((health_gate, "duplicate_blocker".to_string()));
-    assert!(AdaptiveGateLedger::restore_pending(
-        altered,
-        owner,
-        AdaptiveWorkerRole::Validation,
-        "isolated source packet",
-        root.path(),
-        SOURCE_SHA_A,
-    )
-    .is_err());
+    altered
+        .blocked_gates
+        .push((health_gate, "duplicate_blocker".to_string()));
+    assert!(
+        AdaptiveGateLedger::restore_pending(
+            altered,
+            owner,
+            AdaptiveWorkerRole::Validation,
+            "isolated source packet",
+            root.path(),
+            SOURCE_SHA_A,
+        )
+        .is_err()
+    );
     let mut json = serde_json::to_value(checkpoint).expect("checkpoint JSON");
     json["foreignAuthority"] = serde_json::json!("not approved");
     assert!(serde_json::from_value::<AdaptiveGateCheckpoint>(json).is_err());

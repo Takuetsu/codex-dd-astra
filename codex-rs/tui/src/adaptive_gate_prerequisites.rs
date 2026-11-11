@@ -213,7 +213,9 @@ impl AdaptiveGateLedger {
             AdaptiveWorkerRole::Implementation => Ok("implementation"),
             AdaptiveWorkerRole::Validation => Ok("validation"),
             AdaptiveWorkerRole::Repair => Ok("repair"),
-            AdaptiveWorkerRole::Unspecified => Err("unbound Worker cannot save gate authority".to_string()),
+            AdaptiveWorkerRole::Unspecified => {
+                Err("unbound Worker cannot save gate authority".to_string())
+            }
         }
     }
 
