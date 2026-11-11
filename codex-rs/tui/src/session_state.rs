@@ -322,8 +322,9 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
     // must not recover a previous READY terminal or any source authority.
     let gate_ledger = match state.gate_checkpoint.as_ref() {
         Some(checkpoint) => {
-            let owner_thread_id = owner_thread_id
-                .ok_or_else(|| "persisted gate checkpoint needs the original Worker thread".to_string())?;
+            let owner_thread_id = owner_thread_id.ok_or_else(|| {
+                "persisted gate checkpoint needs the original Worker thread".to_string()
+            })?;
             let pin = assignment_preflight
                 .as_ref()
                 .ok_or_else(|| "persisted gate checkpoint needs a pinned source".to_string())?;
