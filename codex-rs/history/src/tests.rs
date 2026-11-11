@@ -154,6 +154,7 @@ fn workflow_state_rollout_records_round_trip_without_thread_identity() -> Result
                 assignment_task_kind: None,
                 authorized_source_root: None,
                 authorized_source_sha: None,
+                gate_checkpoint: None,
                 worker_assignment_locked: true,
                 workflow_terminal: Some("ready_for_validation".to_string()),
             },
@@ -253,6 +254,7 @@ fn adaptive_workflow_snapshot_restores_and_legacy_owner_qa_preserves_binding() {
         assignment_task_kind: None,
         authorized_source_root: None,
         authorized_source_sha: None,
+        gate_checkpoint: None,
         worker_assignment_locked: true,
         workflow_terminal: Some("ready_for_validation".to_string()),
     };
