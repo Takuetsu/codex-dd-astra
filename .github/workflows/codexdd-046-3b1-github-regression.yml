@@ -1042,8 +1042,8 @@ jobs:
         working-directory: codex-rs
         run: |
           $ErrorActionPreference = 'Stop'
-          $filter = 'operator_summary_adds_run_and_candidate_identity_without_full_log_output'
-          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $filter = 'tools::handlers::codexdd_validation::tests::operator_summary_adds_run_and_candidate_identity_without_full_log_output'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --exact --list 2>&1
           $listExit = $LASTEXITCODE
           $listing | Out-Host
           if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
