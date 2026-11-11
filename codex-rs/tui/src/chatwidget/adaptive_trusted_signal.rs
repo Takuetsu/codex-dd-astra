@@ -569,8 +569,9 @@ impl ChatWidget {
             std::path::Path::new(&pin.source_root),
             &pin.source_sha,
         ) {
-            return Err("required gates do not match the assigned source SHA/worktree/scope"
-                .to_string());
+            return Err(
+                "required gates do not match the assigned source SHA/worktree/scope".to_string(),
+            );
         }
         let outstanding = ledger.outstanding(&state.evidence_registry);
         if !outstanding.is_empty() {
