@@ -376,22 +376,33 @@ impl CodexDDValidationHandler {
             Ok(bytes) => bytes,
             Err(err) => {
                 let _ = tokio::fs::remove_file(&temp_exit_path).await;
+                // Only the trusted delegate error (not profile stdout) may
+                // identify a command-policy refusal before native execution.
+                let delegated_error = execution_result.as_ref().err().map(ToString::to_string);
+                let error_type = classify_missing_native_log(delegated_error.as_deref());
                 let execution_note = execution_result
                     .as_ref()
                     .map(ToolOutput::log_output)
                     .unwrap_or_else(std::string::ToString::to_string);
-                let message = format!(
+                let diagnostic = format!(
                     "CodexDD validation did not produce its required full log {}: {err}. Execution detail: {execution_note}",
                     temp_log_path.display()
                 );
-                // Missing native logs are infrastructure errors, not a reason to
-                // retry or reclassify model capability. Capture the diagnostic
-                // out-of-tree and emit an explicitly unsuccessful tool result.
+                // Preserve the complete reason outside the repository, even
+                // when no PowerShell process ran. Neither error is a test FAIL.
                 let codex_home = invocation.turn.config.codex_home.to_path_buf();
                 let repo_id = repository_log_id(&repository_root);
                 let final_log_path =
-                    persist_validation_log(&codex_home, &repo_id, &run_id, message.as_bytes())
+                    persist_validation_log(&codex_home, &repo_id, &run_id, diagnostic.as_bytes())
                         .await?;
+                let message = if error_type == "execution_policy_blocked" {
+                    format!(
+                        "SETUP_BLOCKED: the configured execution policy rejected native validation before its repository-owned profile started. Use existing operator approval/sandbox controls to authorize a retry; no test ran, PASS receipt or repair authority was issued. Diagnostic log: {}",
+                        final_log_path.display()
+                    )
+                } else {
+                    diagnostic
+                };
                 let summary = ValidationSummary {
                     contract_version: CONTRACT_VERSION,
                     profile: args.profile.contract_name().to_string(),
@@ -399,7 +410,7 @@ impl CodexDDValidationHandler {
                     exit_code: 2,
                     stages: Vec::new(),
                     failed_stage: None,
-                    error_type: Some("missing_native_log".to_string()),
+                    error_type: Some(error_type.to_string()),
                     message: Some(message),
                     log_path: final_log_path.display().to_string(),
                 };
@@ -496,6 +507,16 @@ async fn emit_native_setup_blocker(
         persist_validation_log(&codex_home, &repo_id, run_id, message.as_bytes()).await?;
     let summary = native_setup_blocker_summary(profile, error_type, message, &log_path);
     emit_validation_result(invocation, profile, run_id, branch, head_sha, &summary).await
+}
+
+/// Distinguish a proven delegated policy refusal from a generic absent native
+/// log. Never infer policy denial from profile text or model-provided arguments.
+fn classify_missing_native_log(delegated_error: Option<&str>) -> &'static str {
+    if delegated_error.is_some_and(|error| error.contains("blocked by policy")) {
+        "execution_policy_blocked"
+    } else {
+        "missing_native_log"
+    }
 }
 
 fn native_setup_blocker_summary(

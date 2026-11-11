@@ -918,6 +918,37 @@ fn codexdd_046_3b2_native_role_gate_rejects_independent_workers() {
 }
 
 #[test]
+fn codexdd_046_3b2o_policy_denial_is_typed_nonrepairable_setup_blocker() {
+    let denied = "exec_command failed: CreateProcess Rejected: blocked by policy";
+    assert_eq!(
+        classify_missing_native_log(Some(denied)),
+        "execution_policy_blocked"
+    );
+    assert_eq!(
+        classify_missing_native_log(Some("exec_command failed: log unavailable")),
+        "missing_native_log"
+    );
+    assert_eq!(classify_missing_native_log(None), "missing_native_log");
+
+    let summary = native_setup_blocker_summary(
+        ValidationProfile::Targeted,
+        classify_missing_native_log(Some(denied)),
+        "SETUP_BLOCKED: execution policy denied native validation".to_string(),
+        Path::new("isolated-policy-denial.log"),
+    );
+    assert_eq!(summary.status, "error");
+    assert_eq!(summary.exit_code, 2);
+    assert_eq!(summary.error_type.as_deref(), Some("execution_policy_blocked"));
+    assert!(summary.stages.is_empty());
+    assert_eq!(summary.failed_stage, None);
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::Targeted, &summary),
+        None,
+        "command policy refusal must not manufacture a repair fingerprint"
+    );
+}
+
+#[test]
 fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker() {
     let tmp = tempdir().expect("no-git fixture");
     let missing_git = find_active_repository_root(tmp.path())

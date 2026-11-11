@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — Packet 3B.2n: actual Core LVO handler admission and native receipt
 
-**State:** source-only integration fixture awaiting exact-source Rustfmt and native Windows acceptance.
+**State:** 3B.2n focused native Windows Core handler positive fixture COMPLETE; real restricted Windows/project/Validator acceptance remains open.
 **Branch:** `dd/codexdd-v0.4.6-agent-reliability`.
 **Parent:** `ac5e5fa7cde1cf56b8b845c50b768b0a367c9af6`.
 
@@ -49,3 +49,11 @@ The source-only repair `f7f01a984a1c4b570d56f59a55de4cd8001f6791` passed both so
 **Narrow candidate, not yet accepted:** In source-only commit `59b341e5b11534bba22453b47c25d8e51f140e0c`, the single disposable test session sets the explicit `PermissionProfile::Disabled` (unrestricted) alongside `AskForApproval::Never` *only for its synthetic temporary repository*. The working branch does not change `codexdd_validation.rs`, any production sandbox/approval default, tool registration, or any game repository. No remote data or installed binaries are touched. This proves the desired *positive* Core path under explicitly authorized test execution if its Windows test passes; it **does not** prove the actual project profile can run under ordinary restricted Windows policy. 3B.2l negative-role tests and 3B.2m native-exit integrity remain distinct evidence.
 
 **Next focused gate:** [GitHub Actions #43029759768](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43029759768) must pass the exact source/Rustfmt preflights, enumerate exactly one test and execute it to completion with a real handler PASS, expected root/SHA, out-of-tree receipt and clean source tree before 3B.2n's positive fixture may be closed. If the policy still rejects, stop broad/repeated Windows CI and diagnose the specific safety rule. An unrestricted **test-only** success must never be represented as safe automatic privilege escalation for active agents.
+
+## Native Core handler acceptance — 2026-11-11
+
+**PASS (scoped 3B.2n).** [GitHub Actions #43029759768](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43029759768), exact source `59b341e5b11534bba22453b47c25d8e51f140e0c`, native Windows job `130554257016`. The source-contract and exact Rustfmt jobs passed. The Windows job enumerated exactly one Core handler test, then executed `codexdd_046_3b2t_real_core_lvo_handler_runs_trusted_pinned_fixture`: **1 passed, 0 failed**, native execution 3.92 seconds after compilation. The test asserts the real Core handler's structured PASS, exact temporary source SHA/root, native PowerShell log/exit, completed control receipt and no dirty source. Remaining unrelated Windows jobs were intentionally skipped. Total workflow duration was 21m 22s, dominated by a clean Windows Core build.
+
+**Disposition:** Close **3B.2n only** for the explicitly authorized, disposable positive execution fixture. The test deliberately uses unrestricted command execution in its isolated Core config; this is *not* evidence that a normally restricted Worker/Windows sandbox can run the profile without user approval. Do not grant that permission profile in production, infer BREAKWATER Node acceptance, or treat this synthetic PASS as an independent Validator's report.
+
+**Follow-on 3B.2o:** A prior restricted attempt [#42954490135](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42954490135) produced no PowerShell log because `exec_command` returned `blocked by policy`, which Core surfaced as generic `missing_native_log`. The follow-on addresses only accurate, actionable classification of this *known delegate error*: `execution_policy_blocked`, nonrepairable `SETUP_BLOCKED`, with the complete diagnostic still out-of-tree. The behavior does not override the permission policy or make the restricted profile run. A new exact-source targeted Windows check is required before 3B.2o can be accepted.

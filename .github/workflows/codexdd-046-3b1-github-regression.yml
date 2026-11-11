@@ -602,10 +602,10 @@ jobs:
           git status --short
 
   windows-3b2n-core-handler-native:
-    name: 3B.2n native Core Worker-bound LVO handler and receipt
+    name: 3B.2n/3B.2o native Core handler and policy refusal regression
     # Disposable synthetic repository fixture; tests actual Core handler/tool
     # execution but does not claim live model Worker or official project profile.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2n-core-native]')
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b2n-core-native]') || contains(github.event.head_commit.message, '[3b2o-policy-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 75
@@ -668,6 +668,16 @@ jobs:
           & cargo test --locked -p codex-core --lib $filter -- --exact --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.2n Core native handler integration failed' }
           Write-Host '3B.2n synthetic fixture passed through real Core native handler; not a project validation receipt.'
+          $policyFilter = 'tools::handlers::codexdd_validation::tests::codexdd_046_3b2o_policy_denial_is_typed_nonrepairable_setup_blocker'
+          $policyListing = & cargo test --locked -p codex-core --lib $policyFilter -- --exact --list 2>&1
+          $policyListExit = $LASTEXITCODE
+          $policyListing | Out-Host
+          if ($policyListExit -ne 0 -or ($policyListing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.2o expected exactly one policy refusal classifier test'
+          }
+          & cargo test --locked -p codex-core --lib $policyFilter -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2o policy refusal classification regression failed' }
+          Write-Host '3B.2o policy refusal is a nonrepairable SETUP_BLOCKED result; no permissions changed.'
       - name: Confirm no source mutation or release activity
         if: always()
         shell: pwsh
