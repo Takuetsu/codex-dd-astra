@@ -7,6 +7,8 @@ use std::path::PathBuf;
 
 use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_complexity::AdaptiveImplementationPhase;
+use crate::adaptive_gate_prerequisites::AdaptiveGateCheckpoint;
+use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
@@ -193,6 +195,15 @@ fn apply_persisted_adaptive_workflow_state(
     state: codex_history::AdaptiveWorkflowStateSnapshot,
     source_turn_id: Option<String>,
 ) -> Result<(), String> {
+    apply_persisted_adaptive_workflow_state_for_thread(adaptive_effort, state, source_turn_id, None)
+}
+
+fn apply_persisted_adaptive_workflow_state_for_thread(
+    adaptive_effort: &mut AdaptiveEffortState,
+    state: codex_history::AdaptiveWorkflowStateSnapshot,
+    source_turn_id: Option<String>,
+    owner_thread_id: Option<ThreadId>,
+) -> Result<(), String> {
     let starting_family = restore_family(state.starting_family)?;
     let current_family = restore_family(state.current_family)?;
     let current_effort = restore_effort(state.current_effort)?;
@@ -306,6 +317,47 @@ fn apply_persisted_adaptive_workflow_state(
             );
         }
     }
+    // A persisted checkpoint describes required gates, never a native PASS.
+    // A missing authenticated owner thread or a mismatched locked worktree
+    // must not recover a previous READY terminal or any source authority.
+    let gate_ledger = match state.gate_checkpoint.as_ref() {
+        Some(checkpoint) => {
+            let owner_thread_id = owner_thread_id
+                .ok_or_else(|| "persisted gate checkpoint needs the original Worker thread".to_string())?;
+            let pin = assignment_preflight
+                .as_ref()
+                .ok_or_else(|| "persisted gate checkpoint needs a pinned source".to_string())?;
+            let scope = state
+                .authorized_scope
+                .as_deref()
+                .ok_or_else(|| "persisted gate checkpoint needs authorized scope".to_string())?;
+            if !state.worker_assignment_locked {
+                return Err("persisted gate checkpoint needs a locked Worker".to_string());
+            }
+            let encoded = serde_json::to_value(checkpoint)
+                .map_err(|err| format!("invalid persisted gate checkpoint: {err}"))?;
+            let typed: AdaptiveGateCheckpoint = serde_json::from_value(encoded)
+                .map_err(|err| format!("invalid typed gate checkpoint: {err}"))?;
+            Some(AdaptiveGateLedger::restore_pending(
+                typed,
+                owner_thread_id,
+                worker_role,
+                scope,
+                std::path::Path::new(&pin.source_root),
+                &pin.source_sha,
+            )?)
+        }
+        None => None,
+    };
+    // A prior ready_for_owner_qa terminal cannot survive a restart with no
+    // revalidatable source / independent-Validator evidence.
+    let workflow_terminal = if gate_ledger.is_some()
+        && workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    {
+        None
+    } else {
+        workflow_terminal
+    };
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -345,6 +397,7 @@ fn apply_persisted_adaptive_workflow_state(
         successor_admission: None,
         pending_signal: None,
         evidence_registry: Default::default(),
+        gate_ledger,
         complexity_class,
         implementation_phase,
         validation_repair_fingerprint,
@@ -386,7 +439,12 @@ pub(crate) async fn restore_persisted_workflow_state(
             state,
             source_turn_id,
         } => {
-            apply_persisted_adaptive_workflow_state(adaptive_effort, state, source_turn_id)?;
+            apply_persisted_adaptive_workflow_state_for_thread(
+                adaptive_effort,
+                state,
+                source_turn_id,
+                Some(thread_id),
+            )?;
         }
         codex_history::RestoredWorkflowState::Unsupported => {
             adaptive_effort.enabled = false;
@@ -431,6 +489,7 @@ mod tests {
                 assignment_task_kind: None,
                 authorized_source_root: None,
                 authorized_source_sha: None,
+                gate_checkpoint: None,
                 worker_assignment_locked: true,
                 workflow_terminal: Some("ready_for_validation".to_string()),
             },
@@ -500,6 +559,7 @@ mod tests {
                     assignment_task_kind: None,
                     authorized_source_root: None,
                     authorized_source_sha: None,
+                    gate_checkpoint: None,
                     worker_assignment_locked: true,
                     workflow_terminal: Some(persisted.to_string()),
                 },
@@ -537,6 +597,7 @@ mod tests {
                 assignment_task_kind: None,
                 authorized_source_root: None,
                 authorized_source_sha: None,
+                gate_checkpoint: None,
                 worker_assignment_locked: true,
                 workflow_terminal: None,
             },
@@ -582,6 +643,7 @@ mod tests {
                     assignment_task_kind: None,
                     authorized_source_root: None,
                     authorized_source_sha: None,
+                    gate_checkpoint: None,
                     worker_assignment_locked: true,
                     workflow_terminal: None,
                 },

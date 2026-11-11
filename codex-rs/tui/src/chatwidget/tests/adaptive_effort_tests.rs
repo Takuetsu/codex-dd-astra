@@ -2737,7 +2737,7 @@ fn durable_workflow_snapshot_persists_complexity_class() {
         ..AdaptiveEffortState::default()
     };
 
-    let snapshot = state.durable_workflow_snapshot();
+    let snapshot = state.durable_workflow_snapshot(ThreadId::new());
     let value = serde_json::to_value(snapshot).expect("snapshot should serialize");
 
     assert_eq!(
