@@ -25,12 +25,16 @@ impl ChatWidget {
         self.observe_adaptive_worker_assignment(notification);
         self.observe_codexdd_validation_status(notification);
 
-        let Some(record) = record_from_item_completion(notification) else {
+        let Some(mut record) = record_from_item_completion(notification) else {
             return;
         };
         if record.thread_id != thread_id {
             return;
         }
+        record.bind_worker_identity(
+            &self.adaptive_effort.worker_context,
+            self.adaptive_effort.assignment_preflight.as_ref(),
+        );
         self.adaptive_effort.evidence_registry.register(record);
 
         let source_turn_id = notification.turn_id.as_str();

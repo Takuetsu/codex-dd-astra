@@ -1,7 +1,12 @@
 //! Typed, thread-bound adaptive evidence derived from native tool completion items.
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
+use crate::adaptive_worker::AdaptiveTaskKind;
+use crate::adaptive_worker::AdaptiveWorkerContext;
+use crate::adaptive_worker::AdaptiveWorkerPreflight;
+use crate::adaptive_worker::AdaptiveWorkerRole;
 use codex_app_server_protocol::CommandExecutionStatus;
 use codex_app_server_protocol::DynamicToolCallStatus;
 use codex_app_server_protocol::ItemCompletedNotification;
@@ -29,6 +34,40 @@ pub(crate) enum AdaptiveEvidenceKind {
     DynamicToolCall,
 }
 
+
+/// Facts emitted by the built-in native LVO handler only on a complete PASS.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AdaptiveNativeSourceProvenance {
+    pub(crate) source_root: String,
+    pub(crate) source_sha: String,
+    pub(crate) run_id: String,
+    pub(crate) completed_at_ms: u64,
+}
+
+/// Worker identity captured from immutable first-assignment state on receipt.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AdaptiveEvidenceWorkerBinding {
+    pub(crate) role: AdaptiveWorkerRole,
+    pub(crate) authorized_scope: String,
+    pub(crate) task_kind: AdaptiveTaskKind,
+    pub(crate) source_root: String,
+    pub(crate) source_sha: String,
+}
+
+/// Expectations must come from an authorized gate, not from the success itself.
+pub(crate) struct AdaptiveSourceGateRequirement<'a> {
+    pub(crate) thread_id: ThreadId,
+    pub(crate) worker_role: AdaptiveWorkerRole,
+    pub(crate) task_kind: AdaptiveTaskKind,
+    pub(crate) authorized_scope: &'a str,
+    pub(crate) source_root: &'a Path,
+    pub(crate) source_sha: &'a str,
+    pub(crate) required_profile: &'a str,
+    pub(crate) source_turn_id: Option<&'a str>,
+    pub(crate) expected_run_id: Option<&'a str>,
+    pub(crate) minimum_completed_at_ms: u64,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct AdaptiveEvidenceRecord {
     pub(crate) evidence_id: String,
@@ -39,6 +78,41 @@ pub(crate) struct AdaptiveEvidenceRecord {
     pub(crate) tool_name: Option<String>,
     pub(crate) validation_profile: Option<String>,
     pub(crate) validation_failure_fingerprint: Option<String>,
+    pub(crate) native_source_provenance: Option<AdaptiveNativeSourceProvenance>,
+    pub(crate) worker_binding: Option<AdaptiveEvidenceWorkerBinding>,
+}
+
+impl AdaptiveEvidenceRecord {
+    /// Snapshot authoritative first-assignment identity only for a genuine
+    /// native-source receipt. Unpinned/legacy Workers cannot authorize it.
+    pub(crate) fn bind_worker_identity(
+        &mut self,
+        worker: &AdaptiveWorkerContext,
+        preflight: Option<&AdaptiveWorkerPreflight>,
+    ) {
+        let (Some(_native), Some(pin), Some(scope)) = (
+            self.native_source_provenance.as_ref(),
+            preflight,
+            worker.authorized_scope.as_deref(),
+        ) else {
+            return;
+        };
+        if worker.role != AdaptiveWorkerRole::Implementation
+            || pin.task_kind != AdaptiveTaskKind::SourceChange
+            || scope.trim().is_empty()
+            || pin.source_sha.len() != 40
+            || !pin.source_sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return;
+        }
+        self.worker_binding = Some(AdaptiveEvidenceWorkerBinding {
+            role: worker.role,
+            authorized_scope: scope.to_string(),
+            task_kind: pin.task_kind,
+            source_root: pin.source_root.clone(),
+            source_sha: pin.source_sha.clone(),
+        });
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -61,6 +135,12 @@ pub(crate) enum AdaptiveEvidenceResolveError {
     CrossThread,
     SourceTurnMismatch,
     OutcomeMismatch,
+    MissingProvenance,
+    WorkerBindingMismatch,
+    SourceIdentityMismatch,
+    GateScopeMismatch,
+    RunIdMismatch,
+    StaleEvidence,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -140,6 +220,76 @@ impl AdaptiveEvidenceRegistry {
         let record = self.resolve_for_thread(evidence_id, thread_id)?;
         if record.outcome != expected {
             return Err(AdaptiveEvidenceResolveError::OutcomeMismatch);
+        }
+        Ok(record)
+    }
+
+    /// Strict source-gate proof: successful commands and stale/partial LVO
+    /// receipts never substitute for exact native profile evidence.
+    pub(crate) fn match_native_source_gate<'a>(
+        &'a self,
+        evidence_id: &str,
+        requirement: &AdaptiveSourceGateRequirement<'_>,
+    ) -> Result<&'a AdaptiveEvidenceRecord, AdaptiveEvidenceResolveError> {
+        let record = match requirement.source_turn_id {
+            Some(turn_id) => {
+                self.resolve_for_turn(evidence_id, requirement.thread_id, turn_id)?
+            }
+            None => self.resolve_for_thread(evidence_id, requirement.thread_id)?,
+        };
+        if record.outcome != AdaptiveEvidenceOutcome::Success {
+            return Err(AdaptiveEvidenceResolveError::OutcomeMismatch);
+        }
+        if record.kind != AdaptiveEvidenceKind::DynamicToolCall
+            || record.tool_name.as_deref() != Some(CODEXDD_VALIDATION_TOOL_NAME)
+        {
+            return Err(AdaptiveEvidenceResolveError::MissingProvenance);
+        }
+        let native = record
+            .native_source_provenance
+            .as_ref()
+            .ok_or(AdaptiveEvidenceResolveError::MissingProvenance)?;
+        let bound = record
+            .worker_binding
+            .as_ref()
+            .ok_or(AdaptiveEvidenceResolveError::WorkerBindingMismatch)?;
+        if bound.role != AdaptiveWorkerRole::Implementation
+            || bound.role != requirement.worker_role
+            || bound.task_kind != requirement.task_kind
+            || bound.task_kind != AdaptiveTaskKind::SourceChange
+            || bound.authorized_scope != requirement.authorized_scope
+            || bound.authorized_scope.trim().is_empty()
+        {
+            return Err(AdaptiveEvidenceResolveError::WorkerBindingMismatch);
+        }
+        if requirement.source_sha.len() != 40
+            || !requirement
+                .source_sha
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit())
+            || !bound.source_sha.eq_ignore_ascii_case(requirement.source_sha)
+            || !native.source_sha.eq_ignore_ascii_case(requirement.source_sha)
+            || !same_canonical_root(&bound.source_root, requirement.source_root)
+            || !same_canonical_root(&native.source_root, requirement.source_root)
+        {
+            return Err(AdaptiveEvidenceResolveError::SourceIdentityMismatch);
+        }
+        if record.validation_profile.as_deref() != Some(requirement.required_profile)
+            || !matches!(
+                requirement.required_profile,
+                "targeted" | CODEXDD_WORK_PACKET_PROFILE | "release"
+            )
+        {
+            return Err(AdaptiveEvidenceResolveError::GateScopeMismatch);
+        }
+        if requirement
+            .expected_run_id
+            .is_some_and(|run_id| run_id != native.run_id)
+        {
+            return Err(AdaptiveEvidenceResolveError::RunIdMismatch);
+        }
+        if native.completed_at_ms < requirement.minimum_completed_at_ms {
+            return Err(AdaptiveEvidenceResolveError::StaleEvidence);
         }
         Ok(record)
     }
@@ -505,5 +655,70 @@ pub(crate) fn record_from_item_completion(
         tool_name,
         validation_profile,
         validation_failure_fingerprint,
+        native_source_provenance: native_source_provenance(notification),
+        worker_binding: None,
+    })
+}
+
+fn same_canonical_root(observed: &str, required: &Path) -> bool {
+    Path::new(observed)
+        .canonicalize()
+        .ok()
+        .zip(required.canonicalize().ok())
+        .is_some_and(|(observed, required)| observed == required)
+}
+
+/// Legacy or partial tool items are still recorded for diagnostics but cannot
+/// carry source gate authority. Only a full native PASS has these facts.
+fn native_source_provenance(
+    notification: &ItemCompletedNotification,
+) -> Option<AdaptiveNativeSourceProvenance> {
+    let ThreadItem::DynamicToolCall {
+        namespace,
+        tool,
+        arguments,
+        status,
+        success,
+        ..
+    } = &notification.item
+    else {
+        return None;
+    };
+    if namespace.is_some()
+        || tool != CODEXDD_VALIDATION_TOOL_NAME
+        || *status != DynamicToolCallStatus::Completed
+        || *success != Some(true)
+        || arguments.get("result").and_then(serde_json::Value::as_str) != Some("pass")
+        || !matches!(
+            arguments.get("profile").and_then(serde_json::Value::as_str),
+            Some("targeted" | CODEXDD_WORK_PACKET_PROFILE | "release")
+        )
+    {
+        return None;
+    }
+    let required = |name| {
+        arguments
+            .get(name)
+            .and_then(serde_json::Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+    };
+    let source_root = required("source_root")?;
+    let source_sha = required("head_sha")?;
+    let run_id = required("run_id")?;
+    let completed_at_ms = u64::try_from(notification.completed_at_ms).ok()?;
+    if !Path::new(source_root).is_absolute()
+        || source_root.len() > 4096
+        || source_sha.len() != 40
+        || !source_sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+        || run_id.len() > 256
+        || completed_at_ms == 0
+    {
+        return None;
+    }
+    Some(AdaptiveNativeSourceProvenance {
+        source_root: source_root.to_string(),
+        source_sha: source_sha.to_ascii_lowercase(),
+        run_id: run_id.to_string(),
+        completed_at_ms,
     })
 }

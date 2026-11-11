@@ -526,6 +526,7 @@ fn operator_summary_adds_run_and_candidate_identity_without_full_log_output() {
         run_id: "run-42",
         branch: Some("dd/status-evidence"),
         head_sha: "0123456789abcdef",
+        source_root: Some("C:\\candidate".to_string()),
     };
 
     let value = serde_json::to_value(operator).expect("operator summary");
@@ -534,6 +535,7 @@ fn operator_summary_adds_run_and_candidate_identity_without_full_log_output() {
     assert_eq!(value["run_id"], "run-42");
     assert_eq!(value["branch"], "dd/status-evidence");
     assert_eq!(value["head_sha"], "0123456789abcdef");
+    assert_eq!(value["source_root"], "C:\\candidate");
     assert_eq!(
         value["log_path"],
         "C:\\codexdd\\validation\\run-42\\validation.log"

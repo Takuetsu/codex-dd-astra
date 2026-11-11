@@ -136,6 +136,7 @@ struct ValidationOperatorSummary<'a> {
     run_id: &'a str,
     branch: Option<&'a str>,
     head_sha: &'a str,
+    source_root: Option<String>,
 }
 
 pub struct CodexDDValidationHandler;
@@ -418,6 +419,7 @@ impl CodexDDValidationHandler {
                     &invocation,
                     args.profile,
                     &run_id,
+                    &repository_root,
                     &branch,
                     &head_sha,
                     &summary,
@@ -480,6 +482,7 @@ impl CodexDDValidationHandler {
             &invocation,
             args.profile,
             &run_id,
+            &repository_root,
             &branch,
             &head_sha,
             &summary,
@@ -506,7 +509,8 @@ async fn emit_native_setup_blocker(
     let log_path =
         persist_validation_log(&codex_home, &repo_id, run_id, message.as_bytes()).await?;
     let summary = native_setup_blocker_summary(profile, error_type, message, &log_path);
-    emit_validation_result(invocation, profile, run_id, branch, head_sha, &summary).await
+    emit_validation_result(invocation, profile, run_id, selected_path, branch, head_sha, &summary)
+        .await
 }
 
 /// Distinguish a proven delegated policy refusal from a generic absent native
@@ -561,11 +565,17 @@ async fn emit_validation_result(
     invocation: &ToolInvocation,
     profile: ValidationProfile,
     run_id: &str,
+    selected_path: &Path,
     branch: &Option<String>,
     head_sha: &str,
     summary: &ValidationSummary,
 ) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
     let success = summary.status == "pass" && summary.exit_code == 0;
+    // Core-observed selected repository, never a model-provided path.
+    let source_root = selected_path
+        .canonicalize()
+        .ok()
+        .map(|root| root.display().to_string());
     let failure_fingerprint = validation_failure_fingerprint(profile, summary);
     let receipt_arguments = json!({
         "profile": profile.tool_name(),
@@ -573,6 +583,7 @@ async fn emit_validation_result(
         "run_id": run_id,
         "branch": branch.clone(),
         "head_sha": head_sha,
+        "source_root": source_root.clone(),
         "log_path": summary.log_path.clone(),
         "failure_fingerprint": failure_fingerprint,
         "failed_stage": summary.failed_stage.clone(),
@@ -625,6 +636,7 @@ async fn emit_validation_result(
         run_id,
         branch: branch.as_deref(),
         head_sha,
+        source_root,
     };
     let text = serde_json::to_string(&operator_summary).map_err(|err| {
         FunctionCallError::RespondToModel(format!(

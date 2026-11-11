@@ -4,7 +4,12 @@ use super::adaptive_evidence::AdaptiveEvidenceRecord;
 use super::adaptive_evidence::AdaptiveEvidenceRegistration;
 use super::adaptive_evidence::AdaptiveEvidenceRegistry;
 use super::adaptive_evidence::AdaptiveEvidenceResolveError;
+use super::adaptive_evidence::AdaptiveSourceGateRequirement;
 use super::adaptive_evidence::record_from_item_completion;
+use super::adaptive_worker::AdaptiveTaskKind;
+use super::adaptive_worker::AdaptiveWorkerContext;
+use super::adaptive_worker::AdaptiveWorkerPreflight;
+use super::adaptive_worker::AdaptiveWorkerRole;
 use codex_app_server_protocol::CommandExecutionSource;
 use codex_app_server_protocol::CommandExecutionStatus;
 use codex_app_server_protocol::DynamicToolCallStatus;
@@ -30,6 +35,8 @@ fn record(
         tool_name: None,
         validation_profile: None,
         validation_failure_fingerprint: None,
+        native_source_provenance: None,
+        worker_binding: None,
     }
 }
 
@@ -71,6 +78,8 @@ fn native_command_completion_becomes_small_typed_evidence() {
             tool_name: None,
             validation_profile: None,
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         })
     );
 }
@@ -125,6 +134,8 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             tool_name: None,
             validation_profile: None,
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         })
     );
     assert_eq!(
@@ -138,6 +149,8 @@ fn mcp_and_dynamic_completions_reuse_their_runtime_call_ids() {
             tool_name: Some("tool".to_string()),
             validation_profile: None,
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         })
     );
 }
@@ -256,6 +269,8 @@ fn work_packet_failure_is_preferred_over_targeted_regardless_of_ref_order() {
             tool_name: Some(super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string()),
             validation_profile: Some(profile.to_string()),
             validation_failure_fingerprint: Some(fingerprint.to_string()),
+            native_source_provenance: None,
+            worker_binding: None,
         });
     }
 
@@ -432,4 +447,321 @@ fn conflict_on_source_turn_is_also_permanent() {
         registry.resolve("native-call-1"),
         Err(AdaptiveEvidenceResolveError::Conflicted)
     );
+}
+
+
+const SOURCE_SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const SOURCE_SHA_B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+fn scoped_native_source_receipt(
+    thread_id: ThreadId,
+    source_root: &std::path::Path,
+    source_sha: &str,
+    profile: &str,
+) -> AdaptiveEvidenceRecord {
+    let notification = ItemCompletedNotification {
+        item: ThreadItem::DynamicToolCall {
+            id: "native-lvo-evidence".to_string(),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({
+                "profile": profile,
+                "result": "pass",
+                "run_id": "native-run-123",
+                "head_sha": source_sha,
+                "source_root": source_root.canonicalize().expect("canonical root").display().to_string(),
+            }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(true),
+            duration_ms: Some(1),
+        },
+        thread_id: thread_id.to_string(),
+        turn_id: "native-source-turn".to_string(),
+        completed_at_ms: 1_000,
+    };
+    let mut record = record_from_item_completion(&notification).expect("native record");
+    record.bind_worker_identity(
+        &AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("isolated source packet".to_string()),
+        },
+        Some(&AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: source_root.display().to_string(),
+            source_sha: source_sha.to_string(),
+        }),
+    );
+    record
+}
+
+fn native_source_requirement<'a>(
+    thread_id: ThreadId,
+    source_root: &'a std::path::Path,
+    source_sha: &'a str,
+    required_profile: &'a str,
+) -> AdaptiveSourceGateRequirement<'a> {
+    AdaptiveSourceGateRequirement {
+        thread_id,
+        worker_role: AdaptiveWorkerRole::Implementation,
+        task_kind: AdaptiveTaskKind::SourceChange,
+        authorized_scope: "isolated source packet",
+        source_root,
+        source_sha,
+        required_profile,
+        source_turn_id: Some("native-source-turn"),
+        expected_run_id: Some("native-run-123"),
+        minimum_completed_at_ms: 999,
+    }
+}
+
+#[test]
+fn codexdd_046_3b3b_a03_requires_exact_source_sha_and_worktree() {
+    let root = tempfile::tempdir().expect("root");
+    let other_root = tempfile::tempdir().expect("other root");
+    let thread_id = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    assert_eq!(
+        registry.register(scoped_native_source_receipt(
+            thread_id,
+            root.path(),
+            SOURCE_SHA_A,
+            "work_packet",
+        )),
+        AdaptiveEvidenceRegistration::Registered
+    );
+    let current = native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    assert!(registry
+        .match_native_source_gate("native-lvo-evidence", &current)
+        .is_ok());
+    let changed_source =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_B, "work_packet");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &changed_source),
+        Err(AdaptiveEvidenceResolveError::SourceIdentityMismatch)
+    );
+    let changed_worktree =
+        native_source_requirement(thread_id, other_root.path(), SOURCE_SHA_A, "work_packet");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &changed_worktree),
+        Err(AdaptiveEvidenceResolveError::SourceIdentityMismatch)
+    );
+}
+
+#[test]
+fn codexdd_046_3b3b_a04_rejects_other_worker_scope_and_narrower_gate() {
+    let root = tempfile::tempdir().expect("root");
+    let thread_id = ThreadId::new();
+    let other_worker = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(scoped_native_source_receipt(
+        thread_id,
+        root.path(),
+        SOURCE_SHA_A,
+        "targeted",
+    ));
+    let focused =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "targeted");
+    assert!(registry
+        .match_native_source_gate("native-lvo-evidence", &focused)
+        .is_ok());
+    let whole_gate =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &whole_gate),
+        Err(AdaptiveEvidenceResolveError::GateScopeMismatch)
+    );
+    let other_thread =
+        native_source_requirement(other_worker, root.path(), SOURCE_SHA_A, "targeted");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &other_thread),
+        Err(AdaptiveEvidenceResolveError::CrossThread)
+    );
+    let mut other_scope =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "targeted");
+    other_scope.authorized_scope = "other packet";
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &other_scope),
+        Err(AdaptiveEvidenceResolveError::WorkerBindingMismatch)
+    );
+    let mut wrong_role =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "targeted");
+    wrong_role.worker_role = AdaptiveWorkerRole::Validation;
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &wrong_role),
+        Err(AdaptiveEvidenceResolveError::WorkerBindingMismatch)
+    );
+}
+
+#[test]
+fn codexdd_046_3b3b_legacy_unpinned_and_generic_success_are_not_gate_proof() {
+    let root = tempfile::tempdir().expect("root");
+    let thread_id = ThreadId::new();
+    let requirement =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    let legacy_notification = ItemCompletedNotification {
+        item: ThreadItem::DynamicToolCall {
+            id: "legacy-call".to_string(),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({
+                "profile": "work_packet",
+                "result": "pass",
+                "head_sha": SOURCE_SHA_A,
+            }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(true),
+            duration_ms: Some(1),
+        },
+        thread_id: thread_id.to_string(),
+        turn_id: "native-source-turn".to_string(),
+        completed_at_ms: 1_000,
+    };
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(record_from_item_completion(&legacy_notification).expect("legacy"));
+    assert_eq!(
+        registry.match_native_source_gate("legacy-call", &requirement),
+        Err(AdaptiveEvidenceResolveError::MissingProvenance)
+    );
+
+    let mut unpinned =
+        scoped_native_source_receipt(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    unpinned.worker_binding = None;
+    registry.register(unpinned);
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &requirement),
+        Err(AdaptiveEvidenceResolveError::WorkerBindingMismatch)
+    );
+
+    registry.register(record(
+        "generic-success",
+        thread_id,
+        "native-source-turn",
+        AdaptiveEvidenceOutcome::Success,
+    ));
+    assert_eq!(
+        registry.match_native_source_gate("generic-success", &requirement),
+        Err(AdaptiveEvidenceResolveError::MissingProvenance)
+    );
+}
+
+#[test]
+fn codexdd_046_3b3b_run_timestamp_and_turn_must_match_gate() {
+    let root = tempfile::tempdir().expect("root");
+    let thread_id = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(scoped_native_source_receipt(
+        thread_id,
+        root.path(),
+        SOURCE_SHA_A,
+        "work_packet",
+    ));
+    let mut requirement =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    requirement.expected_run_id = Some("other-run");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &requirement),
+        Err(AdaptiveEvidenceResolveError::RunIdMismatch)
+    );
+    requirement.expected_run_id = Some("native-run-123");
+    requirement.minimum_completed_at_ms = 1_001;
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &requirement),
+        Err(AdaptiveEvidenceResolveError::StaleEvidence)
+    );
+    requirement.minimum_completed_at_ms = 999;
+    requirement.source_turn_id = Some("other-turn");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &requirement),
+        Err(AdaptiveEvidenceResolveError::SourceTurnMismatch)
+    );
+}
+
+#[test]
+fn codexdd_046_3b3b_provenance_conflict_is_permanently_inadmissible() {
+    let root = tempfile::tempdir().expect("root");
+    let thread_id = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    let original =
+        scoped_native_source_receipt(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    assert_eq!(
+        registry.register(original.clone()),
+        AdaptiveEvidenceRegistration::Registered
+    );
+    assert_eq!(
+        registry.register(original.clone()),
+        AdaptiveEvidenceRegistration::Duplicate
+    );
+    let conflicting = AdaptiveEvidenceRecord {
+        native_source_provenance: original.native_source_provenance.as_ref().map(|p| {
+            super::adaptive_evidence::AdaptiveNativeSourceProvenance {
+                source_sha: SOURCE_SHA_B.to_string(),
+                ..p.clone()
+            }
+        }),
+        ..original.clone()
+    };
+    assert_eq!(
+        registry.register(conflicting),
+        AdaptiveEvidenceRegistration::Conflicted
+    );
+    let requirement =
+        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    assert_eq!(
+        registry.match_native_source_gate("native-lvo-evidence", &requirement),
+        Err(AdaptiveEvidenceResolveError::Conflicted)
+    );
+    assert_eq!(
+        registry.register(original),
+        AdaptiveEvidenceRegistration::Conflicted
+    );
+}
+
+#[test]
+fn codexdd_046_3b3b_native_pass_without_exact_fields_cannot_bind() {
+    let root = tempfile::tempdir().expect("root");
+    let thread_id = ThreadId::new();
+    for (idx, result, sha, run_id, finished) in [
+        (0, "fail", SOURCE_SHA_A, "native-run-123", 1_000),
+        (1, "pass", "not-a-sha", "native-run-123", 1_000),
+        (2, "pass", SOURCE_SHA_A, "", 1_000),
+        (3, "pass", SOURCE_SHA_A, "native-run-123", 0),
+    ] {
+        let notification = ItemCompletedNotification {
+            item: ThreadItem::DynamicToolCall {
+                id: format!("invalid-{idx}"),
+                namespace: None,
+                tool: super::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME.to_string(),
+                arguments: serde_json::json!({
+                    "profile": "work_packet",
+                    "result": result,
+                    "run_id": run_id,
+                    "head_sha": sha,
+                    "source_root": root.path().display().to_string(),
+                }),
+                status: DynamicToolCallStatus::Completed,
+                content_items: None,
+                success: Some(true),
+                duration_ms: Some(1),
+            },
+            thread_id: thread_id.to_string(),
+            turn_id: "native-source-turn".to_string(),
+            completed_at_ms: finished,
+        };
+        let mut record = record_from_item_completion(&notification).expect("diagnostic record");
+        record.bind_worker_identity(
+            &AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("isolated source packet".to_string()),
+            },
+            Some(&AdaptiveWorkerPreflight {
+                task_kind: AdaptiveTaskKind::SourceChange,
+                source_root: root.path().display().to_string(),
+                source_sha: SOURCE_SHA_A.to_string(),
+            }),
+        );
+        assert!(record.native_source_provenance.is_none());
+        assert!(record.worker_binding.is_none());
+    }
 }
