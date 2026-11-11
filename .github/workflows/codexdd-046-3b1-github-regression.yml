@@ -989,10 +989,10 @@ jobs:
           Write-Host 'GitHub source verification only. No deployment, install, release or production merge.'
 
   windows-3b3b-native-provenance:
-    name: 3B.3b exact-source Windows Core and TUI provenance regressions
+    name: 3B.3b/3B.3c exact-source Windows evidence regressions
     # Explicit owner-directed GitHub-only scoped diagnostic: isolated disposable
     # evidence fixtures, never a real project profile or release acceptance.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b3b-native]')
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b3b-native]') || contains(github.event.head_commit.message, '[3b3c-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 100
@@ -1069,6 +1069,21 @@ jobs:
           }
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3b TUI source and gate provenance tests failed' }
+      - name: Validate four 3B.3c prerequisite-ledger negative controls
+        if: contains(github.event.head_commit.message, '[3b3c-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b3c_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '4 tests, 0 benchmarks') {
+            throw '3B.3c expected exactly four source/runtime/Validator prerequisite fixtures'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3c pending gate and evidence invalidation regression failed' }
       - name: Confirm no source mutation, install or release
         if: always()
         shell: pwsh
