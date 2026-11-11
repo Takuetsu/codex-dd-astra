@@ -302,6 +302,8 @@ impl ChatWidget {
                         &envelope.evidence_refs,
                         AdaptiveEvidenceOutcome::Success,
                     )
+                    // A generic command PASS does not grant source/operations/QA approval.
+                    && self.owner_qa_prerequisite_admission().is_ok()
             }
         };
         let signal_kind = envelope.signal_kind;
@@ -332,6 +334,24 @@ impl ChatWidget {
             }
         });
         if !accepted {
+            if signal_kind == AdaptiveRuntimeSignalKind::ReadyForOwnerQa {
+                // Failure to meet a gate is not permission to escalate, rerun
+                // a finished test or latch an unverified terminal.
+                let missing = self
+                    .owner_qa_prerequisite_admission()
+                    .err()
+                    .unwrap_or_else(|| {
+                        "current-turn independent validation evidence was not accepted".to_string()
+                    });
+                self.add_info_message(
+                    format!(
+                        "CodexDD READY_FOR_OWNER_QA withheld: {missing}. Source evidence is preserved; obtain the missing independent, authorized prerequisite evidence before retrying READY."
+                    ),
+                    None,
+                );
+                self.save_adaptive_effort_for_current_thread();
+                return false;
+            }
             if signal_kind == AdaptiveRuntimeSignalKind::ImplementationWork
                 && implementation_work_failure.is_some()
                 && implementation_work_profile_allowed
@@ -517,6 +537,51 @@ impl ChatWidget {
                     .failure_pressure_for_turn(thread_id, source_turn_id)
                     >= ADAPTIVE_FAILURE_PRESSURE_THRESHOLD
         })
+    }
+
+    /// Explicit prerequisite identity and independent Validator requirements
+    /// are checked separately from a same-turn successful tool response.
+    /// 3C.1a deliberately refuses positive READY until actual validated
+    /// independent + optional runtime-health receipts can be admitted.
+    fn owner_qa_prerequisite_admission(&self) -> Result<(), String> {
+        let state = &self.adaptive_effort;
+        if state.worker_context.role != AdaptiveWorkerRole::Validation
+            || !state.worker_assignment_locked
+        {
+            return Err("independent Validation Worker is not first-assignment locked".to_string());
+        }
+        let scope = state
+            .worker_context
+            .authorized_scope
+            .as_deref()
+            .filter(|scope| !scope.trim().is_empty())
+            .ok_or_else(|| "authorized Validation scope is missing".to_string())?;
+        let pin = state
+            .assignment_preflight
+            .as_ref()
+            .ok_or_else(|| "Validation Worker has no exact authorized source pin".to_string())?;
+        let ledger = state
+            .gate_ledger
+            .as_ref()
+            .ok_or_else(|| "owner-required gate ledger is not bound to this Worker".to_string())?;
+        if !ledger.matches_authorized_source(
+            scope,
+            std::path::Path::new(&pin.source_root),
+            &pin.source_sha,
+        ) {
+            return Err("required gates do not match the assigned source SHA/worktree/scope"
+                .to_string());
+        }
+        let outstanding = ledger.outstanding(&state.evidence_registry);
+        if !outstanding.is_empty() {
+            let details = outstanding
+                .iter()
+                .map(|gate| format!("{:?}: {:?}", gate.gate, gate.state))
+                .collect::<Vec<_>>()
+                .join("; ");
+            return Err(format!("required gates are pending or blocked: {details}"));
+        }
+        Ok(())
     }
 
     fn valid_evidence_refs(
@@ -2241,13 +2306,12 @@ mod tests {
         chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
         chat.adaptive_effort.worker_context.authorized_scope = Some(scope.to_string());
         chat.adaptive_effort.worker_assignment_locked = true;
-        chat.adaptive_effort.assignment_preflight = Some(
-            crate::adaptive_worker::AdaptiveWorkerPreflight {
+        chat.adaptive_effort.assignment_preflight =
+            Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
                 task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
                 source_root: worktree.path().display().to_string(),
                 source_sha: sha.to_string(),
-            },
-        );
+            });
         chat.adaptive_effort.gate_ledger = Some(
             crate::adaptive_gate_prerequisites::AdaptiveGateLedger::new(
                 scope,
@@ -2315,19 +2379,20 @@ mod tests {
         chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
         chat.adaptive_effort.worker_context.authorized_scope = Some(scope.to_string());
         chat.adaptive_effort.worker_assignment_locked = true;
-        chat.adaptive_effort.assignment_preflight = Some(
-            crate::adaptive_worker::AdaptiveWorkerPreflight {
+        chat.adaptive_effort.assignment_preflight =
+            Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
                 task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
                 source_root: foreign.path().display().to_string(),
                 source_sha: sha.to_string(),
-            },
-        );
+            });
         chat.adaptive_effort.gate_ledger = Some(
             crate::adaptive_gate_prerequisites::AdaptiveGateLedger::new(
                 scope,
                 authorized.path(),
                 sha,
-                vec![crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::IndependentValidation],
+                vec![
+                    crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::IndependentValidation,
+                ],
             )
             .expect("authorized gate"),
         );
@@ -2352,7 +2417,15 @@ mod tests {
         chat.turn_lifecycle.agent_turn_running = false;
         assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
         assert_eq!(chat.adaptive_effort.workflow_terminal, None);
-        assert_eq!(chat.adaptive_effort.gate_ledger.as_ref().expect("gates").outstanding(&chat.adaptive_effort.evidence_registry).len(), 1);
+        assert_eq!(
+            chat.adaptive_effort
+                .gate_ledger
+                .as_ref()
+                .expect("gates")
+                .outstanding(&chat.adaptive_effort.evidence_registry)
+                .len(),
+            1
+        );
     }
 
     #[tokio::test]
