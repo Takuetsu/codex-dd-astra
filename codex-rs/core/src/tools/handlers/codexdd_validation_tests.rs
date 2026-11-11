@@ -330,12 +330,19 @@ exit 0
                 config.cwd =
                     codex_utils_absolute_path::AbsolutePathBuf::try_from(source_root.clone())
                         .expect("valid isolated absolute root");
-                // The test harness has no frontend to answer exec approval requests.
-                // Disable *interactive prompts in this fixture only*; preserve
-                // the sandbox profile, Core-bound source and Worker role gates.
+                // This fixture has no frontend for interactive approvals, and
+                // the default Windows test profile has no enforceable sandbox.
+                // Explicitly grant unrestricted exec ONLY in this disposable
+                // test session. Production permissions are unchanged; this
+                // proves the Core source/role binding and native receipt path,
+                // not restricted-sandbox or unapproved command execution.
                 config.permissions.approval_policy = codex_config::Constrained::allow_any(
                     codex_protocol::protocol::AskForApproval::Never,
                 );
+                config
+                    .permissions
+                    .set_permission_profile(codex_protocol::models::PermissionProfile::Disabled)
+                    .expect("disposable Core fixture must explicitly authorize execution");
                 config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
                     role: AdaptiveWorkerRoleToml::Implementation,
                     authorized_scope: Some("isolated test-only native profile".to_string()),
