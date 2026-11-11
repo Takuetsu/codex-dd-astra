@@ -938,7 +938,10 @@ fn codexdd_046_3b2o_policy_denial_is_typed_nonrepairable_setup_blocker() {
     );
     assert_eq!(summary.status, "error");
     assert_eq!(summary.exit_code, 2);
-    assert_eq!(summary.error_type.as_deref(), Some("execution_policy_blocked"));
+    assert_eq!(
+        summary.error_type.as_deref(),
+        Some("execution_policy_blocked")
+    );
     assert!(summary.stages.is_empty());
     assert_eq!(summary.failed_stage, None);
     assert_eq!(
