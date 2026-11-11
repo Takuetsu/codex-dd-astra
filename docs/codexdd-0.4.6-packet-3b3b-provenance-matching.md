@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-11  
 **Base:** `0465dc95d8f78183c796ab6034f7e46e6ab2825d` (3B.3a).  
-**State:** CHECKPOINTED SOURCE + FOCUSED TEST FIXTURES; Windows execution acceptance remains OPEN.  
+**State:** FOCUSED WINDOWS NATIVE REGRESSIONS ACCEPTED (2026-11-11); 3B.3b closed; independent real-runtime acceptance remains OPEN.  
 **Branch:** `dd/codexdd-v0.4.6-agent-reliability`; production remains 0.4.4 and 0.4.5 frozen.
 
 ## One observable outcome
@@ -37,3 +37,11 @@ Performed before commit: exact GitHub parent/ref and required source ownership i
 The existing GitHub push workflow's ordinary source-contract and formatting jobs may automatically execute when these Core files move to the development branch. Its Windows native jobs require separate explicit commit markers and are not dispatched here. Neither auto-run source checks nor prior 3B.2o green receipts replace new exact-head native acceptance.
 
 Next: run minimal Windows exact-head TUI tests (selector `codexdd_046_3b3b_`), existing adaptive evidence tests and relevant Core handler regressions on Daniel-CL after format/source checks; repair any compiler/format faults narrowly. Only after that should the 3B.3b native gate be called accepted. 3B.3c may then implement explicit source/operations/independent-Validator prerequisites, and 3B.3d durable pending-gate resume. The private BREAKWATER Node profile, independent live Validator, 3B.4 and all release gates remain open.
+
+## 2026-11-11 authoritative 3B.3b closure
+
+**Accepted exact source:** `a249ab5bf06839f07219a05510260739f4252abf`. [GitHub Actions run #43054633002](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43054633002) completed `success`; source-contract and Rustfmt jobs `success` and the exact-source Windows Core/TUI provenance job `success`. Native job logs explicitly show Core operator summary test `1 passed, 0 failed` and TUI provenance regressions `6 passed, 0 failed` (seven focused tests total). The corrected branch fixed the ten historical TUI `AdaptiveEvidenceRecord` fixture initializations after earlier run #43048358426 failed compilation; superseded run #43048453466 also failed and is not accepted as green.
+
+**Accepted scope:** 3B.3b matching/negative controls A03/A04 and Core receipt source root. This is a native GitHub Windows **synthetic fixture** gate, not an owner-required full regression, actual preview health, independent live Validation Worker, private BREAKWATER Node profile, release profile, installation or production merge. The 0.4.6 milestone and overall 3B.3 phase remain OPEN. Keep these distinctions in summaries and later gate ledgers. This closure updates the initial pre-acceptance statements above; historical test-state descriptions remain as provenance of the original checkpoint.
+
+**Next:** 3B.3c explicit required source/operations/independent-Validation gate states and missing-gate regression cases, followed by 3B.3d durable source-bound resume and Phase 3C.1 trusted terminal admission.
