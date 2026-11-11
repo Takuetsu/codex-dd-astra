@@ -1791,6 +1791,10 @@ pub struct ThreadAdaptiveWorkflowState {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub authorized_source_sha: Option<String>,
+    /// Source-/Worker-bound pending requirements only; never prior success.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub gate_checkpoint: Option<JsonValue>,
     pub worker_assignment_locked: bool,
     pub workflow_terminal: Option<String>,
 }

@@ -8,6 +8,7 @@ use crate::adaptive_complexity::implementation_floor;
 use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
+use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 pub(crate) use crate::adaptive_policy::AdaptiveEffort;
 pub(crate) use crate::adaptive_policy::AdaptiveFailureKind;
 pub(crate) use crate::adaptive_policy::AdaptiveFamily;
@@ -129,6 +130,8 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
     pub(crate) pending_signal: Option<AdaptivePendingSignal>,
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
+    /// Pending source-/Worker-bound requirements, never cached success authority.
+    pub(crate) gate_ledger: Option<AdaptiveGateLedger>,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
     pub(crate) validation_repair_fingerprint: Option<String>,
@@ -308,6 +311,7 @@ impl AdaptiveEffortState {
             || worker_context.authorized_scope.is_some();
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
+        let gate_ledger = self.gate_ledger.clone();
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
         let consecutive_no_native_progress_turns = self.consecutive_no_native_progress_turns;
@@ -341,6 +345,7 @@ impl AdaptiveEffortState {
             successor_admission: None,
             pending_signal: None,
             evidence_registry,
+            gate_ledger,
             complexity_class,
             implementation_phase,
             validation_repair_fingerprint,
@@ -353,6 +358,7 @@ impl AdaptiveEffortState {
 
     pub(crate) fn durable_workflow_snapshot(
         &self,
+        owner_thread_id: codex_protocol::ThreadId,
     ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
         let family_name = |family: AdaptiveFamily| match family {
             AdaptiveFamily::Luna => "luna",
@@ -435,6 +441,14 @@ impl AdaptiveEffortState {
                 .assignment_preflight
                 .as_ref()
                 .map(|pin| pin.source_sha.clone()),
+            gate_checkpoint: self.gate_ledger.as_ref().and_then(|ledger| {
+                // The generated value contains requirements and blockers only.
+                // If the Worker is unbound, never serialize an authority hint.
+                ledger
+                    .checkpoint_for_worker(owner_thread_id, self.worker_context.role)
+                    .ok()
+                    .and_then(|checkpoint| serde_json::to_value(checkpoint).ok())
+            }),
             worker_assignment_locked: self.worker_assignment_locked,
             workflow_terminal: workflow_terminal.map(str::to_string),
         }
@@ -545,7 +559,7 @@ impl ChatWidget {
                     .adaptive_effort
                     .workflow_terminal
                     .and_then(|_| self.adaptive_effort.last_processed_terminal_turn_id.clone()),
-                adaptive_state: Some(self.adaptive_effort.durable_workflow_snapshot()),
+                adaptive_state: Some(self.adaptive_effort.durable_workflow_snapshot(thread_id)),
             });
         }
     }

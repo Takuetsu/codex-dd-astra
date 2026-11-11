@@ -3998,6 +3998,7 @@ mod tests {
                     assignment_task_kind: None,
                     authorized_source_root: None,
                     authorized_source_sha: None,
+                    gate_checkpoint: None,
                     worker_assignment_locked: true,
                     workflow_terminal: None,
                 }),

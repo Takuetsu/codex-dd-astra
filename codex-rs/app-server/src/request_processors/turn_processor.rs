@@ -215,6 +215,44 @@ impl TurnRequestProcessor {
                         "setAdaptiveState requires adaptiveState".to_string(),
                     ));
                 };
+                let gate_checkpoint = state
+                    .gate_checkpoint
+                    .as_ref()
+                    .map(|checkpoint| {
+                        let payload = serde_json::to_vec(checkpoint)
+                            .map_err(|err| invalid_request(format!("invalid gate checkpoint: {err}")))?;
+                        if payload.len() > 8192 {
+                            return Err(invalid_request(
+                                "gate checkpoint exceeds bounded size".to_string(),
+                            ));
+                        }
+                        let parsed: codex_rollout::AdaptiveGateCheckpointSnapshot =
+                            serde_json::from_slice(&payload).map_err(|err| {
+                                invalid_request(format!("invalid typed gate checkpoint: {err}"))
+                            })?;
+                        if parsed.schema_version != 1
+                            || parsed.owner_thread_id != params.thread_id
+                            || parsed.owner_role != state.worker_role
+                            || state.authorized_scope.as_deref()
+                                != Some(parsed.authorized_scope.as_str())
+                            || state.authorized_source_root.as_deref()
+                                != Some(parsed.source_root.as_str())
+                            || state
+                                .authorized_source_sha
+                                .as_deref()
+                                .is_none_or(|sha| !sha.eq_ignore_ascii_case(&parsed.source_sha))
+                            || !state.worker_assignment_locked
+                            || parsed.required_gates.is_empty()
+                            || parsed.required_gates.len() > 16
+                        {
+                            return Err(invalid_request(
+                                "gate checkpoint does not match the locked Worker and source"
+                                    .to_string(),
+                            ));
+                        }
+                        Ok(parsed)
+                    })
+                    .transpose()?;
                 codex_rollout::WorkflowStateItem::set_adaptive_state(
                     codex_rollout::AdaptiveWorkflowStateSnapshot {
                         enabled: state.enabled,
@@ -249,6 +287,7 @@ impl TurnRequestProcessor {
                         assignment_task_kind: state.assignment_task_kind,
                         authorized_source_root: state.authorized_source_root,
                         authorized_source_sha: state.authorized_source_sha,
+                        gate_checkpoint,
                         worker_assignment_locked: state.worker_assignment_locked,
                         workflow_terminal: state.workflow_terminal,
                     },

@@ -890,3 +890,154 @@ mod codexdd_complexity_persistence_regression {
         );
     }
 }
+
+#[cfg(test)]
+mod codexdd_046_3b3d2_persistence_tests {
+    use super::*;
+    use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+    use crate::adaptive_gate_prerequisites::AdaptiveGateState;
+    use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+    use crate::adaptive_worker::AdaptiveTaskKind;
+    use crate::adaptive_worker::AdaptiveWorkerPreflight;
+
+    fn pinned_wire_state(
+        source_root: &std::path::Path,
+        owner: ThreadId,
+    ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
+        let scope = "isolated persistent gate handoff";
+        let ledger = AdaptiveGateLedger::new(
+            scope,
+            source_root,
+            &"a".repeat(40),
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("exact authorized requirements");
+        let mut adaptive = AdaptiveEffortState::default();
+        adaptive.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some(scope.to_string()),
+        };
+        adaptive.assignment_preflight = Some(AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: source_root.display().to_string(),
+            source_sha: "a".repeat(40),
+        });
+        adaptive.worker_assignment_locked = true;
+        adaptive.gate_ledger = Some(ledger);
+        let snapshot = adaptive.durable_workflow_snapshot(owner);
+        let checkpoint = snapshot.gate_checkpoint.as_ref().expect("durable gates");
+        let text = serde_json::to_string(checkpoint).expect("small bounded JSON");
+        assert!(text.contains("independent_validation"));
+        assert!(!text.contains("native-lvo-evidence"));
+        assert!(!text.contains("native-run-123"));
+        snapshot
+    }
+
+    fn history_snapshot(
+        wire: &codex_app_server_protocol::ThreadAdaptiveWorkflowState,
+    ) -> codex_history::AdaptiveWorkflowStateSnapshot {
+        serde_json::from_value(serde_json::json!({
+            "enabled": true,
+            "starting_family": "astra",
+            "current_family": "sol",
+            "current_effort": "low",
+            "attempt_number": 1,
+            "paused_by_user": false,
+            "worker_role": "validation",
+            "authorized_scope": wire.authorized_scope,
+            "assignment_task_kind": wire.assignment_task_kind,
+            "authorized_source_root": wire.authorized_source_root,
+            "authorized_source_sha": wire.authorized_source_sha,
+            "worker_assignment_locked": true,
+            "workflow_terminal": "ready_for_owner_qa",
+            "gate_checkpoint": wire.gate_checkpoint,
+        }))
+        .expect("strict typed rollout checkpoint")
+    }
+
+    #[test]
+    fn codexdd_046_3b3d2_protocol_and_rollout_restart_require_revalidation() {
+        let temp = tempfile::tempdir().expect("worktree");
+        let owner = ThreadId::new();
+        let wire = pinned_wire_state(temp.path(), owner);
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            history_snapshot(&wire),
+            Some("old-ready-turn".to_string()),
+            Some(owner),
+        )
+        .expect("current Worker identity and source");
+        let pending = adaptive
+            .gate_ledger
+            .as_ref()
+            .expect("restored requirements")
+            .outstanding(&Default::default());
+        assert_eq!(pending.len(), 2);
+        assert_eq!(pending[0].state, AdaptiveGateState::Pending);
+        assert_eq!(pending[1].state, AdaptiveGateState::Pending);
+        assert_eq!(adaptive.workflow_terminal, None);
+        assert_eq!(adaptive.evidence_registry.len(), 0);
+        assert!(adaptive.pending_signal.is_none());
+        assert!(adaptive.successor_admission.is_none());
+    }
+
+    #[test]
+    fn codexdd_046_3b3d2_legacy_snapshot_remains_compatible_without_gates() {
+        let temp = tempfile::tempdir().expect("worktree");
+        let owner = ThreadId::new();
+        let wire = pinned_wire_state(temp.path(), owner);
+        let mut snapshot = serde_json::to_value(history_snapshot(&wire)).expect("rollout JSON");
+        snapshot.as_object_mut().expect("object").remove("gate_checkpoint");
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            serde_json::from_value(snapshot).expect("legacy rollout"),
+            None,
+            Some(owner),
+        )
+        .expect("old state is backward compatible");
+        assert!(adaptive.gate_ledger.is_none());
+        // Legacy terminals are separately guarded by 3C.1; a missing gate
+        // checkpoint must not be interpreted as new 3B.3d proof.
+    }
+
+    #[test]
+    fn codexdd_046_3b3d2_rejects_wrong_owner_stale_sha_and_unbound_restore() {
+        let temp = tempfile::tempdir().expect("worktree");
+        let owner = ThreadId::new();
+        let wire = pinned_wire_state(temp.path(), owner);
+        let baseline = history_snapshot(&wire);
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            baseline.clone(),
+            None,
+            Some(ThreadId::new()),
+        )
+        .is_err());
+        assert!(apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            baseline.clone(),
+            None,
+            None,
+        )
+        .is_err());
+
+        let mut forged = serde_json::to_value(baseline).expect("rollout JSON");
+        forged["authorized_source_sha"] = serde_json::json!("b".repeat(40));
+        let incompatible = serde_json::from_value(forged).expect("typed old format");
+        assert!(apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            incompatible,
+            None,
+            Some(owner),
+        )
+        .is_err());
+        assert!(adaptive.gate_ledger.is_none());
+    }
+}
+
