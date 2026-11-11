@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 Phase 3B.1 — nonproduction, source-matched GitHub verification.
 # No release publishing, installation, runner-controlled worktree changes, or production merge.
-# One-shot 3B.2n source-bound native Core handler acceptance dispatch; no release or model authority changes.
+# One-shot 3B.2n native CI diagnostic for noninteractive Core handler; no release or model authority changes.
 name: CodexDD 0.4.6 3B.1 GitHub regression
 
 on:
