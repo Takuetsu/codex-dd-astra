@@ -395,6 +395,19 @@ exit 0
     };
     let receipt: serde_json::Value =
         serde_json::from_str(&output.log_output()).expect("structured LVO receipt");
+    if receipt["status"] != "pass" {
+        // The real handler must remain fail-closed. Surface the typed receipt
+        // from this disposable fixture before asserting, to distinguish a
+        // denied executor from invalid profile output or source-pin mismatch.
+        eprintln!(
+            "3B.2n native LVO receipt: status={}, error_type={}, message={}, exit_code={}, log_path={}",
+            receipt["status"],
+            receipt["error_type"],
+            receipt["message"],
+            receipt["exit_code"],
+            receipt["log_path"]
+        );
+    }
     assert_eq!(receipt["profile"], "targeted");
     assert_eq!(receipt["status"], "pass");
     assert_eq!(receipt["exit_code"], 0);
