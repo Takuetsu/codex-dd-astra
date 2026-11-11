@@ -11,6 +11,10 @@ on:
       - .github/workflows/codexdd-046-3b1-github-regression.yml
       - codex-rs/config/src/config_toml.rs
       - codex-rs/tui/src/adaptive_worker.rs
+      - codex-rs/tui/src/adaptive_evidence.rs
+      - codex-rs/tui/src/adaptive_evidence_tests.rs
+      - codex-rs/tui/src/adaptive_gate_prerequisites.rs
+      - codex-rs/tui/src/lib.rs
       - codex-rs/tui/src/app_server_session.rs
       - codex-rs/tui/src/app/app_server_event_targets.rs
       - codex-rs/tui/src/app/tests.rs
