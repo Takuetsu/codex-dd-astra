@@ -770,7 +770,6 @@ fn codexdd_046_3b3b_native_pass_without_exact_fields_cannot_bind() {
     }
 }
 
-
 #[test]
 fn codexdd_046_3b3c_a01_focused_pass_retains_required_full_gate() {
     let root = tempfile::tempdir().expect("isolated root");
@@ -811,10 +810,7 @@ fn codexdd_046_3b3c_a01_focused_pass_retains_required_full_gate() {
         AdaptiveRequiredGate::SourceProfile("release".to_string())
     );
     assert_eq!(pending[0].state, AdaptiveGateState::Pending);
-    assert_eq!(
-        pending[1].gate,
-        AdaptiveRequiredGate::IndependentValidation
-    );
+    assert_eq!(pending[1].gate, AdaptiveRequiredGate::IndependentValidation);
     assert!(!gates.ready_for_owner_qa(&registry));
     assert_eq!(
         gates.observe_source_pass(
@@ -962,8 +958,13 @@ fn codexdd_046_3b3c_requirements_reject_missing_or_duplicate_authority() {
     ];
     for requirements in cases {
         assert!(
-            AdaptiveGateLedger::new("isolated source packet", root.path(), SOURCE_SHA_A, requirements)
-                .is_err()
+            AdaptiveGateLedger::new(
+                "isolated source packet",
+                root.path(),
+                SOURCE_SHA_A,
+                requirements
+            )
+            .is_err()
         );
     }
     assert!(

@@ -114,11 +114,11 @@ mod adaptive_controller;
 mod adaptive_controller_tests;
 #[allow(dead_code)]
 mod adaptive_evidence;
-#[allow(dead_code)]
-mod adaptive_gate_prerequisites;
 #[cfg(test)]
 #[path = "adaptive_evidence_tests.rs"]
 mod adaptive_evidence_tests;
+#[allow(dead_code)]
+mod adaptive_gate_prerequisites;
 #[allow(dead_code)]
 mod adaptive_policy;
 #[allow(dead_code)]

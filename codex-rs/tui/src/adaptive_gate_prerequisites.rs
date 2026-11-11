@@ -91,7 +91,10 @@ impl AdaptiveGateLedger {
                     if !ports.is_empty()
                         && ports.len() <= 8
                         && ports.iter().all(|port| *port != 0)
-                        && ports.iter().collect::<std::collections::BTreeSet<_>>().len()
+                        && ports
+                            .iter()
+                            .collect::<std::collections::BTreeSet<_>>()
+                            .len()
                             == ports.len() => {}
                 AdaptiveRequiredGate::OwnedRuntimeHealth(_) => {
                     return Err("invalid required runtime listener ports".to_string());
@@ -127,13 +130,8 @@ impl AdaptiveGateLedger {
         {
             return Err(AdaptiveEvidenceResolveError::GateScopeMismatch);
         }
-        let requirement = self.source_requirement(
-            profile,
-            thread_id,
-            turn_id,
-            run_id,
-            minimum_completed_at_ms,
-        );
+        let requirement =
+            self.source_requirement(profile, thread_id, turn_id, run_id, minimum_completed_at_ms);
         registry.match_native_source_gate(evidence_id, &requirement)?;
         self.source_refs.insert(
             profile.to_string(),
@@ -175,7 +173,8 @@ impl AdaptiveGateLedger {
         gate: &AdaptiveRequiredGate,
         reason_code: &str,
     ) -> Result<(), String> {
-        if !self.required.contains(gate) || reason_code.trim().is_empty() || reason_code.len() > 128 {
+        if !self.required.contains(gate) || reason_code.trim().is_empty() || reason_code.len() > 128
+        {
             return Err("invalid blocked gate or reason code".to_string());
         }
         self.blockers.retain(|(recorded, _)| recorded != gate);
@@ -197,18 +196,19 @@ impl AdaptiveGateLedger {
                 } else {
                     match gate {
                         AdaptiveRequiredGate::SourceProfile(profile) => {
-                            let source_is_current = self.source_refs.get(profile).is_some_and(|proof| {
-                                let requirement = self.source_requirement(
-                                    profile,
-                                    proof.thread_id,
-                                    &proof.turn_id,
-                                    &proof.run_id,
-                                    proof.minimum_completed_at_ms,
-                                );
-                                registry
-                                    .match_native_source_gate(&proof.evidence_id, &requirement)
-                                    .is_ok()
-                            });
+                            let source_is_current =
+                                self.source_refs.get(profile).is_some_and(|proof| {
+                                    let requirement = self.source_requirement(
+                                        profile,
+                                        proof.thread_id,
+                                        &proof.turn_id,
+                                        &proof.run_id,
+                                        proof.minimum_completed_at_ms,
+                                    );
+                                    registry
+                                        .match_native_source_gate(&proof.evidence_id, &requirement)
+                                        .is_ok()
+                                });
                             (!source_is_current).then_some(AdaptiveGateState::Pending)
                         }
                         // Until the owned-health producer (3D.1) and independent
