@@ -509,8 +509,16 @@ async fn emit_native_setup_blocker(
     let log_path =
         persist_validation_log(&codex_home, &repo_id, run_id, message.as_bytes()).await?;
     let summary = native_setup_blocker_summary(profile, error_type, message, &log_path);
-    emit_validation_result(invocation, profile, run_id, selected_path, branch, head_sha, &summary)
-        .await
+    emit_validation_result(
+        invocation,
+        profile,
+        run_id,
+        selected_path,
+        branch,
+        head_sha,
+        &summary,
+    )
+    .await
 }
 
 /// Distinguish a proven delegated policy refusal from a generic absent native

@@ -34,7 +34,6 @@ pub(crate) enum AdaptiveEvidenceKind {
     DynamicToolCall,
 }
 
-
 /// Facts emitted by the built-in native LVO handler only on a complete PASS.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct AdaptiveNativeSourceProvenance {
@@ -232,9 +231,7 @@ impl AdaptiveEvidenceRegistry {
         requirement: &AdaptiveSourceGateRequirement<'_>,
     ) -> Result<&'a AdaptiveEvidenceRecord, AdaptiveEvidenceResolveError> {
         let record = match requirement.source_turn_id {
-            Some(turn_id) => {
-                self.resolve_for_turn(evidence_id, requirement.thread_id, turn_id)?
-            }
+            Some(turn_id) => self.resolve_for_turn(evidence_id, requirement.thread_id, turn_id)?,
             None => self.resolve_for_thread(evidence_id, requirement.thread_id)?,
         };
         if record.outcome != AdaptiveEvidenceOutcome::Success {
@@ -267,8 +264,12 @@ impl AdaptiveEvidenceRegistry {
                 .source_sha
                 .bytes()
                 .all(|byte| byte.is_ascii_hexdigit())
-            || !bound.source_sha.eq_ignore_ascii_case(requirement.source_sha)
-            || !native.source_sha.eq_ignore_ascii_case(requirement.source_sha)
+            || !bound
+                .source_sha
+                .eq_ignore_ascii_case(requirement.source_sha)
+            || !native
+                .source_sha
+                .eq_ignore_ascii_case(requirement.source_sha)
             || !same_canonical_root(&bound.source_root, requirement.source_root)
             || !same_canonical_root(&native.source_root, requirement.source_root)
         {

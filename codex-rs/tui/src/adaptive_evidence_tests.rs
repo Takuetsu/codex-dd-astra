@@ -449,7 +449,6 @@ fn conflict_on_source_turn_is_also_permanent() {
     );
 }
 
-
 const SOURCE_SHA_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const SOURCE_SHA_B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
@@ -531,9 +530,11 @@ fn codexdd_046_3b3b_a03_requires_exact_source_sha_and_worktree() {
         AdaptiveEvidenceRegistration::Registered
     );
     let current = native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
-    assert!(registry
-        .match_native_source_gate("native-lvo-evidence", &current)
-        .is_ok());
+    assert!(
+        registry
+            .match_native_source_gate("native-lvo-evidence", &current)
+            .is_ok()
+    );
     let changed_source =
         native_source_requirement(thread_id, root.path(), SOURCE_SHA_B, "work_packet");
     assert_eq!(
@@ -560,13 +561,13 @@ fn codexdd_046_3b3b_a04_rejects_other_worker_scope_and_narrower_gate() {
         SOURCE_SHA_A,
         "targeted",
     ));
-    let focused =
-        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "targeted");
-    assert!(registry
-        .match_native_source_gate("native-lvo-evidence", &focused)
-        .is_ok());
-    let whole_gate =
-        native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
+    let focused = native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "targeted");
+    assert!(
+        registry
+            .match_native_source_gate("native-lvo-evidence", &focused)
+            .is_ok()
+    );
+    let whole_gate = native_source_requirement(thread_id, root.path(), SOURCE_SHA_A, "work_packet");
     assert_eq!(
         registry.match_native_source_gate("native-lvo-evidence", &whole_gate),
         Err(AdaptiveEvidenceResolveError::GateScopeMismatch)
