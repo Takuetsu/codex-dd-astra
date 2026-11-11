@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — 3B.3c.1 explicit prerequisite-ledger foundation
 
 **Date:** 2026-11-11. **Parent:** `4cd38f4da3e1bc430e0b046b8b31f8357f01ab7c` (documented 3B.3b native acceptance).
-**State:** SOURCE AND REGRESSION FIXTURES CHECKPOINTED, **RUSTFMT / NATIVE WINDOWS NOT YET EXECUTED**. 0.4.6 and 3B.3c remain IN PROGRESS.
+**State:** 3B.3c.1 FOCUSED WINDOWS SOURCE/RUSTFMT/NATIVE ACCEPTED on `9b159f54e7b5582f72b95db8e3434322dc73593b`; full 3B.3c and milestone remain IN PROGRESS.
 
 ## Packet
 
@@ -33,3 +33,10 @@ The tests use disposable temporary roots and synthetic typed completion fixture 
 3B.3b **accepted** at source `a249ab5bf06839f07219a05510260739f4252abf` through Windows GitHub Actions [#43054633002](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43054633002): source preflight and Rustfmt passed, native Core 1/1 and TUI 6/6 passed. This does *not* validate 3B.3c's new files.
 
 3B.3c.1 is a new source checkpoint requiring its own exact-head cheap format and focused native proof. No permissions or operator-owned gates are waived. Separate unfinished obligations: private BREAKWATER Node/independent live validation; 3B.3d durable handoff; 3C.1 trusted terminal gate/transport; 3D.1 actual runtime-health owner; 3B.4 progress digest, and later full acceptance/release.
+
+## Native acceptance (2026-11-11)
+
+- **Authoritative checkpoint:** `9b159f54e7b5582f72b95db8e3434322dc73593b`. [GitHub Actions #43070130453](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43070130453) completed SUCCESS after source preflight and Rustfmt both PASS.
+- **Native Windows log:** Core selected source-root summary **1/1 PASS**, existing 3B.3b provenance negatives **6/6 PASS**, new 3B.3c.1 A01/A02/A07/invalid-requirements **4/4 PASS**. Total 11/11 focused tests, zero failures. The earlier formatting-failed run #43067720315 is superseded.
+- **Accepted exactly:** typed in-memory required-gate model and synthetic negative tests. No actual preview port or health request was run; no independent live Validator, durable resume, terminal READY check, real BREAKWATER Node profile, official release, installation or production merge is accepted.
+- **Next:** 3B.3d narrow source-/Worker-bound gate checkpoint and safe restore, then explicit app-server/rollout persistence wiring. 3C.1 separately owns trusted terminal admission; 3D.1 owns approved live-health evidence.
