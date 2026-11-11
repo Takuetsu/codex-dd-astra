@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — packet 3B.3d.2: durable prerequisite bridge
 
 **Date:** 2026-11-11. **Parent:** `8290a2526aa5dc118bbaec60458f78f36344935c` (3B.3d.1 native acceptance documented).
-**State:** IMPLEMENTATION CHECKPOINT; new exact-source Windows compile/format/regression validation required. No release or production installation.
+**State:** EXACT-SOURCE FOCUSED WINDOWS NATIVE ACCEPTED (2026-11-11); 3B.3d.2 CLOSED. Full milestone, terminal admission, independent Validator and live runtime checks remain OPEN. No release or production installation.
 
 ## Outcome and scope
 
@@ -28,3 +28,11 @@ Source owners: `tui/src/chatwidget/adaptive_effort.rs`, `tui/src/session_state.r
 This source packet does **not** grant owner readiness, independent Validator acceptance, live operational health, or a new permission mechanism. Ledger creation from explicit owner task requirements and the guarded READY terminal belong to 3C.1, while live health evidence belongs to 3D.1. The original 3B.2 private BREAKWATER Node/independent live tests, other 0.4.6 phases, complete release validation, and production install remain open.
 
 Next: run source-contract/Rustfmt and narrow native Windows 3B.3d.2 tests at exact source SHA. Fix any compiler/format errors in the owning files before calling the new persistence bridge accepted. Cheap local on Daniel-CL is the default; GitHub-only native proof needs a separately scoped diagnostic and must not be represented as live-project acceptance.
+
+## Acceptance record — 2026-11-11
+
+Authoritative GitHub Actions [run #43108774480](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43108774480) completed **SUCCESS** at exact source `98d87ddde286c68f136aeddfaa429ad21e4f35f4`. Source-contract and Rustfmt succeeded. Windows Core operator receipt test **1/1 PASS**; 3B.3b native provenance cases **6/6 PASS**; 3B.3c pending prerequisites **4/4 PASS**; 3B.3d.1 checkpoint cases **3/3 PASS**; 3B.3d.2 V2 protocol/rollout/resume cases **3/3 PASS**. Total **17/17**, no failures. Previous run #43102047434 failed Rustfmt on one owner-thread closure layout and is superseded; earlier infrastructure cancellation and compiler errors are not valid acceptance evidence.
+
+**Closed exactly:** typed source-/Worker-bound pending-gate checkpoint over TUI ↔ app-server V2 ↔ rollout with restart negatives, current-source acceptance and old snapshot parser compatibility. **Not accepted:** a genuine independently validated READY, a real safe preview listener/health response, official full product validation, private game checkout, 3C.1 terminal enforcement, 3D.1 operations proof, production install or release.
+
+**Next packet:** 3C.1 terminal fail-closed admission and source/independent proof, keeping positive READY pending until all authorized gates have actual native evidence. Never infer terminal authority from this synthetic persistence result.
