@@ -2156,7 +2156,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn green_reviewer_terminal_overrides_armed_failure_pressure_and_admits_no_successor() {
+    async fn green_reviewer_command_without_required_gates_cannot_claim_owner_qa() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
         let turn_id = "green-review-after-pressure";
@@ -2206,11 +2206,12 @@ mod tests {
         });
 
         chat.turn_lifecycle.agent_turn_running = false;
-        assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
-        assert_eq!(
-            chat.adaptive_effort.workflow_terminal,
-            Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
-        );
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Cancelled { .. })
+        ));
         assert_eq!(
             chat.adaptive_effort.current_family,
             Some(AdaptiveFamily::Luna)
@@ -2222,7 +2223,136 @@ mod tests {
         assert_eq!(chat.adaptive_effort.attempt_number, 1);
         assert_eq!(chat.adaptive_effort.pending_attempt, None);
         assert_eq!(chat.adaptive_effort.successor_admission, None);
-        assert!(!chat.maybe_submit_adaptive_successor());
+        // Rejected READY is neither a successful terminal nor an implicit
+        // capability/model escalation caused by earlier unrelated failures.
+        assert_eq!(chat.adaptive_effort.last_outcome, None);
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c1a_green_review_still_requires_full_and_independent_gates() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let worktree = tempfile::tempdir().expect("disposable source root");
+        let sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let scope = "isolated authorized candidate verification";
+        let thread_id = ThreadId::new();
+        let turn_id = "partial-positive-review";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some(scope.to_string());
+        chat.adaptive_effort.worker_assignment_locked = true;
+        chat.adaptive_effort.assignment_preflight = Some(
+            crate::adaptive_worker::AdaptiveWorkerPreflight {
+                task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+                source_root: worktree.path().display().to_string(),
+                source_sha: sha.to_string(),
+            },
+        );
+        chat.adaptive_effort.gate_ledger = Some(
+            crate::adaptive_gate_prerequisites::AdaptiveGateLedger::new(
+                scope,
+                worktree.path(),
+                sha,
+                vec![
+                    crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::SourceProfile(
+                        "release".to_string(),
+                    ),
+                    crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(
+                        vec![4331, 4332],
+                    ),
+                    crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::IndependentValidation,
+                ],
+            )
+            .expect("authorized task gates"),
+        );
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "generic-review-green",
+            CommandExecutionStatus::Completed,
+            0,
+        ));
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+                evidence_refs: vec!["generic-review-green".to_string()],
+                diagnostic_note: Some("PASS".to_string()),
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert_eq!(
+            chat.adaptive_effort
+                .gate_ledger
+                .as_ref()
+                .expect("gate requirements preserved")
+                .outstanding(&chat.adaptive_effort.evidence_registry)
+                .len(),
+            3
+        );
+        assert!(matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Cancelled { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c1a_foreign_worktree_cannot_acquire_owner_qa_from_green_exec() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let authorized = tempfile::tempdir().expect("owner worktree");
+        let foreign = tempfile::tempdir().expect("foreign worktree");
+        let thread_id = ThreadId::new();
+        let turn_id = "wrong-worktree-review";
+        let scope = "isolated authorized candidate";
+        let sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+        chat.adaptive_effort.worker_context.authorized_scope = Some(scope.to_string());
+        chat.adaptive_effort.worker_assignment_locked = true;
+        chat.adaptive_effort.assignment_preflight = Some(
+            crate::adaptive_worker::AdaptiveWorkerPreflight {
+                task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+                source_root: foreign.path().display().to_string(),
+                source_sha: sha.to_string(),
+            },
+        );
+        chat.adaptive_effort.gate_ledger = Some(
+            crate::adaptive_gate_prerequisites::AdaptiveGateLedger::new(
+                scope,
+                authorized.path(),
+                sha,
+                vec![crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::IndependentValidation],
+            )
+            .expect("authorized gate"),
+        );
+        chat.turn_lifecycle.agent_turn_running = true;
+        chat.turn_lifecycle.last_turn_id = Some(turn_id.to_string());
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            turn_id,
+            "green-foreign-exec",
+            CommandExecutionStatus::Completed,
+            0,
+        ));
+        chat.handle_adaptive_runtime_signal(AdaptiveRuntimeSignalNotification {
+            thread_id: thread_id.to_string(),
+            signal: AdaptiveRuntimeSignalEnvelope {
+                source_turn_id: turn_id.to_string(),
+                signal_kind: AdaptiveRuntimeSignalKind::ReadyForOwnerQa,
+                evidence_refs: vec!["green-foreign-exec".to_string()],
+                diagnostic_note: None,
+            },
+        });
+        chat.turn_lifecycle.agent_turn_running = false;
+        assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert_eq!(chat.adaptive_effort.gate_ledger.as_ref().expect("gates").outstanding(&chat.adaptive_effort.evidence_registry).len(), 1);
     }
 
     #[tokio::test]

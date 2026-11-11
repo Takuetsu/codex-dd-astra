@@ -334,6 +334,22 @@ impl AdaptiveGateLedger {
             .collect()
     }
 
+    /// Even a correctly matched checkpoint is not permission to claim an
+    /// unrelated source, scope or worktree on a later Validation Worker.
+    pub(crate) fn matches_authorized_source(
+        &self,
+        scope: &str,
+        root: &Path,
+        sha: &str,
+    ) -> bool {
+        self.scope == scope
+            && self.sha.eq_ignore_ascii_case(sha)
+            && root
+                .canonicalize()
+                .ok()
+                .is_some_and(|selected| selected == self.root)
+    }
+
     pub(crate) fn ready_for_owner_qa(&self, registry: &AdaptiveEvidenceRegistry) -> bool {
         self.outstanding(registry).is_empty()
     }

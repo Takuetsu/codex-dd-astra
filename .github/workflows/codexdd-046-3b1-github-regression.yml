@@ -989,10 +989,10 @@ jobs:
           Write-Host 'GitHub source verification only. No deployment, install, release or production merge.'
 
   windows-3b3b-native-provenance:
-    name: 3B.3b/3B.3c/3B.3d exact-source Windows provenance and persistence
+    name: 3B.3b/3B.3c/3B.3d/3C.1a exact-source Windows gates
     # Explicit owner-directed GitHub-only scoped diagnostic: isolated disposable
     # evidence fixtures, never a real project profile or release acceptance.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b3b-native]') || contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]'))
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b3b-native]') || contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 100
@@ -1070,7 +1070,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3b TUI source and gate provenance tests failed' }
       - name: Validate four 3B.3c prerequisite-ledger negative controls
-        if: contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]')
+        if: contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1085,7 +1085,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3c pending gate and evidence invalidation regression failed' }
       - name: Validate three 3B.3d checkpoint and fail-closed restore regressions
-        if: contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]')
+        if: contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1100,7 +1100,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3d restart checkpoint and source isolation tests failed' }
       - name: Validate three 3B.3d.2 durable protocol and rollout restart regressions
-        if: contains(github.event.head_commit.message, '[3b3d2-native]')
+        if: contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1114,6 +1114,28 @@ jobs:
           }
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3d.2 checkpoint persistence and Worker isolation failed' }
+      - name: Validate 3C.1a negative READY gate and existing RepairRequired control
+        if: contains(github.event.head_commit.message, '[3c1a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $groups = @(
+            @{ Filter = 'codexdd_046_3c1a_'; Count = 2 },
+            @{ Filter = 'green_reviewer_command_without_required_gates_cannot_claim_owner_qa'; Count = 1 },
+            @{ Filter = 'repair_required_terminal_overrides_armed_failure_pressure_and_admits_no_successor'; Count = 1 }
+          )
+          foreach ($group in $groups) {
+            $filter = $group.Filter
+            $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch "$($group.Count) tests?, 0 benchmarks") {
+              throw "3C.1a unexpected number of tests for $filter"
+            }
+            & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+            if ($LASTEXITCODE -ne 0) { throw "3C.1a READY/refusal regression failed for $filter" }
+          }
       - name: Confirm no source mutation, install or release
         if: always()
         shell: pwsh
