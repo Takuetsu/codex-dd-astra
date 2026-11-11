@@ -26,9 +26,9 @@ mod sqlite_metrics;
 pub mod state_db;
 mod writer_lock;
 
-pub use codex_history::AdaptiveValidationStatusSnapshot;
 pub use codex_history::AdaptiveGateCheckpointSnapshot;
 pub use codex_history::AdaptiveRequiredGateSnapshot;
+pub use codex_history::AdaptiveValidationStatusSnapshot;
 pub use codex_history::AdaptiveWorkflowStateSnapshot;
 pub use codex_history::CompactedItem;
 pub use codex_history::CompactionResumeMetadata;

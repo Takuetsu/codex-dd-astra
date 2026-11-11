@@ -219,8 +219,9 @@ impl TurnRequestProcessor {
                     .gate_checkpoint
                     .as_ref()
                     .map(|checkpoint| {
-                        let payload = serde_json::to_vec(checkpoint)
-                            .map_err(|err| invalid_request(format!("invalid gate checkpoint: {err}")))?;
+                        let payload = serde_json::to_vec(checkpoint).map_err(|err| {
+                            invalid_request(format!("invalid gate checkpoint: {err}"))
+                        })?;
                         if payload.len() > 8192 {
                             return Err(invalid_request(
                                 "gate checkpoint exceeds bounded size".to_string(),
@@ -280,9 +281,7 @@ impl TurnRequestProcessor {
                                     _ => return false,
                                 }
                             }
-                            for (index, (gate, reason)) in
-                                parsed.blocked_gates.iter().enumerate()
-                            {
+                            for (index, (gate, reason)) in parsed.blocked_gates.iter().enumerate() {
                                 if !parsed.required_gates.contains(gate)
                                     || reason.trim().is_empty()
                                     || reason.len() > 128
@@ -309,7 +308,10 @@ impl TurnRequestProcessor {
                             || !same_root
                             || parsed.source_root.len() > 4096
                             || parsed.source_sha.len() != 40
-                            || !parsed.source_sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+                            || !parsed
+                                .source_sha
+                                .bytes()
+                                .all(|byte| byte.is_ascii_hexdigit())
                             || state
                                 .authorized_source_sha
                                 .as_deref()

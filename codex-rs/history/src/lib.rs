@@ -169,7 +169,6 @@ pub struct AdaptiveValidationStatusSnapshot {
     pub log_path: String,
 }
 
-
 /// The explicitly required gate types are persisted as requirements only.
 /// They carry no successful evidence or terminal authority.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]

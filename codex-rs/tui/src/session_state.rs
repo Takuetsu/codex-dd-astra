@@ -991,7 +991,10 @@ mod codexdd_046_3b3d2_persistence_tests {
         let owner = ThreadId::new();
         let wire = pinned_wire_state(temp.path(), owner);
         let mut snapshot = serde_json::to_value(history_snapshot(&wire)).expect("rollout JSON");
-        snapshot.as_object_mut().expect("object").remove("gate_checkpoint");
+        snapshot
+            .as_object_mut()
+            .expect("object")
+            .remove("gate_checkpoint");
         let mut adaptive = AdaptiveEffortState::default();
         apply_persisted_adaptive_workflow_state_for_thread(
             &mut adaptive,
@@ -1012,32 +1015,37 @@ mod codexdd_046_3b3d2_persistence_tests {
         let wire = pinned_wire_state(temp.path(), owner);
         let baseline = history_snapshot(&wire);
         let mut adaptive = AdaptiveEffortState::default();
-        assert!(apply_persisted_adaptive_workflow_state_for_thread(
-            &mut adaptive,
-            baseline.clone(),
-            None,
-            Some(ThreadId::new()),
-        )
-        .is_err());
-        assert!(apply_persisted_adaptive_workflow_state_for_thread(
-            &mut adaptive,
-            baseline.clone(),
-            None,
-            None,
-        )
-        .is_err());
+        assert!(
+            apply_persisted_adaptive_workflow_state_for_thread(
+                &mut adaptive,
+                baseline.clone(),
+                None,
+                Some(ThreadId::new()),
+            )
+            .is_err()
+        );
+        assert!(
+            apply_persisted_adaptive_workflow_state_for_thread(
+                &mut adaptive,
+                baseline.clone(),
+                None,
+                None,
+            )
+            .is_err()
+        );
 
         let mut forged = serde_json::to_value(baseline).expect("rollout JSON");
         forged["authorized_source_sha"] = serde_json::json!("b".repeat(40));
         let incompatible = serde_json::from_value(forged).expect("typed old format");
-        assert!(apply_persisted_adaptive_workflow_state_for_thread(
-            &mut adaptive,
-            incompatible,
-            None,
-            Some(owner),
-        )
-        .is_err());
+        assert!(
+            apply_persisted_adaptive_workflow_state_for_thread(
+                &mut adaptive,
+                incompatible,
+                None,
+                Some(owner),
+            )
+            .is_err()
+        );
         assert!(adaptive.gate_ledger.is_none());
     }
 }
-
