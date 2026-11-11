@@ -322,7 +322,7 @@ exit 0
     let expected_sha = git(&["rev-parse", "HEAD"]).trim().to_string();
     let expected_root = source_root.canonicalize().expect("canonical source");
 
-    let (session, turn, _events) =
+    let (session, turn, events) =
         crate::session::tests::make_session_and_context_with_auth_and_config_and_rx(
             codex_login::CodexAuth::from_api_key("Test API Key"),
             Vec::new(),
@@ -330,6 +330,12 @@ exit 0
                 config.cwd =
                     codex_utils_absolute_path::AbsolutePathBuf::try_from(source_root.clone())
                         .expect("valid isolated absolute root");
+                // The test harness has no frontend to answer exec approval requests.
+                // Disable *interactive prompts in this fixture only*; preserve
+                // the sandbox profile, Core-bound source and Worker role gates.
+                config.permissions.approval_policy = codex_config::Constrained::allow_any(
+                    codex_protocol::protocol::AskForApproval::Never,
+                );
                 config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
                     role: AdaptiveWorkerRoleToml::Implementation,
                     authorized_scope: Some("isolated test-only native profile".to_string()),
@@ -366,10 +372,27 @@ exit 0
         },
     };
     let handler = CodexDDValidationHandler;
-    let output = tokio::time::timeout(Duration::from_secs(90), handler.handle(invocation))
-        .await
-        .expect("native tool must return a completed result")
-        .expect("real Core handler must execute disposable native profile");
+    let outcome = tokio::time::timeout(Duration::from_secs(45), handler.handle(invocation)).await;
+    let output = match outcome {
+        Ok(result) => result.expect("real Core handler must complete the native fixture"),
+        Err(_) => {
+            let mut observed = Vec::new();
+            while let Ok(event) = events.try_recv() {
+                let name = match event.msg {
+                    codex_protocol::protocol::EventMsg::ExecApprovalRequest(_) => {
+                        "exec_approval_request"
+                    }
+                    codex_protocol::protocol::EventMsg::ExecCommandBegin(_) => "exec_begin",
+                    codex_protocol::protocol::EventMsg::ExecCommandEnd(_) => "exec_end",
+                    _ => "other",
+                };
+                observed.push(name);
+            }
+            panic!(
+                "native handler exceeded 45s in noninteractive CI; observed event kinds: {observed:?}"
+            );
+        }
+    };
     let receipt: serde_json::Value =
         serde_json::from_str(&output.log_output()).expect("structured LVO receipt");
     assert_eq!(receipt["profile"], "targeted");
