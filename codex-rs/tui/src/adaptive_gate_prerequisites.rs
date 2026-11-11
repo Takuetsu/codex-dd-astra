@@ -11,8 +11,15 @@ use crate::adaptive_evidence::AdaptiveSourceGateRequirement;
 use crate::adaptive_worker::AdaptiveTaskKind;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use codex_protocol::ThreadId;
+use serde::Deserialize;
+use serde::Serialize;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// A checkpoint is *not* proof: native evidence refs are deliberately excluded.
+const CODEXDD_GATE_CHECKPOINT_VERSION: u8 = 1;
+const MAX_GATE_REQUIREMENTS: usize = 16;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum AdaptiveRequiredGate {
     SourceProfile(String),
     OwnedRuntimeHealth(Vec<u16>),
@@ -29,6 +36,22 @@ pub(crate) enum AdaptiveGateState {
 pub(crate) struct AdaptiveOutstandingGate {
     pub(crate) gate: AdaptiveRequiredGate,
     pub(crate) state: AdaptiveGateState,
+}
+
+/// Bounded, non-authoritative task prerequisites saved for process restart.
+/// This is never a trusted native PASS, runtime listener receipt or terminal.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AdaptiveGateCheckpoint {
+    pub(crate) schema_version: u8,
+    pub(crate) owner_thread_id: String,
+    pub(crate) owner_role: String,
+    pub(crate) authorized_scope: String,
+    pub(crate) source_root: String,
+    pub(crate) source_sha: String,
+    pub(crate) required_gates: Vec<AdaptiveRequiredGate>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) blocked_gates: Vec<(AdaptiveRequiredGate, String)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -61,6 +84,8 @@ impl AdaptiveGateLedger {
         required: Vec<AdaptiveRequiredGate>,
     ) -> Result<Self, String> {
         if scope.trim().is_empty()
+            || scope.len() > 1024
+            || required.len() > MAX_GATE_REQUIREMENTS
             || sha.len() != 40
             || !sha.bytes().all(|byte| byte.is_ascii_hexdigit())
         {
@@ -110,6 +135,86 @@ impl AdaptiveGateLedger {
             source_refs: BTreeMap::new(),
             blockers: Vec::new(),
         })
+    }
+
+    /// Serialize only requirements and bounded blockers. Revalidatable native
+    /// receipts deliberately remain in the in-memory registry, never a
+    /// persisted green flag that could become stale after restart.
+    pub(crate) fn checkpoint_for_worker(
+        &self,
+        owner_thread_id: ThreadId,
+        owner_role: AdaptiveWorkerRole,
+    ) -> Result<AdaptiveGateCheckpoint, String> {
+        let owner_role = Self::bound_role_name(owner_role)?;
+        Ok(AdaptiveGateCheckpoint {
+            schema_version: CODEXDD_GATE_CHECKPOINT_VERSION,
+            owner_thread_id: owner_thread_id.to_string(),
+            owner_role: owner_role.to_string(),
+            authorized_scope: self.scope.clone(),
+            source_root: self.root.display().to_string(),
+            source_sha: self.sha.clone(),
+            required_gates: self.required.clone(),
+            blocked_gates: self.blockers.clone(),
+        })
+    }
+
+    /// A legacy, foreign Worker, old SHA or moved root must never reacquire
+    /// authority. Even a matching checkpoint restores *pending* source gates:
+    /// no source proof ref or independent gate can be replayed from JSON.
+    pub(crate) fn restore_pending(
+        checkpoint: AdaptiveGateCheckpoint,
+        expected_thread_id: ThreadId,
+        expected_role: AdaptiveWorkerRole,
+        expected_scope: &str,
+        expected_root: &Path,
+        expected_sha: &str,
+    ) -> Result<Self, String> {
+        let role = Self::bound_role_name(expected_role)?;
+        if checkpoint.schema_version != CODEXDD_GATE_CHECKPOINT_VERSION
+            || checkpoint.owner_thread_id != expected_thread_id.to_string()
+            || checkpoint.owner_role != role
+            || checkpoint.authorized_scope != expected_scope
+            || !checkpoint.source_sha.eq_ignore_ascii_case(expected_sha)
+            || checkpoint.source_root.len() > 4096
+        {
+            return Err("gate checkpoint worker, scope or source identity mismatch".to_string());
+        }
+        let actual_root = Path::new(&checkpoint.source_root)
+            .canonicalize()
+            .map_err(|_| "gate checkpoint root is no longer available".to_string())?;
+        let expected_root = expected_root
+            .canonicalize()
+            .map_err(|_| "authorized gate worktree is unavailable".to_string())?;
+        if actual_root != expected_root {
+            return Err("gate checkpoint belongs to a different worktree".to_string());
+        }
+        let mut restored = Self::new(
+            expected_scope,
+            &expected_root,
+            expected_sha,
+            checkpoint.required_gates,
+        )?;
+        if checkpoint.blocked_gates.len() > restored.required.len() {
+            return Err("gate checkpoint has excess blockers".to_string());
+        }
+        let mut seen = Vec::new();
+        for (gate, reason) in checkpoint.blocked_gates {
+            if seen.contains(&gate) {
+                return Err("gate checkpoint has duplicate blockers".to_string());
+            }
+            restored.mark_blocked(&gate, &reason)?;
+            seen.push(gate);
+        }
+        Ok(restored)
+    }
+
+    fn bound_role_name(role: AdaptiveWorkerRole) -> Result<&'static str, String> {
+        match role {
+            AdaptiveWorkerRole::Implementation => Ok("implementation"),
+            AdaptiveWorkerRole::Validation => Ok("validation"),
+            AdaptiveWorkerRole::Repair => Ok("repair"),
+            AdaptiveWorkerRole::Unspecified => Err("unbound Worker cannot save gate authority".to_string()),
+        }
     }
 
     /// Only an exact native LVO receipt from a pinned Implementation Worker

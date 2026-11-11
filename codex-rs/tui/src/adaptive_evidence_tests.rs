@@ -6,6 +6,7 @@ use super::adaptive_evidence::AdaptiveEvidenceRegistry;
 use super::adaptive_evidence::AdaptiveEvidenceResolveError;
 use super::adaptive_evidence::AdaptiveSourceGateRequirement;
 use super::adaptive_evidence::record_from_item_completion;
+use super::adaptive_gate_prerequisites::AdaptiveGateCheckpoint;
 use super::adaptive_gate_prerequisites::AdaptiveGateLedger;
 use super::adaptive_gate_prerequisites::AdaptiveGateState;
 use super::adaptive_gate_prerequisites::AdaptiveRequiredGate;
@@ -976,4 +977,188 @@ fn codexdd_046_3b3c_requirements_reject_missing_or_duplicate_authority() {
         )
         .is_err()
     );
+}
+
+
+#[test]
+fn codexdd_046_3b3d_checkpoint_roundtrip_drops_all_success_authority() {
+    let root = tempfile::tempdir().expect("isolated root");
+    let source_worker = ThreadId::new();
+    let owner_thread = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(scoped_native_source_receipt(
+        source_worker,
+        root.path(),
+        SOURCE_SHA_A,
+        "work_packet",
+    ));
+    let mut ledger = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![
+            AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    )
+    .expect("required gates");
+    ledger
+        .observe_source_pass(
+            &registry,
+            "work_packet",
+            "native-lvo-evidence",
+            source_worker,
+            "native-source-turn",
+            "native-run-123",
+            999,
+        )
+        .expect("source LVO green");
+    assert_eq!(ledger.outstanding(&registry).len(), 1);
+    let checkpoint = ledger
+        .checkpoint_for_worker(owner_thread, AdaptiveWorkerRole::Validation)
+        .expect("bound Validator checkpoint");
+    let json = serde_json::to_string(&checkpoint).expect("checkpoint JSON");
+    assert!(!json.contains("native-lvo-evidence"));
+    assert!(!json.contains("native-run-123"));
+    assert!(!json.contains("sourceRefs"));
+    let decoded: AdaptiveGateCheckpoint = serde_json::from_str(&json).expect("round trip");
+    assert_eq!(decoded, checkpoint);
+    let restored = AdaptiveGateLedger::restore_pending(
+        decoded,
+        owner_thread,
+        AdaptiveWorkerRole::Validation,
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+    )
+    .expect("matching Worker and source");
+    let outstanding = restored.outstanding(&registry);
+    assert_eq!(outstanding.len(), 2);
+    assert_eq!(
+        outstanding[0].gate,
+        AdaptiveRequiredGate::SourceProfile("work_packet".to_string())
+    );
+    assert_eq!(outstanding[0].state, AdaptiveGateState::Pending);
+    assert_eq!(
+        outstanding[1].gate,
+        AdaptiveRequiredGate::IndependentValidation
+    );
+    assert!(!restored.ready_for_owner_qa(&registry));
+}
+
+#[test]
+fn codexdd_046_3b3d_rejects_cross_worker_prior_sha_and_wrong_worktree() {
+    let root = tempfile::tempdir().expect("source");
+    let other_root = tempfile::tempdir().expect("foreign source");
+    let owner = ThreadId::new();
+    let other_thread = ThreadId::new();
+    let scope = "isolated source packet";
+    let ledger = AdaptiveGateLedger::new(
+        scope,
+        root.path(),
+        SOURCE_SHA_A,
+        vec![AdaptiveRequiredGate::IndependentValidation],
+    )
+    .expect("bounded gates");
+    assert!(ledger
+        .checkpoint_for_worker(owner, AdaptiveWorkerRole::Unspecified)
+        .is_err());
+    let checkpoint = ledger
+        .checkpoint_for_worker(owner, AdaptiveWorkerRole::Validation)
+        .expect("bound Worker");
+    for (thread, role, expected_scope, expected_root, sha) in [
+        (other_thread, AdaptiveWorkerRole::Validation, scope, root.path(), SOURCE_SHA_A),
+        (owner, AdaptiveWorkerRole::Implementation, scope, root.path(), SOURCE_SHA_A),
+        (owner, AdaptiveWorkerRole::Validation, "foreign packet", root.path(), SOURCE_SHA_A),
+        (owner, AdaptiveWorkerRole::Validation, scope, other_root.path(), SOURCE_SHA_A),
+        (owner, AdaptiveWorkerRole::Validation, scope, root.path(), SOURCE_SHA_B),
+    ] {
+        assert!(AdaptiveGateLedger::restore_pending(
+            checkpoint.clone(),
+            thread,
+            role,
+            expected_scope,
+            expected_root,
+            sha,
+        )
+        .is_err());
+    }
+}
+
+#[test]
+fn codexdd_046_3b3d_restores_only_valid_pending_blockers_and_fails_closed() {
+    let root = tempfile::tempdir().expect("source root");
+    let owner = ThreadId::new();
+    let health_gate = AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4331, 4332]);
+    let mut ledger = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![
+            AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+            health_gate.clone(),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    )
+    .expect("gate list");
+    ledger
+        .mark_blocked(&health_gate, "service_health_missing")
+        .expect("typed blocker");
+    let checkpoint = ledger
+        .checkpoint_for_worker(owner, AdaptiveWorkerRole::Validation)
+        .expect("checkpoint");
+    let restored = AdaptiveGateLedger::restore_pending(
+        checkpoint.clone(),
+        owner,
+        AdaptiveWorkerRole::Validation,
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+    )
+    .expect("bound pending restore");
+    let outstanding = restored.outstanding(&AdaptiveEvidenceRegistry::default());
+    assert_eq!(outstanding.len(), 3);
+    assert_eq!(outstanding[0].state, AdaptiveGateState::Pending);
+    assert_eq!(
+        outstanding[1].state,
+        AdaptiveGateState::Blocked("service_health_missing".to_string())
+    );
+    assert_eq!(outstanding[2].state, AdaptiveGateState::Pending);
+
+    let mut altered = checkpoint.clone();
+    altered.schema_version = 42;
+    assert!(AdaptiveGateLedger::restore_pending(
+        altered,
+        owner,
+        AdaptiveWorkerRole::Validation,
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+    )
+    .is_err());
+    let mut altered = checkpoint.clone();
+    altered.required_gates.clear();
+    assert!(AdaptiveGateLedger::restore_pending(
+        altered,
+        owner,
+        AdaptiveWorkerRole::Validation,
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+    )
+    .is_err());
+    let mut altered = checkpoint.clone();
+    altered.blocked_gates.push((health_gate, "duplicate_blocker".to_string()));
+    assert!(AdaptiveGateLedger::restore_pending(
+        altered,
+        owner,
+        AdaptiveWorkerRole::Validation,
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+    )
+    .is_err());
+    let mut json = serde_json::to_value(checkpoint).expect("checkpoint JSON");
+    json["foreignAuthority"] = serde_json::json!("not approved");
+    assert!(serde_json::from_value::<AdaptiveGateCheckpoint>(json).is_err());
 }
