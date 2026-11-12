@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — Packet 3C.1b.2g: app-server native two-Worker evidence boundary
 
 **Date:** 2026-11-12. **Parent:** `bd81688edd5f214e97d97df1a52b1ca38ed462c9` (3C.1b.2f native Core integration accepted).
-**State:** SOURCE IMPLEMENTATION, focused Windows native app-server test **PENDING**. TUI READY admission and 3C.1 completion **NOT YET ACCEPTED**.
+**State:** ACCEPTED focused native app-server two-Worker execution and cold resume at `ad20adee456fa55a725678e5786dfab9cda2ff03` ([GitHub Actions #43296361647](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43296361647), green 2026-11-12, 22m25s). TUI READY admission and milestone 3C.1 completion **NOT YET ACCEPTED**.
 
 ## Scope
 
@@ -33,6 +33,10 @@ Correction: the fixture supplies `turn_trigger=codexdd_adaptive_mechanical_valid
 Source review traced the failure to a **fixture authority-origin mismatch**, not an unbounded production privilege escalation. The fixture previously supplied Worker role/root/SHA in `thread/start.config.adaptive_worker` (launcher config). `CoreFirstWorkerAuthority::first_user_snapshot()` intentionally returns `None` for launcher-only bindings: it persists **only first accepted direct user-origin Worker headers** into exact-thread `ThreadSettingsApplied` rollout events. Returning a first-user snapshot from arbitrary startup config would incorrectly convert a process-local launcher choice into durable owner authority.
 
 The corrected integration test now sends a real original first user-origin `[adaptive_worker]` assignment on **each** independently started app-server thread, requires that initial turn to complete, then invokes actual native handlers on dedicated successor turns. It closes and restarts the app-server, asserting that the exact same-thread, Core-durable first-user binding is restored without copying another thread's role or accepting another SHA. This strengthens evidence of the intended boundary rather than changing production authority or weakening cold-resume expectations. Focused Windows acceptance is pending.
+
+## Accepted 3C.1b.2g — verified native Windows run #128
+
+[GitHub Actions #43296361647](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43296361647), SHA `ad20adee456fa55a725678e5786dfab9cda2ff03`: **SUCCESS**, 22m25s. Linux source-contract preflight, Rustfmt, and the single targeted real Windows app-server two-thread test are all green. The test executed two separately owner-initialized source-pinned Core sessions, both real native PowerShell profiles, two distinct forwarded `item/completed` receipts, and cold-resumed both exact Worker snapshots after restarting the app-server process. This closes *only* 3C.1b.2g; there is no owner READY or production app install implied. The next packet is 3C.1b.2h, TUI notification/gate/READY admission.
 
 ## What a green result does and does not mean
 
