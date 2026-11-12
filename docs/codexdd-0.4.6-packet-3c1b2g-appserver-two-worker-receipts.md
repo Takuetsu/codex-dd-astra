@@ -20,6 +20,12 @@ The test uses a no-prompt danger-full-access **sandbox setting only inside these
 
 The dedicated `[3c1b2g-native]` Windows job runs exact source branch/SHA preflight, Rustfmt, pinned Windows Rust/DotSlash/V8, and verifies exactly one new native app-server integration test under `cargo test --locked -p codex-app-server --test all`. It runs no full release compile, deployment or BREAKWATER work.
 
+## Native acceptance attempt #124 and root cause
+
+[GitHub Actions #43282916077](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43282916077), exact source `5e75a1dce702a4d10be05aa1d284a9838667cbdd`: source preflight and Rustfmt green; native app-server test **FAILED** after approximately 120 seconds waiting for an absent tool receipt. Actual Core log: `unsupported call: run_codexdd_validation`. A mock model tried to call the Implementation validation tool from an **ordinary** user turn. The Core registry correctly exposes that tool **only** on `codexdd_adaptive_mechanical_validation` turns. Earlier direct Handler tests bypassed the tool registry; changing production registration to make the tool available on arbitrary turns would violate the separation guarantee.
+
+Correction: the fixture supplies `turn_trigger=codexdd_adaptive_mechanical_validation` **only** for its explicitly authorized, source-pinned Implementation session; the independent Validation Worker remains a normal (non-terminalization) turn and must have a separate Core-bound role/SHA. The test now also treats an early `turn/completed` without a matching `item/completed` receipt as immediate failure, instead of silently consuming its entire 120-second timeout. This is strictly a test-harness correction. No production authorization or tool exposure was broadened. CI rerun needed before any PASS claim.
+
 ## What a green result does and does not mean
 
 A green result demonstrates the two separate Core native receipts are forwarded into **correct app-server item completion notifications** and survive identity restoration after a fresh process. It is a stronger interface acceptance than an in-memory handoff unit test.

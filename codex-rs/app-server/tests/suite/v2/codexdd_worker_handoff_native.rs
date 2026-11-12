@@ -179,6 +179,13 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
                     text: format!("Run the preauthorized {profile} native profile."),
                     text_elements: Vec::new(),
                 }],
+                // Source LVO is intentionally absent on an ordinary model turn.
+                // Only the original owner-approved Implementation Worker may
+                // request the bounded MechanicalValidation lifecycle.
+                turn_trigger: (role == "implementation").then(|| {
+                    codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER
+                        .to_string()
+                }),
                 ..Default::default()
             })
             .await?;
@@ -190,6 +197,17 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
             app_server.read_stream_until_matching_notification(
                 "matching genuine native validation completion",
                 |notice| {
+                    // Fail immediately on a completed turn that never issued
+                    // the required native receipt (e.g. a wrongly tagged turn)
+                    // rather than spending the entire 120s deadline.
+                    if notice.method == "turn/completed" {
+                        return notice
+                            .params
+                            .as_ref()
+                            .and_then(|params| params.get("threadId"))
+                            .and_then(|id| id.as_str())
+                            == Some(thread_id.as_str());
+                    }
                     notice.method == "item/completed"
                         && notice
                             .params
@@ -209,6 +227,10 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
             ),
         )
         .await??;
+        ensure!(
+            item.method == "item/completed",
+            "{role} turn completed without a real {tool} receipt; refusing synthetic PASS",
+        );
         let completion: ItemCompletedNotification =
             serde_json::from_value(item.params.context("native completion payload missing")?)?;
         ensure!(completion.thread_id == thread_id);
