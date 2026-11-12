@@ -194,8 +194,12 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
         )
         .await??;
         ensure!(
-            first_terminal.params.as_ref().and_then(|params| params.get("threadId"))
-                .and_then(|id| id.as_str()) == Some(thread_id.as_str()),
+            first_terminal
+                .params
+                .as_ref()
+                .and_then(|params| params.get("threadId"))
+                .and_then(|id| id.as_str())
+                == Some(thread_id.as_str()),
             "owner assignment turn finished on a foreign thread"
         );
         ensure!(
@@ -203,7 +207,8 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
                 .params
                 .as_ref()
                 .and_then(|params| params.pointer("/turn/id"))
-                .and_then(|id| id.as_str()) == Some(first_started.turn.id.as_str()),
+                .and_then(|id| id.as_str())
+                == Some(first_started.turn.id.as_str()),
             "owner assignment turn was not the expected Core turn"
         );
         ensure!(
@@ -211,7 +216,8 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
                 .params
                 .as_ref()
                 .and_then(|params| params.pointer("/turn/status"))
-                .and_then(|status| status.as_str()) == Some("completed"),
+                .and_then(|status| status.as_str())
+                == Some("completed"),
             "initial direct user Worker assignment must finish successfully"
         );
 
