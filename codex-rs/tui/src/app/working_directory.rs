@@ -433,6 +433,7 @@ impl App {
                 source_root: None,
                 source_sha: None,
                 task_kind: None,
+                required_gates: None,
             });
         }
         if is_new_worktree {

@@ -38,6 +38,7 @@ fn every_external_role_and_scope_binds_canonically() {
                 source_root: None,
                 source_sha: None,
                 task_kind: None,
+                required_gates: None,
             }),
             AdaptiveWorkerContext {
                 role: expected,

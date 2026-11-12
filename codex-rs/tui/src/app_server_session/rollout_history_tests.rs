@@ -512,6 +512,7 @@ async fn initial_resume_applies_only_the_current_startup_worker_binding() -> Res
         source_root: None,
         source_sha: None,
         task_kind: None,
+        required_gates: None,
     });
     let mut app_server = crate::start_embedded_app_server_for_picker(&bound_config).await?;
     let bound = app_server

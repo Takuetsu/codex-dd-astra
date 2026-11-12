@@ -1055,6 +1055,7 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
         source_root: None,
         source_sha: None,
         task_kind: None,
+        required_gates: None,
     });
     let (mut app_server, requests, proxy) = Box::pin(start_recording_app_server(
         &app.config,
