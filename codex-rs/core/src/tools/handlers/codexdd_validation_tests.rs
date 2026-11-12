@@ -482,7 +482,11 @@ exit 0
         String::from_utf8(output.stdout).expect("Git UTF-8")
     };
     git(&["init", "-q"]);
-    git(&["add", "scripts/codexdd-test-workpacket.ps1", "scripts/codexdd-test-independent.ps1"]);
+    git(&[
+        "add",
+        "scripts/codexdd-test-workpacket.ps1",
+        "scripts/codexdd-test-independent.ps1",
+    ]);
     git(&[
         "-c",
         "user.name=CodexDD two-worker acceptance",
@@ -560,14 +564,12 @@ exit 0
     assert_eq!(source_receipt["stages"].as_array().map(Vec::len), Some(1));
     let emitted_source = std::iter::from_fn(|| source_events.try_recv().ok())
         .filter_map(|event| match event.msg {
-            codex_protocol::protocol::EventMsg::ItemCompleted(completed) => {
-                match completed.item {
-                    TurnItem::DynamicToolCall(item) if item.tool == TOOL_NAME => {
-                        Some((completed.thread_id, item))
-                    }
-                    _ => None,
+            codex_protocol::protocol::EventMsg::ItemCompleted(completed) => match completed.item {
+                TurnItem::DynamicToolCall(item) if item.tool == TOOL_NAME => {
+                    Some((completed.thread_id, item))
                 }
-            }
+                _ => None,
+            },
             _ => None,
         })
         .last()
@@ -624,9 +626,8 @@ exit 0
     .await
     .expect("independent native Validator cannot hang")
     .expect("separately bound native review must finish");
-    let review_receipt: serde_json::Value =
-        serde_json::from_str(&review_output.log_output())
-            .expect("real structured independent review output");
+    let review_receipt: serde_json::Value = serde_json::from_str(&review_output.log_output())
+        .expect("real structured independent review output");
     if review_receipt["status"] != "pass" {
         eprintln!("3C.1b.2f native Validator receipt: {review_receipt}");
     }
@@ -639,20 +640,21 @@ exit 0
         canonical.display().to_string(),
     );
     assert_eq!(review_receipt["stages"].as_array().map(Vec::len), Some(1));
-    assert_eq!(review_receipt["stages"][0]["stage"], "independent-candidate-check");
+    assert_eq!(
+        review_receipt["stages"][0]["stage"],
+        "independent-candidate-check"
+    );
     assert_eq!(review_receipt["stages"][0]["native_exit_code"], 0);
     assert_ne!(review_receipt["run_id"], source_receipt["run_id"]);
 
     let emitted_review = std::iter::from_fn(|| review_events.try_recv().ok())
         .filter_map(|event| match event.msg {
-            codex_protocol::protocol::EventMsg::ItemCompleted(completed) => {
-                match completed.item {
-                    TurnItem::DynamicToolCall(item) if item.tool == INDEPENDENT_TOOL_NAME => {
-                        Some((completed.thread_id, item))
-                    }
-                    _ => None,
+            codex_protocol::protocol::EventMsg::ItemCompleted(completed) => match completed.item {
+                TurnItem::DynamicToolCall(item) if item.tool == INDEPENDENT_TOOL_NAME => {
+                    Some((completed.thread_id, item))
                 }
-            }
+                _ => None,
+            },
             _ => None,
         })
         .last()
@@ -687,16 +689,18 @@ exit 0
     .expect("refusal cannot hang")
     .expect("refusal must emit typed completed tool receipt");
     let blocked: serde_json::Value =
-        serde_json::from_str(&blocked_output.log_output())
-            .expect("structured refusal");
+        serde_json::from_str(&blocked_output.log_output()).expect("structured refusal");
     assert_eq!(blocked["status"], "error");
     assert_eq!(blocked["error_type"], "source_identity_mismatch");
     assert!(!blocked_output.success_for_logging());
 
     // A changed clean HEAD also must not be accepted under a stale pin,
     // even though the same script is still available.
-    fs::write(source_root.join("source-change.txt"), "new source without owner approval")
-        .expect("fixture source edit");
+    fs::write(
+        source_root.join("source-change.txt"),
+        "new source without owner approval",
+    )
+    .expect("fixture source edit");
     git(&["add", "source-change.txt"]);
     git(&[
         "-c",
@@ -722,8 +726,7 @@ exit 0
     .expect("stale-source refusal cannot hang")
     .expect("stale-source refusal is a completed tool result");
     let stale_receipt: serde_json::Value =
-        serde_json::from_str(&stale_output.log_output())
-            .expect("typed stale-source refusal");
+        serde_json::from_str(&stale_output.log_output()).expect("typed stale-source refusal");
     assert_eq!(stale_receipt["status"], "error");
     assert_eq!(stale_receipt["error_type"], "source_identity_mismatch");
     assert!(!stale_output.success_for_logging());
