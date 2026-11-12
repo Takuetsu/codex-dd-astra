@@ -6,8 +6,8 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
-use crate::adaptive_evidence::AdaptiveIndependentReviewRequirement;
 use crate::adaptive_evidence::AdaptiveEvidenceResolveError;
+use crate::adaptive_evidence::AdaptiveIndependentReviewRequirement;
 use crate::adaptive_evidence::AdaptiveSourceGateRequirement;
 use crate::adaptive_worker::AdaptiveTaskKind;
 use crate::adaptive_worker::AdaptiveWorkerRole;
@@ -303,7 +303,10 @@ impl AdaptiveGateLedger {
         run_id: &str,
         minimum_completed_at_ms: u64,
     ) -> Result<(), AdaptiveEvidenceResolveError> {
-        if !self.required.contains(&AdaptiveRequiredGate::IndependentValidation) {
+        if !self
+            .required
+            .contains(&AdaptiveRequiredGate::IndependentValidation)
+        {
             return Err(AdaptiveEvidenceResolveError::GateScopeMismatch);
         }
         let requirement = self.independent_requirement(

@@ -1,10 +1,10 @@
-use super::adaptive_evidence::AdaptiveIndependentReviewRequirement;
 use super::adaptive_evidence::AdaptiveEvidenceKind;
 use super::adaptive_evidence::AdaptiveEvidenceOutcome;
 use super::adaptive_evidence::AdaptiveEvidenceRecord;
 use super::adaptive_evidence::AdaptiveEvidenceRegistration;
 use super::adaptive_evidence::AdaptiveEvidenceRegistry;
 use super::adaptive_evidence::AdaptiveEvidenceResolveError;
+use super::adaptive_evidence::AdaptiveIndependentReviewRequirement;
 use super::adaptive_evidence::AdaptiveSourceGateRequirement;
 use super::adaptive_evidence::record_from_item_completion;
 use super::adaptive_gate_prerequisites::AdaptiveGateCheckpoint;
@@ -1255,7 +1255,10 @@ fn codexdd_046_3c1b2a_independent_receipt_contract_and_restart_drop_authority() 
     let validator = ThreadId::new();
     let review = synthetic_independent_review_receipt(validator, root.path(), SOURCE_SHA_A);
     let mut registry = AdaptiveEvidenceRegistry::default();
-    assert_eq!(registry.register(review), AdaptiveEvidenceRegistration::Registered);
+    assert_eq!(
+        registry.register(review),
+        AdaptiveEvidenceRegistration::Registered
+    );
     let req = AdaptiveIndependentReviewRequirement {
         validation_thread_id: validator,
         implementation_thread_id: impl_thread,
@@ -1266,7 +1269,11 @@ fn codexdd_046_3c1b2a_independent_receipt_contract_and_restart_drop_authority() 
         expected_run_id: "native-review-789",
         minimum_completed_at_ms: 1_999,
     };
-    assert!(registry.match_native_independent_review("native-review-receipt", &req).is_ok());
+    assert!(
+        registry
+            .match_native_independent_review("native-review-receipt", &req)
+            .is_ok()
+    );
     let mut ledger = AdaptiveGateLedger::new(
         "isolated source packet",
         root.path(),
@@ -1428,4 +1435,3 @@ fn codexdd_046_3c1b2a_wrong_source_or_conflict_revokes_native_review() {
     assert_eq!(ledger.outstanding(&registry).len(), 1);
     assert!(!ledger.ready_for_owner_qa(&registry));
 }
-

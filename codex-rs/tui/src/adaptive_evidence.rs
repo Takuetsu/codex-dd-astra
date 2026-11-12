@@ -116,11 +116,13 @@ impl AdaptiveEvidenceRecord {
         };
         let correct_native_producer = matches!(
             (worker.role, self.tool_name.as_deref()),
-            (AdaptiveWorkerRole::Implementation, Some(CODEXDD_VALIDATION_TOOL_NAME))
-                | (
-                    AdaptiveWorkerRole::Validation,
-                    Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME)
-                )
+            (
+                AdaptiveWorkerRole::Implementation,
+                Some(CODEXDD_VALIDATION_TOOL_NAME)
+            ) | (
+                AdaptiveWorkerRole::Validation,
+                Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME)
+            )
         );
         if !correct_native_producer
             || pin.task_kind != AdaptiveTaskKind::SourceChange
@@ -345,8 +347,7 @@ impl AdaptiveEvidenceRegistry {
         }
         if record.kind != AdaptiveEvidenceKind::DynamicToolCall
             || record.tool_name.as_deref() != Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME)
-            || record.validation_profile.as_deref()
-                != Some(CODEXDD_INDEPENDENT_VALIDATION_PROFILE)
+            || record.validation_profile.as_deref() != Some(CODEXDD_INDEPENDENT_VALIDATION_PROFILE)
         {
             return Err(AdaptiveEvidenceResolveError::MissingProvenance);
         }
@@ -789,7 +790,10 @@ fn native_source_provenance(
     let profile = arguments.get("profile").and_then(serde_json::Value::as_str);
     let expected_native_profile = match tool.as_str() {
         CODEXDD_VALIDATION_TOOL_NAME => {
-            matches!(profile, Some("targeted" | CODEXDD_WORK_PACKET_PROFILE | "release"))
+            matches!(
+                profile,
+                Some("targeted" | CODEXDD_WORK_PACKET_PROFILE | "release")
+            )
         }
         CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME => {
             profile == Some(CODEXDD_INDEPENDENT_VALIDATION_PROFILE)
