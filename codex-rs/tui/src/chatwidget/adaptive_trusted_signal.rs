@@ -576,15 +576,20 @@ impl ChatWidget {
             );
         }
         if self.thread_id.is_none_or(|review_thread| {
-            state.review_origin_thread_id.is_none_or(|source_thread| source_thread == review_thread)
+            state
+                .review_origin_thread_id
+                .is_none_or(|source_thread| source_thread == review_thread)
         }) {
-            return Err("current Validation Worker lacks a distinct authenticated source handoff".to_string());
+            return Err(
+                "current Validation Worker lacks a distinct authenticated source handoff"
+                    .to_string(),
+            );
         }
-        if !ledger.independent_review_referenced_by(
-            &state.evidence_registry,
-            evidence_refs,
-        ) {
-            return Err("READY signal must cite a current Core-native independent review receipt".to_string());
+        if !ledger.independent_review_referenced_by(&state.evidence_registry, evidence_refs) {
+            return Err(
+                "READY signal must cite a current Core-native independent review receipt"
+                    .to_string(),
+            );
         }
         let outstanding = ledger.outstanding(&state.evidence_registry);
         if !outstanding.is_empty() {

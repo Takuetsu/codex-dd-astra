@@ -36,19 +36,18 @@ impl ChatWidget {
             &self.adaptive_effort.worker_context,
             self.adaptive_effort.assignment_preflight.as_ref(),
         );
-        let independent_receipt = if record.tool_name.as_deref()
-            == Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME)
-        {
-            record.native_source_provenance.as_ref().map(|native| {
-                (
-                    record.evidence_id.clone(),
-                    native.run_id.clone(),
-                    native.completed_at_ms,
-                )
-            })
-        } else {
-            None
-        };
+        let independent_receipt =
+            if record.tool_name.as_deref() == Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME) {
+                record.native_source_provenance.as_ref().map(|native| {
+                    (
+                        record.evidence_id.clone(),
+                        native.run_id.clone(),
+                        native.completed_at_ms,
+                    )
+                })
+            } else {
+                None
+            };
         self.adaptive_effort.evidence_registry.register(record);
         // Only a real fresh-Worker handoff has the parent identity, the
         // original owner-gate ledger and the source receipts for rechecking.
@@ -305,8 +304,7 @@ mod tests {
                 1_999,
             )
             .expect("source receipt matches exact Implementation Worker");
-        chat.adaptive_effort.workflow_terminal =
-            Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+        chat.adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,
             authorized_scope: scope.to_string(),
@@ -327,7 +325,11 @@ mod tests {
             "review-run",
         );
         chat.register_adaptive_evidence(&review_receipt);
-        let ledger = chat.adaptive_effort.gate_ledger.as_ref().expect("review ledger");
+        let ledger = chat
+            .adaptive_effort
+            .gate_ledger
+            .as_ref()
+            .expect("review ledger");
         assert!(
             ledger
                 .outstanding(&chat.adaptive_effort.evidence_registry)

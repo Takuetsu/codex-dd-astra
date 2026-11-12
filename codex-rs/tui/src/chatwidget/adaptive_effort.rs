@@ -191,13 +191,22 @@ impl AdaptiveEffortState {
         };
         // Preserve the same pinned source for the automatically spawned independent
         // validation of this exact scope, never for an unrelated fresh assignment.
-        let assignment_preflight = binding.and_then(|binding| {
-            self.worker_context
-                .authorized_scope
-                .as_deref()
-                .filter(|scope| scope.trim() == binding.authorized_scope.trim())
-                .and(self.assignment_preflight.clone())
-        });
+        let assignment_preflight = if self.worker_assignment_locked
+            && self.worker_context.role == AdaptiveWorkerRole::Implementation
+            && self.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        {
+            binding
+                .filter(|binding| binding.role == AdaptiveWorkerRole::Validation)
+                .and_then(|binding| {
+                    self.worker_context
+                        .authorized_scope
+                        .as_deref()
+                        .filter(|scope| scope.trim() == binding.authorized_scope.trim())
+                        .and(self.assignment_preflight.clone())
+                })
+        } else {
+            None
+        };
         let implementation_phase = (worker_context.role == AdaptiveWorkerRole::Implementation
             && self.complexity_class.is_some())
         .then_some(AdaptiveImplementationPhase::Implementation);
@@ -1021,18 +1030,9 @@ mod tests {
         };
         let mut validator = parent.fresh_for_new_worker(Some(&binding));
         validator.inherit_authorized_independent_review(&parent, &binding, parent_thread_id);
-        assert_eq!(
-            validator.review_origin_thread_id,
-            Some(parent_thread_id)
-        );
-        assert_eq!(
-            validator.assignment_preflight,
-            parent.assignment_preflight
-        );
-        assert_eq!(
-            validator.gate_ledger,
-            parent.gate_ledger
-        );
+        assert_eq!(validator.review_origin_thread_id, Some(parent_thread_id));
+        assert_eq!(validator.assignment_preflight, parent.assignment_preflight);
+        assert_eq!(validator.gate_ledger, parent.gate_ledger);
         assert_eq!(validator.workflow_terminal, None);
         assert_eq!(
             validator
@@ -1044,9 +1044,9 @@ mod tests {
             2,
             "no source or independent success is inferred from the transfer"
         );
-        let persisted = serde_json::to_value(validator.durable_workflow_snapshot(
-            codex_protocol::ThreadId::new(),
-        ))
+        let persisted = serde_json::to_value(
+            validator.durable_workflow_snapshot(codex_protocol::ThreadId::new()),
+        )
         .expect("requirements-only snapshot");
         assert!(
             persisted.get("reviewOriginThreadId").is_none(),
@@ -1068,11 +1068,7 @@ mod tests {
         let mut not_ready = parent.clone();
         not_ready.workflow_terminal = None;
         let mut validator = not_ready.fresh_for_new_worker(Some(&binding));
-        validator.inherit_authorized_independent_review(
-            &not_ready,
-            &binding,
-            parent_thread_id,
-        );
+        validator.inherit_authorized_independent_review(&not_ready, &binding, parent_thread_id);
         assert_eq!(validator.review_origin_thread_id, None);
         assert!(validator.gate_ledger.is_none());
 
@@ -1093,11 +1089,7 @@ mod tests {
             .expect("pin")
             .source_sha = "b".repeat(40);
         let mut rejected = wrong_source.fresh_for_new_worker(Some(&binding));
-        rejected.inherit_authorized_independent_review(
-            &wrong_source,
-            &binding,
-            parent_thread_id,
-        );
+        rejected.inherit_authorized_independent_review(&wrong_source, &binding, parent_thread_id);
         assert_eq!(rejected.review_origin_thread_id, None);
         assert!(rejected.gate_ledger.is_none());
     }

@@ -1085,6 +1085,9 @@ impl App {
                 crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,
             });
         }
+        let handoff_pin = fresh_adaptive_effort
+            .review_origin_thread_id
+            .and(fresh_adaptive_effort.assignment_preflight.as_ref());
         if let Some(binding) = worker_binding {
             config.adaptive_worker = Some(codex_config::config_toml::AdaptiveWorkerConfigToml {
                 role: match binding.role {
@@ -1102,15 +1105,9 @@ impl App {
                     }
                 },
                 authorized_scope: Some(binding.authorized_scope),
-                source_root: fresh_adaptive_effort
-                    .assignment_preflight
-                    .as_ref()
-                    .map(|pin| pin.source_root.clone()),
-                source_sha: fresh_adaptive_effort
-                    .assignment_preflight
-                    .as_ref()
-                    .map(|pin| pin.source_sha.clone()),
-                task_kind: fresh_adaptive_effort.assignment_preflight.as_ref().map(|pin| {
+                source_root: handoff_pin.map(|pin| pin.source_root.clone()),
+                source_sha: handoff_pin.map(|pin| pin.source_sha.clone()),
+                task_kind: handoff_pin.map(|pin| {
                     match pin.task_kind {
                         crate::adaptive_worker::AdaptiveTaskKind::SourceChange => "source_change",
                         crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => {
