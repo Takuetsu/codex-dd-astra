@@ -349,6 +349,7 @@ exit 0
                     source_root: Some(expected_root.display().to_string()),
                     source_sha: Some(expected_sha.clone()),
                     task_kind: Some("source_change".to_string()),
+                    required_gates: None,
                 });
             },
         )
@@ -780,6 +781,7 @@ fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() 
         source_root: Some(nested.display().to_string()),
         source_sha: Some(sha.clone()),
         task_kind: Some("source_change".to_string()),
+        required_gates: None,
     };
     assert_eq!(
         validate_native_authorized_target(&nested, Some(&binding), &sha),
@@ -865,6 +867,7 @@ fn native_authorized_target_keeps_legacy_unpinned_compatibility() {
         source_root: None,
         source_sha: None,
         task_kind: None,
+        required_gates: None,
     };
     let unpinned = temp.path();
     let sha = "a".repeat(40);
@@ -891,6 +894,7 @@ fn codexdd_046_3b2_native_role_gate_rejects_independent_workers() {
         source_root: None,
         source_sha: None,
         task_kind: None,
+        required_gates: None,
     };
     for role in [
         AdaptiveWorkerRoleToml::Validation,
@@ -1018,6 +1022,7 @@ fn codexdd_046_3b2d_protected_mechanical_requires_core_bound_source() {
         source_root: None,
         source_sha: None,
         task_kind: None,
+        required_gates: None,
     };
     for worker in [None, Some(&legacy)] {
         let blocker = native_mechanical_source_authority_blocker(Some(trigger), worker)
@@ -1158,6 +1163,7 @@ fn codexdd_046_3c1b2b_independent_review_requires_bound_validation_role_and_scop
         source_root: Some(root.display().to_string()),
         source_sha: Some(sha.clone()),
         task_kind: Some("source_change".to_string()),
+        required_gates: None,
     };
     assert!(
         validate_native_independent_authorized_target(root, None, &sha)
@@ -1233,6 +1239,7 @@ fn codexdd_046_3c1b2b_independent_review_checks_real_git_root_head_and_clean_sou
         source_root: Some(root.display().to_string()),
         source_sha: Some(sha.clone()),
         task_kind: Some("source_change".to_string()),
+        required_gates: None,
     };
     assert_eq!(
         validate_native_independent_authorized_target(&root, Some(&worker), &sha),

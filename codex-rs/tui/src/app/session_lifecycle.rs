@@ -1117,6 +1117,9 @@ impl App {
                     }
                     .to_string()
                 }),
+                // Gate authority lives only in the originating owner ledger.
+                // A model-generated Validator handoff cannot rewrite requirements.
+                required_gates: None,
             });
         }
         match app_server

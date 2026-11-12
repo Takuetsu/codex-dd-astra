@@ -473,6 +473,7 @@ impl CoreFirstWorkerAuthority {
             source_root,
             source_sha,
             task_kind: snapshot.task_kind.clone(),
+            required_gates: None,
         });
         self.accepted_user_origin = true;
         self.locked = true;

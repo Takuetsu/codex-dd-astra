@@ -18,7 +18,7 @@ use crate::adaptive_worker::AdaptiveWorkerPreflight;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::adaptive_worker::NewWorkerBinding;
-use crate::adaptive_worker::parse_adaptive_worker_assignment_with_preflight;
+use crate::adaptive_worker::parse_adaptive_owner_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
@@ -339,10 +339,11 @@ impl AdaptiveEffortState {
             return Ok(false);
         }
         self.worker_assignment_locked = true;
-        match parse_adaptive_worker_assignment_with_preflight(text) {
-            Ok(Some((worker_context, assignment_preflight))) => {
+        match parse_adaptive_owner_assignment(text) {
+            Ok(Some((worker_context, assignment_preflight, gate_ledger))) => {
                 self.worker_context = worker_context;
                 self.assignment_preflight = assignment_preflight;
+                self.gate_ledger = gate_ledger;
                 Ok(true)
             }
             Ok(None) => Ok(false),
@@ -1371,6 +1372,75 @@ mod tests {
         state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
         state.paused_by_user = true;
         assert!(!state.implementation_mechanical_validation_active());
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2e_owner_first_turn_gates_survive_route_but_cannot_be_rewritten() {
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        use std::process::Command;
+
+        let root = tempfile::tempdir().expect("isolated pinned gate fixture");
+        for args in [
+            vec!["init", "-q"],
+            vec![
+                "-c",
+                "user.name=CodexDD Gate Fixture",
+                "-c",
+                "user.email=codexdd@example.test",
+                "commit",
+                "--allow-empty",
+                "-q",
+                "-m",
+                "owner gate authority",
+            ],
+        ] {
+            let status = Command::new("git")
+                .arg("-C")
+                .arg(root.path())
+                .args(&args)
+                .status()
+                .expect("Git available");
+            assert!(status.success(), "fixture Git command failed");
+        }
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root.path())
+            .args(["rev-parse", "HEAD"])
+            .output()
+            .expect("candidate HEAD");
+        assert!(output.status.success());
+        let sha = String::from_utf8(output.stdout).expect("UTF8 HEAD");
+        let manifest = r#"[{ kind = "source_profile", profile = "work_packet" }, { kind = "independent_validation" }]"#;
+        let first = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"locked owner QA task\"\nsource_root = '{}'\nsource_sha = \"{}\"\ntask_kind = \"source_change\"\nrequired_gates = {manifest}\n\nImplement the exact assigned task.",
+            root.path().display(),
+            sha.trim()
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
+        let original_ledger = state.gate_ledger.clone().expect("issued by first owner turn");
+        let outstanding = original_ledger.outstanding(&state.evidence_registry);
+        assert_eq!(outstanding.len(), 2);
+        assert!(outstanding.iter().any(|item| {
+            item.gate == AdaptiveRequiredGate::IndependentValidation
+        }));
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+        state.activate_adaptive_family(AdaptiveFamily::Sol61, false);
+        assert_eq!(state.gate_ledger, Some(original_ledger.clone()));
+        assert_eq!(
+            state.observe_worker_assignment_text(
+                "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"different scope\"\nrequired_gates = []\n\nRemove gates."
+            ),
+            Ok(false),
+            "later user turns cannot clear or replace the original requirements"
+        );
+        assert_eq!(state.gate_ledger, Some(original_ledger));
+        let snapshot = state.durable_workflow_snapshot(codex_protocol::ThreadId::new());
+        let requirements = snapshot.gate_checkpoint.expect("pending gates are durable");
+        assert!(requirements.get("requiredGates").is_some());
+        assert!(requirements.get("sourceRefs").is_none());
+        assert!(requirements.get("independentReviewRef").is_none());
+        assert_eq!(state.workflow_terminal, None);
     }
 
     #[test]

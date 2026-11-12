@@ -170,6 +170,20 @@ pub enum AdaptiveWorkerRoleToml {
     Repair,
 }
 
+/// Owner-specified, bounded gate contract. A typed ledger is constructed
+/// only on an original externally authorized first assignment. No model turn
+/// can add, remove or reinterpret these required gates.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(deny_unknown_fields)]
+pub struct AdaptiveOwnerGateToml {
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ports: Option<Vec<u16>>,
+}
+
 /// Immutable governance context bound to the initial Worker by its launcher.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
@@ -184,6 +198,10 @@ pub struct AdaptiveWorkerConfigToml {
     /// Bounded task classifier, never a new permission/Worker role.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub task_kind: Option<String>,
+    /// Omitted for legacy bindings; an omission cannot clear READY gates.
+    /// In a first-message header, use inline TOML tables on one line.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_gates: Option<Vec<AdaptiveOwnerGateToml>>,
 }
 
 /// Decode a user-origin first-message Worker header without granting tool rights.
@@ -263,6 +281,7 @@ pub fn parse_adaptive_worker_first_message(
         source_root: Option<String>,
         source_sha: Option<String>,
         task_kind: Option<String>,
+        required_gates: Option<Vec<AdaptiveOwnerGateToml>>,
     }
     let parsed: FirstMessageAssignment = toml::from_str(&header)
         .map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
@@ -272,6 +291,7 @@ pub fn parse_adaptive_worker_first_message(
         source_root: parsed.adaptive_worker.source_root,
         source_sha: parsed.adaptive_worker.source_sha,
         task_kind: parsed.adaptive_worker.task_kind,
+        required_gates: parsed.adaptive_worker.required_gates,
     };
     if worker.role == AdaptiveWorkerRoleToml::Unspecified {
         return Err("Worker role must be implementation, validation, or repair".to_string());
@@ -1224,6 +1244,47 @@ task_kind = "benchmark"
             Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         );
         assert_eq!(worker.task_kind.as_deref(), Some("benchmark"));
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2e_owner_manifest_is_typed_and_unknown_fields_are_refused() {
+        let root = if cfg!(windows) {
+            r"C:\approved\isolated-gate-candidate"
+        } else {
+            "/tmp/approved/isolated-gate-candidate"
+        };
+        let header = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"owner-required task\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\ntask_kind = \"source_change\"\nrequired_gates = [{{ kind = \"source_profile\", profile = \"work_packet\" }}, {{ kind = \"independent_validation\" }}]\n"
+        );
+        let config: ConfigToml = toml::from_str(&header).expect("typed startup gate manifest");
+        let gates = config
+            .adaptive_worker
+            .as_ref()
+            .and_then(|worker| worker.required_gates.as_ref())
+            .expect("exact owner-specified gates");
+        assert_eq!(gates.len(), 2);
+        assert_eq!(gates[0].kind, "source_profile");
+        assert_eq!(gates[0].profile.as_deref(), Some("work_packet"));
+        assert_eq!(gates[1].kind, "independent_validation");
+        assert!(gates[1].profile.is_none() && gates[1].ports.is_none());
+
+        let first = format!("{header}\nImplement only this approved scope.");
+        let parsed = parse_adaptive_worker_first_message(&first)
+            .expect("same owner first-message grammar")
+            .expect("first-message Worker binding");
+        assert_eq!(
+            parsed.required_gates,
+            config.adaptive_worker.expect("startup binding").required_gates
+        );
+
+        let bad = header.replace(
+            r#"kind = "independent_validation" }"#,
+            r#"kind = "independent_validation", unexpected = "pass" }"#,
+        );
+        assert!(
+            toml::from_str::<ConfigToml>(&bad).is_err(),
+            "unrecognized gate fields must never become inferred authority"
+        );
     }
 
     #[test]

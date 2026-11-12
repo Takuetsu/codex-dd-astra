@@ -1850,7 +1850,7 @@ pub(crate) async fn start_thread_with_request_handle(
     let startup_binding = config
         .adaptive_worker
         .as_ref()
-        .map(crate::adaptive_worker::configured_worker_binding)
+        .map(crate::adaptive_worker::configured_worker_authority)
         .transpose()
         .map_err(|message| color_eyre::eyre::eyre!(message))?;
     let request_id = RequestId::String(format!("startup-thread-start-{}", Uuid::new_v4()));
@@ -1874,7 +1874,7 @@ pub(crate) async fn start_thread_with_request_handle(
         started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
             .await?;
     started.task_tools_available = task_tools_available;
-    if let Some((context, preflight)) = startup_binding {
+    if let Some((context, preflight, ledger)) = startup_binding {
         // An explicitly configured role or scope is immutable; an intentionally
         // unspecified empty startup role remains eligible for its first header.
         let lock_assignment = context.role
@@ -1882,6 +1882,7 @@ pub(crate) async fn start_thread_with_request_handle(
             || context.authorized_scope.is_some();
         started.session.adaptive_effort.worker_context = context;
         started.session.adaptive_effort.assignment_preflight = preflight;
+        started.session.adaptive_effort.gate_ledger = ledger;
         started.session.adaptive_effort.worker_assignment_locked = lock_assignment;
     }
     Ok(started)
@@ -3077,6 +3078,7 @@ mod tests {
             source_root: Some(root.to_string()),
             source_sha: Some(sha.clone()),
             task_kind: Some("source_change".to_string()),
+            required_gates: None,
         });
         let local =
             thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
@@ -3103,6 +3105,7 @@ mod tests {
             source_root: None,
             source_sha: None,
             task_kind: None,
+            required_gates: None,
         });
         let legacy =
             thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
