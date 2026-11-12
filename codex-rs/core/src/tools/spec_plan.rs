@@ -1244,24 +1244,28 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     // role/root/SHA/scope check immediately before and after native execution.
     // Terminalization remains report-only, and the Implementation LVO is
     // never exposed as the independent review tool.
-    let has_validator_binding = turn_context.config.adaptive_worker.as_ref().is_some_and(|worker| {
-        matches!(
-            &worker.role,
-            codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
-        ) && worker.task_kind.as_deref() == Some("source_change")
-            && worker
-                .authorized_scope
-                .as_deref()
-                .is_some_and(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
-            && worker
-                .source_root
-                .as_deref()
-                .is_some_and(|root| !root.trim().is_empty())
-            && worker
-                .source_sha
-                .as_deref()
-                .is_some_and(|sha| sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit()))
-    });
+    let has_validator_binding =
+        turn_context
+            .config
+            .adaptive_worker
+            .as_ref()
+            .is_some_and(|worker| {
+                matches!(
+                    &worker.role,
+                    codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+                ) && worker.task_kind.as_deref() == Some("source_change")
+                    && worker
+                        .authorized_scope
+                        .as_deref()
+                        .is_some_and(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
+                    && worker
+                        .source_root
+                        .as_deref()
+                        .is_some_and(|root| !root.trim().is_empty())
+                    && worker.source_sha.as_deref().is_some_and(|sha| {
+                        sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+                    })
+            });
     if has_validator_binding
         && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
         && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)

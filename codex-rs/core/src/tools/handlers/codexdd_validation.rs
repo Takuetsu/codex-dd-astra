@@ -202,7 +202,9 @@ impl ToolExecutor<ToolInvocation> for CodexDDIndependentValidationHandler {
             "profile".to_string(),
             JsonSchema::string_enum(
                 vec![json!("independent_review")],
-                Some("Only the owner-authorized, repo-owned independent review profile".to_string()),
+                Some(
+                    "Only the owner-authorized, repo-owned independent review profile".to_string(),
+                ),
             ),
         )]
         .into_iter()
@@ -378,9 +380,7 @@ impl CodexDDValidationHandler {
         };
         // Keep preflight errors as typed, non-PASS LVO tool completions. A
         // generic exception is not a usable receipt for an unfinished Worker.
-        let script_path = repository_root
-            .join("scripts")
-            .join(profile.script_name());
+        let script_path = repository_root.join("scripts").join(profile.script_name());
         // Core is the authority for where the native LVO profile really runs.
         // A TUI-only preflight is insufficient if the session CWD changes or
         // differs from the delegate's execution environment.
@@ -400,16 +400,18 @@ impl CodexDDValidationHandler {
         .err()
         .map(|message| ("source_identity_mismatch", message))
         .or_else(|| {
-            (!independent).then(|| {
-                native_mechanical_source_authority_blocker(
-                    codex_analytics::TurnAnalyticsMetadata::turn_trigger(
-                        invocation.turn.turn_metadata_state.as_ref(),
+            (!independent)
+                .then(|| {
+                    native_mechanical_source_authority_blocker(
+                        codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+                            invocation.turn.turn_metadata_state.as_ref(),
+                        )
+                        .as_deref(),
+                        invocation.turn.config.adaptive_worker.as_ref(),
                     )
-                    .as_deref(),
-                    invocation.turn.config.adaptive_worker.as_ref(),
-                )
-                .map(|message| ("source_authority_unavailable", message))
-            }).flatten()
+                    .map(|message| ("source_authority_unavailable", message))
+                })
+                .flatten()
         })
         .or_else(|| {
             validate_repository_profile(&repository_root, profile)
@@ -712,7 +714,11 @@ async fn emit_validation_result(
     } else {
         validation_failure_fingerprint(profile, summary)
     };
-    let receipt_tool_name = if independent { INDEPENDENT_TOOL_NAME } else { TOOL_NAME };
+    let receipt_tool_name = if independent {
+        INDEPENDENT_TOOL_NAME
+    } else {
+        TOOL_NAME
+    };
     let receipt_arguments = json!({
         "profile": profile.tool_name(),
         "result": summary.status.clone(),
@@ -1039,15 +1045,13 @@ fn validate_native_independent_authorized_target(
     let (Some(source_root), Some(source_sha)) =
         (worker.source_root.as_deref(), worker.source_sha.as_deref())
     else {
-        return Err("SETUP_BLOCKED: independent Validator requires both Core-bound source root and SHA.".to_string());
+        return Err(
+            "SETUP_BLOCKED: independent Validator requires both Core-bound source root and SHA."
+                .to_string(),
+        );
     };
-    validate_bound_native_source_target(
-        repository_root,
-        source_root,
-        source_sha,
-        observed_head_sha,
-    )
-    .map_err(|message| message.replace("native LVO", "native independent Validator"))
+    validate_bound_native_source_target(repository_root, source_root, source_sha, observed_head_sha)
+        .map_err(|message| message.replace("native LVO", "native independent Validator"))
 }
 
 /// Both native producers use the same read-only Git identity guard, but their
