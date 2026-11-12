@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-12.
 **Parent source:** `acdb9d348a421ddf7365a847e21ffe0da6963806`.
-**State:** source checkpoint; native Windows PowerShell profile/contract acceptance pending. No real Core-authenticated independent PASS or owner READY is asserted.
+**State:** 3C.1b.2d native Windows profile/contract fixtures accepted on 2026-11-12 at `64cbda642392391f2bf5c27863bfb36429af51b7`. No real Core-authenticated independent PASS or owner READY is asserted.
 
 ## Verified prerequisite
 
@@ -28,3 +28,9 @@ The already implemented Core-native `run_codexdd_independent_validation` handler
 4. Run disposable, source-matched native Core+TUI+app-server end-to-end tests, followed by remaining reliability phases, full Windows acceptance, owner-controlled release/installation, and only then an approximately seven-day single BREAKWATER milestone soak.
 
 **Safety:** No active BREAKWATER/Cycle Vengeance worktrees, deployment, 0.4.5 unfreeze, security weakening, arbitrary script execution, and no released 0.4.6 build.
+
+## Acceptance checkpoint — 2026-11-12
+
+[GitHub Actions #43258603289](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43258603289), exact source `64cbda642392391f2bf5c27863bfb36429af51b7`: **SUCCESS**. Source preflight, Rustfmt, native Windows PowerShell independent profile syntax/fixed-stage checks, shared contract-v1 PASS/FAIL/ERROR classification and existing targeted fixture compatibility passed. The first run [#43257796218](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43257796218) detected an isolated test-harness assignment to PowerShell's reserved `$Error` variable; it was corrected as `$errorExitCode`. The workflow now includes all independent profile script paths in its push filter so script-only changes trigger validation.
+
+**Explicit nonclaims:** These are contract fixtures, not completion of the actual six-stage native profile through Core, not real two-Worker app-server handoff, not owner gate issuance, not 3C.1 completion, not a production install and not a BREAKWATER coding authorization.
