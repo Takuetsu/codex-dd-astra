@@ -550,7 +550,10 @@ impl ChatWidget {
     /// are checked separately from a same-turn successful tool response.
     /// 3C.1a deliberately refuses positive READY until actual validated
     /// independent + optional runtime-health receipts can be admitted.
-    pub(super) fn owner_qa_prerequisite_admission(&self, evidence_refs: &[String]) -> Result<(), String> {
+    pub(super) fn owner_qa_prerequisite_admission(
+        &self,
+        evidence_refs: &[String],
+    ) -> Result<(), String> {
         let state = &self.adaptive_effort;
         if state.worker_context.role != AdaptiveWorkerRole::Validation
             || !state.worker_assignment_locked
