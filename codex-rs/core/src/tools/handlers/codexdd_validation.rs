@@ -38,6 +38,7 @@ use serde::Serialize;
 use serde_json::json;
 
 const TOOL_NAME: &str = "run_codexdd_validation";
+const INDEPENDENT_TOOL_NAME: &str = "run_codexdd_independent_validation";
 const CONTRACT_VERSION: u64 = 1;
 const EVENT_PREFIX: &str = "CODEXDD_VALIDATION_JSON ";
 const MAX_RETAINED_RUNS_PER_REPOSITORY: usize = 20;
@@ -48,6 +49,7 @@ enum ValidationProfile {
     Targeted,
     WorkPacket,
     Release,
+    IndependentReview,
 }
 
 impl ValidationProfile {
@@ -56,6 +58,7 @@ impl ValidationProfile {
             Self::Targeted => "targeted",
             Self::WorkPacket => "work_packet",
             Self::Release => "release",
+            Self::IndependentReview => "independent_review",
         }
     }
 
@@ -64,6 +67,7 @@ impl ValidationProfile {
             Self::Targeted => "targeted",
             Self::WorkPacket => "work-packet",
             Self::Release => "release",
+            Self::IndependentReview => "independent-review",
         }
     }
 
@@ -72,6 +76,7 @@ impl ValidationProfile {
             Self::Targeted => "codexdd-test-targeted.ps1",
             Self::WorkPacket => "codexdd-test-workpacket.ps1",
             Self::Release => "codexdd-test-release.ps1",
+            Self::IndependentReview => "codexdd-test-independent.ps1",
         }
     }
 
@@ -80,6 +85,7 @@ impl ValidationProfile {
             Self::Targeted => 15 * 60 * 1_000,
             Self::WorkPacket => 45 * 60 * 1_000,
             Self::Release => 2 * 60 * 60 * 1_000,
+            Self::IndependentReview => 45 * 60 * 1_000,
         }
     }
 }
@@ -88,6 +94,47 @@ impl ValidationProfile {
 #[serde(deny_unknown_fields)]
 struct ValidationArgs {
     profile: ValidationProfile,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct IndependentValidationArgs {
+    profile: IndependentValidationProfile,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum IndependentValidationProfile {
+    IndependentReview,
+}
+
+/// A model cannot opt into independent review through the Implementation-only
+/// tool. The separate built-in tool owns its fixed review profile.
+fn parse_native_profile(
+    arguments: &str,
+    independent: bool,
+) -> Result<ValidationProfile, FunctionCallError> {
+    if independent {
+        let args: IndependentValidationArgs = serde_json::from_str(arguments).map_err(|err| {
+            FunctionCallError::RespondToModel(format!(
+                "failed to parse independent Validator arguments: {err}"
+            ))
+        })?;
+        let _ = args.profile;
+        Ok(ValidationProfile::IndependentReview)
+    } else {
+        let args: ValidationArgs = serde_json::from_str(arguments).map_err(|err| {
+            FunctionCallError::RespondToModel(format!(
+                "failed to parse run_codexdd_validation arguments: {err}"
+            ))
+        })?;
+        if args.profile == ValidationProfile::IndependentReview {
+            return Err(FunctionCallError::RespondToModel(
+                "Independent review requires the separate Validation-only native tool".to_string(),
+            ));
+        }
+        Ok(args.profile)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -141,6 +188,58 @@ struct ValidationOperatorSummary<'a> {
 
 pub struct CodexDDValidationHandler;
 
+/// A separate Core built-in producer, available only to a source-pinned
+/// Validation Worker. It does not grant the Implementation-only LVO tool.
+pub struct CodexDDIndependentValidationHandler;
+
+impl ToolExecutor<ToolInvocation> for CodexDDIndependentValidationHandler {
+    fn tool_name(&self) -> ToolName {
+        ToolName::plain(INDEPENDENT_TOOL_NAME)
+    }
+
+    fn spec(&self) -> ToolSpec {
+        let properties = [(
+            "profile".to_string(),
+            JsonSchema::string_enum(
+                vec![json!("independent_review")],
+                Some("Only the owner-authorized, repo-owned independent review profile".to_string()),
+            ),
+        )]
+        .into_iter()
+        .collect();
+        ToolSpec::Function(ResponsesApiTool {
+            name: INDEPENDENT_TOOL_NAME.to_string(),
+            description: "Run a separate, source-bound independent Validator profile using only the current authorized Validation Worker, a clean exact Git SHA and the repository-owned scripts/codexdd-test-independent.ps1. The native execution and exit code are verified before Core emits an independent-review receipt. Missing proof is a setup blocker, never READY."
+                .to_string(),
+            strict: false,
+            defer_loading: None,
+            parameters: JsonSchema::object(
+                properties,
+                Some(vec!["profile".to_string()]),
+                Some(false.into()),
+            ),
+            output_schema: None,
+        })
+    }
+
+    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+    where
+        ToolInvocation: 'a,
+    {
+        Box::pin(async move {
+            CodexDDValidationHandler
+                .handle_call_for(invocation, true)
+                .await
+        })
+    }
+}
+
+impl CoreToolRuntime for CodexDDIndependentValidationHandler {
+    fn is_builtin_control_tool(&self) -> bool {
+        true
+    }
+}
+
 impl ToolExecutor<ToolInvocation> for CodexDDValidationHandler {
     fn tool_name(&self) -> ToolName {
         ToolName::plain(TOOL_NAME)
@@ -188,16 +287,20 @@ impl CodexDDValidationHandler {
         &self,
         invocation: ToolInvocation,
     ) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
+        self.handle_call_for(invocation, false).await
+    }
+
+    async fn handle_call_for(
+        &self,
+        invocation: ToolInvocation,
+        independent: bool,
+    ) -> Result<Box<dyn ToolOutput>, FunctionCallError> {
         let ToolPayload::Function { arguments } = &invocation.payload else {
             return Err(FunctionCallError::RespondToModel(
-                "run_codexdd_validation received unsupported payload".to_string(),
+                "CodexDD native validation received unsupported payload".to_string(),
             ));
         };
-        let args: ValidationArgs = serde_json::from_str(arguments).map_err(|err| {
-            FunctionCallError::RespondToModel(format!(
-                "failed to parse run_codexdd_validation arguments: {err}"
-            ))
-        })?;
+        let profile = parse_native_profile(arguments, independent)?;
 
         let turn_environment = resolve_tool_environment(
             &invocation.step_context,
@@ -223,7 +326,7 @@ impl CodexDDValidationHandler {
             Err(message) => {
                 return emit_native_setup_blocker(
                     &invocation,
-                    args.profile,
+                    profile,
                     &run_id,
                     cwd.as_path(),
                     &None,
@@ -239,7 +342,7 @@ impl CodexDDValidationHandler {
             None => {
                 return emit_native_setup_blocker(
                     &invocation,
-                    args.profile,
+                    profile,
                     &run_id,
                     &repository_root,
                     &None,
@@ -259,7 +362,7 @@ impl CodexDDValidationHandler {
             None => {
                 return emit_native_setup_blocker(
                     &invocation,
-                    args.profile,
+                    profile,
                     &run_id,
                     &repository_root,
                     &branch,
@@ -277,29 +380,39 @@ impl CodexDDValidationHandler {
         // generic exception is not a usable receipt for an unfinished Worker.
         let script_path = repository_root
             .join("scripts")
-            .join(args.profile.script_name());
+            .join(profile.script_name());
         // Core is the authority for where the native LVO profile really runs.
         // A TUI-only preflight is insufficient if the session CWD changes or
         // differs from the delegate's execution environment.
-        let admission_error = validate_native_authorized_target(
-            &repository_root,
-            invocation.turn.config.adaptive_worker.as_ref(),
-            &head_sha,
-        )
+        let admission_error = if independent {
+            validate_native_independent_authorized_target(
+                &repository_root,
+                invocation.turn.config.adaptive_worker.as_ref(),
+                &head_sha,
+            )
+        } else {
+            validate_native_authorized_target(
+                &repository_root,
+                invocation.turn.config.adaptive_worker.as_ref(),
+                &head_sha,
+            )
+        }
         .err()
         .map(|message| ("source_identity_mismatch", message))
         .or_else(|| {
-            native_mechanical_source_authority_blocker(
-                codex_analytics::TurnAnalyticsMetadata::turn_trigger(
-                    invocation.turn.turn_metadata_state.as_ref(),
+            (!independent).then(|| {
+                native_mechanical_source_authority_blocker(
+                    codex_analytics::TurnAnalyticsMetadata::turn_trigger(
+                        invocation.turn.turn_metadata_state.as_ref(),
+                    )
+                    .as_deref(),
+                    invocation.turn.config.adaptive_worker.as_ref(),
                 )
-                .as_deref(),
-                invocation.turn.config.adaptive_worker.as_ref(),
-            )
-            .map(|message| ("source_authority_unavailable", message))
+                .map(|message| ("source_authority_unavailable", message))
+            }).flatten()
         })
         .or_else(|| {
-            validate_repository_profile(&repository_root, args.profile)
+            validate_repository_profile(&repository_root, profile)
                 .err()
                 .map(|message| ("profile_unavailable", format!("SETUP_BLOCKED: {message}")))
         });
@@ -308,7 +421,7 @@ impl CodexDDValidationHandler {
             // product repair, even when the script was never attempted.
             return emit_native_setup_blocker(
                 &invocation,
-                args.profile,
+                profile,
                 &run_id,
                 &repository_root,
                 &branch,
@@ -348,7 +461,7 @@ impl CodexDDValidationHandler {
             "login": false,
             "tty": false,
             "yield_time_ms": 30_000,
-            "timeout_ms": args.profile.timeout_ms(),
+            "timeout_ms": profile.timeout_ms(),
             "max_output_tokens": 1_000
         })
         .to_string();
@@ -406,7 +519,7 @@ impl CodexDDValidationHandler {
                 };
                 let summary = ValidationSummary {
                     contract_version: CONTRACT_VERSION,
-                    profile: args.profile.contract_name().to_string(),
+                    profile: profile.contract_name().to_string(),
                     status: "error".to_string(),
                     exit_code: 2,
                     stages: Vec::new(),
@@ -417,7 +530,7 @@ impl CodexDDValidationHandler {
                 };
                 return emit_validation_result(
                     &invocation,
-                    args.profile,
+                    profile,
                     &run_id,
                     &repository_root,
                     &branch,
@@ -442,10 +555,10 @@ impl CodexDDValidationHandler {
             persist_validation_log(&codex_home, &repo_id, &run_id, &log_bytes).await?;
         let _ = tokio::fs::remove_file(&temp_log_path).await;
 
-        let mut summary = parse_validation_summary(args.profile, &log_text, &final_log_path)
+        let mut summary = parse_validation_summary(profile, &log_text, &final_log_path)
             .unwrap_or_else(|message| ValidationSummary {
                 contract_version: CONTRACT_VERSION,
-                profile: args.profile.contract_name().to_string(),
+                profile: profile.contract_name().to_string(),
                 status: "error".to_string(),
                 exit_code: 2,
                 stages: Vec::new(),
@@ -464,12 +577,21 @@ impl CodexDDValidationHandler {
             enforce_native_exit_consistency(&mut summary, native_exit_code);
             // A repository-owned script can run tests, but it must not move the
             // candidate HEAD or dirty a pinned source and retain a PASS receipt.
-            if summary.status == "pass"
-                && let Err(message) = validate_native_authorized_target(
+            let post_execution_identity = if independent {
+                validate_native_independent_authorized_target(
                     &repository_root,
                     invocation.turn.config.adaptive_worker.as_ref(),
                     &head_sha,
                 )
+            } else {
+                validate_native_authorized_target(
+                    &repository_root,
+                    invocation.turn.config.adaptive_worker.as_ref(),
+                    &head_sha,
+                )
+            };
+            if summary.status == "pass"
+                && let Err(message) = post_execution_identity
             {
                 summary.status = "error".to_string();
                 summary.exit_code = 2;
@@ -480,7 +602,7 @@ impl CodexDDValidationHandler {
 
         emit_validation_result(
             &invocation,
-            args.profile,
+            profile,
             &run_id,
             &repository_root,
             &branch,
@@ -584,7 +706,13 @@ async fn emit_validation_result(
         .canonicalize()
         .ok()
         .map(|root| root.display().to_string());
-    let failure_fingerprint = validation_failure_fingerprint(profile, summary);
+    let independent = profile == ValidationProfile::IndependentReview;
+    let failure_fingerprint = if independent {
+        None
+    } else {
+        validation_failure_fingerprint(profile, summary)
+    };
+    let receipt_tool_name = if independent { INDEPENDENT_TOOL_NAME } else { TOOL_NAME };
     let receipt_arguments = json!({
         "profile": profile.tool_name(),
         "result": summary.status.clone(),
@@ -599,7 +727,7 @@ async fn emit_validation_result(
     let receipt_started = TurnItem::DynamicToolCall(DynamicToolCallItem {
         id: invocation.call_id.clone(),
         namespace: None,
-        tool: TOOL_NAME.to_string(),
+        tool: receipt_tool_name.to_string(),
         arguments: receipt_arguments.clone(),
         status: DynamicToolCallStatus::InProgress,
         content_items: None,
@@ -618,7 +746,7 @@ async fn emit_validation_result(
             TurnItem::DynamicToolCall(DynamicToolCallItem {
                 id: invocation.call_id.clone(),
                 namespace: None,
-                tool: TOOL_NAME.to_string(),
+                tool: receipt_tool_name.to_string(),
                 arguments: receipt_arguments,
                 status: DynamicToolCallStatus::Completed,
                 content_items: None,
@@ -876,6 +1004,60 @@ fn validate_native_authorized_target(
                 .to_string(),
         );
     };
+    validate_bound_native_source_target(
+        repository_root,
+        expected_root,
+        expected_sha,
+        observed_head_sha,
+    )
+}
+
+/// Independent review requires a *different* explicit Validation role. There
+/// is no legacy unpinned compatibility, role promotion or source fallback.
+fn validate_native_independent_authorized_target(
+    repository_root: &Path,
+    configured_worker: Option<&codex_config::config_toml::AdaptiveWorkerConfigToml>,
+    observed_head_sha: &str,
+) -> Result<(), String> {
+    let Some(worker) = configured_worker else {
+        return Err("SETUP_BLOCKED: independent Validator requires a Core-bound Worker; no review profile ran.".to_string());
+    };
+    if !matches!(
+        &worker.role,
+        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+    ) {
+        return Err("SETUP_BLOCKED: independent review requires Validation role; Implementation/Repair cannot mint its receipt.".to_string());
+    }
+    if worker.task_kind.as_deref() != Some("source_change")
+        || worker
+            .authorized_scope
+            .as_deref()
+            .is_none_or(|scope| scope.trim().is_empty() || scope.len() > 1024)
+    {
+        return Err("SETUP_BLOCKED: independent Validator requires an explicit source-change task and bounded owner-authorized scope.".to_string());
+    }
+    let (Some(source_root), Some(source_sha)) =
+        (worker.source_root.as_deref(), worker.source_sha.as_deref())
+    else {
+        return Err("SETUP_BLOCKED: independent Validator requires both Core-bound source root and SHA.".to_string());
+    };
+    validate_bound_native_source_target(
+        repository_root,
+        source_root,
+        source_sha,
+        observed_head_sha,
+    )
+    .map_err(|message| message.replace("native LVO", "native independent Validator"))
+}
+
+/// Both native producers use the same read-only Git identity guard, but their
+/// role admission is intentionally separate. No unbound Worker reaches here.
+fn validate_bound_native_source_target(
+    repository_root: &Path,
+    expected_root: &str,
+    expected_sha: &str,
+    observed_head_sha: &str,
+) -> Result<(), String> {
     let expected_path = Path::new(expected_root.trim());
     let expected_sha = expected_sha.trim();
     if !expected_path.is_absolute()

@@ -1181,3 +1181,77 @@ jobs:
         run: |
           Write-Host "3B.3b exact-source synthetic fixtures at $env:GITHUB_SHA; no native project acceptance or release."
           git status --short
+
+  windows-3c1b2b-independent-core:
+    name: 3C.1b.2b native Core independent Validator producer and role refusal
+    # Source-scoped Windows unit proof only. No live external worker handoff,
+    # production approval, game worktrees, release or installation.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2b-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact independent-review source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Isolate native independent review Core test output
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2b wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong development branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong product baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2b'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Require exactly three native independent Core regression cases
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2b_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw '3C.1b.2b expected exactly three independent native Core cases'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2b independent Core producer/policy controls failed' }
+      - name: Report nonrelease Core-only boundary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2b Core-only source $env:GITHUB_SHA; independent Worker handoff and live READY remain unproven."
+          git status --short

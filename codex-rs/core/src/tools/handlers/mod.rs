@@ -60,6 +60,7 @@ pub use adaptive_signal::AdaptiveSignalHandler;
 pub use apply_patch::ApplyPatchHandler;
 use codex_protocol::models::AdditionalPermissionProfile;
 use codex_protocol::protocol::AskForApproval;
+pub use codexdd_validation::CodexDDIndependentValidationHandler;
 pub use codexdd_validation::CodexDDValidationHandler;
 pub use current_time::CurrentTimeHandler;
 pub use dynamic::DynamicToolHandler;

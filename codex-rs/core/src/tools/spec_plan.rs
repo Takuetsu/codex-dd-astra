@@ -10,6 +10,7 @@ use crate::tools::handlers::AdaptiveSignalHandler;
 use crate::tools::handlers::ApplyPatchHandler;
 use crate::tools::handlers::CodeModeExecuteHandler;
 use crate::tools::handlers::CodeModeWaitHandler;
+use crate::tools::handlers::CodexDDIndependentValidationHandler;
 use crate::tools::handlers::CodexDDValidationHandler;
 use crate::tools::handlers::CurrentTimeHandler;
 use crate::tools::handlers::DynamicToolHandler;
@@ -70,6 +71,7 @@ use codex_login::AuthManager;
 use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
 use codex_prompts::ResolvedModelMessages;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
 use codex_protocol::account::PlanType;
 use codex_protocol::config_types::WebSearchMode;
@@ -1235,6 +1237,39 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     );
     if turn_trigger.as_deref() == Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {
         registry.add_with_exposure(CodexDDValidationHandler, ToolExposure::DirectModelOnly);
+    }
+
+    // A Validation Worker gets a separate native producer only with the
+    // complete Core-bound first-assignment identity. The handler repeats every
+    // role/root/SHA/scope check immediately before and after native execution.
+    // Terminalization remains report-only, and the Implementation LVO is
+    // never exposed as the independent review tool.
+    let has_validator_binding = turn_context.config.adaptive_worker.as_ref().is_some_and(|worker| {
+        matches!(
+            &worker.role,
+            codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+        ) && worker.task_kind.as_deref() == Some("source_change")
+            && worker
+                .authorized_scope
+                .as_deref()
+                .is_some_and(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
+            && worker
+                .source_root
+                .as_deref()
+                .is_some_and(|root| !root.trim().is_empty())
+            && worker
+                .source_sha
+                .as_deref()
+                .is_some_and(|sha| sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit()))
+    });
+    if has_validator_binding
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+    {
+        registry.add_with_exposure(
+            CodexDDIndependentValidationHandler,
+            ToolExposure::DirectModelOnly,
+        );
     }
 
     if turn_context.config.update_plan_enabled {

@@ -1123,3 +1123,139 @@ fn codexdd_046_3b2e_core_first_header_decoder_rejects_unsafe_headers() {
         );
     }
 }
+
+#[test]
+fn codexdd_046_3c1b2b_independent_profile_is_fixed_and_cannot_be_impersonated_by_lvo() {
+    assert_eq!(
+        parse_native_profile(r#"{"profile":"independent_review"}"#, true).unwrap(),
+        ValidationProfile::IndependentReview
+    );
+    assert!(parse_native_profile(r#"{"profile":"targeted"}"#, true).is_err());
+    assert!(parse_native_profile(r#"{"profile":"work_packet"}"#, true).is_err());
+    assert!(parse_native_profile(r#"{"profile":"independent_review"}"#, false).is_err());
+    assert!(parse_native_profile(r#"{"profile":"targeted","extra":true}"#, false).is_err());
+    assert_eq!(
+        ValidationProfile::IndependentReview.script_name(),
+        "codexdd-test-independent.ps1"
+    );
+    assert_eq!(
+        ValidationProfile::IndependentReview.contract_name(),
+        "independent-review"
+    );
+}
+
+#[test]
+fn codexdd_046_3c1b2b_independent_review_requires_bound_validation_role_and_scope() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("isolated independent Validator");
+    let root = temp.path();
+    let sha = "a".repeat(40);
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("separate owner-approved review".to_string()),
+        source_root: Some(root.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("source_change".to_string()),
+    };
+    assert!(
+        validate_native_independent_authorized_target(root, None, &sha)
+            .expect_err("unbound model cannot produce independent receipt")
+            .contains("Core-bound Worker")
+    );
+    for role in [
+        AdaptiveWorkerRoleToml::Implementation,
+        AdaptiveWorkerRoleToml::Repair,
+        AdaptiveWorkerRoleToml::Unspecified,
+    ] {
+        worker.role = role;
+        assert!(
+            validate_native_independent_authorized_target(root, Some(&worker), &sha)
+                .expect_err("only Validation role may produce independent receipt")
+                .contains("requires Validation role")
+        );
+    }
+    worker.role = AdaptiveWorkerRoleToml::Validation;
+    worker.authorized_scope = None;
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha)
+            .expect_err("missing scope is not review authority")
+            .contains("owner-authorized scope")
+    );
+    worker.authorized_scope = Some("separate owner-approved review".to_string());
+    worker.source_sha = None;
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha)
+            .expect_err("missing source SHA is not review authority")
+            .contains("source root and SHA")
+    );
+}
+
+#[test]
+fn codexdd_046_3c1b2b_independent_review_checks_real_git_root_head_and_clean_source() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("review Git fixture");
+    let root = temp.path().join("candidate");
+    fs::create_dir(&root).expect("candidate root");
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&root)
+            .args(args)
+            .output()
+            .expect("Git available");
+        assert!(
+            output.status.success(),
+            "git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("Git output UTF8")
+    };
+    git(&["init", "-q"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD Review Fixture",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "--allow-empty",
+        "-q",
+        "-m",
+        "independent source anchor",
+    ]);
+    let sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    let worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("independent review source-change".to_string()),
+        source_root: Some(root.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("source_change".to_string()),
+    };
+    assert_eq!(
+        validate_native_independent_authorized_target(&root, Some(&worker), &sha),
+        Ok(())
+    );
+    assert!(
+        validate_native_independent_authorized_target(temp.path(), Some(&worker), &sha)
+            .expect_err("parent is not the pinned candidate")
+            .contains("selected")
+    );
+    assert!(
+        validate_native_independent_authorized_target(&root, Some(&worker), &"f".repeat(40))
+            .expect_err("wrong observed SHA cannot be accepted")
+            .contains("authorized source SHA")
+    );
+    fs::write(root.join("uncommitted-review.txt"), "untrusted change").expect("dirty fixture");
+    assert!(
+        validate_native_independent_authorized_target(&root, Some(&worker), &sha)
+            .expect_err("dirty source cannot produce a review receipt")
+            .contains("staged/unstaged/untracked")
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("uncommitted-review.txt")).expect("preserve edits"),
+        "untrusted change"
+    );
+}
