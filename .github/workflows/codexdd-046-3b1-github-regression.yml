@@ -55,6 +55,7 @@ on:
       - codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs
       - codex-rs/app-server/tests/suite/v2/mod.rs
       - codex-rs/app-server/tests/suite/v2/codexdd_candidate_native.rs
+      - codex-rs/app-server/tests/suite/v2/codexdd_worker_handoff_native.rs
       - docs/regression-fixtures/codexdd-046-agent-reliability-cases.json
       # Native 3C.1b.2d profile/contract changes must trigger their own CI.
       - scripts/codexdd-validation-common.ps1
@@ -1591,4 +1592,78 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "3C.1b.2f native Core test only on $env:GITHUB_SHA; app-server/TUI interprocess handoff and release acceptance remain pending."
+          git status --short
+
+  windows-3c1b2g-appserver-native-two-threads:
+    name: 3C.1b.2g real app-server two-thread native receipts and cold resume
+    # Real Core built-in tools, two JSON-RPC threads and disposable Git source.
+    # No real TUI READY decision, production model, project install or release.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2g-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify branch and source and isolate Windows runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2g wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2g'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Verify one real app-server two-thread native receipt regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2g_'
+          $listing = & cargo test --locked -p codex-app-server --test all $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Exactly one native 3C.1b.2g app-server two-thread test required'
+          }
+          & cargo test --locked -p codex-app-server --test all $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Real app-server two-thread independent receipt/cold resume test failed' }
+      - name: Confirm no source modification or release
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2g disposable Windows app-server integration only at $env:GITHUB_SHA; TUI READY and release still pending."
           git status --short

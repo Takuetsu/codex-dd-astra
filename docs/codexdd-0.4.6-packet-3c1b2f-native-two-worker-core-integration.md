@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — 3C.1b.2f: native Core two-Worker validation acceptance
 
 **Date:** 2026-11-12. **Parent:** `ab06352b4a73b867f2e5f9b4266f20f1533db599` (3C.1b.2e accepted).
-**State:** Source implementation only. Focused native Windows integration CI **PENDING**. Full Core/TUI/app-server handoff and milestone 3C.1 acceptance remain **OPEN**.
+**State:** Focused native Windows Core two-Worker integration **ACCEPTED** at `bd81688edd5f214e97d97df1a52b1ca38ed462c9` on 2026-11-12 ([Actions #43276903773](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43276903773)). Full Core/TUI/app-server handoff and milestone 3C.1 acceptance remain **OPEN**.
 
 ## Purpose
 
@@ -24,3 +24,7 @@ The [3C.1b.2f-native] CI job uses exact SHA/branch source preflight, pinned Wind
 **Not yet proven by this test:** the actual full six-stage repository-owned independent script; owner first-message binding routed across the live app-server; TUI fresh Validation worker launch and receipt observation from an actual app-server event stream; trusted READY signal admission across the two-process TUI/Core seam; strict deadline/restart/cold resume in a real operator session; operations listener+HTTP health. Treat 3C.1 and release 0.4.6 as **OPEN** regardless of a passing Core test. No BREAKWATER coding until full development/release acceptance, then owner-approved install and the approximately one-week one-milestone soak.
 
 **Next:** after the native Core acceptance run passes, add a disposable app-server/TUI two-thread identity and event pipeline end-to-end test; then expand to real full-script and terminal/READY-gate integration with negative role/source/port evidence cases.
+
+## Acceptance checkpoint — November 12, 2026
+
+[GitHub Actions #43276903773](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43276903773): **SUCCESS**, exact source `bd81688edd5f214e97d97df1a52b1ca38ed462c9`, total 23m01s. Source preflight, Rustfmt, one real two-session Core fixture, and the existing three independent Core provenance/refusal tests passed. Both the native PASS and fail-closed negative paths were executed in isolated Windows CI. The 3C.1b.2f fixture used two separately Core-bound sessions, **not** two app-server/TUI-managed sessions; it does not establish a live app-server notification pipeline or authorize READY.
