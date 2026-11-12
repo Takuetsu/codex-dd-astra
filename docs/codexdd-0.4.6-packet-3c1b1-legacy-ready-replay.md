@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — packet 3C.1b.1: legacy READY replay quarantine
 
 **Date:** 2026-11-11. **Base:** `24b596110cba9c3d3b849d155413fbca0b06f1d0` (3C.1a focused Windows accepted).
-**State:** SOURCE AND REGRESSION CHECKPOINT, not native accepted. Full 3C.1, positive independent Validator and 0.4.6 remain open.
+**State:** NATIVE ACCEPTED 2026-11-11 — 3C.1b.1 CLOSED. Full 3C.1, positive independent Validator and 0.4.6 remain open.
 
 ## Outcome and authority
 
@@ -24,3 +24,7 @@ The standalone legacy rollout READY enum branch uses the same fail-closed pause.
 
 Positive 3C.1b must still establish a distinct, owner-authorized Validation Worker with current source-root/SHA, a trusted native independent review producer and appropriately approved whole-task proof. The required-gate ledger must not be made green by a generic shell command, persisted JSON, model prose, or the earlier Implementation Worker’s own validation. 3D.1 still owns actual listener ownership and HTTP response. No synthetic READY or production release is authorized from this packet.
 
+
+## Exact-source native acceptance — 2026-11-11
+
+[GitHub Actions #43130288430](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43130288430) completed **SUCCESS** at exact commit `6854d70ab94f59329b7771098177832e3696119d`. Source-contract preflight PASS, Rustfmt PASS, and scoped Windows native tests PASS: Core receipt 1/1; 3B.3b 6/6; 3B.3c 4/4; 3B.3d.1 3/3; 3B.3d.2 3/3; 3C.1a 4/4; new 3C.1b.1 legacy READY replay 2/2 and updated non-READY terminal compatibility 1/1: **24/24 focused tests**, 0 failures. Other workflows deliberately skipped. This is not an independent live Validator, actual ops/health service, Node project validation or release approval.
