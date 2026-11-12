@@ -240,9 +240,7 @@ impl ChatWidget {
             && !self.input_queue.user_turn_pending_start;
         if is_first_worker_submission
             && let Err(error) =
-                crate::adaptive_worker::parse_adaptive_owner_assignment(
-                    &user_message.text,
-                )
+                crate::adaptive_worker::parse_adaptive_owner_assignment(&user_message.text)
         {
             // Malformed authority must not consume a model turn, and an
             // unsubmitted draft cannot acquire or lock Worker permissions.

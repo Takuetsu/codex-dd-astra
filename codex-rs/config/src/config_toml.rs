@@ -1274,7 +1274,10 @@ task_kind = "benchmark"
             .expect("first-message Worker binding");
         assert_eq!(
             parsed.required_gates,
-            config.adaptive_worker.expect("startup binding").required_gates
+            config
+                .adaptive_worker
+                .expect("startup binding")
+                .required_gates
         );
 
         let bad = header.replace(

@@ -1418,12 +1418,17 @@ mod tests {
         );
         let mut state = AdaptiveEffortState::default();
         assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
-        let original_ledger = state.gate_ledger.clone().expect("issued by first owner turn");
+        let original_ledger = state
+            .gate_ledger
+            .clone()
+            .expect("issued by first owner turn");
         let outstanding = original_ledger.outstanding(&state.evidence_registry);
         assert_eq!(outstanding.len(), 2);
-        assert!(outstanding.iter().any(|item| {
-            item.gate == AdaptiveRequiredGate::IndependentValidation
-        }));
+        assert!(
+            outstanding
+                .iter()
+                .any(|item| { item.gate == AdaptiveRequiredGate::IndependentValidation })
+        );
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
         state.activate_adaptive_family(AdaptiveFamily::Sol61, false);
         assert_eq!(state.gate_ledger, Some(original_ledger.clone()));

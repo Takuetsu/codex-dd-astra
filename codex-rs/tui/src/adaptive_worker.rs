@@ -369,9 +369,12 @@ fn bound_owner_gate_ledger(
         .authorized_scope
         .as_deref()
         .filter(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
-        .ok_or_else(|| "SETUP_BLOCKED: gate requirements need a bounded owner-authorized scope".to_string())?;
+        .ok_or_else(|| {
+            "SETUP_BLOCKED: gate requirements need a bounded owner-authorized scope".to_string()
+        })?;
     let pin = pin.ok_or_else(|| {
-        "SETUP_BLOCKED: owner gate requirements require both an exact source root and SHA".to_string()
+        "SETUP_BLOCKED: owner gate requirements require both an exact source root and SHA"
+            .to_string()
     })?;
     if pin.source_root.len() > 4096 || definitions.is_empty() || definitions.len() > 16 {
         return Err("SETUP_BLOCKED: invalid owner gate manifest size or source path".to_string());
@@ -381,13 +384,15 @@ fn bound_owner_gate_ledger(
         let gate = match definition.kind.as_str() {
             "source_profile" if definition.ports.is_none() => {
                 let profile = definition.profile.as_deref().ok_or_else(|| {
-                    "SETUP_BLOCKED: source_profile gate must explicitly name its native profile".to_string()
+                    "SETUP_BLOCKED: source_profile gate must explicitly name its native profile"
+                        .to_string()
                 })?;
                 AdaptiveRequiredGate::SourceProfile(profile.to_string())
             }
             "owned_runtime_health" if definition.profile.is_none() => {
                 let ports = definition.ports.clone().ok_or_else(|| {
-                    "SETUP_BLOCKED: owned_runtime_health requires explicit approved ports".to_string()
+                    "SETUP_BLOCKED: owned_runtime_health requires explicit approved ports"
+                        .to_string()
                 })?;
                 AdaptiveRequiredGate::OwnedRuntimeHealth(ports)
             }
@@ -397,24 +402,32 @@ fn bound_owner_gate_ledger(
                 AdaptiveRequiredGate::IndependentValidation
             }
             _ => {
-                return Err("SETUP_BLOCKED: unknown or ambiguous owner gate kind/fields".to_string());
+                return Err(
+                    "SETUP_BLOCKED: unknown or ambiguous owner gate kind/fields".to_string()
+                );
             }
         };
         gates.push(gate);
     }
     match pin.task_kind {
         AdaptiveTaskKind::SourceChange => {
-            if !gates.iter().any(|gate| matches!(
-                gate,
-                AdaptiveRequiredGate::SourceProfile(profile)
-                    if profile == "work_packet" || profile == "release"
-            )) {
+            if !gates.iter().any(|gate| {
+                matches!(
+                    gate,
+                    AdaptiveRequiredGate::SourceProfile(profile)
+                        if profile == "work_packet" || profile == "release"
+                )
+            }) {
                 return Err("SETUP_BLOCKED: source-change QA requires an explicitly authorized work_packet or release gate; targeted alone is insufficient".to_string());
             }
         }
         AdaptiveTaskKind::OperationsPreview => {
-            if gates.iter().any(|gate| matches!(gate, AdaptiveRequiredGate::SourceProfile(_)))
-                || !gates.iter().any(|gate| matches!(gate, AdaptiveRequiredGate::OwnedRuntimeHealth(_)))
+            if gates
+                .iter()
+                .any(|gate| matches!(gate, AdaptiveRequiredGate::SourceProfile(_)))
+                || !gates
+                    .iter()
+                    .any(|gate| matches!(gate, AdaptiveRequiredGate::OwnedRuntimeHealth(_)))
             {
                 return Err("SETUP_BLOCKED: operations-preview requires an owned-runtime-health gate, not source-only PASS".to_string());
             }
@@ -423,8 +436,9 @@ fn bound_owner_gate_ledger(
             return Err("SETUP_BLOCKED: benchmark owner gates await a native benchmark-evidence contract; source or runtime PASS cannot substitute".to_string());
         }
     }
-    let ledger = AdaptiveGateLedger::new(scope, Path::new(&pin.source_root), &pin.source_sha, gates)
-        .map_err(|error| format!("SETUP_BLOCKED: invalid owner gate manifest: {error}"))?;
+    let ledger =
+        AdaptiveGateLedger::new(scope, Path::new(&pin.source_root), &pin.source_sha, gates)
+            .map_err(|error| format!("SETUP_BLOCKED: invalid owner gate manifest: {error}"))?;
     // Validate the actual selected Git root, clean HEAD and SHA *before*
     // granting even pending source/operations gate requirements.
     preflight_owner_candidate_identity(pin, Path::new(&pin.source_root))?;
@@ -515,9 +529,8 @@ pub(crate) fn parse_adaptive_worker_assignment(
 pub(crate) fn parse_adaptive_worker_assignment_with_preflight(
     text: &str,
 ) -> Result<Option<(AdaptiveWorkerContext, Option<AdaptiveWorkerPreflight>)>, String> {
-    parse_adaptive_owner_assignment(text).map(|assignment| {
-        assignment.map(|(context, preflight, _)| (context, preflight))
-    })
+    parse_adaptive_owner_assignment(text)
+        .map(|assignment| assignment.map(|(context, preflight, _)| (context, preflight)))
 }
 
 pub(crate) fn parse_adaptive_owner_assignment(
@@ -637,9 +650,11 @@ mod tests {
         assert!(outstanding.iter().any(|pending| {
             pending.gate == AdaptiveRequiredGate::SourceProfile("work_packet".to_string())
         }));
-        assert!(outstanding.iter().any(|pending| {
-            pending.gate == AdaptiveRequiredGate::IndependentValidation
-        }));
+        assert!(
+            outstanding
+                .iter()
+                .any(|pending| { pending.gate == AdaptiveRequiredGate::IndependentValidation })
+        );
         assert!(!ledger.ready_for_owner_qa(&registry));
 
         let binding = codex_config::config_toml::parse_adaptive_worker_first_message(&message)
@@ -652,7 +667,10 @@ mod tests {
         let (_, _, no_inference) = parse_adaptive_owner_assignment(&legacy)
             .expect("legacy assignment may still start")
             .expect("legacy Worker bound");
-        assert!(no_inference.is_none(), "no manifest means no owner QA gates or READY");
+        assert!(
+            no_inference.is_none(),
+            "no manifest means no owner QA gates or READY"
+        );
     }
 
     #[test]
@@ -672,7 +690,11 @@ mod tests {
         ];
         for gates in bad_manifests {
             let message = codexdd_046_3c1b2e_owner_message(
-                source.path(), &sha, "implementation", "source_change", gates,
+                source.path(),
+                &sha,
+                "implementation",
+                "source_change",
+                gates,
             );
             assert!(
                 parse_adaptive_owner_assignment(&message).is_err(),
@@ -681,9 +703,8 @@ mod tests {
         }
         let valid = r#"[{ kind = "source_profile", profile = "work_packet" }, { kind = "independent_validation" }]"#;
         for role in ["validation", "repair"] {
-            let message = codexdd_046_3c1b2e_owner_message(
-                source.path(), &sha, role, "source_change", valid,
-            );
+            let message =
+                codexdd_046_3c1b2e_owner_message(source.path(), &sha, role, "source_change", valid);
             assert!(
                 parse_adaptive_owner_assignment(&message)
                     .expect_err("only Implementation owner can issue gate authority")
@@ -705,7 +726,11 @@ mod tests {
         let (source, sha) = codexdd_046_3c1b2e_git_fixture();
         let gates = r#"[{ kind = "owned_runtime_health", ports = [4879, 4880] }, { kind = "independent_validation" }]"#;
         let message = codexdd_046_3c1b2e_owner_message(
-            source.path(), &sha, "implementation", "operations_preview", gates,
+            source.path(),
+            &sha,
+            "implementation",
+            "operations_preview",
+            gates,
         );
         let (_, pin, ledger) = parse_adaptive_owner_assignment(&message)
             .expect("bounded operations requirements")
@@ -725,7 +750,11 @@ mod tests {
                 .contains("operations/benchmark")
         );
         let benchmark = codexdd_046_3c1b2e_owner_message(
-            source.path(), &sha, "implementation", "benchmark", gates,
+            source.path(),
+            &sha,
+            "implementation",
+            "benchmark",
+            gates,
         );
         assert!(
             parse_adaptive_owner_assignment(&benchmark)
@@ -734,7 +763,11 @@ mod tests {
         );
         let source_only = r#"[{ kind = "source_profile", profile = "work_packet" }, { kind = "independent_validation" }]"#;
         let bad_operation = codexdd_046_3c1b2e_owner_message(
-            source.path(), &sha, "implementation", "operations_preview", source_only,
+            source.path(),
+            &sha,
+            "implementation",
+            "operations_preview",
+            source_only,
         );
         assert!(parse_adaptive_owner_assignment(&bad_operation).is_err());
     }
@@ -746,7 +779,11 @@ mod tests {
         let gates = r#"[{ kind = "source_profile", profile = "work_packet" }, { kind = "independent_validation" }]"#;
         let wrong_sha = "f".repeat(40);
         let wrong = codexdd_046_3c1b2e_owner_message(
-            source.path(), &wrong_sha, "implementation", "source_change", gates,
+            source.path(),
+            &wrong_sha,
+            "implementation",
+            "source_change",
+            gates,
         );
         assert!(
             parse_adaptive_owner_assignment(&wrong)
@@ -757,7 +794,11 @@ mod tests {
         let nested = source.path().join("not-an-independent-worktree");
         fs::create_dir(&nested).expect("nested source directory");
         let foreign = codexdd_046_3c1b2e_owner_message(
-            &nested, &sha, "implementation", "source_change", gates,
+            &nested,
+            &sha,
+            "implementation",
+            "source_change",
+            gates,
         );
         assert!(
             parse_adaptive_owner_assignment(&foreign)
@@ -768,14 +809,21 @@ mod tests {
         let dirty_file = source.path().join("preserve-this-untracked-file.txt");
         fs::write(&dirty_file, "operator source edits").expect("untracked edit");
         let dirty = codexdd_046_3c1b2e_owner_message(
-            source.path(), &sha, "implementation", "source_change", gates,
+            source.path(),
+            &sha,
+            "implementation",
+            "source_change",
+            gates,
         );
         assert!(
             parse_adaptive_owner_assignment(&dirty)
                 .expect_err("dirty source must not get a gate ledger")
                 .contains("staged/unstaged/untracked")
         );
-        assert_eq!(fs::read_to_string(dirty_file).expect("edits retained"), "operator source edits");
+        assert_eq!(
+            fs::read_to_string(dirty_file).expect("edits retained"),
+            "operator source edits"
+        );
     }
 
     #[test]
