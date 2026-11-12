@@ -69,9 +69,9 @@ if ($fail -ne 1) {
 $errorStages = @(
     (New-CodexDDValidationStage -Name "fixture-error" -FilePath "__codexdd_missing_review_executable__" -ArgumentList @() -WorkingDirectory $repositoryRoot)
 )
-$error = Invoke-CodexDDValidationProfile -Profile "independent-review" -RepositoryRoot $repositoryRoot -Stages $errorStages
-if ($error -ne 2) {
-    throw "Independent-review fixture ERROR returned $error instead of 2."
+$errorExitCode = Invoke-CodexDDValidationProfile -Profile "independent-review" -RepositoryRoot $repositoryRoot -Stages $errorStages
+if ($errorExitCode -ne 2) {
+    throw "Independent-review fixture ERROR returned $errorExitCode instead of 2."
 }
 
 Write-Host "CODEXDD_046_3C1B2D_INDEPENDENT_PROFILE_CONTRACT PASS"
