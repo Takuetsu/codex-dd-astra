@@ -11,6 +11,11 @@ on:
       - .github/workflows/codexdd-046-3b1-github-regression.yml
       - codex-rs/config/src/config_toml.rs
       - codex-rs/tui/src/adaptive_worker.rs
+      # Owner-gate schema field compatibility across TUI startup/test surfaces.
+      - codex-rs/tui/src/app/working_directory.rs
+      - codex-rs/tui/src/adaptive_worker_tests.rs
+      - codex-rs/tui/src/app/tests/session_lifecycle_requests.rs
+      - codex-rs/tui/src/app_server_session/rollout_history_tests.rs
       - codex-rs/tui/src/adaptive_evidence.rs
       - codex-rs/tui/src/adaptive_evidence_tests.rs
       - codex-rs/tui/src/adaptive_gate_prerequisites.rs
