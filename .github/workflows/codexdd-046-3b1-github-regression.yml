@@ -109,7 +109,7 @@ jobs:
                   "source_pin_survives_adaptive_activation_and_new_model_route",
               ),
               "codex-rs/tui/src/app_server_session.rs": (
-                  "configured_worker_binding",
+                  "configured_worker_authority",
                   "worker_assignment_locked = lock_assignment",
                   "pinned_startup_worker_source_is_transmitted_only_to_embedded_core",
               ),
