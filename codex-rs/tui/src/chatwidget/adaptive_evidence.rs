@@ -446,6 +446,8 @@ mod tests {
     /// notifications; this is the TUI boundary, not a second native execution.
     #[tokio::test]
     async fn codexdd_046_3c1b2h_tui_live_wire_handoff_ready_and_conflict_refusal() {
+        use crate::adaptive_complexity::AdaptiveComplexityClass;
+        use crate::adaptive_complexity::AdaptiveImplementationPhase;
         use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
         use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
         use crate::adaptive_worker::AdaptiveTaskKind;
@@ -454,8 +456,6 @@ mod tests {
         use crate::adaptive_worker::AdaptiveWorkerRole;
         use crate::adaptive_worker::AdaptiveWorkflowTerminal;
         use crate::adaptive_worker::NewWorkerBinding;
-        use crate::adaptive_complexity::AdaptiveComplexityClass;
-        use crate::adaptive_complexity::AdaptiveImplementationPhase;
         use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
         use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
         use codex_app_server_protocol::DynamicToolCallStatus;
@@ -629,7 +629,8 @@ mod tests {
             None,
         );
         assert!(
-            !chat.adaptive_effort
+            !chat
+                .adaptive_effort
                 .gate_ledger
                 .as_ref()
                 .expect("inherited owner gates")
@@ -666,7 +667,8 @@ mod tests {
             "a green nonnative result cannot cite the owner's independent gate"
         );
         let original_pin = chat.adaptive_effort.assignment_preflight.clone();
-        chat.adaptive_effort.assignment_preflight
+        chat.adaptive_effort
+            .assignment_preflight
             .as_mut()
             .expect("review pin")
             .source_sha = "c".repeat(40);
@@ -699,7 +701,8 @@ mod tests {
             None,
         );
         assert!(
-            !chat.adaptive_effort
+            !chat
+                .adaptive_effort
                 .gate_ledger
                 .as_ref()
                 .expect("owner ledger")
@@ -720,9 +723,10 @@ mod tests {
             )),
             None,
         );
-        assert!(chat
-            .owner_qa_prerequisite_admission(&["native-independent-review-retry".to_string()])
-            .is_ok());
+        assert!(
+            chat.owner_qa_prerequisite_admission(&["native-independent-review-retry".to_string()])
+                .is_ok()
+        );
 
         chat.handle_server_notification(
             ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {
@@ -750,9 +754,11 @@ mod tests {
         while let Ok(event) = app_events.try_recv() {
             if let crate::app_event::AppEvent::PersistWorkflowState {
                 thread_id,
-                operation: codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+                operation:
+                    codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
                 ..
-            } = event {
+            } = event
+            {
                 assert_eq!(thread_id, validation);
                 ready_persisted = true;
             }
@@ -831,10 +837,20 @@ mod tests {
             ServerNotification::ItemCompleted(review.clone()),
             Some(ReplayKind::ThreadSnapshot),
         );
-        assert!(!chat.adaptive_effort.gate_ledger.as_ref().expect("owner gates")
-            .ready_for_owner_qa(&chat.adaptive_effort.evidence_registry));
+        assert!(
+            !chat
+                .adaptive_effort
+                .gate_ledger
+                .as_ref()
+                .expect("owner gates")
+                .ready_for_owner_qa(&chat.adaptive_effort.evidence_registry)
+        );
         chat.handle_server_notification(ServerNotification::ItemCompleted(review), None);
-        let pending = chat.adaptive_effort.gate_ledger.as_ref().expect("owner gates")
+        let pending = chat
+            .adaptive_effort
+            .gate_ledger
+            .as_ref()
+            .expect("owner gates")
             .outstanding(&chat.adaptive_effort.evidence_registry);
         assert_eq!(
             pending.len(),
@@ -846,5 +862,4 @@ mod tests {
                 .is_err()
         );
     }
-
 }
