@@ -1737,7 +1737,7 @@ jobs:
           }
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3C.1b.2h TUI gate ingestion or READY refusal failed' }
-      - name: Recheck original 3C.1b.2c handoff native receipt fixture
+      - name: Recheck all three original 3C.1b.2c handoff regression cases
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1746,8 +1746,17 @@ jobs:
           $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
           $listExit = $LASTEXITCODE
           $listing | Out-Host
-          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
-            throw 'Original 3C.1b.2c TUI receipt regression missing'
+          $requiredNames = @(
+            'codexdd_046_3c1b2c_handoff_rejects_unterminalized_foreign_or_unpinned_source',
+            'codexdd_046_3c1b2c_live_handoff_preserves_exact_source_gates_without_terminal',
+            'codexdd_046_3c1b2c_native_completion_handoff_rechecks_source_and_review'
+          )
+          $reportedTests = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $reportedTests -notmatch '3 tests, 0 benchmarks') {
+            throw 'Expected exactly three existing 3C.1b.2c TUI handoff regressions'
+          }
+          foreach ($name in $requiredNames) {
+            if (-not $reportedTests.Contains($name)) { throw "Missing 3C.1b.2c regression: $name" }
           }
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'Original 3C.1b.2c handoff regressed' }

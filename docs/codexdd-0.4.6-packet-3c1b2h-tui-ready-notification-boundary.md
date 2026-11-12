@@ -24,7 +24,11 @@ The test uses isolated worktree fixtures and realistic notification structs; it 
 
 ## Isolated Windows CI
 
-A dedicated `[3c1b2h-native]` push job validates exact branch/SHA and Rustfmt, compiles the focused Windows `codex-tui` library tests with repository-pinned Rust, DotSlash and V8, asserts exactly two new tests are present and reruns the one existing 3C.1b.2c handoff case. No changed game worktrees, installations, published artifacts or production authorizations.
+A dedicated `[3c1b2h-native]` push job validates exact branch/SHA and Rustfmt, compiles the focused Windows `codex-tui` library tests with repository-pinned Rust, DotSlash and V8, asserts exactly two new tests are present and reruns all three existing 3C.1b.2c handoff regressions (foreign/unpinned refusal, source-gate inheritance, and source/native-review rechecking). No changed game worktrees, installations, published artifacts or production authorizations.
+
+## Initial Windows result and CI harness correction
+
+[Run #43306411405](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43306411405) on `a8e0615e440a2222ddb24f1d78b6b4400562ae3a`: source preflight **PASS**, Rustfmt **PASS**, both new Windows native TUI `3C.1b.2h` regression tests **PASS** (2/2). The overall workflow reported **FAILURE** because its additional `3C.1b.2c` recheck used an incorrect expected-test count of *one*; the compiled test binary correctly enumerated *three* pre-existing tests. It aborted before running those three, so their results cannot be inferred from this attempt. The CI correction now requires all three named tests and executes all three; it changes no TUI gate authorizations, proof validation, or production behavior. Focused Windows acceptance remains pending until the corrected workflow is green.
 
 ## Follow-on acceptance
 
