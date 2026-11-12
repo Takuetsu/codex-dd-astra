@@ -51,6 +51,11 @@ on:
       - codex-rs/app-server/tests/suite/v2/mod.rs
       - codex-rs/app-server/tests/suite/v2/codexdd_candidate_native.rs
       - docs/regression-fixtures/codexdd-046-agent-reliability-cases.json
+      # Native 3C.1b.2d profile/contract changes must trigger their own CI.
+      - scripts/codexdd-validation-common.ps1
+      - scripts/codexdd-test-independent.ps1
+      - scripts/codexdd-independent-profile-contract-tests.ps1
+      - scripts/codexdd-validation-contract-tests.ps1
   workflow_dispatch:
 
 permissions:
