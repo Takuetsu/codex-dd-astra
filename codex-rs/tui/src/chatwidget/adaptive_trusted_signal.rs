@@ -326,6 +326,17 @@ impl ChatWidget {
                 return true;
             }
         }
+        // Evaluate the READY refusal while the trusted envelope is still
+        // borrowed. A later pending-signal state change must not keep a
+        // reference into the previous signal alive or relax any evidence gate.
+        let missing_ready_prerequisites =
+            (!accepted && signal_kind == AdaptiveRuntimeSignalKind::ReadyForOwnerQa).then(|| {
+                self.owner_qa_prerequisite_admission(&envelope.evidence_refs)
+                    .err()
+                    .unwrap_or_else(|| {
+                        "current-turn independent validation evidence was not accepted".to_string()
+                    })
+            });
         self.adaptive_effort.pending_signal = Some(if accepted {
             AdaptivePendingSignal::Consumed {
                 source_turn_id: source_turn_id.to_string(),
@@ -336,15 +347,9 @@ impl ChatWidget {
             }
         });
         if !accepted {
-            if signal_kind == AdaptiveRuntimeSignalKind::ReadyForOwnerQa {
+            if let Some(missing) = missing_ready_prerequisites {
                 // Failure to meet a gate is not permission to escalate, rerun
                 // a finished test or latch an unverified terminal.
-                let missing = self
-                    .owner_qa_prerequisite_admission(&envelope.evidence_refs)
-                    .err()
-                    .unwrap_or_else(|| {
-                        "current-turn independent validation evidence was not accepted".to_string()
-                    });
                 self.add_info_message(
                     format!(
                         "CodexDD READY_FOR_OWNER_QA withheld: {missing}. Source evidence is preserved; obtain the missing independent, authorized prerequisite evidence before retrying READY."
