@@ -36,7 +36,11 @@ const TEST_TIMEOUT: Duration = Duration::from_secs(120);
 
 #[cfg(windows)]
 fn git(root: &Path, args: &[&str]) -> Result<String> {
-    let output = Command::new("git").arg("-C").arg(root).args(args).output()?;
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()?;
     ensure!(
         output.status.success(),
         "isolated Git {} failed: {}",
@@ -236,7 +240,10 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
             .context("real native run_id missing")?
             .to_string();
         ensure!(!run_id.trim().is_empty());
-        ensure!(!native_run_ids.contains(&run_id), "separate Worker reused native run ID");
+        ensure!(
+            !native_run_ids.contains(&run_id),
+            "separate Worker reused native run ID"
+        );
         native_run_ids.push(run_id);
         thread_ids.push(thread_id);
 
@@ -249,7 +256,11 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
 
     ensure!(thread_ids.len() == 2 && native_run_ids.len() == 2);
     ensure!(
-        git(&root, &["status", "--porcelain=v1", "--untracked-files=all"])?.is_empty(),
+        git(
+            &root,
+            &["status", "--porcelain=v1", "--untracked-files=all"]
+        )?
+        .is_empty(),
         "real native process should leave source candidate unchanged"
     );
     timeout(TEST_TIMEOUT, app_server.shutdown_gracefully()).await??;
@@ -281,7 +292,9 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
             worker
                 .source_root
                 .as_ref()
-                .is_some_and(|path| Path::new(path).canonicalize().ok().as_ref() == Some(&canonical))
+                .is_some_and(
+                    |path| Path::new(path).canonicalize().ok().as_ref() == Some(&canonical)
+                )
         );
     }
     timeout(TEST_TIMEOUT, restarted.shutdown_gracefully()).await??;
