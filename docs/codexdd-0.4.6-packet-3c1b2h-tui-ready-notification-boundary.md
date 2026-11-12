@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — Packet 3C.1b.2h: TUI native item completion → owner READY gate
 
 **Date:** 2026-11-12. **Parent:** `ad20adee456fa55a725678e5786dfab9cda2ff03` (3C.1b.2g accepted).
-**Status:** SOURCE IMPLEMENTED; targeted Windows TUI native regression **PENDING**. Overall 3C.1 and CodexDD 0.4.6 **OPEN / NONPRODUCTION**.
+**Status:** FOCUSED WINDOWS NATIVE TUI ACCEPTED at `7c08b07a147a118c036e7c76ff2bdc3ef3181fc1` ([Actions #43312959959](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43312959959), successful 2026-11-12). Overall 3C.1 and CodexDD 0.4.6 **OPEN / NONPRODUCTION**.
 
 ## Finding and narrow correction
 
@@ -29,6 +29,10 @@ A dedicated `[3c1b2h-native]` push job validates exact branch/SHA and Rustfmt, c
 ## Initial Windows result and CI harness correction
 
 [Run #43306411405](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43306411405) on `a8e0615e440a2222ddb24f1d78b6b4400562ae3a`: source preflight **PASS**, Rustfmt **PASS**, both new Windows native TUI `3C.1b.2h` regression tests **PASS** (2/2). The overall workflow reported **FAILURE** because its additional `3C.1b.2c` recheck used an incorrect expected-test count of *one*; the compiled test binary correctly enumerated *three* pre-existing tests. It aborted before running those three, so their results cannot be inferred from this attempt. The CI correction now requires all three named tests and executes all three; it changes no TUI gate authorizations, proof validation, or production behavior. Focused Windows acceptance remains pending until the corrected workflow is green.
+
+## Accepted native Windows checkpoint — #132
+
+[GitHub Actions #43312959959](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43312959959), exact source `7c08b07a147a118c036e7c76ff2bdc3ef3181fc1`: **SUCCESS**, 14m54s. Preflight and Rustfmt passed. Both new TUI item/completed owner-gate and trusted READY tests passed, and all **three** existing 3C.1b.2c receipt/handoff regressions passed. This acceptance is scoped to native Windows TUI processing of fixture notifications, not a spawned app-server feeding real native receipts to the TUI in one process-to-process test. The latter is packet 3C.1b.2i.
 
 ## Follow-on acceptance
 
