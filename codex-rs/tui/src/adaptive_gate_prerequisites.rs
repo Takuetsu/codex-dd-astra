@@ -6,6 +6,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
+use crate::adaptive_evidence::AdaptiveIndependentReviewRequirement;
 use crate::adaptive_evidence::AdaptiveEvidenceResolveError;
 use crate::adaptive_evidence::AdaptiveSourceGateRequirement;
 use crate::adaptive_worker::AdaptiveTaskKind;
@@ -63,6 +64,18 @@ struct NativeSourceRef {
     minimum_completed_at_ms: u64,
 }
 
+/// Native independent Validator evidence remains a live registry reference,
+/// not a durable green flag or an assertion copied from the source Worker.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct NativeIndependentReviewRef {
+    evidence_id: String,
+    validation_thread_id: ThreadId,
+    implementation_thread_id: ThreadId,
+    validation_turn_id: String,
+    run_id: String,
+    minimum_completed_at_ms: u64,
+}
+
 /// The owner-specified prerequisites for one exact candidate. Source receipts
 /// remain references and are rechecked on every readiness evaluation, so a
 /// later conflict/stale source cannot retain a cached PASS.
@@ -73,6 +86,7 @@ pub(crate) struct AdaptiveGateLedger {
     sha: String,
     required: Vec<AdaptiveRequiredGate>,
     source_refs: BTreeMap<String, NativeSourceRef>,
+    independent_review_ref: Option<NativeIndependentReviewRef>,
     blockers: Vec<(AdaptiveRequiredGate, String)>,
 }
 
@@ -133,6 +147,7 @@ impl AdaptiveGateLedger {
             sha: sha.to_ascii_lowercase(),
             required,
             source_refs: BTreeMap::new(),
+            independent_review_ref: None,
             blockers: Vec::new(),
         })
     }
@@ -275,6 +290,61 @@ impl AdaptiveGateLedger {
         }
     }
 
+    /// Observe a Core-native independent review from a fresh, authorized
+    /// Validation Worker. The dedicated producer is not yet registered;
+    /// until it exists, no live receipt can satisfy this requirement.
+    pub(crate) fn observe_independent_review_pass(
+        &mut self,
+        registry: &AdaptiveEvidenceRegistry,
+        evidence_id: &str,
+        validation_thread_id: ThreadId,
+        implementation_thread_id: ThreadId,
+        validation_turn_id: &str,
+        run_id: &str,
+        minimum_completed_at_ms: u64,
+    ) -> Result<(), AdaptiveEvidenceResolveError> {
+        if !self.required.contains(&AdaptiveRequiredGate::IndependentValidation) {
+            return Err(AdaptiveEvidenceResolveError::GateScopeMismatch);
+        }
+        let requirement = self.independent_requirement(
+            validation_thread_id,
+            implementation_thread_id,
+            validation_turn_id,
+            run_id,
+            minimum_completed_at_ms,
+        );
+        registry.match_native_independent_review(evidence_id, &requirement)?;
+        self.independent_review_ref = Some(NativeIndependentReviewRef {
+            evidence_id: evidence_id.to_string(),
+            validation_thread_id,
+            implementation_thread_id,
+            validation_turn_id: validation_turn_id.to_string(),
+            run_id: run_id.to_string(),
+            minimum_completed_at_ms,
+        });
+        Ok(())
+    }
+
+    fn independent_requirement<'a>(
+        &'a self,
+        validation_thread_id: ThreadId,
+        implementation_thread_id: ThreadId,
+        validation_turn_id: &'a str,
+        run_id: &'a str,
+        minimum_completed_at_ms: u64,
+    ) -> AdaptiveIndependentReviewRequirement<'a> {
+        AdaptiveIndependentReviewRequirement {
+            validation_thread_id,
+            implementation_thread_id,
+            validation_turn_id,
+            authorized_scope: &self.scope,
+            source_root: &self.root,
+            source_sha: &self.sha,
+            expected_run_id: run_id,
+            minimum_completed_at_ms,
+        }
+    }
+
     pub(crate) fn mark_blocked(
         &mut self,
         gate: &AdaptiveRequiredGate,
@@ -318,10 +388,28 @@ impl AdaptiveGateLedger {
                                 });
                             (!source_is_current).then_some(AdaptiveGateState::Pending)
                         }
-                        // Until the owned-health producer (3D.1) and independent
-                        // Validator gate (3C.1) exist, these never auto-pass.
-                        AdaptiveRequiredGate::OwnedRuntimeHealth(_)
-                        | AdaptiveRequiredGate::IndependentValidation => {
+                        AdaptiveRequiredGate::IndependentValidation => {
+                            let independent_is_current =
+                                self.independent_review_ref.as_ref().is_some_and(|proof| {
+                                    let requirement = self.independent_requirement(
+                                        proof.validation_thread_id,
+                                        proof.implementation_thread_id,
+                                        &proof.validation_turn_id,
+                                        &proof.run_id,
+                                        proof.minimum_completed_at_ms,
+                                    );
+                                    registry
+                                        .match_native_independent_review(
+                                            &proof.evidence_id,
+                                            &requirement,
+                                        )
+                                        .is_ok()
+                                });
+                            (!independent_is_current).then_some(AdaptiveGateState::Pending)
+                        }
+                        // 3D.1 must still provide a strictly authorized owned
+                        // live-health result. A QA review is not listener proof.
+                        AdaptiveRequiredGate::OwnedRuntimeHealth(_) => {
                             Some(AdaptiveGateState::Pending)
                         }
                     }

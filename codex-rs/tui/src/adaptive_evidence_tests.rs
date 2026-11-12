@@ -1,3 +1,4 @@
+use super::adaptive_evidence::AdaptiveIndependentReviewRequirement;
 use super::adaptive_evidence::AdaptiveEvidenceKind;
 use super::adaptive_evidence::AdaptiveEvidenceOutcome;
 use super::adaptive_evidence::AdaptiveEvidenceRecord;
@@ -1203,3 +1204,228 @@ fn codexdd_046_3b3d_restores_only_valid_pending_blockers_and_fails_closed() {
     json["foreignAuthority"] = serde_json::json!("not approved");
     assert!(serde_json::from_value::<AdaptiveGateCheckpoint>(json).is_err());
 }
+
+/// A synthetic native completion is used to test the *matcher contract* only.
+/// The dedicated Core review producer remains an open, separate packet.
+fn synthetic_independent_review_receipt(
+    validator_thread: ThreadId,
+    root: &std::path::Path,
+    sha: &str,
+) -> AdaptiveEvidenceRecord {
+    let item = ItemCompletedNotification {
+        item: ThreadItem::DynamicToolCall {
+            id: "native-review-receipt".to_string(),
+            namespace: None,
+            tool: super::adaptive_evidence::CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME.to_string(),
+            arguments: serde_json::json!({
+                "profile": "independent_review",
+                "result": "pass",
+                "run_id": "native-review-789",
+                "head_sha": sha,
+                "source_root": root.canonicalize().expect("source root").display().to_string(),
+            }),
+            status: DynamicToolCallStatus::Completed,
+            content_items: None,
+            success: Some(true),
+            duration_ms: Some(1),
+        },
+        thread_id: validator_thread.to_string(),
+        turn_id: "independent-review-turn".to_string(),
+        completed_at_ms: 2_000,
+    };
+    let mut receipt = record_from_item_completion(&item).expect("typed simulated record");
+    receipt.bind_worker_identity(
+        &AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some("isolated source packet".to_string()),
+        },
+        Some(&AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: root.display().to_string(),
+            source_sha: sha.to_string(),
+        }),
+    );
+    receipt
+}
+
+#[test]
+fn codexdd_046_3c1b2a_independent_receipt_contract_and_restart_drop_authority() {
+    let root = tempfile::tempdir().expect("source root");
+    let impl_thread = ThreadId::new();
+    let validator = ThreadId::new();
+    let review = synthetic_independent_review_receipt(validator, root.path(), SOURCE_SHA_A);
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    assert_eq!(registry.register(review), AdaptiveEvidenceRegistration::Registered);
+    let req = AdaptiveIndependentReviewRequirement {
+        validation_thread_id: validator,
+        implementation_thread_id: impl_thread,
+        validation_turn_id: "independent-review-turn",
+        authorized_scope: "isolated source packet",
+        source_root: root.path(),
+        source_sha: SOURCE_SHA_A,
+        expected_run_id: "native-review-789",
+        minimum_completed_at_ms: 1_999,
+    };
+    assert!(registry.match_native_independent_review("native-review-receipt", &req).is_ok());
+    let mut ledger = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![AdaptiveRequiredGate::IndependentValidation],
+    )
+    .expect("required independent gate");
+    ledger
+        .observe_independent_review_pass(
+            &registry,
+            "native-review-receipt",
+            validator,
+            impl_thread,
+            "independent-review-turn",
+            "native-review-789",
+            1_999,
+        )
+        .expect("only matching typed review can be recorded");
+    assert!(ledger.ready_for_owner_qa(&registry));
+    let checkpoint = ledger
+        .checkpoint_for_worker(validator, AdaptiveWorkerRole::Validation)
+        .expect("requirements-only checkpoint");
+    let json = serde_json::to_string(&checkpoint).expect("JSON");
+    assert!(!json.contains("native-review-receipt"));
+    assert!(!json.contains("native-review-789"));
+    let restored = AdaptiveGateLedger::restore_pending(
+        checkpoint,
+        validator,
+        AdaptiveWorkerRole::Validation,
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+    )
+    .expect("same identity restored pending");
+    assert_eq!(restored.outstanding(&registry).len(), 1);
+    assert!(!restored.ready_for_owner_qa(&registry));
+}
+
+#[test]
+fn codexdd_046_3c1b2a_generic_or_implementation_success_cannot_be_independent() {
+    let root = tempfile::tempdir().expect("source");
+    let implementation = ThreadId::new();
+    let validator = ThreadId::new();
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(record(
+        "generic-green",
+        validator,
+        "independent-review-turn",
+        AdaptiveEvidenceOutcome::Success,
+    ));
+    registry.register(scoped_native_source_receipt(
+        implementation,
+        root.path(),
+        SOURCE_SHA_A,
+        "work_packet",
+    ));
+    let req = AdaptiveIndependentReviewRequirement {
+        validation_thread_id: validator,
+        implementation_thread_id: implementation,
+        validation_turn_id: "independent-review-turn",
+        authorized_scope: "isolated source packet",
+        source_root: root.path(),
+        source_sha: SOURCE_SHA_A,
+        expected_run_id: "native-review-789",
+        minimum_completed_at_ms: 1_999,
+    };
+    assert_eq!(
+        registry.match_native_independent_review("generic-green", &req),
+        Err(AdaptiveEvidenceResolveError::MissingProvenance)
+    );
+    assert_eq!(
+        registry.match_native_independent_review("native-lvo-evidence", &req),
+        Err(AdaptiveEvidenceResolveError::CrossThread)
+    );
+    let same_worker = AdaptiveIndependentReviewRequirement {
+        implementation_thread_id: validator,
+        ..req
+    };
+    assert_eq!(
+        registry.match_native_independent_review("generic-green", &same_worker),
+        Err(AdaptiveEvidenceResolveError::WorkerBindingMismatch)
+    );
+}
+
+#[test]
+fn codexdd_046_3c1b2a_wrong_source_or_conflict_revokes_native_review() {
+    let root = tempfile::tempdir().expect("source");
+    let other = tempfile::tempdir().expect("foreign");
+    let implementation = ThreadId::new();
+    let validator = ThreadId::new();
+    let review = synthetic_independent_review_receipt(validator, root.path(), SOURCE_SHA_A);
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    registry.register(review.clone());
+    let mut req = AdaptiveIndependentReviewRequirement {
+        validation_thread_id: validator,
+        implementation_thread_id: implementation,
+        validation_turn_id: "independent-review-turn",
+        authorized_scope: "isolated source packet",
+        source_root: root.path(),
+        source_sha: SOURCE_SHA_A,
+        expected_run_id: "native-review-789",
+        minimum_completed_at_ms: 1_999,
+    };
+    req.source_sha = SOURCE_SHA_B;
+    assert_eq!(
+        registry.match_native_independent_review("native-review-receipt", &req),
+        Err(AdaptiveEvidenceResolveError::SourceIdentityMismatch)
+    );
+    req.source_sha = SOURCE_SHA_A;
+    req.source_root = other.path();
+    assert_eq!(
+        registry.match_native_independent_review("native-review-receipt", &req),
+        Err(AdaptiveEvidenceResolveError::SourceIdentityMismatch)
+    );
+    req.source_root = root.path();
+    req.expected_run_id = "prior-review-789";
+    assert_eq!(
+        registry.match_native_independent_review("native-review-receipt", &req),
+        Err(AdaptiveEvidenceResolveError::RunIdMismatch)
+    );
+    req.expected_run_id = "native-review-789";
+    req.minimum_completed_at_ms = 2_001;
+    assert_eq!(
+        registry.match_native_independent_review("native-review-receipt", &req),
+        Err(AdaptiveEvidenceResolveError::StaleEvidence)
+    );
+    let mut ledger = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![AdaptiveRequiredGate::IndependentValidation],
+    )
+    .expect("review required");
+    ledger
+        .observe_independent_review_pass(
+            &registry,
+            "native-review-receipt",
+            validator,
+            implementation,
+            "independent-review-turn",
+            "native-review-789",
+            1_999,
+        )
+        .expect("synthetic typed native review contract");
+    assert!(ledger.ready_for_owner_qa(&registry));
+    let conflicting = AdaptiveEvidenceRecord {
+        native_source_provenance: review.native_source_provenance.as_ref().map(|proof| {
+            super::adaptive_evidence::AdaptiveNativeSourceProvenance {
+                source_sha: SOURCE_SHA_B.to_string(),
+                ..proof.clone()
+            }
+        }),
+        ..review
+    };
+    assert_eq!(
+        registry.register(conflicting),
+        AdaptiveEvidenceRegistration::Conflicted
+    );
+    assert_eq!(ledger.outstanding(&registry).len(), 1);
+    assert!(!ledger.ready_for_owner_qa(&registry));
+}
+

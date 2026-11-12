@@ -989,10 +989,10 @@ jobs:
           Write-Host 'GitHub source verification only. No deployment, install, release or production merge.'
 
   windows-3b3b-native-provenance:
-    name: 3B.3b/3B.3c/3B.3d/3C.1a/3C.1b1 Windows gates
+    name: 3B.3b-3C.1b.2a Windows evidence contracts
     # Explicit owner-directed GitHub-only scoped diagnostic: isolated disposable
     # evidence fixtures, never a real project profile or release acceptance.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b3b-native]') || contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]'))
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b3b-native]') || contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 100
@@ -1070,7 +1070,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3b TUI source and gate provenance tests failed' }
       - name: Validate four 3B.3c prerequisite-ledger negative controls
-        if: contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]')
+        if: contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1085,7 +1085,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3c pending gate and evidence invalidation regression failed' }
       - name: Validate three 3B.3d checkpoint and fail-closed restore regressions
-        if: contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]')
+        if: contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1100,7 +1100,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3d restart checkpoint and source isolation tests failed' }
       - name: Validate three 3B.3d.2 durable protocol and rollout restart regressions
-        if: contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]')
+        if: contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1115,7 +1115,7 @@ jobs:
           & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.3d.2 checkpoint persistence and Worker isolation failed' }
       - name: Validate 3C.1a negative READY gate and existing RepairRequired control
-        if: contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]')
+        if: contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1137,7 +1137,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "3C.1a READY/refusal regression failed for $filter" }
           }
       - name: Validate 3C.1b.1 two legacy READY replay negatives and old terminal compatibility
-        if: contains(github.event.head_commit.message, '[3c1b1-native]')
+        if: contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -1160,6 +1160,21 @@ jobs:
           }
           & cargo test --locked -p codex-tui --lib $legacy -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3C.1b.1 prior terminal compatibility failed' }
+      - name: Validate three 3C.1b.2a synthetic native independent review contract regressions
+        if: contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2a_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw '3C.1b.2a expected exactly three source-bound independent review contract cases'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2a independent review provenance matcher failed' }
       - name: Confirm no source mutation, install or release
         if: always()
         shell: pwsh
