@@ -24,7 +24,6 @@ use codex_app_server_protocol::TurnStartResponse;
 use codex_app_server_protocol::UserInput;
 use core_test_support::responses;
 use serde_json::json;
-use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::time::Duration;
@@ -122,6 +121,11 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
     ];
     let mut response_sequence = Vec::new();
     for (role, call_id, tool, profile) in calls {
+        // First direct user turn durably binds the original owner identity.
+        // This must be a separate turn from the protected native successor.
+        response_sequence.push(create_final_assistant_message_sse_response(
+            "initial owner identity accepted",
+        )?);
         let arguments = json!({ "profile": profile }).to_string();
         response_sequence.push(responses::sse(vec![
             responses::ev_response_created(&format!("mock-{role}-tool")),
@@ -142,22 +146,14 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
     let mut thread_ids = Vec::new();
     let mut native_run_ids = Vec::new();
     for (role, call_id, tool, profile) in calls {
-        let config = HashMap::from([(
-            "adaptive_worker".to_string(),
-            json!({
-                "role": role,
-                "authorized_scope": scope,
-                "source_root": canonical.display().to_string(),
-                "source_sha": sha,
-                "task_kind": "source_change",
-            }),
-        )]);
         let id = app_server
             .send_thread_start_request(ThreadStartParams {
                 model: Some("mock-model".to_string()),
                 cwd: Some(root.display().to_string()),
                 history_mode: Some(ThreadHistoryMode::Legacy),
-                config: Some(config),
+                // Original Worker authority must come from an actual direct
+                // user turn. Launcher config is intentionally not persisted
+                // as the Core first-user authorization checkpoint.
                 approval_policy: Some(AskForApproval::Never),
                 // A deliberately approved no-sandbox policy exists only inside
                 // this self-contained Windows CI fixture and its Git directory.
@@ -172,6 +168,53 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
             !thread_ids.contains(&thread_id),
             "fresh Validation Worker reused the Implementation thread identity"
         );
+
+        // The first user turn is a strict TOML Worker assignment, not a model
+        // tool call. Core must durably flush that exact-thread authority before
+        // a later, separately marked validation turn can use it.
+        let first_message = format!(
+            "[adaptive_worker]\nrole = \"{role}\"\nauthorized_scope = \"{scope}\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"source_change\"\n\nAuthorize this isolated {role} Worker for one bounded native profile.",
+            canonical.display()
+        );
+        let first_id = app_server
+            .send_turn_start_request(TurnStartParams {
+                thread_id: thread_id.clone(),
+                input: vec![UserInput::Text {
+                    text: first_message,
+                    text_elements: Vec::new(),
+                }],
+                ..Default::default()
+            })
+            .await?;
+        let first_started: TurnStartResponse =
+            timeout(TEST_TIMEOUT, app_server.read_response(first_id)).await??;
+        let first_terminal = timeout(
+            TEST_TIMEOUT,
+            app_server.read_stream_until_notification_message("turn/completed"),
+        )
+        .await??;
+        ensure!(
+            first_terminal.params.as_ref().and_then(|params| params.get("threadId"))
+                .and_then(|id| id.as_str()) == Some(thread_id.as_str()),
+            "owner assignment turn finished on a foreign thread"
+        );
+        ensure!(
+            first_terminal
+                .params
+                .as_ref()
+                .and_then(|params| params.pointer("/turn/id"))
+                .and_then(|id| id.as_str()) == Some(first_started.turn.id.as_str()),
+            "owner assignment turn was not the expected Core turn"
+        );
+        ensure!(
+            first_terminal
+                .params
+                .as_ref()
+                .and_then(|params| params.pointer("/turn/status"))
+                .and_then(|status| status.as_str()) == Some("completed"),
+            "initial direct user Worker assignment must finish successfully"
+        );
+
         let turn_id = app_server
             .send_turn_start_request(TurnStartParams {
                 thread_id: thread_id.clone(),
