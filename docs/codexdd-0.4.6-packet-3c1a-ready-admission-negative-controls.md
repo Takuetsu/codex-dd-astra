@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — 3C.1a: fail-closed READY admission (negative controls)
 
 **Date:** 2026-11-11. **Base:** `fbd1d1ca3b82a6769c10c343bc6517fa21ab1d13` (3B.3d.2 native acceptance documented).
-**State:** SOURCE / TEST CHECKPOINT ONLY; no exact-head Rustfmt or native Windows compile/test proof yet. 3C.1 and 0.4.6 remain OPEN.
+**State:** ACCEPTED: exact-source focused native Windows negative terminal gate. Full 3C.1 and 0.4.6 remain OPEN.
 
 ## Outcome and boundaries
 
@@ -26,3 +26,9 @@ An invalid READY attempt is cancelled without terminal latch or `SetReadyForOwne
 This checkpoint implements the **negative terminal admission boundary only**. Positive admission requires an independently bound Validator evidence producer (3C.1b), owner-authorized gate assignment/transfer to the Validation Worker, and a verified owned runtime-health producer (3D.1) when required. Restored legacy READY snapshots and direct app-server persistence authority also need separate 3C.1 review. Do not claim the 0.4.6 READY workflow is usable or accept a release from a green synthetic test.
 
 Next: exact-head source/Rustfmt plus focused native Windows `codexdd_046_3c1a_` and old READY/RepairRequired controls, then implement the positive admission and bounded recovery. Cheap local Windows checks before broad CI remain preferred; GitHub-only diagnostic jobs must remain narrow and source-scoped.
+
+## Exact-source native acceptance — 2026-11-11
+
+Source `24b596110cba9c3d3b849d155413fbca0b06f1d0`; [GitHub Actions #43117038186](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43117038186) SUCCESS. Source preflight and Rustfmt PASS; focused Windows log: Core receipt 1/1, 3B.3b provenance 6/6, 3B.3c prerequisite 4/4, 3B.3d.1 source-bound checkpoint 3/3, 3B.3d.2 persistent resume 3/3, 3C.1a negative READY controls 2/2 + corrected preexisting green-review refusal 1/1 + RepairRequired nonregression 1/1. **21/21 focused tests passed**. This accepts only the fail-closed refusal of generic green READY and exact pinned-gate identity; no live independent QA, runtime health, positive READY path, complete 0.4.6 deployment or production build was validated.
+
+**Next:** 3C.1b legacy READY replay safety and separate source/Worker-bound positive independent-Validator proof producer. The old standalone `SetReadyForOwnerQa` and checkpoint-free snapshot restore paths require explicit negative controls before any fresh READY authority can survive restart.

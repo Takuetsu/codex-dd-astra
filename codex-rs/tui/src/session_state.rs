@@ -350,11 +350,12 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         }
         None => None,
     };
-    // A prior ready_for_owner_qa terminal cannot survive a restart with no
-    // revalidatable source / independent-Validator evidence.
-    let workflow_terminal = if gate_ledger.is_some()
-        && workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
-    {
+    // Restored snapshots do not contain admissible native source or independent
+    // Validator receipts. Even an older record with no gate checkpoint cannot
+    // restore READY; park it for owner review instead of silently continuing.
+    let restored_ready_is_unverified =
+        workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
+    let workflow_terminal = if restored_ready_is_unverified {
         None
     } else {
         workflow_terminal
@@ -378,7 +379,7 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         current_family,
         current_effort,
         attempt_number: state.attempt_number,
-        paused_by_user: state.paused_by_user,
+        paused_by_user: state.paused_by_user || restored_ready_is_unverified,
         last_outcome: None,
         last_failure_kind: None,
         worker_context: AdaptiveWorkerContext {
@@ -410,6 +411,19 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
     Ok(())
 }
 
+/// A legacy SetReadyForOwnerQa rollout item is an old assertion, not current
+/// evidence. The independent gate is not replayable after restart; hold this
+/// worker for an explicit owner decision without triggering retries.
+fn suspend_unverified_legacy_ready(adaptive_effort: &mut AdaptiveEffortState) {
+    adaptive_effort.workflow_terminal = None;
+    adaptive_effort.paused_by_user = true;
+    adaptive_effort.last_processed_terminal_turn_id = None;
+    adaptive_effort.unfinished_turn_pressure = 0;
+    adaptive_effort.pending_attempt = None;
+    adaptive_effort.pending_signal = None;
+    adaptive_effort.successor_admission = None;
+}
+
 pub(crate) async fn restore_persisted_workflow_state(
     rollout_path: Option<&std::path::Path>,
     thread_id: ThreadId,
@@ -430,11 +444,7 @@ pub(crate) async fn restore_persisted_workflow_state(
     match codex_history::restored_workflow_state(items.iter()) {
         codex_history::RestoredWorkflowState::None => {}
         codex_history::RestoredWorkflowState::ReadyForOwnerQa => {
-            adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
-            adaptive_effort.unfinished_turn_pressure = 0;
-            adaptive_effort.pending_attempt = None;
-            adaptive_effort.pending_signal = None;
-            adaptive_effort.successor_admission = None;
+            suspend_unverified_legacy_ready(adaptive_effort);
         }
         codex_history::RestoredWorkflowState::Adaptive {
             state,
@@ -526,18 +536,20 @@ mod tests {
     }
 
     #[test]
-    fn restored_snapshot_accepts_every_hard_workflow_terminal() {
-        for (persisted, expected) in [
+    fn restored_snapshot_preserves_non_ready_terminals_but_quarantines_unverified_ready() {
+        for (persisted, expected, held_for_owner) in [
             (
                 "ready_for_validation",
-                AdaptiveWorkflowTerminal::ReadyForValidation,
+                Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+                false,
             ),
-            ("repair_required", AdaptiveWorkflowTerminal::RepairRequired),
             (
-                "ready_for_owner_qa",
-                AdaptiveWorkflowTerminal::ReadyForOwnerQa,
+                "repair_required",
+                Some(AdaptiveWorkflowTerminal::RepairRequired),
+                false,
             ),
-            ("blocked", AdaptiveWorkflowTerminal::Blocked),
+            ("ready_for_owner_qa", None, true),
+            ("blocked", Some(AdaptiveWorkflowTerminal::Blocked), false),
         ] {
             let mut adaptive = AdaptiveEffortState::default();
             apply_persisted_adaptive_workflow_state(
@@ -568,7 +580,8 @@ mod tests {
             )
             .expect("terminal snapshot should restore");
 
-            assert_eq!(adaptive.workflow_terminal, Some(expected));
+            assert_eq!(adaptive.workflow_terminal, expected);
+            assert_eq!(adaptive.paused_by_user, held_for_owner);
             assert_eq!(adaptive.pending_attempt, None);
             assert_eq!(adaptive.pending_signal, None);
             assert_eq!(adaptive.successor_admission, None);
@@ -1067,8 +1080,9 @@ mod codexdd_046_3b3d2_persistence_tests {
         )
         .expect("old state is backward compatible");
         assert!(adaptive.gate_ledger.is_none());
-        // Legacy terminals are separately guarded by 3C.1; a missing gate
-        // checkpoint must not be interpreted as new 3B.3d proof.
+        assert_eq!(adaptive.workflow_terminal, None);
+        assert!(adaptive.paused_by_user);
+        // Missing checkpoint means the old READY report is not current proof.
     }
 
     #[test]
@@ -1110,5 +1124,66 @@ mod codexdd_046_3b3d2_persistence_tests {
             .is_err()
         );
         assert!(adaptive.gate_ledger.is_none());
+    }
+}
+
+#[cfg(test)]
+mod codexdd_046_3c1b1_resume_guards {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3c1b1_standalone_legacy_ready_is_held_without_evidence() {
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+            ..Default::default()
+        };
+        suspend_unverified_legacy_ready(&mut state);
+        assert_eq!(state.workflow_terminal, None);
+        assert!(state.paused_by_user);
+        assert_eq!(state.last_processed_terminal_turn_id, None);
+        assert!(state.pending_signal.is_none());
+        assert!(state.successor_admission.is_none());
+        assert!(state.pending_attempt.is_none());
+        assert_eq!(state.evidence_registry.len(), 0);
+    }
+
+    #[test]
+    fn codexdd_046_3c1b1_legacy_ready_snapshot_with_source_pin_is_not_readiness() {
+        let root = tempfile::tempdir().expect("disposable authorized root");
+        let sha = "a".repeat(40);
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(serde_json::json!({
+                "enabled": true,
+                "starting_family": "astra",
+                "current_family": "sol",
+                "current_effort": "low",
+                "attempt_number": 2,
+                "paused_by_user": false,
+                "worker_role": "validation",
+                "authorized_scope": "isolated legacy Validator task",
+                "assignment_task_kind": "source_change",
+                "authorized_source_root": root.path(),
+                "authorized_source_sha": sha,
+                "worker_assignment_locked": true,
+                "workflow_terminal": "ready_for_owner_qa"
+            }))
+            .expect("legacy snapshot without gate checkpoint");
+        let mut state = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(
+            &mut state,
+            snapshot,
+            Some("prior-green-turn".to_string()),
+        )
+        .expect("backward-compatible but unverified READY");
+        assert_eq!(state.workflow_terminal, None);
+        assert!(state.paused_by_user);
+        assert_eq!(state.last_processed_terminal_turn_id, None);
+        assert!(state.gate_ledger.is_none());
+        assert!(state.evidence_registry.len() == 0);
+        assert_eq!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Validation
+        );
     }
 }
