@@ -183,8 +183,7 @@ async fn codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume(
                 // Only the original owner-approved Implementation Worker may
                 // request the bounded MechanicalValidation lifecycle.
                 turn_trigger: (role == "implementation").then(|| {
-                    codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER
-                        .to_string()
+                    codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string()
                 }),
                 ..Default::default()
             })
