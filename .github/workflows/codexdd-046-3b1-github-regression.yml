@@ -1343,3 +1343,51 @@ jobs:
         run: |
           Write-Host "3C.1b.2c source-only TUI fixtures $env:GITHUB_SHA; real cross-process validation and release remain open."
           git status --short
+
+  windows-3c1b2d-independent-profile:
+    name: 3C.1b.2d real repo-owned independent profile and contract-v1 refusal
+    # Verifies the actual profile script exists, parses, has a fixed stage list
+    # and emits properly classified native event/exit results on Windows.
+    # The fixtures are NOT a real review or owner QA acceptance.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2d-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm exact 0.4.6 candidate identity and native scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source checkout' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Unexpected product baseline' }
+          foreach ($file in @(
+            'scripts/codexdd-validation-common.ps1',
+            'scripts/codexdd-test-independent.ps1',
+            'scripts/codexdd-independent-profile-contract-tests.ps1'
+          )) {
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing $file" }
+          }
+      - name: Execute native independent review profile contract fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-independent-profile-contract-tests.ps1'
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2d independent profile script/contract regression failed' }
+      - name: Check existing implementation profile fixture compatibility
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-validation-contract-tests.ps1'
+          if ($LASTEXITCODE -ne 0) { throw 'Existing targeted contract profile regression failed' }
+      - name: Confirm checkout unchanged and no release
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2d Windows profile/contract fixtures on $env:GITHUB_SHA. NOT an independent Core PASS or owner READY."
+          git status --short
