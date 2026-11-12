@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — Packet 3C.1b.2e: owner-authorized gate issuance
 
 **Date:** 2026-11-12. **Parent:** `d2131bd604f32a7181d9aad840b50a2fab1bf3e4` (3C.1b.2d contract acceptance recorded).
-**State:** SOURCE IMPLEMENTATION ONLY. Native Windows CI, real independent Core tool PASS, full app-server/TUI handoff and 0.4.6 release acceptance remain **PENDING**.
+**State:** FOCUSED NATIVE WINDOWS ACCEPTED at `ab06352b4a73b867f2e5f9b4266f20f1533db599`, [GitHub Actions #43267324386](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43267324386), 2026-11-12. Real independent Core tool PASS, full app-server/TUI handoff and 0.4.6 release acceptance remain **PENDING**.
 
 ## Purpose and authority
 
@@ -44,3 +44,7 @@ The `[3c1b2e-native]` Windows workflow requires source preflight, Rustfmt, one t
 ## Next
 
 After native CI, execute real source-pinned disposable-worktree Core/TUI/app-server acceptance with two separate Workers, including negative stale/mismatched/dirty evidence paths and an authentic independent native PASS before calling 3C.1 complete. Finish the full remaining 0.4.6 development and release validation before the approximately seven-day single-milestone BREAKWATER soak.
+
+## Accepted focused Windows proof — 2026-11-12
+
+GitHub Actions [#43267324386](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43267324386), exact source `ab06352b4a73b867f2e5f9b4266f20f1533db599`: **SUCCESS** (25m34s). Source preflight, Rustfmt, one native configuration/parser test, five owner-gate issuance/refusal TUI tests, and three prior source-bound handoff TUI tests passed. First compiler pass had four legacy TUI `AdaptiveWorkerConfigToml` initializer errors; fixed by explicitly setting `required_gates: None`, preserving old behavior. This acceptance establishes typed owner gate issuance **only at the focused source/unit level**, not a real native independent PASS, a complete app-server+TUI handoff, a full release suite, or READY permission.
