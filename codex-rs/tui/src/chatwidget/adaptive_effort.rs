@@ -132,6 +132,9 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
     /// Pending source-/Worker-bound requirements, never cached success authority.
     pub(crate) gate_ledger: Option<AdaptiveGateLedger>,
+    /// Ephemeral parent Implementation thread for a fresh, source-bound review.
+    /// Never persisted or inferred from a model-provided thread ID.
+    pub(crate) review_origin_thread_id: Option<codex_protocol::ThreadId>,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
     pub(crate) validation_repair_fingerprint: Option<String>,
@@ -212,6 +215,41 @@ impl AdaptiveEffortState {
             budget_mode: self.budget_mode,
             ..Default::default()
         }
+    }
+
+    /// Handoff authority originates from the terminalized source Worker,
+    /// not an arbitrary matching scope or a replayed checkpoint. In-memory
+    /// registry refs are copied only so each exact gate can be revalidated.
+    fn inherit_authorized_independent_review(
+        &mut self,
+        previous: &Self,
+        binding: &NewWorkerBinding,
+        origin_thread_id: codex_protocol::ThreadId,
+    ) {
+        let Some(pin) = self.assignment_preflight.as_ref() else {
+            return;
+        };
+        let Some(ledger) = previous.gate_ledger.as_ref() else {
+            return;
+        };
+        if binding.role != AdaptiveWorkerRole::Validation
+            || previous.worker_context.role != AdaptiveWorkerRole::Implementation
+            || !previous.worker_assignment_locked
+            || previous.workflow_terminal != Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+            || previous.worker_context.authorized_scope.as_deref()
+                != Some(binding.authorized_scope.as_str())
+            || pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+            || !ledger.matches_authorized_source(
+                &binding.authorized_scope,
+                std::path::Path::new(&pin.source_root),
+                &pin.source_sha,
+            )
+        {
+            return;
+        }
+        self.gate_ledger = Some(ledger.clone());
+        self.evidence_registry = previous.evidence_registry.clone();
+        self.review_origin_thread_id = Some(origin_thread_id);
     }
 
     pub(crate) fn activate_adaptive_startup(&mut self, preferred_family: AdaptiveFamily) {
@@ -312,6 +350,7 @@ impl AdaptiveEffortState {
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
         let gate_ledger = self.gate_ledger.clone();
+        let review_origin_thread_id = self.review_origin_thread_id;
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
         let consecutive_no_native_progress_turns = self.consecutive_no_native_progress_turns;
@@ -346,6 +385,7 @@ impl AdaptiveEffortState {
             pending_signal: None,
             evidence_registry,
             gate_ledger,
+            review_origin_thread_id,
             complexity_class,
             implementation_phase,
             validation_repair_fingerprint,
@@ -531,7 +571,7 @@ impl ChatWidget {
         let complexity = self.adaptive_effort.complexity_class?.label();
         Some(
             format!(
-                "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. If the change is green, report ready_for_owner_qa with successful native evidence refs. If a blocker is found, report repair_required with failing native evidence refs.",
+                "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. For an authorized pinned source, call the direct built-in run_codexdd_independent_validation tool with profile=independent_review; a generic command PASS or the Implementation-only runner is not an independent review. Include the native independent-review receipt ID in the successful evidence refs when reporting ready_for_owner_qa. Any remaining source, runtime or independent gate means READY must stay pending. If a blocker is found, report repair_required with failing native evidence refs.",
                 binding.authorized_scope,
                 complexity,
             )
@@ -543,7 +583,15 @@ impl ChatWidget {
         &self,
         binding: Option<&NewWorkerBinding>,
     ) -> AdaptiveEffortState {
-        self.adaptive_effort.fresh_for_new_worker(binding)
+        let mut fresh = self.adaptive_effort.fresh_for_new_worker(binding);
+        if let (Some(binding), Some(origin_thread_id)) = (binding, self.thread_id) {
+            fresh.inherit_authorized_independent_review(
+                &self.adaptive_effort,
+                binding,
+                origin_thread_id,
+            );
+        }
+        fresh
     }
 
     pub(super) fn save_adaptive_effort_for_current_thread(&self) {
@@ -924,6 +972,135 @@ mod tests {
     use super::*;
 
     const VALIDATION_ASSIGNMENT: &str = "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"Z-A0.45B-R2 independent verification\"\n\nReview the exact pushed R2 candidate.";
+
+    fn codexdd_046_3c1b2c_source_parent(
+        root: &std::path::Path,
+        scope: &str,
+    ) -> AdaptiveEffortState {
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        let sha = "a".repeat(40);
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some(scope.to_string()),
+            },
+            worker_assignment_locked: true,
+            assignment_preflight: Some(AdaptiveWorkerPreflight {
+                task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+                source_root: root.display().to_string(),
+                source_sha: sha.clone(),
+            }),
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+            ..Default::default()
+        };
+        state.gate_ledger = Some(
+            AdaptiveGateLedger::new(
+                scope,
+                root,
+                &sha,
+                vec![
+                    AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                    AdaptiveRequiredGate::IndependentValidation,
+                ],
+            )
+            .expect("owner-specified gate requirements"),
+        );
+        state
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2c_live_handoff_preserves_exact_source_gates_without_terminal() {
+        let root = tempfile::tempdir().expect("isolated candidate");
+        let scope = "isolated authorized task";
+        let parent = codexdd_046_3c1b2c_source_parent(root.path(), scope);
+        let parent_thread_id = codex_protocol::ThreadId::new();
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: scope.to_string(),
+        };
+        let mut validator = parent.fresh_for_new_worker(Some(&binding));
+        validator.inherit_authorized_independent_review(&parent, &binding, parent_thread_id);
+        assert_eq!(
+            validator.review_origin_thread_id,
+            Some(parent_thread_id)
+        );
+        assert_eq!(
+            validator.assignment_preflight,
+            parent.assignment_preflight
+        );
+        assert_eq!(
+            validator.gate_ledger,
+            parent.gate_ledger
+        );
+        assert_eq!(validator.workflow_terminal, None);
+        assert_eq!(
+            validator
+                .gate_ledger
+                .as_ref()
+                .expect("transferred requirements")
+                .outstanding(&validator.evidence_registry)
+                .len(),
+            2,
+            "no source or independent success is inferred from the transfer"
+        );
+        let persisted = serde_json::to_value(validator.durable_workflow_snapshot(
+            codex_protocol::ThreadId::new(),
+        ))
+        .expect("requirements-only snapshot");
+        assert!(
+            persisted.get("reviewOriginThreadId").is_none(),
+            "source Worker identity is ephemeral, never restored as READY authority"
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2c_handoff_rejects_unterminalized_foreign_or_unpinned_source() {
+        let root = tempfile::tempdir().expect("isolated candidate");
+        let scope = "isolated authorized task";
+        let parent = codexdd_046_3c1b2c_source_parent(root.path(), scope);
+        let parent_thread_id = codex_protocol::ThreadId::new();
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: scope.to_string(),
+        };
+
+        let mut not_ready = parent.clone();
+        not_ready.workflow_terminal = None;
+        let mut validator = not_ready.fresh_for_new_worker(Some(&binding));
+        validator.inherit_authorized_independent_review(
+            &not_ready,
+            &binding,
+            parent_thread_id,
+        );
+        assert_eq!(validator.review_origin_thread_id, None);
+        assert!(validator.gate_ledger.is_none());
+
+        let wrong_scope = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: "other task".to_string(),
+        };
+        let mut foreign = parent.fresh_for_new_worker(Some(&wrong_scope));
+        foreign.inherit_authorized_independent_review(&parent, &wrong_scope, parent_thread_id);
+        assert_eq!(foreign.review_origin_thread_id, None);
+        assert!(foreign.gate_ledger.is_none());
+        assert!(foreign.assignment_preflight.is_none());
+
+        let mut wrong_source = parent.clone();
+        wrong_source
+            .assignment_preflight
+            .as_mut()
+            .expect("pin")
+            .source_sha = "b".repeat(40);
+        let mut rejected = wrong_source.fresh_for_new_worker(Some(&binding));
+        rejected.inherit_authorized_independent_review(
+            &wrong_source,
+            &binding,
+            parent_thread_id,
+        );
+        assert_eq!(rejected.review_origin_thread_id, None);
+        assert!(rejected.gate_ledger.is_none());
+    }
 
     #[test]
     fn plain_adaptive_startup_waits_for_external_worker_binding() {

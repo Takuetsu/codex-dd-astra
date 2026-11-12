@@ -436,6 +436,30 @@ impl AdaptiveGateLedger {
                 .is_some_and(|selected| selected == self.root)
     }
 
+    /// A model-selected generic command cannot substitute for the exact
+    /// independent Core receipt in the terminal signal's evidence references.
+    pub(crate) fn independent_review_referenced_by(
+        &self,
+        registry: &AdaptiveEvidenceRegistry,
+        evidence_refs: &[String],
+    ) -> bool {
+        self.independent_review_ref.as_ref().is_some_and(|proof| {
+            evidence_refs.contains(&proof.evidence_id)
+                && registry
+                    .match_native_independent_review(
+                        &proof.evidence_id,
+                        &self.independent_requirement(
+                            proof.validation_thread_id,
+                            proof.implementation_thread_id,
+                            &proof.validation_turn_id,
+                            &proof.run_id,
+                            proof.minimum_completed_at_ms,
+                        ),
+                    )
+                    .is_ok()
+        })
+    }
+
     pub(crate) fn ready_for_owner_qa(&self, registry: &AdaptiveEvidenceRegistry) -> bool {
         self.outstanding(registry).is_empty()
     }

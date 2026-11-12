@@ -400,6 +400,9 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         pending_signal: None,
         evidence_registry: Default::default(),
         gate_ledger,
+        // Restart cannot recreate a live cross-Worker handoff or trusted
+        // independent receipt from the persisted requirements-only snapshot.
+        review_origin_thread_id: None,
         complexity_class,
         implementation_phase,
         validation_repair_fingerprint,

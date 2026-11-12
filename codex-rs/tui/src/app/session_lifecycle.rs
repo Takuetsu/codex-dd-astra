@@ -1043,6 +1043,33 @@ impl App {
             &self.cli_kv_overrides,
             &self.harness_overrides,
         );
+        // The launcher may be at the milestone root while the authorized Git
+        // worktree is nested elsewhere. Only a verified live source handoff
+        // selects that explicit target as the fresh Validator's Core CWD.
+        // Missing/moved paths fail closed; no ancestor repository fallback.
+        if fresh_adaptive_effort.review_origin_thread_id.is_some()
+            && let Some(pin) = fresh_adaptive_effort.assignment_preflight.as_ref()
+        {
+            let selected = match std::path::Path::new(&pin.source_root).canonicalize() {
+                Ok(root) => root,
+                Err(err) => {
+                    self.chat_widget.add_error_message(format!(
+                        "SETUP_BLOCKED: authorized independent Validator worktree {} is unavailable ({err}); no Validation Worker started.",
+                        pin.source_root,
+                    ));
+                    return;
+                }
+            };
+            match codex_utils_absolute_path::AbsolutePathBuf::try_from(selected) {
+                Ok(root) => config.cwd = root,
+                Err(err) => {
+                    self.chat_widget.add_error_message(format!(
+                        "SETUP_BLOCKED: authorized independent Validator CWD is invalid ({err}); no Validation Worker started."
+                    ));
+                    return;
+                }
+            }
+        }
         if bound_worker
             && let (Some(family), Some(effort)) = (
                 fresh_adaptive_effort.current_family,
@@ -1075,9 +1102,24 @@ impl App {
                     }
                 },
                 authorized_scope: Some(binding.authorized_scope),
-                source_root: None,
-                source_sha: None,
-                task_kind: None,
+                source_root: fresh_adaptive_effort
+                    .assignment_preflight
+                    .as_ref()
+                    .map(|pin| pin.source_root.clone()),
+                source_sha: fresh_adaptive_effort
+                    .assignment_preflight
+                    .as_ref()
+                    .map(|pin| pin.source_sha.clone()),
+                task_kind: fresh_adaptive_effort.assignment_preflight.as_ref().map(|pin| {
+                    match pin.task_kind {
+                        crate::adaptive_worker::AdaptiveTaskKind::SourceChange => "source_change",
+                        crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => {
+                            "operations_preview"
+                        }
+                        crate::adaptive_worker::AdaptiveTaskKind::Benchmark => "benchmark",
+                    }
+                    .to_string()
+                }),
             });
         }
         match app_server

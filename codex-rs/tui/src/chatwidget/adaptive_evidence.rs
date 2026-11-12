@@ -3,6 +3,7 @@
 use super::*;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AUTO_FAILURE_PRESSURE_DIAGNOSTIC;
+use crate::adaptive_evidence::CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME;
 use crate::adaptive_evidence::CODEXDD_VALIDATION_TOOL_NAME;
 use crate::adaptive_evidence::record_from_item_completion;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
@@ -35,7 +36,37 @@ impl ChatWidget {
             &self.adaptive_effort.worker_context,
             self.adaptive_effort.assignment_preflight.as_ref(),
         );
+        let independent_receipt = if record.tool_name.as_deref()
+            == Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME)
+        {
+            record.native_source_provenance.as_ref().map(|native| {
+                (
+                    record.evidence_id.clone(),
+                    native.run_id.clone(),
+                    native.completed_at_ms,
+                )
+            })
+        } else {
+            None
+        };
         self.adaptive_effort.evidence_registry.register(record);
+        // Only a real fresh-Worker handoff has the parent identity, the
+        // original owner-gate ledger and the source receipts for rechecking.
+        if let (Some(origin_thread_id), Some((evidence_id, run_id, completed_at_ms))) = (
+            self.adaptive_effort.review_origin_thread_id,
+            independent_receipt,
+        ) && let Some(ledger) = self.adaptive_effort.gate_ledger.as_mut()
+        {
+            let _ = ledger.observe_independent_review_pass(
+                &self.adaptive_effort.evidence_registry,
+                &evidence_id,
+                thread_id,
+                origin_thread_id,
+                &notification.turn_id,
+                &run_id,
+                completed_at_ms,
+            );
+        }
 
         let source_turn_id = notification.turn_id.as_str();
         let pressure = self
@@ -175,6 +206,145 @@ mod tests {
             turn_id: "turn".to_string(),
             completed_at_ms: 1,
         }
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c1b2c_native_completion_handoff_rechecks_source_and_review() {
+        use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        use crate::adaptive_worker::AdaptiveTaskKind;
+        use crate::adaptive_worker::AdaptiveWorkerContext;
+        use crate::adaptive_worker::AdaptiveWorkerPreflight;
+        use crate::adaptive_worker::AdaptiveWorkerRole;
+        use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+        use crate::adaptive_worker::NewWorkerBinding;
+        use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
+        use codex_app_server_protocol::DynamicToolCallStatus;
+        use codex_protocol::ThreadId;
+
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("isolated source");
+        let scope = "isolated independent review";
+        let sha = "a".repeat(40);
+        let implementation = ThreadId::new();
+        let validation = ThreadId::new();
+        chat.thread_id = Some(implementation);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some(scope.to_string()),
+        };
+        chat.adaptive_effort.worker_assignment_locked = true;
+        chat.adaptive_effort.assignment_preflight = Some(AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: source.path().display().to_string(),
+            source_sha: sha.clone(),
+        });
+        chat.adaptive_effort.gate_ledger = Some(
+            AdaptiveGateLedger::new(
+                scope,
+                source.path(),
+                &sha,
+                vec![
+                    AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                    AdaptiveRequiredGate::IndependentValidation,
+                ],
+            )
+            .expect("exact owner requirements"),
+        );
+
+        let completed = |thread: ThreadId,
+                         turn_id: &str,
+                         id: &str,
+                         tool: &str,
+                         profile: &str,
+                         run_id: &str|
+         -> ItemCompletedNotification {
+            ItemCompletedNotification {
+                item: ThreadItem::DynamicToolCall {
+                    id: id.to_string(),
+                    namespace: None,
+                    tool: tool.to_string(),
+                    arguments: serde_json::json!({
+                        "profile": profile,
+                        "result": "pass",
+                        "run_id": run_id,
+                        "head_sha": sha,
+                        "source_root": source.path().display().to_string(),
+                    }),
+                    status: DynamicToolCallStatus::Completed,
+                    content_items: None,
+                    success: Some(true),
+                    duration_ms: Some(1),
+                },
+                thread_id: thread.to_string(),
+                turn_id: turn_id.to_string(),
+                completed_at_ms: 2_000,
+            }
+        };
+        let source_receipt = completed(
+            implementation,
+            "source-turn",
+            "native-source",
+            CODEXDD_VALIDATION_TOOL_NAME,
+            "work_packet",
+            "source-run",
+        );
+        chat.register_adaptive_evidence(&source_receipt);
+        chat.adaptive_effort
+            .gate_ledger
+            .as_mut()
+            .expect("owner ledger")
+            .observe_source_pass(
+                &chat.adaptive_effort.evidence_registry,
+                "work_packet",
+                "native-source",
+                implementation,
+                "source-turn",
+                "source-run",
+                1_999,
+            )
+            .expect("source receipt matches exact Implementation Worker");
+        chat.adaptive_effort.workflow_terminal =
+            Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: scope.to_string(),
+        };
+        let fresh = chat.fresh_adaptive_effort_for_new_worker(Some(&binding));
+        assert_eq!(fresh.review_origin_thread_id, Some(implementation));
+        assert!(fresh.gate_ledger.is_some());
+        assert!(fresh.evidence_registry.len() > 0);
+
+        chat.thread_id = Some(validation);
+        chat.adaptive_effort = fresh;
+        let review_receipt = completed(
+            validation,
+            "review-turn",
+            "native-review",
+            CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME,
+            "independent_review",
+            "review-run",
+        );
+        chat.register_adaptive_evidence(&review_receipt);
+        let ledger = chat.adaptive_effort.gate_ledger.as_ref().expect("review ledger");
+        assert!(
+            ledger
+                .outstanding(&chat.adaptive_effort.evidence_registry)
+                .is_empty(),
+            "gates are cleared only by matching source and separately bound Core receipts"
+        );
+        assert!(ledger.independent_review_referenced_by(
+            &chat.adaptive_effort.evidence_registry,
+            &["native-review".to_string()],
+        ));
+        assert!(!ledger.independent_review_referenced_by(
+            &chat.adaptive_effort.evidence_registry,
+            &["generic-command".to_string()],
+        ));
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        // Source + native review receipts are accepted by the TUI observer
+        // but never auto-latch READY without a separate trusted signal.
     }
 
     #[test]

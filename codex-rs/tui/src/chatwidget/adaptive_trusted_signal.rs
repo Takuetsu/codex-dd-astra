@@ -303,7 +303,9 @@ impl ChatWidget {
                         AdaptiveEvidenceOutcome::Success,
                     )
                     // A generic command PASS does not grant source/operations/QA approval.
-                    && self.owner_qa_prerequisite_admission().is_ok()
+                    && self
+                        .owner_qa_prerequisite_admission(&envelope.evidence_refs)
+                        .is_ok()
             }
         };
         let signal_kind = envelope.signal_kind;
@@ -338,7 +340,7 @@ impl ChatWidget {
                 // Failure to meet a gate is not permission to escalate, rerun
                 // a finished test or latch an unverified terminal.
                 let missing = self
-                    .owner_qa_prerequisite_admission()
+                    .owner_qa_prerequisite_admission(&envelope.evidence_refs)
                     .err()
                     .unwrap_or_else(|| {
                         "current-turn independent validation evidence was not accepted".to_string()
@@ -543,7 +545,7 @@ impl ChatWidget {
     /// are checked separately from a same-turn successful tool response.
     /// 3C.1a deliberately refuses positive READY until actual validated
     /// independent + optional runtime-health receipts can be admitted.
-    fn owner_qa_prerequisite_admission(&self) -> Result<(), String> {
+    fn owner_qa_prerequisite_admission(&self, evidence_refs: &[String]) -> Result<(), String> {
         let state = &self.adaptive_effort;
         if state.worker_context.role != AdaptiveWorkerRole::Validation
             || !state.worker_assignment_locked
@@ -572,6 +574,17 @@ impl ChatWidget {
             return Err(
                 "required gates do not match the assigned source SHA/worktree/scope".to_string(),
             );
+        }
+        if self.thread_id.is_none_or(|review_thread| {
+            state.review_origin_thread_id.is_none_or(|source_thread| source_thread == review_thread)
+        }) {
+            return Err("current Validation Worker lacks a distinct authenticated source handoff".to_string());
+        }
+        if !ledger.independent_review_referenced_by(
+            &state.evidence_registry,
+            evidence_refs,
+        ) {
+            return Err("READY signal must cite a current Core-native independent review receipt".to_string());
         }
         let outstanding = ledger.outstanding(&state.evidence_registry);
         if !outstanding.is_empty() {
