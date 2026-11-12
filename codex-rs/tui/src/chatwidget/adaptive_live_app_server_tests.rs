@@ -36,7 +36,11 @@ use tokio::time::timeout;
 const LIVE_TIMEOUT: Duration = Duration::from_secs(90);
 
 fn fixture_git(root: &Path, args: &[&str]) -> Result<String> {
-    let output = Command::new("git").arg("-C").arg(root).args(args).output()?;
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()?;
     ensure!(
         output.status.success(),
         "disposable Git {} failed: {}",
@@ -90,13 +94,16 @@ async fn take_turn_event(
 ) -> Result<ServerNotification> {
     let event = timeout(
         LIVE_TIMEOUT,
-        server.read_stream_until_matching_notification("exact source-bound native turn event", |n| {
-            n.method == method
-                && n.params.as_ref().is_some_and(|params| {
-                    params.get("threadId").and_then(|v| v.as_str()) == Some(thread_id)
-                        && params.pointer("/turn/id").and_then(|v| v.as_str()) == Some(turn_id)
-                })
-        }),
+        server.read_stream_until_matching_notification(
+            "exact source-bound native turn event",
+            |n| {
+                n.method == method
+                    && n.params.as_ref().is_some_and(|params| {
+                        params.get("threadId").and_then(|v| v.as_str()) == Some(thread_id)
+                            && params.pointer("/turn/id").and_then(|v| v.as_str()) == Some(turn_id)
+                    })
+            },
+        ),
     )
     .await??;
     decode_live_notification(event)
@@ -110,24 +117,27 @@ async fn take_item_event(
 ) -> Result<ServerNotification> {
     let note = timeout(
         LIVE_TIMEOUT,
-        server.read_stream_until_matching_notification("authentic app-server item/completed", |n| {
-            n.method == "item/completed"
-                && n.params.as_ref().is_some_and(|params| {
-                    serde_json::from_value::<ItemCompletedNotification>(params.clone())
-                        .ok()
-                        .is_some_and(|done| {
-                            done.thread_id == thread_id
-                                && done.turn_id == turn_id
-                                && match &done.item {
-                                    ThreadItem::UserMessage { .. } => expected_call.is_none(),
-                                    ThreadItem::DynamicToolCall { id, .. } => {
-                                        expected_call == Some(id.as_str())
+        server.read_stream_until_matching_notification(
+            "authentic app-server item/completed",
+            |n| {
+                n.method == "item/completed"
+                    && n.params.as_ref().is_some_and(|params| {
+                        serde_json::from_value::<ItemCompletedNotification>(params.clone())
+                            .ok()
+                            .is_some_and(|done| {
+                                done.thread_id == thread_id
+                                    && done.turn_id == turn_id
+                                    && match &done.item {
+                                        ThreadItem::UserMessage { .. } => expected_call.is_none(),
+                                        ThreadItem::DynamicToolCall { id, .. } => {
+                                            expected_call == Some(id.as_str())
+                                        }
+                                        _ => false,
                                     }
-                                    _ => false,
-                                }
-                        })
-                })
-        }),
+                            })
+                    })
+            },
+        ),
     )
     .await??;
     decode_live_notification(note)
@@ -140,26 +150,22 @@ async fn take_trusted_signal(
 ) -> Result<ServerNotification> {
     let note = timeout(
         LIVE_TIMEOUT,
-        server.read_stream_until_matching_notification(
-            "real signal or premature terminal",
-            |n| {
-                if n.method == "turn/completed" {
-                    return n.params.as_ref().is_some_and(|params| {
-                        params.get("threadId").and_then(|v| v.as_str()) == Some(thread_id)
-                            && params.pointer("/turn/id").and_then(|v| v.as_str()) == Some(turn_id)
-                    });
-                }
-                n.method == "turn/adaptiveRuntimeSignal"
-                    && n.params.as_ref().is_some_and(|params| {
-                        serde_json::from_value::<AdaptiveRuntimeSignalNotification>(params.clone())
-                            .ok()
-                            .is_some_and(|signal| {
-                                signal.thread_id == thread_id
-                                    && signal.signal.source_turn_id == turn_id
-                            })
-                    })
-            },
-        ),
+        server.read_stream_until_matching_notification("real signal or premature terminal", |n| {
+            if n.method == "turn/completed" {
+                return n.params.as_ref().is_some_and(|params| {
+                    params.get("threadId").and_then(|v| v.as_str()) == Some(thread_id)
+                        && params.pointer("/turn/id").and_then(|v| v.as_str()) == Some(turn_id)
+                });
+            }
+            n.method == "turn/adaptiveRuntimeSignal"
+                && n.params.as_ref().is_some_and(|params| {
+                    serde_json::from_value::<AdaptiveRuntimeSignalNotification>(params.clone())
+                        .ok()
+                        .is_some_and(|signal| {
+                            signal.thread_id == thread_id && signal.signal.source_turn_id == turn_id
+                        })
+                })
+        }),
     )
     .await??;
     ensure!(
@@ -243,11 +249,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         )?);
         responses_sequence.push(responses::sse(vec![
             responses::ev_response_created(&format!("native-{role}-validation")),
-            responses::ev_function_call(
-                call_id,
-                tool,
-                &json!({"profile": profile}).to_string(),
-            ),
+            responses::ev_function_call(call_id, tool, &json!({"profile": profile}).to_string()),
             responses::ev_completed(&format!("native-{role}-validation")),
         ]));
         responses_sequence.push(responses::sse(vec![
@@ -275,8 +277,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         .build_initialized()
         .await?;
 
-    let (mut chat, _sender, mut app_events, _op_rx) =
-        make_chatwidget_manual_with_sender().await;
+    let (mut chat, _sender, mut app_events, _op_rx) = make_chatwidget_manual_with_sender().await;
     let mut origin_thread: Option<ThreadId> = None;
     let mut run_ids = Vec::new();
     for (role, profile, _tool, call_id, _) in work {
@@ -301,7 +302,10 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
             chat.dispatch_adaptive_command("astra");
         } else {
             let origin = origin_thread.context("real source Worker missing")?;
-            ensure!(origin != thread, "Validator must use a different app-server thread");
+            ensure!(
+                origin != thread,
+                "Validator must use a different app-server thread"
+            );
             chat.thread_id = Some(thread);
         }
 
@@ -328,13 +332,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
             .await?;
         let first: TurnStartResponse =
             timeout(LIVE_TIMEOUT, server.read_response(first_req)).await??;
-        let first_item = take_item_event(
-            &mut server,
-            &thread_id,
-            &first.turn.id,
-            None,
-        )
-        .await?;
+        let first_item = take_item_event(&mut server, &thread_id, &first.turn.id, None).await?;
         chat.handle_server_notification(first_item, None);
         if role == "implementation" {
             ensure!(
@@ -342,11 +340,15 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                 "TUI ignored true owner-origin implementation header"
             );
             ensure!(
-                chat.adaptive_effort.gate_ledger.as_ref().is_some_and(|ledger| {
-                    ledger
-                        .outstanding(&chat.adaptive_effort.evidence_registry)
-                        .len() == 2
-                }),
+                chat.adaptive_effort
+                    .gate_ledger
+                    .as_ref()
+                    .is_some_and(|ledger| {
+                        ledger
+                            .outstanding(&chat.adaptive_effort.evidence_registry)
+                            .len()
+                            == 2
+                    }),
                 "real first user message did not create both owner-required gates"
             );
         } else {
@@ -359,13 +361,8 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                 "fresh Validator lost immutable origin gate ledger"
             );
         }
-        let first_done = take_turn_event(
-            &mut server,
-            "turn/completed",
-            &thread_id,
-            &first.turn.id,
-        )
-        .await?;
+        let first_done =
+            take_turn_event(&mut server, "turn/completed", &thread_id, &first.turn.id).await?;
         ensure!(
             matches!(
                 first_done,
@@ -412,13 +409,8 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         .await?;
         chat.handle_server_notification(native_started, None);
 
-        let native_item = take_item_event(
-            &mut server,
-            &thread_id,
-            &native_turn.turn.id,
-            Some(call_id),
-        )
-        .await?;
+        let native_item =
+            take_item_event(&mut server, &thread_id, &native_turn.turn.id, Some(call_id)).await?;
         let ServerNotification::ItemCompleted(ref receipt) = native_item else {
             anyhow::bail!("native app-server did not deliver a typed tool receipt");
         };
@@ -459,7 +451,8 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                     .as_ref()
                     .context("missing first-owner ledger")?
                     .outstanding(&chat.adaptive_effort.evidence_registry)
-                    .len() == 1,
+                    .len()
+                    == 1,
                 "real native source item did not satisfy only the owner's source-profile gate"
             );
         } else {
@@ -472,12 +465,8 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                 "real separate native Validator item did not close all owner gates"
             );
         }
-        let live_signal = take_trusted_signal(
-            &mut server,
-            &thread_id,
-            &native_turn.turn.id,
-        )
-        .await?;
+        let live_signal =
+            take_trusted_signal(&mut server, &thread_id, &native_turn.turn.id).await?;
         chat.handle_server_notification(live_signal, None);
         let native_done = take_turn_event(
             &mut server,
@@ -525,12 +514,20 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
 
     ensure!(run_ids.len() == 2 && run_ids[0] != run_ids[1]);
     ensure!(
-        fixture_git(&root, &["status", "--porcelain=v1", "--untracked-files=all"])?
-            .is_empty(),
+        fixture_git(
+            &root,
+            &["status", "--porcelain=v1", "--untracked-files=all"]
+        )?
+        .is_empty(),
         "native validation modified the committed disposable candidate"
     );
-    let current = chat.thread_id.context("missing final TUI thread identity")?;
-    ensure!(Some(current) != origin_thread, "READY cannot belong to Implementation thread");
+    let current = chat
+        .thread_id
+        .context("missing final TUI thread identity")?;
+    ensure!(
+        Some(current) != origin_thread,
+        "READY cannot belong to Implementation thread"
+    );
     let mut persisted = false;
     while let Ok(event) = app_events.try_recv() {
         if let crate::app_event::AppEvent::PersistWorkflowState {
@@ -543,7 +540,10 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
             persisted = true;
         }
     }
-    ensure!(persisted, "TUI did not request READY persistence on Validation Worker");
+    ensure!(
+        persisted,
+        "TUI did not request READY persistence on Validation Worker"
+    );
     timeout(LIVE_TIMEOUT, server.shutdown_gracefully()).await??;
     Ok(())
 }
