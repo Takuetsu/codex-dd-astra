@@ -1,7 +1,7 @@
 # CodexDD 0.4.6 — 3C.1b.2i: live app-server native receipt → TUI owner terminal
 
 **Prepared:** 2026-11-12. **Parent:** `7c08b07a147a118c036e7c76ff2bdc3ef3181fc1` (3C.1b.2h focused TUI accepted).
-**Status:** SOURCE IMPLEMENTATION; isolated native Windows CI **PENDING**. Milestone 3C.1 and release 0.4.6 **OPEN**. No BREAKWATER or installed-binary changes.
+**Status:** FOCUSED REAL-PROCESS WINDOWS INTEGRATION ACCEPTED on 2026-11-12; broader 3C.1 and 0.4.6 release **OPEN**. No BREAKWATER or installed-binary changes.
 
 ## Acceptance gap
 
@@ -29,3 +29,13 @@ Dedicated `[3c1b2i-native]` GitHub Actions job pins branch/SHA, source contracts
 This is not a real graphical/interactive TUI terminal acceptance, does not prove the TUI's complete app-server transport event multiplexer or automatic app-managed new-thread creation, does not exercise every live restart/replay/source drift sequence, and does not perform a full six-stage independent script or actual owned listener/HTTP health. All production and release gating remains **closed**. Any capability/policy mutation must be separately reviewed.
 
 After this test is green, drive the actual TUI `AppServerSession` transport/automatic session creation and bounded restart/replay negative paths in the next 3C packet; continue 3D owned runtime health, remaining milestone phases, complete Windows distribution and regression acceptance. Only then approve installation and the approximately one-week single-milestone BREAKWATER soak.
+
+## Accepted native Windows integration — GitHub Actions #136
+
+[GitHub Actions run #43334938407](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43334938407) **SUCCESS** at exact branch checkpoint `455c1f2bc0432fae6d6f864d66301624b38c6df5` (30m32s total). Source-contract preflight, Rustfmt, and the dedicated 3C.1b.2i native Windows job all passed. The job enumerated **exactly one** new `codex-tui --lib` integration test and executed it: **1 passed, 0 failed; 5909 filtered out; 7.77s test runtime**. The app-server logs confirm Core completed distinct built-in `run_codexdd_validation` (`work_packet`) and `run_codexdd_independent_validation` (`independent_review`) calls in different Worker threads, on the same committed disposable source SHA, with separate real native run IDs. The test also asserted the trusted terminal events, live TUI owner gates, and Validator-thread READY persistence.
+
+The previous attempt [#43320620083](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43320620083) reached a successful Core source receipt but failed a **test-oracle mismatch**: the script's display profile `work-packet` was compared with the actual tool receipt ID `work_packet`. No tool authorization or production runtime change was needed. Test assertion was corrected at `086afbb2482979db69d4772b48a28b167b6cbc34`; the first [#43334149959](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43334149959) green run **did not execute the native job** because its commit lacked the required `[3c1b2i-native]` trigger. The accepted source `455c1f2` made the assertion explicit and triggered the actual Windows job. No unexecuted/skipped job is counted as native acceptance.
+
+**Acceptance boundary:** this proves actual app-server JSON-RPC process notifications passed into the production `ChatWidget` reducer by the integration harness. It **does not yet prove** the normal TUI `App::handle_app_server_event` / thread-buffer / automatic fresh Worker lifecycle, the interactive graphical TUI, real process restart/replay refusal in that full App path, actual owned listener/HTTP health, or the full Windows release/profile gates. Do not label 3C.1 or 0.4.6 complete from this packet.
+
+**Next:** 3C.1b.2j, first the App-server-event/thread-buffer routing negative controls, then automatic source→fresh Validator handoff and bounded restart/replay provenance under the normal TUI App session lifecycle. Keep native, release, and installation gates separate.
