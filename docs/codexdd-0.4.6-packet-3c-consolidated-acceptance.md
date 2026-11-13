@@ -33,3 +33,8 @@
 ## Current-run hold
 
 Positive App/Core and status diagnostics were prepared on `dd/codexdd-v0.4.6-agent-reliability` through source commit `7b1f2f274ab5fc77f534fb8cef4e6e5b20316750`. The early one-shot native opt-in [Actions #43507811429](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43507811429) is on older immutable source `36e32e1d71e1af5795f67967f216ee956a976ee3` and is **diagnostic**, not necessarily current-head acceptance. The latest corrected source must receive its own exact-source native PASS. Status/Phase 3C completion remains blocked until that is demonstrated.
+
+
+## 3C combined acceptance tightening — exact current-source regression gate
+
+The scoped positive Windows job is extended to reuse its already compiled native `codex-tui --lib` test binary to re-execute the real OS cold-App automatic-handoff rejection and source-pinned historical READY quarantine guard **on the same final SHA** as the five 3C.2 diagnostics and the positive App-owned two-Worker sequence. Each is individually enumerated and required to report 1 passed / 0 failed; neither skipped, foreign-source nor historical results count. Source/Rustfmt prerequisites still precede the Windows job. This is a work-in-progress test-plan improvement; no new Windows PASS is claimed by this edit.

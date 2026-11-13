@@ -2491,6 +2491,25 @@ jobs:
           }
           & cargo test --locked -p codex-tui --lib $filter -- --ignored --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2b2b real OS App-owned native source-to-Validator lifecycle failed' }
+          # Current-source negative controls prevent a positive route from weakening cold replay refusal.
+          $negative = 'codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff'
+          $negativeList = & cargo test --locked -p codex-tui --lib $negative -- --list 2>&1
+          $negativeExit = $LASTEXITCODE
+          $negativeList | Out-Host
+          if ($negativeExit -ne 0 -or ($negativeList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Exactly one real-process cold App replay negative test must be present'
+          }
+          & cargo test --locked -p codex-tui --lib $negative -- --ignored --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Real-process old automatic Validator replay refusal regressed on current source' }
+          $coldGuard = 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
+          $guardList = & cargo test --locked -p codex-tui --lib $coldGuard -- --list 2>&1
+          $guardExit = $LASTEXITCODE
+          $guardList | Out-Host
+          if ($guardExit -ne 0 -or ($guardList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Exactly one source-pinned cold READY restoration guard must be present'
+          }
+          & cargo test --locked -p codex-tui --lib $coldGuard -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Source-pinned cold READY guard regressed on current source' }
 
       - name: Confirm nonproduction-only scoped regression
         if: always()
