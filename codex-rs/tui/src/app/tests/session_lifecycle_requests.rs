@@ -5203,7 +5203,10 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
         1,
         "fresh Validator must submit exactly one initial user-origin assignment"
     );
-    let (items, cwd) = submitted.into_iter().next().expect("exactly one Validator turn");
+    let (items, cwd) = submitted
+        .into_iter()
+        .next()
+        .expect("exactly one Validator turn");
     assert_eq!(cwd.canonicalize()?, candidate);
     assert_eq!(
         items,
