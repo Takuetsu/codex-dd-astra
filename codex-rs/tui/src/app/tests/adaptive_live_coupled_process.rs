@@ -244,9 +244,10 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
             "ready_for_owner_qa",
         ),
     ] {
-        sequence.push(create_final_assistant_message_sse_response(
-            "Owner assignment accepted.",
-        ).map_err(|err| color_eyre::eyre::eyre!("{err:#}"))?);
+        sequence.push(
+            create_final_assistant_message_sse_response("Owner assignment accepted.")
+                .map_err(|err| color_eyre::eyre::eyre!("{err:#}"))?,
+        );
         sequence.push(responses::sse(vec![
             responses::ev_response_created(&format!("{role}-native-profile")),
             responses::ev_function_call(call_id, tool, &json!({"profile": profile}).to_string()),
@@ -266,7 +267,10 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
             ),
             responses::ev_completed(&format!("{role}-native-signal")),
         ]));
-        sequence.push(create_final_assistant_message_sse_response("done").map_err(|err| color_eyre::eyre::eyre!("{err:#}"))?);
+        sequence.push(
+            create_final_assistant_message_sse_response("done")
+                .map_err(|err| color_eyre::eyre::eyre!("{err:#}"))?,
+        );
     }
     let mock = create_mock_responses_server_sequence_unchecked(sequence).await;
     let home = tempfile::tempdir()?;
