@@ -4,6 +4,10 @@
 //! the restart were separately accepted in 3C.1b.2j3b2b1.
 
 use super::*;
+use crate::adaptive_complexity::AdaptiveComplexityClass;
+use crate::adaptive_complexity::AdaptiveImplementationPhase;
+use crate::adaptive_policy::AdaptiveEffort;
+use crate::adaptive_policy::AdaptiveFamily;
 use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
 use crate::adaptive_worker::AdaptiveTaskKind;
@@ -90,6 +94,12 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
     )?;
     let mut saved = AdaptiveEffortState {
         enabled: true,
+        starting_family: Some(AdaptiveFamily::Astra),
+        current_family: Some(AdaptiveFamily::Sol),
+        current_effort: Some(AdaptiveEffort::High),
+        attempt_number: 1,
+        complexity_class: Some(AdaptiveComplexityClass::Standard),
+        implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
         worker_context: AdaptiveWorkerContext {
             role: AdaptiveWorkerRole::Implementation,
             authorized_scope: Some(scope.to_owned()),
