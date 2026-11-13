@@ -4468,14 +4468,17 @@ mod tests {
         let approved_sha = git(&["rev-parse", "HEAD"])?;
         let scope = "3C.1b.2j3b1 authorized separate Validator";
         let config = build_config(&home).await;
-        let thread_id = ThreadId::from_string(&create_fake_rollout(
-            home.path(),
-            "2025-01-05T12-00-00",
-            "2025-01-05T12:00:00Z",
-            "Saved independent Validator assignment",
-            Some(config.model_provider_id.as_str()),
-            /*git_info*/ None,
-        )?)?;
+        let thread_id = ThreadId::from_string(
+            &create_fake_rollout(
+                home.path(),
+                "2025-01-05T12-00-00",
+                "2025-01-05T12:00:00Z",
+                "Saved independent Validator assignment",
+                Some(config.model_provider_id.as_str()),
+                /*git_info*/ None,
+            )
+            .map_err(|error| color_eyre::eyre::eyre!("failed to create Validator rollout: {error}"))?,
+        )?;
 
         let mut original = crate::chatwidget::adaptive_effort::AdaptiveEffortState {
             enabled: true,
@@ -4504,7 +4507,8 @@ mod tests {
                 AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
                 AdaptiveRequiredGate::IndependentValidation,
             ],
-        )?);
+        )
+        .map_err(|reason| color_eyre::eyre::eyre!("invalid Validator gate fixture: {reason}"))?);
         let persisted = original.durable_workflow_snapshot(thread_id);
         assert!(
             persisted.gate_checkpoint.is_some(),
