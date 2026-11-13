@@ -2407,7 +2407,7 @@ jobs:
 
   windows-3c1b2j3b2b2b-positive-coupled:
     name: 3C.1b.2j3b2b2b Windows positive App-owned two native Workers across real process restart
-    # Run exact current-head source/format gates, four 3C.2 diagnostics, then the real positive App/Core lifecycle.
+    # Run exactly five 3C.2 diagnostics, one real positive App/Core lifecycle, and both cold negative controls.
     # Exact-source positive acceptance: authentic Core receipts via real WebSocket App routing and automatic Validator.
     # Source Core PASS before child restart; App creates separate native Validator after restart; one READY.
     # No fixture READY/PASS, no bypass, no active worktree, release and installation remain held.
