@@ -943,7 +943,13 @@ impl ChatWidget {
             .unwrap_or("None");
         let validation_repair_remaining =
             CODEXDD_VALIDATION_REPAIR_LIMIT.saturating_sub(state.validation_repair_cycles_used);
-        let validation_next = match state.workflow_terminal {
+        let non_source_task = state.assignment_preflight.as_ref().is_some_and(|pin| {
+            pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        });
+        let validation_next = if non_source_task {
+            "owner-approved operations/benchmark path (not source work_packet)"
+        } else {
+            match state.workflow_terminal {
             Some(AdaptiveWorkflowTerminal::ReadyForValidation) => "handoff ready",
             Some(AdaptiveWorkflowTerminal::Blocked) => "owner review required",
             _ if state.worker_context.role != AdaptiveWorkerRole::Implementation => "n/a",
@@ -965,6 +971,7 @@ impl ChatWidget {
                 None if state.complexity_class.is_none() => "reconnaissance",
                 None => "implementation",
             },
+            }
         };
         let source_pin = state.assignment_preflight.as_ref().map_or_else(
             || "None (do not infer a worktree from the launch cwd)".to_string(),
@@ -1006,9 +1013,6 @@ impl ChatWidget {
                 }
             },
         );
-        let non_source_task = state.assignment_preflight.as_ref().is_some_and(|pin| {
-            pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
-        });
         let native_tool = match state.worker_context.role {
             AdaptiveWorkerRole::Implementation => {
                 "run_codexdd_validation (Core live tool/profile availability not inferred from historical LVO status)"
