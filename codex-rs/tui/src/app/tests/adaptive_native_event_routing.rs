@@ -3,7 +3,6 @@
 //! Native Core receipt execution is independently covered by 3C.1b.2i.
 
 use super::*;
-use pretty_assertions::assert_eq;
 use codex_app_server_client::AppServerEvent;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
@@ -11,6 +10,7 @@ use codex_app_server_protocol::DynamicToolCallStatus;
 use codex_app_server_protocol::ItemCompletedNotification;
 use codex_app_server_protocol::ThreadWorkflowStateOperation;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
+use pretty_assertions::assert_eq;
 
 #[tokio::test]
 async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -> Result<()> {
