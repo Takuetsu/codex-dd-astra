@@ -2403,3 +2403,85 @@ jobs:
         run: |
           Write-Host "3C.1b.2j3b2b2a real OS cold App dispatcher negative test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
           git status --short
+
+  windows-3c1b2j3b2b2b-positive-coupled:
+    name: 3C.1b.2j3b2b2b Windows positive App-owned two native Workers across real process restart
+    # Exact-source positive acceptance: authentic Core receipts via real WebSocket App routing and automatic Validator.
+    # Source Core PASS before child restart; App creates separate native Validator after restart; one READY.
+    # No fixture READY/PASS, no bypass, no active worktree, release and installation remain held.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j3b2b2b source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3b2b2b wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3b2b2b'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Build real app-server and prove one positive App-owned native end-to-end Windows test
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'Real app-server executable build failed' }
+          $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
+          $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
+          $filter = 'codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart')) {
+            throw 'Expected exactly one true App-owned two-Worker OS restart regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --ignored --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2b2b real OS App-owned native source-to-Validator lifecycle failed' }
+
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j3b2b2b positive native App/Core OS-restart lifecycle test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
