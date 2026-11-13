@@ -46,7 +46,8 @@ async fn start_real_app_server(
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0))?;
     let port = listener.local_addr()?.port();
     drop(listener);
-    let url = format!("ws://127.0.0.1:{port}/");
+    // The server --listen parser accepts a socket address, not a URL path.
+    let url = format!("ws://127.0.0.1:{port}");
     let target = crate::AppServerTarget::Remote {
         endpoint: crate::resolve_remote_addr(&url)?,
     };
