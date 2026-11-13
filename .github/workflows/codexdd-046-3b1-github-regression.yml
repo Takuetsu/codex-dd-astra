@@ -2468,6 +2468,17 @@ jobs:
           $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
           if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
           $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
+          # Run independent 3C.2 status diagnostics on the same exact compiled source first.
+          $statusFilter = 'codexdd_046_3c2a_'
+          $statusList = & cargo test --locked -p codex-tui --lib $statusFilter -- --list 2>&1
+          $statusExit = $LASTEXITCODE
+          $statusList | Out-Host
+          $statusOutput = $statusList -join [Environment]::NewLine
+          if ($statusExit -ne 0 -or $statusOutput -notmatch '3 tests, 0 benchmarks' -or -not $statusOutput.Contains('codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof') -or -not $statusOutput.Contains('codexdd_046_3c2a_status_reports_exact_pin_pending_gates_and_role_specific_tool') -or -not $statusOutput.Contains('codexdd_046_3c2a_cold_paused_status_never_implies_historic_ready')) {
+            throw 'Expected exactly three 3C.2a source/role/tool diagnostics'
+          }
+          & cargo test --locked -p codex-tui --lib $statusFilter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.2a TUI status diagnostics failed; no source or tool authority may be inferred' }
           $filter = 'codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart'
           $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
           $listExit = $LASTEXITCODE
