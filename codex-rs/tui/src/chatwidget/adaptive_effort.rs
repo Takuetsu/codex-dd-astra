@@ -1830,10 +1830,18 @@ mod tests {
         state.assignment_preflight.as_mut().expect("owner task kind").task_kind =
             crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview;
         state.gate_ledger = None;
-        chat.adaptive_effort = state;
+        chat.adaptive_effort = state.clone();
         let operations = chat.adaptive_effort_status_text();
         assert!(operations.contains("Next action: Non-source operations/benchmark task:"));
         assert!(operations.contains("Do not run source work_packet"));
+        assert!(operations.contains("Native tool required: No source-validation tool applies"));
         assert!(!operations.contains("Next action: Run current Core-native work_packet"));
+
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+        chat.adaptive_effort = state;
+        let old_terminal = chat.adaptive_effort_status_text();
+        assert!(old_terminal.contains("Next action: Non-source operations/benchmark task:"));
+        assert!(!old_terminal.contains("Next action: Start exactly one fresh independent Validator"));
+        assert!(!old_terminal.contains("Native tool required: run_codexdd_validation"));
     }
 }
