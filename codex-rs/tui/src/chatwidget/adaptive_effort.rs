@@ -946,10 +946,7 @@ impl ChatWidget {
         let non_source_task = state.assignment_preflight.as_ref().is_some_and(|pin| {
             pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
         });
-        let validation_next = if non_source_task {
-            "owner-approved operations/benchmark path (not source work_packet)"
-        } else {
-            match state.workflow_terminal {
+        let validation_next = match state.workflow_terminal {
             Some(AdaptiveWorkflowTerminal::ReadyForValidation) => "handoff ready",
             Some(AdaptiveWorkflowTerminal::Blocked) => "owner review required",
             _ if state.worker_context.role != AdaptiveWorkerRole::Implementation => "n/a",
@@ -971,7 +968,11 @@ impl ChatWidget {
                 None if state.complexity_class.is_none() => "reconnaissance",
                 None => "implementation",
             },
-            }
+        };
+        let validation_next = if non_source_task {
+            "owner-approved operations/benchmark path (not source work_packet)"
+        } else {
+            validation_next
         };
         let source_pin = state.assignment_preflight.as_ref().map_or_else(
             || "None (do not infer a worktree from the launch cwd)".to_string(),
