@@ -1806,4 +1806,29 @@ mod tests {
         assert!(status.contains("source:work_packet PENDING"));
         assert!(!status.contains("Next action: Start exactly one fresh independent Validator"));
     }
+
+    #[tokio::test]
+    async fn codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("disposable source");
+        let mut state = codexdd_046_3c1b2c_source_parent(source.path(), "non-source status");
+        state.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::Blocked);
+        chat.adaptive_effort = state.clone();
+        let blocked = chat.adaptive_effort_status_text();
+        assert!(blocked.contains("Next action: Owner review required"));
+        assert!(!blocked.contains("Next action: Run current Core-native work_packet"));
+
+        state.workflow_terminal = None;
+        state.assignment_preflight.as_mut().expect("owner task kind").task_kind =
+            crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview;
+        state.gate_ledger = None;
+        chat.adaptive_effort = state;
+        let operations = chat.adaptive_effort_status_text();
+        assert!(operations.contains("Next action: Non-source operations/benchmark task:"));
+        assert!(operations.contains("Do not run source work_packet"));
+        assert!(!operations.contains("Next action: Run current Core-native work_packet"));
+    }
 }
