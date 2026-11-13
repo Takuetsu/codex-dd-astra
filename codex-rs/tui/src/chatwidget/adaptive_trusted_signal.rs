@@ -451,10 +451,23 @@ impl ChatWidget {
                     AdaptiveWorkflowTerminal::ReadyForValidation,
                 );
                 if let Some(worker_binding) = self.automatic_validation_binding() {
-                    self.app_event_tx.send(AppEvent::NewSession {
-                        name: None,
-                        worker_binding: Some(worker_binding),
-                    });
+                    let origin = self.thread_id.zip(
+                        self.automatic_validation_source_sha(&worker_binding)
+                            .map(str::to_string),
+                    );
+                    if let Some((origin_thread_id, source_sha)) = origin {
+                        self.app_event_tx.send(AppEvent::StartAutomaticValidation {
+                            origin_thread_id,
+                            source_sha,
+                            worker_binding,
+                        });
+                    } else {
+                        self.add_info_message(
+                            "SETUP_BLOCKED: automatic independent Validator requires an exact owner-authorized source, scope and gate ledger; no unpinned Validation Worker started."
+                                .to_string(),
+                            None,
+                        );
+                    }
                 }
             }
             AdaptiveRuntimeSignalKind::RepairRequired => self

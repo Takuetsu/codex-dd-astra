@@ -544,6 +544,15 @@ pub(crate) enum AppEvent {
         log_id: u64,
     },
 
+    /// Source-originated automatic independent Validator handoff. Unlike a
+    /// manual NewSession request, a queued/replayed request must still match
+    /// the currently displayed Implementation Worker and exact source SHA.
+    StartAutomaticValidation {
+        origin_thread_id: ThreadId,
+        source_sha: String,
+        worker_binding: NewWorkerBinding,
+    },
+
     /// Start a new session, optionally assigning it a name.
     NewSession {
         name: Option<String>,

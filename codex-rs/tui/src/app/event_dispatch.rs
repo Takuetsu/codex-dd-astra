@@ -164,6 +164,35 @@ impl App {
             }
             AppEvent::PluginMentionsLoaded { ref cwd, .. }
                 if cwds_differ(cwd, self.config.cwd.as_path()) => {}
+            AppEvent::StartAutomaticValidation {
+                origin_thread_id,
+                source_sha,
+                worker_binding,
+            } => {
+                let owned_source = self.current_displayed_thread_id()
+                    == Some(origin_thread_id)
+                    && self.chat_widget.thread_id() == Some(origin_thread_id)
+                    && self
+                        .chat_widget
+                        .automatic_validation_source_sha(&worker_binding)
+                        == Some(source_sha.as_str());
+                if !owned_source {
+                    self.chat_widget.add_error_message(
+                        "SETUP_BLOCKED: stale or foreign automatic Validator handoff; the current Implementation Worker does not own this source SHA and gate ledger. No Validation Worker started."
+                            .to_string(),
+                    );
+                } else {
+                    self.start_fresh_session_with_worker_binding(
+                        tui,
+                        app_server,
+                        /*session_start_source*/ None,
+                        /*initial_user_message*/ None,
+                        /*new_thread_name*/ None,
+                        Some(worker_binding),
+                    )
+                    .await;
+                }
+            }
             AppEvent::NewSession {
                 name,
                 worker_binding,

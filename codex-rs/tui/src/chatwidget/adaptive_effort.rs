@@ -570,6 +570,33 @@ impl ChatWidget {
         })
     }
 
+    /// A newly queued automatic handoff is only authoritative while its
+    /// source Implementation Worker is still displayed and terminalized.
+    /// A generic manually requested Validation session is not this event.
+    pub(crate) fn automatic_validation_source_sha(
+        &self,
+        binding: &NewWorkerBinding,
+    ) -> Option<&str> {
+        let state = &self.adaptive_effort;
+        if self.automatic_validation_binding().as_ref() != Some(binding)
+            || state.worker_context.role != AdaptiveWorkerRole::Implementation
+            || !state.worker_assignment_locked
+        {
+            return None;
+        }
+        let pin = state.assignment_preflight.as_ref()?;
+        if pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+            || !state.gate_ledger.as_ref()?.matches_authorized_source(
+                &binding.authorized_scope,
+                std::path::Path::new(&pin.source_root),
+                &pin.source_sha,
+            )
+        {
+            return None;
+        }
+        Some(pin.source_sha.as_str())
+    }
+
     pub(crate) fn automatic_validation_prompt_for_new_worker(
         &self,
         binding: &NewWorkerBinding,
