@@ -2315,7 +2315,7 @@ jobs:
 
   windows-3c1b2j3b2b2a-cold-app-routing:
     name: 3C.1b.2j3b2b2a Windows real OS App event routing and cold automatic Validator replay refusal
-    # Exact-source native retest after fixing incomplete fixture route and quarantining stale source READY.
+    # Exact-source native retest after verified Rustfmt fixes; guard source-PASS authority across cold OS restart.
     # App foreground event buffer and source-bound automatic handoff after real cold OS restart.
     # Synthetic old READY fixture never grants native PASS; full coupled native sequence still open.
     if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b2a-native]')
