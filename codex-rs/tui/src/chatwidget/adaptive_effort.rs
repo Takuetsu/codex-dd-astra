@@ -1035,6 +1035,8 @@ impl ChatWidget {
         };
         let next_action = if !state.enabled {
             "Enable adaptive mode, then supply one owner-origin Worker assignment."
+        } else if !worker_is_bound && state.worker_assignment_locked {
+            "The first Worker assignment is locked but invalid. Preserve evidence; start a new Worker thread with a valid [adaptive_worker] header in its first nonblank user message."
         } else if !worker_is_bound {
             "Start the first nonblank user message with [adaptive_worker], role and authorized_scope; source changes also require source_root, source_sha, task_kind and required_gates."
         } else if state.paused_by_user {
@@ -1761,6 +1763,31 @@ mod tests {
         );
         assert!(status.contains("source_root, source_sha, task_kind and required_gates"));
         assert!(!status.contains("READY_FOR_OWNER_QA\n  Authorized source:"));
+    }
+
+
+    #[tokio::test]
+    async fn codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        chat.adaptive_effort
+            .activate_adaptive_startup(AdaptiveFamily::Astra);
+        let invalid = "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"bad owner assignment\"\n\nTry again.";
+        assert!(
+            chat.adaptive_effort
+                .observe_worker_assignment_text(invalid)
+                .is_err()
+        );
+        assert!(chat.adaptive_effort.worker_assignment_locked);
+        assert_eq!(
+            chat.adaptive_effort.worker_context.role,
+            AdaptiveWorkerRole::Unspecified
+        );
+        let status = chat.adaptive_effort_status_text();
+        assert!(status.contains("Next action: The first Worker assignment is locked but invalid"));
+        assert!(status.contains("Preserve evidence; start a new Worker thread"));
+        assert!(status.contains("Native tool required: Not authorized"));
+        assert!(!status.contains("Next action: Start the first nonblank user message"));
     }
 
     #[tokio::test]

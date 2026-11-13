@@ -2476,8 +2476,8 @@ jobs:
           $statusExit = $LASTEXITCODE
           $statusList | Out-Host
           $statusOutput = $statusList -join [Environment]::NewLine
-          if ($statusExit -ne 0 -or $statusOutput -notmatch '4 tests, 0 benchmarks' -or -not $statusOutput.Contains('codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof') -or -not $statusOutput.Contains('codexdd_046_3c2a_status_reports_exact_pin_pending_gates_and_role_specific_tool') -or -not $statusOutput.Contains('codexdd_046_3c2a_cold_paused_status_never_implies_historic_ready') -or -not $statusOutput.Contains('codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice')) {
-            throw 'Expected exactly four 3C.2a/b source/role/tool diagnostics'
+          if ($statusExit -ne 0 -or $statusOutput -notmatch '5 tests, 0 benchmarks' -or -not $statusOutput.Contains('codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof') -or -not $statusOutput.Contains('codexdd_046_3c2a_status_reports_exact_pin_pending_gates_and_role_specific_tool') -or -not $statusOutput.Contains('codexdd_046_3c2a_cold_paused_status_never_implies_historic_ready') -or -not $statusOutput.Contains('codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice') -or -not $statusOutput.Contains('codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread')) {
+            throw 'Expected exactly five 3C.2a/b/c source/role/tool diagnostics'
           }
           & cargo test --locked -p codex-tui --lib $statusFilter -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3C.2a TUI status diagnostics failed; no source or tool authority may be inferred' }
