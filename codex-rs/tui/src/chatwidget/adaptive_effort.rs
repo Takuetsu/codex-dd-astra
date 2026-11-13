@@ -1006,7 +1006,13 @@ impl ChatWidget {
                 }
             },
         );
-        let native_tool = match state.worker_context.role {
+        let non_source_task = state.assignment_preflight.as_ref().is_some_and(|pin| {
+            pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        });
+        let native_tool = if non_source_task {
+            "No source-validation tool applies; operations-specific native availability not yet established"
+        } else {
+            match state.worker_context.role {
             AdaptiveWorkerRole::Implementation => {
                 "run_codexdd_validation (Core live tool/profile availability not inferred from historical LVO status)"
             }
@@ -1019,6 +1025,7 @@ impl ChatWidget {
             AdaptiveWorkerRole::Unspecified => {
                 "Not authorized until the first user-origin Worker assignment"
             }
+            }
         };
         let next_action = if !state.enabled {
             "Enable adaptive mode, then supply one owner-origin Worker assignment."
@@ -1028,14 +1035,12 @@ impl ChatWidget {
             "Hold: confirm the original source and owner prerequisites; resume only with fresh native proof. Historic READY is not authority."
         } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa) {
             "Await independent owner QA approval; do not auto-release or reuse this READY after restart."
-        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
-            "Start exactly one fresh independent Validator for the current source SHA and owner gates."
         } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::Blocked) {
             "Owner review required; preserve task state and do not escalate or fabricate evidence."
-        } else if state.assignment_preflight.as_ref().is_some_and(|pin| {
-            pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
-        }) {
+        } else if non_source_task {
             "Non-source operations/benchmark task: wait for an explicitly authorized operations-specific path. Do not run source work_packet or claim mechanical source PASS."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
+            "Start exactly one fresh independent Validator for the current source SHA and owner gates."
         } else if state.gate_ledger.is_none() && state.assignment_preflight.is_some() {
             "Source-pinned Worker needs an explicit owner gate manifest; no READY or Validator handoff."
         } else if state.worker_context.role == AdaptiveWorkerRole::Validation {
