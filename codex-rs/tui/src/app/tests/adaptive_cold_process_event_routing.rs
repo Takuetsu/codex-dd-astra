@@ -6,10 +6,10 @@
 use super::*;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_complexity::AdaptiveImplementationPhase;
-use crate::adaptive_policy::AdaptiveEffort;
-use crate::adaptive_policy::AdaptiveFamily;
 use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+use crate::adaptive_policy::AdaptiveEffort;
+use crate::adaptive_policy::AdaptiveFamily;
 use crate::adaptive_worker::AdaptiveTaskKind;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerPreflight;
