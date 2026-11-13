@@ -411,7 +411,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         ..
     } = &handoff
     {
-        ensure!(origin_thread_id == implementation && source_sha == sha);
+        ensure!(origin_thread_id == &implementation && source_sha == &sha);
     }
 
     // The original native source process is genuinely torn down here; the

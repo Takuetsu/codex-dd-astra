@@ -2408,7 +2408,7 @@ jobs:
 
   windows-3c1b2j3b2b2b-positive-coupled:
     name: 3C.1b.2j3b2b2b Windows positive App-owned two native Workers across real process restart
-    # Run exactly five 3C.2 diagnostics, one real positive App/Core lifecycle, and both cold negative controls on the committed source SHA.
+    # Same source: five 3C.2 diagnostics, positive App/Core restart, two cold controls, two replay refusals and one foreign-routing refusal.
     # Exact-source positive acceptance: authentic Core receipts via real WebSocket App routing and automatic Validator.
     # Source Core PASS before child restart; App creates separate native Validator after restart; one READY.
     # No fixture READY/PASS, no bypass, no active worktree, release and installation remain held.
@@ -2471,6 +2471,20 @@ jobs:
           $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
           if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
           $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
+          # No enumeration-only or accidentally ignored test can satisfy this exact-source native gate.
+          function Invoke-RequiredNativeTest {
+            param([string]$TestFilter, [int]$RequiredCount, [switch]$RunIgnored)
+            $nativeArgs = @('test', '--locked', '-p', 'codex-tui', '--lib', $TestFilter, '--')
+            if ($RunIgnored) { $nativeArgs += '--ignored' }
+            $nativeArgs += @('--test-threads=1', '--nocapture')
+            $result = & cargo @nativeArgs 2>&1
+            $nativeExit = $LASTEXITCODE
+            $result | Out-Host
+            $nativeText = $result -join [Environment]::NewLine
+            if ($nativeExit -ne 0 -or -not $nativeText.Contains("test result: ok. $RequiredCount passed; 0 failed; 0 ignored;")) {
+              throw "Exact-source native $TestFilter must report $RequiredCount passed, 0 failed, 0 ignored (exit=$nativeExit)"
+            }
+          }
           # Run independent 3C.2 status diagnostics on the same exact compiled source first.
           $statusFilter = 'codexdd_046_3c2'
           $statusList = & cargo test --locked -p codex-tui --lib $statusFilter -- --list 2>&1
@@ -2480,8 +2494,7 @@ jobs:
           if ($statusExit -ne 0 -or $statusOutput -notmatch '5 tests, 0 benchmarks' -or -not $statusOutput.Contains('codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof') -or -not $statusOutput.Contains('codexdd_046_3c2a_status_reports_exact_pin_pending_gates_and_role_specific_tool') -or -not $statusOutput.Contains('codexdd_046_3c2a_cold_paused_status_never_implies_historic_ready') -or -not $statusOutput.Contains('codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice') -or -not $statusOutput.Contains('codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread')) {
             throw 'Expected exactly five 3C.2a/b/c source/role/tool diagnostics'
           }
-          & cargo test --locked -p codex-tui --lib $statusFilter -- --test-threads=1 --nocapture
-          if ($LASTEXITCODE -ne 0) { throw '3C.2a TUI status diagnostics failed; no source or tool authority may be inferred' }
+          Invoke-RequiredNativeTest -TestFilter $statusFilter -RequiredCount 5
           $filter = 'codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart'
           $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
           $listExit = $LASTEXITCODE
@@ -2490,8 +2503,7 @@ jobs:
           if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart')) {
             throw 'Expected exactly one true App-owned two-Worker OS restart regression'
           }
-          & cargo test --locked -p codex-tui --lib $filter -- --ignored --test-threads=1 --nocapture
-          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2b2b real OS App-owned native source-to-Validator lifecycle failed' }
+          Invoke-RequiredNativeTest -TestFilter $filter -RequiredCount 1 -RunIgnored
           # Current-source negative controls prevent a positive route from weakening cold replay refusal.
           $negative = 'codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff'
           $negativeList = & cargo test --locked -p codex-tui --lib $negative -- --list 2>&1
@@ -2500,8 +2512,7 @@ jobs:
           if ($negativeExit -ne 0 -or ($negativeList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
             throw 'Exactly one real-process cold App replay negative test must be present'
           }
-          & cargo test --locked -p codex-tui --lib $negative -- --ignored --test-threads=1 --nocapture
-          if ($LASTEXITCODE -ne 0) { throw 'Real-process old automatic Validator replay refusal regressed on current source' }
+          Invoke-RequiredNativeTest -TestFilter $negative -RequiredCount 1 -RunIgnored
           $coldGuard = 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
           $guardList = & cargo test --locked -p codex-tui --lib $coldGuard -- --list 2>&1
           $guardExit = $LASTEXITCODE
@@ -2509,8 +2520,27 @@ jobs:
           if ($guardExit -ne 0 -or ($guardList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
             throw 'Exactly one source-pinned cold READY restoration guard must be present'
           }
-          & cargo test --locked -p codex-tui --lib $coldGuard -- --test-threads=1 --nocapture
-          if ($LASTEXITCODE -ne 0) { throw 'Source-pinned cold READY guard regressed on current source' }
+          Invoke-RequiredNativeTest -TestFilter $coldGuard -RequiredCount 1
+          # Cover stale, duplicate, selected-thread and foreign READY routing on the identical native SHA.
+          $replayFilter = 'codexdd_046_3c1b2j3a_'
+          $replayList = & cargo test --locked -p codex-tui --lib $replayFilter -- --list 2>&1
+          $replayExit = $LASTEXITCODE
+          $replayList | Out-Host
+          $replayNames = $replayList -join [Environment]::NewLine
+          if ($replayExit -ne 0 -or $replayNames -notmatch '2 tests, 0 benchmarks' -or -not $replayNames.Contains('codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator') -or -not $replayNames.Contains('codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded_state')) {
+            throw 'Both exact-source duplicate/stale origin handoff refusals must be present'
+          }
+          Invoke-RequiredNativeTest -TestFilter $replayFilter -RequiredCount 2
+
+          $routingFilter = 'codexdd_046_3c1b2j1_'
+          $routingList = & cargo test --locked -p codex-tui --lib $routingFilter -- --list 2>&1
+          $routingExit = $LASTEXITCODE
+          $routingList | Out-Host
+          $routingNames = $routingList -join [Environment]::NewLine
+          if ($routingExit -ne 0 -or $routingNames -notmatch '1 test, 0 benchmarks' -or -not $routingNames.Contains('codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence')) {
+            throw 'Exact-source App foreground routing and foreign READY refusal must be present'
+          }
+          Invoke-RequiredNativeTest -TestFilter $routingFilter -RequiredCount 1
 
       - name: Confirm nonproduction-only scoped regression
         if: always()
