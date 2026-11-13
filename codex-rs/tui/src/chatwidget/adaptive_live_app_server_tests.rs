@@ -17,6 +17,8 @@ use codex_app_server_protocol::JSONRPCNotification;
 use codex_app_server_protocol::SandboxMode;
 use codex_app_server_protocol::ServerNotification;
 use codex_app_server_protocol::ThreadHistoryMode;
+use codex_app_server_protocol::ThreadResumeParams;
+use codex_app_server_protocol::ThreadResumeResponse;
 use codex_app_server_protocol::ThreadItem;
 use codex_app_server_protocol::ThreadStartParams;
 use codex_app_server_protocol::ThreadStartResponse;
@@ -180,6 +182,20 @@ async fn take_trusted_signal(
 /// emitted by Core inside the spawned Windows app-server process.
 #[tokio::test]
 async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Result<()> {
+    run_native_app_server_to_tui_handoff(false).await
+}
+
+/// Real Core-native source and independent-review tool receipts must remain
+/// separately bound after the app-server OS process is replaced. Old source
+/// events cannot complete a new Validation Worker or replay owner READY.
+/// The App event-loop and persisted TUI UI checkpoint still need b2b2 proof.
+#[cfg(windows)]
+#[tokio::test]
+async fn codexdd_046_3c1b2j3b2b1_real_native_receipts_across_restart_refuse_replay() -> Result<()> {
+    run_native_app_server_to_tui_handoff(true).await
+}
+
+async fn run_native_app_server_to_tui_handoff(restart_between_workers: bool) -> Result<()> {
     use crate::adaptive_complexity::AdaptiveComplexityClass;
     use crate::adaptive_complexity::AdaptiveImplementationPhase;
     use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
@@ -280,6 +296,8 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
     let (mut chat, _sender, mut app_events, _op_rx) = make_chatwidget_manual_with_sender().await;
     let mut origin_thread: Option<ThreadId> = None;
     let mut run_ids = Vec::new();
+    let mut previous_source_receipt: Option<ServerNotification> = None;
+    let mut previous_source_signal: Option<ServerNotification> = None;
     for (role, profile, _tool, call_id, _) in work {
         let request_id = server
             .send_thread_start_request(ThreadStartParams {
@@ -307,6 +325,44 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                 "Validator must use a different app-server thread"
             );
             chat.thread_id = Some(thread);
+            if restart_between_workers {
+                let before = &chat.adaptive_effort;
+                let gates = before
+                    .gate_ledger
+                    .as_ref()
+                    .context("cold-restarted Validator missing original owner gates")?;
+                let pending_before = gates.outstanding(&before.evidence_registry).len();
+                let evidence_before = before.evidence_registry.len();
+                ensure!(
+                    pending_before == 1 && before.workflow_terminal.is_none(),
+                    "fresh Validator must retain only the original source PASS, not owner READY"
+                );
+                chat.handle_server_notification(
+                    previous_source_receipt
+                        .clone()
+                        .context("missing authentic prior source receipt")?,
+                    None,
+                );
+                chat.handle_server_notification(
+                    previous_source_signal
+                        .clone()
+                        .context("missing authentic prior source signal")?,
+                    None,
+                );
+                let after = &chat.adaptive_effort;
+                ensure!(
+                    after.evidence_registry.len() == evidence_before
+                        && after
+                            .gate_ledger
+                            .as_ref()
+                            .context("replayed source event erased owner gates")?
+                            .outstanding(&after.evidence_registry)
+                            .len()
+                            == pending_before
+                        && after.workflow_terminal.is_none(),
+                    "old Core source receipt/signal replay granted Validator gate or READY"
+                );
+            }
         }
 
         // Owner authority is encoded only by the actual first user message.
@@ -439,6 +495,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
             .to_string();
         ensure!(!native_run.is_empty() && !run_ids.contains(&native_run));
         run_ids.push(native_run);
+        let native_item_replay = native_item.clone();
         chat.handle_server_notification(native_item, None);
 
         if role == "implementation" {
@@ -464,6 +521,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         }
         let live_signal =
             take_trusted_signal(&mut server, &thread_id, &native_turn.turn.id).await?;
+        let live_signal_replay = live_signal.clone();
         chat.handle_server_notification(live_signal, None);
         let native_done = take_turn_event(
             &mut server,
@@ -495,6 +553,51 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
             chat.adaptive_effort = fresh;
             chat.turn_lifecycle.agent_turn_running = false;
             chat.turn_lifecycle.last_turn_id = None;
+            if restart_between_workers {
+                previous_source_receipt = Some(native_item_replay);
+                previous_source_signal = Some(live_signal_replay);
+                let inherited = &chat.adaptive_effort;
+                ensure!(
+                    inherited.review_origin_thread_id == Some(thread)
+                        && inherited.evidence_registry.len() == 1
+                        && inherited
+                            .gate_ledger
+                            .as_ref()
+                            .context("lost owner ledger on cross-process handoff")?
+                            .outstanding(&inherited.evidence_registry)
+                            .len()
+                            == 1
+                        && inherited.workflow_terminal.is_none(),
+                    "source receipt/owner gate inheritance granted forged native review"
+                );
+                timeout(LIVE_TIMEOUT, server.shutdown_gracefully()).await??;
+                server = TestAppServer::builder()
+                    .with_codex_home(home.path())
+                    .without_auto_env()
+                    .build_initialized()
+                    .await?;
+                let request_id = server
+                    .send_thread_resume_request(ThreadResumeParams {
+                        thread_id: thread_id.clone(),
+                        ..Default::default()
+                    })
+                    .await?;
+                let resumed: ThreadResumeResponse =
+                    timeout(LIVE_TIMEOUT, server.read_response(request_id)).await??;
+                let worker = resumed
+                    .codexdd_first_worker
+                    .context("new app-server OS process lost original Core first-user source")?;
+                ensure!(
+                    resumed.thread.id == thread_id
+                        && worker.role == "implementation"
+                        && worker.authorized_scope == scope
+                        && worker.source_sha.as_deref() == Some(sha.as_str())
+                        && worker.source_root.as_ref().is_some_and(|path| {
+                            Path::new(path).canonicalize().ok().as_ref() == Some(&canonical)
+                        }),
+                    "cold resumed Core source/role identity does not match original user authority"
+                );
+            }
         } else {
             ensure!(
                 chat.adaptive_effort.workflow_terminal
@@ -506,6 +609,17 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                     .is_ok(),
                 "post-terminal READY must cite actual separate native Validator receipt"
             );
+            if restart_between_workers {
+                let evidence_before = chat.adaptive_effort.evidence_registry.len();
+                chat.handle_server_notification(native_item_replay, None);
+                chat.handle_server_notification(live_signal_replay, None);
+                ensure!(
+                    chat.adaptive_effort.evidence_registry.len() == evidence_before
+                        && chat.adaptive_effort.workflow_terminal
+                            == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+                    "replayed Validator receipt/signal changed the authorized READY evidence"
+                );
+            }
         }
     }
 
@@ -525,7 +639,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         Some(current) != origin_thread,
         "READY cannot belong to Implementation thread"
     );
-    let mut persisted = false;
+    let mut persisted_count = 0;
     while let Ok(event) = app_events.try_recv() {
         if let crate::app_event::AppEvent::PersistWorkflowState {
             thread_id,
@@ -534,12 +648,12 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         } = event
         {
             ensure!(thread_id == current, "foreign thread persisted READY");
-            persisted = true;
+            persisted_count += 1;
         }
     }
     ensure!(
-        persisted,
-        "TUI did not request READY persistence on Validation Worker"
+        persisted_count == 1,
+        "TUI must persist owner READY exactly once on the genuine Validator"
     );
     timeout(LIVE_TIMEOUT, server.shutdown_gracefully()).await??;
     Ok(())
