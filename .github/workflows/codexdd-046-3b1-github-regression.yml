@@ -1925,3 +1925,77 @@ jobs:
         run: |
           Write-Host "3C.1b.2j1 native App routing test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
           git status --short
+  windows-3c1b2j2-validator-handoff:
+    name: 3C.1b.2j2 Windows automatic Validator handoff and missing/drifted SHA refusals
+    # App-managed source-bound fresh Validator lifecycle. Initial READY is
+    # a typed fixture; native Core receipts remain proved by 3C.1b.2i.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j2-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j2 source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j2 wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j2'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run exactly two 3C.1b.2j2 native Validator lifecycle tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2j2_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '2 tests, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates') -or -not $all.Contains('codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_source')) {
+            throw 'Expected two source-bound fresh Validator handoff and refusal regressions'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j2 native Validator handoff or source refusal failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j2 native Validator lifecycle test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short

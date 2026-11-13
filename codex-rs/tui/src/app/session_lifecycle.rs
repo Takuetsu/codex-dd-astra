@@ -1012,6 +1012,13 @@ impl App {
             }
             return;
         }
+        // An automatic independent Validator may only be created from the
+        // terminalized owner Worker with an intact, still-matching source and
+        // required-gate ledger. A missing/moved candidate must not silently
+        // create an unpinned Validator in the launcher's milestone root.
+        let automatic_validation_handoff = worker_binding.as_ref().is_some_and(|binding| {
+            self.chat_widget.automatic_validation_binding().as_ref() == Some(binding)
+        });
         let initial_user_message = initial_user_message.or_else(|| {
             worker_binding.as_ref().and_then(|binding| {
                 self.chat_widget
@@ -1022,6 +1029,17 @@ impl App {
         let fresh_adaptive_effort = self
             .chat_widget
             .fresh_adaptive_effort_for_new_worker(worker_binding.as_ref());
+        if automatic_validation_handoff
+            && (fresh_adaptive_effort.review_origin_thread_id.is_none()
+                || fresh_adaptive_effort.assignment_preflight.is_none()
+                || fresh_adaptive_effort.gate_ledger.is_none())
+        {
+            self.chat_widget.add_error_message(
+                "SETUP_BLOCKED: automatic independent Validator handoff lacks the current owner-authorized source and gate ledger; no Validation Worker started."
+                    .to_string(),
+            );
+            return;
+        }
         // Start a fresh in-memory session while preserving resumability via persisted rollout
         // history. If an initial message is provided, `enqueue_primary_thread_session` suppresses it
         // until the new session is configured and any replayed turns have been rendered.
@@ -1060,6 +1078,18 @@ impl App {
                     return;
                 }
             };
+            // Recheck the live Git root, clean working tree and exact HEAD
+            // before thread/start. An inherited ledger alone is not proof
+            // that the on-disk checkout still matches its owner source SHA.
+            if let Err(err) = crate::adaptive_worker::preflight_mechanical_target(
+                Some(pin),
+                &selected,
+            ) {
+                self.chat_widget.add_error_message(format!(
+                    "{err} No Validation Worker started."
+                ));
+                return;
+            }
             match codex_utils_absolute_path::AbsolutePathBuf::try_from(selected) {
                 Ok(root) => config.cwd = root,
                 Err(err) => {
