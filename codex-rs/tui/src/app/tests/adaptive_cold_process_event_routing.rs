@@ -108,7 +108,8 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
             AdaptiveRequiredGate::SourceProfile("work_packet".to_owned()),
             AdaptiveRequiredGate::IndependentValidation,
         ],
-    )?);
+    )
+    .map_err(|error| color_eyre::eyre::eyre!("invalid owner gate fixture: {error}"))?);
     let checkpoint = saved.durable_workflow_snapshot(thread);
     assert!(checkpoint.gate_checkpoint.is_some());
 
