@@ -966,8 +966,87 @@ impl ChatWidget {
                 None => "implementation",
             },
         };
+        let source_pin = state.assignment_preflight.as_ref().map_or_else(
+            || "None (do not infer a worktree from the launch cwd)".to_string(),
+            |pin| format!("{} @ {}", pin.source_root, pin.source_sha),
+        );
+        let pending_gates = state.gate_ledger.as_ref().map_or_else(
+            || "Not specified by an authorized owner".to_string(),
+            |ledger| {
+                let outstanding = ledger.outstanding(&state.evidence_registry);
+                if outstanding.is_empty() {
+                    "None (still requires a trusted terminal signal)".to_string()
+                } else {
+                    outstanding
+                        .iter()
+                        .map(|item| {
+                            let name = match &item.gate {
+                                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::SourceProfile(profile) => {
+                                    format!("source:{profile}")
+                                }
+                                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(ports) => {
+                                    format!("runtime:{ports:?}")
+                                }
+                                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::IndependentValidation => {
+                                    "independent_review".to_string()
+                                }
+                            };
+                            let status = match &item.state {
+                                crate::adaptive_gate_prerequisites::AdaptiveGateState::Pending => {
+                                    "PENDING"
+                                }
+                                crate::adaptive_gate_prerequisites::AdaptiveGateState::Blocked(_) => {
+                                    "BLOCKED"
+                                }
+                            };
+                            format!("{name} {status}")
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                }
+            },
+        );
+        let native_tool = match state.worker_context.role {
+            AdaptiveWorkerRole::Implementation => {
+                "run_codexdd_validation (Core live tool/profile availability not inferred from historical LVO status)"
+            }
+            AdaptiveWorkerRole::Validation => {
+                "run_codexdd_independent_validation (Core live tool/profile availability must be verified)"
+            }
+            AdaptiveWorkerRole::Repair => {
+                "Repair cannot substitute for a fresh independent Validator"
+            }
+            AdaptiveWorkerRole::Unspecified => {
+                "Not authorized until the first user-origin Worker assignment"
+            }
+        };
+        let next_action = if !state.enabled {
+            "Enable adaptive mode, then supply one owner-origin Worker assignment."
+        } else if !worker_is_bound {
+            "Start the first nonblank user message with [adaptive_worker], role and authorized_scope; source changes also require source_root, source_sha, task_kind and required_gates."
+        } else if state.paused_by_user {
+            "Hold: confirm the original source and owner prerequisites; resume only with fresh native proof. Historic READY is not authority."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa) {
+            "Await independent owner QA approval; do not auto-release or reuse this READY after restart."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
+            "Start exactly one fresh independent Validator for the current source SHA and owner gates."
+        } else if state.gate_ledger.is_none()
+            && state.assignment_preflight.is_some()
+        {
+            "Source-pinned Worker needs an explicit owner gate manifest; no READY or Validator handoff."
+        } else if state.worker_context.role == AdaptiveWorkerRole::Validation {
+            "Run a fresh Core-native independent_review against the exact pinned source; old source receipts cannot satisfy this gate."
+        } else if state.worker_context.role == AdaptiveWorkerRole::Implementation
+            && state.implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
+        {
+            "Run current Core-native work_packet (and targeted if required) for the pinned SHA; inspect tool/profile setup blockers."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::Blocked) {
+            "Owner review required; preserve task state and do not escalate or fabricate evidence."
+        } else {
+            "Continue the authorized Worker route; check first-message role, source pin and actual Core tool/profile readiness before claiming completion."
+        };
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
-        format!(
+        let report = format!(
             "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}\n  LVO last: {}\n  LVO run: {}\n  LVO candidate: {}\n  LVO failed stage: {}\n  LVO failure fingerprint: {}\n  LVO repair budget: {}/{} used ({} remaining)\n  LVO next: {}\n  LVO log: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
@@ -1000,6 +1079,9 @@ impl ChatWidget {
             validation_repair_remaining,
             validation_next,
             validation_log
+        );
+        format!(
+            "{report}\n  Authorized source: {source_pin}\n  Pending prerequisites: {pending_gates}\n  Native tool required: {native_tool}\n  Next action: {next_action}"
         )
     }
 }
