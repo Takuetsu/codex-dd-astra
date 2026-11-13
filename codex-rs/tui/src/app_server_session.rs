@@ -4501,18 +4501,20 @@ mod tests {
             workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
             ..Default::default()
         };
-        original.gate_ledger = Some(AdaptiveGateLedger::new(
-            scope,
-            &source_root,
-            &approved_sha,
-            vec![
-                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
-                AdaptiveRequiredGate::IndependentValidation,
-            ],
-        )
-        .map_err(|reason| {
-            color_eyre::eyre::eyre!("invalid Validator gate fixture: {reason}")
-        })?);
+        original.gate_ledger = Some(
+            AdaptiveGateLedger::new(
+                scope,
+                &source_root,
+                &approved_sha,
+                vec![
+                    AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                    AdaptiveRequiredGate::IndependentValidation,
+                ],
+            )
+            .map_err(|reason| {
+                color_eyre::eyre::eyre!("invalid Validator gate fixture: {reason}")
+            })?,
+        );
         let persisted = original.durable_workflow_snapshot(thread_id);
         assert!(
             persisted.gate_checkpoint.is_some(),
