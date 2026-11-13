@@ -8,6 +8,7 @@ use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
 use codex_app_server_protocol::DynamicToolCallStatus;
 use codex_app_server_protocol::ItemCompletedNotification;
+use codex_app_server_protocol::ThreadWorkflowStateOperation;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 
 #[tokio::test]
@@ -138,7 +139,7 @@ async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -
             !matches!(
                 event,
                 AppEvent::PersistWorkflowState {
-                    operation: codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+                    operation: ThreadWorkflowStateOperation::SetReadyForOwnerQa,
                     ..
                 }
             ),
