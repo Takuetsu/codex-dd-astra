@@ -76,7 +76,8 @@ permissions:
 
 concurrency:
   group: codexdd-046-3b1-${{ github.ref }}
-  cancel-in-progress: false
+  # Only an explicitly requested Phase 3C native acceptance supersedes obsolete runs.
+  cancel-in-progress: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') }}
 
 jobs:
   source-contract:
