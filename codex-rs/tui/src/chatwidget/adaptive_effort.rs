@@ -1009,10 +1009,7 @@ impl ChatWidget {
         let non_source_task = state.assignment_preflight.as_ref().is_some_and(|pin| {
             pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
         });
-        let native_tool = if non_source_task {
-            "No source-validation tool applies; operations-specific native availability not yet established"
-        } else {
-            match state.worker_context.role {
+        let native_tool = match state.worker_context.role {
             AdaptiveWorkerRole::Implementation => {
                 "run_codexdd_validation (Core live tool/profile availability not inferred from historical LVO status)"
             }
@@ -1025,7 +1022,11 @@ impl ChatWidget {
             AdaptiveWorkerRole::Unspecified => {
                 "Not authorized until the first user-origin Worker assignment"
             }
-            }
+        };
+        let native_tool = if non_source_task {
+            "No source-validation tool applies; operations-specific native availability not yet established"
+        } else {
+            native_tool
         };
         let next_action = if !state.enabled {
             "Enable adaptive mode, then supply one owner-origin Worker assignment."
