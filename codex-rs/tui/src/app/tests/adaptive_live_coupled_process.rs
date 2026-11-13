@@ -20,6 +20,7 @@ use codex_app_server_protocol::ServerNotification;
 use codex_app_server_protocol::ThreadItem;
 use codex_app_server_protocol::UserInput;
 use color_eyre::eyre::Context;
+use color_eyre::eyre::ContextCompat;
 use color_eyre::eyre::bail;
 use color_eyre::eyre::ensure;
 use core_test_support::responses;
@@ -244,7 +245,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
     ] {
         sequence.push(create_final_assistant_message_sse_response(
             "Owner assignment accepted.",
-        )?);
+        ).map_err(|err| color_eyre::eyre::eyre!("{err:#}"))?);
         sequence.push(responses::sse(vec![
             responses::ev_response_created(&format!("{role}-native-profile")),
             responses::ev_function_call(call_id, tool, &json!({"profile": profile}).to_string()),
@@ -264,7 +265,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
             ),
             responses::ev_completed(&format!("{role}-native-signal")),
         ]));
-        sequence.push(create_final_assistant_message_sse_response("done")?);
+        sequence.push(create_final_assistant_message_sse_response("done").map_err(|err| color_eyre::eyre::eyre!("{err:#}"))?);
     }
     let mock = create_mock_responses_server_sequence_unchecked(sequence).await;
     let home = tempfile::tempdir()?;
@@ -364,7 +365,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         &root,
         "Execute only the authorized source work_packet native profile.".to_string(),
         Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string()),
-        app.chat_widget.current_model(),
+        app.chat_widget.current_model().to_string(),
     )
     .await?;
     let events = drive_native_turn(&mut app, &mut server, implementation, &turn_id).await?;
@@ -405,7 +406,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         ..
     } = &handoff
     {
-        ensure!(*origin_thread_id == implementation && source_sha == &sha);
+        ensure!(origin_thread_id == implementation && source_sha == sha);
     }
 
     // The original native source process is genuinely torn down here; the
@@ -470,7 +471,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
             _ => bail!("App first Validator turn is not the generated text assignment"),
         },
         None,
-        app.chat_widget.current_model(),
+        app.chat_widget.current_model().to_string(),
     )
     .await?;
     let _ = drive_native_turn(&mut app, &mut restarted, validator, &assignment).await?;
@@ -480,7 +481,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         &root,
         "Run the authorized independent_review native profile and report receipt.".to_string(),
         None,
-        app.chat_widget.current_model(),
+        app.chat_widget.current_model().to_string(),
     )
     .await?;
     let events = drive_native_turn(&mut app, &mut restarted, validator, &review_turn).await?;
