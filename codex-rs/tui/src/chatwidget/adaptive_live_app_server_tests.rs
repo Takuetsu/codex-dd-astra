@@ -428,12 +428,7 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
                 && *success == Some(true)
                 && arguments["head_sha"] == sha
                 && arguments["result"] == "pass"
-                && arguments["profile"]
-                    == if role == "implementation" {
-                        "work-packet"
-                    } else {
-                        "independent-review"
-                    },
+                && arguments["profile"] == profile,
             "Core process receipt failed its native status or source pin"
         );
         let native_run = arguments["run_id"]
