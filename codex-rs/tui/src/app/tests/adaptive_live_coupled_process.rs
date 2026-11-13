@@ -280,7 +280,21 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         .build()
         .await?;
     let (mut server, child) = start_real_app_server(&binary, home.path(), &config).await?;
-    let started = server.start_thread(&config).await?;
+    // Remote TUI intentionally does not inherit client cwd by default. This
+    // same-host isolated fixture explicitly selects the authorized Git root.
+    let started = server
+        .start_thread_with_session_start_source(
+            &crate::local_settings::LocalSettings::from(&config),
+            &config,
+            /*session_start_source*/ None,
+            Some(&root),
+            /*selected_profile*/ None,
+        )
+        .await?;
+    ensure!(
+        started.session.cwd.as_path().canonicalize()? == root,
+        "the source thread was not started in the exact authorized root"
+    );
     let implementation = started.session.thread_id;
     let (mut app, mut app_events, _ops) = make_test_app_with_channels().await;
     app.config = config.clone();
