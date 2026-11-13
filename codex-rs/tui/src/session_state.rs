@@ -1044,6 +1044,108 @@ mod codexdd_046_3b3d2_persistence_tests {
     }
 
     #[test]
+    fn codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume() {
+        let checkout = tempfile::tempdir().expect("isolated candidate");
+        let owner = ThreadId::new();
+        let scope = "3C.1b.2j3b2b2a original Implementation scope";
+        let sha = "a".repeat(40);
+        let ledger = AdaptiveGateLedger::new(
+            scope,
+            checkout.path(),
+            &sha,
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("locked source gate manifest");
+        let state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::High),
+            attempt_number: 1,
+            complexity_class: Some(AdaptiveComplexityClass::Standard),
+            implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some(scope.to_string()),
+            },
+            assignment_preflight: Some(AdaptiveWorkerPreflight {
+                task_kind: AdaptiveTaskKind::SourceChange,
+                source_root: checkout.path().display().to_string(),
+                source_sha: sha.clone(),
+            }),
+            worker_assignment_locked: true,
+            gate_ledger: Some(ledger),
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+            ..Default::default()
+        };
+        let wire = state.durable_workflow_snapshot(owner);
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(serde_json::json!({
+                "enabled": true,
+                "starting_family": "astra",
+                "current_family": "sol",
+                "current_effort": "high",
+                "attempt_number": 1,
+                "paused_by_user": false,
+                "worker_role": "implementation",
+                "authorized_scope": scope,
+                "assignment_task_kind": "source_change",
+                "authorized_source_root": checkout.path(),
+                "authorized_source_sha": sha,
+                "worker_assignment_locked": true,
+                "complexity_class": "standard",
+                "implementation_phase": "mechanical_validation",
+                "workflow_terminal": "ready_for_validation",
+                "gate_checkpoint": wire.gate_checkpoint,
+            }))
+            .expect("typed source-locked rollout checkpoint");
+        let mut resumed = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state_for_thread(
+            &mut resumed,
+            snapshot,
+            Some("old-source-terminal".to_string()),
+            Some(owner),
+        )
+        .expect("original owner state and pending gates still restore");
+        assert_eq!(resumed.worker_context.role, AdaptiveWorkerRole::Implementation);
+        assert_eq!(resumed.complexity_class, Some(AdaptiveComplexityClass::Standard));
+        assert_eq!(
+            resumed.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert_eq!(
+            resumed
+                .assignment_preflight
+                .as_ref()
+                .expect("source identity kept")
+                .source_sha,
+            sha
+        );
+        assert_eq!(resumed.workflow_terminal, None);
+        assert!(
+            resumed.paused_by_user,
+            "historical source READY without fresh native PASS must be held for owner"
+        );
+        assert_eq!(resumed.last_processed_terminal_turn_id, None);
+        assert_eq!(resumed.evidence_registry.len(), 0);
+        assert!(resumed.pending_signal.is_none());
+        assert!(resumed.successor_admission.is_none());
+        assert_eq!(
+            resumed
+                .gate_ledger
+                .as_ref()
+                .expect("original required gates")
+                .outstanding(&resumed.evidence_registry)
+                .len(),
+            2,
+            "original requirements remain pending, never implicitly PASS"
+        );
+    }
+
+    #[test]
     fn codexdd_046_3b3d2_protocol_and_rollout_restart_require_revalidation() {
         let temp = tempfile::tempdir().expect("worktree");
         let owner = ThreadId::new();
