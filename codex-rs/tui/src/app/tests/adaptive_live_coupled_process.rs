@@ -5,15 +5,15 @@
 use super::*;
 use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_complexity::AdaptiveImplementationPhase;
-use crate::adaptive_gate_prerequisites::AdaptiveGateState;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::app_server_session::TurnPermissionsOverride;
 use crate::app_server_session::real_process_restart_tests::start_real_app_server;
 use crate::app_server_session::real_process_restart_tests::stop_real_app_server;
 use crate::legacy_core::config::ConfigOverrides;
-use anyhow::Context;
-use anyhow::ensure;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::ensure;
 use app_test_support::MockResponsesConfig;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
@@ -92,7 +92,7 @@ async fn drive_native_turn(
             return Ok(delivered);
         }
     }
-    anyhow::bail!("real app-server stream exceeded bounded event count without completing turn")
+    bail!("real app-server stream exceeded bounded event count without completing turn")
 }
 
 async fn send_real_turn(
@@ -388,7 +388,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         &root,
         match prompt.as_slice() {
             [UserInput::Text { text, .. }] => text.clone(),
-            _ => anyhow::bail!("App first Validator turn is not the generated text assignment"),
+            _ => bail!("App first Validator turn is not the generated text assignment"),
         },
         None,
         app.chat_widget.current_model(),
