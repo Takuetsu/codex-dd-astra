@@ -83,7 +83,7 @@ pub(crate) async fn start_real_app_server(
     ))
 }
 
-async fn stop_real_app_server(session: AppServerSession, mut child: Child) -> Result<()> {
+pub(crate) async fn stop_real_app_server(session: AppServerSession, mut child: Child) -> Result<()> {
     session.shutdown().await?;
     if child.try_wait()?.is_none() {
         child.kill().await?;
