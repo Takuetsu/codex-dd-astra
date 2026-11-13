@@ -108,8 +108,8 @@ async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -
     .await;
     app.handle_app_server_event(
         &app_server,
-        AppServerEvent::ServerNotification(Box::new(
-            ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {
+        AppServerEvent::ServerNotification(Box::new(ServerNotification::AdaptiveRuntimeSignal(
+            AdaptiveRuntimeSignalNotification {
                 thread_id: foreign.to_string(),
                 signal: AdaptiveRuntimeSignalEnvelope {
                     source_turn_id: "foreign-turn".to_string(),
@@ -117,8 +117,8 @@ async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -
                     evidence_refs: vec!["foreign-independent-receipt".to_string()],
                     diagnostic_note: None,
                 },
-            }),
-        )),
+            },
+        ))),
     )
     .await;
     assert!(

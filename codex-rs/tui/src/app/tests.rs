@@ -10,10 +10,10 @@ mod math_interruption_tests;
 #[path = "tests/security_setup_tests.rs"]
 mod security_setup_tests;
 
-#[path = "tests/advanced_reasoning_tests.rs"]
-mod advanced_reasoning_tests;
 #[path = "tests/adaptive_native_event_routing.rs"]
 mod adaptive_native_event_routing;
+#[path = "tests/advanced_reasoning_tests.rs"]
+mod advanced_reasoning_tests;
 #[path = "tests/agents_navigation_tests.rs"]
 mod agents_navigation_tests;
 #[path = "tests/approvals_reviewer_error_tests.rs"]
