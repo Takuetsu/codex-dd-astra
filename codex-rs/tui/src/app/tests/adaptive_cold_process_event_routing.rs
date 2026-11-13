@@ -148,8 +148,8 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
             ResumeModelSettings::RestoreFromThread,
         )
         .await?;
-    assert_eq!(resumed.session.thread_id, thread);
-    assert_eq!(
+    std::assert_eq!(resumed.session.thread_id, thread);
+    std::assert_eq!(
         resumed.session.adaptive_effort.worker_context.role,
         AdaptiveWorkerRole::Implementation
     );
@@ -158,7 +158,7 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
             && resumed.session.adaptive_effort.paused_by_user,
         "cold real-process resume cannot restore historical Implementation READY"
     );
-    assert_eq!(
+    std::assert_eq!(
         resumed
             .session
             .adaptive_effort
@@ -175,8 +175,8 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
     let (mut app, mut app_events, _ops) = make_test_app_with_channels().await;
     app.enqueue_primary_thread_session(resumed.session, resumed.turns)
         .await?;
-    assert_eq!(app.current_displayed_thread_id(), Some(thread));
-    assert_eq!(app.chat_widget.thread_id(), Some(thread));
+    std::assert_eq!(app.current_displayed_thread_id(), Some(thread));
+    std::assert_eq!(app.chat_widget.thread_id(), Some(thread));
     assert!(
         app.chat_widget
             .adaptive_effort_for_test()
@@ -249,7 +249,7 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
         },
     )
     .await?;
-    assert_eq!(app.current_displayed_thread_id(), Some(thread));
+    std::assert_eq!(app.current_displayed_thread_id(), Some(thread));
     assert!(
         app.chat_widget
             .adaptive_effort_for_test()
@@ -284,7 +284,7 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
         },
     )
     .await?;
-    assert_eq!(app.current_displayed_thread_id(), Some(thread));
+    std::assert_eq!(app.current_displayed_thread_id(), Some(thread));
     assert!(
         app.chat_widget
             .adaptive_effort_for_test()
