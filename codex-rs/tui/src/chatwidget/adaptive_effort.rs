@@ -1840,6 +1840,8 @@ mod tests {
         assert!(operations.contains("Next action: Non-source operations/benchmark task:"));
         assert!(operations.contains("Do not run source work_packet"));
         assert!(operations.contains("Native tool required: No source-validation tool applies"));
+        assert!(operations.contains("LVO next: owner-approved operations/benchmark path"));
+        assert!(!operations.contains("LVO next: work_packet"));
         assert!(!operations.contains("Next action: Run current Core-native work_packet"));
 
         state.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
