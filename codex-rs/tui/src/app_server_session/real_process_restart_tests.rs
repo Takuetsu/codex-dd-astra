@@ -38,7 +38,7 @@ fn git(root: &Path, args: &[&str]) -> Result<String> {
 /// The test owns each child process and uses the public websocket client
 /// transport exactly as the running TUI would. Do not replace this with an
 /// embedded app-server: that separate evidence is 3C.1b.2j3b1.
-async fn start_real_app_server(
+pub(crate) async fn start_real_app_server(
     binary: &Path,
     codex_home: &Path,
     config: &Config,
