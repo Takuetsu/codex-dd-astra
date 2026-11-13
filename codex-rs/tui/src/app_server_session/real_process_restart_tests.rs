@@ -92,10 +92,11 @@ async fn stop_real_app_server(session: AppServerSession, mut child: Child) -> Re
 
 #[tokio::test]
 #[ignore = "requires GitHub Windows real-process binary and isolated CODEXDD_REAL_APP_SERVER_BIN"]
-async fn codexdd_046_3c1b2j3b2a_real_os_restart_does_not_resurrect_ready_or_native_pass(
-) -> Result<()> {
-    let executable = std::env::var_os("CODEXDD_REAL_APP_SERVER_BIN")
-        .ok_or_else(|| color_eyre::eyre::eyre!("real-process CI must set CODEXDD_REAL_APP_SERVER_BIN"))?;
+async fn codexdd_046_3c1b2j3b2a_real_os_restart_does_not_resurrect_ready_or_native_pass()
+-> Result<()> {
+    let executable = std::env::var_os("CODEXDD_REAL_APP_SERVER_BIN").ok_or_else(|| {
+        color_eyre::eyre::eyre!("real-process CI must set CODEXDD_REAL_APP_SERVER_BIN")
+    })?;
     let executable = std::path::PathBuf::from(executable);
     assert!(
         executable.is_file(),
@@ -175,8 +176,7 @@ async fn codexdd_046_3c1b2j3b2a_real_os_restart_does_not_resurrect_ready_or_nati
     );
 
     let settings = crate::local_settings::LocalSettings::from(&config);
-    let (mut first, first_child) =
-        start_real_app_server(&executable, home.path(), &config).await?;
+    let (mut first, first_child) = start_real_app_server(&executable, home.path(), &config).await?;
     first
         .resume_thread(
             &settings,
@@ -195,8 +195,7 @@ async fn codexdd_046_3c1b2j3b2a_real_os_restart_does_not_resurrect_ready_or_nati
         .await?;
     stop_real_app_server(first, first_child).await?;
 
-    let (mut cold, cold_child) =
-        start_real_app_server(&executable, home.path(), &config).await?;
+    let (mut cold, cold_child) = start_real_app_server(&executable, home.path(), &config).await?;
     let resumed = cold
         .resume_thread(
             &settings,
@@ -208,7 +207,10 @@ async fn codexdd_046_3c1b2j3b2a_real_os_restart_does_not_resurrect_ready_or_nati
     let state = &resumed.session.adaptive_effort;
     std::assert_eq!(resumed.session.thread_id, thread_id);
     std::assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
-    std::assert_eq!(state.worker_context.authorized_scope.as_deref(), Some(scope));
+    std::assert_eq!(
+        state.worker_context.authorized_scope.as_deref(),
+        Some(scope)
+    );
     std::assert_eq!(
         state
             .assignment_preflight
