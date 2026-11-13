@@ -4544,7 +4544,6 @@ mod tests {
             )
             .await?;
         first.shutdown().await?;
-        drop(first);
 
         // Spawn a fresh embedded app-server, not an in-memory reuse of the
         // previous session. The TUI mapper rehydrates its rollout checkpoint.
@@ -4595,7 +4594,6 @@ mod tests {
             "historical Core PASS receipts cannot be replayed from a gate checkpoint"
         );
         cold.shutdown().await?;
-        drop(cold);
 
         // A different Git HEAD must not be promoted by another cold resume.
         git(&[
@@ -4642,7 +4640,6 @@ mod tests {
             "changed HEAD must refuse exact-source validation"
         );
         moved.shutdown().await?;
-        drop(moved);
 
         // Unavailable original worktree cannot recover a gate checkpoint.
         std::fs::remove_dir_all(&source_root)?;
