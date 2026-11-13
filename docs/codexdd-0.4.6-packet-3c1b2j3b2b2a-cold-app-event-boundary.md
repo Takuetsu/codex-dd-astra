@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — 3C.1b.2j3b2b2a: real cold App event-buffer and stale automatic handoff refusal
 
-**Opened:** 2026-11-13. **Parent:** 3C.1b.2j3b2b1 exact Windows run [#43475890208](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43475890208), native Core receipts 1/1 PASS on `3772a8e9fed0ff1ee71614fad883bd8ebe74b29f`. **Status:** WIP, test and gated native job submitted; not yet accepted. 3C.1b.2j3b2b2, 3C.1 and 0.4.6 remain OPEN.
+**Opened:** 2026-11-13. **Parent:** 3C.1b.2j3b2b1 exact Windows run [#43475890208](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43475890208), native Core receipts 1/1 PASS on `3772a8e9fed0ff1ee71614fad883bd8ebe74b29f`. **Status:** ACCEPTED (Windows native source-matched gate #43501797235 on 59cecfa0ef8d772fb5858f330bd00d13003c5c07). 3C.1b.2j3b2b2, 3C.1 and 0.4.6 remain OPEN.
 
 ## Why another targeted control is required
 
@@ -41,6 +41,12 @@ Source review then confirmed a more significant **product bug** independently of
 
 The scoped source-contract preflight was successful on `e416e88331c6035b9a08a3d4706d8d77bc57f584`. Its Rustfmt review reported only three layout differences; exactly those were corrected in `9363e42a21ee50f9e95643fa3f19f1eb33871d6b` and `fb24aec2a137bb2b11a99fbadcc3c973a1e03d10`. The production source restoration condition and native Windows App test assertions were not relaxed.
 
-Dedicated native gate [GitHub Actions #43501797235](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43501797235) targets exact SHA `59cecfa0ef8d772fb5858f330bd00d13003c5c07`. **Queued as of the packet update; not accepted.** The job must separately enumerate and execute both (1) `codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff` (ignored-by-default, genuine Windows OS process restart plus old event negative test) and (2) `codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume` (nonignored, exact persisted restoration guard). Source-contract and Rustfmt jobs remain hard prerequisites. Any failed/missing/skipped stage leaves b2b2a OPEN.
+Dedicated native gate [GitHub Actions #43501797235](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43501797235) targets exact SHA `59cecfa0ef8d772fb5858f330bd00d13003c5c07`. **ACCEPTED 2026-11-13** — source-contract PASS, Rustfmt PASS, native real-process App routing **1 passed, 0 failed (1.85s)**, separate source-pinned READY restore guard **1 passed, 0 failed (0.00s)**, zero skipped inside the native job. The job must separately enumerate and execute both (1) `codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff` (ignored-by-default, genuine Windows OS process restart plus old event negative test) and (2) `codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume` (nonignored, exact persisted restoration guard). Source-contract and Rustfmt jobs remain hard prerequisites. Any failed/missing/skipped stage leaves b2b2a OPEN.
 
 Still required after this packet: positive, App-owned automatic two-Worker native receipt sequence across the same OS-process restart, b2b2b. No release or install.
+
+## Acceptance record
+
+GitHub Actions [#43501797235](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43501797235) completed **SUCCESS** at immutable source SHA `59cecfa0ef8d772fb5858f330bd00d13003c5c07`. The source-contract and Rustfmt jobs were each green. The dedicated Windows job enumerated and actually ran exactly one ignored real OS app-server cold-App dispatcher test (1 passed / 0 failed, 1.85 seconds) plus exactly one separately filtered source-pinned READY quarantine guard (1 passed / 0 failed, 0.00 seconds). Prior red attempts remain classified, not promoted. No native READY was fabricated, no permission changed, no active project touched.
+
+**Scope limit:** This is negative control only. 3C.1b.2j3b2b2b must still prove the positive App-owned real two-Worker lifecycle and evidence on one source-matched process-restart sequence. 3C.2 role/status diagnosis also remains mandatory before declaring Phase 3C complete. 0.4.6 release and install remain blocked.
