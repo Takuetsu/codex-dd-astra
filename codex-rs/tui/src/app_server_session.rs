@@ -4423,8 +4423,8 @@ mod tests {
     /// The fixture does not create new Core-native receipts or reauthorize a
     /// moved source SHA: those remain separate real-producer test boundaries.
     #[tokio::test]
-    async fn codexdd_046_3c1b2j3b1_real_cold_resume_keeps_gates_pending_and_refuses_source_drift(
-    ) -> Result<()> {
+    async fn codexdd_046_3c1b2j3b1_real_cold_resume_keeps_gates_pending_and_refuses_source_drift()
+    -> Result<()> {
         use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
         use crate::adaptive_gate_prerequisites::AdaptiveGateState;
         use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
@@ -4510,7 +4510,10 @@ mod tests {
             persisted.gate_checkpoint.is_some(),
             "original owner gate requirements must have a durable checkpoint"
         );
-        assert_eq!(persisted.workflow_terminal.as_deref(), Some("ready_for_owner_qa"));
+        assert_eq!(
+            persisted.workflow_terminal.as_deref(),
+            Some("ready_for_owner_qa")
+        );
 
         let settings = LocalSettings::from(&config);
         let mut first = crate::start_embedded_app_server_for_picker(&config).await?;
@@ -4547,7 +4550,10 @@ mod tests {
         assert_eq!(resumed.session.thread_id, thread_id);
         let restored = &resumed.session.adaptive_effort;
         assert_eq!(restored.worker_context.role, AdaptiveWorkerRole::Validation);
-        assert_eq!(restored.worker_context.authorized_scope.as_deref(), Some(scope));
+        assert_eq!(
+            restored.worker_context.authorized_scope.as_deref(),
+            Some(scope)
+        );
         assert!(restored.worker_assignment_locked);
         assert_eq!(
             restored
@@ -4558,7 +4564,10 @@ mod tests {
             approved_sha
         );
         assert_eq!(restored.workflow_terminal, None);
-        assert!(restored.paused_by_user, "historical READY cannot resume as trusted");
+        assert!(
+            restored.paused_by_user,
+            "historical READY cannot resume as trusted"
+        );
         assert_eq!(restored.review_origin_thread_id, None);
         assert_eq!(restored.evidence_registry.len(), 0);
         assert!(restored.pending_signal.is_none());
