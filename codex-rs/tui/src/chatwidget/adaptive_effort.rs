@@ -1771,7 +1771,7 @@ mod tests {
             crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
         chat.adaptive_effort
             .activate_adaptive_startup(AdaptiveFamily::Astra);
-        let invalid = "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"bad\"\n\nTry again.";
+        let invalid = "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"x\"\n\nx";
         assert!(
             chat.adaptive_effort
                 .observe_worker_assignment_text(invalid)
