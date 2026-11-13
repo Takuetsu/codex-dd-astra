@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — 3C.1b.2j3b2a: real OS process TUI checkpoint
 
-**Opened:** 2026-11-13. **Parent:** 3C.1b.2j3b1 accepted at `4d6dc84ecd33b8cb8528b2acea8d7b0c01254674`, [GitHub Actions #43457407670](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43457407670) (Windows 1/1 PASS). **State:** source submitted, focused Windows CI pending. The full 3C.1b.2j3, 3C.1 and 0.4.6 release remain OPEN.
+**Opened:** 2026-11-13. **Parent:** 3C.1b.2j3b1 accepted at `4d6dc84ecd33b8cb8528b2acea8d7b0c01254674`, [GitHub Actions #43457407670](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43457407670) (Windows 1/1 PASS). **State:** ACCEPTED focused Windows native process/restart checkpoint at `4bbda6aab623c4fbf29196af19010e300684b222` ([Actions #43468082893](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43468082893), SUCCESS, 2026-11-13). The full 3C.1b.2j3, 3C.1 and 0.4.6 release remain OPEN. The full 3C.1b.2j3, 3C.1 and 0.4.6 release remain OPEN.
 
 ## Distinct process acceptance boundary
 
@@ -15,3 +15,11 @@ This test intentionally verifies TUI's **remote-transport same-host** session ma
 Owner test: `codex-rs/tui/src/app_server_session/real_process_restart_tests.rs`. The isolated `[3c1b2j3b2a-native]` workflow builds `codex-app-server.exe` at the pinned development SHA and executes exactly one ignored-by-default `codex-tui --lib` test on Windows. Explicit startup, connect and process-reaping bounds; source preflight/Rustfmt gates first. All test files and process instances remain disposable and must not change live installations. Any source, OS process, owner-identity or READY assertion failure is blocking until classified. Never relax native-proof requirements to make an assertion green.
 
 **Following acceptance:** 3C.1b.2j3b2b must couple actual Core native source/Validator receipts and App user-origin/Validator lifecycle across the process restart, including duplicate READY and stale/replayed receipt refusals. Release and BREAKWATER soak remain blocked.
+
+## Accepted Windows proof and strict boundary
+
+At exact checkpoint `4bbda6aab623c4fbf29196af19010e300684b222`, GitHub Actions [#43468082893](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43468082893) completed **SUCCESS**: source-contract preflight PASS, Rustfmt PASS and dedicated native Windows OS-process regression **1 passed, 0 failed; 5916 filtered out, 3.18s test runtime**. The test launched a real `codex-app-server.exe` child, persisted a checkpoint, then resumed it across fresh OS processes, source HEAD drift and removed-root refusal. Historical READY, old receipts, unbound successors and unauthorized repinning remained disallowed.
+
+The immediately preceding red [#43461857927](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43461857927) compiled but the child exited with code 2 before its WebSocket could connect. The discriminating source inspection showed the fixture used `ws://127.0.0.1:PORT/` even though the production `--listen` parser accepts only `ws://IP:PORT` without the trailing slash. The correction changed the **test URL only**, not the parser, policy, transport or READY logic.
+
+**Do not extrapolate this green result:** the original saved state is a typed test fixture, not real Core-produced native Validator evidence; there is no full first-user source -> automatically created Validation Worker -> fresh native receipt -> App-owned READY across restart. That specific coupled acceptance belongs to 3C.1b.2j3b2b, and release/installation/soak remain prohibited until later gates.
