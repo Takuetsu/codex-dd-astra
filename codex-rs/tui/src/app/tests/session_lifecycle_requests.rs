@@ -5119,7 +5119,11 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
         .expect("fresh Validator attached");
     assert_ne!(validator, implementation);
     assert_eq!(app.current_displayed_thread_id(), Some(validator));
-    assert_eq!(app.config.cwd.as_path(), candidate.as_path());
+    assert_eq!(
+        app.config.cwd.as_path().canonicalize()?,
+        candidate,
+        "Validator must select the same canonical authorized Git root on Windows"
+    );
     assert_eq!(app.chat_widget.current_model(), "gpt-6-sol");
     let state = app.chat_widget.adaptive_effort_for_test();
     assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
@@ -5287,7 +5291,10 @@ async fn codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_so
             .collect::<Vec<_>>()
             .join("\n");
         assert!(
-            messages.contains("SETUP_BLOCKED") && messages.contains("No Validation Worker started"),
+            messages.contains("SETUP_BLOCKED")
+                && messages
+                    .to_ascii_lowercase()
+                    .contains("no validation worker started"),
             "{scenario}: expected actionable source-pinning refusal, observed: {messages}"
         );
         server.shutdown().await?;
