@@ -177,6 +177,7 @@ fn require_real_native_receipt(
     Ok(matches.remove(0))
 }
 
+// Final-source native execution must be opt-in; a skipped test is never acceptance.
 #[tokio::test]
 #[ignore = "requires isolated Windows real app-server binary and mock Core provider"]
 async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart() -> Result<()> {
