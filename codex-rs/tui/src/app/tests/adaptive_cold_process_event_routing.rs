@@ -47,7 +47,10 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
         std::env::var_os("CODEXDD_REAL_APP_SERVER_BIN")
             .ok_or_else(|| color_eyre::eyre::eyre!("missing real Windows app-server executable"))?,
     );
-    assert!(binary.is_file(), "native Windows app-server executable required");
+    assert!(
+        binary.is_file(),
+        "native Windows app-server executable required"
+    );
 
     let home = tempfile::tempdir()?;
     let source = tempfile::tempdir()?;
@@ -100,16 +103,18 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
         workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForValidation),
         ..Default::default()
     };
-    saved.gate_ledger = Some(AdaptiveGateLedger::new(
-        scope,
-        &root,
-        &sha,
-        vec![
-            AdaptiveRequiredGate::SourceProfile("work_packet".to_owned()),
-            AdaptiveRequiredGate::IndependentValidation,
-        ],
-    )
-    .map_err(|error| color_eyre::eyre::eyre!("invalid owner gate fixture: {error}"))?);
+    saved.gate_ledger = Some(
+        AdaptiveGateLedger::new(
+            scope,
+            &root,
+            &sha,
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_owned()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .map_err(|error| color_eyre::eyre::eyre!("invalid owner gate fixture: {error}"))?,
+    );
     let checkpoint = saved.durable_workflow_snapshot(thread);
     assert!(checkpoint.gate_checkpoint.is_some());
 
@@ -172,22 +177,25 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
         .await?;
     assert_eq!(app.current_displayed_thread_id(), Some(thread));
     assert_eq!(app.chat_widget.thread_id(), Some(thread));
-    assert!(app.chat_widget.adaptive_effort_for_test().workflow_terminal.is_none());
+    assert!(
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .workflow_terminal
+            .is_none()
+    );
     while app_events.try_recv().is_ok() {}
 
     // An old Core terminal signal is not authority for a newly loaded App
     // session. Deliver through the same foreground thread-buffer multiplexer.
-    let stale = ServerNotification::AdaptiveRuntimeSignal(
-        AdaptiveRuntimeSignalNotification {
-            thread_id: thread.to_string(),
-            signal: AdaptiveRuntimeSignalEnvelope {
-                source_turn_id: "historical-source-ready".to_owned(),
-                signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
-                evidence_refs: vec!["prior-source-run".to_string()],
-                diagnostic_note: None,
-            },
+    let stale = ServerNotification::AdaptiveRuntimeSignal(AdaptiveRuntimeSignalNotification {
+        thread_id: thread.to_string(),
+        signal: AdaptiveRuntimeSignalEnvelope {
+            source_turn_id: "historical-source-ready".to_owned(),
+            signal_kind: AdaptiveRuntimeSignalKind::ReadyForValidation,
+            evidence_refs: vec!["prior-source-run".to_string()],
+            diagnostic_note: None,
         },
-    );
+    });
     app.handle_app_server_event(
         &restarted,
         AppServerEvent::ServerNotification(Box::new(stale)),
@@ -211,7 +219,10 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
     );
     app.handle_thread_event_now(event);
     assert!(
-        app.chat_widget.adaptive_effort_for_test().workflow_terminal.is_none(),
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .workflow_terminal
+            .is_none(),
         "a historical source signal must not reauthorize the source Worker"
     );
     assert!(
@@ -240,7 +251,10 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
     .await?;
     assert_eq!(app.current_displayed_thread_id(), Some(thread));
     assert!(
-        app.chat_widget.adaptive_effort_for_test().workflow_terminal.is_none(),
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .workflow_terminal
+            .is_none(),
         "App must not resurrect old source terminal through queued Validator handoff"
     );
 
@@ -272,7 +286,10 @@ async fn codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff
     .await?;
     assert_eq!(app.current_displayed_thread_id(), Some(thread));
     assert!(
-        app.chat_widget.adaptive_effort_for_test().workflow_terminal.is_none(),
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .workflow_terminal
+            .is_none(),
         "changed Git HEAD must not authorize a cold queued Validator"
     );
     while let Ok(event) = app_events.try_recv() {
