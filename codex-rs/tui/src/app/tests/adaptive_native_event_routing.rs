@@ -59,15 +59,19 @@ async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -
         .expect("selected Worker has a foreground receiver")
         .try_recv()
         .expect("native evidence must reach the selected Worker event queue");
-    assert!(
-        matches!(&queued, ThreadBufferedEvent::Notification(notification)
-            if matches!(notification.as_ref(), ServerNotification::ItemCompleted(item)
-                if item.thread_id == selected.to_string()
-                    && matches!(&item.item, ThreadItem::DynamicToolCall { id, arguments, .. }
-                        if id == "native-source-receipt"
-                            && arguments["profile"] == "work_packet"
-                            && arguments["run_id"] == "native-source-run")))
-    );
+    let ThreadBufferedEvent::Notification(notification) = &queued else {
+        panic!("the foreground channel did not preserve a native item notification");
+    };
+    let ServerNotification::ItemCompleted(item) = notification.as_ref() else {
+        panic!("the App event multiplexer changed the native item event type");
+    };
+    let ThreadItem::DynamicToolCall { id, arguments, .. } = &item.item else {
+        panic!("native tool completion was rewritten into a different item");
+    };
+    assert_eq!(item.thread_id, selected.to_string());
+    assert_eq!(id, "native-source-receipt");
+    assert_eq!(arguments["profile"], "work_packet");
+    assert_eq!(arguments["run_id"], "native-source-run");
     app.handle_thread_event_now(queued);
     assert!(
         app.chat_widget.adaptive_effort.workflow_terminal.is_none(),
