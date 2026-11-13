@@ -1030,6 +1030,12 @@ impl ChatWidget {
             "Await independent owner QA approval; do not auto-release or reuse this READY after restart."
         } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
             "Start exactly one fresh independent Validator for the current source SHA and owner gates."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::Blocked) {
+            "Owner review required; preserve task state and do not escalate or fabricate evidence."
+        } else if state.assignment_preflight.as_ref().is_some_and(|pin| {
+            pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        }) {
+            "Non-source operations/benchmark task: wait for an explicitly authorized operations-specific path. Do not run source work_packet or claim mechanical source PASS."
         } else if state.gate_ledger.is_none() && state.assignment_preflight.is_some() {
             "Source-pinned Worker needs an explicit owner gate manifest; no READY or Validator handoff."
         } else if state.worker_context.role == AdaptiveWorkerRole::Validation {
@@ -1038,8 +1044,6 @@ impl ChatWidget {
             && state.implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
         {
             "Run current Core-native work_packet (and targeted if required) for the pinned SHA; inspect tool/profile setup blockers."
-        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::Blocked) {
-            "Owner review required; preserve task state and do not escalate or fabricate evidence."
         } else {
             "Continue the authorized Worker route; check first-message role, source pin and actual Core tool/profile readiness before claiming completion."
         };
