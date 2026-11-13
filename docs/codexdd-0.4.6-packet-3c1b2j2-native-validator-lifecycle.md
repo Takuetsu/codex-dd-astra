@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — 3C.1b.2j2: App-owned fresh Validator handoff
 
-**Opened:** 2026-11-12. **Parent:** 3C.1b.2j1 accepted at \`58dd0a3e06f4fbc619f7fc5d85209c36298f2af2\`, [GitHub Actions #43347103729](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43347103729). **Status:** source and focused native Windows verification PENDING. 3C.1, 0.4.6 and any installation remain OPEN.
+**Opened:** 2026-11-12. **Parent:** 3C.1b.2j1 accepted at \`58dd0a3e06f4fbc619f7fc5d85209c36298f2af2\`, [GitHub Actions #43347103729](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43347103729). **Status:** ACCEPTED focused native Windows App Validator lifecycle at `628d75c606ba499818344f561178fa214f72db76` ([GitHub Actions #43435363662](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43435363662), PASS 2026-11-13). 3C.1, 0.4.6 and any installation remain OPEN.
 
 ## Scope and ownership
 
@@ -24,3 +24,11 @@ Only the dedicated, commit-message-gated \`[3c1b2j2-native]\` Windows job can ac
 ## After green
 
 Then proceed to 3C.1b.2j3: cold restart/replay/changed-SHA refusal through the complete App lifecycle, followed by 3C.2, remaining 3B.4/3D–3F and Phase 4 full native/release gates. The planned one-milestone ~one-week BREAKWATER soak starts **only after** completed 0.4.6 release acceptance and owner installation authorization.
+
+## Accepted focused native Windows evidence — 2026-11-13
+
+[GitHub Actions #43435363662](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43435363662) on SHA `628d75c606ba499818344f561178fa214f72db76`: Linux source-contract preflight **PASS**, Rustfmt **PASS**, dedicated 3C.1b.2j2 native Windows **PASS**. The Windows runner enumerated exactly two `codex-tui --lib` tests and executed **2 passed, 0 failed; 5911 filtered out; 2.21s**.
+
+The tests drove the normal `AppEvent::NewSession` branch, exercised a fresh Validator attachment with exact authorized source, selected CWD and preserved owner ledger, and verified one initial independent user-origin assignment on the replacement widget's `AppEvent` channel. The adversarial test passed **missing owner ledger, removed worktree, and changed HEAD** refusals with zero new `thread/start` requests.
+
+Repair history: Rustfmt from #43351137692, test-only Windows path and message case assertions from #43353048104, and correction to observe the replacement widget's real `AppEvent::CodexOp` instead of the discarded original widget's direct `Op` receiver from #43356186646. #43433827901 stopped at a single Rustfmt line, corrected at the accepted SHA. This proves the focused deterministic App + recording app-server boundary, **not** a fresh genuine multi-process cold-restart/replay acceptance, broader interactive TUI, complete 3C.1 or release 0.4.6. Next 3C.1b.2j3 must verify durable resume, duplicate/stale replay refusal and source drift across the App lifecycle.
