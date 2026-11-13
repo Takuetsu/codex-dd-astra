@@ -13,6 +13,9 @@ mod security_setup_tests;
 #[cfg(windows)]
 #[path = "tests/adaptive_cold_process_event_routing.rs"]
 mod adaptive_cold_process_event_routing;
+#[cfg(windows)]
+#[path = "tests/adaptive_live_coupled_process.rs"]
+mod adaptive_live_coupled_process;
 #[path = "tests/adaptive_native_event_routing.rs"]
 mod adaptive_native_event_routing;
 #[path = "tests/advanced_reasoning_tests.rs"]
