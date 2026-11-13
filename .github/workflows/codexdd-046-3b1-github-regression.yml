@@ -27,6 +27,7 @@ on:
       - codex-rs/tui/src/app/tests.rs
       - codex-rs/tui/src/app/tests/adaptive_native_event_routing.rs
       - codex-rs/tui/src/app/tests/adaptive_cold_process_event_routing.rs
+      - codex-rs/tui/src/app/tests/adaptive_live_coupled_process.rs
       - codex-rs/tui/src/chatwidget/tests/app_server.rs
       - codex-rs/tui/src/chatwidget/settings.rs
       - codex-rs/app-server/src/bespoke_event_handling.rs
