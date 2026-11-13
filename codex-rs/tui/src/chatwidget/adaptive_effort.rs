@@ -1765,14 +1765,13 @@ mod tests {
         assert!(!status.contains("READY_FOR_OWNER_QA\n  Authorized source:"));
     }
 
-
     #[tokio::test]
     async fn codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread() {
         let (mut chat, _sender, _app_events, _ops) =
             crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
         chat.adaptive_effort
             .activate_adaptive_startup(AdaptiveFamily::Astra);
-        let invalid = "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"bad owner assignment\"\n\nTry again.";
+        let invalid = "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"bad\"\n\nTry again.";
         assert!(
             chat.adaptive_effort
                 .observe_worker_assignment_text(invalid)
