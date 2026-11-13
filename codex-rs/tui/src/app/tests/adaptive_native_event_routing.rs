@@ -75,7 +75,10 @@ async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -
     assert_eq!(arguments["run_id"], "native-source-run");
     app.handle_thread_event_now(queued);
     assert!(
-        app.chat_widget.adaptive_effort_for_test().workflow_terminal.is_none(),
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .workflow_terminal
+            .is_none(),
         "a native-looking receipt without an owner source/gate pin cannot grant READY"
     );
 
@@ -133,7 +136,12 @@ async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -
         "unowned foreign Worker must not become an owned session through a receipt"
     );
     assert_eq!(app.current_displayed_thread_id(), Some(selected));
-    assert!(app.chat_widget.adaptive_effort_for_test().workflow_terminal.is_none());
+    assert!(
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .workflow_terminal
+            .is_none()
+    );
     while let Ok(event) = app_events.try_recv() {
         assert!(
             !matches!(
