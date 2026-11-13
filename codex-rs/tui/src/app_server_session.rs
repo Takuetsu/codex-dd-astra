@@ -2742,6 +2742,10 @@ pub(crate) fn app_server_rate_limit_snapshots(
     snapshots
 }
 
+#[cfg(all(test, windows))]
+#[path = "app_server_session/real_process_restart_tests.rs"]
+mod real_process_restart_tests;
+
 #[cfg(test)]
 #[path = "app_server_session/reasoning_defaults_tests.rs"]
 mod reasoning_defaults_tests;
