@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — 3C.1b.2j1: App transport routing of native evidence
 
-**Opened:** 2026-11-12. **Parent acceptance:** 3C.1b.2i at `455c1f2bc0432fae6d6f864d66301624b38c6df5`, [Windows Actions #43334938407](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43334938407). **Status:** test source checkpoint; focused Windows CI pending. 3C.1 and release 0.4.6 remain OPEN/nonproduction.
+**Opened:** 2026-11-12. **Parent acceptance:** 3C.1b.2i at `455c1f2bc0432fae6d6f864d66301624b38c6df5`, [Windows Actions #43334938407](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43334938407). **Status:** ACCEPTED — 2026-11-12 focused Windows CI [#43347103729](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43347103729), exact checkpoint `58dd0a3e06f4fbc619f7fc5d85209c36298f2af2`. 3C.1 and release 0.4.6 remain OPEN/nonproduction.
 
 ## Outcome and ownership
 
@@ -23,3 +23,9 @@ The `[3c1b2j1-native]` Windows CI job must run exact source/branch preflight, Ru
 ## Follow-up
 
 **3C.1b.2j2:** App-owned automatic fresh Validator start and first user-origin Worker header, pinned CWD, immutable owner gate ledger and actual thread attachment. **3C.1b.2j3:** bounded App process restart/replay and source-drift refusal. After that: remaining 3C.2, 3B.4, 3D, 3E, 3F and Phase 4 required Windows and real-agent acceptance. Only full 0.4.6 approval authorizes installation; then the planned one-milestone, roughly one-week BREAKWATER soak.
+
+## Native acceptance evidence (run #144)
+
+Source-contract preflight PASS; Linux Rustfmt PASS; dedicated Windows `3C.1b.2j1 Windows App event routing and foreign READY refusal` PASS. The Windows job enumerated exactly one named `codex-tui --lib` test and executed it: **1 passed, 0 failed, 5910 filtered out, 0.17s test runtime**. The test used the normal App event multiplexer and foreground buffer, asserted unchanged source tool ID/profile/native-run ID, then refused foreign independent Validator receipts and READY signals without creating a foreign thread or requesting READY persistence.
+
+Known repair history (not release blockers): #43340044479 stopped at Rustfmt; #43341388909 reached Windows compiler E0659 ambiguous `assert_eq!`; #43345412227 stopped at Rustfmt import ordering. The accepted run at `58dd0a3` passed both checks and executed the Windows test. This remains a deterministic typed-notification App routing test and is not a second genuine Core-produced native stream or a full interactive TUI test. Next packet 3C.1b.2j2 covers automatic source→fresh Validator thread creation, pinned CWD, exact original owner gates and initial user-origin prompt.
