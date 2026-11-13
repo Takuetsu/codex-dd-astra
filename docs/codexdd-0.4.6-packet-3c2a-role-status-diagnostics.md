@@ -17,3 +17,11 @@ Three deterministic tests exercise first-assignment diagnosis, source/Validator 
 ## Release hold
 
 Scope is **diagnostic**, not evidence promotion, provider compatibility, source-orchestration rewrite or full UI redesign. Require Rustfmt and named 3C.2a tests on native Windows, plus negative provenance verification. No 0.4.6 production binary release until later owner-controlled gates.
+
+## 3C.2b priority audit — added before native acceptance
+
+Read-only source audit of the new `Next action` precedence found two misleading cases: `Blocked` Validation/Implementation Workers could receive role-specific `run ...` instructions before the owner-review stop rule, and authorized non-source operations/benchmark tasks in MechanicalValidation could be told to run source-only `work_packet`. These are **diagnostic recommendation defects**, not permission bypasses; however status must not tell an operator to take an unsafe or irrelevant action.
+
+Correction: check `Blocked` before native role-specific work, and check explicitly pinned `OperationsPreview`/`Benchmark` before any source-only profile recommendation. Both routes now report owner-review / authorized operations-specific path with no source-PASS implication. One added `codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice` regression covers both; total 3C.2 status tests now **four**.
+
+**Unverified until native Windows passes**: the exact runner must enumerate and run `codexdd_046_3c2` as four tests (not three), and the real App/Core positive packet must complete separately. The scope remains read-only presentation; no new privileged operations manager, source pin bypass, profile override, or owner approval has been introduced. Contextual live Core tool availability can only be established by actual current Core profile execution, never from status history alone.
