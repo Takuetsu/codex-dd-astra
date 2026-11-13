@@ -2231,6 +2231,7 @@ jobs:
 
   windows-3c1b2j3b2b1-native-cross-process:
     name: 3C.1b.2j3b2b1 real native two-Worker receipts across app-server restart
+    # One-shot exact-source native rerun after Rustfmt: verify source resume and stale replay rejection.
     # Windows-only real app-server OS restart between original source and independent Validator native receipts.
     # Test fixture has no production keys, project access, installs or uploads.
     if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b1-native]')
