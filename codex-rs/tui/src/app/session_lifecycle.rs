@@ -1081,13 +1081,11 @@ impl App {
             // Recheck the live Git root, clean working tree and exact HEAD
             // before thread/start. An inherited ledger alone is not proof
             // that the on-disk checkout still matches its owner source SHA.
-            if let Err(err) = crate::adaptive_worker::preflight_mechanical_target(
-                Some(pin),
-                &selected,
-            ) {
-                self.chat_widget.add_error_message(format!(
-                    "{err} No Validation Worker started."
-                ));
+            if let Err(err) =
+                crate::adaptive_worker::preflight_mechanical_target(Some(pin), &selected)
+            {
+                self.chat_widget
+                    .add_error_message(format!("{err} No Validation Worker started."));
                 return;
             }
             match codex_utils_absolute_path::AbsolutePathBuf::try_from(selected) {

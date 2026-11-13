@@ -4992,7 +4992,6 @@ async fn new_session_worker_binding_resets_dirty_adaptive_state() -> Result<()> 
     Ok(())
 }
 
-
 fn codexdd_046_3c1b2j2_source_fixture() -> (tempfile::TempDir, String) {
     let root = tempfile::tempdir().expect("disposable source checkout");
     let git = |args: &[&str]| {
@@ -5077,7 +5076,10 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
     let (mut app, _events, mut ops) = make_test_app_with_channels().await;
     let implementation = ThreadId::new();
     let original_cwd = app.config.cwd.to_path_buf();
-    assert_ne!(original_cwd, candidate, "launch root must differ from pinned worktree");
+    assert_ne!(
+        original_cwd, candidate,
+        "launch root must differ from pinned worktree"
+    );
     app.enqueue_primary_thread_session(
         test_thread_session(implementation, original_cwd),
         Vec::new(),
@@ -5099,8 +5101,7 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
         .automatic_validation_prompt_for_new_worker(&binding)
         .expect("automatic review prompt");
 
-    let (mut server, requests, proxy) =
-        start_recording_app_server(&app.config, None, None).await?;
+    let (mut server, requests, proxy) = start_recording_app_server(&app.config, None, None).await?;
     let mut tui = crate::tui::test_support::make_test_tui()?;
     app.handle_event(
         &mut tui,
@@ -5112,14 +5113,20 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
     )
     .await?;
 
-    let validator = app.chat_widget.thread_id().expect("fresh Validator attached");
+    let validator = app
+        .chat_widget
+        .thread_id()
+        .expect("fresh Validator attached");
     assert_ne!(validator, implementation);
     assert_eq!(app.current_displayed_thread_id(), Some(validator));
     assert_eq!(app.config.cwd.as_path(), candidate.as_path());
     assert_eq!(app.chat_widget.current_model(), "gpt-6-sol");
     let state = app.chat_widget.adaptive_effort_for_test();
     assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
-    assert_eq!(state.worker_context.authorized_scope.as_deref(), Some(scope));
+    assert_eq!(
+        state.worker_context.authorized_scope.as_deref(),
+        Some(scope)
+    );
     assert_eq!(state.review_origin_thread_id, Some(implementation));
     assert_eq!(
         state
@@ -5141,10 +5148,15 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
         2,
         "no native PASS is granted by moving the owner gate ledger"
     );
-    assert!(state.evidence_registry.conclusive_refs_for_thread(
-        validator,
-        crate::adaptive_evidence::AdaptiveEvidenceOutcome::Success
-    ).is_empty());
+    assert!(
+        state
+            .evidence_registry
+            .conclusive_refs_for_thread(
+                validator,
+                crate::adaptive_evidence::AdaptiveEvidenceOutcome::Success
+            )
+            .is_empty()
+    );
 
     let starts = recorded_params(&requests, "thread/start");
     assert_eq!(starts.len(), 1);
@@ -5185,7 +5197,8 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
 }
 
 #[tokio::test]
-async fn codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_source() -> Result<()> {
+async fn codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_source() -> Result<()>
+{
     for scenario in ["missing-ledger", "removed-root", "sha-drift"] {
         let (source_root, sha) = codexdd_046_3c1b2j2_source_fixture();
         let candidate = source_root.path().canonicalize()?;
@@ -5249,8 +5262,16 @@ async fn codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_so
             },
         )
         .await?;
-        assert_eq!(app.chat_widget.thread_id(), Some(implementation), "{scenario}");
-        assert_eq!(app.current_displayed_thread_id(), Some(implementation), "{scenario}");
+        assert_eq!(
+            app.chat_widget.thread_id(),
+            Some(implementation),
+            "{scenario}"
+        );
+        assert_eq!(
+            app.current_displayed_thread_id(),
+            Some(implementation),
+            "{scenario}"
+        );
         assert_eq!(app.config.cwd.to_path_buf(), original_cwd, "{scenario}");
         assert!(
             recorded_params(&requests, "thread/start").is_empty(),
