@@ -2,7 +2,7 @@
 
 **Opened:** 2026-11-13. **Parent:** 3C.1b.2j2 accepted at `628d75c606ba499818344f561178fa214f72db76` ([GitHub Actions #43435363662](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43435363662): source preflight, Rustfmt, and 2/2 native Windows tests green).
 
-**State:** proposed source/test packet, isolated Windows CI PENDING. The full 3C.1b.2j3 cold-process acceptance, 3C.1 and 0.4.6 are NOT accepted.
+**State:** ACCEPTED focused native Windows source-origin/replay-refusal regression at `25d0ebc5db9af7fc2af07d968a633033317b5d12` ([GitHub Actions #43440575225](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43440575225), PASS 2026-11-13). Full 3C.1b.2j3 cold-process acceptance, 3C.1 and 0.4.6 remain OPEN.
 
 ## Problem / exact boundary
 
@@ -23,3 +23,9 @@ Only the exact `[3c1b2j3a-native]` commit-scoped Windows CI job can accept this 
 ## Explicit remaining work
 
 **3C.1b.2j3b:** actual cold app-server process shutdown/restart with a persisted App-owned source/Validator identity, no replay of stale `READY`/prior PASS receipts, changed-SHA/moved-root refusal at live resume/QA and no duplicate autonomous Validator creation. Then outstanding 3C.2, 3B.4, 3D–3F and Phase 4 full release gates. Until accepted, BREAKWATER/CV development and installed binaries are unchanged.
+
+## Accepted Windows evidence — run #151
+
+Source preflight PASS; Rustfmt PASS; isolated native Windows `3C.1b.2j3a Windows origin-bound automatic handoff and replay refusals` PASS. Runner enumerated exactly two named `codex-tui --lib` tests, executed **2 passed, 0 failed; 5913 filtered out; 3.16 seconds** on exact commit `25d0ebc5db9af7fc2af07d968a633033317b5d12`. The first attempt #43440290022 stopped at Rustfmt; formatting-only correction created the accepted SHA. The TUI dispatcher no longer treats a queued automatic handoff as a generic manual new session.
+
+**Scope caveat:** j3a is an in-process App event and recording app-server test. It does **not** establish a newly launched app-server process, TUI process restart, durable record rehydration, or full no-stale-READY acceptance. Those are the next 3C.1b.2j3b boundary.
