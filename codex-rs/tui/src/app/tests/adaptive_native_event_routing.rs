@@ -3,6 +3,7 @@
 //! Native Core receipt execution is independently covered by 3C.1b.2i.
 
 use super::*;
+use pretty_assertions::assert_eq;
 use codex_app_server_client::AppServerEvent;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 use codex_app_server_protocol::AdaptiveRuntimeSignalNotification;
@@ -14,7 +15,7 @@ use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 #[tokio::test]
 async fn codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence() -> Result<()> {
     let (mut app, mut app_events, _ops) = make_test_app_with_channels().await;
-    let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(&app.config)).await?;
+    let app_server = Box::pin(crate::start_embedded_app_server_for_picker(&app.config)).await?;
     let selected = ThreadId::new();
     let foreign = ThreadId::new();
 
