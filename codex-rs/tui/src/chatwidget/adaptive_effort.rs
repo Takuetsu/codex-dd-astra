@@ -1030,9 +1030,7 @@ impl ChatWidget {
             "Await independent owner QA approval; do not auto-release or reuse this READY after restart."
         } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
             "Start exactly one fresh independent Validator for the current source SHA and owner gates."
-        } else if state.gate_ledger.is_none()
-            && state.assignment_preflight.is_some()
-        {
+        } else if state.gate_ledger.is_none() && state.assignment_preflight.is_some() {
             "Source-pinned Worker needs an explicit owner gate manifest; no READY or Validator handoff."
         } else if state.worker_context.role == AdaptiveWorkerRole::Validation {
             "Run a fresh Core-native independent_review against the exact pinned source; old source receipts cannot satisfy this gate."
@@ -1733,14 +1731,19 @@ mod tests {
     async fn codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof() {
         let (mut chat, _sender, _app_events, _ops) =
             crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
-        chat.adaptive_effort.activate_adaptive_startup(AdaptiveFamily::Astra);
+        chat.adaptive_effort
+            .activate_adaptive_startup(AdaptiveFamily::Astra);
         let status = chat.adaptive_effort_status_text();
         assert!(status.contains("Worker binding: Awaiting first assignment"));
         assert!(status.contains("Pending prerequisites: Not specified by an authorized owner"));
         assert!(status.contains(
             "Native tool required: Not authorized until the first user-origin Worker assignment"
         ));
-        assert!(status.contains("Next action: Start the first nonblank user message with [adaptive_worker]"));
+        assert!(
+            status.contains(
+                "Next action: Start the first nonblank user message with [adaptive_worker]"
+            )
+        );
         assert!(status.contains("source_root, source_sha, task_kind and required_gates"));
         assert!(!status.contains("READY_FOR_OWNER_QA\n  Authorized source:"));
     }
@@ -1757,7 +1760,10 @@ mod tests {
         state.workflow_terminal = None;
         chat.adaptive_effort = state.clone();
         let source_status = chat.adaptive_effort_status_text();
-        assert!(source_status.contains(&format!("Authorized source: {} @ {sha}", source.path().display())));
+        assert!(source_status.contains(&format!(
+            "Authorized source: {} @ {sha}",
+            source.path().display()
+        )));
         assert!(source_status.contains("source:work_packet PENDING"));
         assert!(source_status.contains("independent_review PENDING"));
         assert!(source_status.contains("Native tool required: run_codexdd_validation"));
@@ -1768,10 +1774,17 @@ mod tests {
         state.review_origin_thread_id = Some(codex_protocol::ThreadId::new());
         chat.adaptive_effort = state;
         let validation_status = chat.adaptive_effort_status_text();
-        assert!(validation_status.contains("Native tool required: run_codexdd_independent_validation"));
-        assert!(validation_status.contains("Next action: Run a fresh Core-native independent_review"));
+        assert!(
+            validation_status.contains("Native tool required: run_codexdd_independent_validation")
+        );
+        assert!(
+            validation_status.contains("Next action: Run a fresh Core-native independent_review")
+        );
         assert!(validation_status.contains("independent_review PENDING"));
-        assert!(!validation_status.contains("Next action: Start exactly one fresh independent Validator"));
+        assert!(
+            !validation_status
+                .contains("Next action: Start exactly one fresh independent Validator")
+        );
     }
 
     #[tokio::test]
