@@ -5325,7 +5325,6 @@ async fn codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_so
     Ok(())
 }
 
-
 #[tokio::test]
 async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator() -> Result<()> {
     let (checkout, sha) = codexdd_046_3c1b2j2_source_fixture();
@@ -5368,7 +5367,9 @@ async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator
     assert_eq!(app.current_displayed_thread_id(), Some(validator));
     assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
     assert_eq!(
-        app.chat_widget.adaptive_effort_for_test().review_origin_thread_id,
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .review_origin_thread_id,
         Some(origin)
     );
     assert_eq!(
@@ -5447,7 +5448,8 @@ async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator
 }
 
 #[tokio::test]
-async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded_state() -> Result<()> {
+async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded_state()
+-> Result<()> {
     for scenario in [
         "foreign-origin",
         "wrong-sha",
@@ -5509,11 +5511,15 @@ async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded
                 assert!(output.status.success(), "{scenario}: Git SHA drift setup");
             }
             "reloaded-without-terminal" => {
-                app.chat_widget.adaptive_effort_for_test_mut().workflow_terminal = None;
+                app.chat_widget
+                    .adaptive_effort_for_test_mut()
+                    .workflow_terminal = None;
             }
             "repair-role" => {
-                app.chat_widget.adaptive_effort_for_test_mut().worker_context.role =
-                    AdaptiveWorkerRole::Repair;
+                app.chat_widget
+                    .adaptive_effort_for_test_mut()
+                    .worker_context
+                    .role = AdaptiveWorkerRole::Repair;
             }
             _ => {}
         }
@@ -5531,7 +5537,11 @@ async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded
             },
         )
         .await?;
-        assert_eq!(app.current_displayed_thread_id(), Some(origin), "{scenario}");
+        assert_eq!(
+            app.current_displayed_thread_id(),
+            Some(origin),
+            "{scenario}"
+        );
         assert_eq!(app.chat_widget.thread_id(), Some(origin), "{scenario}");
         assert!(
             recorded_params(&requests, "thread/start").is_empty(),
