@@ -21,6 +21,8 @@ on:
       - codex-rs/tui/src/adaptive_gate_prerequisites.rs
       - codex-rs/tui/src/lib.rs
       - codex-rs/tui/src/app_server_session.rs
+      # Real OS process regression changes must enter source/format and native CI.
+      - codex-rs/tui/src/app_server_session/real_process_restart_tests.rs
       - codex-rs/tui/src/app/app_server_event_targets.rs
       - codex-rs/tui/src/app/tests.rs
       - codex-rs/tui/src/app/tests/adaptive_native_event_routing.rs
