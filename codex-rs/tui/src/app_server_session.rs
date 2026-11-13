@@ -4418,6 +4418,232 @@ mod tests {
         );
     }
 
+    /// A new embedded app-server process must restore TUI gate requirements
+    /// from the recorded rollout, but not a previous Validator READY/PASS.
+    /// The fixture does not create new Core-native receipts or reauthorize a
+    /// moved source SHA: those remain separate real-producer test boundaries.
+    #[tokio::test]
+    async fn codexdd_046_3c1b2j3b1_real_cold_resume_keeps_gates_pending_and_refuses_source_drift(
+    ) -> Result<()> {
+        use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+        use crate::adaptive_gate_prerequisites::AdaptiveGateState;
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        use crate::adaptive_policy::AdaptiveEffort;
+        use crate::adaptive_policy::AdaptiveFamily;
+        use crate::adaptive_worker::AdaptiveTaskKind;
+        use crate::adaptive_worker::AdaptiveWorkerContext;
+        use crate::adaptive_worker::AdaptiveWorkerPreflight;
+        use crate::adaptive_worker::AdaptiveWorkerRole;
+        use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+
+        let home = tempfile::tempdir()?;
+        let source = tempfile::tempdir()?;
+        let source_root = source.path().canonicalize()?;
+        let git = |args: &[&str]| -> Result<String> {
+            let result = std::process::Command::new("git")
+                .arg("-C")
+                .arg(&source_root)
+                .args(args)
+                .output()?;
+            assert!(
+                result.status.success(),
+                "fixture Git command failed: {}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            Ok(String::from_utf8(result.stdout)?.trim().to_string())
+        };
+        git(&["init", "-q"])?;
+        git(&[
+            "-c",
+            "user.name=CodexDD cold-resume fixture",
+            "-c",
+            "user.email=codexdd@example.invalid",
+            "commit",
+            "--allow-empty",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "approved original source",
+        ])?;
+        let approved_sha = git(&["rev-parse", "HEAD"])?;
+        let scope = "3C.1b.2j3b1 authorized separate Validator";
+        let config = build_config(&home).await;
+        let thread_id = ThreadId::from_string(&create_fake_rollout(
+            home.path(),
+            "2025-01-05T12-00-00",
+            "2025-01-05T12:00:00Z",
+            "Saved independent Validator assignment",
+            Some(config.model_provider_id.as_str()),
+            /*git_info*/ None,
+        )?)?;
+
+        let mut original = crate::chatwidget::adaptive_effort::AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::High),
+            attempt_number: 1,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: Some(scope.to_string()),
+            },
+            worker_assignment_locked: true,
+            assignment_preflight: Some(AdaptiveWorkerPreflight {
+                task_kind: AdaptiveTaskKind::SourceChange,
+                source_root: source_root.display().to_string(),
+                source_sha: approved_sha.clone(),
+            }),
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+            ..Default::default()
+        };
+        original.gate_ledger = Some(AdaptiveGateLedger::new(
+            scope,
+            &source_root,
+            &approved_sha,
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )?);
+        let persisted = original.durable_workflow_snapshot(thread_id);
+        assert!(
+            persisted.gate_checkpoint.is_some(),
+            "original owner gate requirements must have a durable checkpoint"
+        );
+        assert_eq!(persisted.workflow_terminal.as_deref(), Some("ready_for_owner_qa"));
+
+        let settings = LocalSettings::from(&config);
+        let mut first = crate::start_embedded_app_server_for_picker(&config).await?;
+        first
+            .resume_thread(
+                &settings,
+                config.clone(),
+                thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        first
+            .thread_workflow_state_update(
+                thread_id,
+                ThreadWorkflowStateOperation::SetAdaptiveState,
+                Some("historical-validator-ready-turn".to_string()),
+                Some(persisted),
+            )
+            .await?;
+        first.shutdown().await?;
+        drop(first);
+
+        // Spawn a fresh embedded app-server, not an in-memory reuse of the
+        // previous session. The TUI mapper rehydrates its rollout checkpoint.
+        let mut cold = crate::start_embedded_app_server_for_picker(&config).await?;
+        let resumed = cold
+            .resume_thread(
+                &settings,
+                config.clone(),
+                thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        assert_eq!(resumed.session.thread_id, thread_id);
+        let restored = &resumed.session.adaptive_effort;
+        assert_eq!(restored.worker_context.role, AdaptiveWorkerRole::Validation);
+        assert_eq!(restored.worker_context.authorized_scope.as_deref(), Some(scope));
+        assert!(restored.worker_assignment_locked);
+        assert_eq!(
+            restored
+                .assignment_preflight
+                .as_ref()
+                .expect("same-thread source pin preserved")
+                .source_sha,
+            approved_sha
+        );
+        assert_eq!(restored.workflow_terminal, None);
+        assert!(restored.paused_by_user, "historical READY cannot resume as trusted");
+        assert_eq!(restored.review_origin_thread_id, None);
+        assert_eq!(restored.evidence_registry.len(), 0);
+        assert!(restored.pending_signal.is_none());
+        assert!(restored.successor_admission.is_none());
+        let outstanding = restored
+            .gate_ledger
+            .as_ref()
+            .expect("restored exact owner requirements")
+            .outstanding(&restored.evidence_registry);
+        assert_eq!(outstanding.len(), 2);
+        assert!(
+            outstanding
+                .iter()
+                .all(|gate| gate.state == AdaptiveGateState::Pending),
+            "historical Core PASS receipts cannot be replayed from a gate checkpoint"
+        );
+        cold.shutdown().await?;
+        drop(cold);
+
+        // A different Git HEAD must not be promoted by another cold resume.
+        git(&[
+            "-c",
+            "user.name=CodexDD cold-resume fixture",
+            "-c",
+            "user.email=codexdd@example.invalid",
+            "commit",
+            "--allow-empty",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "unapproved changed HEAD",
+        ])?;
+        assert_ne!(git(&["rev-parse", "HEAD"])?, approved_sha);
+        let mut moved = crate::start_embedded_app_server_for_picker(&config).await?;
+        let stale = moved
+            .resume_thread(
+                &settings,
+                config.clone(),
+                thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        let stale_state = &stale.session.adaptive_effort;
+        assert_eq!(stale_state.workflow_terminal, None);
+        assert_eq!(stale_state.evidence_registry.len(), 0);
+        assert!(stale_state.paused_by_user);
+        assert_eq!(
+            stale_state
+                .assignment_preflight
+                .as_ref()
+                .expect("saved original pin, not current Git HEAD")
+                .source_sha,
+            approved_sha,
+            "cold resume must not silently repin to a later checkout"
+        );
+        assert!(
+            crate::adaptive_worker::preflight_mechanical_target(
+                stale_state.assignment_preflight.as_ref(),
+                &source_root,
+            )
+            .is_err(),
+            "changed HEAD must refuse exact-source validation"
+        );
+        moved.shutdown().await?;
+        drop(moved);
+
+        // Unavailable original worktree cannot recover a gate checkpoint.
+        std::fs::remove_dir_all(&source_root)?;
+        let mut missing = crate::start_embedded_app_server_for_picker(&config).await?;
+        assert!(
+            missing
+                .resume_thread(
+                    &settings,
+                    config,
+                    thread_id,
+                    ResumeModelSettings::RestoreFromThread,
+                )
+                .await
+                .is_err(),
+            "removed owner root must not restore a trusted Validator session"
+        );
+        missing.shutdown().await?;
+        Ok(())
+    }
+
     #[tokio::test]
     async fn codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant() {
         let repo = tempfile::tempdir().expect("isolated source");
