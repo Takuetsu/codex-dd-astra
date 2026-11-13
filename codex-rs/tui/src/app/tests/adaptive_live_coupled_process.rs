@@ -11,9 +11,6 @@ use crate::app_server_session::TurnPermissionsOverride;
 use crate::app_server_session::real_process_restart_tests::start_real_app_server;
 use crate::app_server_session::real_process_restart_tests::stop_real_app_server;
 use crate::legacy_core::config::ConfigOverrides;
-use color_eyre::eyre::Context;
-use color_eyre::eyre::bail;
-use color_eyre::eyre::ensure;
 use app_test_support::MockResponsesConfig;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
@@ -22,6 +19,9 @@ use codex_app_server_protocol::AskForApproval;
 use codex_app_server_protocol::ServerNotification;
 use codex_app_server_protocol::ThreadItem;
 use codex_app_server_protocol::UserInput;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::ensure;
 use core_test_support::responses;
 use serde_json::json;
 use std::path::Path;
@@ -169,7 +169,10 @@ fn require_real_native_receipt(
                 .to_string(),
         );
     }
-    ensure!(matches.len() == 1 && !matches[0].is_empty(), "expected one exact Core-native receipt");
+    ensure!(
+        matches.len() == 1 && !matches[0].is_empty(),
+        "expected one exact Core-native receipt"
+    );
     Ok(matches.remove(0))
 }
 
@@ -195,13 +198,26 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         native_one_stage_script("independent-review", "coupled-independent"),
     )?;
     fixture_git(&root, &["init", "-q"])?;
-    fixture_git(&root, &["add", "scripts/codexdd-test-workpacket.ps1", "scripts/codexdd-test-independent.ps1"])?;
     fixture_git(
         &root,
         &[
-            "-c", "user.name=CodexDD coupled test",
-            "-c", "user.email=codexdd@example.invalid",
-            "commit", "-q", "--no-gpg-sign", "-m", "approved coupled native candidate",
+            "add",
+            "scripts/codexdd-test-workpacket.ps1",
+            "scripts/codexdd-test-independent.ps1",
+        ],
+    )?;
+    fixture_git(
+        &root,
+        &[
+            "-c",
+            "user.name=CodexDD coupled test",
+            "-c",
+            "user.email=codexdd@example.invalid",
+            "commit",
+            "-q",
+            "--no-gpg-sign",
+            "-m",
+            "approved coupled native candidate",
         ],
     )?;
     let sha = fixture_git(&root, &["rev-parse", "HEAD"])?;
@@ -211,10 +227,24 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
 
     let mut sequence = Vec::new();
     for (role, profile, tool, call_id, signal_kind) in [
-        ("implementation", "work_packet", "run_codexdd_validation", "coupled-source-call", "ready_for_validation"),
-        ("validation", "independent_review", "run_codexdd_independent_validation", "coupled-independent-call", "ready_for_owner_qa"),
+        (
+            "implementation",
+            "work_packet",
+            "run_codexdd_validation",
+            "coupled-source-call",
+            "ready_for_validation",
+        ),
+        (
+            "validation",
+            "independent_review",
+            "run_codexdd_independent_validation",
+            "coupled-independent-call",
+            "ready_for_owner_qa",
+        ),
     ] {
-        sequence.push(create_final_assistant_message_sse_response("Owner assignment accepted.")?);
+        sequence.push(create_final_assistant_message_sse_response(
+            "Owner assignment accepted.",
+        )?);
         sequence.push(responses::sse(vec![
             responses::ev_response_created(&format!("{role}-native-profile")),
             responses::ev_function_call(call_id, tool, &json!({"profile": profile}).to_string()),
@@ -229,7 +259,8 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
                     "kind": signal_kind,
                     "evidence_refs": [call_id],
                     "diagnostic_note": "bounded native owner acceptance",
-                }).to_string(),
+                })
+                .to_string(),
             ),
             responses::ev_completed(&format!("{role}-native-signal")),
         ]));
@@ -276,12 +307,18 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         &root,
         owner_text,
         None,
-        config.model.clone().unwrap_or_else(|| "mock-model".to_string()),
+        config
+            .model
+            .clone()
+            .unwrap_or_else(|| "mock-model".to_string()),
     )
     .await?;
     let _original = drive_native_turn(&mut app, &mut server, implementation, &turn_id).await?;
     ensure!(
-        app.chat_widget.adaptive_effort_for_test().worker_context.role
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .worker_context
+            .role
             == AdaptiveWorkerRole::Implementation,
         "actual initial user origin was not admitted"
     );
@@ -291,18 +328,21 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
             .gate_ledger
             .as_ref()
             .is_some_and(|ledger| {
-                ledger.outstanding(
-                    &app.chat_widget.adaptive_effort_for_test().evidence_registry
-                ).len() == 2
+                ledger
+                    .outstanding(&app.chat_widget.adaptive_effort_for_test().evidence_registry)
+                    .len()
+                    == 2
             }),
         "first user source failed to create both pending owner gates"
     );
     // The earlier accepted workflow packets establish the complexity floor.
     // This fixture starts at their terminal MechanicalValidation boundary.
-    app.chat_widget.adaptive_effort_for_test_mut().complexity_class =
-        Some(AdaptiveComplexityClass::Standard);
-    app.chat_widget.adaptive_effort_for_test_mut().implementation_phase =
-        Some(AdaptiveImplementationPhase::MechanicalValidation);
+    app.chat_widget
+        .adaptive_effort_for_test_mut()
+        .complexity_class = Some(AdaptiveComplexityClass::Standard);
+    app.chat_widget
+        .adaptive_effort_for_test_mut()
+        .implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
 
     let turn_id = send_real_turn(
         &mut server,
@@ -326,24 +366,31 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
             .gate_ledger
             .as_ref()
             .is_some_and(|ledger| {
-                ledger.outstanding(
-                    &app.chat_widget.adaptive_effort_for_test().evidence_registry
-                ).len() == 1
+                ledger
+                    .outstanding(&app.chat_widget.adaptive_effort_for_test().evidence_registry)
+                    .len()
+                    == 1
             }),
         "real source PASS must close only source profile, not independent review"
     );
 
     let queued = std::iter::from_fn(|| app_events.try_recv().ok()).collect::<Vec<_>>();
-    let mut handoffs = queued.into_iter().filter(|event| matches!(
-        event, AppEvent::StartAutomaticValidation { .. }
-    ));
-    let handoff = handoffs.next().context("production App did not queue automatic Validator")?;
-    ensure!(handoffs.next().is_none(), "duplicate automatic Validator event");
+    let mut handoffs = queued
+        .into_iter()
+        .filter(|event| matches!(event, AppEvent::StartAutomaticValidation { .. }));
+    let handoff = handoffs
+        .next()
+        .context("production App did not queue automatic Validator")?;
+    ensure!(
+        handoffs.next().is_none(),
+        "duplicate automatic Validator event"
+    );
     if let AppEvent::StartAutomaticValidation {
         origin_thread_id,
         source_sha,
         ..
-    } = &handoff {
+    } = &handoff
+    {
         ensure!(*origin_thread_id == implementation && source_sha == &sha);
     }
 
@@ -353,21 +400,31 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
     let (mut restarted, restarted_child) =
         start_real_app_server(&binary, home.path(), &config).await?;
     app.handle_event(&mut tui, &mut restarted, handoff).await?;
-    let validator = app.chat_widget.thread_id().context("App did not attach a new Validator")?;
-    ensure!(validator != implementation, "source and Validator share a thread");
+    let validator = app
+        .chat_widget
+        .thread_id()
+        .context("App did not attach a new Validator")?;
+    ensure!(
+        validator != implementation,
+        "source and Validator share a thread"
+    );
     ensure!(app.current_displayed_thread_id() == Some(validator));
     let fresh = app.chat_widget.adaptive_effort_for_test();
     ensure!(
         fresh.worker_context.role == AdaptiveWorkerRole::Validation
             && fresh.review_origin_thread_id == Some(implementation)
-            && fresh.assignment_preflight.as_ref().is_some_and(|pin| pin.source_sha == sha)
+            && fresh
+                .assignment_preflight
+                .as_ref()
+                .is_some_and(|pin| pin.source_sha == sha)
             && fresh.workflow_terminal.is_none(),
         "App-owned Validator lost original source, role, or fresh pending terminal"
     );
     ensure!(
-        fresh.gate_ledger.as_ref().is_some_and(|ledger| {
-            ledger.outstanding(&fresh.evidence_registry).len() == 1
-        }),
+        fresh
+            .gate_ledger
+            .as_ref()
+            .is_some_and(|ledger| { ledger.outstanding(&fresh.evidence_registry).len() == 1 }),
         "new Validator reused READY or lost the only pending independent gate"
     );
     let auto_events = std::iter::from_fn(|| app_events.try_recv().ok()).collect::<Vec<_>>();
@@ -379,9 +436,17 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         } if thread_id == validator => Some((items, cwd)),
         _ => None,
     });
-    let (prompt, cwd) = initial.next().context("App did not submit fresh Validator prompt")?;
-    ensure!(initial.next().is_none(), "App submitted more than one Validator first turn");
-    ensure!(cwd.canonicalize()? == root, "App-created Validator selected wrong Git root");
+    let (prompt, cwd) = initial
+        .next()
+        .context("App did not submit fresh Validator prompt")?;
+    ensure!(
+        initial.next().is_none(),
+        "App submitted more than one Validator first turn"
+    );
+    ensure!(
+        cwd.canonicalize()? == root,
+        "App-created Validator selected wrong Git root"
+    );
     let assignment = send_real_turn(
         &mut restarted,
         validator,
@@ -407,13 +472,17 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
     let events = drive_native_turn(&mut app, &mut restarted, validator, &review_turn).await?;
     let validation_run =
         require_real_native_receipt(&events, validator, "independent_review", &sha)?;
-    ensure!(source_run != validation_run, "source and independent native run IDs reused");
+    ensure!(
+        source_run != validation_run,
+        "source and independent native run IDs reused"
+    );
     let terminal = app.chat_widget.adaptive_effort_for_test();
     ensure!(
         terminal.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
-            && terminal.gate_ledger.as_ref().is_some_and(|ledger| {
-                ledger.ready_for_owner_qa(&terminal.evidence_registry)
-            }),
+            && terminal
+                .gate_ledger
+                .as_ref()
+                .is_some_and(|ledger| { ledger.ready_for_owner_qa(&terminal.evidence_registry) }),
         "actual independent Core-native receipt did not authorize App owner READY"
     );
     let mut ready_events = Vec::new();
@@ -421,7 +490,8 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
         if matches!(
             &event,
             AppEvent::PersistWorkflowState {
-                operation: codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+                operation:
+                    codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
                 ..
             }
         ) {
