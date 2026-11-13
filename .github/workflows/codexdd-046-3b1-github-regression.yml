@@ -2315,7 +2315,7 @@ jobs:
 
   windows-3c1b2j3b2b2a-cold-app-routing:
     name: 3C.1b.2j3b2b2a Windows real OS App event routing and cold automatic Validator replay refusal
-    # Exact-source native retest after compiler E0659 assert_eq disambiguation (no policy changes).
+    # Exact-source native retest after fixing incomplete fixture route and quarantining stale source READY.
     # App foreground event buffer and source-bound automatic handoff after real cold OS restart.
     # Synthetic old READY fixture never grants native PASS; full coupled native sequence still open.
     if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b2a-native]')
@@ -2377,7 +2377,7 @@ jobs:
           $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
           if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
           $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
-          $filter = 'codexdd_046_3c1b2j3b2b2a_'
+          $filter = 'codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff'
           $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
           $listExit = $LASTEXITCODE
           $listing | Out-Host
@@ -2387,6 +2387,16 @@ jobs:
           }
           & cargo test --locked -p codex-tui --lib $filter -- --ignored --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2b2a real OS cold App event or stale handoff refusal failed' }
+          # Run the pinned-source restore guard independently, using the same compiled test binary.
+          $sourceGuard = 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
+          $guardList = & cargo test --locked -p codex-tui --lib $sourceGuard -- --list 2>&1
+          $guardExit = $LASTEXITCODE
+          $guardList | Out-Host
+          if ($guardExit -ne 0 -or ($guardList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Missing exact pinned-source cold restore guard'
+          }
+          & cargo test --locked -p codex-tui --lib $sourceGuard -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Source-pinned ready_for_validation cold restore guard failed' }
       - name: Confirm nonproduction-only scoped regression
         if: always()
         shell: pwsh
