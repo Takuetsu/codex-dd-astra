@@ -423,6 +423,8 @@ async fn codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff() -> Res
         else {
             anyhow::bail!("expected native Core tool completion, not synthetic text");
         };
+        // Core receipts use the authorized tool profile ID (underscores),
+        // not the human-readable PowerShell script profile label (hyphens).
         ensure!(
             *status == codex_app_server_protocol::DynamicToolCallStatus::Completed
                 && *success == Some(true)
