@@ -350,11 +350,17 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         }
         None => None,
     };
-    // Restored snapshots do not contain admissible native source or independent
-    // Validator receipts. Even an older record with no gate checkpoint cannot
-    // restore READY; park it for owner review instead of silently continuing.
+    // Restored snapshots have no admissible native source or independent
+    // Validator receipts. Quarantine owner READY and source-pinned Implementation
+    // READY used for automatic Validator handoff: a persisted gate manifest is
+    // only pending requirements, never evidence of a live source PASS.
+    // Keep legacy unpinned Repair handoffs compatible with existing resumes.
     let restored_ready_is_unverified =
-        workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
+        workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+            || (workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+                && assignment_preflight
+                    .as_ref()
+                    .is_some_and(|pin| pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::SourceChange));
     let workflow_terminal = if restored_ready_is_unverified {
         None
     } else {
