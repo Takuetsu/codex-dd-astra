@@ -5073,7 +5073,7 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
     let (source_root, sha) = codexdd_046_3c1b2j2_source_fixture();
     let candidate = source_root.path().canonicalize()?;
     let scope = "3C.1b.2j2 exact owner-approved source task";
-    let (mut app, _events, mut ops) = make_test_app_with_channels().await;
+    let (mut app, mut events, _initial_widget_ops) = make_test_app_with_channels().await;
     let implementation = ThreadId::new();
     let original_cwd = app.config.cwd.to_path_buf();
     assert_ne!(
@@ -5182,9 +5182,28 @@ async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates(
     let started_cwd = starts[0]["cwd"].as_str().expect("native thread/start cwd");
     assert_eq!(std::path::Path::new(started_cwd).canonicalize()?, candidate);
 
-    let Op::UserTurn { items, cwd, .. } = next_user_turn_op(&mut ops) else {
-        panic!("automatic Validator must submit its own initial user-origin review prompt");
-    };
+    // A newly attached App-owned ChatWidget uses CodexOpTarget::AppEvent.
+    // The direct Op receiver returned by the original test widget does not
+    // observe the replacement widget's initial submission.
+    let submitted = std::iter::from_fn(|| events.try_recv().ok())
+        .filter_map(|event| match event {
+            AppEvent::CodexOp(Op::UserTurn { items, cwd, .. }) => Some((items, cwd)),
+            AppEvent::SubmitThreadOp {
+                thread_id,
+                op: Op::UserTurn { items, cwd, .. },
+            } => {
+                assert_eq!(thread_id, validator, "Validator must own its first turn");
+                Some((items, cwd))
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        submitted.len(),
+        1,
+        "fresh Validator must submit exactly one initial user-origin assignment"
+    );
+    let (items, cwd) = submitted.into_iter().next().expect("exactly one Validator turn");
     assert_eq!(cwd.canonicalize()?, candidate);
     assert_eq!(
         items,
