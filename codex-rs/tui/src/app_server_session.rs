@@ -4477,7 +4477,9 @@ mod tests {
                 Some(config.model_provider_id.as_str()),
                 /*git_info*/ None,
             )
-            .map_err(|error| color_eyre::eyre::eyre!("failed to create Validator rollout: {error}"))?,
+            .map_err(|error| {
+                color_eyre::eyre::eyre!("failed to create Validator rollout: {error}")
+            })?,
         )?;
 
         let mut original = crate::chatwidget::adaptive_effort::AdaptiveEffortState {
@@ -4508,7 +4510,9 @@ mod tests {
                 AdaptiveRequiredGate::IndependentValidation,
             ],
         )
-        .map_err(|reason| color_eyre::eyre::eyre!("invalid Validator gate fixture: {reason}"))?);
+        .map_err(|reason| {
+            color_eyre::eyre::eyre!("invalid Validator gate fixture: {reason}")
+        })?);
         let persisted = original.durable_workflow_snapshot(thread_id);
         assert!(
             persisted.gate_checkpoint.is_some(),
