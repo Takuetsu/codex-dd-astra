@@ -2548,3 +2548,89 @@ jobs:
         run: |
           Write-Host "3C.1b.2j3b2b2b positive native App/Core OS-restart lifecycle test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
           git status --short
+
+  windows-3d1b1-owned-host-admission:
+    name: 3D.1b1 Windows source-pinned owned-host PID/port admission (no runtime PASS)
+    # Explicit opt-in, after source/format green; read-only admission plus disposable owned-child fixture.
+    # D02/D03 positive preflight and negative foreign-PID controls, NOT full operations evidence.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3d1b1-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact branch with no write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify immutable source and isolated native paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong native SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Nonproduction baseline modified' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1b1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute exact D01-D03 preflight and prior 3C refusal regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Invoke-TestGroup {
+            param([string]$Name, [int]$ExpectedCount)
+            $list = & cargo test --locked -p codex-tui --lib $Name -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listText = $list -join [Environment]::NewLine
+            $list | Out-Host
+            if ($listExit -ne 0 -or -not $listText.Contains("$ExpectedCount test") -or -not $listText.Contains('0 benchmarks')) {
+              throw "Required $Name test enumeration missing (expected $ExpectedCount)"
+            }
+            $output = & cargo test --locked -p codex-tui --lib $Name -- --test-threads=1 --nocapture 2>&1
+            $exit = $LASTEXITCODE
+            $output | Out-Host
+            $text = $output -join [Environment]::NewLine
+            if ($exit -ne 0 -or -not $text.Contains("test result: ok. $ExpectedCount passed; 0 failed; 0 ignored;")) {
+              throw "Required $Name native pass missing ($ExpectedCount expected, exit=$exit)"
+            }
+          }
+          Invoke-TestGroup 'codexdd_046_3d1b1_' 1
+          Invoke-TestGroup 'codexdd_046_3d1b0_' 1
+          Invoke-TestGroup 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked' 1
+          Invoke-TestGroup 'codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice' 1
+      - name: Assert no source edits, release, runtime PASS or installed change
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "Source-pinned 3D.1b1 guarded admission and negative controls only. No host runtime receipt, benchmark, release or installation authorized."

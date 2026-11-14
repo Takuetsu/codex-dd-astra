@@ -443,6 +443,12 @@ impl AdaptiveGateLedger {
                     AdaptiveRequiredGate::OwnedRuntimeHealth(ports) if ports.contains(&port)
                 )
             })
+            && !self.blockers.iter().any(|(gate, _)| {
+                matches!(
+                    gate,
+                    AdaptiveRequiredGate::OwnedRuntimeHealth(ports) if ports.contains(&port)
+                )
+            })
     }
 
     /// Even a correctly matched checkpoint is not permission to claim an

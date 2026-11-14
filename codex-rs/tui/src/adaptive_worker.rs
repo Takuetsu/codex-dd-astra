@@ -897,6 +897,27 @@ mod tests {
         )
         .is_ok());
 
+        let mut explicitly_blocked = ledger.clone();
+        explicitly_blocked
+            .mark_blocked(
+                &crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(
+                    vec![49121],
+                ),
+                "owner_ownership_hold",
+            )
+            .expect("block exact authorized port");
+        assert!(preflight_owned_runtime_target(
+            &owner,
+            Some(&pin),
+            Some(&explicitly_blocked),
+            source.path(),
+            49121,
+            owned_pid,
+            &mut child,
+        )
+        .expect_err("blocked owner gate must forbid host check")
+        .contains("port is not in"));
+
         let wrong_sha = AdaptiveWorkerPreflight {
             source_sha: "f".repeat(40),
             ..pin.clone()
