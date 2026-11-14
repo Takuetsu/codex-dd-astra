@@ -318,7 +318,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
     while app_events.try_recv().is_ok() {}
 
     let owner_text = format!(
-        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"{scope}\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"source_change\"\nrequired_gates = [{{ kind = \"source_profile\", profile = \"work_packet\" }}, {{ kind = \"independent_validation\" }}]\nAuthorize this disposable source.",
+        "[adaptive_worker]\n\nrole = \"implementation\"\nauthorized_scope = \"{scope}\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"source_change\"\nrequired_gates = [{{ kind = \"source_profile\", profile = \"work_packet\" }}, {{ kind = \"independent_validation\" }}]\nAuthorize this disposable source.",
         root.display()
     );
     let turn_id = send_real_turn(
