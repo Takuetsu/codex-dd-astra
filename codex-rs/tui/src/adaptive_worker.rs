@@ -1183,6 +1183,7 @@ mod tests {
             source_sha: Some("A".repeat(40)),
             task_kind: Some("benchmark".to_string()),
             required_gates: None,
+            benchmark: None,
         };
         let (context, preflight) = configured_worker_binding(&config).expect("valid startup pin");
         assert_eq!(context.role, AdaptiveWorkerRole::Implementation);

@@ -11,6 +11,7 @@ on:
       - .github/workflows/codexdd-046-3b1-github-regression.yml
       - codex-rs/config/src/config_toml.rs
       - codex-rs/tui/src/adaptive_worker.rs
+      - codex-rs/tui/src/adaptive_benchmark.rs
       - codex-rs/tui/src/adaptive_owned_runtime.rs
       # Owner-gate schema field compatibility across TUI startup/test surfaces.
       - codex-rs/tui/src/app/working_directory.rs
@@ -2724,3 +2725,83 @@ jobs:
         run: |
           git status --short
           Write-Host "Source-pinned 3D.1b2 guarded admission and negative controls only. No host runtime receipt, benchmark, release or installation authorized."
+
+  windows-3d1c-benchmark-native:
+    name: 3D.1c Windows source-pinned real 2-vs-4 guarded benchmark admission (no QA PASS)
+    # Owner-authorized disposable benchmark fixture only. No host/process manager.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3d1c-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 80
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify exact original SHA and disposable Windows paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Benchmark source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Production baseline changed' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1c'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run actual 2 and 4 OS-process benchmark measurements and refusal tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $group = 'codexdd_046_3d1c_'
+          $list = & cargo test --locked -p codex-tui --lib $group -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $list | Out-Host
+          if ($listExit -ne 0 -or -not (($list -join [Environment]::NewLine).Contains('2 tests, 0 benchmarks'))) {
+            throw 'Required two D01 native tests not enumerated'
+          }
+          $output = & cargo test --locked -p codex-tui --lib $group -- --test-threads=1 --nocapture 2>&1
+          $exit = $LASTEXITCODE
+          $output | Out-Host
+          if ($exit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
+            throw "Native benchmark fixture failed (exit=$exit)"
+          }
+          $negative = 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked'
+          & cargo test --locked -p codex-tui --lib $negative -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Existing non-source gate refusal regressed' }
+      - name: Confirm no production, source edits, releases or installs
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "D01 isolated native admission only; no 3D acceptance, host manager, production or release."

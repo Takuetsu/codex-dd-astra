@@ -434,6 +434,7 @@ impl App {
                 source_sha: None,
                 task_kind: None,
                 required_gates: None,
+                benchmark: None,
             });
         }
         if is_new_worktree {

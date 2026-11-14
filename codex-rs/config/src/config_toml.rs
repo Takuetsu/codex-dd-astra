@@ -184,6 +184,18 @@ pub struct AdaptiveOwnerGateToml {
     pub ports: Option<Vec<u16>>,
 }
 
+/// Exact task-specific benchmark authority supplied by the original Worker owner.
+/// This is a command identity contract, not shell execution permission or QA PASS.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(deny_unknown_fields)]
+pub struct AdaptiveOwnerBenchmarkToml {
+    pub command_2: String,
+    pub command_4: String,
+    pub resource_lock: String,
+    pub max_duration_ms: u64,
+}
+
 /// Immutable governance context bound to the initial Worker by its launcher.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
@@ -202,6 +214,9 @@ pub struct AdaptiveWorkerConfigToml {
     /// In a first-message header, use inline TOML tables on one line.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub required_gates: Option<Vec<AdaptiveOwnerGateToml>>,
+    /// Exact owner-approved two/four-command and resource-lock contract.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub benchmark: Option<AdaptiveOwnerBenchmarkToml>,
 }
 
 /// Decode a user-origin first-message Worker header without granting tool rights.
@@ -282,6 +297,7 @@ pub fn parse_adaptive_worker_first_message(
         source_sha: Option<String>,
         task_kind: Option<String>,
         required_gates: Option<Vec<AdaptiveOwnerGateToml>>,
+        benchmark: Option<AdaptiveOwnerBenchmarkToml>,
     }
     let parsed: FirstMessageAssignment = toml::from_str(&header)
         .map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
@@ -292,6 +308,7 @@ pub fn parse_adaptive_worker_first_message(
         source_sha: parsed.adaptive_worker.source_sha,
         task_kind: parsed.adaptive_worker.task_kind,
         required_gates: parsed.adaptive_worker.required_gates,
+        benchmark: parsed.adaptive_worker.benchmark,
     };
     if worker.role == AdaptiveWorkerRoleToml::Unspecified {
         return Err("Worker role must be implementation, validation, or repair".to_string());

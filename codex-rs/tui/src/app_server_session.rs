@@ -3096,6 +3096,7 @@ mod tests {
             source_sha: Some(sha.clone()),
             task_kind: Some("source_change".to_string()),
             required_gates: None,
+            benchmark: None,
         });
         let local =
             thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
@@ -3123,6 +3124,7 @@ mod tests {
             source_sha: None,
             task_kind: None,
             required_gates: None,
+            benchmark: None,
         });
         let legacy =
             thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);

@@ -474,6 +474,7 @@ impl CoreFirstWorkerAuthority {
             source_sha,
             task_kind: snapshot.task_kind.clone(),
             required_gates: None,
+            benchmark: None,
         });
         self.accepted_user_origin = true;
         self.locked = true;

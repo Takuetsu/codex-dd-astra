@@ -102,6 +102,8 @@ pub(crate) use codex_app_server_client::legacy_core;
 pub(crate) use worktree_startup::ManagedTuiWorktree;
 
 #[allow(dead_code)]
+mod adaptive_benchmark;
+#[allow(dead_code)]
 mod adaptive_budget;
 #[allow(dead_code)]
 mod adaptive_classification;
