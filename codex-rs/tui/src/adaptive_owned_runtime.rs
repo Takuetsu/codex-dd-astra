@@ -5,11 +5,11 @@
 //! handle, pin and owner-issued exact-port gate. Native gate evidence is a
 //! separate integration step; no status/receipt is synthesized here.
 
+use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
 use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 use crate::adaptive_gate_prerequisites::AdaptiveGateState;
 use crate::adaptive_gate_prerequisites::AdaptiveOutstandingGate;
 use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
-use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerPreflight;
 use crate::adaptive_worker::preflight_owned_runtime_target;
@@ -313,7 +313,6 @@ pub(crate) fn consume_owned_health_ticket(
     Ok(fresh)
 }
 
-
 /// A one-time, source-bound native observation evaluated at the QA boundary.
 /// This is intentionally not an Owner QA PASS or a durable gate receipt:
 /// the regular gate ledger still reports OwnedRuntimeHealth as pending until
@@ -520,7 +519,6 @@ mod tests {
         )
     }
 
-
     #[test]
     fn codexdd_046_3d1b2b2_review_rechecks_owned_health_without_minting_ready() {
         let (root, sha, owner, pin, gates, port, mut child) = test_owner("200 OK");
@@ -554,22 +552,27 @@ mod tests {
         // This read-only QA view never persists or produces a trusted Core
         // health receipt. Original ledger continues to block READY.
         assert!(!gates.ready_for_owner_qa(&registry));
-        assert!(gates.outstanding(&registry).iter().any(|gate| {
-            gate.gate == AdaptiveRequiredGate::OwnedRuntimeHealth(vec![port])
-        }));
+        assert!(
+            gates
+                .outstanding(&registry)
+                .iter()
+                .any(|gate| { gate.gate == AdaptiveRequiredGate::OwnedRuntimeHealth(vec![port]) })
+        );
         child.kill().expect("kill only disposable owned fixture");
         child.wait().expect("reap only disposable fixture");
-        assert!(review_live_owned_runtime_at_qa(
-            &owner,
-            Some(&pin),
-            Some(&gates),
-            &registry,
-            root.path(),
-            port,
-            pid,
-            &mut child,
-        )
-        .is_err());
+        assert!(
+            review_live_owned_runtime_at_qa(
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                &registry,
+                root.path(),
+                port,
+                pid,
+                &mut child,
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -578,36 +581,40 @@ mod tests {
         let registry = AdaptiveEvidenceRegistry::default();
         let pid = child.id();
         let wrong_port = port.wrapping_add(1);
-        assert!(review_live_owned_runtime_at_qa(
-            &owner,
-            Some(&pin),
-            Some(&gates),
-            &registry,
-            root.path(),
-            wrong_port,
-            pid,
-            &mut child,
-        )
-        .expect_err("foreign port is not an owner-issued single-port gate")
-        .contains("one unblocked exact approved port"));
+        assert!(
+            review_live_owned_runtime_at_qa(
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                &registry,
+                root.path(),
+                wrong_port,
+                pid,
+                &mut child,
+            )
+            .expect_err("foreign port is not an owner-issued single-port gate")
+            .contains("one unblocked exact approved port")
+        );
         gates
             .mark_blocked(
                 &AdaptiveRequiredGate::OwnedRuntimeHealth(vec![port]),
                 "owner_lock_hold",
             )
             .expect("owner gate block");
-        assert!(review_live_owned_runtime_at_qa(
-            &owner,
-            Some(&pin),
-            Some(&gates),
-            &registry,
-            root.path(),
-            port,
-            pid,
-            &mut child,
-        )
-        .expect_err("blocked owner gate cannot be cleared by HTTP 200")
-        .contains("one unblocked exact approved port"));
+        assert!(
+            review_live_owned_runtime_at_qa(
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                &registry,
+                root.path(),
+                port,
+                pid,
+                &mut child,
+            )
+            .expect_err("blocked owner gate cannot be cleared by HTTP 200")
+            .contains("one unblocked exact approved port")
+        );
         assert!(!gates.ready_for_owner_qa(&registry));
         child.kill().expect("only disposable owned fixture");
         child.wait().expect("reap only disposable fixture");
