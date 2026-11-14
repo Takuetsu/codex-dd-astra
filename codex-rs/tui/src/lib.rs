@@ -119,6 +119,9 @@ mod adaptive_evidence;
 mod adaptive_evidence_tests;
 #[allow(dead_code)]
 mod adaptive_gate_prerequisites;
+#[cfg(windows)]
+#[allow(dead_code)]
+mod adaptive_owned_runtime;
 #[allow(dead_code)]
 mod adaptive_policy;
 #[allow(dead_code)]
