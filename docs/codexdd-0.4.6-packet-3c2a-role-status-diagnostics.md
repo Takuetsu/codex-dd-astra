@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — 3C.2a: role and source-aware diagnostic status
 
-**Opened:** 2026-11-13. **Status: WIP / focused Windows acceptance not yet run.** Owner packet: 3C.2 — TUI role-binding/status diagnostics.
+**Opened:** 2026-11-13. **ACCEPTED:** 2026-11-14 via [GitHub Actions #43603946333](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43603946333), immutable tested source `c1e5be2dce8f35e234f5f91442b22239f59cffa2`; five native Windows diagnostics passed. Owner packet: 3C.2 — TUI role-binding/status diagnostics.
 
 ## Scope
 
@@ -24,11 +24,16 @@ Read-only source audit of the new `Next action` precedence found two misleading 
 
 Correction: check `Blocked` before native role-specific work, and check explicitly pinned `OperationsPreview`/`Benchmark` before any source-only profile recommendation. Both routes now report owner-review / authorized operations-specific path with no source-PASS implication. One added `codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice` regression covers both; total 3C.2 status tests now **four**.
 
-**Unverified until native Windows passes**: the exact runner must enumerate and run `codexdd_046_3c2` as four tests (not three), and the real App/Core positive packet must complete separately. The scope remains read-only presentation; no new privileged operations manager, source pin bypass, profile override, or owner approval has been introduced. Contextual live Core tool availability can only be established by actual current Core profile execution, never from status history alone.
+**Historical plan, superseded by 3C.2c:** the exact runner was expanded to enumerate and execute five `codexdd_046_3c2` tests (not three or four), and the App/Core positive packet remained a separate requirement. The scope remains read-only presentation; no new privileged operations manager, source pin bypass, profile override, or owner approval has been introduced. Contextual live Core tool availability can only be established by actual current Core profile execution, never from status history alone.
 
 
 ## 3C.2c — malformed first-assignment status guard
 
 An invalid first user-origin `[adaptive_worker]` header locks the original thread without binding a Worker role. The initial status diagnostics mistakenly told the owner to retry a first-message header in that already locked thread. Status now explicitly preserves the current evidence and directs a fresh Worker thread with a valid first user-origin header. No existing thread is rebound, no history is cleared and no validation authority is created.
 
-Test `codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread` verifies the actual parser rejection, locked/unbound state, accurate next action and continued unavailability of privileged Core tools. The focused native Windows job is extended from four to five named 3C.2 status regressions. **Pending source-matched Windows validation**: no PASS may be claimed from older immutable CI runs. 3C.1 positive App/Core acceptance remains a separate mandatory test.
+Test `codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread` verifies the actual parser rejection, locked/unbound state, accurate next action and continued unavailability of privileged Core tools. The focused native Windows job is extended from four to five named 3C.2 status regressions. **Acceptance:** [GitHub Actions #43603946333](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43603946333), immutable tested source `c1e5be2dce8f35e234f5f91442b22239f59cffa2` explicitly enumerated and executed all five 3C.2a/b/c tests: **5 passed / 0 failed / 0 ignored**. The separate 3C.1 App/Core positive acceptance also passed **1/1** in that same job; neither requirement is waived.
+
+
+## Final 3C.2 diagnostic acceptance
+
+The final-source GitHub job explicitly reports successful tests for unbound first-message instructions, pinned root/SHA and role-specific gate/tool advice, cold-paused historical READY refusal, blocked/operations-only action priority, and locked malformed first-assignment guidance. These remain **read-only diagnostics**; they do not assign roles, imply present tool availability from historical status, promote evidence, or bypass Core approval and immutable source authority. Full 0.4.6 release and installation are still held behind the later phases.

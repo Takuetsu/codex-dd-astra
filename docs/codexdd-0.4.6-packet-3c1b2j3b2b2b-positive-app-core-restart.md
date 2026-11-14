@@ -1,6 +1,6 @@
 # CodexDD 0.4.6 — 3C.1b.2j3b2b2b: positive App-owned two-Worker native restart acceptance
 
-**Opened:** 2026-11-13. **Status: WIP / Windows native acceptance NOT YET RUN.** Parent: 3C.1b.2j3b2b2a accepted via exact source SHA `59cecfa0ef8d772fb5858f330bd00d13003c5c07` ([Actions #43501797235](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43501797235), both native tests green).
+**Opened:** 2026-11-13. **ACCEPTED:** 2026-11-14 via [GitHub Actions #43603946333](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43603946333), immutable tested source `c1e5be2dce8f35e234f5f91442b22239f59cffa2` — native Windows real-process positive lifecycle **1/1 passed, 0 failed, 0 ignored**. Parent: 3C.1b.2j3b2b2a accepted via exact source SHA `59cecfa0ef8d772fb5858f330bd00d13003c5c07` ([Actions #43501797235](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43501797235), both native tests green).
 
 ## Required positive integration
 
@@ -20,3 +20,12 @@ The fixture explicitly enters the previously accepted `MechanicalValidation` pha
 Source-contract PASS, Rustfmt PASS and a dedicated isolated native Windows job compiling the real app-server, enumerating **exactly one** named ignored test, executing it without skip, and observing **1 passed, 0 failed**. Failure to compile, tool absence, protocol rejection, wrong tool/profile/SHA, missing/duplicate READY, process leak or wrong worker thread is a real failure to classify. Never weaken source pin, role/approval policy or native receipts to turn CI green. The active BREAKWATER/CV/0.4.5/installed CodexDD programs remain untouched.
 
 After this acceptance, 3C.1 subpacket audit remains required and separate 3C.2 role/status tests must pass before claiming Phase 3C complete. 3D/3E/3F/4, owner release authorization and the roughly one-week BREAKWATER soak are later distinct gates.
+
+
+## Acceptance record — 2026-11-14
+
+[GitHub Actions #43603946333](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43603946333), immutable tested source `c1e5be2dce8f35e234f5f91442b22239f59cffa2` succeeded after the exact source-contract preflight and Rustfmt checks. The dedicated Windows job built the real `codex-app-server.exe`, enumerated the single ignored-positive test, ran it with `--ignored`, and reported **1 passed / 0 failed / 0 ignored**; no enumeration-only or prior-source proof was counted. The test asserts actual first-user source authority, distinct native Core source and Validator receipts, matching Git source root and SHA, a separate OS child after restart, an App-owned fresh independent Validator, and a single READY persistence operation. The deterministic mock selects tools only; it cannot mint native PASS or READY.
+
+The earlier Windows attempt [#43600000652](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43600000652) failed at the newly created Validator Git root, not due to successful end-to-end behavior. Its same-host WebSocket test transport used remote-workspace semantics, which intentionally omit client local CWD/pinned Core override. Test-only helper `AppServerSession::with_same_host_daemon_params_for_test` now models a real same-machine **local daemon** without altering production remote-workspace authority isolation. The accepted build includes the exact Rustfmt correction to this fixture.
+
+The same source also passed five 3C.2 status tests, two cold controls, two stale/duplicate replay refusals and one selected-thread native routing refusal: eleven named native tests total. This **closes the positive 3C.1b.2j3b2b2b packet**, not product release, broad real-agent validation, or later owner QA.
