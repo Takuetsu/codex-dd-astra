@@ -6,6 +6,10 @@
 //! separate integration step; no status/receipt is synthesized here.
 
 use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+use crate::adaptive_gate_prerequisites::AdaptiveGateState;
+use crate::adaptive_gate_prerequisites::AdaptiveOutstandingGate;
+use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerPreflight;
 use crate::adaptive_worker::preflight_owned_runtime_target;
@@ -309,6 +313,82 @@ pub(crate) fn consume_owned_health_ticket(
     Ok(fresh)
 }
 
+
+/// A one-time, source-bound native observation evaluated at the QA boundary.
+/// This is intentionally not an Owner QA PASS or a durable gate receipt:
+/// the regular gate ledger still reports OwnedRuntimeHealth as pending until
+/// a Core-bound independently revalidated native producer exists.
+#[derive(Debug)]
+pub(crate) struct AdaptiveOwnedRuntimeQaReview {
+    pub(crate) observation: AdaptiveOwnedHttpObservation,
+    pub(crate) other_pending_gates: Vec<AdaptiveOutstandingGate>,
+}
+
+/// Evaluate the original owner health requirement while an authorized
+/// same-process Child is available. An explicit single-port gate is required;
+/// until multi-port process ownership is implemented, never infer a PASS for
+/// two services from one listener.
+///
+/// This issues a fresh private ticket, consumes it for a *second* Windows
+/// owner-PID/HTTP 200 inspection, and exposes what other gates remain pending.
+/// No durable registry record is written and ready_for_owner_qa remains
+/// deliberately unchanged; a later cold resume cannot replay this review.
+pub(crate) fn review_live_owned_runtime_at_qa(
+    worker: &AdaptiveWorkerContext,
+    pin: Option<&AdaptiveWorkerPreflight>,
+    ledger: Option<&AdaptiveGateLedger>,
+    registry: &AdaptiveEvidenceRegistry,
+    runtime_cwd: &Path,
+    port: u16,
+    reported_pid: u32,
+    child: &mut Child,
+) -> Result<AdaptiveOwnedRuntimeQaReview, String> {
+    let ledger = ledger.ok_or_else(|| {
+        "SETUP_BLOCKED: the original owner runtime-health gate is unavailable".to_string()
+    })?;
+    let outstanding = ledger.outstanding(registry);
+    let health = AdaptiveRequiredGate::OwnedRuntimeHealth(vec![port]);
+    let runtime_gates = outstanding
+        .iter()
+        .filter(|entry| matches!(entry.gate, AdaptiveRequiredGate::OwnedRuntimeHealth(_)))
+        .collect::<Vec<_>>();
+    if runtime_gates.len() != 1
+        || runtime_gates[0].gate != health
+        || runtime_gates[0].state != AdaptiveGateState::Pending
+    {
+        return Err(
+            "SETUP_BLOCKED: owner runtime-health review requires one unblocked exact approved port"
+                .to_string(),
+        );
+    }
+    let ticket = issue_owned_health_ticket(
+        worker,
+        pin,
+        Some(ledger),
+        runtime_cwd,
+        port,
+        reported_pid,
+        child,
+    )?;
+    let observation = consume_owned_health_ticket(
+        ticket,
+        worker,
+        pin,
+        Some(ledger),
+        runtime_cwd,
+        port,
+        reported_pid,
+        child,
+    )?;
+    Ok(AdaptiveOwnedRuntimeQaReview {
+        observation,
+        other_pending_gates: outstanding
+            .into_iter()
+            .filter(|entry| entry.gate != health)
+            .collect(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -438,6 +518,99 @@ mod tests {
             port,
             child,
         )
+    }
+
+
+    #[test]
+    fn codexdd_046_3d1b2b2_review_rechecks_owned_health_without_minting_ready() {
+        let (root, sha, owner, pin, gates, port, mut child) = test_owner("200 OK");
+        let registry = AdaptiveEvidenceRegistry::default();
+        let pid = child.id();
+        let reviewed = review_live_owned_runtime_at_qa(
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            &registry,
+            root.path(),
+            port,
+            pid,
+            &mut child,
+        )
+        .expect("approved live owner can obtain a non-persisted QA observation");
+        assert_eq!(reviewed.observation.source_sha, sha);
+        assert_eq!(reviewed.observation.owned_pid, pid);
+        assert_eq!(reviewed.observation.approved_port, port);
+        assert_eq!(reviewed.observation.http_status, 200);
+        assert!(reviewed.observation.observed_at_ms > 0);
+        assert_eq!(reviewed.other_pending_gates.len(), 1);
+        assert_eq!(
+            reviewed.other_pending_gates[0].gate,
+            AdaptiveRequiredGate::IndependentValidation
+        );
+        assert_eq!(
+            reviewed.other_pending_gates[0].state,
+            AdaptiveGateState::Pending
+        );
+        // This read-only QA view never persists or produces a trusted Core
+        // health receipt. Original ledger continues to block READY.
+        assert!(!gates.ready_for_owner_qa(&registry));
+        assert!(gates.outstanding(&registry).iter().any(|gate| {
+            gate.gate == AdaptiveRequiredGate::OwnedRuntimeHealth(vec![port])
+        }));
+        child.kill().expect("kill only disposable owned fixture");
+        child.wait().expect("reap only disposable fixture");
+        assert!(review_live_owned_runtime_at_qa(
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            &registry,
+            root.path(),
+            port,
+            pid,
+            &mut child,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn codexdd_046_3d1b2b2_review_refuses_blocked_and_unapproved_ports() {
+        let (root, _sha, owner, pin, mut gates, port, mut child) = test_owner("200 OK");
+        let registry = AdaptiveEvidenceRegistry::default();
+        let pid = child.id();
+        let wrong_port = port.wrapping_add(1);
+        assert!(review_live_owned_runtime_at_qa(
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            &registry,
+            root.path(),
+            wrong_port,
+            pid,
+            &mut child,
+        )
+        .expect_err("foreign port is not an owner-issued single-port gate")
+        .contains("one unblocked exact approved port"));
+        gates
+            .mark_blocked(
+                &AdaptiveRequiredGate::OwnedRuntimeHealth(vec![port]),
+                "owner_lock_hold",
+            )
+            .expect("owner gate block");
+        assert!(review_live_owned_runtime_at_qa(
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            &registry,
+            root.path(),
+            port,
+            pid,
+            &mut child,
+        )
+        .expect_err("blocked owner gate cannot be cleared by HTTP 200")
+        .contains("one unblocked exact approved port"));
+        assert!(!gates.ready_for_owner_qa(&registry));
+        child.kill().expect("only disposable owned fixture");
+        child.wait().expect("reap only disposable fixture");
     }
 
     #[test]

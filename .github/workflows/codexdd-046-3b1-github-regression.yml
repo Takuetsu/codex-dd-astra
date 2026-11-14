@@ -78,7 +78,7 @@ permissions:
 concurrency:
   group: codexdd-046-3b1-${{ github.ref }}
   # Only an explicitly requested exact-source 3C or scoped 3D native acceptance supersedes obsolete runs.
-  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]')) }}
+  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]')) }}
 
 jobs:
   source-contract:
@@ -2640,7 +2640,7 @@ jobs:
     name: 3D.1b2 Windows source-pinned owner HTTP and transient ticket refusals (no gate PASS)
     # Explicit opt-in, after source/format green; read-only admission plus disposable owned-child fixture.
     # D02 real loopback owned PID plus HTTP 200 and 503 refusal; no native ledger PASS yet.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b1-native]'))
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b1-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 75
@@ -2712,6 +2712,7 @@ jobs:
             }
           }
           Invoke-TestGroup 'codexdd_046_3d1b2_' 2
+          Invoke-TestGroup 'codexdd_046_3d1b2b2_' 2
           Invoke-TestGroup 'codexdd_046_3d1b2b1_' 2
           Invoke-TestGroup 'codexdd_046_3d1b1_' 1
           Invoke-TestGroup 'codexdd_046_3d1b0_' 1
