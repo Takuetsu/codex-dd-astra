@@ -87,8 +87,7 @@ impl AdaptiveApprovedBenchmark {
         })?;
         let scope = worker.authorized_scope.as_deref().unwrap_or_default();
         if worker.role != AdaptiveWorkerRole::Implementation
-            || original.role
-                != codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+            || original.role != codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
             || original.task_kind.as_deref() != Some("benchmark")
             || pin.task_kind != AdaptiveTaskKind::Benchmark
             || scope.is_empty()
@@ -115,8 +114,7 @@ impl AdaptiveApprovedBenchmark {
             || plan.max_duration_ms > MAX_BENCHMARK_DURATION_MS
         {
             return Err(
-                "SETUP_BLOCKED: benchmark needs two distinct bounded original commands"
-                    .to_string(),
+                "SETUP_BLOCKED: benchmark needs two distinct bounded original commands".to_string(),
             );
         }
         let root = Path::new(&pin.source_root)
@@ -165,11 +163,15 @@ impl AdaptiveApprovedBenchmark {
             .write(true)
             .create_new(true)
             .open(&self.lock_path)
-            .map_err(|_| "SETUP_BLOCKED: cannot exclusively acquire approved benchmark lock".to_string())?;
+            .map_err(|_| {
+                "SETUP_BLOCKED: cannot exclusively acquire approved benchmark lock".to_string()
+            })?;
         if let Err(error) = file.try_lock() {
             drop(file);
             let _ = std::fs::remove_file(&self.lock_path);
-            return Err(format!("SETUP_BLOCKED: resource lock cannot be held exclusively: {error}"));
+            return Err(format!(
+                "SETUP_BLOCKED: resource lock cannot be held exclusively: {error}"
+            ));
         }
         Ok(AdaptiveBenchmarkLock {
             path: self.lock_path.clone(),
@@ -206,9 +208,7 @@ impl AdaptiveApprovedBenchmark {
         }
         preflight_owner_candidate_identity(pin, runtime_cwd)?;
         if !held_lock.is_some_and(|lock| {
-            lock.path == self.lock_path
-                && lock.file.is_some()
-                && lock.path.is_file()
+            lock.path == self.lock_path && lock.file.is_some() && lock.path.is_file()
         }) {
             return Err("SETUP_BLOCKED: benchmark resource lock is not held".to_string());
         }
@@ -276,7 +276,9 @@ impl AdaptiveApprovedBenchmark {
             ..
         } = &event.item
         else {
-            return Err("SETUP_BLOCKED: benchmark requires native Core command completion".to_string());
+            return Err(
+                "SETUP_BLOCKED: benchmark requires native Core command completion".to_string(),
+            );
         };
         let Some(pid) = process_id.as_deref().filter(|value| !value.is_empty()) else {
             return Err("SETUP_BLOCKED: benchmark lacks a real process identifier".to_string());
@@ -445,7 +447,9 @@ mod tests {
             root.path(),
         )
         .expect("original approved benchmark");
-        let lease = approval.reserve_resource_lock().expect("exclusive fixture lock");
+        let lease = approval
+            .reserve_resource_lock()
+            .expect("exclusive fixture lock");
         assert!(
             approval.reserve_resource_lock().is_err(),
             "another benchmark must not reuse the live lock"
@@ -603,46 +607,52 @@ mod tests {
             "native-4",
         );
         let mut changed = four.clone();
-        if let ThreadItem::CommandExecution { ref mut command, .. } = changed.item {
+        if let ThreadItem::CommandExecution {
+            ref mut command, ..
+        } = changed.item
+        {
             *command = "unapproved command".to_string();
         }
         assert!(
-            approval.admit_native_completions(
-                &worker,
-                Some(&pin),
-                root.path(),
-                Some(&lease),
-                thread,
-                "owner-turn",
-                started,
-                clock_ms(),
-                Some(&two),
-                Some(&changed),
-            )
-            .is_err()
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&changed),
+                )
+                .is_err()
         );
         let mut duplicate = four;
         if let (
             ThreadItem::CommandExecution { process_id: p2, .. },
             ThreadItem::CommandExecution { process_id: p4, .. },
-        ) = (&two.item, &mut duplicate.item) {
+        ) = (&two.item, &mut duplicate.item)
+        {
             *p4 = p2.clone();
         }
         assert!(
-            approval.admit_native_completions(
-                &worker,
-                Some(&pin),
-                root.path(),
-                Some(&lease),
-                thread,
-                "owner-turn",
-                started,
-                clock_ms(),
-                Some(&two),
-                Some(&duplicate),
-            )
-            .expect_err("foreign/reused PID")
-            .contains("reuses")
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&duplicate),
+                )
+                .expect_err("foreign/reused PID")
+                .contains("reuses")
         );
     }
 }
