@@ -1145,9 +1145,11 @@ impl App {
                     }
                     .to_string()
                 }),
-                // Gate authority lives only in the originating owner ledger.
-                // A model-generated Validator handoff cannot rewrite requirements.
+                // Gate and benchmark authority live only in the originating
+                // owner's first assignment. A Validator/Repair handoff cannot
+                // acquire a new command/lock grant from generated handoff text.
                 required_gates: None,
+                benchmark: None,
             });
         }
         match app_server
