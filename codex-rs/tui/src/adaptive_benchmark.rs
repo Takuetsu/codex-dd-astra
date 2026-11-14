@@ -20,6 +20,8 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 const MAX_COMMAND_BYTES: usize = 4096;
 const MAX_BENCHMARK_DURATION_MS: u64 = 120_000;
@@ -35,6 +37,9 @@ pub(crate) struct AdaptiveApprovedBenchmark {
     command_4: String,
     lock_path: PathBuf,
     max_duration_ms: u64,
+    // Fresh in-memory authorization bounds native event freshness and replay.
+    bound_at_ms: u64,
+    consumed: bool,
 }
 
 /// A temporary exclusive reservation at the owner's exact scratch lock path.
@@ -141,6 +146,10 @@ impl AdaptiveApprovedBenchmark {
                     .to_string(),
             );
         }
+        let bound_at_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| "SETUP_BLOCKED: benchmark admission clock unavailable".to_string())?
+            .as_millis() as u64;
         Ok(Self {
             scope: scope.to_string(),
             root,
@@ -149,6 +158,8 @@ impl AdaptiveApprovedBenchmark {
             command_4: plan.command_4.clone(),
             lock_path,
             max_duration_ms: plan.max_duration_ms,
+            bound_at_ms,
+            consumed: false,
         })
     }
 
@@ -179,13 +190,12 @@ impl AdaptiveApprovedBenchmark {
         })
     }
 
-    /// Consume only two genuine completed Core AppServer command items with
-    /// distinct IDs/processes and actual durations. There is no generic exec
-    /// or model-reported PASS path. Caller must establish an embedded trusted
-    /// transport before forwarding these native notifications.
+    /// Admit at most one pair of source-bound Core AppServer command outcomes.
+    /// An embedded trusted transport must be established by the caller; this
+    /// helper neither authenticates arbitrary JSON nor grants exec authority.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn admit_native_completions(
-        &self,
+        &mut self,
         worker: &AdaptiveWorkerContext,
         pin: Option<&AdaptiveWorkerPreflight>,
         runtime_cwd: &Path,
@@ -197,6 +207,9 @@ impl AdaptiveApprovedBenchmark {
         two: Option<&ItemCompletedNotification>,
         four: Option<&ItemCompletedNotification>,
     ) -> Result<AdaptiveNativeBenchmarkComparison, String> {
+        if self.consumed {
+            return Err("SETUP_BLOCKED: benchmark outcomes already consumed in this owner session".to_string());
+        }
         let pin = pin.ok_or_else(|| "SETUP_BLOCKED: missing benchmark source pin".to_string())?;
         if worker.role != AdaptiveWorkerRole::Implementation
             || worker.authorized_scope.as_deref() != Some(self.scope.as_str())
@@ -214,6 +227,7 @@ impl AdaptiveApprovedBenchmark {
         }
         if turn_id.is_empty()
             || started_at_ms == 0
+            || started_at_ms < self.bound_at_ms
             || now_ms < started_at_ms
             || now_ms - started_at_ms > MAX_EVENT_AGE_MS
         {
@@ -241,6 +255,7 @@ impl AdaptiveApprovedBenchmark {
             return Err("SETUP_BLOCKED: benchmark reuses an item or OS process".to_string());
         }
         preflight_owner_candidate_identity(pin, runtime_cwd)?;
+        self.consumed = true;
         Ok(AdaptiveNativeBenchmarkComparison {
             source_sha: self.sha.clone(),
             two,
@@ -280,8 +295,11 @@ impl AdaptiveApprovedBenchmark {
                 "SETUP_BLOCKED: benchmark requires native Core command completion".to_string(),
             );
         };
-        let Some(pid) = process_id.as_deref().filter(|value| !value.is_empty()) else {
-            return Err("SETUP_BLOCKED: benchmark lacks a real process identifier".to_string());
+        let Some(pid) = process_id
+            .as_deref()
+            .filter(|value| value.len() <= 10 && value.parse::<u32>().is_ok_and(|pid| pid != 0))
+        else {
+            return Err("SETUP_BLOCKED: benchmark lacks a positive decimal OS process identifier".to_string());
         };
         let duration = (*duration_ms)
             .and_then(|value| u64::try_from(value).ok())
@@ -296,7 +314,9 @@ impl AdaptiveApprovedBenchmark {
             || *source != CommandExecutionSource::Agent
             || *status != CommandExecutionStatus::Completed
             || *exit_code != Some(0)
+            || duration == 0
             || duration > self.max_duration_ms
+            || duration > completed_at_ms.saturating_sub(started_at_ms).saturating_add(1)
             || event.thread_id != thread_id.to_string()
             || event.turn_id != turn_id
             || completed_at_ms < started_at_ms
@@ -440,7 +460,7 @@ mod tests {
     #[test]
     fn codexdd_046_3d1c_real_two_and_four_os_processes_are_measured_under_lock() {
         let (root, config, worker, pin) = fixture();
-        let approval = AdaptiveApprovedBenchmark::from_original_owner(
+        let mut approval = AdaptiveApprovedBenchmark::from_original_owner(
             &config,
             &worker,
             Some(&pin),
@@ -505,6 +525,23 @@ mod tests {
         assert_eq!((matched.two.threads, matched.four.threads), (2, 4));
         assert_ne!(matched.two.process_id, matched.four.process_id);
         assert_eq!(matched.source_sha, pin.source_sha);
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    start,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&four),
+                )
+                .expect_err("same owned session cannot replay a completed pair")
+                .contains("already consumed")
+        );
         drop(lease);
         assert!(!Path::new(&plan.resource_lock).exists());
     }
@@ -513,7 +550,7 @@ mod tests {
     #[test]
     fn codexdd_046_3d1c_missing_owner_lock_source_or_real_receipt_refuses() {
         let (root, config, worker, pin) = fixture();
-        let approval = AdaptiveApprovedBenchmark::from_original_owner(
+        let mut approval = AdaptiveApprovedBenchmark::from_original_owner(
             &config,
             &worker,
             Some(&pin),
@@ -628,6 +665,27 @@ mod tests {
                     Some(&changed),
                 )
                 .is_err()
+        );
+        let mut nonnumeric = four.clone();
+        if let ThreadItem::CommandExecution { process_id, .. } = &mut nonnumeric.item {
+            *process_id = Some("pid-from-untrusted-prose".to_string());
+        }
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&nonnumeric),
+                )
+                .expect_err("arbitrary process text is not a native PID")
+                .contains("decimal OS process")
         );
         let mut duplicate = four;
         if let (
