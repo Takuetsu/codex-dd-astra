@@ -484,7 +484,8 @@ mod tests {
             "another benchmark must not reuse the live lock"
         );
         let thread = ThreadId::new();
-        let start = clock_ms().saturating_sub(1);
+        // The measured owner session must start at or after admission, never before it.
+        let start = clock_ms().max(approval.bound_at_ms);
         let plan = config.benchmark.as_ref().expect("benchmark");
         // The original first-message parser must retain exact typed commands
         // and the lock; assignment prose cannot supply or upgrade them.
@@ -567,7 +568,7 @@ mod tests {
         )
         .expect("owner plan");
         let thread = ThreadId::new();
-        let started = clock_ms().saturating_sub(1);
+        let started = clock_ms().max(approval.bound_at_ms);
         assert!(
             approval
                 .admit_native_completions(
@@ -586,6 +587,23 @@ mod tests {
                 .contains("resource lock")
         );
         let lease = approval.reserve_resource_lock().expect("scratch lock");
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    approval.bound_at_ms.saturating_sub(1),
+                    clock_ms(),
+                    None,
+                    None,
+                )
+                .expect_err("benchmark begun before original owner authorization")
+                .contains("session is stale or unbound")
+        );
         assert!(
             approval
                 .admit_native_completions(
