@@ -208,7 +208,10 @@ impl AdaptiveApprovedBenchmark {
         four: Option<&ItemCompletedNotification>,
     ) -> Result<AdaptiveNativeBenchmarkComparison, String> {
         if self.consumed {
-            return Err("SETUP_BLOCKED: benchmark outcomes already consumed in this owner session".to_string());
+            return Err(
+                "SETUP_BLOCKED: benchmark outcomes already consumed in this owner session"
+                    .to_string(),
+            );
         }
         let pin = pin.ok_or_else(|| "SETUP_BLOCKED: missing benchmark source pin".to_string())?;
         if worker.role != AdaptiveWorkerRole::Implementation
@@ -299,7 +302,10 @@ impl AdaptiveApprovedBenchmark {
             .as_deref()
             .filter(|value| value.len() <= 10 && value.parse::<u32>().is_ok_and(|pid| pid != 0))
         else {
-            return Err("SETUP_BLOCKED: benchmark lacks a positive decimal OS process identifier".to_string());
+            return Err(
+                "SETUP_BLOCKED: benchmark lacks a positive decimal OS process identifier"
+                    .to_string(),
+            );
         };
         let duration = (*duration_ms)
             .and_then(|value| u64::try_from(value).ok())
@@ -316,7 +322,10 @@ impl AdaptiveApprovedBenchmark {
             || *exit_code != Some(0)
             || duration == 0
             || duration > self.max_duration_ms
-            || duration > completed_at_ms.saturating_sub(started_at_ms).saturating_add(1)
+            || duration
+                > completed_at_ms
+                    .saturating_sub(started_at_ms)
+                    .saturating_add(1)
             || event.thread_id != thread_id.to_string()
             || event.turn_id != turn_id
             || completed_at_ms < started_at_ms
