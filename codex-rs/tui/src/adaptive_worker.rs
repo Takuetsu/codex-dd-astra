@@ -291,7 +291,7 @@ pub(crate) fn preflight_owned_runtime_target(
 /// Bounded Git inspection of the selected, explicitly authorized candidate,
 /// including non-source tasks. This does not grant operations permissions or
 /// convert a source-only test into a live-runtime health receipt.
-fn preflight_owner_candidate_identity(
+pub(crate) fn preflight_owner_candidate_identity(
     binding: &AdaptiveWorkerPreflight,
     runtime_cwd: &Path,
 ) -> Result<(), String> {
