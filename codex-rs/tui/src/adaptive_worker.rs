@@ -236,13 +236,17 @@ pub(crate) fn preflight_owned_runtime_target(
             .as_deref()
             .is_none_or(|scope| scope.trim().is_empty())
     {
-        return Err("SETUP_BLOCKED: owned host preview requires original Implementation scope".to_string());
+        return Err(
+            "SETUP_BLOCKED: owned host preview requires original Implementation scope".to_string(),
+        );
     }
     let pin = pin.ok_or_else(|| {
         "SETUP_BLOCKED: host preview needs the original exact source root and SHA".to_string()
     })?;
     if pin.task_kind != AdaptiveTaskKind::OperationsPreview {
-        return Err("SETUP_BLOCKED: host preview cannot use source or benchmark authority".to_string());
+        return Err(
+            "SETUP_BLOCKED: host preview cannot use source or benchmark authority".to_string(),
+        );
     }
     let scope = worker
         .authorized_scope
@@ -256,7 +260,10 @@ pub(crate) fn preflight_owned_runtime_target(
             approved_port,
         )
     }) {
-        return Err("SETUP_BLOCKED: port is not in the original owner-owned runtime-health gate".to_string());
+        return Err(
+            "SETUP_BLOCKED: port is not in the original owner-owned runtime-health gate"
+                .to_string(),
+        );
     }
     if reported_pid == 0 || reported_pid != owned_child.id() {
         return Err("SETUP_BLOCKED: host.pid does not identify the live child owned by this task; no signal, restart or kill authorized".to_string());
@@ -265,10 +272,14 @@ pub(crate) fn preflight_owned_runtime_target(
         child
             .try_wait()
             .map(|status| status.is_none())
-            .map_err(|error| format!("SETUP_BLOCKED: owned host process cannot be monitored: {error}"))
+            .map_err(|error| {
+                format!("SETUP_BLOCKED: owned host process cannot be monitored: {error}")
+            })
     };
     if !child_alive(owned_child)? {
-        return Err("SETUP_BLOCKED: owned process has exited; stale host.pid is not authority".to_string());
+        return Err(
+            "SETUP_BLOCKED: owned process has exited; stale host.pid is not authority".to_string(),
+        );
     }
     preflight_owner_candidate_identity(pin, runtime_cwd)?;
     if !child_alive(owned_child)? {
@@ -875,27 +886,31 @@ mod tests {
         assert!(rejected.contains("host.pid does not identify"));
         assert!(child.try_wait().expect("still-owned child").is_none());
 
-        assert!(preflight_owned_runtime_target(
-            &owner,
-            Some(&pin),
-            Some(&ledger),
-            source.path(),
-            49122,
-            owned_pid,
-            &mut child,
-        )
-        .expect_err("unapproved port must block")
-        .contains("port is not in"));
-        assert!(preflight_owned_runtime_target(
-            &owner,
-            Some(&pin),
-            Some(&ledger),
-            source.path(),
-            49121,
-            owned_pid,
-            &mut child,
-        )
-        .is_ok());
+        assert!(
+            preflight_owned_runtime_target(
+                &owner,
+                Some(&pin),
+                Some(&ledger),
+                source.path(),
+                49122,
+                owned_pid,
+                &mut child,
+            )
+            .expect_err("unapproved port must block")
+            .contains("port is not in")
+        );
+        assert!(
+            preflight_owned_runtime_target(
+                &owner,
+                Some(&pin),
+                Some(&ledger),
+                source.path(),
+                49121,
+                owned_pid,
+                &mut child,
+            )
+            .is_ok()
+        );
 
         let mut explicitly_blocked = ledger.clone();
         explicitly_blocked
@@ -906,62 +921,73 @@ mod tests {
                 "owner_ownership_hold",
             )
             .expect("block exact authorized port");
-        assert!(preflight_owned_runtime_target(
-            &owner,
-            Some(&pin),
-            Some(&explicitly_blocked),
-            source.path(),
-            49121,
-            owned_pid,
-            &mut child,
-        )
-        .expect_err("blocked owner gate must forbid host check")
-        .contains("port is not in"));
+        assert!(
+            preflight_owned_runtime_target(
+                &owner,
+                Some(&pin),
+                Some(&explicitly_blocked),
+                source.path(),
+                49121,
+                owned_pid,
+                &mut child,
+            )
+            .expect_err("blocked owner gate must forbid host check")
+            .contains("port is not in")
+        );
 
         let wrong_sha = AdaptiveWorkerPreflight {
             source_sha: "f".repeat(40),
             ..pin.clone()
         };
-        assert!(preflight_owned_runtime_target(
-            &owner,
-            Some(&wrong_sha),
-            Some(&ledger),
-            source.path(),
-            49121,
-            owned_pid,
-            &mut child,
-        )
-        .expect_err("wrong SHA is not owner authority")
-        .contains("port is not in"));
+        assert!(
+            preflight_owned_runtime_target(
+                &owner,
+                Some(&wrong_sha),
+                Some(&ledger),
+                source.path(),
+                49121,
+                owned_pid,
+                &mut child,
+            )
+            .expect_err("wrong SHA is not owner authority")
+            .contains("port is not in")
+        );
 
         let mut wrong_role = owner.clone();
         wrong_role.role = AdaptiveWorkerRole::Repair;
-        assert!(preflight_owned_runtime_target(
-            &wrong_role,
-            Some(&pin),
-            Some(&ledger),
-            source.path(),
-            49121,
-            owned_pid,
-            &mut child,
-        )
-        .expect_err("Repair cannot inherit host lifecycle")
-        .contains("Implementation scope"));
+        assert!(
+            preflight_owned_runtime_target(
+                &wrong_role,
+                Some(&pin),
+                Some(&ledger),
+                source.path(),
+                49121,
+                owned_pid,
+                &mut child,
+            )
+            .expect_err("Repair cannot inherit host lifecycle")
+            .contains("Implementation scope")
+        );
 
         child.kill().expect("only kill our disposable test child");
         child.wait().expect("reap own child");
-        assert!(preflight_owned_runtime_target(
-            &owner,
-            Some(&pin),
-            Some(&ledger),
-            source.path(),
-            49121,
-            owned_pid,
-            &mut child,
-        )
-        .expect_err("exited owned child cannot prove health")
-        .contains("has exited"));
-        assert!(!ledger.ready_for_owner_qa(&crate::adaptive_evidence::AdaptiveEvidenceRegistry::default()));
+        assert!(
+            preflight_owned_runtime_target(
+                &owner,
+                Some(&pin),
+                Some(&ledger),
+                source.path(),
+                49121,
+                owned_pid,
+                &mut child,
+            )
+            .expect_err("exited owned child cannot prove health")
+            .contains("has exited")
+        );
+        assert!(
+            !ledger
+                .ready_for_owner_qa(&crate::adaptive_evidence::AdaptiveEvidenceRegistry::default())
+        );
     }
 
     #[test]
