@@ -430,8 +430,7 @@ async fn codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart(
     // The original native source process is genuinely torn down here; the
     // App retains the live, just-observed Core source proof in its own memory.
     stop_real_app_server(server, child).await?;
-    let (restarted, restarted_child) =
-        start_real_app_server(&binary, home.path(), &config).await?;
+    let (restarted, restarted_child) = start_real_app_server(&binary, home.path(), &config).await?;
     let mut restarted = restarted.with_same_host_daemon_params_for_test();
     app.handle_event(&mut tui, &mut restarted, handoff).await?;
     let validator = app
