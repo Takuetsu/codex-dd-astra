@@ -199,7 +199,6 @@ pub(crate) fn observe_owned_loopback_health(
     })
 }
 
-
 /// A deliberately ephemeral, single-consumption capability derived from a
 /// *real* owner-held Child and a fresh loopback HTTP 200 observation.
 ///
@@ -295,8 +294,15 @@ pub(crate) fn consume_owned_health_ticket(
     {
         return Err("SETUP_BLOCKED: stale or future-dated runtime health ticket".to_string());
     }
-    let fresh =
-        observe_owned_loopback_health(worker, Some(pin), ledger, runtime_cwd, port, reported_pid, child)?;
+    let fresh = observe_owned_loopback_health(
+        worker,
+        Some(pin),
+        ledger,
+        runtime_cwd,
+        port,
+        reported_pid,
+        child,
+    )?;
     if fresh.observed_at_ms < ticket.observed_at_ms {
         return Err("SETUP_BLOCKED: health response predates its original observation".to_string());
     }
@@ -434,7 +440,6 @@ mod tests {
         )
     }
 
-
     #[test]
     fn codexdd_046_3d1b2b1_native_ticket_is_single_use_and_still_not_gate_pass() {
         let (root, sha, owner, pin, gates, port, mut child) = test_owner("200 OK");
@@ -464,7 +469,9 @@ mod tests {
         assert_eq!(fresh.http_status, 200);
         assert_eq!(fresh.owned_pid, child.id());
         assert!(!gates.ready_for_owner_qa(&Default::default()));
-        child.kill().expect("terminate only disposable owned fixture");
+        child
+            .kill()
+            .expect("terminate only disposable owned fixture");
         child.wait().expect("reap only disposable owned fixture");
     }
 
@@ -472,55 +479,105 @@ mod tests {
     fn codexdd_046_3d1b2b1_ticket_refuses_stale_wrong_source_port_and_dead_child() {
         let (root, _sha, owner, pin, gates, port, mut child) = test_owner("200 OK");
         let mut stale = issue_owned_health_ticket(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child,
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            root.path(),
+            port,
+            child.id(),
+            &mut child,
         )
         .expect("native ticket");
         stale.observed_at_ms = 0;
         assert!(
             consume_owned_health_ticket(
-                stale, &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child,
+                stale,
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                root.path(),
+                port,
+                child.id(),
+                &mut child,
             )
             .expect_err("stale ticket cannot be replayed")
             .contains("stale")
         );
 
         let wrong_source = issue_owned_health_ticket(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child,
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            root.path(),
+            port,
+            child.id(),
+            &mut child,
         )
         .expect("native ticket");
         let mut drifted = pin.clone();
         drifted.source_sha = "f".repeat(40);
         assert!(
             consume_owned_health_ticket(
-                wrong_source, &owner, Some(&drifted), Some(&gates), root.path(), port,
-                child.id(), &mut child,
+                wrong_source,
+                &owner,
+                Some(&drifted),
+                Some(&gates),
+                root.path(),
+                port,
+                child.id(),
+                &mut child,
             )
             .expect_err("source drift cannot borrow a health ticket")
             .contains("drifted")
         );
 
         let wrong_port = issue_owned_health_ticket(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child,
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            root.path(),
+            port,
+            child.id(),
+            &mut child,
         )
         .expect("native ticket");
         assert!(
             consume_owned_health_ticket(
-                wrong_port, &owner, Some(&pin), Some(&gates), root.path(),
-                port.wrapping_add(1), child.id(), &mut child,
+                wrong_port,
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                root.path(),
+                port.wrapping_add(1),
+                child.id(),
+                &mut child,
             )
             .expect_err("port drift cannot borrow health proof")
             .contains("drifted")
         );
 
         let dead = issue_owned_health_ticket(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child,
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            root.path(),
+            port,
+            child.id(),
+            &mut child,
         )
         .expect("native ticket");
         child.kill().expect("only owned test child");
         child.wait().expect("reap owned test child");
         assert!(
             consume_owned_health_ticket(
-                dead, &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child,
+                dead,
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                root.path(),
+                port,
+                child.id(),
+                &mut child,
             )
             .expect_err("exited process must not inherit old health")
             .contains("has exited")
