@@ -107,7 +107,9 @@ fn loopback_listener_owner(port: u16) -> Result<u32, String> {
             continue;
         }
         if matching.replace(row.dwOwningPid).is_some() {
-            return Err("SETUP_BLOCKED: ambiguous listener owner for approved loopback port".to_string());
+            return Err(
+                "SETUP_BLOCKED: ambiguous listener owner for approved loopback port".to_string(),
+            );
         }
     }
     matching.ok_or_else(|| {
@@ -128,33 +130,32 @@ pub(crate) fn observe_owned_loopback_health(
     reported_pid: u32,
     child: &mut Child,
 ) -> Result<AdaptiveOwnedHttpObservation, String> {
-    preflight_owned_runtime_target(
-        worker,
-        pin,
-        ledger,
-        runtime_cwd,
-        port,
-        reported_pid,
-        child,
-    )?;
+    preflight_owned_runtime_target(worker, pin, ledger, runtime_cwd, port, reported_pid, child)?;
     if loopback_listener_owner(port)? != reported_pid {
         return Err("SETUP_BLOCKED: approved port is served by a foreign process".to_string());
     }
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let mut connection = TcpStream::connect_timeout(&addr, Duration::from_millis(600))
         .map_err(|error| format!("SETUP_BLOCKED: authorized listener did not connect: {error}"))?;
-    connection.set_write_timeout(Some(HTTP_DEADLINE))
+    connection
+        .set_write_timeout(Some(HTTP_DEADLINE))
         .map_err(|error| format!("SETUP_BLOCKED: health write timeout unavailable: {error}"))?;
-    connection.write_all(
-        format!("GET /health HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n").as_bytes()
-    ).map_err(|error| format!("SETUP_BLOCKED: HTTP health request failed: {error}"))?;
+    connection
+        .write_all(
+            format!("GET /health HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n")
+                .as_bytes(),
+        )
+        .map_err(|error| format!("SETUP_BLOCKED: HTTP health request failed: {error}"))?;
     let deadline = Instant::now() + HTTP_DEADLINE;
     let mut status_line = Vec::new();
     loop {
         if Instant::now() >= deadline || status_line.len() >= MAX_HTTP_STATUS_BYTES {
-            return Err("SETUP_BLOCKED: HTTP health status exceeded bounded deadline or size".to_string());
+            return Err(
+                "SETUP_BLOCKED: HTTP health status exceeded bounded deadline or size".to_string(),
+            );
         }
-        connection.set_read_timeout(Some(deadline.saturating_duration_since(Instant::now())))
+        connection
+            .set_read_timeout(Some(deadline.saturating_duration_since(Instant::now())))
             .map_err(|error| format!("SETUP_BLOCKED: HTTP read timeout unavailable: {error}"))?;
         let mut byte = [0u8; 1];
         connection.read_exact(&mut byte).map_err(|error| {
@@ -168,16 +169,21 @@ pub(crate) fn observe_owned_loopback_health(
     let line = std::str::from_utf8(&status_line)
         .map_err(|_| "SETUP_BLOCKED: invalid HTTP health status encoding".to_string())?;
     let mut tokens = line.split_whitespace();
-    if !matches!(tokens.next(), Some("HTTP/1.0" | "HTTP/1.1"))
-        || tokens.next() != Some("200")
-    {
-        return Err("SETUP_BLOCKED: owner listener health endpoint did not return HTTP 200".to_string());
+    if !matches!(tokens.next(), Some("HTTP/1.0" | "HTTP/1.1")) || tokens.next() != Some("200") {
+        return Err(
+            "SETUP_BLOCKED: owner listener health endpoint did not return HTTP 200".to_string(),
+        );
     }
     drop(connection);
     if loopback_listener_owner(port)? != reported_pid
-        || child.try_wait().map_err(|error| format!("SETUP_BLOCKED: child status unavailable: {error}"))?.is_some()
+        || child
+            .try_wait()
+            .map_err(|error| format!("SETUP_BLOCKED: child status unavailable: {error}"))?
+            .is_some()
     {
-        return Err("SETUP_BLOCKED: runtime owner changed or exited during health check".to_string());
+        return Err(
+            "SETUP_BLOCKED: runtime owner changed or exited during health check".to_string(),
+        );
     }
     let observed_at_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -211,15 +217,16 @@ mod tests {
             .expect("child-approved port")
             .parse()
             .expect("numeric child port");
-        let status = std::env::var("CODEXDD_046_HEALTH_FIXTURE_STATUS")
-            .expect("child HTTP status");
+        let status = std::env::var("CODEXDD_046_HEALTH_FIXTURE_STATUS").expect("child HTTP status");
         let listener = TcpListener::bind(("127.0.0.1", port)).expect("owned loopback listener");
         listener.set_nonblocking(true).expect("nonblocking fixture");
         let expires = Instant::now() + Duration::from_secs(12);
         while Instant::now() < expires {
             match listener.accept() {
                 Ok((mut stream, _)) => {
-                    stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
                     let mut input = [0u8; 512];
                     let received = stream.read(&mut input).unwrap_or_default();
                     let requested = String::from_utf8_lossy(&input[..received]);
@@ -231,7 +238,9 @@ mod tests {
                     let response = format!(
                         "HTTP/1.0 {response_status}\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK"
                     );
-                    stream.write_all(response.as_bytes()).expect("test response");
+                    stream
+                        .write_all(response.as_bytes())
+                        .expect("test response");
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                     thread::sleep(Duration::from_millis(20));
@@ -241,7 +250,9 @@ mod tests {
         }
     }
 
-    fn test_owner(status: &str) -> (
+    fn test_owner(
+        status: &str,
+    ) -> (
         tempfile::TempDir,
         String,
         AdaptiveWorkerContext,
@@ -253,13 +264,26 @@ mod tests {
         let root = tempfile::tempdir().expect("disposable source root");
         let git = |args: &[&str]| -> String {
             let result = Command::new("git")
-                .arg("-C").arg(root.path()).args(args).output().expect("Git available");
+                .arg("-C")
+                .arg(root.path())
+                .args(args)
+                .output()
+                .expect("Git available");
             assert!(result.status.success(), "fixture Git failed");
             String::from_utf8(result.stdout).expect("UTF-8 Git")
         };
         git(&["init", "-q"]);
-        git(&["-c", "user.name=CodexDD test", "-c", "user.email=codexdd@example.test",
-            "commit", "--allow-empty", "-q", "-m", "isolated source"]);
+        git(&[
+            "-c",
+            "user.name=CodexDD test",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-q",
+            "-m",
+            "isolated source",
+        ]);
         let sha = git(&["rev-parse", "HEAD"]).trim().to_string();
         let listener = TcpListener::bind("127.0.0.1:0").expect("allocate spare loopback port");
         let port = listener.local_addr().expect("port").port();
@@ -269,7 +293,8 @@ mod tests {
             root.path().display()
         );
         let (owner, pin, gates) = parse_adaptive_owner_assignment(&assignment)
-            .expect("valid owner contract").expect("owner admission");
+            .expect("valid owner contract")
+            .expect("owner admission");
         let mut child = Command::new(std::env::current_exe().expect("self test binary"))
             .arg("--ignored")
             .arg("--exact")
@@ -287,10 +312,21 @@ mod tests {
                 break;
             }
             assert!(Instant::now() < deadline, "fixture listener did not start");
-            assert!(child.try_wait().expect("test child status").is_none(), "fixture child exited");
+            assert!(
+                child.try_wait().expect("test child status").is_none(),
+                "fixture child exited"
+            );
             thread::sleep(Duration::from_millis(50));
         }
-        (root, sha, owner, pin.expect("source pin"), gates.expect("owner gates"), port, child)
+        (
+            root,
+            sha,
+            owner,
+            pin.expect("source pin"),
+            gates.expect("owner gates"),
+            port,
+            child,
+        )
     }
 
     #[test]
@@ -298,8 +334,15 @@ mod tests {
         let (root, sha, owner, pin, gates, port, mut child) = test_owner("200 OK");
         assert_eq!(owner.role, AdaptiveWorkerRole::Implementation);
         let proof = observe_owned_loopback_health(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child
-        ).expect("same-owner live HTTP 200");
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            root.path(),
+            port,
+            child.id(),
+            &mut child,
+        )
+        .expect("same-owner live HTTP 200");
         assert_eq!(proof.source_sha, sha);
         assert_eq!(proof.owned_pid, child.id());
         assert_eq!(proof.approved_port, port);
@@ -308,18 +351,38 @@ mod tests {
         assert!(!gates.ready_for_owner_qa(&Default::default()));
         child.kill().expect("kill only our disposable fixture");
         child.wait().expect("reap only our fixture");
-        assert!(observe_owned_loopback_health(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child
-        ).is_err());
+        assert!(
+            observe_owned_loopback_health(
+                &owner,
+                Some(&pin),
+                Some(&gates),
+                root.path(),
+                port,
+                child.id(),
+                &mut child
+            )
+            .is_err()
+        );
     }
 
     #[test]
     fn codexdd_046_3d1b2_non_200_ownership_health_refused_without_gate_credit() {
-        let (root, _sha, owner, pin, gates, port, mut child) = test_owner("503 Service Unavailable");
+        let (root, _sha, owner, pin, gates, port, mut child) =
+            test_owner("503 Service Unavailable");
         let result = observe_owned_loopback_health(
-            &owner, Some(&pin), Some(&gates), root.path(), port, child.id(), &mut child
+            &owner,
+            Some(&pin),
+            Some(&gates),
+            root.path(),
+            port,
+            child.id(),
+            &mut child,
         );
-        assert!(result.expect_err("service failure cannot pass").contains("HTTP 200"));
+        assert!(
+            result
+                .expect_err("service failure cannot pass")
+                .contains("HTTP 200")
+        );
         assert!(!gates.ready_for_owner_qa(&Default::default()));
         child.kill().expect("kill only our disposable fixture");
         child.wait().expect("reap only our fixture");
