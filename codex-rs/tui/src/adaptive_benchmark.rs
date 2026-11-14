@@ -696,6 +696,66 @@ mod tests {
                 .expect_err("arbitrary process text is not a native PID")
                 .contains("decimal OS process")
         );
+        // A correctly shaped completion from another App thread or turn
+        // must not be used as evidence for this owner's measured session.
+        let mut foreign_thread = four.clone();
+        foreign_thread.thread_id = ThreadId::new().to_string();
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&foreign_thread),
+                )
+                .expect_err("foreign-thread event cannot satisfy D01")
+                .contains("native benchmark item does not match")
+        );
+        let mut foreign_turn = four.clone();
+        foreign_turn.turn_id = "foreign-turn".to_string();
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&foreign_turn),
+                )
+                .expect_err("foreign-turn event cannot satisfy D01")
+                .contains("native benchmark item does not match")
+        );
+        let mut earlier_completion = four.clone();
+        earlier_completion.completed_at_ms =
+            i64::try_from(started.saturating_sub(1)).expect("bounded test clock");
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    Some(&two),
+                    Some(&earlier_completion),
+                )
+                .expect_err("pre-authorization completion cannot satisfy D01")
+                .contains("native benchmark item does not match")
+        );
         let mut duplicate = four;
         if let (
             ThreadItem::CommandExecution { process_id: p2, .. },
