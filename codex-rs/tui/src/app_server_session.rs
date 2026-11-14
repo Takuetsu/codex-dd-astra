@@ -588,6 +588,19 @@ impl AppServerSession {
         self.remote_cwd_override.as_deref()
     }
 
+    /// The real OS-process WebSocket fixture is a same-host local daemon, not
+    /// a remote workspace. Keep production remote mode unchanged: only the
+    /// #[cfg(test)] native fixture may select the local-daemon parameter policy.
+    #[cfg(test)]
+    pub(crate) fn with_same_host_daemon_params_for_test(mut self) -> Self {
+        assert!(
+            !self.uses_embedded_app_server(),
+            "same-host daemon acceptance requires an independent app-server process"
+        );
+        self.thread_params_mode = ThreadParamsMode::Embedded;
+        self
+    }
+
     pub(crate) fn uses_remote_workspace(&self) -> bool {
         matches!(self.thread_params_mode, ThreadParamsMode::Remote)
     }
