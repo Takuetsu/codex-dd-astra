@@ -44,3 +44,10 @@ Contract provenance: docs/regression-fixtures/codexdd-046-agent-reliability-case
 **3D.3 F01** requires a supported and configured backend reproducing tool_choice HTTP 400 with exact sanitized request/response; historical local-Qwen subtype unknown. No broad adapter fallback or authentication/permission weakening.
 
 Owner's default cheap focused validation is Daniel-CL before CI; any isolated GitHub-only native exception must be justified and owner-authorized per docs/codexdd-major-phase-work-packet-standard.md. This documentation-only reconnaissance does not require Cargo or CI. The next task is 3D.1b. If source/host authorization is genuinely required, notify owner of the single necessary approval; do not make a speculative live-process change.
+
+
+## 3D.1b0 — early non-source next-action guard (source checkpoint, not host proof)
+
+The existing /status message instructed both task kinds to wait for an unknown route, without indicating their **different** missing authority. A bounded read-only correction to tui/src/chatwidget/adaptive_effort.rs now distinguishes OperationsPreview (source, process ownership, allowed port, real HTTP response, no foreign restart) from Benchmark (owner-approved command, resource lock, separate 2-thread and 4-thread real measurements). Both explicitly require SETUP_BLOCKED if mandatory evidence is missing and forbid source work_packet and invented READY. BLOCKED/paused/first-user precedence remains unchanged. Regression codexdd_046_3d1b0_non_source_status_requires_owner_proof_and_safe_block exercises both route diagnostics and BLOCKED precedence.
+
+**This is presentation/admission guidance only. It is not a trusted runtime health producer, benchmark executor, process manager, service check or acceptance PASS.** The D01–D03 positive fixture and required exact-source Windows tests remain in future 3D.1b/c/d subpackets. This code checkpoint does not relax 3C source/Validator roles or close 3B.4.

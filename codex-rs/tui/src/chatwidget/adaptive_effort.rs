@@ -1046,7 +1046,19 @@ impl ChatWidget {
         } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::Blocked) {
             "Owner review required; preserve task state and do not escalate or fabricate evidence."
         } else if non_source_task {
-            "Non-source operations/benchmark task: wait for an explicitly authorized operations-specific path. Do not run source work_packet or claim mechanical source PASS."
+            // A non-source Worker needs task-specific, owner-approved proof,
+            // never the protected source-only MechanicalValidation profile.
+            match state.assignment_preflight.as_ref().map(|pin| pin.task_kind) {
+                Some(crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview) => {
+                    "Non-source operations/benchmark task: verify exact authorized source, owned process and approved port; only then use guarded, permitted tools to check a fresh HTTP health response. Missing ownership or response requires SETUP_BLOCKED and owner handoff, not a foreign process restart. Do not run source work_packet or claim READY."
+                }
+                Some(crate::adaptive_worker::AdaptiveTaskKind::Benchmark) => {
+                    "Non-source operations/benchmark task: require an exact owner-approved benchmark command and resource lock for the pinned source; collect fresh 2-thread and 4-thread measurements through guarded tools. Missing authorization, lock or either measurement requires SETUP_BLOCKED. Do not run source work_packet or claim READY."
+                }
+                _ => {
+                    "Non-source operations/benchmark task: no approved source-only profile applies. Do not run source work_packet or claim READY."
+                }
+            }
         } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
             "Start exactly one fresh independent Validator for the current source SHA and owner gates."
         } else if state.gate_ledger.is_none() && state.assignment_preflight.is_some() {
@@ -1882,5 +1894,46 @@ mod tests {
             !old_terminal.contains("Next action: Start exactly one fresh independent Validator")
         );
         assert!(!old_terminal.contains("Native tool required: run_codexdd_validation"));
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3d1b0_non_source_status_requires_owner_proof_and_safe_block() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("disposable source");
+        let mut state = codexdd_046_3c1b2c_source_parent(source.path(), "owner non-source task");
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        state.workflow_terminal = None;
+        state
+            .assignment_preflight
+            .as_mut()
+            .expect("source-bound owner task")
+            .task_kind = crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview;
+        chat.adaptive_effort = state.clone();
+        let preview = chat.adaptive_effort_status_text();
+        assert!(preview.contains("owned process and approved port"));
+        assert!(preview.contains("fresh HTTP health response"));
+        assert!(preview.contains("SETUP_BLOCKED and owner handoff"));
+        assert!(!preview.contains("Next action: Run current Core-native work_packet"));
+        assert!(!preview.contains("Next action: Start exactly one fresh independent Validator"));
+
+        state
+            .assignment_preflight
+            .as_mut()
+            .expect("source-bound benchmark task")
+            .task_kind = crate::adaptive_worker::AdaptiveTaskKind::Benchmark;
+        chat.adaptive_effort = state.clone();
+        let benchmark = chat.adaptive_effort_status_text();
+        assert!(benchmark.contains("owner-approved benchmark command and resource lock"));
+        assert!(benchmark.contains("2-thread and 4-thread measurements"));
+        assert!(benchmark.contains("Missing authorization, lock or either measurement"));
+        assert!(!benchmark.contains("Next action: Run current Core-native work_packet"));
+        assert!(!benchmark.contains("Next action: Start exactly one fresh independent Validator"));
+
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::Blocked);
+        chat.adaptive_effort = state;
+        let blocked = chat.adaptive_effort_status_text();
+        assert!(blocked.contains("Next action: Owner review required"));
+        assert!(!blocked.contains("Next action: Non-source operations/benchmark task:"));
     }
 }
