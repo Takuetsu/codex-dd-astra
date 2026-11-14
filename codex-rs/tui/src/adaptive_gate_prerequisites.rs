@@ -425,6 +425,26 @@ impl AdaptiveGateLedger {
             .collect()
     }
 
+    /// A pending runtime-health gate permits checking only owner-approved ports.
+    /// Port admission is not a PASS: process ownership, listener identity and a
+    /// live response must still be verified by the eventual trusted producer.
+    pub(crate) fn authorizes_runtime_health_port(
+        &self,
+        scope: &str,
+        root: &Path,
+        sha: &str,
+        port: u16,
+    ) -> bool {
+        port != 0
+            && self.matches_authorized_source(scope, root, sha)
+            && self.required.iter().any(|gate| {
+                matches!(
+                    gate,
+                    AdaptiveRequiredGate::OwnedRuntimeHealth(ports) if ports.contains(&port)
+                )
+            })
+    }
+
     /// Even a correctly matched checkpoint is not permission to claim an
     /// unrelated source, scope or worktree on a later Validation Worker.
     pub(crate) fn matches_authorized_source(&self, scope: &str, root: &Path, sha: &str) -> bool {
