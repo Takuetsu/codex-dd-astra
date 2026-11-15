@@ -3180,7 +3180,7 @@ mod tests {
         let sha = run_git(&["rev-parse", "HEAD"])?.trim().to_string();
         let mut config = ConfigBuilder::default()
             .codex_home(temp.path().to_path_buf())
-            .config_overrides(ConfigOverrides {
+            .harness_overrides(ConfigOverrides {
                 cwd: Some(candidate.clone()),
                 ..ConfigOverrides::default()
             })
