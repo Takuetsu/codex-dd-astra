@@ -269,9 +269,7 @@ impl AdaptiveApprovedBenchmark {
             return Err("SETUP_BLOCKED: original benchmark source or role drifted".to_string());
         }
         preflight_owner_candidate_identity(pin, runtime_cwd)?;
-        if !held_lock.is_some_and(|lock| {
-            lock.path == self.lock_path && lock.owns_original_path()
-        }) {
+        if !held_lock.is_some_and(|lock| lock.path == self.lock_path && lock.owns_original_path()) {
             return Err("SETUP_BLOCKED: benchmark resource lock is not held".to_string());
         }
         if turn_id.is_empty()
