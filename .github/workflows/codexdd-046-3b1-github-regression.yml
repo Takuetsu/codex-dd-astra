@@ -2812,6 +2812,26 @@ jobs:
           if ($authorityExit -ne 0 -or -not (($authorityOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
             throw "Required original-owner benchmark authority pass missing (exit=$authorityExit)"
           }
+          # Native Windows coverage must exercise both no-fork executable authority
+          # and the earlier Phase 3C cold-resume source/READY refusal. Rustfmt
+          # and successful compilation alone do not establish these properties.
+          foreach ($protected in @(
+            'codexdd_046_3d1c2b_fork_refuses_inherited_original_benchmark_authority',
+            'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
+          )) {
+            $enumerated = & cargo test --locked -p codex-tui --lib $protected -- --list 2>&1
+            $enumeratedExit = $LASTEXITCODE
+            $enumerated | Out-Host
+            if ($enumeratedExit -ne 0 -or -not (($enumerated -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+              throw "Required fork/cold-resume refusal test not enumerated: $protected"
+            }
+            $verified = & cargo test --locked -p codex-tui --lib $protected -- --test-threads=1 --nocapture 2>&1
+            $verifiedExit = $LASTEXITCODE
+            $verified | Out-Host
+            if ($verifiedExit -ne 0 -or -not (($verified -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+              throw "Required fork/cold-resume refusal test failed: $protected (exit=$verifiedExit)"
+            }
+          }
           $negative = 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked'
           & cargo test --locked -p codex-tui --lib $negative -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'Existing non-source gate refusal regressed' }
