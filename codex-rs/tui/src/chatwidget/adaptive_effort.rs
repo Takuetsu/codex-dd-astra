@@ -132,6 +132,8 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
     /// Pending source-/Worker-bound requirements, never cached success authority.
     pub(crate) gate_ledger: Option<AdaptiveGateLedger>,
+    /// First user-turn benchmark authority; never serialized or inherited by a Validator.
+    pub(crate) original_benchmark_config: Option<codex_config::config_toml::AdaptiveWorkerConfigToml>,
     /// Ephemeral parent Implementation thread for a fresh, source-bound review.
     /// Never persisted or inferred from a model-provided thread ID.
     pub(crate) review_origin_thread_id: Option<codex_protocol::ThreadId>,
@@ -344,11 +346,34 @@ impl AdaptiveEffortState {
                 self.worker_context = worker_context;
                 self.assignment_preflight = assignment_preflight;
                 self.gate_ledger = gate_ledger;
+                // The exact original assignment is the only source of benchmark
+                // commands and scratch lock. Subsequent model turns cannot revise it.
+                self.original_benchmark_config = codex_config::config_toml::parse_adaptive_worker_first_message(text)?
+                    .filter(|original| original.role == codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+                        && original.task_kind.as_deref() == Some("benchmark")
+                        && original.benchmark.is_some());
                 Ok(true)
             }
             Ok(None) => Ok(false),
             Err(err) => Err(err),
         }
+    }
+
+    pub(crate) fn bound_original_benchmark(&self) -> Result<&codex_config::config_toml::AdaptiveWorkerConfigToml, String> {
+        let original = self.original_benchmark_config.as_ref().ok_or_else(||
+            "SETUP_BLOCKED: original Worker has no authorized benchmark command/lock contract".to_string())?;
+        let pin = self.assignment_preflight.as_ref().ok_or_else(||
+            "SETUP_BLOCKED: original benchmark source pin missing".to_string())?;
+        if !self.worker_assignment_locked
+            || self.worker_context.role != AdaptiveWorkerRole::Implementation
+            || pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+            || original.authorized_scope != self.worker_context.authorized_scope
+            || original.source_root.as_deref() != Some(pin.source_root.as_str())
+            || !original.source_sha.as_deref().is_some_and(|sha| sha.eq_ignore_ascii_case(&pin.source_sha))
+        {
+            return Err("SETUP_BLOCKED: original benchmark role, scope or source changed".to_string());
+        }
+        Ok(original)
     }
 
     fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
@@ -360,6 +385,7 @@ impl AdaptiveEffortState {
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
         let gate_ledger = self.gate_ledger.clone();
+        let original_benchmark_config = self.original_benchmark_config.clone();
         let review_origin_thread_id = self.review_origin_thread_id;
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
@@ -395,6 +421,7 @@ impl AdaptiveEffortState {
             pending_signal: None,
             evidence_registry,
             gate_ledger,
+            original_benchmark_config,
             review_origin_thread_id,
             complexity_class,
             implementation_phase,
@@ -1116,6 +1143,29 @@ impl ChatWidget {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    #[test]
+    fn codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral() {
+        let root = if cfg!(windows) { r"C:\\fixture\\candidate" } else { "/tmp/fixture/candidate" };
+        let message = format!(
+            "[adaptive_worker]\\nrole = \\\"implementation\\\"\\nauthorized_scope = \\\"benchmark authority\\\"\\nsource_root = '{root}'\\nsource_sha = \\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\"\\ntask_kind = \\\"benchmark\\\"\\nbenchmark = {{ command_2 = \\\"approved-two\\\", command_4 = \\\"approved-four\\\", resource_lock = \\\"scratch-lock\\\", max_duration_ms = 20000 }}\\n\\nRun the bounded benchmark."
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&message), Ok(true));
+        assert_eq!(state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2, "approved-two");
+        state.activate_adaptive_family(AdaptiveFamily::Sol, false);
+        assert!(state.bound_original_benchmark().is_ok());
+        let replacement = message.replace("approved-two", "unapproved-two");
+        assert_eq!(state.observe_worker_assignment_text(&replacement), Ok(false));
+        assert_eq!(state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2, "approved-two");
+        let snapshot = serde_json::to_string(&state.durable_workflow_snapshot(codex_protocol::ThreadId::new())).unwrap();
+        assert!(!snapshot.contains("approved-two"));
+        let binding = NewWorkerBinding { role: AdaptiveWorkerRole::Validation, authorized_scope: "benchmark authority".to_string() };
+        assert!(state.fresh_for_new_worker(Some(&binding)).bound_original_benchmark().is_err());
+        state.worker_context.authorized_scope = Some("forged scope".to_string());
+        assert!(state.bound_original_benchmark().is_err());
+    }
 
     const VALIDATION_ASSIGNMENT: &str = "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"Z-A0.45B-R2 independent verification\"\n\nReview the exact pushed R2 candidate.";
 
