@@ -1895,15 +1895,15 @@ pub(crate) async fn start_thread_with_request_handle(
             || context.authorized_scope.is_some();
         // Only launcher-bound local benchmark commands and lock survive in
         // transient TUI memory; this is neither execution nor QA authority.
-        started.session.adaptive_effort.original_benchmark_config =
-            (thread_params_mode == ThreadParamsMode::Embedded
-                && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
-                && preflight.as_ref().is_some_and(|pin| {
-                    pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
-                }))
-            .then(|| config.adaptive_worker.clone())
-            .flatten()
-            .filter(|original| original.benchmark.is_some());
+        started.session.adaptive_effort.original_benchmark_config = (thread_params_mode
+            == ThreadParamsMode::Embedded
+            && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+            && preflight.as_ref().is_some_and(|pin| {
+                pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+            }))
+        .then(|| config.adaptive_worker.clone())
+        .flatten()
+        .filter(|original| original.benchmark.is_some());
         started.session.adaptive_effort.worker_context = context;
         started.session.adaptive_effort.assignment_preflight = preflight;
         started.session.adaptive_effort.gate_ledger = ledger;
@@ -3219,9 +3219,8 @@ mod tests {
                 .command_2,
             "owner-approved-two"
         );
-        let durable = serde_json::to_string(
-            &owner.durable_workflow_snapshot(started.session.thread_id),
-        )?;
+        let durable =
+            serde_json::to_string(&owner.durable_workflow_snapshot(started.session.thread_id))?;
         assert!(!durable.contains("owner-approved-two"));
         assert!(!durable.contains("owner-approved-four"));
         local.shutdown().await?;
