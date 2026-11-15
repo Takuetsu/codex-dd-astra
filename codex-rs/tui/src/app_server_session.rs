@@ -1893,6 +1893,17 @@ pub(crate) async fn start_thread_with_request_handle(
         let lock_assignment = context.role
             != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
             || context.authorized_scope.is_some();
+        // Only launcher-bound local benchmark commands and lock survive in
+        // transient TUI memory; this is neither execution nor QA authority.
+        started.session.adaptive_effort.original_benchmark_config =
+            (thread_params_mode == ThreadParamsMode::Embedded
+                && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+                && preflight.as_ref().is_some_and(|pin| {
+                    pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+                }))
+            .then(|| config.adaptive_worker.clone())
+            .flatten()
+            .filter(|original| original.benchmark.is_some());
         started.session.adaptive_effort.worker_context = context;
         started.session.adaptive_effort.assignment_preflight = preflight;
         started.session.adaptive_effort.gate_ledger = ledger;
@@ -3135,6 +3146,100 @@ mod tests {
                 .is_none_or(|config| !config.contains_key("adaptive_worker")),
             "old Workers must retain prior startup override behavior"
         );
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral() -> Result<()> {
+        use codex_config::config_toml::AdaptiveOwnerBenchmarkToml;
+        use codex_config::config_toml::AdaptiveWorkerConfigToml;
+        use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+        let temp = tempfile::tempdir()?;
+        let candidate = temp.path().join("benchmark-candidate");
+        std::fs::create_dir(&candidate)?;
+        let run_git = |args: &[&str]| -> Result<String> {
+            let output = std::process::Command::new("git")
+                .current_dir(&candidate)
+                .args(args)
+                .output()?;
+            assert!(output.status.success(), "test Git failed: {output:?}");
+            Ok(String::from_utf8(output.stdout)?)
+        };
+        run_git(&["init", "-q"])?;
+        run_git(&[
+            "-c",
+            "user.name=CodexDD fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-q",
+            "-m",
+            "isolated benchmark",
+        ])?;
+        let sha = run_git(&["rev-parse", "HEAD"])?.trim().to_string();
+        let mut config = ConfigBuilder::default()
+            .codex_home(temp.path().to_path_buf())
+            .config_overrides(ConfigOverrides {
+                cwd: Some(candidate.clone()),
+                ..ConfigOverrides::default()
+            })
+            .build()
+            .await?;
+        config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("original launcher benchmark".to_string()),
+            source_root: Some(candidate.to_string_lossy().to_string()),
+            source_sha: Some(sha),
+            task_kind: Some("benchmark".to_string()),
+            required_gates: None,
+            benchmark: Some(AdaptiveOwnerBenchmarkToml {
+                command_2: "owner-approved-two".to_string(),
+                command_4: "owner-approved-four".to_string(),
+                resource_lock: temp
+                    .path()
+                    .join("benchmark.lock")
+                    .to_string_lossy()
+                    .to_string(),
+                max_duration_ms: 20_000,
+            }),
+        });
+
+        let mut local = crate::start_embedded_app_server_for_picker(&config).await?;
+        let started = local.start_thread(&config).await?;
+        let owner = &started.session.adaptive_effort;
+        assert!(owner.worker_assignment_locked);
+        assert_eq!(
+            owner
+                .bound_original_benchmark()
+                .expect("local launcher retains original benchmark authority")
+                .benchmark
+                .as_ref()
+                .expect("approved commands")
+                .command_2,
+            "owner-approved-two"
+        );
+        let durable = serde_json::to_string(
+            &owner.durable_workflow_snapshot(started.session.thread_id),
+        )?;
+        assert!(!durable.contains("owner-approved-two"));
+        assert!(!durable.contains("owner-approved-four"));
+        local.shutdown().await?;
+
+        // A remote session cannot borrow local launcher command/lock authority.
+        let mut remote = crate::start_embedded_app_server_for_picker(&config).await?;
+        remote.thread_params_mode = ThreadParamsMode::Remote;
+        let remote_started = remote.start_thread(&config).await?;
+        assert!(
+            remote_started
+                .session
+                .adaptive_effort
+                .bound_original_benchmark()
+                .is_err(),
+            "remote must not inherit launcher-local benchmark commands"
+        );
+        remote.shutdown().await?;
+        Ok(())
     }
 
     #[tokio::test]

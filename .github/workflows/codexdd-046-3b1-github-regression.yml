@@ -2812,6 +2812,21 @@ jobs:
           if ($authorityExit -ne 0 -or -not (($authorityOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
             throw "Required original-owner benchmark authority pass missing (exit=$authorityExit)"
           }
+          # Original launcher commands and lock must remain ephemeral to local
+          # embedded transport, and must not be inherited by remote sessions.
+          $startupTest = 'codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral'
+          $startupList = & cargo test --locked -p codex-tui --lib $startupTest -- --list 2>&1
+          $startupListExit = $LASTEXITCODE
+          $startupList | Out-Host
+          if ($startupListExit -ne 0 -or -not (($startupList -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'Required launcher-local benchmark regression not enumerated'
+          }
+          $startupOutput = & cargo test --locked -p codex-tui --lib $startupTest -- --test-threads=1 --nocapture 2>&1
+          $startupExit = $LASTEXITCODE
+          $startupOutput | Out-Host
+          if ($startupExit -ne 0 -or -not (($startupOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "Launcher-local benchmark authority test failed (exit=$startupExit)"
+          }
           # Native Windows coverage must exercise both no-fork executable authority
           # and the earlier Phase 3C cold-resume source/READY refusal. Rustfmt
           # and successful compilation alone do not establish these properties.
