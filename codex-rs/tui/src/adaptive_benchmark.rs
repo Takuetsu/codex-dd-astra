@@ -48,6 +48,7 @@ pub(crate) struct AdaptiveApprovedBenchmark {
 pub(crate) struct AdaptiveBenchmarkLock {
     path: PathBuf,
     file: Option<File>,
+    acquired_at_ms: u64,
 }
 
 impl Drop for AdaptiveBenchmarkLock {
@@ -184,9 +185,18 @@ impl AdaptiveApprovedBenchmark {
                 "SETUP_BLOCKED: resource lock cannot be held exclusively: {error}"
             ));
         }
+        let acquired_at_ms = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(elapsed) => elapsed.as_millis() as u64,
+            Err(_) => {
+                drop(file);
+                let _ = std::fs::remove_file(&self.lock_path);
+                return Err("SETUP_BLOCKED: benchmark lock clock unavailable".to_string());
+            }
+        };
         Ok(AdaptiveBenchmarkLock {
             path: self.lock_path.clone(),
             file: Some(file),
+            acquired_at_ms,
         })
     }
 
@@ -231,6 +241,9 @@ impl AdaptiveApprovedBenchmark {
         if turn_id.is_empty()
             || started_at_ms == 0
             || started_at_ms < self.bound_at_ms
+            // A post-hoc resource lock cannot authorize already-started work.
+            // Equal millisecond timestamps are ambiguous, so refuse them too.
+            || held_lock.is_some_and(|lock| started_at_ms <= lock.acquired_at_ms)
             || now_ms < started_at_ms
             || now_ms - started_at_ms > MAX_EVENT_AGE_MS
         {
@@ -485,7 +498,9 @@ mod tests {
         );
         let thread = ThreadId::new();
         // The measured owner session must start at or after admission, never before it.
-        let start = clock_ms().max(approval.bound_at_ms);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let start = clock_ms();
+        assert!(start > lease.acquired_at_ms && start >= approval.bound_at_ms);
         let plan = config.benchmark.as_ref().expect("benchmark");
         // The original first-message parser must retain exact typed commands
         // and the lock; assignment prose cannot supply or upgrade them.
@@ -568,7 +583,7 @@ mod tests {
         )
         .expect("owner plan");
         let thread = ThreadId::new();
-        let started = clock_ms().max(approval.bound_at_ms);
+        let pre_lock_start = clock_ms().max(approval.bound_at_ms);
         assert!(
             approval
                 .admit_native_completions(
@@ -578,7 +593,7 @@ mod tests {
                     None,
                     thread,
                     "owner-turn",
-                    started,
+                    pre_lock_start,
                     clock_ms(),
                     None,
                     None,
@@ -586,7 +601,46 @@ mod tests {
                 .expect_err("no lock")
                 .contains("resource lock")
         );
+        std::thread::sleep(std::time::Duration::from_millis(10));
         let lease = approval.reserve_resource_lock().expect("scratch lock");
+        assert!(pre_lock_start < lease.acquired_at_ms);
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    pre_lock_start,
+                    clock_ms(),
+                    None,
+                    None,
+                )
+                .expect_err("post-hoc resource lock cannot justify pre-lock execution")
+                .contains("session is stale or unbound")
+        );
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    lease.acquired_at_ms,
+                    clock_ms(),
+                    None,
+                    None,
+                )
+                .expect_err("same-millisecond start is not ordered after lock acquisition")
+                .contains("session is stale or unbound")
+        );
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let started = clock_ms();
+        assert!(started > lease.acquired_at_ms);
         assert!(
             approval
                 .admit_native_completions(
