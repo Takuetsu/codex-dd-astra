@@ -133,7 +133,8 @@ pub(crate) struct AdaptiveEffortState {
     /// Pending source-/Worker-bound requirements, never cached success authority.
     pub(crate) gate_ledger: Option<AdaptiveGateLedger>,
     /// First user-turn benchmark authority; never serialized or inherited by a Validator.
-    pub(crate) original_benchmark_config: Option<codex_config::config_toml::AdaptiveWorkerConfigToml>,
+    pub(crate) original_benchmark_config:
+        Option<codex_config::config_toml::AdaptiveWorkerConfigToml>,
     /// Ephemeral parent Implementation thread for a fresh, source-bound review.
     /// Never persisted or inferred from a model-provided thread ID.
     pub(crate) review_origin_thread_id: Option<codex_protocol::ThreadId>,
@@ -348,10 +349,15 @@ impl AdaptiveEffortState {
                 self.gate_ledger = gate_ledger;
                 // The exact original assignment is the only source of benchmark
                 // commands and scratch lock. Subsequent model turns cannot revise it.
-                self.original_benchmark_config = codex_config::config_toml::parse_adaptive_worker_first_message(text)?
-                    .filter(|original| original.role == codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
-                        && original.task_kind.as_deref() == Some("benchmark")
-                        && original.benchmark.is_some());
+                self.original_benchmark_config =
+                    codex_config::config_toml::parse_adaptive_worker_first_message(text)?.filter(
+                        |original| {
+                            original.role
+                                == codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+                                && original.task_kind.as_deref() == Some("benchmark")
+                                && original.benchmark.is_some()
+                        },
+                    );
                 Ok(true)
             }
             Ok(None) => Ok(false),
@@ -359,19 +365,30 @@ impl AdaptiveEffortState {
         }
     }
 
-    pub(crate) fn bound_original_benchmark(&self) -> Result<&codex_config::config_toml::AdaptiveWorkerConfigToml, String> {
-        let original = self.original_benchmark_config.as_ref().ok_or_else(||
-            "SETUP_BLOCKED: original Worker has no authorized benchmark command/lock contract".to_string())?;
-        let pin = self.assignment_preflight.as_ref().ok_or_else(||
-            "SETUP_BLOCKED: original benchmark source pin missing".to_string())?;
+    pub(crate) fn bound_original_benchmark(
+        &self,
+    ) -> Result<&codex_config::config_toml::AdaptiveWorkerConfigToml, String> {
+        let original = self.original_benchmark_config.as_ref().ok_or_else(|| {
+            "SETUP_BLOCKED: original Worker has no authorized benchmark command/lock contract"
+                .to_string()
+        })?;
+        let pin = self
+            .assignment_preflight
+            .as_ref()
+            .ok_or_else(|| "SETUP_BLOCKED: original benchmark source pin missing".to_string())?;
         if !self.worker_assignment_locked
             || self.worker_context.role != AdaptiveWorkerRole::Implementation
             || pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::Benchmark
             || original.authorized_scope != self.worker_context.authorized_scope
             || original.source_root.as_deref() != Some(pin.source_root.as_str())
-            || !original.source_sha.as_deref().is_some_and(|sha| sha.eq_ignore_ascii_case(&pin.source_sha))
+            || !original
+                .source_sha
+                .as_deref()
+                .is_some_and(|sha| sha.eq_ignore_ascii_case(&pin.source_sha))
         {
-            return Err("SETUP_BLOCKED: original benchmark role, scope or source changed".to_string());
+            return Err(
+                "SETUP_BLOCKED: original benchmark role, scope or source changed".to_string(),
+            );
         }
         Ok(original)
     }
@@ -1144,7 +1161,6 @@ impl ChatWidget {
 mod tests {
     use super::*;
 
-
     #[test]
     fn codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral() {
         let root = if cfg!(windows) {
@@ -1158,26 +1174,47 @@ mod tests {
         let mut state = AdaptiveEffortState::default();
         assert_eq!(state.observe_worker_assignment_text(&message), Ok(true));
         assert_eq!(
-            state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2,
+            state
+                .bound_original_benchmark()
+                .unwrap()
+                .benchmark
+                .as_ref()
+                .unwrap()
+                .command_2,
             "approved-two"
         );
         state.activate_adaptive_family(AdaptiveFamily::Sol, false);
         assert!(state.bound_original_benchmark().is_ok());
         let replacement = message.replace("approved-two", "unapproved-two");
-        assert_eq!(state.observe_worker_assignment_text(&replacement), Ok(false));
         assert_eq!(
-            state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2,
+            state.observe_worker_assignment_text(&replacement),
+            Ok(false)
+        );
+        assert_eq!(
+            state
+                .bound_original_benchmark()
+                .unwrap()
+                .benchmark
+                .as_ref()
+                .unwrap()
+                .command_2,
             "approved-two"
         );
         let snapshot = serde_json::to_string(
             &state.durable_workflow_snapshot(codex_protocol::ThreadId::new()),
-        ).unwrap();
+        )
+        .unwrap();
         assert!(!snapshot.contains("approved-two"));
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,
             authorized_scope: "benchmark authority".to_string(),
         };
-        assert!(state.fresh_for_new_worker(Some(&binding)).bound_original_benchmark().is_err());
+        assert!(
+            state
+                .fresh_for_new_worker(Some(&binding))
+                .bound_original_benchmark()
+                .is_err()
+        );
         state.worker_context.authorized_scope = Some("forged scope".to_string());
         assert!(state.bound_original_benchmark().is_err());
     }
