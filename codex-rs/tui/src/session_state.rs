@@ -70,18 +70,61 @@ pub(crate) struct ThreadSessionState {
     pub(crate) adaptive_effort: AdaptiveEffortState,
 }
 
+/// Forks may retain workflow context, but never executable first-owner
+/// benchmark authority, per-turn native evidence, or pending handoff signals.
+fn fork_safe_adaptive_state(parent: &AdaptiveEffortState) -> AdaptiveEffortState {
+    let mut inherited = parent.clone();
+    inherited.original_benchmark_config = None;
+    inherited.pending_signal = None;
+    inherited.pending_attempt = None;
+    inherited.successor_admission = None;
+    inherited.unfinished_turn_pressure = 0;
+    inherited.evidence_registry = Default::default();
+    inherited
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1c2b_fork_authority_regression {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3d1c2b_fork_refuses_inherited_original_benchmark_authority() {
+        let root = if cfg!(windows) {
+            r"C:\fixture\candidate"
+        } else {
+            "/tmp/fixture/candidate"
+        };
+        let message = format!(
+            r#"[adaptive_worker]
+role = "implementation"
+authorized_scope = "benchmark authority"
+source_root = '{root}'
+source_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+task_kind = "benchmark"
+benchmark = {{ command_2 = "approved-two", command_4 = "approved-four", resource_lock = "scratch-lock", max_duration_ms = 20000 }}
+
+Run the bounded benchmark."#
+        );
+        let mut parent = AdaptiveEffortState::default();
+        assert_eq!(parent.observe_worker_assignment_text(&message), Ok(true));
+        assert!(parent.bound_original_benchmark().is_ok());
+
+        let child = fork_safe_adaptive_state(&parent);
+        assert_eq!(child.worker_context.role, AdaptiveWorkerRole::Implementation);
+        assert!(child.worker_assignment_locked);
+        assert!(child.original_benchmark_config.is_none());
+        assert!(child.bound_original_benchmark().is_err());
+        assert!(parent.bound_original_benchmark().is_ok());
+    }
+}
+
 impl ThreadSessionState {
     /// Copies adaptive state exactly once from the immediate typed fork parent.
     pub(crate) fn inherit_adaptive_effort_from(&mut self, parent: &Self) {
         if self.forked_from_id == Some(parent.thread_id)
             && self.adaptive_effort == AdaptiveEffortState::default()
         {
-            self.adaptive_effort = parent.adaptive_effort.clone();
-            self.adaptive_effort.pending_signal = None;
-            self.adaptive_effort.pending_attempt = None;
-            self.adaptive_effort.successor_admission = None;
-            self.adaptive_effort.unfinished_turn_pressure = 0;
-            self.adaptive_effort.evidence_registry = Default::default();
+            self.adaptive_effort = fork_safe_adaptive_state(&parent.adaptive_effort);
         }
     }
 
