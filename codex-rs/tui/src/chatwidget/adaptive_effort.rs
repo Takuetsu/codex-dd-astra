@@ -1147,21 +1147,36 @@ mod tests {
 
     #[test]
     fn codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral() {
-        let root = if cfg!(windows) { r"C:\\fixture\\candidate" } else { "/tmp/fixture/candidate" };
+        let root = if cfg!(windows) {
+            r"C:\fixture\candidate"
+        } else {
+            "/tmp/fixture/candidate"
+        };
         let message = format!(
-            "[adaptive_worker]\\nrole = \\\"implementation\\\"\\nauthorized_scope = \\\"benchmark authority\\\"\\nsource_root = '{root}'\\nsource_sha = \\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\"\\ntask_kind = \\\"benchmark\\\"\\nbenchmark = {{ command_2 = \\\"approved-two\\\", command_4 = \\\"approved-four\\\", resource_lock = \\\"scratch-lock\\\", max_duration_ms = 20000 }}\\n\\nRun the bounded benchmark."
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"benchmark authority\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\ntask_kind = \"benchmark\"\nbenchmark = {{ command_2 = \"approved-two\", command_4 = \"approved-four\", resource_lock = \"scratch-lock\", max_duration_ms = 20000 }}\n\nRun the bounded benchmark."
         );
         let mut state = AdaptiveEffortState::default();
         assert_eq!(state.observe_worker_assignment_text(&message), Ok(true));
-        assert_eq!(state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2, "approved-two");
+        assert_eq!(
+            state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2,
+            "approved-two"
+        );
         state.activate_adaptive_family(AdaptiveFamily::Sol, false);
         assert!(state.bound_original_benchmark().is_ok());
         let replacement = message.replace("approved-two", "unapproved-two");
         assert_eq!(state.observe_worker_assignment_text(&replacement), Ok(false));
-        assert_eq!(state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2, "approved-two");
-        let snapshot = serde_json::to_string(&state.durable_workflow_snapshot(codex_protocol::ThreadId::new())).unwrap();
+        assert_eq!(
+            state.bound_original_benchmark().unwrap().benchmark.as_ref().unwrap().command_2,
+            "approved-two"
+        );
+        let snapshot = serde_json::to_string(
+            &state.durable_workflow_snapshot(codex_protocol::ThreadId::new()),
+        ).unwrap();
         assert!(!snapshot.contains("approved-two"));
-        let binding = NewWorkerBinding { role: AdaptiveWorkerRole::Validation, authorized_scope: "benchmark authority".to_string() };
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: "benchmark authority".to_string(),
+        };
         assert!(state.fresh_for_new_worker(Some(&binding)).bound_original_benchmark().is_err());
         state.worker_context.authorized_scope = Some("forged scope".to_string());
         assert!(state.bound_original_benchmark().is_err());
