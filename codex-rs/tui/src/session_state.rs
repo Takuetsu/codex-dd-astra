@@ -110,7 +110,10 @@ Run the bounded benchmark."#
         assert!(parent.bound_original_benchmark().is_ok());
 
         let child = fork_safe_adaptive_state(&parent);
-        assert_eq!(child.worker_context.role, AdaptiveWorkerRole::Implementation);
+        assert_eq!(
+            child.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+        );
         assert!(child.worker_assignment_locked);
         assert!(child.original_benchmark_config.is_none());
         assert!(child.bound_original_benchmark().is_err());
