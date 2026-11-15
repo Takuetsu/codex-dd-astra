@@ -875,6 +875,14 @@ impl AppServerSession {
         remote_cwd_override: Option<&std::path::Path>,
         selected_profile: Option<&PermissionProfileSelection>,
     ) -> Result<AppServerStartedThread> {
+        // Bind launcher Worker authority before creating a Core thread. Both the
+        // direct startup path and this interactive start path must agree.
+        let startup_binding = config
+            .adaptive_worker
+            .as_ref()
+            .map(crate::adaptive_worker::configured_worker_authority)
+            .transpose()
+            .map_err(|message| color_eyre::eyre::eyre!(message))?;
         let request_id = self.next_request_id();
         let session_config = self.session_config_with_effective_service_tier(config);
         let mut params = thread_start_params_from_config(
@@ -931,6 +939,27 @@ impl AppServerSession {
         started.task_tools_available = task_tools_available;
         if task_tools_available {
             self.remember_task_tool_thread(started.session.thread_id);
+        }
+        if let Some((context, preflight, ledger)) = startup_binding {
+            let lock_assignment = context.role
+                != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
+                || context.authorized_scope.is_some();
+            // Keep approved commands and scratch lock only in transient local TUI
+            // state. Remote threads receive no executable benchmark authority.
+            started.session.adaptive_effort.original_benchmark_config = (self
+                .uses_embedded_app_server()
+                && self.thread_params_mode() == ThreadParamsMode::Embedded
+                && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+                && preflight.as_ref().is_some_and(|pin| {
+                    pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+                }))
+            .then(|| config.adaptive_worker.clone())
+            .flatten()
+            .filter(|original| original.benchmark.is_some());
+            started.session.adaptive_effort.worker_context = context;
+            started.session.adaptive_effort.assignment_preflight = preflight;
+            started.session.adaptive_effort.gate_ledger = ledger;
+            started.session.adaptive_effort.worker_assignment_locked = lock_assignment;
         }
         Ok(started)
     }
