@@ -2797,6 +2797,21 @@ jobs:
           if ($exit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
             throw "Native benchmark fixture failed (exit=$exit)"
           }
+          # First-owner command/lock must be immutable in memory and absent from
+          # persisted snapshots, new Validator Workers and forged source/scope.
+          $authorityTest = 'codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral'
+          $authorityList = & cargo test --locked -p codex-tui --lib $authorityTest -- --list 2>&1
+          $authorityListExit = $LASTEXITCODE
+          $authorityList | Out-Host
+          if ($authorityListExit -ne 0 -or -not (($authorityList -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'Required original-owner benchmark authority test not enumerated'
+          }
+          $authorityOutput = & cargo test --locked -p codex-tui --lib $authorityTest -- --test-threads=1 --nocapture 2>&1
+          $authorityExit = $LASTEXITCODE
+          $authorityOutput | Out-Host
+          if ($authorityExit -ne 0 -or -not (($authorityOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "Required original-owner benchmark authority pass missing (exit=$authorityExit)"
+          }
           $negative = 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked'
           & cargo test --locked -p codex-tui --lib $negative -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'Existing non-source gate refusal regressed' }

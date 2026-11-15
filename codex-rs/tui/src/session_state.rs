@@ -406,6 +406,10 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         pending_signal: None,
         evidence_registry: Default::default(),
         gate_ledger,
+        // The original owner's executable benchmark commands and scratch-lock
+        // authority exist only in the live first-message Worker state. A cold
+        // restore must fail closed instead of reconstructing them from history.
+        original_benchmark_config: None,
         // Restart cannot recreate a live cross-Worker handoff or trusted
         // independent receipt from the persisted requirements-only snapshot.
         review_origin_thread_id: None,
