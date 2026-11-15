@@ -51,11 +51,47 @@ pub(crate) struct AdaptiveBenchmarkLock {
     acquired_at_ms: u64,
 }
 
+impl AdaptiveBenchmarkLock {
+    /// A path that merely exists is not proof that the original owner's
+    /// *locked file handle* still refers to that path. Reject a removed or
+    /// replaced lock rather than accepting another process's scratch file.
+    fn owns_original_path(&self) -> bool {
+        let Some(file) = self.file.as_ref() else {
+            return false;
+        };
+        let (Ok(held), Ok(at_path)) = (file.metadata(), std::fs::metadata(&self.path)) else {
+            return false;
+        };
+        if !held.is_file() || !at_path.is_file() {
+            return false;
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            let handle_id = held.volume_serial_number().zip(held.file_index());
+            let path_id = at_path.volume_serial_number().zip(at_path.file_index());
+            handle_id.is_some() && handle_id == path_id
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            held.dev() == at_path.dev() && held.ino() == at_path.ino()
+        }
+        #[cfg(not(any(windows, unix)))]
+        {
+            false
+        }
+    }
+}
+
 impl Drop for AdaptiveBenchmarkLock {
     fn drop(&mut self) {
-        // Release our file handle before removing only our own scratch lock.
+        // Do not remove another owner's replacement scratch lock.
+        let owns_path = self.owns_original_path();
         drop(self.file.take());
-        let _ = std::fs::remove_file(&self.path);
+        if owns_path {
+            let _ = std::fs::remove_file(&self.path);
+        }
     }
 }
 
@@ -234,7 +270,7 @@ impl AdaptiveApprovedBenchmark {
         }
         preflight_owner_candidate_identity(pin, runtime_cwd)?;
         if !held_lock.is_some_and(|lock| {
-            lock.path == self.lock_path && lock.file.is_some() && lock.path.is_file()
+            lock.path == self.lock_path && lock.owns_original_path()
         }) {
             return Err("SETUP_BLOCKED: benchmark resource lock is not held".to_string());
         }
@@ -641,6 +677,42 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(10));
         let started = clock_ms();
         assert!(started > lease.acquired_at_ms);
+        // A live file at the expected pathname is not enough: its locked
+        // handle must identify the same OS file, not an unrelated scratch file.
+        let foreign_path = root.path().join("foreign-lock-handle");
+        std::fs::write(&foreign_path, b"not the approved lock").expect("foreign fixture");
+        let mut impostor = AdaptiveBenchmarkLock {
+            path: lease.path.clone(),
+            file: Some(
+                OpenOptions::new()
+                    .read(true)
+                    .open(&foreign_path)
+                    .expect("foreign open handle"),
+            ),
+            acquired_at_ms: lease.acquired_at_ms,
+        };
+        assert!(!impostor.owns_original_path());
+        assert!(
+            approval
+                .admit_native_completions(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&impostor),
+                    thread,
+                    "owner-turn",
+                    started,
+                    clock_ms(),
+                    None,
+                    None,
+                )
+                .expect_err("foreign handle must not authorize the original scratch lock")
+                .contains("resource lock")
+        );
+        // Restore the test-only handle's own path before Drop so it cannot
+        // remove the genuine owner's lock.
+        impostor.path = foreign_path;
+        drop(impostor);
         assert!(
             approval
                 .admit_native_completions(
