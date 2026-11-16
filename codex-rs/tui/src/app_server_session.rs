@@ -1889,7 +1889,9 @@ fn original_launcher_benchmark_config(
     (trusted_embedded_transport
         && thread_params_mode == ThreadParamsMode::Embedded
         && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
-        && pin.is_some_and(|pin| pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark))
+        && pin.is_some_and(|pin| {
+            pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+        }))
     .then(|| config.adaptive_worker.clone())
     .flatten()
     .filter(|original| original.benchmark.is_some())
