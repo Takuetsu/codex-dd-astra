@@ -3411,9 +3411,11 @@ mod tests {
             "even a local Core process with remote parameters cannot yield trusted owner events"
         );
         let remote_started = remote.start_thread(&config).await?;
-        let remote_event =
-            codexdd_046_3d1c2b_read_native_thread_start(&mut remote, remote_started.session.thread_id)
-                .await?;
+        let remote_event = codexdd_046_3d1c2b_read_native_thread_start(
+            &mut remote,
+            remote_started.session.thread_id,
+        )
+        .await?;
         assert!(
             !remote_event.local_in_process_origin,
             "remote thread parameters must not acquire trusted local Core provenance"
