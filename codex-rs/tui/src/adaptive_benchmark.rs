@@ -13,6 +13,7 @@ use crate::adaptive_worker::preflight_owner_candidate_identity;
 use codex_app_server_protocol::CommandExecutionSource;
 use codex_app_server_protocol::CommandExecutionStatus;
 use codex_app_server_protocol::ItemCompletedNotification;
+use codex_app_server_protocol::ItemStartedNotification;
 use codex_app_server_protocol::ThreadItem;
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_protocol::ThreadId;
@@ -255,6 +256,149 @@ impl AdaptiveApprovedBenchmark {
             file: Some(file),
             acquired_at_ms,
         })
+    }
+
+    /// Correlate a command's native start and completion shapes before
+    /// admitting a benchmark. This verifies item identity and event ordering,
+    /// not the authenticity of the source connection: the caller must prove
+    /// that both events came from the live, local embedded Core stream.
+    #[allow(clippy::too_many_arguments)]
+    fn match_native_start(
+        &self,
+        start: Option<&ItemStartedNotification>,
+        done: Option<&ItemCompletedNotification>,
+        expected_command: &str,
+        thread_id: ThreadId,
+        turn_id: &str,
+        run_started_at_ms: u64,
+        lock: &AdaptiveBenchmarkLock,
+    ) -> Result<(), String> {
+        let start = start.ok_or_else(|| {
+            "SETUP_BLOCKED: benchmark lacks a native command-start event".to_string()
+        })?;
+        let done = done.ok_or_else(|| {
+            "SETUP_BLOCKED: benchmark lacks a native command-completion event".to_string()
+        })?;
+        let ThreadItem::CommandExecution {
+            id,
+            command,
+            cwd,
+            plugin_id,
+            script_path,
+            source,
+            status,
+            process_id,
+            exit_code,
+            duration_ms,
+            ..
+        } = &start.item
+        else {
+            return Err("SETUP_BLOCKED: benchmark start is not a native command".to_string());
+        };
+        let ThreadItem::CommandExecution {
+            id: done_id,
+            command: done_command,
+            cwd: done_cwd,
+            process_id: done_process_id,
+            ..
+        } = &done.item
+        else {
+            return Err("SETUP_BLOCKED: benchmark completion is not a native command".to_string());
+        };
+        let started = u64::try_from(start.started_at_ms)
+            .map_err(|_| "SETUP_BLOCKED: benchmark native start time invalid".to_string())?;
+        let completed = u64::try_from(done.completed_at_ms)
+            .map_err(|_| "SETUP_BLOCKED: benchmark native completion time invalid".to_string())?;
+        if !lock.owns_original_path()
+            || started <= lock.acquired_at_ms
+            || started < run_started_at_ms
+            || started > completed
+            || start.thread_id != thread_id.to_string()
+            || start.turn_id != turn_id
+            || done.thread_id != start.thread_id
+            || done.turn_id != start.turn_id
+            || id.is_empty()
+            || id != done_id
+            || command != expected_command
+            || command != done_command
+            || cwd != done_cwd
+            || Path::new(cwd.as_str()).canonicalize().ok().as_ref() != Some(&self.root)
+            || plugin_id.is_some()
+            || script_path.is_some()
+            || *source != CommandExecutionSource::Agent
+            || *status != CommandExecutionStatus::InProgress
+            || exit_code.is_some()
+            || duration_ms.is_some()
+            || process_id
+                .as_ref()
+                .is_some_and(|process_id| Some(process_id) != done_process_id.as_ref())
+        {
+            return Err(
+                "SETUP_BLOCKED: native benchmark start does not match owner command, lock, thread, turn or completion"
+                    .to_string(),
+            );
+        }
+        Ok(())
+    }
+
+    /// Require two matching start/completion pairs. The existing completion
+    /// admission still performs exact source, role, duration, exit and one-use
+    /// checks. Neither function may mint QA without trusted Core ingress.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn admit_native_lifecycles(
+        &mut self,
+        worker: &AdaptiveWorkerContext,
+        pin: Option<&AdaptiveWorkerPreflight>,
+        runtime_cwd: &Path,
+        held_lock: Option<&AdaptiveBenchmarkLock>,
+        thread_id: ThreadId,
+        turn_id: &str,
+        started_at_ms: u64,
+        now_ms: u64,
+        two_start: Option<&ItemStartedNotification>,
+        two_done: Option<&ItemCompletedNotification>,
+        four_start: Option<&ItemStartedNotification>,
+        four_done: Option<&ItemCompletedNotification>,
+    ) -> Result<AdaptiveNativeBenchmarkComparison, String> {
+        if self.consumed {
+            return Err(
+                "SETUP_BLOCKED: benchmark outcomes already consumed in this owner session"
+                    .to_string(),
+            );
+        }
+        let lock = held_lock.ok_or_else(|| {
+            "SETUP_BLOCKED: benchmark resource lock is not held".to_string()
+        })?;
+        self.match_native_start(
+            two_start,
+            two_done,
+            &self.command_2,
+            thread_id,
+            turn_id,
+            started_at_ms,
+            lock,
+        )?;
+        self.match_native_start(
+            four_start,
+            four_done,
+            &self.command_4,
+            thread_id,
+            turn_id,
+            started_at_ms,
+            lock,
+        )?;
+        self.admit_native_completions(
+            worker,
+            pin,
+            runtime_cwd,
+            held_lock,
+            thread_id,
+            turn_id,
+            started_at_ms,
+            now_ms,
+            two_done,
+            four_done,
+        )
     }
 
     /// Admit at most one pair of source-bound Core AppServer command outcomes.
@@ -588,8 +732,78 @@ mod tests {
             root.path(),
             "native-bench-4",
         );
+        // This test makes native-shaped start records from actual OS-process
+        // completions; only a future trusted Core event-stream integration may
+        // prove that the start events themselves were authentically observed.
+        let make_fixture_start = |done: &ItemCompletedNotification| {
+            let mut item = done.item.clone();
+            if let ThreadItem::CommandExecution {
+                status,
+                process_id,
+                exit_code,
+                duration_ms,
+                ..
+            } = &mut item
+            {
+                *status = CommandExecutionStatus::InProgress;
+                *process_id = None;
+                *exit_code = None;
+                *duration_ms = None;
+            }
+            ItemStartedNotification {
+                item,
+                thread_id: done.thread_id.clone(),
+                turn_id: done.turn_id.clone(),
+                started_at_ms: i64::try_from(start).expect("bounded test timestamp"),
+            }
+        };
+        let two_start = make_fixture_start(&two);
+        let four_start = make_fixture_start(&four);
+        let mut foreign_start = four_start.clone();
+        foreign_start.turn_id = "foreign-turn".to_string();
+        assert!(
+            approval
+                .admit_native_lifecycles(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    start,
+                    clock_ms(),
+                    Some(&two_start),
+                    Some(&two),
+                    Some(&foreign_start),
+                    Some(&four),
+                )
+                .expect_err("foreign start cannot authorize an otherwise valid completion")
+                .contains("native benchmark start does not match")
+        );
+        let mut stale_start = four_start.clone();
+        stale_start.started_at_ms =
+            i64::try_from(lease.acquired_at_ms).expect("bounded lock timestamp");
+        assert!(
+            approval
+                .admit_native_lifecycles(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    start,
+                    clock_ms(),
+                    Some(&two_start),
+                    Some(&two),
+                    Some(&stale_start),
+                    Some(&four),
+                )
+                .expect_err("pre-lock start is not authorized by post-hoc lock")
+                .contains("native benchmark start does not match")
+        );
         let matched = approval
-            .admit_native_completions(
+            .admit_native_lifecycles(
                 &worker,
                 Some(&pin),
                 root.path(),
@@ -598,10 +812,12 @@ mod tests {
                 "owner-turn",
                 start,
                 clock_ms(),
+                Some(&two_start),
                 Some(&two),
+                Some(&four_start),
                 Some(&four),
             )
-            .expect("two real distinct measured native OS processes");
+            .expect("matched native lifecycle records for two real OS processes");
         assert_eq!((matched.two.threads, matched.four.threads), (2, 4));
         assert_ne!(matched.two.process_id, matched.four.process_id);
         assert_eq!(matched.source_sha, pin.source_sha);
