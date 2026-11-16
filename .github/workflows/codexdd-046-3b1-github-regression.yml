@@ -2780,6 +2780,29 @@ jobs:
         uses: ./.github/actions/setup-rusty-v8
         with:
           target: x86_64-pc-windows-msvc
+      # The first native build is expensive on disposable Windows runners.
+      # Save the compiled, source-fingerprinted Cargo artifacts immediately
+      # after compilation so failing tests do not force another cold build.
+      # A restored cache NEVER substitutes for current-source test execution.
+      - name: Restore isolated Windows 3D.1c Rust build cache
+        id: benchmark-cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Compile source-bound native TUI tests once
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib --no-run
+          if ($LASTEXITCODE -ne 0) { throw 'Native TUI test compilation failed' }
+      - name: Save verified compiled Windows test cache before execution
+        if: steps.benchmark-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
       - name: Run actual 2 and 4 OS-process benchmark measurements and refusal tests
         shell: pwsh
         working-directory: codex-rs
