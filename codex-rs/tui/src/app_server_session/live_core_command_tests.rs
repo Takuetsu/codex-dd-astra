@@ -48,6 +48,8 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
 
     // The mock model requests exactly one harmless command. The Core app-server,
     // not the test, must execute it and emit both native lifecycle events.
+    // exec_command's first process emits UnifiedExecStartup, not Agent: this
+    // is the declared native source in Core's UnifiedExecProcessManager.
     const COMMAND: &str = "echo CODEXDD_CORE_PROVENANCE";
     let model_call = responses::sse(vec![
         responses::ev_response_created("core-command-response"),
@@ -147,7 +149,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                             continue;
                         }
                         color_eyre::eyre::ensure!(
-                            *source == CommandExecutionSource::Agent
+                            *source == CommandExecutionSource::UnifiedExecStartup
                                 && *status == CommandExecutionStatus::InProgress
                                 && command.contains(COMMAND),
                             "expected Core call start mismatch: source={source:?}, status={status:?}, command_matches_literal={}",
@@ -178,7 +180,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                             continue;
                         }
                         color_eyre::eyre::ensure!(
-                            *source == CommandExecutionSource::Agent
+                            *source == CommandExecutionSource::UnifiedExecStartup
                                 && *status == CommandExecutionStatus::Completed
                                 && *exit_code == Some(0)
                                 && command.contains(COMMAND),
