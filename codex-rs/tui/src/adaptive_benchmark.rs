@@ -366,9 +366,8 @@ impl AdaptiveApprovedBenchmark {
                     .to_string(),
             );
         }
-        let lock = held_lock.ok_or_else(|| {
-            "SETUP_BLOCKED: benchmark resource lock is not held".to_string()
-        })?;
+        let lock = held_lock
+            .ok_or_else(|| "SETUP_BLOCKED: benchmark resource lock is not held".to_string())?;
         self.match_native_start(
             two_start,
             two_done,
