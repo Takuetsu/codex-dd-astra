@@ -333,6 +333,7 @@ pub(crate) struct AppServerBootstrap {
 pub(crate) struct AppServerObservedEvent {
     event: AppServerEvent,
     local_in_process_origin: bool,
+    origin_session_id: Uuid,
 }
 
 impl AppServerObservedEvent {
@@ -344,10 +345,23 @@ impl AppServerObservedEvent {
         self.event
     }
 
-    /// Identify native command lifecycle notifications received through a
-    /// local embedded Core stream, never merely a shaped protocol struct.
-    pub(crate) fn is_local_core_command_lifecycle(&self) -> bool {
-        if !self.local_in_process_origin {
+    /// An observation belongs only to the exact live embedded Core session
+    /// that read it. Reconnecting to a different Core instance cannot reuse
+    /// an older event's provenance, even when the thread ID is unchanged.
+    pub(crate) fn is_from_local_core_session(&self, session: &AppServerSession) -> bool {
+        self.local_in_process_origin
+            && self.origin_session_id == session.event_source_id
+            && session.uses_embedded_app_server()
+            && session.thread_params_mode == ThreadParamsMode::Embedded
+    }
+
+    /// Identify native command lifecycle notifications received through this
+    /// local Core session, never from a shaped or replayed protocol struct.
+    pub(crate) fn is_local_core_command_lifecycle(
+        &self,
+        session: &AppServerSession,
+    ) -> bool {
+        if !self.is_from_local_core_session(session) {
             return false;
         }
         match &self.event {
@@ -373,6 +387,8 @@ impl AppServerObservedEvent {
 
 pub(crate) struct AppServerSession {
     client: AppServerClient,
+    /// Fresh opaque identity for this connection, never exported or persisted.
+    event_source_id: Uuid,
     next_request_id: i64,
     history_pagination: HashMap<ThreadId, history::ThreadHistoryPagination>,
     task_tool_threads: HashSet<ThreadId>,
@@ -480,6 +496,7 @@ impl AppServerSession {
     pub(crate) fn new(client: AppServerClient, thread_params_mode: ThreadParamsMode) -> Self {
         Self {
             client,
+            event_source_id: Uuid::new_v4(),
             next_request_id: 1,
             history_pagination: HashMap::new(),
             task_tool_threads: HashSet::new(),
@@ -914,6 +931,7 @@ impl AppServerSession {
             .map(|event| AppServerObservedEvent {
                 event,
                 local_in_process_origin,
+                origin_session_id: self.event_source_id,
             })
     }
 
@@ -3355,13 +3373,21 @@ mod tests {
             codexdd_046_3d1c2b_read_native_thread_start(&mut local, started.session.thread_id)
                 .await?;
         assert!(
-            observed.local_in_process_origin,
+            observed.is_from_local_core_session(&local),
             "only the real in-process Core reader may produce local event provenance"
         );
         assert!(
-            !observed.is_local_core_command_lifecycle(),
+            !observed.is_local_core_command_lifecycle(&local),
             "a Core thread-start event is not a benchmark command receipt"
         );
+        // A new in-process Core instance is not the original source, even
+        // though it runs on this same machine and uses embedded parameters.
+        let another_core = crate::start_embedded_app_server_for_picker(&config).await?;
+        assert!(
+            !observed.is_from_local_core_session(&another_core),
+            "stale Core events cannot inherit the new session's trusted origin"
+        );
+        another_core.shutdown().await?;
         let owner = &started.session.adaptive_effort;
         assert!(owner.worker_assignment_locked);
         assert_eq!(
@@ -3417,11 +3443,11 @@ mod tests {
         )
         .await?;
         assert!(
-            !remote_event.local_in_process_origin,
+            !remote_event.is_from_local_core_session(&remote),
             "remote thread parameters must not acquire trusted local Core provenance"
         );
         assert!(
-            !remote_event.is_local_core_command_lifecycle(),
+            !remote_event.is_local_core_command_lifecycle(&remote),
             "an untrusted transport may never authorize benchmark command evidence"
         );
         assert!(

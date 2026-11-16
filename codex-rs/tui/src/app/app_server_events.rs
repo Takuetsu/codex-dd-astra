@@ -42,7 +42,7 @@ impl App {
         app_server: &AppServerSession,
         event: AppServerObservedEvent,
     ) {
-        if event.is_local_core_command_lifecycle() {
+        if event.is_local_core_command_lifecycle(app_server) {
             tracing::trace!("observed a local Core command event; benchmark QA remains pending");
         }
         self.handle_app_server_event(app_server, event.into_event())
