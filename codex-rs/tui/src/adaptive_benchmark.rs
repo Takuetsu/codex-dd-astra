@@ -400,11 +400,12 @@ impl AdaptiveApprovedBenchmark {
         )
     }
 
-    /// Admit at most one pair of source-bound Core AppServer command outcomes.
-    /// An embedded trusted transport must be established by the caller; this
-    /// helper neither authenticates arbitrary JSON nor grants exec authority.
+    /// Completion-only matching is deliberately private: an external caller
+    /// must not bypass admit_native_lifecycles and its required start-event,
+    /// original-thread and pre-lock refusal checks. Trusted Core ingress and
+    /// real guarded execution remain separate mandatory proof boundaries.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn admit_native_completions(
+    fn admit_native_completions(
         &mut self,
         worker: &AdaptiveWorkerContext,
         pin: Option<&AdaptiveWorkerPreflight>,
@@ -799,6 +800,48 @@ mod tests {
                     Some(&four),
                 )
                 .expect_err("pre-lock start is not authorized by post-hoc lock")
+                .contains("native benchmark start does not match")
+        );
+        assert!(
+            approval
+                .admit_native_lifecycles(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    start,
+                    clock_ms(),
+                    None,
+                    Some(&two),
+                    Some(&four_start),
+                    Some(&four),
+                )
+                .expect_err("completion-only evidence must not bypass native starts")
+                .contains("lacks a native command-start")
+        );
+        let mut wrong_start_id = four_start.clone();
+        if let ThreadItem::CommandExecution { id, .. } = &mut wrong_start_id.item {
+            *id = "unrelated-command-start".to_string();
+        }
+        assert!(
+            approval
+                .admit_native_lifecycles(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    start,
+                    clock_ms(),
+                    Some(&two_start),
+                    Some(&two),
+                    Some(&wrong_start_id),
+                    Some(&four),
+                )
+                .expect_err("a different native item ID cannot satisfy the completion")
                 .contains("native benchmark start does not match")
         );
         let matched = approval
