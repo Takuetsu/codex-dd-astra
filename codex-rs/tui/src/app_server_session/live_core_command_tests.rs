@@ -140,11 +140,18 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                         ..
                     } = &item.item
                     {
+                        // Startup/approval traffic can contain other real Core
+                        // command items in the same turn. Only the literal mock
+                        // tool-call ID is authoritative for this regression.
+                        if id != "core-command-call" {
+                            continue;
+                        }
                         color_eyre::eyre::ensure!(
                             *source == CommandExecutionSource::Agent
                                 && *status == CommandExecutionStatus::InProgress
                                 && command.contains(COMMAND),
-                            "Core command start does not identify the expected agent execution"
+                            "expected Core call start mismatch: source={source:?}, status={status:?}, command_matches_literal={}",
+                            command.contains(COMMAND)
                         );
                         color_eyre::eyre::ensure!(
                             started_item.is_none(),
@@ -167,12 +174,16 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                         ..
                     } = &item.item
                     {
+                        if id != "core-command-call" {
+                            continue;
+                        }
                         color_eyre::eyre::ensure!(
                             *source == CommandExecutionSource::Agent
                                 && *status == CommandExecutionStatus::Completed
                                 && *exit_code == Some(0)
                                 && command.contains(COMMAND),
-                            "Core did not report successful genuine agent command execution"
+                            "expected Core call completion mismatch: source={source:?}, status={status:?}, exit_code={exit_code:?}, command_matches_literal={}",
+                            command.contains(COMMAND)
                         );
                         color_eyre::eyre::ensure!(
                             completed_item.is_none(),
