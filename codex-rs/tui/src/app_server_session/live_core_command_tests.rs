@@ -1,6 +1,7 @@
-//! 0.4.6 3D.1c2b: a genuine agent-command lifecycle read from the local
-//! embedded Core stream. This is an isolated, non-authoritative ingress test:
-//! no benchmark admission, owner QA, or privileged process management.
+//! 0.4.6 3D.1c2c: execute both original-owner commands through genuine
+//! embedded Core, admit the original native start/completion events under the
+//! held owner scratch lock, and refuse missing-start/replayed admission.
+//! This remains a disposable test, not a production QA or release gate.
 
 use super::*;
 use crate::adaptive_benchmark::AdaptiveApprovedBenchmark;
@@ -14,6 +15,8 @@ use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
 use codex_app_server_protocol::CommandExecutionSource;
 use codex_app_server_protocol::CommandExecutionStatus;
+use codex_app_server_protocol::ItemCompletedNotification;
+use codex_app_server_protocol::ItemStartedNotification;
 use codex_app_server_protocol::ServerNotification;
 use codex_app_server_protocol::ThreadItem;
 use codex_config::config_toml::AdaptiveOwnerBenchmarkToml;
@@ -22,6 +25,14 @@ use codex_config::config_toml::AdaptiveWorkerRoleToml;
 use core_test_support::responses;
 use std::collections::BTreeMap;
 use std::time::Duration;
+
+fn epoch_ms() -> Result<u64> {
+    Ok(u64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_millis(),
+    )?)
+}
 
 #[tokio::test]
 async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycle() -> Result<()> {
@@ -89,7 +100,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
     )
     .map_err(|error| color_eyre::eyre::eyre!("{error}"))?
     .ok_or_else(|| color_eyre::eyre::eyre!("missing immutable owner source pin"))?;
-    let approved =
+    let mut approved =
         AdaptiveApprovedBenchmark::from_original_owner(&original, &worker, Some(&pin), &root)
             .map_err(|error| color_eyre::eyre::eyre!("{error}"))?;
     // Acquire before either Core command is dispatched; keep the actual OS
@@ -144,6 +155,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
     let mut server = crate::start_embedded_app_server_for_picker(&config).await?;
     let started = server.start_thread(&config).await?;
     let thread_id = started.session.thread_id;
+    let run_started_at_ms = epoch_ms()?;
     let response = server
         .turn_start(
             thread_id,
@@ -174,8 +186,8 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
     let turn_id = response.turn.id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let approved_calls = [(CALL_2, COMMAND_2), (CALL_4, COMMAND_4)];
-    let mut started_items = BTreeMap::<String, String>::new();
-    let mut completed_items = BTreeMap::<String, String>::new();
+    let mut started_items = BTreeMap::<String, ItemStartedNotification>::new();
+    let mut completed_items = BTreeMap::<String, ItemCompletedNotification>::new();
     let mut turn_completed = false;
 
     for _ in 0..400 {
@@ -218,7 +230,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                             command.contains(*approved_command)
                         );
                         color_eyre::eyre::ensure!(
-                            started_items.insert(id.clone(), command.clone()).is_none(),
+                            started_items.insert(id.clone(), item.clone()).is_none(),
                             "Core emitted duplicate command-start events"
                         );
                     }
@@ -253,7 +265,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                         );
                         color_eyre::eyre::ensure!(
                             completed_items
-                                .insert(id.clone(), command.clone())
+                                .insert(id.clone(), item.clone())
                                 .is_none(),
                             "Core emitted duplicate command-completion events"
                         );
@@ -273,12 +285,85 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
         }
     }
     color_eyre::eyre::ensure!(
-        turn_completed && started_items.len() == 2 && started_items == completed_items,
+        turn_completed
+            && started_items.len() == 2
+            && completed_items.len() == 2
+            && started_items.keys().eq(completed_items.keys()),
         "live Core did not produce two distinct matching source-bound command lifecycles"
     );
     color_eyre::eyre::ensure!(
         approved.reserve_resource_lock().is_err(),
         "original scratch lock was released before Core completed the benchmark turn"
+    );
+
+    // Only the unmodified notifications received on the authenticated embedded
+    // Core reader enter D01. A missing native start must not consume authority.
+    let verified_now_ms = epoch_ms()?;
+    color_eyre::eyre::ensure!(
+        approved
+            .admit_native_lifecycles(
+                &worker,
+                Some(&pin),
+                &root,
+                Some(&held_lock),
+                thread_id,
+                &turn_id,
+                run_started_at_ms,
+                verified_now_ms,
+                None,
+                completed_items.get(CALL_2),
+                started_items.get(CALL_4),
+                completed_items.get(CALL_4),
+            )
+            .is_err(),
+        "completion-only Core evidence unexpectedly admitted a benchmark"
+    );
+    let comparison = approved
+        .admit_native_lifecycles(
+            &worker,
+            Some(&pin),
+            &root,
+            Some(&held_lock),
+            thread_id,
+            &turn_id,
+            run_started_at_ms,
+            verified_now_ms,
+            started_items.get(CALL_2),
+            completed_items.get(CALL_2),
+            started_items.get(CALL_4),
+            completed_items.get(CALL_4),
+        )
+        .map_err(|error| {
+            color_eyre::eyre::eyre!("genuine Core benchmark admission refused: {error}")
+        })?;
+    color_eyre::eyre::ensure!(
+        comparison.source_sha == pin.source_sha
+            && comparison.two.threads == 2
+            && comparison.four.threads == 4
+            && comparison.two.item_id == CALL_2
+            && comparison.four.item_id == CALL_4
+            && comparison.two.process_id != comparison.four.process_id,
+        "native Core benchmark comparison failed original-owner identity checks"
+    );
+    color_eyre::eyre::ensure!(
+        matches!(
+            approved.admit_native_lifecycles(
+                &worker,
+                Some(&pin),
+                &root,
+                Some(&held_lock),
+                thread_id,
+                &turn_id,
+                run_started_at_ms,
+                epoch_ms()?,
+                started_items.get(CALL_2),
+                completed_items.get(CALL_2),
+                started_items.get(CALL_4),
+                completed_items.get(CALL_4),
+            ),
+            Err(ref reason) if reason.contains("already consumed")
+        ),
+        "native Core benchmark events were admitted twice"
     );
     server.shutdown().await?;
     drop(held_lock);
