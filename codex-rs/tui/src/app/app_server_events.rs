@@ -45,7 +45,8 @@ impl App {
         if event.is_local_core_command_lifecycle() {
             tracing::trace!("observed a local Core command event; benchmark QA remains pending");
         }
-        self.handle_app_server_event(app_server, event.into_event()).await;
+        self.handle_app_server_event(app_server, event.into_event())
+            .await;
     }
 
     pub(super) fn refresh_mcp_startup_expected_servers_from_config(&mut self) {

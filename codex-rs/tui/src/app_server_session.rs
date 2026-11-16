@@ -908,10 +908,13 @@ impl AppServerSession {
     pub(crate) async fn next_observed_event(&mut self) -> Option<AppServerObservedEvent> {
         let local_in_process_origin = self.uses_embedded_app_server()
             && self.thread_params_mode == ThreadParamsMode::Embedded;
-        self.client.next_event().await.map(|event| AppServerObservedEvent {
-            event,
-            local_in_process_origin,
-        })
+        self.client
+            .next_event()
+            .await
+            .map(|event| AppServerObservedEvent {
+                event,
+                local_in_process_origin,
+            })
     }
 
     #[cfg(test)]
