@@ -68,6 +68,7 @@ async fn lifecycle_metadata_uses_local_prompt_history() -> Result<()> {
             &local_settings,
             config.clone(),
             mode,
+            app_server.uses_embedded_app_server(),
             /*remote_cwd_override*/ None,
             app_server.thread_tool_transport(),
             crate::app_server_session::StartupLaunchChoices::default(),
