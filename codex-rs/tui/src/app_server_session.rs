@@ -324,6 +324,53 @@ pub(crate) struct AppServerBootstrap {
     pub(crate) collaboration_modes: Vec<codex_protocol::config_types::CollaborationModeMask>,
 }
 
+/// Ephemeral provenance for events actually read from the app-server stream.
+///
+/// Only AppServerSession::next_observed_event constructs this value. A normal
+/// test-callable event handler cannot turn a separately supplied notification
+/// into a trusted local Core event. Even this token is NOT a benchmark receipt:
+/// command authorization, execution and held-lock continuity remain mandatory.
+pub(crate) struct AppServerObservedEvent {
+    event: AppServerEvent,
+    local_in_process_origin: bool,
+}
+
+impl AppServerObservedEvent {
+    pub(crate) fn event(&self) -> &AppServerEvent {
+        &self.event
+    }
+
+    pub(crate) fn into_event(self) -> AppServerEvent {
+        self.event
+    }
+
+    /// Identify native command lifecycle notifications received through a
+    /// local embedded Core stream, never merely a shaped protocol struct.
+    pub(crate) fn is_local_core_command_lifecycle(&self) -> bool {
+        if !self.local_in_process_origin {
+            return false;
+        }
+        match &self.event {
+            AppServerEvent::ServerNotification(notification) => match notification.as_ref() {
+                codex_app_server_protocol::ServerNotification::ItemStarted(start) => {
+                    matches!(
+                        &start.item,
+                        codex_app_server_protocol::ThreadItem::CommandExecution { .. }
+                    )
+                }
+                codex_app_server_protocol::ServerNotification::ItemCompleted(done) => {
+                    matches!(
+                        &done.item,
+                        codex_app_server_protocol::ThreadItem::CommandExecution { .. }
+                    )
+                }
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
+
 pub(crate) struct AppServerSession {
     client: AppServerClient,
     next_request_id: i64,
@@ -853,6 +900,18 @@ impl AppServerSession {
 
     pub(crate) async fn next_event(&mut self) -> Option<AppServerEvent> {
         self.client.next_event().await
+    }
+
+    /// This is the only entry point that can attach local Core provenance to a
+    /// notification. Replayed, directly constructed or remote events cannot
+    /// acquire this observation marker through the regular App event handler.
+    pub(crate) async fn next_observed_event(&mut self) -> Option<AppServerObservedEvent> {
+        let local_in_process_origin = self.uses_embedded_app_server()
+            && self.thread_params_mode == ThreadParamsMode::Embedded;
+        self.client.next_event().await.map(|event| AppServerObservedEvent {
+            event,
+            local_in_process_origin,
+        })
     }
 
     #[cfg(test)]
@@ -3255,6 +3314,11 @@ mod tests {
         });
 
         let mut local = crate::start_embedded_app_server_for_picker(&config).await?;
+        assert!(
+            local.uses_embedded_app_server()
+                && local.thread_params_mode() == ThreadParamsMode::Embedded,
+            "only a real embedded transport may be the origin of a trusted native stream"
+        );
         let started = local.start_thread(&config).await?;
         let owner = &started.session.adaptive_effort;
         assert!(owner.worker_assignment_locked);
@@ -3299,6 +3363,11 @@ mod tests {
         // A remote session cannot borrow local launcher command/lock authority.
         let mut remote = crate::start_embedded_app_server_for_picker(&config).await?;
         remote.thread_params_mode = ThreadParamsMode::Remote;
+        assert!(
+            remote.uses_embedded_app_server()
+                && remote.thread_params_mode() != ThreadParamsMode::Embedded,
+            "even a local Core process with remote parameters cannot yield trusted owner events"
+        );
         let remote_started = remote.start_thread(&config).await?;
         assert!(
             remote_started

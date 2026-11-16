@@ -12,6 +12,7 @@ use crate::app_event::RateLimitRefreshOrigin;
 #[cfg(any(target_os = "windows", test))]
 use crate::app_event::WindowsSandboxEnableMode;
 use crate::app_info::app_info_from_api;
+use crate::app_server_session::AppServerObservedEvent;
 use crate::app_server_session::AppServerSession;
 use crate::app_server_session::status_account_display_from_auth_mode;
 use codex_app_server_client::AppServerEvent;
@@ -33,6 +34,20 @@ use codex_protocol::protocol::SubAgentSource;
 use std::time::Duration;
 
 impl App {
+    /// Only the real session event reader can supply this provenance-bearing
+    /// value. Do not elevate the observation to benchmark/QA authority until
+    /// exact owner, thread/turn, guarded command and live lock are verified.
+    pub(super) async fn handle_observed_app_server_event(
+        &mut self,
+        app_server: &AppServerSession,
+        event: AppServerObservedEvent,
+    ) {
+        if event.is_local_core_command_lifecycle() {
+            tracing::trace!("observed a local Core command event; benchmark QA remains pending");
+        }
+        self.handle_app_server_event(app_server, event.into_event()).await;
+    }
+
     pub(super) fn refresh_mcp_startup_expected_servers_from_config(&mut self) {
         if self
             .current_displayed_thread_id()

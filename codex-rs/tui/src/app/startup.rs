@@ -1336,10 +1336,10 @@ See the Codex keymap documentation for supported actions and examples."
                             app.handle_exit_mode(&mut app_server, ExitMode::ShutdownFirst).await
                         }
                     }
-                    app_server_event = app_server.next_event(), if listen_for_app_server_events && !app.reconnect.offline
+                    app_server_event = app_server.next_observed_event(), if listen_for_app_server_events && !app.reconnect.offline
                         && (matches!(app.app_server_target, AppServerTarget::Embedded) || !has_pending_app_events) => {
                         match app_server_event {
-                            Some(event) => app.handle_app_server_event(&app_server, event).await,
+                            Some(event) => app.handle_observed_app_server_event(&app_server, event).await,
                             None => {
                                 listen_for_app_server_events = false;
                                 app.begin_reconnect();
