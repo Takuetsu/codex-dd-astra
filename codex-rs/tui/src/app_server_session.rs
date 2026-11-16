@@ -357,10 +357,7 @@ impl AppServerObservedEvent {
 
     /// Identify native command lifecycle notifications received through this
     /// local Core session, never from a shaped or replayed protocol struct.
-    pub(crate) fn is_local_core_command_lifecycle(
-        &self,
-        session: &AppServerSession,
-    ) -> bool {
+    pub(crate) fn is_local_core_command_lifecycle(&self, session: &AppServerSession) -> bool {
         if !self.is_from_local_core_session(session) {
             return false;
         }
