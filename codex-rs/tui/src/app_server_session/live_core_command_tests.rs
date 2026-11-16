@@ -19,8 +19,8 @@ use codex_app_server_protocol::ThreadItem;
 use codex_config::config_toml::AdaptiveOwnerBenchmarkToml;
 use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_config::config_toml::AdaptiveWorkerRoleToml;
-use std::collections::BTreeMap;
 use core_test_support::responses;
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 #[tokio::test]
@@ -69,7 +69,10 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
             command_2: COMMAND_2.to_string(),
             command_4: COMMAND_4.to_string(),
             resource_lock: std::env::temp_dir()
-                .join(format!("codexdd-core-ingress-{}.lock", uuid::Uuid::new_v4()))
+                .join(format!(
+                    "codexdd-core-ingress-{}.lock",
+                    uuid::Uuid::new_v4()
+                ))
                 .to_string_lossy()
                 .to_string(),
             max_duration_ms: 30_000,
@@ -86,13 +89,9 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
     )
     .map_err(|error| color_eyre::eyre::eyre!("{error}"))?
     .ok_or_else(|| color_eyre::eyre::eyre!("missing immutable owner source pin"))?;
-    let approved = AdaptiveApprovedBenchmark::from_original_owner(
-        &original,
-        &worker,
-        Some(&pin),
-        &root,
-    )
-    .map_err(|error| color_eyre::eyre::eyre!("{error}"))?;
+    let approved =
+        AdaptiveApprovedBenchmark::from_original_owner(&original, &worker, Some(&pin), &root)
+            .map_err(|error| color_eyre::eyre::eyre!("{error}"))?;
     // Acquire before either Core command is dispatched; keep the actual OS
     // lock handle alive until the two source-bound Core lifecycles finish.
     let held_lock = approved
@@ -253,7 +252,9 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                             command.contains(*approved_command)
                         );
                         color_eyre::eyre::ensure!(
-                            completed_items.insert(id.clone(), command.clone()).is_none(),
+                            completed_items
+                                .insert(id.clone(), command.clone())
+                                .is_none(),
                             "Core emitted duplicate command-completion events"
                         );
                     }
