@@ -300,6 +300,7 @@ impl AdaptiveApprovedBenchmark {
             command: done_command,
             cwd: done_cwd,
             process_id: done_process_id,
+            source: done_source,
             ..
         } = &done.item
         else {
@@ -325,7 +326,11 @@ impl AdaptiveApprovedBenchmark {
             || Path::new(cwd.as_str()).canonicalize().ok().as_ref() != Some(&self.root)
             || plugin_id.is_some()
             || script_path.is_some()
-            || *source != CommandExecutionSource::Agent
+            || !matches!(
+                source,
+                CommandExecutionSource::Agent | CommandExecutionSource::UnifiedExecStartup
+            )
+            || source != done_source
             || *status != CommandExecutionStatus::InProgress
             || exit_code.is_some()
             || duration_ms.is_some()
@@ -529,7 +534,10 @@ impl AdaptiveApprovedBenchmark {
             || plugin_id.is_some()
             || script_path.is_some()
             || command != expected_command
-            || *source != CommandExecutionSource::Agent
+            || !matches!(
+                source,
+                CommandExecutionSource::Agent | CommandExecutionSource::UnifiedExecStartup
+            )
             || *status != CommandExecutionStatus::Completed
             || *exit_code != Some(0)
             || duration == 0
@@ -759,6 +767,74 @@ mod tests {
         };
         let two_start = make_fixture_start(&two);
         let four_start = make_fixture_start(&four);
+        // Core exec_command emits UnifiedExecStartup for its initial process,
+        // not Agent. Its native source must remain checked against the matching
+        // completion; a user-shell or cross-source event is never D01 evidence.
+        let mut core_start = two_start.clone();
+        let mut core_done = two.clone();
+        if let ThreadItem::CommandExecution { source, .. } = &mut core_start.item {
+            *source = CommandExecutionSource::UnifiedExecStartup;
+        }
+        if let ThreadItem::CommandExecution { source, .. } = &mut core_done.item {
+            *source = CommandExecutionSource::UnifiedExecStartup;
+        }
+        approval
+            .match_native_start(
+                Some(&core_start),
+                Some(&core_done),
+                &plan.command_2,
+                thread,
+                "owner-turn",
+                start,
+                &lease,
+            )
+            .expect("real Core unified-exec startup source matches its completion");
+        approval
+            .match_measurement(
+                Some(&core_done),
+                &plan.command_2,
+                2,
+                thread,
+                "owner-turn",
+                start,
+                clock_ms(),
+            )
+            .expect("native Core unified-exec completion is an eligible measurement");
+        let mut foreign_done = core_done.clone();
+        if let ThreadItem::CommandExecution { source, .. } = &mut foreign_done.item {
+            *source = CommandExecutionSource::UserShell;
+        }
+        assert!(
+            approval
+                .match_native_start(
+                    Some(&core_start),
+                    Some(&foreign_done),
+                    &plan.command_2,
+                    thread,
+                    "owner-turn",
+                    start,
+                    &lease,
+                )
+                .is_err(),
+            "a different command source cannot borrow genuine Core-start evidence"
+        );
+        if let ThreadItem::CommandExecution { source, .. } = &mut core_start.item {
+            *source = CommandExecutionSource::UserShell;
+        }
+        assert!(
+            approval
+                .match_native_start(
+                    Some(&core_start),
+                    Some(&foreign_done),
+                    &plan.command_2,
+                    thread,
+                    "owner-turn",
+                    start,
+                    &lease,
+                )
+                .is_err(),
+            "user-shell events must not gain benchmark authority"
+        );
         let mut foreign_start = four_start.clone();
         foreign_start.turn_id = "foreign-turn".to_string();
         assert!(
