@@ -944,18 +944,16 @@ impl AppServerSession {
             let lock_assignment = context.role
                 != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
                 || context.authorized_scope.is_some();
-            // Keep approved commands and scratch lock only in transient local TUI
-            // state. Remote threads receive no executable benchmark authority.
-            started.session.adaptive_effort.original_benchmark_config = (self
-                .uses_embedded_app_server()
-                && self.thread_params_mode() == ThreadParamsMode::Embedded
-                && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
-                && preflight.as_ref().is_some_and(|pin| {
-                    pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
-                }))
-            .then(|| config.adaptive_worker.clone())
-            .flatten()
-            .filter(|original| original.benchmark.is_some());
+            // Both transport and parameter mode must identify the local Core;
+            // same-host daemon or remote transports never inherit execution plans.
+            started.session.adaptive_effort.original_benchmark_config =
+                original_launcher_benchmark_config(
+                    config,
+                    self.thread_params_mode(),
+                    self.uses_embedded_app_server(),
+                    &context,
+                    preflight.as_ref(),
+                );
             started.session.adaptive_effort.worker_context = context;
             started.session.adaptive_effort.assignment_preflight = preflight;
             started.session.adaptive_effort.gate_ledger = ledger;
@@ -1878,11 +1876,31 @@ impl AppServerSession {
     }
 }
 
+/// Retain first-owner commands only for an actual local in-process Core.
+/// Parameter mode alone does not establish transport identity: a same-host
+/// daemon can use Embedded parameters while delivering untrusted external events.
+fn original_launcher_benchmark_config(
+    config: &Config,
+    thread_params_mode: ThreadParamsMode,
+    trusted_embedded_transport: bool,
+    context: &crate::adaptive_worker::AdaptiveWorkerContext,
+    pin: Option<&crate::adaptive_worker::AdaptiveWorkerPreflight>,
+) -> Option<codex_config::config_toml::AdaptiveWorkerConfigToml> {
+    (trusted_embedded_transport
+        && thread_params_mode == ThreadParamsMode::Embedded
+        && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+        && pin.is_some_and(|pin| pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark))
+    .then(|| config.adaptive_worker.clone())
+    .flatten()
+    .filter(|original| original.benchmark.is_some())
+}
+
 pub(crate) async fn start_thread_with_request_handle(
     request_handle: AppServerRequestHandle,
     local_settings: &LocalSettings,
     config: Config,
     thread_params_mode: ThreadParamsMode,
+    trusted_embedded_transport: bool,
     remote_cwd_override: Option<PathBuf>,
     thread_tool_transport: ThreadToolTransport,
     launch_choices: StartupLaunchChoices,
@@ -1922,17 +1940,17 @@ pub(crate) async fn start_thread_with_request_handle(
         let lock_assignment = context.role
             != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
             || context.authorized_scope.is_some();
-        // Only launcher-bound local benchmark commands and lock survive in
-        // transient TUI memory; this is neither execution nor QA authority.
-        started.session.adaptive_effort.original_benchmark_config = (thread_params_mode
-            == ThreadParamsMode::Embedded
-            && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
-            && preflight.as_ref().is_some_and(|pin| {
-                pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
-            }))
-        .then(|| config.adaptive_worker.clone())
-        .flatten()
-        .filter(|original| original.benchmark.is_some());
+        // Keep the original benchmark commands transient and local. Neither
+        // Embedded parameters on an external transport nor a remote thread
+        // may recover executable owner authority from startup configuration.
+        started.session.adaptive_effort.original_benchmark_config =
+            original_launcher_benchmark_config(
+                &config,
+                thread_params_mode,
+                trusted_embedded_transport,
+                &context,
+                preflight.as_ref(),
+            );
         started.session.adaptive_effort.worker_context = context;
         started.session.adaptive_effort.assignment_preflight = preflight;
         started.session.adaptive_effort.gate_ledger = ledger;
@@ -3252,6 +3270,28 @@ mod tests {
             serde_json::to_string(&owner.durable_workflow_snapshot(started.session.thread_id))?;
         assert!(!durable.contains("owner-approved-two"));
         assert!(!durable.contains("owner-approved-four"));
+        assert!(
+            original_launcher_benchmark_config(
+                &config,
+                ThreadParamsMode::Embedded,
+                false,
+                &owner.worker_context,
+                owner.assignment_preflight.as_ref(),
+            )
+            .is_none(),
+            "same-host daemon parameters do not imply trusted in-process Core"
+        );
+        assert!(
+            original_launcher_benchmark_config(
+                &config,
+                ThreadParamsMode::Remote,
+                true,
+                &owner.worker_context,
+                owner.assignment_preflight.as_ref(),
+            )
+            .is_none(),
+            "remote thread parameters cannot retain local benchmark authority"
+        );
         local.shutdown().await?;
 
         // A remote session cannot borrow local launcher command/lock authority.
