@@ -3259,6 +3259,34 @@ mod tests {
         );
     }
 
+    // Observe the real server's thread-created event through the production
+    // transport reader. A manually constructed App event cannot mint the
+    // ephemeral origin marker used by the benchmark provenance boundary.
+    async fn codexdd_046_3d1c2b_read_native_thread_start(
+        session: &mut AppServerSession,
+        thread_id: ThreadId,
+    ) -> Result<AppServerObservedEvent> {
+        let deadline =
+            tokio::time::Instant::now() + std::time::Duration::from_secs(/*secs*/ 10);
+        for _ in 0..20 {
+            let event = tokio::time::timeout_at(deadline, session.next_observed_event())
+                .await?
+                .ok_or_else(|| color_eyre::eyre::eyre!("native Core stream ended"))?;
+            if matches!(
+                event.event(),
+                AppServerEvent::ServerNotification(notification)
+                    if matches!(
+                        notification.as_ref(),
+                        codex_app_server_protocol::ServerNotification::ThreadStarted(start)
+                            if start.thread.id == thread_id.to_string()
+                    )
+            ) {
+                return Ok(event);
+            }
+        }
+        color_eyre::eyre::bail!("bounded local Core stream did not emit the thread start")
+    }
+
     #[tokio::test]
     async fn codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral() -> Result<()> {
         use codex_config::config_toml::AdaptiveOwnerBenchmarkToml;
@@ -3323,6 +3351,17 @@ mod tests {
             "only a real embedded transport may be the origin of a trusted native stream"
         );
         let started = local.start_thread(&config).await?;
+        let observed =
+            codexdd_046_3d1c2b_read_native_thread_start(&mut local, started.session.thread_id)
+                .await?;
+        assert!(
+            observed.local_in_process_origin,
+            "only the real in-process Core reader may produce local event provenance"
+        );
+        assert!(
+            !observed.is_local_core_command_lifecycle(),
+            "a Core thread-start event is not a benchmark command receipt"
+        );
         let owner = &started.session.adaptive_effort;
         assert!(owner.worker_assignment_locked);
         assert_eq!(
@@ -3372,6 +3411,17 @@ mod tests {
             "even a local Core process with remote parameters cannot yield trusted owner events"
         );
         let remote_started = remote.start_thread(&config).await?;
+        let remote_event =
+            codexdd_046_3d1c2b_read_native_thread_start(&mut remote, remote_started.session.thread_id)
+                .await?;
+        assert!(
+            !remote_event.local_in_process_origin,
+            "remote thread parameters must not acquire trusted local Core provenance"
+        );
+        assert!(
+            !remote_event.is_local_core_command_lifecycle(),
+            "an untrusted transport may never authorize benchmark command evidence"
+        );
         assert!(
             remote_started
                 .session
