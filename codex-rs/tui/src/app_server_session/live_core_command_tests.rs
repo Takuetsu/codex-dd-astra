@@ -96,7 +96,10 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
             None,
             TurnPermissionsOverride::Preserve,
             &[],
-            config.model.clone().unwrap_or_else(|| "mock-model".to_string()),
+            config
+                .model
+                .clone()
+                .unwrap_or_else(|| "mock-model".to_string()),
             None,
             None,
             None,
@@ -120,71 +123,68 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
             "Core event lost its exact in-process origin"
         );
         match observed.event() {
-            AppServerEvent::ServerNotification(notification) => {
-                match notification.as_ref() {
-                    ServerNotification::ItemStarted(item)
-                        if observed.is_local_core_command_lifecycle(&server)
-                            && item.thread_id == thread_id.to_string()
-                            && item.turn_id == turn_id =>
+            AppServerEvent::ServerNotification(notification) => match notification.as_ref() {
+                ServerNotification::ItemStarted(item)
+                    if observed.is_local_core_command_lifecycle(&server)
+                        && item.thread_id == thread_id.to_string()
+                        && item.turn_id == turn_id =>
+                {
+                    if let ThreadItem::CommandExecution {
+                        id,
+                        command,
+                        source,
+                        status,
+                        ..
+                    } = &item.item
                     {
-                        if let ThreadItem::CommandExecution {
-                            id,
-                            command,
-                            source,
-                            status,
-                            ..
-                        } = &item.item
-                        {
-                            color_eyre::eyre::ensure!(
-                                *source == CommandExecutionSource::Agent
-                                    && *status == CommandExecutionStatus::InProgress
-                                    && command.contains(COMMAND),
-                                "Core command start does not identify the expected agent execution"
-                            );
-                            color_eyre::eyre::ensure!(
-                                started_item.is_none(),
-                                "Core emitted duplicate command start events"
-                            );
-                            started_item = Some((id.clone(), command.clone()));
-                        }
+                        color_eyre::eyre::ensure!(
+                            *source == CommandExecutionSource::Agent
+                                && *status == CommandExecutionStatus::InProgress
+                                && command.contains(COMMAND),
+                            "Core command start does not identify the expected agent execution"
+                        );
+                        color_eyre::eyre::ensure!(
+                            started_item.is_none(),
+                            "Core emitted duplicate command start events"
+                        );
+                        started_item = Some((id.clone(), command.clone()));
                     }
-                    ServerNotification::ItemCompleted(item)
-                        if observed.is_local_core_command_lifecycle(&server)
-                            && item.thread_id == thread_id.to_string()
-                            && item.turn_id == turn_id =>
-                    {
-                        if let ThreadItem::CommandExecution {
-                            id,
-                            command,
-                            source,
-                            status,
-                            exit_code,
-                            ..
-                        } = &item.item
-                        {
-                            color_eyre::eyre::ensure!(
-                                *source == CommandExecutionSource::Agent
-                                    && *status == CommandExecutionStatus::Completed
-                                    && *exit_code == Some(0)
-                                    && command.contains(COMMAND),
-                                "Core did not report successful genuine agent command execution"
-                            );
-                            color_eyre::eyre::ensure!(
-                                completed_item.is_none(),
-                                "Core emitted duplicate command completion events"
-                            );
-                            completed_item = Some((id.clone(), command.clone()));
-                        }
-                    }
-                    ServerNotification::TurnCompleted(done)
-                        if done.thread_id == thread_id.to_string()
-                            && done.turn.id == turn_id =>
-                    {
-                        turn_completed = true;
-                    }
-                    _ => {}
                 }
-            }
+                ServerNotification::ItemCompleted(item)
+                    if observed.is_local_core_command_lifecycle(&server)
+                        && item.thread_id == thread_id.to_string()
+                        && item.turn_id == turn_id =>
+                {
+                    if let ThreadItem::CommandExecution {
+                        id,
+                        command,
+                        source,
+                        status,
+                        exit_code,
+                        ..
+                    } = &item.item
+                    {
+                        color_eyre::eyre::ensure!(
+                            *source == CommandExecutionSource::Agent
+                                && *status == CommandExecutionStatus::Completed
+                                && *exit_code == Some(0)
+                                && command.contains(COMMAND),
+                            "Core did not report successful genuine agent command execution"
+                        );
+                        color_eyre::eyre::ensure!(
+                            completed_item.is_none(),
+                            "Core emitted duplicate command completion events"
+                        );
+                        completed_item = Some((id.clone(), command.clone()));
+                    }
+                }
+                ServerNotification::TurnCompleted(done)
+                    if done.thread_id == thread_id.to_string() && done.turn.id == turn_id =>
+                {
+                    turn_completed = true;
+                }
+                _ => {}
+            },
             _ => {}
         }
         if turn_completed {
