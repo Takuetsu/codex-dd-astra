@@ -67,10 +67,31 @@ impl AdaptiveBenchmarkLock {
         }
         #[cfg(windows)]
         {
-            use std::os::windows::fs::MetadataExt;
-            let handle_id = held.volume_serial_number().zip(held.file_index());
-            let path_id = at_path.volume_serial_number().zip(at_path.file_index());
-            handle_id.is_some() && handle_id == path_id
+            use std::os::windows::io::AsRawHandle;
+            use windows_sys::Win32::Storage::FileSystem::BY_HANDLE_FILE_INFORMATION;
+            use windows_sys::Win32::Storage::FileSystem::GetFileInformationByHandle;
+
+            let Ok(at_path_file) = OpenOptions::new().read(true).open(&self.path) else {
+                return false;
+            };
+            let identity = |opened: &File| {
+                let mut info = std::mem::MaybeUninit::<BY_HANDLE_FILE_INFORMATION>::uninit();
+                // SAFETY: the raw handle belongs to a live File, and the Win32
+                // function initializes info only when it returns nonzero.
+                let found = unsafe {
+                    GetFileInformationByHandle(opened.as_raw_handle(), info.as_mut_ptr())
+                };
+                (found != 0).then(|| {
+                    // SAFETY: successful GetFileInformationByHandle initialized info.
+                    let info = unsafe { info.assume_init() };
+                    (
+                        info.dwVolumeSerialNumber,
+                        info.nFileIndexHigh,
+                        info.nFileIndexLow,
+                    )
+                })
+            };
+            identity(file).is_some_and(|original| identity(&at_path_file) == Some(original))
         }
         #[cfg(unix)]
         {
