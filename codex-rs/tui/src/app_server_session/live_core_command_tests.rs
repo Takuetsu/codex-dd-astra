@@ -3,6 +3,8 @@
 //! no benchmark admission, owner QA, or privileged process management.
 
 use super::*;
+use crate::legacy_core::config::ConfigBuilder;
+use crate::legacy_core::config::ConfigOverrides;
 use app_test_support::MockResponsesConfig;
 use app_test_support::create_final_assistant_message_sse_response;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
@@ -63,7 +65,8 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
     ]);
     let backend = create_mock_responses_server_sequence_unchecked(vec![
         model_call,
-        create_final_assistant_message_sse_response("Core command finished.")?,
+        create_final_assistant_message_sse_response("Core command finished.")
+            .map_err(|error| color_eyre::eyre::eyre!("{error:#}"))?,
     ])
     .await;
     let home = tempfile::tempdir()?;
