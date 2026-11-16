@@ -2908,6 +2908,10 @@ mod workspace_roots_tests;
 #[path = "app_server_session/prompt_history_tests.rs"]
 mod prompt_history_tests;
 
+#[cfg(all(test, windows))]
+#[path = "app_server_session/live_core_command_tests.rs"]
+mod live_core_command_tests;
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -2797,6 +2797,22 @@ jobs:
           if ($exit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
             throw "Native benchmark fixture failed (exit=$exit)"
           }
+          # Real in-process Core must execute one harmless disposable agent command
+          # and emit its own source-authenticated start/completion lifecycle.
+          # This proves event ingress, NOT the two-command benchmark or QA gate.
+          $realCoreTest = 'codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycle'
+          $realCoreList = & cargo test --locked -p codex-tui --lib $realCoreTest -- --list 2>&1
+          $realCoreListExit = $LASTEXITCODE
+          $realCoreList | Out-Host
+          if ($realCoreListExit -ne 0 -or -not (($realCoreList -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'Required embedded Core command-ingress test not enumerated'
+          }
+          $realCoreOutput = & cargo test --locked -p codex-tui --lib $realCoreTest -- --test-threads=1 --nocapture 2>&1
+          $realCoreExit = $LASTEXITCODE
+          $realCoreOutput | Out-Host
+          if ($realCoreExit -ne 0 -or -not (($realCoreOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "Real embedded Core command-ingress test failed (exit=$realCoreExit)"
+          }
           # First-owner command/lock must be immutable in memory and absent from
           # persisted snapshots, new Validator Workers and forged source/scope.
           $authorityTest = 'codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral'
