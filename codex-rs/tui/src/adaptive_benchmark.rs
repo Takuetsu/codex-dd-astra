@@ -700,8 +700,8 @@ mod tests {
         // handle must identify the same OS file, not an unrelated scratch file.
         // Keep the foreign fixture outside the pinned Git checkout so the
         // refusal exercises the held-handle identity check, not source dirt.
-        let foreign_path = std::env::temp_dir()
-            .join(format!("codexdd-046-3d1c-foreign-{}", uuid::Uuid::new_v4()));
+        let foreign_path =
+            std::env::temp_dir().join(format!("codexdd-046-3d1c-foreign-{}", uuid::Uuid::new_v4()));
         std::fs::write(&foreign_path, b"not the approved lock").expect("foreign fixture");
         let mut impostor = AdaptiveBenchmarkLock {
             path: lease.path.clone(),
