@@ -180,6 +180,9 @@ async fn spawn_process_with_stdin_mode(
         };
     #[cfg(not(target_os = "linux"))]
     let mut child = command.spawn()?;
+    // Retain only direct OS-spawn identity. The terminal session ID is
+    // separate and cannot be treated as a Windows listener owner PID.
+    let local_os_pid = child.id();
     #[cfg(windows)]
     let windows_terminator = {
         // Accept the small race: a descendant created between spawn and
@@ -298,6 +301,7 @@ async fn spawn_process_with_stdin_mode(
             #[cfg(unix)]
             process_group_id,
         }),
+        local_os_pid,
         reader_handle,
         reader_abort_handles,
         writer_handle,
