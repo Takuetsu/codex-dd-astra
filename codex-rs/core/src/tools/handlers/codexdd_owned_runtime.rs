@@ -99,9 +99,7 @@ pub(crate) fn original_owner_preview_gate(
     if argv.is_empty()
         || argv.len() > 32
         || argv.iter().any(|argument| {
-            argument.is_empty()
-                || argument.len() > 4096
-                || argument.chars().any(char::is_control)
+            argument.is_empty() || argument.len() > 4096 || argument.chars().any(char::is_control)
         })
     {
         return Err("SETUP_BLOCKED: invalid original executable argv".to_string());
@@ -386,8 +384,10 @@ mod tests {
         wrong.required_gates.as_mut().unwrap()[0].ports = Some(vec![4331, 4332]);
         assert!(original_owner_preview_gate(&wrong).is_err());
         wrong = worker();
-        wrong.required_gates.as_mut().unwrap()[0].command_argv =
-            Some(vec!["powershell.exe".to_string(), "Get-Date\nRestart-Service".to_string()]);
+        wrong.required_gates.as_mut().unwrap()[0].command_argv = Some(vec![
+            "powershell.exe".to_string(),
+            "Get-Date\nRestart-Service".to_string(),
+        ]);
         assert!(original_owner_preview_gate(&wrong).is_err());
         wrong = worker();
         wrong.required_gates.as_mut().unwrap()[1].command_argv =
