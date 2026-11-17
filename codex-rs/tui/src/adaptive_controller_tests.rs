@@ -76,6 +76,19 @@ fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
     let blocked = reduce_adaptive_controller(retry.state, AdaptiveClassification::RetrySameLevel);
     assert_eq!(blocked.decision, AdaptiveControllerDecision::Blocked);
     assert_eq!(blocked.state.attempt_number, 2);
+    // An unproductive same-route continuation cannot restore a spent retry.
+    // Only a justified route transition or new evidence can rearm it.
+    let (no_op, pressure) = reduce_unfinished_authorized_turn(retry.state, 0);
+    assert_eq!(pressure, 1);
+    assert!(no_op.state.transient_retry_consumed);
+    assert!(matches!(
+        no_op.decision,
+        AdaptiveControllerDecision::ContinueSameRoute { .. }
+    ));
+    assert_eq!(
+        reduce_adaptive_controller(no_op.state, AdaptiveClassification::RetrySameLevel).decision,
+        AdaptiveControllerDecision::Blocked
+    );
     let moved = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert!(!moved.state.transient_retry_consumed);
     assert_eq!(
