@@ -356,7 +356,9 @@ impl TurnRequestProcessor {
                         }),
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
-                        transient_retry_consumed: state.transient_retry_consumed.unwrap_or_default(),
+                        transient_retry_consumed: state
+                            .transient_retry_consumed
+                            .unwrap_or_default(),
                         // Retry pressure is a non-authoritative fact. Do not
                         // persist any consumed permit or Core evidence here.
                         consecutive_no_native_progress_turns: state
