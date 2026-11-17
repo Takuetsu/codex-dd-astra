@@ -264,9 +264,7 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                             command.contains(*approved_command)
                         );
                         color_eyre::eyre::ensure!(
-                            completed_items
-                                .insert(id.clone(), item.clone())
-                                .is_none(),
+                            completed_items.insert(id.clone(), item.clone()).is_none(),
                             "Core emitted duplicate command-completion events"
                         );
                     }
