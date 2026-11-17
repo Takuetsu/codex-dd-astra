@@ -124,6 +124,9 @@ async fn codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycl
                 "exec_command",
                 &serde_json::json!({
                     "cmd": command,
+                    // D01 authenticates only the exact no-profile Core shell
+                    // projection of the original owner's approved command.
+                    "login": false,
                     "yield_time_ms": 5000,
                     "max_output_tokens": 128,
                 })
