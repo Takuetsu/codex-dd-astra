@@ -201,6 +201,7 @@ pub(super) fn observe_read_only_owned_loopback(
 mod tests {
     use super::*;
     use std::net::TcpListener;
+    use std::sync::mpsc;
     use std::thread;
 
     #[test]
@@ -253,6 +254,9 @@ mod tests {
             let listener = TcpListener::bind(("127.0.0.1", 0)).expect("disposable listener");
             let port = listener.local_addr().expect("bound address").port();
             listener.set_nonblocking(true).expect("nonblocking fixture");
+            // Keep the owning listener open through the observer's second
+            // Windows PID check, not just until the HTTP response is sent.
+            let (release_tx, release_rx) = mpsc::channel();
             let service = thread::spawn(move || {
                 let until = Instant::now() + Duration::from_secs(5);
                 while Instant::now() < until {
@@ -272,6 +276,9 @@ mod tests {
                                     .as_bytes(),
                                 )
                                 .expect("health response");
+                            release_rx
+                                .recv_timeout(Duration::from_secs(5))
+                                .expect("release the listener after Core ownership recheck");
                             return;
                         }
                         Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -283,6 +290,7 @@ mod tests {
                 panic!("bounded local health fixture did not receive request");
             });
             let result = observe_read_only_owned_loopback(std::process::id(), port);
+            release_tx.send(()).expect("release disposable listener");
             service.join().expect("owned fixture thread");
             result
         }
