@@ -353,7 +353,9 @@ impl AdaptiveApprovedBenchmark {
                 command == done_command,
                 Path::new(cwd.as_str()).canonicalize().ok().as_ref() == Some(&self.root),
                 source == done_source,
-                process_id.as_ref().is_none_or(|pid| Some(pid) == done_process_id.as_ref()),
+                process_id
+                    .as_ref()
+                    .is_none_or(|pid| Some(pid) == done_process_id.as_ref()),
             ));
         }
         Ok(())
