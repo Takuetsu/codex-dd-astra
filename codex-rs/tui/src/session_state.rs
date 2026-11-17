@@ -1476,6 +1476,10 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         );
         let mut foreign = progress_snapshot(2, Some("turn-2"));
         foreign.worker_role = "validation".to_string();
+        // A Validation snapshot cannot carry an Implementation-only phase.
+        // Remove that separate invalidity so this case reaches the 3B.4
+        // progress-digest role guard instead of failing the earlier phase guard.
+        foreign.implementation_phase = None;
         assert!(
             apply_persisted_adaptive_workflow_state(&mut restored, foreign, None)
                 .expect_err("Validation may not inherit Implementation pressure")
