@@ -1,6 +1,8 @@
 //! 0.4.6 3D.1c2c: execute both original-owner commands through genuine
 //! embedded Core, admit the original native start/completion events under the
 //! held owner scratch lock, and refuse missing-start/replayed admission.
+//! The model requests a no-profile shell so Core's exact argv projection is
+//! compared to the original owner command without permitting appended shell text.
 //! This remains a disposable test, not a production QA or release gate.
 
 use super::*;
