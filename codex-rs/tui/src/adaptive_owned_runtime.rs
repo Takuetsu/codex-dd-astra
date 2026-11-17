@@ -565,20 +565,14 @@ mod tests {
         assert!(require_exact_loopback_listener(PORT, [(PORT, LAN, PID)]).is_err());
         assert!(require_exact_loopback_listener(PORT, [(PORT, LOOPBACK, 0)]).is_err());
         assert!(
-            require_exact_loopback_listener(
-                PORT,
-                [(PORT, LOOPBACK, PID), (PORT, 0, 1234)],
-            )
-            .expect_err("same-port wildcard must refuse exact ownership")
-            .contains("wildcard")
+            require_exact_loopback_listener(PORT, [(PORT, LOOPBACK, PID), (PORT, 0, 1234)],)
+                .expect_err("same-port wildcard must refuse exact ownership")
+                .contains("wildcard")
         );
         assert!(
-            require_exact_loopback_listener(
-                PORT,
-                [(PORT, LOOPBACK, PID), (PORT, LOOPBACK, PID)],
-            )
-            .expect_err("duplicate loopback rows are ambiguous")
-            .contains("ambiguous")
+            require_exact_loopback_listener(PORT, [(PORT, LOOPBACK, PID), (PORT, LOOPBACK, PID)],)
+                .expect_err("duplicate loopback rows are ambiguous")
+                .contains("ambiguous")
         );
     }
 
