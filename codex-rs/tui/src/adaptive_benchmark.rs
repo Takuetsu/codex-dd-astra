@@ -393,6 +393,17 @@ impl AdaptiveApprovedBenchmark {
             started_at_ms,
             lock,
         )?;
+        // A 2-vs-4 comparison is not meaningful when the two measured runs
+        // overlap or execute out of order. Native event timestamps, rather
+        // than model prose or a reconstructed test fixture, establish order.
+        if four_start.is_none_or(|four| {
+            two_done.is_none_or(|two| four.started_at_ms < two.completed_at_ms)
+        }) {
+            return Err(
+                "SETUP_BLOCKED: benchmark runs overlap or are out of required 2-then-4 order"
+                    .to_string(),
+            );
+        }
         self.admit_native_completions(
             worker,
             pin,
@@ -768,7 +779,11 @@ mod tests {
             }
         };
         let two_start = make_fixture_start(&two);
-        let four_start = make_fixture_start(&four);
+        let mut four_start = make_fixture_start(&four);
+        // This legacy fixture synthesizes start shapes from real completed
+        // OS runs. Reflect the actually sequential execution order; only the
+        // embedded Core stream integration test authenticates real starts.
+        four_start.started_at_ms = two.completed_at_ms;
         // Core exec_command emits UnifiedExecStartup for its initial process,
         // not Agent. Its native source must remain checked against the matching
         // completion; a user-shell or cross-source event is never D01 evidence.
@@ -921,6 +936,27 @@ mod tests {
                 )
                 .expect_err("a different native item ID cannot satisfy the completion")
                 .contains("native benchmark start does not match")
+        );
+        let mut overlapping_start = four_start.clone();
+        overlapping_start.started_at_ms = two_start.started_at_ms;
+        assert!(
+            approval
+                .admit_native_lifecycles(
+                    &worker,
+                    Some(&pin),
+                    root.path(),
+                    Some(&lease),
+                    thread,
+                    "owner-turn",
+                    start,
+                    clock_ms(),
+                    Some(&two_start),
+                    Some(&two),
+                    Some(&overlapping_start),
+                    Some(&four),
+                )
+                .expect_err("overlapping measurements cannot compare 2 against 4")
+                .contains("out of required 2-then-4 order")
         );
         let matched = approval
             .admit_native_lifecycles(
