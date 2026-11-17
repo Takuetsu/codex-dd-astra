@@ -42,6 +42,14 @@ on:
       - codex-rs/core/src/session/turn_context.rs
       - codex-rs/core/src/tools/handlers/codexdd_validation.rs
       - codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs
+      # D02 Core-owned OS process identity must never bypass source-pinned CI.
+      - codex-rs/core/src/unified_exec/mod.rs
+      - codex-rs/core/src/unified_exec/process.rs
+      - codex-rs/core/src/unified_exec/process_manager.rs
+      - codex-rs/utils/pty/src/process.rs
+      - codex-rs/utils/pty/src/pty.rs
+      - codex-rs/utils/pty/src/pipe.rs
+      - codex-rs/utils/pty/src/pipe_tests.rs
       - codex-rs/core/src/tools/registry.rs
       - codex-rs/core/src/tools/registry_tests.rs
       - codex-rs/core/src/session/worker_authority.rs
