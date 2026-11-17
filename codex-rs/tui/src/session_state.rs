@@ -278,10 +278,8 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
     let no_native_streak = state.consecutive_no_native_progress_turns;
     let last_no_native_turn = state.last_no_native_progress_turn_id.as_deref();
     if no_native_streak > crate::chatwidget::adaptive_effort::CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT
-        || (no_native_streak > 0)
-            != last_no_native_turn.is_some()
-        || last_no_native_turn
-            .is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
+        || (no_native_streak > 0) != last_no_native_turn.is_some()
+        || last_no_native_turn.is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
         || (no_native_streak > 0
             && (!state.enabled
                 || !state.worker_assignment_locked
@@ -294,7 +292,9 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
                 || implementation_phase.is_none()
                 || workflow_terminal.is_some()))
     {
-        return Err("persisted no-native-progress digest is invalid or exceeds its cap".to_string());
+        return Err(
+            "persisted no-native-progress digest is invalid or exceeds its cap".to_string(),
+        );
     }
     let validation_repair_cycles_used = state.validation_repair_cycles_used;
     let validation_repair_fingerprint = state.validation_repair_fingerprint;
