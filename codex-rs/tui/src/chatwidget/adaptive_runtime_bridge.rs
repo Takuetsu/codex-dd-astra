@@ -266,6 +266,12 @@ impl ChatWidget {
             }
         }
 
+        // A real native result is productive work, not evidence of a no-op.
+        // Carry this decision into the effort controller so a long-running
+        // Implementation Worker does not escalate solely because it had many
+        // successful tool-using turns.
+        let mut native_progress_for_turn = false;
+
         // Unlike alternating unfinished-turn pressure, this streak cannot reset
         // merely because the model escalated effort. A bound Implementation Worker
         // returning prose without a native result or accepted lifecycle signal
@@ -286,6 +292,7 @@ impl ChatWidget {
                     evidence.has_native_implementation_work_for_turn(thread_id, source_turn_id)
                 }
             });
+            native_progress_for_turn = native_progress;
             let streak = if native_progress {
                 0
             } else {
@@ -328,15 +335,25 @@ impl ChatWidget {
             paused_by_user: state.paused_by_user,
             terminal: state.workflow_terminal,
         };
-        let (reduction, unfinished_turn_pressure) =
-            reduce_unfinished_authorized_turn(controller, state.unfinished_turn_pressure);
+        let (reduction, unfinished_turn_pressure) = reduce_unfinished_authorized_turn(
+            controller,
+            if native_progress_for_turn {
+                0
+            } else {
+                state.unfinished_turn_pressure
+            },
+        );
 
         self.adaptive_effort.last_processed_terminal_turn_id = Some(source_turn_id.to_string());
         self.adaptive_effort.current_family = Some(reduction.state.current_route.family);
         self.adaptive_effort.current_effort = Some(reduction.state.current_route.effort);
         self.adaptive_effort.attempt_number = reduction.state.attempt_number;
         self.adaptive_effort.transient_retry_consumed = reduction.state.transient_retry_consumed;
-        self.adaptive_effort.unfinished_turn_pressure = unfinished_turn_pressure;
+        self.adaptive_effort.unfinished_turn_pressure = if native_progress_for_turn {
+            0
+        } else {
+            unfinished_turn_pressure
+        };
         self.adaptive_effort.paused_by_user = reduction.state.paused_by_user;
         self.adaptive_effort.workflow_terminal = reduction.state.terminal;
         self.adaptive_effort.successor_admission = None;
