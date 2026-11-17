@@ -2715,7 +2715,7 @@ jobs:
             }
           }
           Invoke-TestGroup 'codexdd_046_3d1b2_' 2
-          Invoke-TestGroup 'codexdd_046_3d1b2b2_' 2
+          Invoke-TestGroup 'codexdd_046_3d1b2b2_' 3
           Invoke-TestGroup 'codexdd_046_3d1b2b1_' 2
           Invoke-TestGroup 'codexdd_046_3d1b1_' 1
           Invoke-TestGroup 'codexdd_046_3d1b0_' 1
