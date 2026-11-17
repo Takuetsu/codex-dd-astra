@@ -81,7 +81,7 @@ permissions:
 concurrency:
   group: codexdd-046-3b1-${{ github.ref }}
   # Only an explicitly requested exact-source 3C or scoped 3D native acceptance supersedes obsolete runs.
-  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]') || contains(github.event.head_commit.message, '[3d1c-native]') || contains(github.event.head_commit.message, '[3b4-native]')) }}
+  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]') || contains(github.event.head_commit.message, '[3d1c-native]') || contains(github.event.head_commit.message, '[3b4-native]') || contains(github.event.head_commit.message, '[3d1d-native]')) }}
 
 jobs:
   source-contract:
@@ -3001,3 +3001,118 @@ jobs:
         run: |
           git status --short
           Write-Host "3B.4 source-pinned non-authoritative retry-pressure checkpoint only; D02 and release gates remain open."
+
+  windows-3d1d-integrated-native:
+    name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
+    # Bounded source-matched integrated regression. Not a release or Core runtime-health PASS.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3d1d-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Pin development SHA and isolated native work paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Integrated source SHA mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong development branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Protected production version drifted' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1c'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $root 'target')"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Make DotSlash available to native Core children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          Copy-Item -LiteralPath $dotslash -Destination (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe') -Force
+      - name: Pin Rust toolchain 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure checksum-verified Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Reuse source-revalidated Windows Cargo build cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Compile exact-source native TUI test executable once
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib --no-run
+          if ($LASTEXITCODE -ne 0) { throw 'Current-source integrated TUI tests did not compile' }
+      - name: Verify D01 D02 D03 C01-C05 and retained 3C regression matrix
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Invoke-NativeGroup {
+            param([string]$Filter, [int]$Expected)
+            $listed = & cargo test --locked -p codex-tui --lib $Filter -- --list 2>&1
+            $listingExit = $LASTEXITCODE
+            $listed | Out-Host
+            if ($listingExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains("$Expected test" + $(if ($Expected -eq 1) { '' } else { 's' }) + ', 0 benchmarks'))) {
+              throw "Integrated test list mismatch for $Filter ($Expected required)"
+            }
+            $result = & cargo test --locked -p codex-tui --lib $Filter -- --test-threads=1 --nocapture 2>&1
+            $code = $LASTEXITCODE
+            $result | Out-Host
+            if ($code -ne 0 -or -not (($result -join [Environment]::NewLine).Contains("test result: ok. $Expected passed; 0 failed; 0 ignored;"))) {
+              throw "Integrated native test failed: $Filter (expected $Expected, exit=$code)"
+            }
+            Write-Host "VERIFIED_NATIVE_GROUP $Filter count=$Expected SHA=$env:GITHUB_SHA"
+          }
+          # Native 2 vs 4 comparison with independently authenticated local
+          # in-process Core lifecycle; a source-only PASS cannot substitute.
+          Invoke-NativeGroup 'codexdd_046_3d1c_' 3
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycle' 1
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral' 1
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral' 1
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_fork_refuses_inherited_original_benchmark_authority' 1
+          # Original owner-held disposable Child, real Windows PID/HTTP 200
+          # and 503; spoofed PID/wrong port/wildcard/ambiguous listener refuses.
+          Invoke-NativeGroup 'codexdd_046_3d1b2_' 2
+          Invoke-NativeGroup 'codexdd_046_3d1b2b1_' 2
+          Invoke-NativeGroup 'codexdd_046_3d1b2b2_' 3
+          Invoke-NativeGroup 'codexdd_046_3d1b1_' 1
+          Invoke-NativeGroup 'codexdd_046_3d1b0_' 1
+          # Unproductive/no-progress continuation and persistence guards.
+          Invoke-NativeGroup 'codexdd_046_3b4_' 8
+          # Preserve 3C cold resume and non-source gate refusal boundaries.
+          Invoke-NativeGroup 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume' 1
+          Invoke-NativeGroup 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked' 1
+          Invoke-NativeGroup 'codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice' 1
+          Write-Host "3D.1d focused integrated proof complete. Core-owned health producer and owner QA remain OPEN."
+      - name: Verify repository remains unchanged by native test execution
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $changes = git status --porcelain
+          $changes | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot verify clean source after integrated tests' }
+          if ($changes) { throw 'Integrated test unexpectedly modified checkout' }
+          Write-Host "One exact SHA; disposable Windows fixtures only. No installed CodexDD, production, release or trusted D02 receipt."
