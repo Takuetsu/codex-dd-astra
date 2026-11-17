@@ -12,6 +12,8 @@ use crate::tools::handlers::CodeModeExecuteHandler;
 use crate::tools::handlers::CodeModeWaitHandler;
 use crate::tools::handlers::CodexDDIndependentValidationHandler;
 use crate::tools::handlers::CodexDDValidationHandler;
+use crate::tools::handlers::CodexDDOwnedRuntimeHealthHandler;
+use crate::tools::handlers::original_owner_preview_gate;
 use crate::tools::handlers::CurrentTimeHandler;
 use crate::tools::handlers::DynamicToolHandler;
 use crate::tools::handlers::ExecCommandHandler;
@@ -1272,6 +1274,23 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     {
         registry.add_with_exposure(
             CodexDDIndependentValidationHandler,
+            ToolExposure::DirectModelOnly,
+        );
+    }
+
+    // The original Worker must explicitly bind an exact launch argv and
+    // loopback port. No source, benchmark, remote or Validation authority.
+    if cfg!(windows)
+        && turn_context
+            .config
+            .adaptive_worker
+            .as_ref()
+            .is_some_and(|worker| original_owner_preview_gate(worker).is_ok())
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+    {
+        registry.add_with_exposure(
+            CodexDDOwnedRuntimeHealthHandler,
             ToolExposure::DirectModelOnly,
         );
     }

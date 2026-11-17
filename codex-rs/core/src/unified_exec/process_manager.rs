@@ -3,6 +3,7 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::num::NonZeroUsize;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -538,6 +539,66 @@ impl UnifiedExecProcessManager {
             );
         }
         Ok(observed)
+    }
+
+    /// Only the Core process store supplies the original launch identity:
+    /// a model can name an exec session but cannot approve argv, cwd or PID.
+    /// The original process must remain held by this exact Core Session.
+    #[cfg(windows)]
+    pub(crate) async fn observe_original_owner_approved_health(
+        &self,
+        original_session: &Arc<Session>,
+        exec_session_id: i32,
+        approved_argv: &[String],
+        approved_root: &Path,
+        approved_port: u16,
+    ) -> Result<super::owned_runtime_health::CoreOwnedLoopbackObservation, String> {
+        if exec_session_id <= 0 || approved_argv.is_empty() || approved_port == 0 {
+            return Err(
+                "SETUP_BLOCKED: missing bounded original owner runtime authority".to_string(),
+            );
+        }
+        let approved_root = approved_root
+            .canonicalize()
+            .map_err(|_| "SETUP_BLOCKED: original owner checkout unavailable".to_string())?;
+        let (call_id, launch_cwd) = {
+            let store = self.process_store.lock().await;
+            let entry = store
+                .processes
+                .get(&exec_session_id)
+                .ok_or("SETUP_BLOCKED: original Core-owned process no longer exists")?;
+            let session = entry
+                .session
+                .upgrade()
+                .ok_or("SETUP_BLOCKED: original Core process session expired")?;
+            let observed_root = entry
+                .cwd
+                .to_abs_path()
+                .map_err(|_| "SETUP_BLOCKED: original process cwd is not local")?
+                .as_path()
+                .canonicalize()
+                .map_err(|_| "SETUP_BLOCKED: original process cwd disappeared")?;
+            if !Arc::ptr_eq(&session, original_session)
+                || entry.call_id.is_empty()
+                || entry.original_command.as_slice() != approved_argv
+                || observed_root != approved_root
+            {
+                return Err(
+                    "SETUP_BLOCKED: process lacks original Core owner, argv or checkout"
+                        .to_string(),
+                );
+            }
+            (entry.call_id.clone(), entry.cwd.clone())
+        };
+        self.observe_core_owned_loopback_health(
+            original_session,
+            exec_session_id,
+            &call_id,
+            approved_argv,
+            &launch_cwd,
+            approved_port,
+        )
+        .await
     }
 
     pub(crate) async fn allocate_process_id(&self) -> i32 {

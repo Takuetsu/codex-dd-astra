@@ -52,7 +52,7 @@ mod errors;
 mod head_tail_buffer;
 mod oneshot;
 #[cfg(windows)]
-mod owned_runtime_health;
+pub(crate) mod owned_runtime_health;
 mod process;
 mod process_manager;
 mod process_state;

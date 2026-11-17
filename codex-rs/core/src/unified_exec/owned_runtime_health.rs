@@ -25,10 +25,10 @@ const HTTP_DEADLINE: Duration = Duration::from_secs(2);
 /// An ephemeral observation, never a serializable completion receipt or gate.
 #[derive(Debug)]
 #[allow(dead_code)]
-pub(super) struct CoreOwnedLoopbackObservation {
-    pub(super) owner_pid: u32,
-    pub(super) approved_port: u16,
-    pub(super) observed_at_ms: u64,
+pub(crate) struct CoreOwnedLoopbackObservation {
+    pub(crate) owner_pid: u32,
+    pub(crate) approved_port: u16,
+    pub(crate) observed_at_ms: u64,
 }
 
 fn exact_ipv4_loopback_owner(

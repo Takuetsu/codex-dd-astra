@@ -182,6 +182,10 @@ pub struct AdaptiveOwnerGateToml {
     pub profile: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ports: Option<Vec<u16>>,
+    /// Original owner-approved argv for a read-only operations-preview check.
+    /// This is launch identity, never new executable-launch permission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command_argv: Option<Vec<String>>,
 }
 
 /// Exact task-specific benchmark authority supplied by the original Worker owner.

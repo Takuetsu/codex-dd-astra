@@ -3015,7 +3015,7 @@ jobs:
   windows-3d1d-integrated-native:
     name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
     # Bounded source-matched integrated regression. Not a release or Core runtime-health PASS.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3d1d-native]')
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 90
@@ -3105,6 +3105,25 @@ jobs:
             throw "Core-owned D02 listener/HTTP negative tests failed (exit=$testExit)"
           }
           Write-Host "D02 Core-native bounded TCP/HTTP proof: 3 checks passed; health admission remains PENDING"
+      - name: Verify original-owner Core health tool command and scope admission
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1e_'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('2 tests, 0 benchmarks'))) {
+            throw 'Expected two original-owner Core health admission regressions'
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 original-owner Core health authorization tests failed (exit=$testExit)"
+          }
+          Write-Host "Core original-owner gate authorization verified; no QA PASS minted"
       - name: Compile exact-source native TUI test executable once
         shell: pwsh
         working-directory: codex-rs
