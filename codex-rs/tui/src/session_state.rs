@@ -1455,7 +1455,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
             state.last_processed_terminal_turn_id.as_deref(),
             Some("last-no-native-turn")
         );
-        assert!(state.evidence_registry.is_empty());
+        assert_eq!(state.evidence_registry.len(), 0);
         assert!(state.pending_attempt.is_none());
         assert!(state.pending_signal.is_none());
         assert!(state.successor_admission.is_none());
