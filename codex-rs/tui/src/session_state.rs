@@ -296,6 +296,16 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
             "persisted no-native-progress digest is invalid or exceeds its cap".to_string(),
         );
     }
+    // Retain spent same-route infrastructure retry pressure across restart.
+    // This fact cannot reauthorize a pending successor or constitute native proof.
+    if state.transient_retry_consumed
+        && (!state.enabled
+            || state.attempt_number < 2
+            || current_family.is_none()
+            || current_effort.is_none())
+    {
+        return Err("persisted consumed transient retry is internally inconsistent".to_string());
+    }
     let validation_repair_cycles_used = state.validation_repair_cycles_used;
     let validation_repair_fingerprint = state.validation_repair_fingerprint;
     let validation_targeted_retest_required = state.validation_targeted_retest_required;
@@ -464,7 +474,7 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         assignment_preflight,
         worker_assignment_locked: state.worker_assignment_locked,
         workflow_terminal,
-        transient_retry_consumed: false,
+        transient_retry_consumed: state.transient_retry_consumed,
         unfinished_turn_pressure: 0,
         // Only pressure and a previously counted turn survive. All native
         // evidence and successor permits still restore empty, so a repeated
@@ -580,6 +590,7 @@ mod tests {
                 validation_repair_cycles_used: 0,
                 validation_targeted_retest_required: false,
                 validation_status: None,
+                transient_retry_consumed: false,
                 consecutive_no_native_progress_turns: 0,
                 last_no_native_progress_turn_id: None,
                 attempt_number: 6,
@@ -654,6 +665,7 @@ mod tests {
                     validation_repair_cycles_used: 0,
                     validation_targeted_retest_required: false,
                     validation_status: None,
+                    transient_retry_consumed: false,
                     consecutive_no_native_progress_turns: 0,
                     last_no_native_progress_turn_id: None,
                     attempt_number: 1,
@@ -695,6 +707,7 @@ mod tests {
                 validation_repair_cycles_used: 0,
                 validation_targeted_retest_required: false,
                 validation_status: None,
+                transient_retry_consumed: false,
                 consecutive_no_native_progress_turns: 0,
                 last_no_native_progress_turn_id: None,
                 attempt_number: 4,
@@ -743,6 +756,7 @@ mod tests {
                     validation_repair_cycles_used: 0,
                     validation_targeted_retest_required: false,
                     validation_status: None,
+                    transient_retry_consumed: false,
                     consecutive_no_native_progress_turns: 0,
                     last_no_native_progress_turn_id: None,
                     attempt_number: 2,
