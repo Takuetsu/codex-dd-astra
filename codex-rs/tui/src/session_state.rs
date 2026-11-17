@@ -1458,6 +1458,8 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
             "authorized_scope": "bounded original Implementation progress",
             "worker_assignment_locked": true,
             "transient_retry_consumed": false,
+            "unfinished_turn_pressure": 0,
+            "last_processed_turn_id": null,
             "consecutive_no_native_progress_turns": count,
             "last_no_native_progress_turn_id": last_turn
         }))
@@ -1486,6 +1488,11 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         };
         let wire = state.durable_workflow_snapshot(ThreadId::new());
         assert_eq!(wire.transient_retry_consumed, Some(true));
+        assert_eq!(wire.unfinished_turn_pressure, Some(0));
+        assert_eq!(
+            wire.last_processed_turn_id.as_deref(),
+            Some("last-no-native-turn")
+        );
         assert_eq!(wire.consecutive_no_native_progress_turns, Some(2));
         assert_eq!(
             wire.last_no_native_progress_turn_id.as_deref(),
@@ -1556,6 +1563,68 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
     }
 
     #[test]
+    fn codexdd_046_3b4_c05_replay_and_unfinished_pressure_survive_resume() {
+        let state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Sol),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::Medium),
+            attempt_number: 4,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("bounded original Implementation progress".to_string()),
+            },
+            worker_assignment_locked: true,
+            unfinished_turn_pressure: 1,
+            last_processed_terminal_turn_id: Some("productive-turn".to_string()),
+            ..Default::default()
+        };
+        let wire = state.durable_workflow_snapshot(ThreadId::new());
+        assert_eq!(wire.unfinished_turn_pressure, Some(1));
+        assert_eq!(
+            wire.last_processed_turn_id.as_deref(),
+            Some("productive-turn")
+        );
+        let mut persisted = progress_snapshot(0, None);
+        persisted.unfinished_turn_pressure = 1;
+        persisted.last_processed_turn_id = Some("productive-turn".to_string());
+        let mut resumed = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut resumed, persisted.clone(), None)
+            .expect("bounded no-op pressure and replay marker survive");
+        assert_eq!(resumed.unfinished_turn_pressure, 1);
+        assert_eq!(
+            resumed.last_processed_terminal_turn_id.as_deref(),
+            Some("productive-turn")
+        );
+        assert_eq!(resumed.evidence_registry.len(), 0);
+        assert!(resumed.pending_attempt.is_none());
+        assert!(resumed.successor_admission.is_none());
+        assert!(resumed.pending_signal.is_none());
+
+        let mut exhausted = persisted.clone();
+        exhausted.unfinished_turn_pressure = 2;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut resumed, exhausted, None)
+                .expect_err("out of range pressure must refuse")
+                .contains("unfinished-turn progress digest")
+        );
+        let mut missing_marker = persisted.clone();
+        missing_marker.last_processed_turn_id = None;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut resumed, missing_marker, None)
+                .expect_err("pressure without a counted source turn must refuse")
+                .contains("unfinished-turn progress digest")
+        );
+        let mut inconsistent = progress_snapshot(1, Some("no-native-turn"));
+        inconsistent.last_processed_turn_id = Some("unrelated-turn".to_string());
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut resumed, inconsistent, None)
+                .expect_err("mismatched replay and no-native source turn must refuse")
+                .contains("unfinished-turn progress digest")
+        );
+    }
+
+    #[test]
     fn codexdd_046_3b4_legacy_snapshot_without_progress_fields_restores_zero() {
         let mut legacy = serde_json::to_value(progress_snapshot(0, None))
             .expect("serialize legacy-compatible history snapshot");
@@ -1563,6 +1632,8 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
             .as_object_mut()
             .expect("serialized history snapshot is an object");
         object.remove("transient_retry_consumed");
+        object.remove("unfinished_turn_pressure");
+        object.remove("last_processed_turn_id");
         object.remove("consecutive_no_native_progress_turns");
         object.remove("last_no_native_progress_turn_id");
         let legacy: codex_history::AdaptiveWorkflowStateSnapshot =
@@ -1571,6 +1642,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         apply_persisted_adaptive_workflow_state(&mut restored, legacy, None)
             .expect("pre-3B.4 snapshots remain compatible");
         assert!(!restored.transient_retry_consumed);
+        assert_eq!(restored.unfinished_turn_pressure, 0);
         assert_eq!(restored.consecutive_no_native_progress_turns, 0);
         assert_eq!(restored.last_processed_terminal_turn_id, None);
     }
