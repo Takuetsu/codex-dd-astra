@@ -224,6 +224,9 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub validation_status: Option<AdaptiveValidationStatusSnapshot>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
+    /// Already-spent same-route infrastructure retry; no authority or evidence.
+    #[serde(default)]
+    pub transient_retry_consumed: bool,
     /// Bounded Implementation retry pressure; never native evidence or authorization.
     #[serde(default)]
     pub consecutive_no_native_progress_turns: u8,
