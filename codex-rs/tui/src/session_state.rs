@@ -1425,6 +1425,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
             "worker_role": "implementation",
             "authorized_scope": "bounded original Implementation progress",
             "worker_assignment_locked": true,
+            "transient_retry_consumed": false,
             "consecutive_no_native_progress_turns": count,
             "last_no_native_progress_turn_id": last_turn
         }))
@@ -1446,11 +1447,13 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
                 authorized_scope: Some("bounded original Implementation progress".to_string()),
             },
             worker_assignment_locked: true,
+            transient_retry_consumed: true,
             consecutive_no_native_progress_turns: 2,
             last_processed_terminal_turn_id: Some("last-no-native-turn".to_string()),
             ..Default::default()
         };
         let wire = state.durable_workflow_snapshot(ThreadId::new());
+        assert_eq!(wire.transient_retry_consumed, Some(true));
         assert_eq!(wire.consecutive_no_native_progress_turns, Some(2));
         assert_eq!(
             wire.last_no_native_progress_turn_id.as_deref(),
@@ -1458,12 +1461,15 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         );
 
         state = AdaptiveEffortState::default();
+        let mut persisted = progress_snapshot(2, Some("last-no-native-turn"));
+        persisted.transient_retry_consumed = true;
         apply_persisted_adaptive_workflow_state(
             &mut state,
-            progress_snapshot(2, Some("last-no-native-turn")),
+            persisted,
             None,
         )
         .expect("bounded pressure restores but no native evidence does");
+        assert!(state.transient_retry_consumed);
         assert_eq!(state.consecutive_no_native_progress_turns, 2);
         assert_eq!(
             state.last_processed_terminal_turn_id.as_deref(),
@@ -1511,6 +1517,14 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
                 .expect_err("zero streak cannot carry an unearned counted turn")
                 .contains("no-native-progress digest")
         );
+        let mut unearned_retry = progress_snapshot(0, None);
+        unearned_retry.transient_retry_consumed = true;
+        unearned_retry.attempt_number = 1;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut restored, unearned_retry, None)
+                .expect_err("initial route cannot have consumed a retry")
+                .contains("consumed transient retry")
+        );
     }
 
     #[test]
@@ -1520,6 +1534,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         let object = legacy
             .as_object_mut()
             .expect("serialized history snapshot is an object");
+        object.remove("transient_retry_consumed");
         object.remove("consecutive_no_native_progress_turns");
         object.remove("last_no_native_progress_turn_id");
         let legacy: codex_history::AdaptiveWorkflowStateSnapshot =
@@ -1527,6 +1542,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         let mut restored = AdaptiveEffortState::default();
         apply_persisted_adaptive_workflow_state(&mut restored, legacy, None)
             .expect("pre-3B.4 snapshots remain compatible");
+        assert!(!restored.transient_retry_consumed);
         assert_eq!(restored.consecutive_no_native_progress_turns, 0);
         assert_eq!(restored.last_processed_terminal_turn_id, None);
     }
