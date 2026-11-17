@@ -878,6 +878,7 @@ mod tests {
 
         assert!(chat.apply_adaptive_unfinished_authorized_turn("no-tool-1"));
         assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 1);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
 
         chat.register_adaptive_evidence(&command_evidence(
             thread_id,
@@ -888,10 +889,52 @@ mod tests {
         ));
         assert!(chat.apply_adaptive_unfinished_authorized_turn("native-work-2"));
         assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 0);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
 
         assert!(chat.apply_adaptive_unfinished_authorized_turn("no-tool-3"));
         assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 1);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
         assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3b4_c03_productive_native_turns_do_not_escalate_effort() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("bounded productive multi-turn implementation".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.turn_lifecycle.agent_turn_running = false;
+
+        let initial_family = chat.adaptive_effort.current_family;
+        let initial_effort = chat.adaptive_effort.current_effort;
+        let initial_attempt = chat.adaptive_effort.attempt_number;
+        for index in 0..12 {
+            let turn = format!("productive-turn-{index}");
+            let item = format!("productive-native-command-{index}");
+            chat.register_adaptive_evidence(&command_evidence(
+                thread_id,
+                &turn,
+                &item,
+                CommandExecutionStatus::Completed,
+                0,
+            ));
+            assert!(chat.apply_adaptive_unfinished_authorized_turn(&turn));
+            assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 0);
+            assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+            assert_eq!(chat.adaptive_effort.current_family, initial_family);
+            assert_eq!(chat.adaptive_effort.current_effort, initial_effort);
+            assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        }
+        assert_eq!(
+            chat.adaptive_effort.attempt_number,
+            initial_attempt + 12
+        );
     }
 
     #[tokio::test]
