@@ -304,9 +304,7 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
             || current_family.is_none()
             || current_effort.is_none())
     {
-        return Err(
-            "persisted consumed transient retry is internally inconsistent".to_string(),
-        );
+        return Err("persisted consumed transient retry is internally inconsistent".to_string());
     }
     let validation_repair_cycles_used = state.validation_repair_cycles_used;
     let validation_repair_fingerprint = state.validation_repair_fingerprint;
@@ -1466,7 +1464,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
         let mut persisted = progress_snapshot(2, Some("last-no-native-turn"));
         persisted.transient_retry_consumed = true;
         apply_persisted_adaptive_workflow_state(&mut state, persisted, None)
-        .expect("bounded pressure restores but no native evidence does");
+            .expect("bounded pressure restores but no native evidence does");
         assert!(state.transient_retry_consumed);
         assert_eq!(state.consecutive_no_native_progress_turns, 2);
         assert_eq!(
