@@ -531,8 +531,11 @@ impl UnifiedExecProcessManager {
             )
             .await
             .map_err(str::to_string)?;
-        if before != after || observed.owner_pid != after || observed.approved_port != approved_port {
-            return Err("SETUP_BLOCKED: original Core owner changed during health observation".to_string());
+        if before != after || observed.owner_pid != after || observed.approved_port != approved_port
+        {
+            return Err(
+                "SETUP_BLOCKED: original Core owner changed during health observation".to_string(),
+            );
         }
         Ok(observed)
     }
