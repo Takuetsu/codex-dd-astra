@@ -296,6 +296,29 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
             "persisted no-native-progress digest is invalid or exceeds its cap".to_string(),
         );
     }
+    // C05: a restart must not grant an extra unfinished-turn continuation,
+    // and must not double-process the same terminal turn after native progress.
+    // These bounded facts can only restrict continuation, never authorize it.
+    let unfinished_pressure = state.unfinished_turn_pressure;
+    let last_processed = state.last_processed_turn_id.as_deref();
+    if unfinished_pressure
+        >= crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD
+        || last_processed.is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
+        || (unfinished_pressure > 0
+            && (!state.enabled
+                || workflow_terminal.is_some()
+                || worker_role == AdaptiveWorkerRole::Unspecified
+                || state
+                    .authorized_scope
+                    .as_deref()
+                    .is_none_or(|scope| scope.trim().is_empty())
+                || last_processed.is_none()))
+        || (no_native_streak > 0
+            && last_processed.is_some()
+            && last_no_native_turn != last_processed)
+    {
+        return Err("persisted unfinished-turn progress digest is invalid".to_string());
+    }
     // Retain spent same-route infrastructure retry pressure across restart.
     // This fact cannot reauthorize a pending successor or constitute native proof.
     if state.transient_retry_consumed
@@ -475,15 +498,16 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         worker_assignment_locked: state.worker_assignment_locked,
         workflow_terminal,
         transient_retry_consumed: state.transient_retry_consumed,
-        unfinished_turn_pressure: 0,
-        // Only pressure and a previously counted turn survive. All native
-        // evidence and successor permits still restore empty, so a repeated
-        // terminal event cannot buy a fresh no-progress continuation budget.
+        unfinished_turn_pressure: unfinished_pressure,
+        // Only bounded pressure and the last processed turn survive. No native
+        // evidence or successor permit can be recovered from this checkpoint.
         consecutive_no_native_progress_turns: no_native_streak,
         last_processed_terminal_turn_id: if workflow_terminal.is_some() {
-            source_turn_id
+            source_turn_id.or(state.last_processed_turn_id)
         } else {
-            state.last_no_native_progress_turn_id
+            state
+                .last_processed_turn_id
+                .or(state.last_no_native_progress_turn_id)
         },
         pending_attempt: None,
         successor_admission: None,
@@ -591,6 +615,8 @@ mod tests {
                 validation_targeted_retest_required: false,
                 validation_status: None,
                 transient_retry_consumed: false,
+                unfinished_turn_pressure: 0,
+                last_processed_turn_id: None,
                 consecutive_no_native_progress_turns: 0,
                 last_no_native_progress_turn_id: None,
                 attempt_number: 6,
@@ -666,6 +692,8 @@ mod tests {
                     validation_targeted_retest_required: false,
                     validation_status: None,
                     transient_retry_consumed: false,
+                    unfinished_turn_pressure: 0,
+                    last_processed_turn_id: None,
                     consecutive_no_native_progress_turns: 0,
                     last_no_native_progress_turn_id: None,
                     attempt_number: 1,
@@ -708,6 +736,8 @@ mod tests {
                 validation_targeted_retest_required: false,
                 validation_status: None,
                 transient_retry_consumed: false,
+                unfinished_turn_pressure: 0,
+                last_processed_turn_id: None,
                 consecutive_no_native_progress_turns: 0,
                 last_no_native_progress_turn_id: None,
                 attempt_number: 4,
@@ -757,6 +787,8 @@ mod tests {
                     validation_targeted_retest_required: false,
                     validation_status: None,
                     transient_retry_consumed: false,
+                    unfinished_turn_pressure: 0,
+                    last_processed_turn_id: None,
                     consecutive_no_native_progress_turns: 0,
                     last_no_native_progress_turn_id: None,
                     attempt_number: 2,
