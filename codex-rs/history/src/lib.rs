@@ -227,6 +227,12 @@ pub struct AdaptiveWorkflowStateSnapshot {
     /// Already-spent same-route infrastructure retry; no authority or evidence.
     #[serde(default)]
     pub transient_retry_consumed: bool,
+    /// Bounded no-op successor pressure; never an admission permit.
+    #[serde(default)]
+    pub unfinished_turn_pressure: u8,
+    /// Previously counted turn; prevents replay after a successful native turn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_processed_turn_id: Option<String>,
     /// Bounded Implementation retry pressure; never native evidence or authorization.
     #[serde(default)]
     pub consecutive_no_native_progress_turns: u8,
