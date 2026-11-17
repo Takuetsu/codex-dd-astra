@@ -515,6 +515,20 @@ impl AdaptiveEffortState {
             }),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
+            // Preserve only bounded pressure and the last counted turn; neither
+            // grants a successor or restores native evidence after a restart.
+            consecutive_no_native_progress_turns: Some(
+                if self.worker_context.role == AdaptiveWorkerRole::Implementation {
+                    self.consecutive_no_native_progress_turns
+                } else {
+                    0
+                },
+            ),
+            last_no_native_progress_turn_id: (self.worker_context.role
+                == AdaptiveWorkerRole::Implementation
+                && self.consecutive_no_native_progress_turns > 0)
+                .then(|| self.last_processed_terminal_turn_id.clone())
+                .flatten(),
             worker_role: worker_role.to_string(),
             authorized_scope: self.worker_context.authorized_scope.clone(),
             assignment_task_kind: self.assignment_preflight.as_ref().map(|pin| {
