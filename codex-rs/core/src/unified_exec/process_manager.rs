@@ -486,6 +486,57 @@ impl UnifiedExecProcessManager {
         )
     }
 
+    /// D02: a bounded read-only HTTP observation made only for the exact
+    /// owner-held local Core exec session. Both the OS listener and the Core
+    /// process store are rechecked. This does NOT create a gate receipt.
+    #[cfg(windows)]
+    #[allow(dead_code)]
+    pub(crate) async fn observe_core_owned_loopback_health(
+        &self,
+        original_session: &Arc<Session>,
+        exec_session_id: i32,
+        original_call_id: &str,
+        original_owner_command: &[String],
+        original_owner_cwd: &PathUri,
+        approved_port: u16,
+    ) -> Result<super::owned_runtime_health::CoreOwnedLoopbackObservation, String> {
+        if approved_port == 0 {
+            return Err("SETUP_BLOCKED: missing exact approved health port".to_string());
+        }
+        let before = self
+            .inspect_owned_local_os_pid(
+                original_session,
+                exec_session_id,
+                original_call_id,
+                original_owner_command,
+                original_owner_cwd,
+            )
+            .await
+            .map_err(str::to_string)?;
+        // Windows TCP owner lookup and HTTP I/O are synchronous and bounded.
+        // Keep them off the async executor and never hold the process-store
+        // mutex while probing a listener.
+        let observed = tokio::task::spawn_blocking(move || {
+            super::owned_runtime_health::observe_read_only_owned_loopback(before, approved_port)
+        })
+        .await
+        .map_err(|error| format!("SETUP_BLOCKED: native health worker failed: {error}"))??;
+        let after = self
+            .inspect_owned_local_os_pid(
+                original_session,
+                exec_session_id,
+                original_call_id,
+                original_owner_command,
+                original_owner_cwd,
+            )
+            .await
+            .map_err(str::to_string)?;
+        if before != after || observed.owner_pid != after || observed.approved_port != approved_port {
+            return Err("SETUP_BLOCKED: original Core owner changed during health observation".to_string());
+        }
+        Ok(observed)
+    }
+
     pub(crate) async fn allocate_process_id(&self) -> i32 {
         loop {
             let mut store = self.process_store.lock().await;
