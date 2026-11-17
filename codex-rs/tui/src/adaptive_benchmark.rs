@@ -28,6 +28,32 @@ const MAX_COMMAND_BYTES: usize = 4096;
 const MAX_BENCHMARK_DURATION_MS: u64 = 120_000;
 const MAX_EVENT_AGE_MS: u64 = 300_000;
 
+/// Core reports the actual shell argv, not the model's raw `exec_command.cmd`.
+/// Accept only the original literal or the *exact* projection of that literal
+/// through the local default PowerShell with profiles disabled. In particular,
+/// substring matching would admit extra commands and must never be used here.
+/// A custom shell or redacted command fails closed until separately authorized.
+fn matches_original_owner_command(observed: &str, approved: &str) -> bool {
+    if observed == approved {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use codex_shell_command::shell_detect::ShellType;
+        let shell = codex_shell_command::shell_detect::default_user_shell();
+        if shell.shell_type == ShellType::PowerShell {
+            let shell_args = vec![
+                shell.shell_path.to_string_lossy().into_owned(),
+                "-NoProfile".to_string(),
+                "-Command".to_string(),
+                approved.to_string(),
+            ];
+            return observed == codex_shell_command::parse_command::shlex_join(&shell_args);
+        }
+    }
+    false
+}
+
 /// Only values from immutable original owner configuration may create this.
 #[derive(Debug)]
 pub(crate) struct AdaptiveApprovedBenchmark {
@@ -324,7 +350,7 @@ impl AdaptiveApprovedBenchmark {
             || done.turn_id != start.turn_id
             || id.is_empty()
             || id != done_id
-            || command != expected_command
+            || !matches_original_owner_command(command, expected_command)
             || command != done_command
             || cwd != done_cwd
             || Path::new(cwd.as_str()).canonicalize().ok().as_ref() != Some(&self.root)
@@ -343,7 +369,7 @@ impl AdaptiveApprovedBenchmark {
                 .is_some_and(|process_id| Some(process_id) != done_process_id.as_ref())
         {
             return Err(format!(
-                "SETUP_BLOCKED: native benchmark start does not match owner command, lock, thread, turn or completion (lock_owned={}, after_lock={}, after_run={}, temporal_order={}, same_thread={}, same_turn={}, same_id={}, command_exact={}, done_command_exact={}, cwd_exact={}, same_source={}, permitted_source={}, start_status={}, no_plugin={}, no_script={}, no_exit={}, no_duration={}, same_pid={})",
+                "SETUP_BLOCKED: native benchmark start does not match owner command, lock, thread, turn or completion (lock_owned={}, after_lock={}, after_run={}, temporal_order={}, same_thread={}, same_turn={}, same_id={}, approved_command_match={}, start_done_same_command={}, cwd_exact={}, same_source={}, permitted_source={}, start_status={}, no_plugin={}, no_script={}, no_exit={}, no_duration={}, same_pid={})",
                 lock.owns_original_path(),
                 started > lock.acquired_at_ms,
                 started >= run_started_at_ms,
@@ -351,7 +377,7 @@ impl AdaptiveApprovedBenchmark {
                 start.thread_id == thread_id.to_string(),
                 start.turn_id == turn_id && done.turn_id == start.turn_id,
                 id == done_id,
-                command == expected_command,
+                matches_original_owner_command(command, expected_command),
                 command == done_command,
                 Path::new(cwd.as_str()).canonicalize().ok().as_ref() == Some(&self.root),
                 source == done_source,
@@ -570,7 +596,7 @@ impl AdaptiveApprovedBenchmark {
             || id.len() > 256
             || plugin_id.is_some()
             || script_path.is_some()
-            || command != expected_command
+            || !matches_original_owner_command(command, expected_command)
             || !matches!(
                 source,
                 CommandExecutionSource::Agent | CommandExecutionSource::UnifiedExecStartup
@@ -618,6 +644,45 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("test clock")
             .as_millis() as u64
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn codexdd_046_3d1c_shell_projection_requires_exact_original_no_profile_command() {
+        use codex_shell_command::shell_detect::ShellType;
+
+        let approved = "Write-Output approved";
+        let detected_shell = codex_shell_command::shell_detect::default_user_shell();
+        assert_eq!(detected_shell.shell_type, ShellType::PowerShell);
+        let shell_args = vec![
+            detected_shell.shell_path.to_string_lossy().into_owned(),
+            "-NoProfile".to_string(),
+            "-Command".to_string(),
+            approved.to_string(),
+        ];
+        let exact = codex_shell_command::parse_command::shlex_join(&shell_args);
+        assert!(matches_original_owner_command(approved, approved));
+        assert!(matches_original_owner_command(&exact, approved));
+        assert!(!matches_original_owner_command(
+            &exact,
+            "Write-Output different"
+        ));
+        assert!(!matches_original_owner_command(
+            &format!("{exact}; Write-Output unauthorized"),
+            approved
+        ));
+        let mut injected_argv = shell_args.clone();
+        injected_argv[3].push_str("; Write-Output unauthorized");
+        assert!(!matches_original_owner_command(
+            &codex_shell_command::parse_command::shlex_join(&injected_argv),
+            approved
+        ));
+        let mut profile_argv = shell_args;
+        profile_argv.remove(1);
+        assert!(!matches_original_owner_command(
+            &codex_shell_command::parse_command::shlex_join(&profile_argv),
+            approved
+        ));
     }
 
     fn fixture() -> (
