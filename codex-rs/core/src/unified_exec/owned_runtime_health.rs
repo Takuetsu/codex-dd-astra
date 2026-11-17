@@ -44,7 +44,9 @@ fn exact_ipv4_loopback_owner(
             continue;
         }
         if address == 0 {
-            return Err("SETUP_BLOCKED: same-port wildcard listener is not exact loopback".to_string());
+            return Err(
+                "SETUP_BLOCKED: same-port wildcard listener is not exact loopback".to_string(),
+            );
         }
         if address != 0x7f000001 {
             continue;
@@ -76,7 +78,9 @@ fn windows_loopback_owner(port: u16) -> Result<u32, String> {
         )
     };
     if status != 122 || required_bytes < 4 || required_bytes as usize > MAX_TCP_TABLE_BYTES {
-        return Err(format!("SETUP_BLOCKED: Windows TCP owner table unavailable ({status})"));
+        return Err(format!(
+            "SETUP_BLOCKED: Windows TCP owner table unavailable ({status})"
+        ));
     }
     let mut data = vec![0_u32; (required_bytes as usize).div_ceil(4)];
     let mut length = (data.len() * 4) as u32;
@@ -93,7 +97,9 @@ fn windows_loopback_owner(port: u16) -> Result<u32, String> {
         )
     };
     if status != 0 || length < 4 || length as usize > data.len() * 4 {
-        return Err(format!("SETUP_BLOCKED: Windows TCP owner table read failed ({status})"));
+        return Err(format!(
+            "SETUP_BLOCKED: Windows TCP owner table read failed ({status})"
+        ));
     }
     let count = data[0] as usize;
     let stride = std::mem::size_of::<MIB_TCPROW_OWNER_PID>();
@@ -204,7 +210,11 @@ mod tests {
         assert_eq!(
             exact_ipv4_loopback_owner(
                 port,
-                [(port, 0x7f000001, pid), (4332, 0, 19), (port, 0xc0a80102, 20)],
+                [
+                    (port, 0x7f000001, pid),
+                    (4332, 0, 19),
+                    (port, 0xc0a80102, 20)
+                ],
             ),
             Ok(pid)
         );
@@ -217,12 +227,9 @@ mod tests {
                 .contains("wildcard")
         );
         assert!(
-            exact_ipv4_loopback_owner(
-                port,
-                [(port, 0x7f000001, pid), (port, 0x7f000001, pid)],
-            )
-            .expect_err("duplicate owner rows cannot be considered unique")
-            .contains("ambiguous")
+            exact_ipv4_loopback_owner(port, [(port, 0x7f000001, pid), (port, 0x7f000001, pid)],)
+                .expect_err("duplicate owner rows cannot be considered unique")
+                .contains("ambiguous")
         );
     }
 
@@ -251,7 +258,9 @@ mod tests {
                 while Instant::now() < until {
                     match listener.accept() {
                         Ok((mut stream, _)) => {
-                            stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+                            stream
+                                .set_read_timeout(Some(Duration::from_secs(2)))
+                                .unwrap();
                             let mut request = [0_u8; 512];
                             let size = stream.read(&mut request).expect("health request");
                             assert!(request[..size].starts_with(b"GET /health HTTP/1.1"));
