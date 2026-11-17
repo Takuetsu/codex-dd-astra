@@ -33,15 +33,8 @@ async fn codexdd_046_3d1d2_real_windows_pipe_child_has_exact_os_pid_and_expires(
     .map(str::to_string);
     let cwd = std::env::current_dir()?;
     let env: HashMap<String, String> = std::env::vars().collect();
-    let mut spawned = spawn_process_no_stdin(
-        "powershell.exe",
-        &args,
-        &cwd,
-        &env,
-        &None,
-        &[],
-    )
-    .await?;
+    let mut spawned =
+        spawn_process_no_stdin("powershell.exe", &args, &cwd, &env, &None, &[]).await?;
     let os_pid = spawned
         .session
         .live_local_os_pid()
@@ -56,10 +49,9 @@ async fn codexdd_046_3d1d2_real_windows_pipe_child_has_exact_os_pid_and_expires(
             output.extend_from_slice(&chunk);
             if output.contains(&b'\n') {
                 let line = String::from_utf8_lossy(&output);
-                break line.lines().next().expect("PID line").trim().parse::<u32>()?;
+                break line.lines().next().expect("PID line").trim().parse::<u32>();
             }
         }
-        Ok::<u32, anyhow::Error>(0)
     })
     .await??;
     assert_eq!(os_pid, declared_pid, "must report the child's own OS PID");
