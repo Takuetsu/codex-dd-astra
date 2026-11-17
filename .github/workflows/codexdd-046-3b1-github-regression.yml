@@ -2960,7 +2960,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & cargo test --locked -p codex-tui --lib --no-run
           if ($LASTEXITCODE -ne 0) { throw '3B.4 current-source TUI compile failed' }
-      - name: Verify six 3B.4 persistence, productive-turn and refusal regressions
+      - name: Verify eight 3B.4 persistence, replay, productive-turn and refusal regressions
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -2969,13 +2969,13 @@ jobs:
           $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
           $listExit = $LASTEXITCODE
           $listing | Out-Host
-          if ($listExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains('6 tests, 0 benchmarks'))) {
-            throw 'Expected exactly six 3B.4 bounded-progress and typed-refusal tests'
+          if ($listExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains('8 tests, 0 benchmarks'))) {
+            throw 'Expected exactly eight 3B.4 bounded-progress, replay and typed-refusal tests'
           }
           $output = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
           $testExit = $LASTEXITCODE
           $output | Out-Host
-          if ($testExit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 6 passed; 0 failed; 0 ignored;'))) {
+          if ($testExit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 8 passed; 0 failed; 0 ignored;'))) {
             throw "3B.4 native progress and refusal tests failed (exit=$testExit)"
           }
       - name: Protect previous native source cold-resume refusal
