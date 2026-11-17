@@ -1780,6 +1780,14 @@ pub struct ThreadAdaptiveWorkflowState {
     pub validation_status: Option<ThreadAdaptiveValidationStatus>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
+    /// Progress pressure only; not a tool result, receipt or successor permit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub consecutive_no_native_progress_turns: Option<u8>,
+    /// Source turn already counted toward pressure; prevents cold-resume double count.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub last_no_native_progress_turn_id: Option<String>,
     pub worker_role: String,
     pub authorized_scope: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
