@@ -42,9 +42,47 @@ pub(crate) struct AdaptiveOwnedHttpObservation {
     pub(crate) observed_at_ms: u64,
 }
 
+/// A selected-port wildcard listener must never masquerade as an exact
+/// loopback-owned host. Pure classifier keeps the security decision testable
+/// without depending on the Windows TCP table having a particular live shape.
+fn require_exact_loopback_listener(
+    port: u16,
+    listeners: impl IntoIterator<Item = (u16, u32, u32)>,
+) -> Result<u32, String> {
+    if port == 0 {
+        return Err("SETUP_BLOCKED: zero port is never an approved listener".to_string());
+    }
+    let mut matching = None;
+    for (listener_port, local_address, owning_pid) in listeners {
+        if listener_port != port {
+            continue;
+        }
+        if local_address == 0 {
+            return Err(
+                "SETUP_BLOCKED: wildcard IPv4 listener on approved port has no exact loopback owner"
+                    .to_string(),
+            );
+        }
+        if local_address != 0x7f000001 {
+            continue;
+        }
+        if owning_pid == 0 {
+            return Err("SETUP_BLOCKED: loopback listener has no OS process owner".to_string());
+        }
+        if matching.replace(owning_pid).is_some() {
+            return Err(
+                "SETUP_BLOCKED: ambiguous listener owner for approved loopback port".to_string(),
+            );
+        }
+    }
+    matching.ok_or_else(|| {
+        "SETUP_BLOCKED: no exact loopback TCP listener owns the approved port".to_string()
+    })
+}
+
 /// Query the Windows owner-PID listener table directly, without shelling out
 /// to an untrusted PATH command or trusting a stale host.pid file.
-/// A foreign/wildcard listener and an ambiguous owner both fail closed.
+/// A same-port wildcard listener and an ambiguous owner both fail closed.
 fn loopback_listener_owner(port: u16) -> Result<u32, String> {
     if port == 0 {
         return Err("SETUP_BLOCKED: zero port is never an approved listener".to_string());
@@ -92,7 +130,7 @@ fn loopback_listener_owner(port: u16) -> Result<u32, String> {
     if rows > ((bytes as usize) - 4) / row_bytes {
         return Err("SETUP_BLOCKED: invalid TCP listener owner table length".to_string());
     }
-    let mut matching = None;
+    let mut listeners = Vec::with_capacity(rows);
     for index in 0..rows {
         // SAFETY: the checked count bounds each fixed-size row within the
         // owned table allocation. Unaligned reads also work for the C row ABI.
@@ -104,22 +142,13 @@ fn loopback_listener_owner(port: u16) -> Result<u32, String> {
                 .cast::<MIB_TCPROW_OWNER_PID>()
                 .read_unaligned()
         };
-        if u16::from_be(row.dwLocalPort as u16) != port {
-            continue;
-        }
-        // Require *exact* loopback bind, not 0.0.0.0 or a foreign interface.
-        if u32::from_be(row.dwLocalAddr) != 0x7f000001 {
-            continue;
-        }
-        if matching.replace(row.dwOwningPid).is_some() {
-            return Err(
-                "SETUP_BLOCKED: ambiguous listener owner for approved loopback port".to_string(),
-            );
-        }
+        listeners.push((
+            u16::from_be(row.dwLocalPort as u16),
+            u32::from_be(row.dwLocalAddr),
+            row.dwOwningPid,
+        ));
     }
-    matching.ok_or_else(|| {
-        "SETUP_BLOCKED: no exact loopback TCP listener owns the approved port".to_string()
-    })
+    require_exact_loopback_listener(port, listeners)
 }
 
 /// Observe a fresh HTTP 200 on /health only after exact original source/role,
@@ -517,6 +546,40 @@ mod tests {
             port,
             child,
         )
+    }
+
+    #[test]
+    fn codexdd_046_3d1b2b2_exact_loopback_listener_refuses_wildcard_and_ambiguity() {
+        const PORT: u16 = 4331;
+        const LOOPBACK: u32 = 0x7f000001;
+        const LAN: u32 = 0xc0a80101;
+        const PID: u32 = 24680;
+        assert_eq!(
+            require_exact_loopback_listener(
+                PORT,
+                [(PORT, LOOPBACK, PID), (4332, 0, 1234), (PORT, LAN, 4321)],
+            ),
+            Ok(PID)
+        );
+        assert!(require_exact_loopback_listener(0, [(PORT, LOOPBACK, PID)]).is_err());
+        assert!(require_exact_loopback_listener(PORT, [(PORT, LAN, PID)]).is_err());
+        assert!(require_exact_loopback_listener(PORT, [(PORT, LOOPBACK, 0)]).is_err());
+        assert!(
+            require_exact_loopback_listener(
+                PORT,
+                [(PORT, LOOPBACK, PID), (PORT, 0, 1234)],
+            )
+            .expect_err("same-port wildcard must refuse exact ownership")
+            .contains("wildcard")
+        );
+        assert!(
+            require_exact_loopback_listener(
+                PORT,
+                [(PORT, LOOPBACK, PID), (PORT, LOOPBACK, PID)],
+            )
+            .expect_err("duplicate loopback rows are ambiguous")
+            .contains("ambiguous")
+        );
     }
 
     #[test]
