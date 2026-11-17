@@ -301,8 +301,7 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
     // These bounded facts can only restrict continuation, never authorize it.
     let unfinished_pressure = state.unfinished_turn_pressure;
     let last_processed = state.last_processed_turn_id.as_deref();
-    if unfinished_pressure
-        >= crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD
+    if unfinished_pressure >= crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD
         || last_processed.is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
         || (unfinished_pressure > 0
             && (!state.enabled
