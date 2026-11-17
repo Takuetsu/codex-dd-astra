@@ -1784,6 +1784,14 @@ pub struct ThreadAdaptiveWorkflowState {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub transient_retry_consumed: Option<bool>,
+    /// Same-route unfinished-turn pressure, capped and non-authoritative.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub unfinished_turn_pressure: Option<u8>,
+    /// Last processed terminal/unfinished turn, retained for replay refusal only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub last_processed_turn_id: Option<String>,
     /// Progress pressure only; not a tool result, receipt or successor permit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
