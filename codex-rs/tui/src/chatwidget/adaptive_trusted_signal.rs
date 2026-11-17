@@ -970,7 +970,10 @@ mod tests {
         assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
         assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 0);
         assert_eq!(
-            (chat.adaptive_effort.current_family, chat.adaptive_effort.current_effort),
+            (
+                chat.adaptive_effort.current_family,
+                chat.adaptive_effort.current_effort
+            ),
             before_route
         );
         assert_eq!(chat.adaptive_effort.workflow_terminal, None);
