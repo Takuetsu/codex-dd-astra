@@ -356,6 +356,12 @@ impl TurnRequestProcessor {
                         }),
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
+                        // Retry pressure is a non-authoritative fact. Do not
+                        // persist any consumed permit or Core evidence here.
+                        consecutive_no_native_progress_turns: state
+                            .consecutive_no_native_progress_turns
+                            .unwrap_or_default(),
+                        last_no_native_progress_turn_id: state.last_no_native_progress_turn_id,
                         worker_role: state.worker_role,
                         authorized_scope: state.authorized_scope,
                         assignment_task_kind: state.assignment_task_kind,
