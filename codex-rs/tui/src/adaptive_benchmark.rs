@@ -398,9 +398,9 @@ impl AdaptiveApprovedBenchmark {
         // A 2-vs-4 comparison is not meaningful when the two measured runs
         // overlap or execute out of order. Native event timestamps, rather
         // than model prose or a reconstructed test fixture, establish order.
-        if four_start.is_none_or(|four| {
-            two_done.is_none_or(|two| four.started_at_ms < two.completed_at_ms)
-        }) {
+        if four_start
+            .is_none_or(|four| two_done.is_none_or(|two| four.started_at_ms < two.completed_at_ms))
+        {
             return Err(
                 "SETUP_BLOCKED: benchmark runs overlap or are out of required 2-then-4 order"
                     .to_string(),
