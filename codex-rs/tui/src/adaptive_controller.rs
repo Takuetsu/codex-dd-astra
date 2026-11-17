@@ -103,7 +103,9 @@ pub(crate) fn reduce_unfinished_authorized_turn(
             AdaptiveControllerReduction {
                 state: AdaptiveControllerState {
                     attempt_number: next_attempt,
-                    transient_retry_consumed: false,
+                    // A no-op continuation has not produced admissible new evidence;
+                    // it cannot restore a consumed infrastructure retry budget.
+                    transient_retry_consumed: state.transient_retry_consumed,
                     ..state
                 },
                 decision: AdaptiveControllerDecision::ContinueSameRoute {
