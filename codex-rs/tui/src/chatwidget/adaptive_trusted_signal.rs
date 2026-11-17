@@ -931,10 +931,7 @@ mod tests {
             assert_eq!(chat.adaptive_effort.current_effort, initial_effort);
             assert_eq!(chat.adaptive_effort.workflow_terminal, None);
         }
-        assert_eq!(
-            chat.adaptive_effort.attempt_number,
-            initial_attempt + 12
-        );
+        assert_eq!(chat.adaptive_effort.attempt_number, initial_attempt + 12);
     }
 
     #[tokio::test]
