@@ -342,10 +342,19 @@ impl AdaptiveApprovedBenchmark {
                 .as_ref()
                 .is_some_and(|process_id| Some(process_id) != done_process_id.as_ref())
         {
-            return Err(
-                "SETUP_BLOCKED: native benchmark start does not match owner command, lock, thread, turn or completion"
-                    .to_string(),
-            );
+            return Err(format!(
+                "SETUP_BLOCKED: native benchmark start does not match owner command, lock, thread, turn or completion (lock_owned={}, after_lock={}, after_run={}, same_thread={}, same_turn={}, command_exact={}, done_command_exact={}, cwd_exact={}, same_source={}, same_pid={})",
+                lock.owns_original_path(),
+                started > lock.acquired_at_ms,
+                started >= run_started_at_ms,
+                start.thread_id == thread_id.to_string(),
+                start.turn_id == turn_id && done.turn_id == start.turn_id,
+                command == expected_command,
+                command == done_command,
+                Path::new(cwd.as_str()).canonicalize().ok().as_ref() == Some(&self.root),
+                source == done_source,
+                process_id.as_ref().is_none_or(|pid| Some(pid) == done_process_id.as_ref()),
+            ));
         }
         Ok(())
     }
