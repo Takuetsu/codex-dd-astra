@@ -46,6 +46,8 @@ on:
       - codex-rs/core/src/unified_exec/mod.rs
       - codex-rs/core/src/unified_exec/process.rs
       - codex-rs/core/src/unified_exec/process_manager.rs
+      - codex-rs/core/src/unified_exec/owned_runtime_health.rs
+      - codex-rs/core/Cargo.toml
       - codex-rs/utils/pty/src/process.rs
       - codex-rs/utils/pty/src/pty.rs
       - codex-rs/utils/pty/src/pipe.rs
@@ -3084,6 +3086,25 @@ jobs:
             throw "D02 real OS PID identity or remote-driver refusal failed (exit=$testExit)"
           }
           Write-Host "D02 Core-owned local OS PID prereq: 2 verified native Windows tests; no health gate minted"
+      - name: Validate bounded Core-owned Windows TCP/HTTP observer and refusal controls
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1d3_'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('3 tests, 0 benchmarks'))) {
+            throw 'Expected exactly three Core-owned D02 listener/HTTP regressions'
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 3 passed; 0 failed; 0 ignored;'))) {
+            throw "Core-owned D02 listener/HTTP negative tests failed (exit=$testExit)"
+          }
+          Write-Host "D02 Core-native bounded TCP/HTTP proof: 3 checks passed; health admission remains PENDING"
       - name: Compile exact-source native TUI test executable once
         shell: pwsh
         working-directory: codex-rs
