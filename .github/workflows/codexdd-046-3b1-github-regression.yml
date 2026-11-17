@@ -42,6 +42,10 @@ on:
       - codex-rs/core/src/session/turn_context.rs
       - codex-rs/core/src/tools/handlers/codexdd_validation.rs
       - codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs
+      # D02 native producer registration/QA prerequisite changes must trigger CI.
+      - codex-rs/core/src/tools/handlers/codexdd_owned_runtime.rs
+      - codex-rs/core/src/tools/handlers/mod.rs
+      - codex-rs/core/src/tools/spec_plan.rs
       # D02 Core-owned OS process identity must never bypass source-pinned CI.
       - codex-rs/core/src/unified_exec/mod.rs
       - codex-rs/core/src/unified_exec/process.rs
