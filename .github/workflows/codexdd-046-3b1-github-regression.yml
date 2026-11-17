@@ -2985,6 +2985,10 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & cargo test --locked -p codex-tui --lib codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3C pinned READY cold-resume refusal regressed' }
+          # Pure controller regression: a no-evidence continuation must not
+          # rearm a consumed transient-infrastructure retry on the same route.
+          & cargo test --locked -p codex-tui --lib retry_is_route_local_and_only_one_transient_retry_is_allowed -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 spent infrastructure retry was rearmed without evidence' }
           & cargo test --locked -p codex-history --lib workflow_state_rollout_records_round_trip_without_thread_identity -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'Legacy workflow history compatibility regressed' }
       - name: Confirm nonrelease, nonproduction and clean source
