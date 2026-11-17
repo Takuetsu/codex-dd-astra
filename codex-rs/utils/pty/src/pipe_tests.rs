@@ -20,7 +20,8 @@ fn process_fallback_interrupt_terminates_root() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn codexdd_046_3d1d2_real_windows_pipe_child_has_exact_os_pid_and_expires() -> anyhow::Result<()> {
+async fn codexdd_046_3d1d2_real_windows_pipe_child_has_exact_os_pid_and_expires()
+-> anyhow::Result<()> {
     use std::collections::HashMap;
     use std::time::Duration;
 
