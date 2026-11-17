@@ -236,26 +236,28 @@ impl AdaptiveApprovedBenchmark {
             .map_err(|_| {
                 "SETUP_BLOCKED: cannot exclusively acquire approved benchmark lock".to_string()
             })?;
-        if let Err(error) = file.try_lock() {
-            drop(file);
-            let _ = std::fs::remove_file(&self.lock_path);
+        // Own the file handle before trying to lock or read the clock. All
+        // error paths then use Drop's same-file identity check, never a blind
+        // pathname unlink that could delete another owner's replacement lock.
+        let mut held = AdaptiveBenchmarkLock {
+            path: self.lock_path.clone(),
+            file: Some(file),
+            acquired_at_ms: 0,
+        };
+        let held_file = held
+            .file
+            .as_ref()
+            .ok_or_else(|| "SETUP_BLOCKED: benchmark lock handle disappeared".to_string())?;
+        if let Err(error) = held_file.try_lock() {
             return Err(format!(
                 "SETUP_BLOCKED: resource lock cannot be held exclusively: {error}"
             ));
         }
-        let acquired_at_ms = match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(elapsed) => elapsed.as_millis() as u64,
-            Err(_) => {
-                drop(file);
-                let _ = std::fs::remove_file(&self.lock_path);
-                return Err("SETUP_BLOCKED: benchmark lock clock unavailable".to_string());
-            }
-        };
-        Ok(AdaptiveBenchmarkLock {
-            path: self.lock_path.clone(),
-            file: Some(file),
-            acquired_at_ms,
-        })
+        held.acquired_at_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| "SETUP_BLOCKED: benchmark lock clock unavailable".to_string())?
+            .as_millis() as u64;
+        Ok(held)
     }
 
     /// Correlate a command's native start and completion shapes before
