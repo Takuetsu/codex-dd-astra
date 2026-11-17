@@ -935,6 +935,48 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn codexdd_046_3b4_c05_replayed_turn_refuses_but_new_native_progress_continues() {
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
+        let thread_id = ThreadId::new();
+        chat.thread_id = Some(thread_id);
+        chat.dispatch_adaptive_command("astra");
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Implementation;
+        chat.adaptive_effort.worker_context.authorized_scope =
+            Some("bounded replay-refusal and native progress".to_string());
+        chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        chat.adaptive_effort.implementation_phase =
+            Some(AdaptiveImplementationPhase::Implementation);
+        chat.adaptive_effort.attempt_number = 2;
+        chat.adaptive_effort.unfinished_turn_pressure = 1;
+        chat.adaptive_effort.last_processed_terminal_turn_id =
+            Some("already-counted-turn".to_string());
+        chat.turn_lifecycle.agent_turn_running = false;
+        let before_route = (
+            chat.adaptive_effort.current_family,
+            chat.adaptive_effort.current_effort,
+        );
+        assert!(!chat.apply_adaptive_unfinished_authorized_turn("already-counted-turn"));
+        assert_eq!(chat.adaptive_effort.attempt_number, 2);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 1);
+        chat.register_adaptive_evidence(&command_evidence(
+            thread_id,
+            "fresh-native-turn",
+            "fresh-native-command",
+            CommandExecutionStatus::Completed,
+            0,
+        ));
+        assert!(chat.apply_adaptive_unfinished_authorized_turn("fresh-native-turn"));
+        assert_eq!(chat.adaptive_effort.attempt_number, 3);
+        assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);
+        assert_eq!(chat.adaptive_effort.consecutive_no_native_progress_turns, 0);
+        assert_eq!(
+            (chat.adaptive_effort.current_family, chat.adaptive_effort.current_effort),
+            before_route
+        );
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    }
+
+    #[tokio::test]
     async fn control_only_tool_lookups_do_not_mask_implementation_stall() {
         let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let thread_id = ThreadId::new();
