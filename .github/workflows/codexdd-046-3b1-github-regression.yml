@@ -2923,7 +2923,7 @@ jobs:
           if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.4 source identity mismatch' }
           if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
           if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Production version changed' }
-          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b4'
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1c'
           $temp = Join-Path $root 'temp'
           New-Item -ItemType Directory -Force -Path $temp | Out-Null
           @(
@@ -2951,7 +2951,7 @@ jobs:
       - name: Restore verified native Rust compilation cache
         uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
-          path: ${{ runner.temp }}/codexdd-046-3b4/target
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
           key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
       - name: Compile current-source TUI tests
         shell: pwsh
