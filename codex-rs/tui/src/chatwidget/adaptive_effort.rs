@@ -515,6 +515,8 @@ impl AdaptiveEffortState {
             }),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
+            // A consumed retry is non-authoritative pressure, not a successor permit.
+            transient_retry_consumed: Some(self.transient_retry_consumed),
             // Preserve only bounded pressure and the last counted turn; neither
             // grants a successor or restores native evidence after a restart.
             consecutive_no_native_progress_turns: Some(
