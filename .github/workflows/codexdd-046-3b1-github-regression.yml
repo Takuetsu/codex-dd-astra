@@ -81,7 +81,7 @@ permissions:
 concurrency:
   group: codexdd-046-3b1-${{ github.ref }}
   # Only an explicitly requested exact-source 3C or scoped 3D native acceptance supersedes obsolete runs.
-  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]') || contains(github.event.head_commit.message, '[3d1c-native]')) }}
+  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]') || contains(github.event.head_commit.message, '[3d1c-native]') || contains(github.event.head_commit.message, '[3b4-native]')) }}
 
 jobs:
   source-contract:
@@ -2896,3 +2896,100 @@ jobs:
         run: |
           git status --short
           Write-Host "D01 isolated native admission only; no 3D acceptance, host manager, production or release."
+
+  windows-3b4-progress-native:
+    name: 3B.4 Windows no-progress cold-resume persistence and negative controls
+    # The checkpoint records retry pressure only. No native proof, QA PASS,
+    # host-process rights, release, install or benchmark authority is restored.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b4-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Pin isolated Windows 3B.4 Rust target
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.4 source identity mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Production version changed' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b4'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $root 'target')"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native test children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          Copy-Item -LiteralPath $dotslash -Destination (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe') -Force
+      - name: Use pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure checksum-verified Windows V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Restore verified native Rust compilation cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3b4/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Compile current-source TUI tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib --no-run
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 current-source TUI compile failed' }
+      - name: Verify three no-progress persistence and refusal regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b4_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains('3 tests, 0 benchmarks'))) {
+            throw 'Expected exactly three 3B.4 bounded-progress persistence tests'
+          }
+          $output = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $output | Out-Host
+          if ($testExit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 3 passed; 0 failed; 0 ignored;'))) {
+            throw "3B.4 native progress and refusal tests failed (exit=$testExit)"
+          }
+      - name: Protect previous native source cold-resume refusal
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C pinned READY cold-resume refusal regressed' }
+          & cargo test --locked -p codex-history --lib workflow_state_rollout_records_round_trip_without_thread_identity -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Legacy workflow history compatibility regressed' }
+      - name: Confirm nonrelease, nonproduction and clean source
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "3B.4 source-pinned non-authoritative retry-pressure checkpoint only; D02 and release gates remain open."
