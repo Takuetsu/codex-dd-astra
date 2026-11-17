@@ -1321,5 +1321,28 @@ mod tests {
                 .expect_err("foreign/reused PID")
                 .contains("reuses")
         );
+
+        // Even a handle opened at the correct scratch pathname cannot remove
+        // that path if this owner never successfully acquired its OS lock.
+        let unacquired_path = std::env::temp_dir().join(format!(
+            "codexdd-046-3d1c-unacquired-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let unacquired_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(&unacquired_path)
+            .expect("disposable unacquired scratch file");
+        drop(AdaptiveBenchmarkLock {
+            path: unacquired_path.clone(),
+            file: Some(unacquired_file),
+            acquired_at_ms: 0,
+        });
+        assert!(
+            unacquired_path.exists(),
+            "failed or unacquired handle must not unlink another holder's scratch path"
+        );
+        std::fs::remove_file(&unacquired_path).expect("clean up isolated unacquired fixture");
     }
 }
