@@ -517,6 +517,13 @@ impl AdaptiveEffortState {
             paused_by_user: self.paused_by_user,
             // A consumed retry is non-authoritative pressure, not a successor permit.
             transient_retry_consumed: Some(self.transient_retry_consumed),
+            unfinished_turn_pressure: Some(self.unfinished_turn_pressure),
+            // A replay marker may survive, but never a native result or permit.
+            last_processed_turn_id: (self.enabled
+                && self.worker_assignment_locked
+                && self.worker_context.role != AdaptiveWorkerRole::Unspecified)
+                .then(|| self.last_processed_terminal_turn_id.clone())
+                .flatten(),
             // Preserve only bounded pressure and the last counted turn; neither
             // grants a successor or restores native evidence after a restart.
             consecutive_no_native_progress_turns: Some(
