@@ -108,8 +108,10 @@ impl AdaptiveBenchmarkLock {
 
 impl Drop for AdaptiveBenchmarkLock {
     fn drop(&mut self) {
-        // Do not remove another owner's replacement scratch lock.
-        let owns_path = self.owns_original_path();
+        // Only a successfully acquired owner lease may clean up its own
+        // scratch path. A failed lock attempt must not delete a file another
+        // process has since acquired, even if the handle inode is unchanged.
+        let owns_path = self.acquired_at_ms != 0 && self.owns_original_path();
         drop(self.file.take());
         if owns_path {
             let _ = std::fs::remove_file(&self.path);
