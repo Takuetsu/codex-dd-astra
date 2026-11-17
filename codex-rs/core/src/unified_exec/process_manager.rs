@@ -480,10 +480,9 @@ impl UnifiedExecProcessManager {
         {
             return Err("SETUP_BLOCKED: Core owner, original command or cwd mismatch");
         }
-        entry
-            .process
-            .live_local_os_pid()
-            .ok_or("SETUP_BLOCKED: no live local OS process handle; remote and exited sessions refuse")
+        entry.process.live_local_os_pid().ok_or(
+            "SETUP_BLOCKED: no live local OS process handle; remote and exited sessions refuse",
+        )
     }
 
     pub(crate) async fn allocate_process_id(&self) -> i32 {
