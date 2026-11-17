@@ -1780,6 +1780,10 @@ pub struct ThreadAdaptiveWorkflowState {
     pub validation_status: Option<ThreadAdaptiveValidationStatus>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
+    /// Consumed one-time infrastructure retry budget; never grants permission or evidence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub transient_retry_consumed: Option<bool>,
     /// Progress pressure only; not a tool result, receipt or successor permit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
