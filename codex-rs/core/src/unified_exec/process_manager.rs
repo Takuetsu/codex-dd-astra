@@ -446,6 +446,46 @@ fn terminate_process_on_network_denial(
 }
 
 impl UnifiedExecProcessManager {
+    /// D02 read-only identity lookup for a directly launched local process.
+    /// The caller MUST obtain the expected argv and cwd from immutable owner
+    /// authority, not a model-supplied claim. The Core Arc owner, original
+    /// call ID, exact launch argv, cwd and live OS handle must all match.
+    ///
+    /// This method does not probe HTTP, create a receipt, mint READY, adopt
+    /// foreign processes or authorize any new execution.
+    pub(crate) async fn inspect_owned_local_os_pid(
+        &self,
+        original_session: &Arc<Session>,
+        exec_session_id: i32,
+        original_call_id: &str,
+        original_owner_command: &[String],
+        original_owner_cwd: &PathUri,
+    ) -> Result<u32, &'static str> {
+        if original_call_id.is_empty() || original_owner_command.is_empty() {
+            return Err("SETUP_BLOCKED: missing original Core call or owner command");
+        }
+        let store = self.process_store.lock().await;
+        let entry = store
+            .processes
+            .get(&exec_session_id)
+            .ok_or("SETUP_BLOCKED: no live Core-owned exec session")?;
+        let session = entry
+            .session
+            .upgrade()
+            .ok_or("SETUP_BLOCKED: original Core session is gone")?;
+        if !Arc::ptr_eq(&session, original_session)
+            || entry.call_id != original_call_id
+            || entry.original_command.as_slice() != original_owner_command
+            || entry.cwd != *original_owner_cwd
+        {
+            return Err("SETUP_BLOCKED: Core owner, original command or cwd mismatch");
+        }
+        entry
+            .process
+            .live_local_os_pid()
+            .ok_or("SETUP_BLOCKED: no live local OS process handle; remote and exited sessions refuse")
+    }
+
     pub(crate) async fn allocate_process_id(&self) -> i32 {
         loop {
             let mut store = self.process_store.lock().await;
@@ -1212,6 +1252,7 @@ impl UnifiedExecProcessManager {
             plugin_metrics_sidecar: plugin_metrics_sidecar.clone(),
             call_id: context.call_id.clone(),
             process_id,
+            original_command: command.to_vec(),
             cwd: cwd.clone(),
             initial_exec_command_active,
             hook_command,
