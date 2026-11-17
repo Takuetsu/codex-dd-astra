@@ -81,7 +81,7 @@ permissions:
 concurrency:
   group: codexdd-046-3b1-${{ github.ref }}
   # Only an explicitly requested exact-source 3C or scoped 3D native acceptance supersedes obsolete runs.
-  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]')) }}
+  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]') || contains(github.event.head_commit.message, '[3d1c-native]')) }}
 
 jobs:
   source-contract:
@@ -2812,13 +2812,13 @@ jobs:
           $list = & cargo test --locked -p codex-tui --lib $group -- --list 2>&1
           $listExit = $LASTEXITCODE
           $list | Out-Host
-          if ($listExit -ne 0 -or -not (($list -join [Environment]::NewLine).Contains('2 tests, 0 benchmarks'))) {
-            throw 'Required two D01 native tests not enumerated'
+          if ($listExit -ne 0 -or -not (($list -join [Environment]::NewLine).Contains('3 tests, 0 benchmarks'))) {
+            throw 'Required three D01 native tests not enumerated'
           }
           $output = & cargo test --locked -p codex-tui --lib $group -- --test-threads=1 --nocapture 2>&1
           $exit = $LASTEXITCODE
           $output | Out-Host
-          if ($exit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
+          if ($exit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 3 passed; 0 failed; 0 ignored;'))) {
             throw "Native benchmark fixture failed (exit=$exit)"
           }
           # Real in-process Core must execute one harmless disposable agent command
