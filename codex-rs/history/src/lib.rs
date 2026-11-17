@@ -198,7 +198,9 @@ pub struct AdaptiveGateCheckpointSnapshot {
 /// Durable codex-dd adaptive workflow facts that may safely survive process restart.
 ///
 /// Ephemeral authorization state such as pending signals, pending attempts, successor permits,
-/// unfinished pressure, and evidence registries is intentionally excluded.
+/// unfinished successor permits and native evidence registries is intentionally excluded.
+/// The bounded no-native-progress streak and its last counted turn are
+/// non-authoritative retry pressure only, never evidence of a successful run.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub struct AdaptiveWorkflowStateSnapshot {
     pub enabled: bool,
@@ -222,6 +224,12 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub validation_status: Option<AdaptiveValidationStatusSnapshot>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
+    /// Bounded Implementation retry pressure; never native evidence or authorization.
+    #[serde(default)]
+    pub consecutive_no_native_progress_turns: u8,
+    /// Source turn of the last counted no-native-progress result, for replay refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_no_native_progress_turn_id: Option<String>,
     pub worker_role: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authorized_scope: Option<String>,
