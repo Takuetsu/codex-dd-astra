@@ -273,6 +273,29 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
                 .to_string(),
         );
     }
+    // Preserve bounded retry pressure, not native evidence. Malformed,
+    // over-limit or foreign-role snapshots cannot extend the successor budget.
+    let no_native_streak = state.consecutive_no_native_progress_turns;
+    let last_no_native_turn = state.last_no_native_progress_turn_id.as_deref();
+    if no_native_streak > crate::chatwidget::adaptive_effort::CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT
+        || (no_native_streak > 0)
+            != last_no_native_turn.is_some()
+        || last_no_native_turn
+            .is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
+        || (no_native_streak > 0
+            && (!state.enabled
+                || !state.worker_assignment_locked
+                || state
+                    .authorized_scope
+                    .as_deref()
+                    .is_none_or(|scope| scope.trim().is_empty())
+                || worker_role != AdaptiveWorkerRole::Implementation
+                || complexity_class.is_none()
+                || implementation_phase.is_none()
+                || workflow_terminal.is_some()))
+    {
+        return Err("persisted no-native-progress digest is invalid or exceeds its cap".to_string());
+    }
     let validation_repair_cycles_used = state.validation_repair_cycles_used;
     let validation_repair_fingerprint = state.validation_repair_fingerprint;
     let validation_targeted_retest_required = state.validation_targeted_retest_required;
@@ -443,10 +466,15 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         workflow_terminal,
         transient_retry_consumed: false,
         unfinished_turn_pressure: 0,
-        // Restored state has no trustworthy per-turn native evidence; restart
-        // the in-memory progress streak rather than inheriting a stale count.
-        consecutive_no_native_progress_turns: 0,
-        last_processed_terminal_turn_id: workflow_terminal.and(source_turn_id),
+        // Only pressure and a previously counted turn survive. All native
+        // evidence and successor permits still restore empty, so a repeated
+        // terminal event cannot buy a fresh no-progress continuation budget.
+        consecutive_no_native_progress_turns: no_native_streak,
+        last_processed_terminal_turn_id: if workflow_terminal.is_some() {
+            source_turn_id
+        } else {
+            state.last_no_native_progress_turn_id
+        },
         pending_attempt: None,
         successor_admission: None,
         pending_signal: None,
@@ -552,6 +580,8 @@ mod tests {
                 validation_repair_cycles_used: 0,
                 validation_targeted_retest_required: false,
                 validation_status: None,
+                consecutive_no_native_progress_turns: 0,
+                last_no_native_progress_turn_id: None,
                 attempt_number: 6,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
@@ -624,6 +654,8 @@ mod tests {
                     validation_repair_cycles_used: 0,
                     validation_targeted_retest_required: false,
                     validation_status: None,
+                    consecutive_no_native_progress_turns: 0,
+                    last_no_native_progress_turn_id: None,
                     attempt_number: 1,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
@@ -663,6 +695,8 @@ mod tests {
                 validation_repair_cycles_used: 0,
                 validation_targeted_retest_required: false,
                 validation_status: None,
+                consecutive_no_native_progress_turns: 0,
+                last_no_native_progress_turn_id: None,
                 attempt_number: 4,
                 paused_by_user: true,
                 worker_role: "validation".to_string(),
@@ -709,6 +743,8 @@ mod tests {
                     validation_repair_cycles_used: 0,
                     validation_targeted_retest_required: false,
                     validation_status: None,
+                    consecutive_no_native_progress_turns: 0,
+                    last_no_native_progress_turn_id: None,
                     attempt_number: 2,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
