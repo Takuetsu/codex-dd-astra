@@ -2960,7 +2960,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & cargo test --locked -p codex-tui --lib --no-run
           if ($LASTEXITCODE -ne 0) { throw '3B.4 current-source TUI compile failed' }
-      - name: Verify three no-progress persistence and refusal regressions
+      - name: Verify six 3B.4 persistence, productive-turn and refusal regressions
         shell: pwsh
         working-directory: codex-rs
         run: |
@@ -2969,13 +2969,13 @@ jobs:
           $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
           $listExit = $LASTEXITCODE
           $listing | Out-Host
-          if ($listExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains('3 tests, 0 benchmarks'))) {
-            throw 'Expected exactly three 3B.4 bounded-progress persistence tests'
+          if ($listExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains('6 tests, 0 benchmarks'))) {
+            throw 'Expected exactly six 3B.4 bounded-progress and typed-refusal tests'
           }
           $output = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
           $testExit = $LASTEXITCODE
           $output | Out-Host
-          if ($testExit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 3 passed; 0 failed; 0 ignored;'))) {
+          if ($testExit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 6 passed; 0 failed; 0 ignored;'))) {
             throw "3B.4 native progress and refusal tests failed (exit=$testExit)"
           }
       - name: Protect previous native source cold-resume refusal
@@ -2989,6 +2989,10 @@ jobs:
           # rearm a consumed transient-infrastructure retry on the same route.
           & cargo test --locked -p codex-tui --lib retry_is_route_local_and_only_one_transient_retry_is_allowed -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw '3B.4 spent infrastructure retry was rearmed without evidence' }
+          & cargo test --locked -p codex-tui --lib genuine_native_activity_resets_no_progress_streak -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 real native activity no longer resets no-progress watchdog' }
+          & cargo test --locked -p codex-tui --lib control_only_tool_lookups_do_not_mask_implementation_stall -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 control-only queries masked missing progress' }
           & cargo test --locked -p codex-history --lib workflow_state_rollout_records_round_trip_without_thread_identity -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'Legacy workflow history compatibility regressed' }
       - name: Confirm nonrelease, nonproduction and clean source
