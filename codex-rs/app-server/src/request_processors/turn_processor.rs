@@ -359,7 +359,9 @@ impl TurnRequestProcessor {
                         transient_retry_consumed: state
                             .transient_retry_consumed
                             .unwrap_or_default(),
-                        unfinished_turn_pressure: state.unfinished_turn_pressure.unwrap_or_default(),
+                        unfinished_turn_pressure: state
+                            .unfinished_turn_pressure
+                            .unwrap_or_default(),
                         last_processed_turn_id: state.last_processed_turn_id,
                         // Retry pressure is a non-authoritative fact. Do not
                         // persist any consumed permit or Core evidence here.
