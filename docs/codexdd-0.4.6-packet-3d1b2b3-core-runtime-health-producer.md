@@ -26,6 +26,12 @@
 - Demonstrate source-, Core-session-, child-, and turn-bound revalidation at the terminal gate, not merely an isolated disposable test that produces a protocol-shaped message.
 - Run D01–D03 plus prior 3C security regressions at one final source SHA (3D.1d audit), followed by the 0.4.6 broader release acceptance program.
 
+## Current next implementation — direct Core-owned OS PID visibility
+
+The local pipe/PTY `codex-utils-pty::ProcessHandle` now retains a direct child OS PID captured at spawn. It exposes that PID only while its owned handle is live; driver-backed and remote process handles expose no local PID. The Core `UnifiedExecProcess` wrapper and `UnifiedExecProcessManager::inspect_owned_local_os_pid` provide a **read-only** query requiring the same live `Arc<Session>`, exact original tool-call ID, original command argv and original cwd. The model-facing terminal session ID is deliberately **not** used as an OS PID.
+
+The Windows probe tests require a real PowerShell child to report its own `$PID`, compare that with the retained child identity and refuse after exit; a driver-backed fixture cannot invent a Windows PID. This is a **prerequisite for D02** and remains non-authoritative: no Core-owned health HTTP proof, retained owner launch allowlist, independent-validator receipt or gate PASS is created by the lookup. A future producer must combine the lookup with immutable original owner-approved executable and port, live listener ownership, health response and the gate's own replay/expiry checks. The manager's read-only method must not be called with a model-supplied "approved" command.
+
 ## Immediate checkpoint
 
-`adaptive_owned_runtime.rs` has a focused fail-closed IPv4 wildcard/ambiguous listener classifier, tested with synthetic table rows and protected by the original live-child HTTP tests. This is **probe hardening only**; it is not the missing Core-native producer and does not turn `OwnedRuntimeHealth` into PASS.
+`adaptive_owned_runtime.rs` retains the fail-closed IPv4 wildcard/ambiguous listener classifier and disposable live-child HTTP tests. Alongside the Core OS-PID lookup, these are **separate safety foundations**, not the missing Core-native trusted receipt. `OwnedRuntimeHealth` stays PENDING until the full authority chain has been verified on one exact source SHA.
