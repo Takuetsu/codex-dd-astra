@@ -3057,6 +3057,25 @@ jobs:
         with:
           path: ${{ runner.temp }}/codexdd-046-3d1c/target
           key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Validate real direct local OS PID identity and driver refusal on Windows
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = 'codexdd_046_3d1d2_'
+          $listed = & cargo test --locked -p codex-utils-pty --lib $name -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('2 tests, 0 benchmarks'))) {
+            throw 'Missing OS-PID and driver-backed refusal tests on exact source'
+          }
+          $result = & cargo test --locked -p codex-utils-pty --lib $name -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 real OS PID identity or remote-driver refusal failed (exit=$testExit)"
+          }
+          Write-Host "D02 Core-owned local OS PID prereq: 2 verified native Windows tests; no health gate minted"
       - name: Compile exact-source native TUI test executable once
         shell: pwsh
         working-directory: codex-rs
