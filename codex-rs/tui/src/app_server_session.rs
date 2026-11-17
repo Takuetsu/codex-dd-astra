@@ -4341,6 +4341,7 @@ mod tests {
                     ),
                     attempt_number: 3,
                     paused_by_user: false,
+                    transient_retry_consumed: Some(false),
                     consecutive_no_native_progress_turns: Some(0),
                     last_no_native_progress_turn_id: None,
                     worker_role: "implementation".to_string(),
