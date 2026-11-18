@@ -37,6 +37,50 @@ use tokio::time::timeout;
 
 const LIVE_TIMEOUT: Duration = Duration::from_secs(90);
 
+fn d02_native_service_script(port: u16, stop_marker: &Path) -> String {
+    // The listener runs in the *same PowerShell process* retained by Core:
+    // spawning a second Powershell child would invalidate the exact OS PID.
+    r#"$ErrorActionPreference = 'Stop'
+$marker = 'STOP_MARKER'
+$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, PORT_VALUE)
+$listener.Start()
+try {
+    $deadline = (Get-Date).AddSeconds(90)
+    while ((Get-Date) -lt $deadline -and -not (Test-Path -LiteralPath $marker)) {
+        if (-not $listener.Pending()) {
+            Start-Sleep -Milliseconds 20
+            continue
+        }
+        $client = $listener.AcceptTcpClient()
+        try {
+            $stream = $client.GetStream()
+            $stream.ReadTimeout = 1000
+            $bytes = New-Object byte[] 1024
+            [void]$stream.Read($bytes, 0, $bytes.Length)
+            $crlf = [string][char]13 + [string][char]10
+            $response = 'HTTP/1.1 200 OK' + $crlf +
+                'Content-Length: 2' + $crlf +
+                'Connection: close' + $crlf + $crlf + 'OK'
+            $reply = [Text.Encoding]::ASCII.GetBytes($response)
+            $stream.Write($reply, 0, $reply.Length)
+            $stream.Flush()
+        } finally {
+            $client.Close()
+        }
+    }
+} finally {
+    $listener.Stop()
+}
+"#
+    .replace("PORT_VALUE", &port.to_string())
+    .replace(
+        "STOP_MARKER",
+        &stop_marker.display().to_string().replace('\'', "''"),
+    )
+}
+
+
+
 fn fixture_git(root: &Path, args: &[&str]) -> Result<String> {
     let output = Command::new("git")
         .arg("-C")
@@ -654,6 +698,454 @@ async fn run_native_app_server_to_tui_handoff(restart_between_workers: bool) -> 
     ensure!(
         persisted_count == 1,
         "TUI must persist owner READY exactly once on the genuine Validator"
+    );
+    timeout(LIVE_TIMEOUT, server.shutdown_gracefully()).await??;
+    Ok(())
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready() -> Result<()> {
+    use crate::adaptive_complexity::AdaptiveComplexityClass;
+    use crate::adaptive_complexity::AdaptiveImplementationPhase;
+    use crate::adaptive_worker::AdaptiveWorkerRole;
+    use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+    use crate::adaptive_worker::NewWorkerBinding;
+    use crate::app_event::AppEvent;
+    use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
+    use std::net::TcpListener;
+
+    let temp = TempDir::new()?;
+    let root = temp.path().join("owned-preview");
+    let scripts = root.join("scripts");
+    std::fs::create_dir_all(&scripts)?;
+    let stop_marker = temp.path().join("stop-d02-service");
+    let reserved = TcpListener::bind(("127.0.0.1", 0))?;
+    let port = reserved.local_addr()?.port();
+    drop(reserved);
+    let pwsh = Path::new(&std::env::var("ProgramFiles")?)
+        .join("PowerShell")
+        .join("7")
+        .join("pwsh.exe");
+    ensure!(pwsh.is_file(), "native Windows PowerShell 7 is required");
+    let script = scripts.join("owned-health.ps1");
+    std::fs::write(&script, d02_native_service_script(port, &stop_marker))?;
+    std::fs::write(
+        scripts.join("codexdd-test-workpacket.ps1"),
+        one_stage_native_script("work-packet", "d02-owned-preview-source"),
+    )?;
+    std::fs::write(
+        scripts.join("codexdd-test-independent.ps1"),
+        one_stage_native_script("independent-review", "d02-distinct-validator"),
+    )?;
+    fixture_git(&root, &["init", "-q"])?;
+    fixture_git(&root, &["add", "scripts"])?;
+    fixture_git(
+        &root,
+        &[
+            "-c",
+            "user.name=CodexDD D02 QA fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "one source-pinned Core-owned preview",
+        ],
+    )?;
+    let sha = fixture_git(&root, &["rev-parse", "HEAD"])?;
+    let canonical = root.canonicalize()?;
+    let scope = "D02 one owned preview, separate Validator and fresh QA";
+    let command = format!("& '{}'", script.display().to_string().replace('\'', "''"));
+    let argv = [
+        pwsh.display().to_string(),
+        "-NoProfile".to_string(),
+        "-Command".to_string(),
+        command.clone(),
+    ];
+    let command_argv = serde_json::to_string(&argv)?;
+    let owner_message = format!(
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"{scope}\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"operations_preview\"\nrequired_gates = [{{ kind = \"owned_runtime_health\", ports = [{port}], command_argv = {command_argv} }}, {{ kind = \"independent_validation\" }}]\n\nRun this one original approved disposable service.",
+        canonical.display(),
+    );
+    ensure!(
+        codex_config::config_toml::parse_adaptive_worker_first_message(&owner_message)?
+            .is_some(),
+        "original owner health permission must be parsed and locked"
+    );
+
+    let mut sequence = vec![
+        create_final_assistant_message_sse_response("Bounded owner accepted.")?,
+        responses::sse(vec![
+            responses::ev_response_created("d02-real-launch"),
+            responses::ev_function_call(
+                "d02-real-launch-call",
+                "exec_command",
+                &json!({
+                    "cmd": command,
+                    "shell": pwsh.display().to_string(),
+                    "login": false,
+                    "tty": false,
+                    "yield_time_ms": 1000
+                })
+                .to_string(),
+            ),
+            responses::ev_completed("d02-real-launch"),
+        ]),
+        create_final_assistant_message_sse_response("Original service launched.")?,
+    ];
+    for (role, profile, tool, call, signal) in [
+        (
+            "implementation",
+            "work_packet",
+            "run_codexdd_validation",
+            "d02-native-source-receipt",
+            "ready_for_validation",
+        ),
+        (
+            "validation",
+            "independent_review",
+            "run_codexdd_independent_validation",
+            "d02-native-independent-receipt",
+            "ready_for_owner_qa",
+        ),
+    ] {
+        if role == "validation" {
+            sequence.push(create_final_assistant_message_sse_response(
+                "Separate Validation Worker bound.",
+            )?);
+        }
+        sequence.push(responses::sse(vec![
+            responses::ev_response_created(&format!("d02-{role}-native")),
+            responses::ev_function_call(
+                call,
+                tool,
+                &json!({"profile": profile}).to_string(),
+            ),
+            responses::ev_completed(&format!("d02-{role}-native")),
+        ]));
+        sequence.push(responses::sse(vec![
+            responses::ev_response_created(&format!("d02-{role}-signal")),
+            responses::ev_function_call(
+                &format!("{call}-signal"),
+                "report_adaptive_signal",
+                &json!({
+                    "kind": signal,
+                    "evidence_refs": [call],
+                    "diagnostic_note": "native D02 exact owner QA",
+                })
+                .to_string(),
+            ),
+            responses::ev_completed(&format!("d02-{role}-signal")),
+        ]));
+        sequence.push(create_final_assistant_message_sse_response("done")?);
+    }
+    let backend = create_mock_responses_server_sequence_unchecked(sequence).await;
+    let home = TempDir::new()?;
+    MockResponsesConfig::new(&backend.uri()).write(home.path())?;
+    let mut server = TestAppServer::builder()
+        .with_codex_home(home.path())
+        .without_auto_env()
+        .build_initialized()
+        .await?;
+    let (mut chat, _sender, mut app_events, _op_rx) = make_chatwidget_manual_with_sender().await;
+    let mut origin_thread = None;
+    let mut validator_thread = None;
+    let mut last_validation_turn = None;
+    for (role, profile, call_id) in [
+        ("implementation", "work_packet", "d02-native-source-receipt"),
+        ("validation", "independent_review", "d02-native-independent-receipt"),
+    ] {
+        let thread_start_id = server
+            .send_thread_start_request(ThreadStartParams {
+                model: Some("mock-model".to_string()),
+                cwd: Some(canonical.display().to_string()),
+                history_mode: Some(ThreadHistoryMode::Legacy),
+                approval_policy: Some(AskForApproval::Never),
+                // Only disposable temp Git source and loopback CI service.
+                sandbox: Some(SandboxMode::DangerFullAccess),
+                ..Default::default()
+            })
+            .await?;
+        let started: ThreadStartResponse =
+            timeout(LIVE_TIMEOUT, server.read_response(thread_start_id)).await??;
+        let thread_id = started.thread.id;
+        let thread = ThreadId::from_string(&thread_id)?;
+        chat.thread_id = Some(thread);
+        if role == "implementation" {
+            chat.dispatch_adaptive_command("astra");
+            origin_thread = Some(thread);
+        } else {
+            let parent = origin_thread.context("original Core Implementation missing")?;
+            ensure!(thread != parent, "Validator must run in separate Core thread");
+            validator_thread = Some(thread);
+        }
+        let header = if role == "implementation" {
+            owner_message.clone()
+        } else {
+            format!(
+                "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"{scope}\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"operations_preview\"\n\nIndependently validate only the source-pinned original owner preview.",
+                canonical.display(),
+            )
+        };
+        let bind_id = server
+            .send_turn_start_request(TurnStartParams {
+                thread_id: thread_id.clone(),
+                input: vec![UserInput::Text {
+                    text: header,
+                    text_elements: Vec::new(),
+                }],
+                ..Default::default()
+            })
+            .await?;
+        let bound: TurnStartResponse =
+            timeout(LIVE_TIMEOUT, server.read_response(bind_id)).await??;
+        let first_item = take_item_event(&mut server, &thread_id, &bound.turn.id, None).await?;
+        chat.handle_server_notification(first_item, None);
+        ensure!(
+            chat.adaptive_effort.worker_context.role
+                == if role == "implementation" {
+                    AdaptiveWorkerRole::Implementation
+                } else {
+                    AdaptiveWorkerRole::Validation
+                },
+            "live first user message did not preserve Worker role"
+        );
+        let binding_done =
+            take_turn_event(&mut server, "turn/completed", &thread_id, &bound.turn.id).await?;
+        ensure!(
+            matches!(binding_done, ServerNotification::TurnCompleted(_)),
+            "original Worker header did not complete"
+        );
+        if role == "implementation" {
+            ensure!(
+                chat.adaptive_effort
+                    .gate_ledger
+                    .as_ref()
+                    .is_some_and(|ledger| {
+                        ledger.outstanding(&chat.adaptive_effort.evidence_registry).len() == 2
+                    }),
+                "original owner must have runtime plus independent pending gates"
+            );
+            let launch_id = server
+                .send_turn_start_request(TurnStartParams {
+                    thread_id: thread_id.clone(),
+                    input: vec![UserInput::Text {
+                        text: "Launch only the original owner-approved service.".to_string(),
+                        text_elements: Vec::new(),
+                    }],
+                    ..Default::default()
+                })
+                .await?;
+            let launched: TurnStartResponse =
+                timeout(LIVE_TIMEOUT, server.read_response(launch_id)).await??;
+            let done =
+                take_turn_event(&mut server, "turn/completed", &thread_id, &launched.turn.id)
+                    .await?;
+            ensure!(
+                matches!(done, ServerNotification::TurnCompleted(_)),
+                "Core did not retain live approved service turn"
+            );
+            let health_request = server
+                .send_request(
+                    "thread/ownedRuntimeHealth/review",
+                    Some(json!({"threadId": thread_id})),
+                )
+                .await?;
+            let early: codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse =
+                timeout(LIVE_TIMEOUT, server.read_response(health_request)).await??;
+            ensure!(
+                early.owner_pid > 0
+                    && early.approved_port == port
+                    && early.source_sha.eq_ignore_ascii_case(&sha),
+                "native Core listener health did not match owner authorization"
+            );
+            ensure!(
+                chat.adaptive_effort.workflow_terminal.is_none(),
+                "Core-owned HTTP health alone cannot grant QA READY"
+            );
+            chat.adaptive_effort.complexity_class = Some(AdaptiveComplexityClass::Standard);
+            chat.adaptive_effort.implementation_phase =
+                Some(AdaptiveImplementationPhase::MechanicalValidation);
+        }
+        let native_id = server
+            .send_turn_start_request(TurnStartParams {
+                thread_id: thread_id.clone(),
+                input: vec![UserInput::Text {
+                    text: format!("Run only original {role} {profile} native validation."),
+                    text_elements: Vec::new(),
+                }],
+                turn_trigger: (role == "implementation").then(|| {
+                    codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER
+                        .to_string()
+                }),
+                ..Default::default()
+            })
+            .await?;
+        let native: TurnStartResponse =
+            timeout(LIVE_TIMEOUT, server.read_response(native_id)).await??;
+        let started = take_turn_event(
+            &mut server,
+            "turn/started",
+            &thread_id,
+            &native.turn.id,
+        )
+        .await?;
+        chat.handle_server_notification(started, None);
+        let item =
+            take_item_event(&mut server, &thread_id, &native.turn.id, Some(call_id)).await?;
+        let ServerNotification::ItemCompleted(ref receipt) = item else {
+            anyhow::bail!("expected actual Core-native tool completion");
+        };
+        let ThreadItem::DynamicToolCall {
+            arguments,
+            success,
+            status,
+            ..
+        } = &receipt.item
+        else {
+            anyhow::bail!("native validation must emit dynamic Core tool receipt");
+        };
+        ensure!(
+            *success == Some(true)
+                && *status == codex_app_server_protocol::DynamicToolCallStatus::Completed
+                && arguments["profile"] == profile
+                && arguments["result"] == "pass"
+                && arguments["head_sha"] == sha,
+            "independent/native Worker's real Core validation receipt failed"
+        );
+        chat.handle_server_notification(item, None);
+        let signal = take_trusted_signal(&mut server, &thread_id, &native.turn.id).await?;
+        chat.handle_server_notification(signal, None);
+        let completed =
+            take_turn_event(&mut server, "turn/completed", &thread_id, &native.turn.id).await?;
+        chat.handle_server_notification(completed, None);
+        if role == "implementation" {
+            ensure!(
+                chat.adaptive_effort.workflow_terminal
+                    == Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+                "Core-owned Implementation did not reach authorized independent handoff"
+            );
+            let review_binding = NewWorkerBinding {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: scope.to_string(),
+            };
+            let fresh = chat.fresh_adaptive_effort_for_new_worker(Some(&review_binding));
+            ensure!(
+                fresh.review_origin_thread_id == origin_thread
+                    && fresh.gate_ledger.is_some()
+                    && fresh.assignment_preflight.is_some(),
+                "original Core owner identity was not transferred to Validator"
+            );
+            chat.adaptive_effort = fresh;
+            chat.turn_lifecycle.agent_turn_running = false;
+            chat.turn_lifecycle.last_turn_id = None;
+        } else {
+            last_validation_turn = Some(native.turn.id);
+            ensure!(
+                chat.adaptive_effort.workflow_terminal.is_none(),
+                "Validator bypassed pending live Core health QA"
+            );
+            let pending = chat
+                .adaptive_effort
+                .pending_owned_runtime_qa
+                .as_ref()
+                .context("real independent Validator did not schedule live host QA recheck")?;
+            ensure!(
+                pending.origin_thread_id == origin_thread.context("missing origin")?
+                    && pending.validation_thread_id == validator_thread.context("missing Validator")?
+                    && pending.approved_port == port
+                    && pending.source_turn_id == native.turn.id,
+                "pending QA approval is not source, port and turn bound"
+            );
+        }
+    }
+
+    let original = origin_thread.context("missing original Core Worker")?;
+    let validator = validator_thread.context("missing independent Validator")?;
+    let source_turn = last_validation_turn.context("missing actual Validator turn")?;
+    let mut queued_review = None;
+    let mut premature_ready = 0;
+    while let Ok(event) = app_events.try_recv() {
+        match event {
+            AppEvent::ReviewOwnedRuntimeHealthAtQa {
+                validation_thread_id,
+                origin_thread_id,
+                source_turn_id,
+                review_request_id,
+            } => {
+                ensure!(
+                    validation_thread_id == validator
+                        && origin_thread_id == original
+                        && source_turn_id == source_turn,
+                    "host QA request escaped current independent Validator source turn"
+                );
+                ensure!(queued_review.replace(review_request_id).is_none());
+            }
+            AppEvent::PersistWorkflowState {
+                operation:
+                    codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+                ..
+            } => premature_ready += 1,
+            _ => {}
+        }
+    }
+    ensure!(premature_ready == 0, "model READY must not be persisted before Core recheck");
+    let review_id = queued_review.context("no trusted host QA request was scheduled")?;
+    let result_request = server
+        .send_request(
+            "thread/ownedRuntimeHealth/review",
+            Some(json!({"threadId": original.to_string()})),
+        )
+        .await?;
+    let healthy: codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse =
+        timeout(LIVE_TIMEOUT, server.read_response(result_request)).await??;
+    chat.complete_owned_runtime_qa_review(
+        validator,
+        original,
+        &source_turn,
+        review_id,
+        Ok(healthy.clone()),
+    );
+    ensure!(
+        chat.adaptive_effort.workflow_terminal
+            == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+        "fresh Core-owned HTTP 200 plus genuine independent Validator did not reach READY"
+    );
+    ensure!(
+        chat.adaptive_effort.pending_owned_runtime_qa.is_none(),
+        "completed QA request must be consumed once and never saved"
+    );
+    chat.complete_owned_runtime_qa_review(
+        validator,
+        original,
+        &source_turn,
+        review_id,
+        Ok(healthy),
+    );
+    let mut persisted_ready = 0;
+    while let Ok(event) = app_events.try_recv() {
+        if let AppEvent::PersistWorkflowState {
+            operation:
+                codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+            thread_id,
+            ..
+        } = event
+        {
+            ensure!(thread_id == validator, "READY persisted to wrong Worker");
+            persisted_ready += 1;
+        }
+    }
+    ensure!(
+        persisted_ready == 1,
+        "authentic Core QA recheck must persist exactly one READY, never replay"
+    );
+    std::fs::write(&stop_marker, b"stop")?;
+    ensure!(
+        fixture_git(&root, &["status", "--porcelain=v1", "--untracked-files=all"])?
+            .is_empty(),
+        "native QA process changed the pinned candidate"
     );
     timeout(LIVE_TIMEOUT, server.shutdown_gracefully()).await??;
     Ok(())

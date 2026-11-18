@@ -3031,7 +3031,7 @@ jobs:
   windows-3d1d-integrated-native:
     name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
     # Bounded source-matched integrated regression. Not a release or Core runtime-health PASS.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]') || contains(github.event.head_commit.message, '[3d1g-native]') || contains(github.event.head_commit.message, '[3d1h-native]'))
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]') || contains(github.event.head_commit.message, '[3d1g-native]') || contains(github.event.head_commit.message, '[3d1h-native]') || contains(github.event.head_commit.message, '[3d1i-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 90
@@ -3233,6 +3233,25 @@ jobs:
             throw "D02 real Core-held Windows health QA acceptance failed (exit=$testExit)"
           }
           Write-Host 'Verified real Windows Core-owned HTTP health review, fresh observation and cold-resume refusal. Full independent TUI QA still requires acceptance.'
+      - name: Verify D02 real Implementation to independent Validation to live QA READY
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready'
+          $listed = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 end-to-end native TUI/Core QA test absent at this SHA (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 real Core and independent Validator QA READY failed (exit=$testExit)"
+          }
+          Write-Host 'D02 real source-pinned Implementation, independent Validator, fresh Core OS/HTTP review and one-use READY verified.'
       - name: Verify D01 D02 D03 C01-C05 and retained 3C regression matrix
         shell: pwsh
         working-directory: codex-rs
