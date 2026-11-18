@@ -3030,7 +3030,10 @@ jobs:
 
   windows-3d1d-integrated-native:
     name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
-    # Bounded source-matched integrated regression. Not a release or Core runtime-health PASS.
+    # The D02 integrated native gate is opt-in; green source/format checks alone
+    # do not execute or satisfy the Windows Implementation -> Validator -> READY test.
+    # Use [3d1i-native] on an exact-source verification commit to run this gate.
+    # This is not a release or production Core runtime-health PASS.
     if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]') || contains(github.event.head_commit.message, '[3d1g-native]') || contains(github.event.head_commit.message, '[3d1h-native]') || contains(github.event.head_commit.message, '[3d1i-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
