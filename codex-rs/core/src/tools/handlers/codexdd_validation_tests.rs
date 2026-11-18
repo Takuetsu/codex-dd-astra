@@ -1545,7 +1545,8 @@ fn codexdd_046_3d1h_independent_operations_preview_keeps_role_and_sha_guard() {
     );
     worker.task_kind = Some("operations_preview".to_string());
     assert!(
-        validate_native_independent_authorized_target(root, Some(&worker), &"f".repeat(40)).is_err(),
+        validate_native_independent_authorized_target(root, Some(&worker), &"f".repeat(40))
+            .is_err(),
         "source SHA drift must refuse independent preview review"
     );
     assert!(

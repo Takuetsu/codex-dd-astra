@@ -1046,11 +1046,10 @@ fn validate_native_independent_authorized_target(
     if !matches!(
         worker.task_kind.as_deref(),
         Some("source_change" | "operations_preview")
-    )
-        || worker
-            .authorized_scope
-            .as_deref()
-            .is_none_or(|scope| scope.trim().is_empty() || scope.len() > 1024)
+    ) || worker
+        .authorized_scope
+        .as_deref()
+        .is_none_or(|scope| scope.trim().is_empty() || scope.len() > 1024)
     {
         return Err("SETUP_BLOCKED: independent Validator requires an explicit source-change or operations-preview task and bounded owner-authorized scope.".to_string());
     }
