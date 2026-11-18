@@ -461,6 +461,8 @@ impl AdaptiveEffortState {
             gate_ledger,
             original_benchmark_config,
             review_origin_thread_id,
+            // A model/route reset cannot retain an in-flight host QA permit.
+            pending_owned_runtime_qa: None,
             complexity_class,
             implementation_phase,
             validation_repair_fingerprint,

@@ -520,6 +520,8 @@ fn apply_persisted_adaptive_workflow_state_for_thread(
         // Restart cannot recreate a live cross-Worker handoff or trusted
         // independent receipt from the persisted requirements-only snapshot.
         review_origin_thread_id: None,
+        // Cold resume never restores a live Core QA request or its correlation.
+        pending_owned_runtime_qa: None,
         complexity_class,
         implementation_phase,
         validation_repair_fingerprint,
