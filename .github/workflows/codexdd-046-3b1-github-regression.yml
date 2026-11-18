@@ -55,6 +55,9 @@ on:
       - codex-rs/app-server/src/request_processors/turn_processor.rs
       - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
       - codex-rs/app-server-protocol/src/protocol/v2/tests.rs
+      # D02 Core-held real service QA acceptance must trigger same-SHA Windows.
+      - codex-rs/app-server/tests/suite/v2/mod.rs
+      - codex-rs/app-server/tests/suite/v2/codexdd_owned_runtime_native.rs
       # D02 Core-owned OS process identity must never bypass source-pinned CI.
       - codex-rs/core/src/unified_exec/mod.rs
       - codex-rs/core/src/unified_exec/process.rs
@@ -3028,7 +3031,7 @@ jobs:
   windows-3d1d-integrated-native:
     name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
     # Bounded source-matched integrated regression. Not a release or Core runtime-health PASS.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]') || contains(github.event.head_commit.message, '[3d1g-native]'))
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]') || contains(github.event.head_commit.message, '[3d1g-native]') || contains(github.event.head_commit.message, '[3d1h-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 90
@@ -3192,6 +3195,25 @@ jobs:
             throw "D02 operations-preview source-validation boundary failed (exit=$ownerExit)"
           }
           Write-Host 'D02 original Core child selection, operations preview route and replay refusal verified; full real-worker QA acceptance still pending.'
+      - name: Verify D02 real Core-owned Windows HTTP 200 QA and cold-resume refusal
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1h_real_core_owned_http_review_and_cold_resume'
+          $listed = & cargo test --locked -p codex-app-server --test all $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 real Core-held health test missing or did not compile (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-app-server --test all $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 real Core-held Windows health QA acceptance failed (exit=$testExit)"
+          }
+          Write-Host 'Verified real Windows Core-owned HTTP health review, fresh observation and cold-resume refusal. Full independent TUI QA still requires acceptance.'
       - name: Verify D01 D02 D03 C01-C05 and retained 3C regression matrix
         shell: pwsh
         working-directory: codex-rs

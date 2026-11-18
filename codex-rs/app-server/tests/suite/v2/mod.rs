@@ -21,6 +21,8 @@ mod client_metadata;
 mod code_mode_host;
 mod codexdd_candidate_native;
 #[cfg(windows)]
+mod codexdd_owned_runtime_native;
+#[cfg(windows)]
 mod codexdd_worker_handoff_native;
 mod collaboration_mode_list;
 #[cfg(unix)]
