@@ -85,7 +85,10 @@ try {
 }
 "#
     .replace("PORT_VALUE", &port.to_string())
-    .replace("STOP_MARKER", &stop_marker.display().to_string().replace('\'', "''"))
+    .replace(
+        "STOP_MARKER",
+        &stop_marker.display().to_string().replace('\'', "''"),
+    )
 }
 
 async fn assert_live_review(
@@ -101,10 +104,7 @@ async fn assert_live_review(
     timeout(DEADLINE, app_server.read_response(request)).await?
 }
 
-async fn assert_refused_review(
-    app_server: &mut TestAppServer,
-    thread_id: &str,
-) -> Result<()> {
+async fn assert_refused_review(app_server: &mut TestAppServer, thread_id: &str) -> Result<()> {
     let request = app_server
         .send_request(
             "thread/ownedRuntimeHealth/review",
@@ -234,8 +234,7 @@ async fn codexdd_046_3d1h_real_core_owned_http_review_and_cold_resume() -> Resul
             ..Default::default()
         })
         .await?;
-    let _: TurnStartResponse =
-        timeout(DEADLINE, app_server.read_response(first_id)).await??;
+    let _: TurnStartResponse = timeout(DEADLINE, app_server.read_response(first_id)).await??;
     timeout(
         DEADLINE,
         app_server.read_stream_until_notification_message("turn/completed"),
@@ -255,8 +254,7 @@ async fn codexdd_046_3d1h_real_core_owned_http_review_and_cold_resume() -> Resul
             ..Default::default()
         })
         .await?;
-    let _: TurnStartResponse =
-        timeout(DEADLINE, app_server.read_response(launch_id)).await??;
+    let _: TurnStartResponse = timeout(DEADLINE, app_server.read_response(launch_id)).await??;
     timeout(
         DEADLINE,
         app_server.read_stream_until_notification_message("turn/completed"),
@@ -264,8 +262,14 @@ async fn codexdd_046_3d1h_real_core_owned_http_review_and_cold_resume() -> Resul
     .await??;
 
     let observed = assert_live_review(&mut app_server, &thread_id).await?;
-    ensure!(observed.owner_pid > 0, "Core omitted actual OS listener PID");
-    ensure!(observed.approved_port == port, "Core reviewed unapproved port");
+    ensure!(
+        observed.owner_pid > 0,
+        "Core omitted actual OS listener PID"
+    );
+    ensure!(
+        observed.approved_port == port,
+        "Core reviewed unapproved port"
+    );
     ensure!(observed.source_sha.eq_ignore_ascii_case(&sha));
     ensure!(Path::new(&observed.source_root).canonicalize()? == root);
     ensure!(
@@ -283,8 +287,11 @@ async fn codexdd_046_3d1h_real_core_owned_http_review_and_cold_resume() -> Resul
     tokio::time::sleep(Duration::from_secs(2)).await;
     assert_refused_review(&mut app_server, &thread_id).await?;
     ensure!(
-        fixture_git(&root, &["status", "--porcelain=v1", "--untracked-files=all"])?
-            .is_empty(),
+        fixture_git(
+            &root,
+            &["status", "--porcelain=v1", "--untracked-files=all"]
+        )?
+        .is_empty(),
         "native QA fixture modified its pinned Git candidate"
     );
     timeout(DEADLINE, app_server.shutdown_gracefully()).await??;

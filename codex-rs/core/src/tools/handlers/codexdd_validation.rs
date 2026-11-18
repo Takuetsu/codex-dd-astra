@@ -1040,13 +1040,19 @@ fn validate_native_independent_authorized_target(
     ) {
         return Err("SETUP_BLOCKED: independent review requires Validation role; Implementation/Repair cannot mint its receipt.".to_string());
     }
-    if worker.task_kind.as_deref() != Some("source_change")
+    // A Validation Worker may independently validate an owner-approved
+    // operations preview's exact source, but it cannot issue runtime-health
+    // evidence or receive the Implementation-only Core process authority.
+    if !matches!(
+        worker.task_kind.as_deref(),
+        Some("source_change" | "operations_preview")
+    )
         || worker
             .authorized_scope
             .as_deref()
             .is_none_or(|scope| scope.trim().is_empty() || scope.len() > 1024)
     {
-        return Err("SETUP_BLOCKED: independent Validator requires an explicit source-change task and bounded owner-authorized scope.".to_string());
+        return Err("SETUP_BLOCKED: independent Validator requires an explicit source-change or operations-preview task and bounded owner-authorized scope.".to_string());
     }
     let (Some(source_root), Some(source_sha)) =
         (worker.source_root.as_deref(), worker.source_sha.as_deref())

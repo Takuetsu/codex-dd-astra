@@ -3195,6 +3195,25 @@ jobs:
             throw "D02 operations-preview source-validation boundary failed (exit=$ownerExit)"
           }
           Write-Host 'D02 original Core child selection, operations preview route and replay refusal verified; full real-worker QA acceptance still pending.'
+      - name: Verify D02 independent operations-preview Validator is source-pinned
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1h_independent_operations_preview_keeps_role_and_sha_guard'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'D02 independent operations-preview native role and SHA test missing'
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 independent preview Validator acceptance failed (exit=$testExit)"
+          }
+          Write-Host 'Bounded independent operations-preview review verified; Core runtime health still separately required.'
       - name: Verify D02 real Core-owned Windows HTTP 200 QA and cold-resume refusal
         shell: pwsh
         working-directory: codex-rs

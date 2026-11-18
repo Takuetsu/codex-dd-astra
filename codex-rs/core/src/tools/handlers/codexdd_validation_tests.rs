@@ -1487,6 +1487,74 @@ fn codexdd_046_3c1b2b_independent_profile_is_fixed_and_cannot_be_impersonated_by
 }
 
 #[test]
+fn codexdd_046_3d1h_independent_operations_preview_keeps_role_and_sha_guard() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("isolated owner review source");
+    let root = temp.path();
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .expect("Git available for isolated D02 validator");
+        assert!(output.status.success(), "disposable review Git failed");
+        String::from_utf8(output.stdout)
+            .expect("UTF8 HEAD")
+            .trim()
+            .to_string()
+    };
+    git(&["init", "-q"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD D02 Validator",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "--allow-empty",
+        "-q",
+        "-m",
+        "pinned operations review",
+    ]);
+    let sha = git(&["rev-parse", "HEAD"]);
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("original owner operations preview".to_string()),
+        source_root: Some(root.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("operations_preview".to_string()),
+        required_gates: None,
+        benchmark: None,
+    };
+    assert_eq!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha),
+        Ok(())
+    );
+    worker.role = AdaptiveWorkerRoleToml::Implementation;
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha).is_err(),
+        "Implementation cannot impersonate independent review"
+    );
+    worker.role = AdaptiveWorkerRoleToml::Validation;
+    worker.task_kind = Some("benchmark".to_string());
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha).is_err(),
+        "benchmark cannot inherit operations-preview review"
+    );
+    worker.task_kind = Some("operations_preview".to_string());
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &"f".repeat(40)).is_err(),
+        "source SHA drift must refuse independent preview review"
+    );
+    assert!(
+        validate_native_independent_authorized_target(root, None, &sha).is_err(),
+        "unbound Validator cannot produce independent review"
+    );
+}
+
+#[test]
 fn codexdd_046_3c1b2b_independent_review_requires_bound_validation_role_and_scope() {
     use codex_config::config_toml::AdaptiveWorkerConfigToml;
     use codex_config::config_toml::AdaptiveWorkerRoleToml;
