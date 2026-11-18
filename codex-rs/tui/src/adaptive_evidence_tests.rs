@@ -1457,10 +1457,7 @@ fn codexdd_046_3d1i_operations_validator_receipt_cannot_cross_source_gate() {
         }),
     );
     assert_eq!(
-        native
-            .worker_binding
-            .as_ref()
-            .map(|bound| bound.task_kind),
+        native.worker_binding.as_ref().map(|bound| bound.task_kind),
         Some(AdaptiveTaskKind::OperationsPreview)
     );
     let mut registry = AdaptiveEvidenceRegistry::default();

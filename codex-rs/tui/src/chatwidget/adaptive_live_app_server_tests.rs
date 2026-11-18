@@ -1040,7 +1040,7 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
             chat.turn_lifecycle.agent_turn_running = false;
             chat.turn_lifecycle.last_turn_id = None;
         } else {
-            last_validation_turn = Some(native.turn.id);
+            last_validation_turn = Some(native.turn.id.clone());
             ensure!(
                 chat.adaptive_effort.workflow_terminal.is_none(),
                 "Validator bypassed pending live Core health QA"
