@@ -768,7 +768,9 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
         canonical.display(),
     );
     ensure!(
-        codex_config::config_toml::parse_adaptive_worker_first_message(&owner_message)?.is_some(),
+        codex_config::config_toml::parse_adaptive_worker_first_message(&owner_message)
+            .map_err(anyhow::Error::msg)?
+            .is_some(),
         "original owner health permission must be parsed and locked"
     );
 

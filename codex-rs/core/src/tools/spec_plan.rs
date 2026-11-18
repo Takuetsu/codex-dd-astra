@@ -1244,9 +1244,10 @@ fn original_core_validator_tool_allowed(
             .source_root
             .as_deref()
             .is_some_and(|root| !root.trim().is_empty())
-        && worker.source_sha.as_deref().is_some_and(|sha| {
-            sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit())
-        })
+        && worker
+            .source_sha
+            .as_deref()
+            .is_some_and(|sha| sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit()))
 }
 
 #[cfg(test)]
