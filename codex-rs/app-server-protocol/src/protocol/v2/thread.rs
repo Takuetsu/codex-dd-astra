@@ -1836,6 +1836,47 @@ pub struct ThreadWorkflowStateUpdateParams {
 #[ts(export_to = "v2/")]
 pub struct ThreadWorkflowStateUpdateResponse {}
 
+/// Fresh read-only Core observer result, never a checkpoint or native QA PASS.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct ThreadOwnedRuntimeHealthReviewParams {
+    pub thread_id: String,
+    /// Existing Core exec session identifier, not an OS PID.
+    pub session_id: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct ThreadOwnedRuntimeHealthReviewResponse {
+    pub source_root: String,
+    pub source_sha: String,
+    pub approved_port: u16,
+    pub owner_pid: u32,
+    pub observed_at_ms: u64,
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1f_protocol_tests {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3d1f_review_requires_original_core_process_identifier() {
+        let payload = serde_json::json!({
+            "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116",
+            "sessionId": 101
+        });
+        let params: ThreadOwnedRuntimeHealthReviewParams =
+            serde_json::from_value(payload).expect("original Core process identifier");
+        assert_eq!(params.session_id, 101);
+        assert_eq!(
+            serde_json::to_value(&params).unwrap()["sessionId"],
+            serde_json::json!(101)
+        );
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]

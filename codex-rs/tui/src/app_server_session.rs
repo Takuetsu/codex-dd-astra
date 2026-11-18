@@ -106,6 +106,8 @@ use codex_app_server_protocol::ThreadMemoryModeSetResponse;
 use codex_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
 use codex_app_server_protocol::ThreadMetadataUpdateParams;
 use codex_app_server_protocol::ThreadMetadataUpdateResponse;
+use codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewParams;
+use codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse;
 use codex_app_server_protocol::ThreadReadParams;
 use codex_app_server_protocol::ThreadReadResponse;
 use codex_app_server_protocol::ThreadResumeParams;
@@ -1529,6 +1531,34 @@ impl AppServerSession {
             })
             .await
             .wrap_err("thread/inject_items failed during TUI side conversation setup")
+    }
+
+    /// Only a live embedded Core connection can supply a trustworthy QA
+    /// review. A remote session or a restored notification cannot pass.
+    pub(crate) async fn review_core_owned_runtime_health(
+        &mut self,
+        original_thread_id: ThreadId,
+        original_exec_session_id: i32,
+    ) -> Result<ThreadOwnedRuntimeHealthReviewResponse> {
+        if self.thread_params_mode != ThreadParamsMode::Embedded
+            || !self.uses_embedded_app_server()
+            || original_exec_session_id <= 0
+        {
+            color_eyre::eyre::bail!(
+                "SETUP_BLOCKED: D02 QA requires the original live embedded Core"
+            );
+        }
+        let request_id = self.next_request_id();
+        self.client
+            .request_typed(ClientRequest::ThreadOwnedRuntimeHealthReview {
+                request_id,
+                params: ThreadOwnedRuntimeHealthReviewParams {
+                    thread_id: original_thread_id.to_string(),
+                    session_id: original_exec_session_id,
+                },
+            })
+            .await
+            .wrap_err("thread/ownedRuntimeHealth/review refused")
     }
 
     pub(crate) async fn thread_workflow_state_update(

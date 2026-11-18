@@ -678,6 +678,19 @@ impl Session {
         self.services.agent_control.identity()
     }
 
+    /// D02 QA may trust only the original Core-accepted Worker assignment.
+    /// First-user authority must have been durably checkpointed; on resume a
+    /// partial or historical prompt alone cannot restore permission.
+    pub(crate) async fn original_codexdd_runtime_worker(
+        &self,
+    ) -> Option<codex_config::config_toml::AdaptiveWorkerConfigToml> {
+        let state = self.state.lock().await;
+        state
+            .session_configuration
+            .startup_worker_authority()
+            .or_else(|| state.first_worker_authority.runtime_binding())
+    }
+
     pub(crate) async fn originator(&self) -> String {
         let state = self.state.lock().await;
         state.session_configuration.originator.clone()

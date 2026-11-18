@@ -74,6 +74,7 @@ use codex_utils_path_uri::LegacyAppPathString;
 use codex_utils_path_uri::PathUri;
 use rmcp::model::ReadResourceRequestParams;
 use std::any::Any;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -231,6 +232,16 @@ pub struct BackgroundTerminalInfo {
     pub process_id: String,
     pub command: String,
     pub cwd: PathUri,
+}
+
+/// Ephemeral live Core result. Never serialize as a trusted QA receipt.
+#[derive(Clone, Debug)]
+pub struct CodexDDOwnedRuntimeHealthReview {
+    pub source_root: String,
+    pub source_sha: String,
+    pub approved_port: u16,
+    pub owner_pid: u32,
+    pub observed_at_ms: u64,
 }
 
 /// Conduit for the bidirectional stream of messages that compose a thread
@@ -780,6 +791,71 @@ impl CodexThread {
 
     pub async fn list_background_terminals(&self) -> Vec<BackgroundTerminalInfo> {
         self.session.list_background_terminals().await
+    }
+
+    /// Fresh D02 QA verification on this exact original Core process store.
+    /// No cached tool result or restored checkpoint can prove liveness.
+    pub async fn review_codexdd_owned_runtime_health(
+        &self,
+        exec_session_id: i32,
+    ) -> Result<CodexDDOwnedRuntimeHealthReview, String> {
+        if exec_session_id <= 0 {
+            return Err("SETUP_BLOCKED: no live original Core exec session".to_string());
+        }
+        let worker = self
+            .session
+            .original_codexdd_runtime_worker()
+            .await
+            .ok_or_else(|| {
+                "SETUP_BLOCKED: original Core Worker authority is not locked".to_string()
+            })?;
+        let (port, argv) = crate::tools::handlers::original_owner_preview_gate(&worker)?;
+        let root = Path::new(worker.source_root.as_deref().unwrap_or_default())
+            .canonicalize()
+            .map_err(|_| "SETUP_BLOCKED: owner source worktree disappeared".to_string())?;
+        let sha = worker.source_sha.as_deref().unwrap_or_default();
+        let verify_head = || async {
+            let git = codex_git_utils::collect_git_info(&root)
+                .await
+                .ok_or_else(|| "SETUP_BLOCKED: Git identity unavailable".to_string())?;
+            if git
+                .commit_hash
+                .as_ref()
+                .is_none_or(|head| !head.0.eq_ignore_ascii_case(sha))
+            {
+                return Err("SETUP_BLOCKED: runtime source SHA drifted".to_string());
+            }
+            Ok::<(), String>(())
+        };
+        verify_head().await?;
+        #[cfg(not(windows))]
+        {
+            let _ = (port, argv);
+            Err("SETUP_BLOCKED: native health review requires Windows".to_string())
+        }
+        #[cfg(windows)]
+        {
+            let observation = self
+                .session
+                .services
+                .unified_exec_manager
+                .observe_original_owner_approved_health(
+                    &self.session,
+                    exec_session_id,
+                    argv,
+                    &root,
+                    port,
+                )
+                .await?;
+            verify_head().await?;
+            Ok(CodexDDOwnedRuntimeHealthReview {
+                source_root: root.display().to_string(),
+                source_sha: sha.to_ascii_lowercase(),
+                approved_port: observation.approved_port,
+                owner_pid: observation.owner_pid,
+                observed_at_ms: observation.observed_at_ms,
+            })
+        }
     }
 
     pub async fn terminate_background_terminal(&self, process_id: i32) -> bool {

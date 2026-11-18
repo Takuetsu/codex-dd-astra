@@ -46,6 +46,11 @@ on:
       - codex-rs/core/src/tools/handlers/codexdd_owned_runtime.rs
       - codex-rs/core/src/tools/handlers/mod.rs
       - codex-rs/core/src/tools/spec_plan.rs
+      # D02 QA Core review RPC is always in the same SHA's source/format checks.
+      - codex-rs/core/src/codex_thread.rs
+      - codex-rs/app-server/src/message_processor.rs
+      - codex-rs/app-server/src/request_processors/turn_processor.rs
+      - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
       # D02 Core-owned OS process identity must never bypass source-pinned CI.
       - codex-rs/core/src/unified_exec/mod.rs
       - codex-rs/core/src/unified_exec/process.rs
@@ -3019,7 +3024,7 @@ jobs:
   windows-3d1d-integrated-native:
     name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
     # Bounded source-matched integrated regression. Not a release or Core runtime-health PASS.
-    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]'))
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]'))
     needs: [source-contract, rust-format]
     runs-on: windows-2022
     timeout-minutes: 90
@@ -3128,6 +3133,24 @@ jobs:
             throw "D02 original-owner Core health authorization tests failed (exit=$testExit)"
           }
           Write-Host "Core original-owner gate authorization verified; no QA PASS minted"
+      - name: Check live Core QA review protocol and model argument refusal
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $spec = & cargo test --locked -p codex-app-server-protocol --lib codexdd_046_3d1f_ -- --test-threads=1 --nocapture 2>&1
+          $specExit = $LASTEXITCODE
+          $spec | Out-Host
+          if ($specExit -ne 0 -or -not (($spec -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 Core QA review protocol test failed (exit=$specExit)"
+          }
+          $core = & cargo test --locked -p codex-core --lib codexdd_046_3d1f_ -- --test-threads=1 --nocapture 2>&1
+          $coreExit = $LASTEXITCODE
+          $core | Out-Host
+          if ($coreExit -ne 0 -or -not (($core -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 Core QA argument integrity test failed (exit=$coreExit)"
+          }
+          Write-Host "D02 read-only QA path refuses forged model authority; final gate still pending."
       - name: Compile exact-source native TUI test executable once
         shell: pwsh
         working-directory: codex-rs

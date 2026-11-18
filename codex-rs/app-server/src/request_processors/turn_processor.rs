@@ -200,6 +200,29 @@ impl TurnRequestProcessor {
             .map(|response| Some(response.into()))
     }
 
+    /// A request cannot adopt a disk PID or restart a process. If the
+    /// original Core thread has unloaded, no retained handle can validate.
+    pub(crate) async fn thread_owned_runtime_health_review(
+        &self,
+        params: ThreadOwnedRuntimeHealthReviewParams,
+    ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
+        let (_, thread) = self.load_thread(&params.thread_id).await?;
+        let observed = thread
+            .review_codexdd_owned_runtime_health(params.session_id)
+            .await
+            .map_err(invalid_request)?;
+        Ok(Some(
+            ThreadOwnedRuntimeHealthReviewResponse {
+                source_root: observed.source_root,
+                source_sha: observed.source_sha,
+                approved_port: observed.approved_port,
+                owner_pid: observed.owner_pid,
+                observed_at_ms: observed.observed_at_ms,
+            }
+            .into(),
+        ))
+    }
+
     pub(crate) async fn thread_workflow_state_update(
         &self,
         params: ThreadWorkflowStateUpdateParams,

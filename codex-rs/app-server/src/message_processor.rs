@@ -1650,6 +1650,11 @@ impl MessageProcessor {
                     .thread_inject_items(&request_id, params)
                     .await
             }
+            ClientRequest::ThreadOwnedRuntimeHealthReview { params, .. } => {
+                self.turn_processor
+                    .thread_owned_runtime_health_review(params)
+                    .await
+            }
             ClientRequest::ThreadWorkflowStateUpdate { params, .. } => {
                 self.turn_processor
                     .thread_workflow_state_update(params)

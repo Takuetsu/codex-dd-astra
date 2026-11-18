@@ -376,6 +376,24 @@ mod tests {
     }
 
     #[test]
+    fn codexdd_046_3d1f_model_cannot_supply_health_pid_source_or_port() {
+        let valid: OwnedRuntimeArgs =
+            serde_json::from_str(r#"{"session_id":101}"#).expect("one bounded lookup");
+        assert_eq!(valid.session_id, 101);
+        for forged in [
+            r#"{"session_id":101,"owner_pid":123}"#,
+            r#"{"session_id":101,"approved_port":4331}"#,
+            r#"{"session_id":101,"source_sha":"forged"}"#,
+            r#"{"session_id":101,"command_argv":["arbitrary.exe"]}"#,
+        ] {
+            assert!(
+                serde_json::from_str::<OwnedRuntimeArgs>(forged).is_err(),
+                "model must never enlarge Core authority: {forged}"
+            );
+        }
+    }
+
+    #[test]
     fn codexdd_046_3d1e_model_cannot_enlarge_owned_port_or_command() {
         let mut wrong = worker();
         wrong.required_gates.as_mut().unwrap()[0].command_argv = None;
