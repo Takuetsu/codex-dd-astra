@@ -1538,11 +1538,9 @@ impl AppServerSession {
     pub(crate) async fn review_core_owned_runtime_health(
         &mut self,
         original_thread_id: ThreadId,
-        original_exec_session_id: i32,
     ) -> Result<ThreadOwnedRuntimeHealthReviewResponse> {
         if self.thread_params_mode != ThreadParamsMode::Embedded
             || !self.uses_embedded_app_server()
-            || original_exec_session_id <= 0
         {
             color_eyre::eyre::bail!(
                 "SETUP_BLOCKED: D02 QA requires the original live embedded Core"
@@ -1554,7 +1552,6 @@ impl AppServerSession {
                 request_id,
                 params: ThreadOwnedRuntimeHealthReviewParams {
                     thread_id: original_thread_id.to_string(),
-                    session_id: original_exec_session_id,
                 },
             })
             .await

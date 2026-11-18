@@ -2105,6 +2105,30 @@ impl App {
                 self.sync_active_thread_adaptive_effort_to_cached_session(state)
                     .await;
             }
+            AppEvent::ReviewOwnedRuntimeHealthAtQa {
+                validation_thread_id,
+                origin_thread_id,
+                source_turn_id,
+                review_request_id,
+            } => {
+                let result = if self.current_displayed_thread_id() != Some(validation_thread_id)
+                    || self.chat_widget.thread_id() != Some(validation_thread_id)
+                {
+                    Err("SETUP_BLOCKED: QA thread switched before Core health review".to_string())
+                } else {
+                    app_server
+                        .review_core_owned_runtime_health(origin_thread_id)
+                        .await
+                        .map_err(|error| error.to_string())
+                };
+                self.chat_widget.complete_owned_runtime_qa_review(
+                    validation_thread_id,
+                    origin_thread_id,
+                    &source_turn_id,
+                    review_request_id,
+                    result,
+                );
+            }
             AppEvent::PersistWorkflowState {
                 thread_id,
                 operation,

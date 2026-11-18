@@ -11,6 +11,7 @@ use crate::adaptive_policy::AdaptiveTransition;
 use crate::adaptive_policy::next_route;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+use crate::chatwidget::adaptive_effort::AdaptiveOwnedRuntimeQaWait;
 use crate::chatwidget::adaptive_effort::AdaptivePendingSignal;
 use codex_protocol::protocol::AdaptiveRuntimeSignalKind;
 
@@ -208,6 +209,64 @@ impl ChatWidget {
         let implementation_work_budget_available =
             self.adaptive_effort.validation_repair_budget_available();
 
+        // D02: Only a trusted, current-turn independent Validation receipt may
+        // schedule a fresh host-side Core QA recheck. Neither the model's READY
+        // message nor a saved tool result can discharge OwnedRuntimeHealth.
+        // One exact approved runtime port must be the ONLY pending gate.
+        let pending_owned_qa = (envelope.signal_kind
+            == AdaptiveRuntimeSignalKind::ReadyForOwnerQa)
+            .then(|| {
+                let state = &self.adaptive_effort;
+                let port = state
+                    .gate_ledger
+                    .as_ref()?
+                    .single_pending_owned_runtime_health_port()?;
+                let review_thread_id = self.thread_id?;
+                let origin_thread_id = state.review_origin_thread_id?;
+                if !self.valid_evidence_refs(
+                    &envelope.evidence_refs,
+                    AdaptiveEvidenceOutcome::Success,
+                ) || self
+                    .owner_qa_prerequisite_admission_with_runtime(
+                        &envelope.evidence_refs,
+                        Some(port),
+                    )
+                    .is_err()
+                {
+                    return None;
+                }
+                let pin = state.assignment_preflight.as_ref()?;
+                Some(AdaptiveOwnedRuntimeQaWait {
+                    review_request_id: uuid::Uuid::new_v4(),
+                    validation_thread_id: review_thread_id,
+                    origin_thread_id,
+                    source_turn_id: source_turn_id.to_string(),
+                    evidence_refs: envelope.evidence_refs.clone(),
+                    expected_root: pin.source_root.clone(),
+                    expected_sha: pin.source_sha.clone(),
+                    approved_port: port,
+                })
+            })
+            .flatten();
+        if let Some(pending) = pending_owned_qa {
+            self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+                source_turn_id: source_turn_id.to_string(),
+            });
+            // A QA health request is a terminal-bound handoff, never
+            // permission to schedule another model attempt meanwhile.
+            self.adaptive_effort.pending_attempt = None;
+            self.adaptive_effort.successor_admission = None;
+            self.app_event_tx.send(AppEvent::ReviewOwnedRuntimeHealthAtQa {
+                validation_thread_id: pending.validation_thread_id,
+                origin_thread_id: pending.origin_thread_id,
+                source_turn_id: pending.source_turn_id.clone(),
+                review_request_id: pending.review_request_id,
+            });
+            self.adaptive_effort.pending_owned_runtime_qa = Some(pending);
+            self.save_adaptive_effort_for_current_thread();
+            return true;
+        }
+
         let accepted = match envelope.signal_kind {
             AdaptiveRuntimeSignalKind::Complexity => {
                 self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Implementation
@@ -310,10 +369,14 @@ impl ChatWidget {
         };
         let signal_kind = envelope.signal_kind;
         if accepted && signal_kind == AdaptiveRuntimeSignalKind::MechanicalValidation {
-            if let Err(blocker) = crate::adaptive_worker::preflight_mechanical_target(
-                self.adaptive_effort.assignment_preflight.as_ref(),
-                self.config.cwd.as_path(),
-            ) {
+            if let Err(blocker) =
+                crate::adaptive_worker::preflight_mechanical_or_owned_preview_target(
+                    &self.adaptive_effort.worker_context,
+                    self.adaptive_effort.assignment_preflight.as_ref(),
+                    self.adaptive_effort.gate_ledger.as_ref(),
+                    self.config.cwd.as_path(),
+                )
+            {
                 self.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
                     source_turn_id: source_turn_id.to_string(),
                 });
@@ -567,6 +630,16 @@ impl ChatWidget {
         &self,
         evidence_refs: &[String],
     ) -> Result<(), String> {
+        self.owner_qa_prerequisite_admission_with_runtime(evidence_refs, None)
+    }
+
+    /// A host-verified runtime port may be excluded only during the exact
+    /// one-use QA callback, never from ordinary evidence-backed READY checks.
+    fn owner_qa_prerequisite_admission_with_runtime(
+        &self,
+        evidence_refs: &[String],
+        host_verified_port: Option<u16>,
+    ) -> Result<(), String> {
         let state = &self.adaptive_effort;
         if state.worker_context.role != AdaptiveWorkerRole::Validation
             || !state.worker_assignment_locked
@@ -612,7 +685,33 @@ impl ChatWidget {
                     .to_string(),
             );
         }
-        let outstanding = ledger.outstanding(&state.evidence_registry);
+        let mut outstanding = ledger.outstanding(&state.evidence_registry);
+        if let Some(port) = host_verified_port {
+            if ledger.single_pending_owned_runtime_health_port() != Some(port)
+                || !ledger.authorizes_runtime_health_port(
+                    scope,
+                    std::path::Path::new(&pin.source_root),
+                    &pin.source_sha,
+                    port,
+                )
+            {
+                return Err(
+                    "Core-reviewed runtime port does not match original authorized gate"
+                        .to_string(),
+                );
+            }
+            let runtime_gate = crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(
+                vec![port],
+            );
+            if !outstanding.iter().any(|entry| {
+                entry.gate == runtime_gate
+                    && entry.state
+                        == crate::adaptive_gate_prerequisites::AdaptiveGateState::Pending
+            }) {
+                return Err("runtime-health requirement is blocked or not pending".to_string());
+            }
+            outstanding.retain(|entry| entry.gate != runtime_gate);
+        }
         if !outstanding.is_empty() {
             let details = outstanding
                 .iter()
@@ -641,11 +740,110 @@ impl ChatWidget {
             })
     }
 
+    /// Consume the host's response from the live embedded Core request, once,
+    /// bound to the same terminalized Validation turn and original source.
+    /// The response is never inserted into the model evidence registry or
+    /// restored from a serialized checkpoint. Any refusal leaves QA pending.
+    pub(crate) fn complete_owned_runtime_qa_review(
+        &mut self,
+        validation_thread_id: codex_protocol::ThreadId,
+        origin_thread_id: codex_protocol::ThreadId,
+        source_turn_id: &str,
+        review_request_id: uuid::Uuid,
+        result: Result<
+            codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse,
+            String,
+        >,
+    ) {
+        let matches_pending = self
+            .adaptive_effort
+            .pending_owned_runtime_qa
+            .as_ref()
+            .is_some_and(|pending| {
+                pending.review_request_id == review_request_id
+                    && pending.validation_thread_id == validation_thread_id
+                    && pending.origin_thread_id == origin_thread_id
+                    && pending.source_turn_id == source_turn_id
+            });
+        if !matches_pending {
+            return;
+        }
+        let Some(pending) = self.adaptive_effort.pending_owned_runtime_qa.take() else {
+            return;
+        };
+        let valid_context = self.thread_id == Some(validation_thread_id)
+            && self.adaptive_effort.review_origin_thread_id == Some(origin_thread_id)
+            && self.turn_lifecycle.last_turn_id.as_deref() == Some(source_turn_id)
+            && !self.turn_lifecycle.agent_turn_running
+            && self.adaptive_effort.workflow_terminal.is_none()
+            && self.adaptive_effort.worker_context.role == AdaptiveWorkerRole::Validation
+            && matches!(
+                self.adaptive_effort.pending_signal.as_ref(),
+                Some(AdaptivePendingSignal::Consumed { source_turn_id: accepted_turn })
+                    if accepted_turn == source_turn_id
+            );
+        let verified = if !valid_context {
+            Err("SETUP_BLOCKED: QA turn or Worker identity changed".to_string())
+        } else {
+            result.and_then(|observation| {
+                let now_ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_err(|_| "SETUP_BLOCKED: QA clock unavailable".to_string())?
+                    .as_millis() as u64;
+                let observation_id = uuid::Uuid::parse_str(&observation.observation_id)
+                    .map_err(|_| "SETUP_BLOCKED: malformed Core observation identity".to_string())?;
+                let same_root = std::path::Path::new(&observation.source_root)
+                    .canonicalize()
+                    .ok()
+                    .zip(std::path::Path::new(&pending.expected_root).canonicalize().ok())
+                    .is_some_and(|(observed, expected)| observed == expected);
+                if observation_id.is_nil()
+                    || observation.owner_pid == 0
+                    || observation.approved_port != pending.approved_port
+                    || !observation.source_sha.eq_ignore_ascii_case(&pending.expected_sha)
+                    || !same_root
+                    || now_ms
+                        .checked_sub(observation.observed_at_ms)
+                        .is_none_or(|age| age > 5_000)
+                {
+                    return Err(
+                        "SETUP_BLOCKED: Core observation is stale or mismatches original owner"
+                            .to_string(),
+                    );
+                }
+                self.owner_qa_prerequisite_admission_with_runtime(
+                    &pending.evidence_refs,
+                    Some(pending.approved_port),
+                )
+            })
+        };
+        match verified {
+            Ok(()) => {
+                // Do not store the successful observation. Readiness is a
+                // single terminal transition after current native revalidation.
+                self.latch_workflow_terminal(
+                    source_turn_id,
+                    AdaptiveWorkflowTerminal::ReadyForOwnerQa,
+                );
+            }
+            Err(reason) => {
+                self.add_info_message(
+                    format!(
+                        "CodexDD READY_FOR_OWNER_QA withheld: {reason}. Core-owned runtime and independent gates remain required; no health PASS was persisted."
+                    ),
+                    None,
+                );
+                self.save_adaptive_effort_for_current_thread();
+            }
+        }
+    }
+
     fn latch_workflow_terminal(
         &mut self,
         source_turn_id: &str,
         terminal: AdaptiveWorkflowTerminal,
     ) {
+        self.adaptive_effort.pending_owned_runtime_qa = None;
         self.adaptive_effort.workflow_terminal = Some(terminal);
         self.adaptive_effort.unfinished_turn_pressure = 0;
         self.adaptive_effort.consecutive_no_native_progress_turns = 0;
@@ -681,6 +879,97 @@ mod tests {
     use codex_app_server_protocol::ItemCompletedNotification;
     use codex_app_server_protocol::ThreadItem;
     use codex_utils_absolute_path::AbsolutePathBuf;
+
+    #[tokio::test]
+    async fn codexdd_046_3d1g_forged_qa_response_without_host_request_refuses() {
+        let (mut chat, _sender, _rx, _op_rx) =
+            make_chatwidget_manual_with_sender().await;
+        let validator = ThreadId::new();
+        let original = ThreadId::new();
+        chat.thread_id = Some(validator);
+        chat.complete_owned_runtime_qa_review(
+            validator,
+            original,
+            "forged-qa",
+            uuid::Uuid::new_v4(),
+            Ok(codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse {
+                source_root: std::env::temp_dir().display().to_string(),
+                source_sha: "a".repeat(40),
+                approved_port: 4431,
+                owner_pid: 777,
+                observed_at_ms: 1,
+                observation_id: uuid::Uuid::new_v4().to_string(),
+            }),
+        );
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        assert!(chat.adaptive_effort.pending_owned_runtime_qa.is_none());
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3d1g_late_or_replayed_core_qa_token_refuses() {
+        let (mut chat, _sender, _rx, _op_rx) =
+            make_chatwidget_manual_with_sender().await;
+        let validator = ThreadId::new();
+        let original = ThreadId::new();
+        let correlation = uuid::Uuid::new_v4();
+        let source_root = tempfile::tempdir().expect("disposable authorized source");
+        chat.thread_id = Some(validator);
+        chat.adaptive_effort.worker_context.role = AdaptiveWorkerRole::Validation;
+        chat.adaptive_effort.review_origin_thread_id = Some(original);
+        chat.turn_lifecycle.last_turn_id = Some("review-turn".to_string());
+        chat.turn_lifecycle.agent_turn_running = false;
+        chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
+            source_turn_id: "review-turn".to_string(),
+        });
+        chat.adaptive_effort.pending_owned_runtime_qa =
+            Some(AdaptiveOwnedRuntimeQaWait {
+                review_request_id: correlation,
+                validation_thread_id: validator,
+                origin_thread_id: original,
+                source_turn_id: "review-turn".to_string(),
+                evidence_refs: vec!["independent-native-review".to_string()],
+                expected_root: source_root.path().display().to_string(),
+                expected_sha: "a".repeat(40),
+                approved_port: 4431,
+            });
+        let late = codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse {
+            source_root: source_root.path().display().to_string(),
+            source_sha: "a".repeat(40),
+            approved_port: 4431,
+            owner_pid: 777,
+            observed_at_ms: 1,
+            observation_id: uuid::Uuid::new_v4().to_string(),
+        };
+        // A foreign nonce cannot consume the current QA request.
+        chat.complete_owned_runtime_qa_review(
+            validator,
+            original,
+            "review-turn",
+            uuid::Uuid::new_v4(),
+            Ok(late.clone()),
+        );
+        assert!(chat.adaptive_effort.pending_owned_runtime_qa.is_some());
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        // An old Core observation also refuses, and consumes the correlation.
+        chat.complete_owned_runtime_qa_review(
+            validator,
+            original,
+            "review-turn",
+            correlation,
+            Ok(late.clone()),
+        );
+        assert!(chat.adaptive_effort.pending_owned_runtime_qa.is_none());
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+        // Replaying the response cannot recover READY after the first use.
+        chat.complete_owned_runtime_qa_review(
+            validator,
+            original,
+            "review-turn",
+            correlation,
+            Ok(late),
+        );
+        assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    }
 
     fn command_evidence(
         thread_id: ThreadId,

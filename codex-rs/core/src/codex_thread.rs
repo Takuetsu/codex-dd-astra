@@ -242,6 +242,9 @@ pub struct CodexDDOwnedRuntimeHealthReview {
     pub approved_port: u16,
     pub owner_pid: u32,
     pub observed_at_ms: u64,
+    /// Unique ephemeral Core observation generated only after fresh health.
+    /// A caller cannot supply or replay a serialized proof to the Core gate.
+    pub observation_id: String,
 }
 
 /// Conduit for the bidirectional stream of messages that compose a thread
@@ -797,11 +800,7 @@ impl CodexThread {
     /// No cached tool result or restored checkpoint can prove liveness.
     pub async fn review_codexdd_owned_runtime_health(
         &self,
-        exec_session_id: i32,
     ) -> Result<CodexDDOwnedRuntimeHealthReview, String> {
-        if exec_session_id <= 0 {
-            return Err("SETUP_BLOCKED: no live original Core exec session".to_string());
-        }
         let worker = self
             .session
             .original_codexdd_runtime_worker()
@@ -839,9 +838,8 @@ impl CodexThread {
                 .session
                 .services
                 .unified_exec_manager
-                .observe_original_owner_approved_health(
+                .observe_unique_owner_approved_health(
                     &self.session,
-                    exec_session_id,
                     argv,
                     &root,
                     port,
@@ -854,6 +852,7 @@ impl CodexThread {
                 approved_port: observation.approved_port,
                 owner_pid: observation.owner_pid,
                 observed_at_ms: observation.observed_at_ms,
+                observation_id: uuid::Uuid::new_v4().to_string(),
             })
         }
     }

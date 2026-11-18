@@ -425,6 +425,23 @@ impl AdaptiveGateLedger {
             .collect()
     }
 
+    /// Only one expressly approved, unblocked runtime listener can enter a
+    /// native QA review. Never silently satisfy multiple services with one PID.
+    pub(crate) fn single_pending_owned_runtime_health_port(&self) -> Option<u16> {
+        let mut runtime = self
+            .required
+            .iter()
+            .filter(|gate| matches!(gate, AdaptiveRequiredGate::OwnedRuntimeHealth(_)));
+        let gate = runtime.next()?;
+        if runtime.next().is_some() || self.blockers.iter().any(|(blocked, _)| blocked == gate) {
+            return None;
+        }
+        let AdaptiveRequiredGate::OwnedRuntimeHealth(ports) = gate else {
+            return None;
+        };
+        (ports.len() == 1 && ports[0] != 0).then_some(ports[0])
+    }
+
     /// A pending runtime-health gate permits checking only owner-approved ports.
     /// Port admission is not a PASS: process ownership, listener identity and a
     /// live response must still be verified by the eventual trusted producer.
@@ -488,5 +505,47 @@ impl AdaptiveGateLedger {
 
     pub(crate) fn ready_for_owner_qa(&self, registry: &AdaptiveEvidenceRegistry) -> bool {
         self.outstanding(registry).is_empty()
+    }
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1g_runtime_gate_tests {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3d1g_only_one_unblocked_runtime_port_can_enter_qa() {
+        let source = tempfile::tempdir().expect("isolated source");
+        let sha = "a".repeat(40);
+        let required = vec![
+            AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431]),
+            AdaptiveRequiredGate::IndependentValidation,
+        ];
+        let mut ledger = AdaptiveGateLedger::new(
+            "authorized preview",
+            source.path(),
+            &sha,
+            required,
+        )
+        .expect("pinned gate");
+        assert_eq!(ledger.single_pending_owned_runtime_health_port(), Some(4431));
+        ledger
+            .mark_blocked(
+                &AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431]),
+                "health not admitted",
+            )
+            .expect("bounded blocker");
+        assert_eq!(ledger.single_pending_owned_runtime_health_port(), None);
+
+        let multiple = AdaptiveGateLedger::new(
+            "authorized preview",
+            source.path(),
+            &sha,
+            vec![
+                AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431, 4432]),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("two-port owner requirement must stay pending");
+        assert_eq!(multiple.single_pending_owned_runtime_health_port(), None);
     }
 }

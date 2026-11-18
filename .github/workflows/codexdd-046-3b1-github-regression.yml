@@ -24,6 +24,8 @@ on:
       - codex-rs/tui/src/adaptive_gate_prerequisites.rs
       - codex-rs/tui/src/lib.rs
       - codex-rs/tui/src/app_server_session.rs
+      - codex-rs/tui/src/app_event.rs
+      - codex-rs/tui/src/app/event_dispatch.rs
       - codex-rs/tui/src/app_server_session/live_core_command_tests.rs
       # Real OS process regression changes must enter source/format and native CI.
       - codex-rs/tui/src/app_server_session/real_process_restart_tests.rs
@@ -3160,6 +3162,36 @@ jobs:
           $ErrorActionPreference = 'Stop'
           & cargo test --locked -p codex-tui --lib --no-run
           if ($LASTEXITCODE -ne 0) { throw 'Current-source integrated TUI tests did not compile' }
+      - name: Verify D02 exact original-child selection and one-use live QA admission
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Assert-NativeTests {
+            param([string]$Package, [int]$Expected)
+            $filter = 'codexdd_046_3d1g_'
+            $listing = & cargo test --locked -p $Package --lib $filter -- --list 2>&1
+            $listingExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listingExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains("$Expected tests, 0 benchmarks"))) {
+              throw "D02 one-use QA native test inventory failed: $Package"
+            }
+            $result = & cargo test --locked -p $Package --lib $filter -- --test-threads=1 --nocapture 2>&1
+            $exit = $LASTEXITCODE
+            $result | Out-Host
+            if ($exit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains("test result: ok. $Expected passed; 0 failed; 0 ignored;"))) {
+              throw "D02 one-use QA native regressions failed: $Package (exit=$exit)"
+            }
+          }
+          Assert-NativeTests -Package codex-core -Expected 2
+          Assert-NativeTests -Package codex-tui -Expected 4
+          $owner = & cargo test --locked -p codex-core --lib native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha -- --test-threads=1 --nocapture 2>&1
+          $ownerExit = $LASTEXITCODE
+          $owner | Out-Host
+          if ($ownerExit -ne 0 -or -not (($owner -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 operations-preview source-validation boundary failed (exit=$ownerExit)"
+          }
+          Write-Host 'D02 original Core child selection, operations preview route and replay refusal verified; full real-worker QA acceptance still pending.'
       - name: Verify D01 D02 D03 C01-C05 and retained 3C regression matrix
         shell: pwsh
         working-directory: codex-rs

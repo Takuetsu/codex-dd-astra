@@ -1115,6 +1115,37 @@ fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() 
             .contains("operations/benchmark Worker")
     );
 
+    // Approved previews can run source work_packet before independent QA,
+    // but only the separate Core live process producer can satisfy health.
+    let mut preview = binding.clone();
+    preview.task_kind = Some("operations_preview".to_string());
+    preview.required_gates = Some(vec![
+        codex_config::config_toml::AdaptiveOwnerGateToml {
+            kind: "owned_runtime_health".to_string(),
+            profile: None,
+            ports: Some(vec![4431]),
+            command_argv: Some(vec!["powershell.exe".to_string(), "-NoProfile".to_string()]),
+        },
+        codex_config::config_toml::AdaptiveOwnerGateToml {
+            kind: "independent_validation".to_string(),
+            profile: None,
+            ports: None,
+            command_argv: None,
+        },
+    ]);
+    assert_eq!(
+        validate_native_authorized_target(&nested, Some(&preview), &sha),
+        Ok(())
+    );
+    let mut unauthorized_preview = preview.clone();
+    unauthorized_preview.required_gates = None;
+    assert!(validate_native_authorized_target(
+        &nested,
+        Some(&unauthorized_preview),
+        &sha,
+    )
+    .is_err());
+
     let mut incomplete = binding.clone();
     incomplete.source_sha = None;
     assert!(

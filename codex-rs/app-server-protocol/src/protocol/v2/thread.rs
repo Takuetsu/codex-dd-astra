@@ -1838,12 +1838,12 @@ pub struct ThreadWorkflowStateUpdateResponse {}
 
 /// Fresh read-only Core observer result, never a checkpoint or native QA PASS.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[ts(export_to = "v2/")]
 pub struct ThreadOwnedRuntimeHealthReviewParams {
+    /// Only the original loaded Core thread is selected by the trusted TUI.
+    /// Core selects its unique matching retained child, never the caller.
     pub thread_id: String,
-    /// Existing Core exec session identifier, not an OS PID.
-    pub session_id: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
@@ -1855,6 +1855,7 @@ pub struct ThreadOwnedRuntimeHealthReviewResponse {
     pub approved_port: u16,
     pub owner_pid: u32,
     pub observed_at_ms: u64,
+    pub observation_id: String,
 }
 
 #[cfg(test)]
@@ -1864,16 +1865,21 @@ mod codexdd_046_3d1f_protocol_tests {
     #[test]
     fn codexdd_046_3d1f_review_requires_original_core_process_identifier() {
         let payload = serde_json::json!({
-            "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116",
-            "sessionId": 101
+            "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116"
         });
         let params: ThreadOwnedRuntimeHealthReviewParams =
-            serde_json::from_value(payload).expect("original Core process identifier");
-        assert_eq!(params.session_id, 101);
+            serde_json::from_value(payload).expect("original Core thread identifier");
         assert_eq!(
-            serde_json::to_value(&params).unwrap()["sessionId"],
-            serde_json::json!(101)
+            params.thread_id,
+            "7c8f006e-199e-41d7-a98a-a0e675a2e116"
         );
+        assert!(serde_json::from_value::<ThreadOwnedRuntimeHealthReviewParams>(
+            serde_json::json!({
+                "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116",
+                "sessionId": 101,
+            })
+        )
+        .is_err());
     }
 }
 

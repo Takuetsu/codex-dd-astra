@@ -214,6 +214,45 @@ pub(crate) fn preflight_mechanical_target(
     preflight_owner_candidate_identity(binding, runtime_cwd)
 }
 
+/// Protected source MechanicalValidation stays source-only. Operations-preview
+/// work may enter mechanical validation only through its original owner
+/// gate, with a single exact source/port and an independent Validator. It
+/// cannot turn generic work_packet output into a runtime-health receipt.
+pub(crate) fn preflight_mechanical_or_owned_preview_target(
+    worker: &AdaptiveWorkerContext,
+    pin: Option<&AdaptiveWorkerPreflight>,
+    ledger: Option<&AdaptiveGateLedger>,
+    runtime_cwd: &Path,
+) -> Result<(), String> {
+    let Some(pin) = pin else {
+        return preflight_mechanical_target(None, runtime_cwd);
+    };
+    if pin.task_kind != AdaptiveTaskKind::OperationsPreview {
+        return preflight_mechanical_target(Some(pin), runtime_cwd);
+    }
+    let scope = worker
+        .authorized_scope
+        .as_deref()
+        .filter(|scope| !scope.trim().is_empty())
+        .ok_or_else(|| "SETUP_BLOCKED: operations preview has no owner scope".to_string())?;
+    if worker.role != AdaptiveWorkerRole::Implementation
+        || !ledger.is_some_and(|owner| {
+            owner.single_pending_owned_runtime_health_port().is_some()
+                && owner.matches_authorized_source(
+                    scope,
+                    Path::new(&pin.source_root),
+                    &pin.source_sha,
+                )
+        })
+    {
+        return Err(
+            "SETUP_BLOCKED: protected operations validation needs original single-port owner gate"
+                .to_string(),
+        );
+    }
+    preflight_owner_candidate_identity(pin, runtime_cwd)
+}
+
 /// Read-only first stage of an explicitly owned host-preview request.
 ///
 /// Never discover or signal a process by PID. The caller must already hold a
@@ -691,6 +730,72 @@ mod tests {
             "[adaptive_worker]\nrole = \"{role}\"\nauthorized_scope = \"owner-approved isolated task\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"{kind}\"\nrequired_gates = {gates}\n\nExecute only the owner-approved assignment.",
             root.display()
         )
+    }
+
+    #[test]
+    fn codexdd_046_3d1g_ops_preview_mechanical_requires_single_owner_port() {
+        let (source, sha) = codexdd_046_3c1b2e_git_fixture();
+        let gates = r#"[{ kind = "owned_runtime_health", ports = [4431] }, { kind = "independent_validation" }]"#;
+        let message = codexdd_046_3c1b2e_owner_message(
+            source.path(),
+            &sha,
+            "implementation",
+            "operations_preview",
+            gates,
+        );
+        let (worker, pin, ledger) = parse_adaptive_owner_assignment(&message)
+            .expect("bounded operations manifest")
+            .expect("original owner");
+        assert_eq!(
+            preflight_mechanical_or_owned_preview_target(
+                &worker,
+                pin.as_ref(),
+                ledger.as_ref(),
+                source.path(),
+            ),
+            Ok(())
+        );
+        let mut wrong_role = worker.clone();
+        wrong_role.role = AdaptiveWorkerRole::Validation;
+        assert!(
+            preflight_mechanical_or_owned_preview_target(
+                &wrong_role,
+                pin.as_ref(),
+                ledger.as_ref(),
+                source.path(),
+            )
+            .is_err()
+        );
+        let multi = AdaptiveGateLedger::new(
+            "owner-approved isolated task",
+            source.path(),
+            &sha,
+            vec![
+                AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431, 4432]),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("explicit multi-port requirement remains pending");
+        assert!(
+            preflight_mechanical_or_owned_preview_target(
+                &worker,
+                pin.as_ref(),
+                Some(&multi),
+                source.path(),
+            )
+            .is_err()
+        );
+        let mut benchmark = pin.expect("pinned task");
+        benchmark.task_kind = AdaptiveTaskKind::Benchmark;
+        assert!(
+            preflight_mechanical_or_owned_preview_target(
+                &worker,
+                Some(&benchmark),
+                ledger.as_ref(),
+                source.path(),
+            )
+            .is_err()
+        );
     }
 
     #[test]

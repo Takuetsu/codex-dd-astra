@@ -23,6 +23,7 @@ use crate::tools::context::ToolPayload;
 use crate::tools::context::boxed_tool_output;
 use crate::tools::handlers::ExecCommandHandler;
 use crate::tools::handlers::ExecCommandHandlerOptions;
+use crate::tools::handlers::original_owner_preview_gate;
 use crate::tools::handlers::resolve_tool_environment;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
@@ -996,9 +997,16 @@ fn validate_native_authorized_target(
                 .to_string(),
         );
     }
-    if !matches!(worker.task_kind.as_deref(), None | Some("source_change")) {
+    // A genuine owner-authorized operations preview may validate its pinned
+    // source via the ordinary work_packet profile. This never satisfies the
+    // separate runtime-health gate; benchmark and unapproved preview refuse.
+    let approved_preview = worker.task_kind.as_deref() == Some("operations_preview")
+        && original_owner_preview_gate(worker).is_ok();
+    if !approved_preview
+        && !matches!(worker.task_kind.as_deref(), None | Some("source_change"))
+    {
         return Err(
-            "SETUP_BLOCKED: operations/benchmark Worker cannot execute source MechanicalValidation. No profile ran."
+            "SETUP_BLOCKED: operations/benchmark Worker without original runtime authority cannot execute source MechanicalValidation. No profile ran."
                 .to_string(),
         );
     }

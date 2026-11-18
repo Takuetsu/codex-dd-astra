@@ -63,6 +63,20 @@ pub(crate) enum AdaptiveSuccessorAdmission {
     Consumed(AdaptiveSuccessorPermit),
 }
 
+/// In-memory one-use correlation for a QA health recheck. No accepted
+/// runtime-health receipt is ever serialized into the workflow checkpoint.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AdaptiveOwnedRuntimeQaWait {
+    pub(crate) review_request_id: uuid::Uuid,
+    pub(crate) validation_thread_id: codex_protocol::ThreadId,
+    pub(crate) origin_thread_id: codex_protocol::ThreadId,
+    pub(crate) source_turn_id: String,
+    pub(crate) evidence_refs: Vec<String>,
+    pub(crate) expected_root: String,
+    pub(crate) expected_sha: String,
+    pub(crate) approved_port: u16,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum AdaptivePendingSignal {
     /// Turn completion arrived before the separate trusted adaptive signal notification.
@@ -138,6 +152,9 @@ pub(crate) struct AdaptiveEffortState {
     /// Ephemeral parent Implementation thread for a fresh, source-bound review.
     /// Never persisted or inferred from a model-provided thread ID.
     pub(crate) review_origin_thread_id: Option<codex_protocol::ThreadId>,
+    /// Only the host's pending live QA RPC can complete this in-memory
+    /// correlation. Missing sessions and cold resumes never restore it.
+    pub(crate) pending_owned_runtime_qa: Option<AdaptiveOwnedRuntimeQaWait>,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
     pub(crate) validation_repair_fingerprint: Option<String>,
@@ -250,7 +267,11 @@ impl AdaptiveEffortState {
             || previous.workflow_terminal != Some(AdaptiveWorkflowTerminal::ReadyForValidation)
             || previous.worker_context.authorized_scope.as_deref()
                 != Some(binding.authorized_scope.as_str())
-            || pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+            || !matches!(
+                pin.task_kind,
+                crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+                    | crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview
+            )
             || !ledger.matches_authorized_source(
                 &binding.authorized_scope,
                 std::path::Path::new(&pin.source_root),
@@ -648,8 +669,11 @@ impl ChatWidget {
             return None;
         }
         let pin = state.assignment_preflight.as_ref()?;
-        if pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
-            || !state.gate_ledger.as_ref()?.matches_authorized_source(
+        if !matches!(
+            pin.task_kind,
+            crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+                | crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview
+        ) || !state.gate_ledger.as_ref()?.matches_authorized_source(
                 &binding.authorized_scope,
                 std::path::Path::new(&pin.source_root),
                 &pin.source_sha,

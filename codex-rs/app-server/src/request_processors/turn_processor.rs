@@ -208,7 +208,7 @@ impl TurnRequestProcessor {
     ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
         let (_, thread) = self.load_thread(&params.thread_id).await?;
         let observed = thread
-            .review_codexdd_owned_runtime_health(params.session_id)
+            .review_codexdd_owned_runtime_health()
             .await
             .map_err(invalid_request)?;
         Ok(Some(
@@ -218,6 +218,7 @@ impl TurnRequestProcessor {
                 approved_port: observed.approved_port,
                 owner_pid: observed.owner_pid,
                 observed_at_ms: observed.observed_at_ms,
+                observation_id: observed.observation_id,
             }
             .into(),
         ))

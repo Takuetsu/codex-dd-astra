@@ -601,6 +601,60 @@ impl UnifiedExecProcessManager {
         .await
     }
 
+    /// QA does not receive or select a model-supplied Core exec session ID.
+    /// Only one live original-session child with exact approved argv, root,
+    /// and direct OS handle can qualify. Ambiguity and cold resume refuse.
+    #[cfg(windows)]
+    pub(crate) async fn observe_unique_owner_approved_health(
+        &self,
+        original_session: &Arc<Session>,
+        approved_argv: &[String],
+        approved_root: &Path,
+        approved_port: u16,
+    ) -> Result<super::owned_runtime_health::CoreOwnedLoopbackObservation, String> {
+        if approved_argv.is_empty() || approved_port == 0 {
+            return Err("SETUP_BLOCKED: missing original owner argv or port".to_string());
+        }
+        let canonical_root = approved_root
+            .canonicalize()
+            .map_err(|_| "SETUP_BLOCKED: original owner root unavailable".to_string())?;
+        let eligible = {
+            let store = self.process_store.lock().await;
+            store
+                .processes
+                .iter()
+                .filter_map(|(&session_id, entry)| {
+                    let held_session = entry.session.upgrade()?;
+                    if !Arc::ptr_eq(&held_session, original_session)
+                        || entry.call_id.is_empty()
+                        || entry.original_command.as_slice() != approved_argv
+                        || entry.process.live_local_os_pid().is_none()
+                    {
+                        return None;
+                    }
+                    let entry_root = entry
+                        .cwd
+                        .to_abs_path()
+                        .ok()?
+                        .as_path()
+                        .canonicalize()
+                        .ok()?;
+                    (entry_root == canonical_root).then_some(session_id)
+                })
+                .take(2)
+                .collect::<Vec<_>>()
+        };
+        let session_id = unique_original_owner_session_id(eligible)?;
+        self.observe_original_owner_approved_health(
+            original_session,
+            session_id,
+            approved_argv,
+            &canonical_root,
+            approved_port,
+        )
+        .await
+    }
+
     pub(crate) async fn allocate_process_id(&self) -> i32 {
         loop {
             let mut store = self.process_store.lock().await;
@@ -2046,3 +2100,30 @@ enum ProcessStatus {
 #[cfg(test)]
 #[path = "process_manager_tests.rs"]
 mod tests;
+
+#[cfg(windows)]
+fn unique_original_owner_session_id(eligible: Vec<i32>) -> Result<i32, String> {
+    match eligible.as_slice() {
+        [session_id] if *session_id > 0 => Ok(*session_id),
+        [] => Err("SETUP_BLOCKED: original Core session has no live approved process".to_string()),
+        _ => Err("SETUP_BLOCKED: multiple or invalid original Core process handles".to_string()),
+    }
+}
+
+#[cfg(all(test, windows))]
+mod codexdd_046_3d1g_unique_owner_tests {
+    use super::unique_original_owner_session_id;
+
+    #[test]
+    fn codexdd_046_3d1g_only_unique_original_core_process_is_admitted() {
+        assert_eq!(unique_original_owner_session_id(vec![101]), Ok(101));
+        assert!(unique_original_owner_session_id(vec![]).is_err());
+        assert!(unique_original_owner_session_id(vec![0]).is_err());
+    }
+
+    #[test]
+    fn codexdd_046_3d1g_ambiguous_process_store_refuses() {
+        assert!(unique_original_owner_session_id(vec![101, 202]).is_err());
+        assert!(unique_original_owner_session_id(vec![101, 101]).is_err());
+    }
+}

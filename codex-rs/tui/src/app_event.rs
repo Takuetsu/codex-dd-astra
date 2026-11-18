@@ -316,6 +316,15 @@ pub(crate) enum AppEvent {
         source_turn_id: Option<String>,
         adaptive_state: Option<codex_app_server_protocol::ThreadAdaptiveWorkflowState>,
     },
+    /// Only an independently accepted Validation Worker may queue this. The
+    /// App must call the current embedded Core RPC; a copied event or saved
+    /// completion record is never a native health result.
+    ReviewOwnedRuntimeHealthAtQa {
+        validation_thread_id: ThreadId,
+        origin_thread_id: ThreadId,
+        source_turn_id: String,
+        review_request_id: Uuid,
+    },
     /// Open the live command center for recent and locally retained root sessions.
     OpenAgentsOverview,
     ShowMoreAgentsOverview,
