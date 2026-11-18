@@ -79,8 +79,6 @@ try {
     )
 }
 
-
-
 fn fixture_git(root: &Path, args: &[&str]) -> Result<String> {
     let output = Command::new("git")
         .arg("-C")
@@ -770,8 +768,7 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
         canonical.display(),
     );
     ensure!(
-        codex_config::config_toml::parse_adaptive_worker_first_message(&owner_message)?
-            .is_some(),
+        codex_config::config_toml::parse_adaptive_worker_first_message(&owner_message)?.is_some(),
         "original owner health permission must be parsed and locked"
     );
 
@@ -818,11 +815,7 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
         }
         sequence.push(responses::sse(vec![
             responses::ev_response_created(&format!("d02-{role}-native")),
-            responses::ev_function_call(
-                call,
-                tool,
-                &json!({"profile": profile}).to_string(),
-            ),
+            responses::ev_function_call(call, tool, &json!({"profile": profile}).to_string()),
             responses::ev_completed(&format!("d02-{role}-native")),
         ]));
         sequence.push(responses::sse(vec![
@@ -855,7 +848,11 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
     let mut last_validation_turn = None;
     for (role, profile, call_id) in [
         ("implementation", "work_packet", "d02-native-source-receipt"),
-        ("validation", "independent_review", "d02-native-independent-receipt"),
+        (
+            "validation",
+            "independent_review",
+            "d02-native-independent-receipt",
+        ),
     ] {
         let thread_start_id = server
             .send_thread_start_request(ThreadStartParams {
@@ -878,7 +875,10 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
             origin_thread = Some(thread);
         } else {
             let parent = origin_thread.context("original Core Implementation missing")?;
-            ensure!(thread != parent, "Validator must run in separate Core thread");
+            ensure!(
+                thread != parent,
+                "Validator must run in separate Core thread"
+            );
             validator_thread = Some(thread);
         }
         let header = if role == "implementation" {
@@ -924,7 +924,10 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
                     .gate_ledger
                     .as_ref()
                     .is_some_and(|ledger| {
-                        ledger.outstanding(&chat.adaptive_effort.evidence_registry).len() == 2
+                        ledger
+                            .outstanding(&chat.adaptive_effort.evidence_registry)
+                            .len()
+                            == 2
                     }),
                 "original owner must have runtime plus independent pending gates"
             );
@@ -977,24 +980,17 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
                     text_elements: Vec::new(),
                 }],
                 turn_trigger: (role == "implementation").then(|| {
-                    codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER
-                        .to_string()
+                    codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string()
                 }),
                 ..Default::default()
             })
             .await?;
         let native: TurnStartResponse =
             timeout(LIVE_TIMEOUT, server.read_response(native_id)).await??;
-        let started = take_turn_event(
-            &mut server,
-            "turn/started",
-            &thread_id,
-            &native.turn.id,
-        )
-        .await?;
+        let started =
+            take_turn_event(&mut server, "turn/started", &thread_id, &native.turn.id).await?;
         chat.handle_server_notification(started, None);
-        let item =
-            take_item_event(&mut server, &thread_id, &native.turn.id, Some(call_id)).await?;
+        let item = take_item_event(&mut server, &thread_id, &native.turn.id, Some(call_id)).await?;
         let ServerNotification::ItemCompleted(ref receipt) = item else {
             anyhow::bail!("expected actual Core-native tool completion");
         };
@@ -1054,7 +1050,8 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
                 .context("real independent Validator did not schedule live host QA recheck")?;
             ensure!(
                 pending.origin_thread_id == origin_thread.context("missing origin")?
-                    && pending.validation_thread_id == validator_thread.context("missing Validator")?
+                    && pending.validation_thread_id
+                        == validator_thread.context("missing Validator")?
                     && pending.approved_port == port
                     && pending.source_turn_id == native.turn.id,
                 "pending QA approval is not source, port and turn bound"
@@ -1091,7 +1088,10 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
             _ => {}
         }
     }
-    ensure!(premature_ready == 0, "model READY must not be persisted before Core recheck");
+    ensure!(
+        premature_ready == 0,
+        "model READY must not be persisted before Core recheck"
+    );
     let review_id = queued_review.context("no trusted host QA request was scheduled")?;
     let result_request = server
         .send_request(
@@ -1109,8 +1109,7 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
         Ok(healthy.clone()),
     );
     ensure!(
-        chat.adaptive_effort.workflow_terminal
-            == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+        chat.adaptive_effort.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
         "fresh Core-owned HTTP 200 plus genuine independent Validator did not reach READY"
     );
     ensure!(
@@ -1127,8 +1126,7 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
     let mut persisted_ready = 0;
     while let Ok(event) = app_events.try_recv() {
         if let AppEvent::PersistWorkflowState {
-            operation:
-                codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
+            operation: codex_app_server_protocol::ThreadWorkflowStateOperation::SetReadyForOwnerQa,
             thread_id,
             ..
         } = event
@@ -1143,8 +1141,11 @@ async fn codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready()
     );
     std::fs::write(&stop_marker, b"stop")?;
     ensure!(
-        fixture_git(&root, &["status", "--porcelain=v1", "--untracked-files=all"])?
-            .is_empty(),
+        fixture_git(
+            &root,
+            &["status", "--porcelain=v1", "--untracked-files=all"]
+        )?
+        .is_empty(),
         "native QA process changed the pinned candidate"
     );
     timeout(LIVE_TIMEOUT, server.shutdown_gracefully()).await??;
