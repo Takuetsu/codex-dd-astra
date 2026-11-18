@@ -1223,6 +1223,68 @@ fn add_mcp_resource_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     }
 }
 
+/// Tool exposure is a separate boundary from the handler's native source
+/// checks. A pinned independent Validator for an approved operations preview
+/// must receive the same review tool as a source-change Validator, while
+/// Implementation/Repair/Benchmark and unbound workers cannot gain it.
+fn original_core_validator_tool_allowed(
+    worker: &codex_config::config_toml::AdaptiveWorkerConfigToml,
+) -> bool {
+    matches!(
+        worker.role,
+        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+    ) && matches!(
+        worker.task_kind.as_deref(),
+        Some("source_change" | "operations_preview")
+    ) && worker
+        .authorized_scope
+        .as_deref()
+        .is_some_and(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
+        && worker
+            .source_root
+            .as_deref()
+            .is_some_and(|root| !root.trim().is_empty())
+        && worker.source_sha.as_deref().is_some_and(|sha| {
+            sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+        })
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1i_validator_registration_tests {
+    use super::original_core_validator_tool_allowed;
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    #[test]
+    fn codexdd_046_3d1i_native_independent_validator_preview_tool_admitted() {
+        let mut worker = AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Validation,
+            authorized_scope: Some("one source-pinned original preview".to_string()),
+            source_root: Some("C:\\codexdd-test-source".to_string()),
+            source_sha: Some("a".repeat(40)),
+            task_kind: Some("operations_preview".to_string()),
+            required_gates: None,
+            benchmark: None,
+        };
+        assert!(original_core_validator_tool_allowed(&worker));
+        worker.task_kind = Some("source_change".to_string());
+        assert!(original_core_validator_tool_allowed(&worker));
+        worker.task_kind = Some("benchmark".to_string());
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.task_kind = Some("operations_preview".to_string());
+        worker.role = AdaptiveWorkerRoleToml::Implementation;
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.role = AdaptiveWorkerRoleToml::Repair;
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.role = AdaptiveWorkerRoleToml::Validation;
+        worker.source_sha = Some("untrusted".to_string());
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.source_sha = Some("a".repeat(40));
+        worker.authorized_scope = None;
+        assert!(!original_core_validator_tool_allowed(&worker));
+    }
+}
+
 #[instrument(level = "trace", skip_all)]
 fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut ToolRegistry) {
     let turn_context = context.turn_context;
@@ -1246,28 +1308,11 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     // role/root/SHA/scope check immediately before and after native execution.
     // Terminalization remains report-only, and the Implementation LVO is
     // never exposed as the independent review tool.
-    let has_validator_binding =
-        turn_context
-            .config
-            .adaptive_worker
-            .as_ref()
-            .is_some_and(|worker| {
-                matches!(
-                    &worker.role,
-                    codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
-                ) && worker.task_kind.as_deref() == Some("source_change")
-                    && worker
-                        .authorized_scope
-                        .as_deref()
-                        .is_some_and(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
-                    && worker
-                        .source_root
-                        .as_deref()
-                        .is_some_and(|root| !root.trim().is_empty())
-                    && worker.source_sha.as_deref().is_some_and(|sha| {
-                        sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit())
-                    })
-            });
+    let has_validator_binding = turn_context
+        .config
+        .adaptive_worker
+        .as_ref()
+        .is_some_and(original_core_validator_tool_allowed);
     if has_validator_binding
         && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
         && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)

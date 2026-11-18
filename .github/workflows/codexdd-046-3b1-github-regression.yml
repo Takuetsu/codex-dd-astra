@@ -3233,6 +3233,24 @@ jobs:
             throw "D02 real Core-held Windows health QA acceptance failed (exit=$testExit)"
           }
           Write-Host 'Verified real Windows Core-owned HTTP health review, fresh observation and cold-resume refusal. Full independent TUI QA still requires acceptance.'
+      - name: Verify D02 native independent Validator tool exposure
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_native_independent_validator_preview_tool_admitted'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 native Validator tool exposure regression missing (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 independent operations-preview tool admission refused (exit=$testExit)"
+          }
       - name: Verify D02 real Implementation to independent Validation to live QA READY
         shell: pwsh
         working-directory: codex-rs
