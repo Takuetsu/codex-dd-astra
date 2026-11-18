@@ -1263,6 +1263,7 @@ fn codexdd_046_3c1b2a_independent_receipt_contract_and_restart_drop_authority() 
         validation_thread_id: validator,
         implementation_thread_id: impl_thread,
         validation_turn_id: "independent-review-turn",
+        task_kind: AdaptiveTaskKind::SourceChange,
         authorized_scope: "isolated source packet",
         source_root: root.path(),
         source_sha: SOURCE_SHA_A,
@@ -1334,6 +1335,7 @@ fn codexdd_046_3c1b2a_generic_or_implementation_success_cannot_be_independent() 
         validation_thread_id: validator,
         implementation_thread_id: implementation,
         validation_turn_id: "independent-review-turn",
+        task_kind: AdaptiveTaskKind::SourceChange,
         authorized_scope: "isolated source packet",
         source_root: root.path(),
         source_sha: SOURCE_SHA_A,
@@ -1371,6 +1373,7 @@ fn codexdd_046_3c1b2a_wrong_source_or_conflict_revokes_native_review() {
         validation_thread_id: validator,
         implementation_thread_id: implementation,
         validation_turn_id: "independent-review-turn",
+        task_kind: AdaptiveTaskKind::SourceChange,
         authorized_scope: "isolated source packet",
         source_root: root.path(),
         source_sha: SOURCE_SHA_A,
@@ -1434,4 +1437,83 @@ fn codexdd_046_3c1b2a_wrong_source_or_conflict_revokes_native_review() {
     );
     assert_eq!(ledger.outstanding(&registry).len(), 1);
     assert!(!ledger.ready_for_owner_qa(&registry));
+}
+
+#[test]
+fn codexdd_046_3d1i_operations_validator_receipt_cannot_cross_source_gate() {
+    let root = tempfile::tempdir().expect("disposable original source");
+    let validator = ThreadId::new();
+    let implementation = ThreadId::new();
+    let mut native = synthetic_independent_review_receipt(validator, root.path(), SOURCE_SHA_A);
+    native.bind_worker_identity(
+        &AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some("isolated source packet".to_string()),
+        },
+        Some(&AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::OperationsPreview,
+            source_root: root.path().display().to_string(),
+            source_sha: SOURCE_SHA_A.to_string(),
+        }),
+    );
+    assert_eq!(
+        native
+            .worker_binding
+            .as_ref()
+            .map(|bound| bound.task_kind),
+        Some(AdaptiveTaskKind::OperationsPreview)
+    );
+    let mut registry = AdaptiveEvidenceRegistry::default();
+    assert_eq!(
+        registry.register(native),
+        AdaptiveEvidenceRegistration::Registered
+    );
+    let mut operations = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![
+            AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431]),
+            AdaptiveRequiredGate::IndependentValidation,
+        ],
+    )
+    .expect("original owner operations gate");
+    operations
+        .observe_independent_review_pass(
+            &registry,
+            "native-review-receipt",
+            validator,
+            implementation,
+            "independent-review-turn",
+            "native-review-789",
+            1_999,
+        )
+        .expect("independent operations reviewer must bind");
+    assert_eq!(
+        operations.outstanding(&registry).len(),
+        1,
+        "even an approved independent review does not satisfy live Core health"
+    );
+
+    let mut source_only = AdaptiveGateLedger::new(
+        "isolated source packet",
+        root.path(),
+        SOURCE_SHA_A,
+        vec![AdaptiveRequiredGate::IndependentValidation],
+    )
+    .expect("source-only separate gate");
+    assert!(
+        source_only
+            .observe_independent_review_pass(
+                &registry,
+                "native-review-receipt",
+                validator,
+                implementation,
+                "independent-review-turn",
+                "native-review-789",
+                1_999,
+            )
+            .is_err(),
+        "an operations-preview independent receipt cannot satisfy source-only ownership"
+    );
 }

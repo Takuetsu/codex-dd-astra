@@ -340,6 +340,17 @@ impl AdaptiveGateLedger {
             validation_thread_id,
             implementation_thread_id,
             validation_turn_id,
+            // Original operations-preview gates have runtime authority but no
+            // source-profile gate. Source and runtime evidence never mix.
+            task_kind: if self
+                .required
+                .iter()
+                .any(|gate| matches!(gate, AdaptiveRequiredGate::OwnedRuntimeHealth(_)))
+            {
+                AdaptiveTaskKind::OperationsPreview
+            } else {
+                AdaptiveTaskKind::SourceChange
+            },
             authorized_scope: &self.scope,
             source_root: &self.root,
             source_sha: &self.sha,

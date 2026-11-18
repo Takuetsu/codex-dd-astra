@@ -3251,6 +3251,24 @@ jobs:
           if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
             throw "D02 independent operations-preview tool admission refused (exit=$testExit)"
           }
+      - name: Verify D02 native operations-preview receipt cannot bypass source or runtime gates
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_operations_validator_receipt_cannot_cross_source_gate'
+          $list = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $list | Out-Host
+          if ($listExit -ne 0 -or -not (($list -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 operations-review gate-binding test missing (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 operations-preview native receipt cross-gate refusal failed (exit=$testExit)"
+          }
       - name: Verify D02 real Implementation to independent Validation to live QA READY
         shell: pwsh
         working-directory: codex-rs

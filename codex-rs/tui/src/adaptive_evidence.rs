@@ -65,6 +65,8 @@ pub(crate) struct AdaptiveIndependentReviewRequirement<'a> {
     pub(crate) validation_thread_id: ThreadId,
     pub(crate) implementation_thread_id: ThreadId,
     pub(crate) validation_turn_id: &'a str,
+    /// Original owner gate task kind, not the Validator model's requested type.
+    pub(crate) task_kind: AdaptiveTaskKind,
     pub(crate) authorized_scope: &'a str,
     pub(crate) source_root: &'a Path,
     pub(crate) source_sha: &'a str,
@@ -124,8 +126,14 @@ impl AdaptiveEvidenceRecord {
                 Some(CODEXDD_INDEPENDENT_VALIDATION_TOOL_NAME)
             )
         );
+        // An explicitly pinned operations-preview Worker may bind a real
+        // Core source check and a separate native independent review. That
+        // receipt never discharges the OwnedRuntimeHealth gate.
         if !correct_native_producer
-            || pin.task_kind != AdaptiveTaskKind::SourceChange
+            || !matches!(
+                pin.task_kind,
+                AdaptiveTaskKind::SourceChange | AdaptiveTaskKind::OperationsPreview
+            )
             || scope.trim().is_empty()
             || pin.source_sha.len() != 40
             || !pin.source_sha.bytes().all(|byte| byte.is_ascii_hexdigit())
@@ -360,7 +368,11 @@ impl AdaptiveEvidenceRegistry {
             .as_ref()
             .ok_or(AdaptiveEvidenceResolveError::WorkerBindingMismatch)?;
         if bound.role != AdaptiveWorkerRole::Validation
-            || bound.task_kind != AdaptiveTaskKind::SourceChange
+            || bound.task_kind != requirement.task_kind
+            || !matches!(
+                bound.task_kind,
+                AdaptiveTaskKind::SourceChange | AdaptiveTaskKind::OperationsPreview
+            )
             || bound.authorized_scope != requirement.authorized_scope
             || bound.authorized_scope.trim().is_empty()
         {
