@@ -52,6 +52,7 @@ on:
       - codex-rs/app-server/src/request_processors.rs
       - codex-rs/app-server/src/request_processors/turn_processor.rs
       - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+      - codex-rs/app-server-protocol/src/protocol/v2/tests.rs
       # D02 Core-owned OS process identity must never bypass source-pinned CI.
       - codex-rs/core/src/unified_exec/mod.rs
       - codex-rs/core/src/unified_exec/process.rs
