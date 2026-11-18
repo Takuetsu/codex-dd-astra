@@ -49,6 +49,7 @@ on:
       # D02 QA Core review RPC is always in the same SHA's source/format checks.
       - codex-rs/core/src/codex_thread.rs
       - codex-rs/app-server/src/message_processor.rs
+      - codex-rs/app-server/src/request_processors.rs
       - codex-rs/app-server/src/request_processors/turn_processor.rs
       - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
       # D02 Core-owned OS process identity must never bypass source-pinned CI.
