@@ -253,6 +253,25 @@ pub(crate) fn preflight_mechanical_or_owned_preview_target(
     preflight_owner_candidate_identity(pin, runtime_cwd)
 }
 
+/// Read-only source admission for the automatic independent Validator.
+/// Preserve the original pinned candidate for both source and owner-approved
+/// operations work. A benchmark or arbitrary task cannot be transformed into
+/// an independent runtime-health approval.
+pub(crate) fn preflight_inherited_validation_target(
+    pin: &AdaptiveWorkerPreflight,
+    runtime_cwd: &Path,
+) -> Result<(), String> {
+    match pin.task_kind {
+        AdaptiveTaskKind::SourceChange | AdaptiveTaskKind::OperationsPreview => {
+            preflight_owner_candidate_identity(pin, runtime_cwd)
+        }
+        AdaptiveTaskKind::Benchmark => Err(
+            "SETUP_BLOCKED: benchmark cannot become an independent operations Validator"
+                .to_string(),
+        ),
+    }
+}
+
 /// Read-only first stage of an explicitly owned host-preview request.
 ///
 /// Never discover or signal a process by PID. The caller must already hold a
@@ -730,6 +749,33 @@ mod tests {
             "[adaptive_worker]\nrole = \"{role}\"\nauthorized_scope = \"owner-approved isolated task\"\nsource_root = '{}'\nsource_sha = \"{sha}\"\ntask_kind = \"{kind}\"\nrequired_gates = {gates}\n\nExecute only the owner-approved assignment.",
             root.display()
         )
+    }
+
+    #[test]
+    fn codexdd_046_3d1i_automatic_preview_validator_preserves_exact_source() {
+        let (source, sha) = codexdd_046_3c1b2e_git_fixture();
+        let mut pin = AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::OperationsPreview,
+            source_root: source.path().display().to_string(),
+            source_sha: sha.clone(),
+        };
+        assert_eq!(
+            preflight_inherited_validation_target(&pin, source.path()),
+            Ok(())
+        );
+        pin.task_kind = AdaptiveTaskKind::SourceChange;
+        assert_eq!(
+            preflight_inherited_validation_target(&pin, source.path()),
+            Ok(())
+        );
+        pin.task_kind = AdaptiveTaskKind::Benchmark;
+        assert!(preflight_inherited_validation_target(&pin, source.path()).is_err());
+        pin.task_kind = AdaptiveTaskKind::OperationsPreview;
+        pin.source_sha = "f".repeat(40);
+        assert!(preflight_inherited_validation_target(&pin, source.path()).is_err());
+        pin.source_sha = sha;
+        let foreign = tempfile::tempdir().expect("foreign source");
+        assert!(preflight_inherited_validation_target(&pin, foreign.path()).is_err());
     }
 
     #[test]

@@ -1082,7 +1082,7 @@ impl App {
             // before thread/start. An inherited ledger alone is not proof
             // that the on-disk checkout still matches its owner source SHA.
             if let Err(err) =
-                crate::adaptive_worker::preflight_mechanical_target(Some(pin), &selected)
+                crate::adaptive_worker::preflight_inherited_validation_target(pin, &selected)
             {
                 self.chat_widget
                     .add_error_message(format!("{err} No Validation Worker started."));
