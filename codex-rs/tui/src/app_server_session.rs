@@ -1539,8 +1539,7 @@ impl AppServerSession {
         &mut self,
         original_thread_id: ThreadId,
     ) -> Result<ThreadOwnedRuntimeHealthReviewResponse> {
-        if self.thread_params_mode != ThreadParamsMode::Embedded
-            || !self.uses_embedded_app_server()
+        if self.thread_params_mode != ThreadParamsMode::Embedded || !self.uses_embedded_app_server()
         {
             color_eyre::eyre::bail!(
                 "SETUP_BLOCKED: D02 QA requires the original live embedded Core"

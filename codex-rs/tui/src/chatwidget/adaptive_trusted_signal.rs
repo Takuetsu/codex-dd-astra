@@ -213,8 +213,7 @@ impl ChatWidget {
         // schedule a fresh host-side Core QA recheck. Neither the model's READY
         // message nor a saved tool result can discharge OwnedRuntimeHealth.
         // One exact approved runtime port must be the ONLY pending gate.
-        let pending_owned_qa = (envelope.signal_kind
-            == AdaptiveRuntimeSignalKind::ReadyForOwnerQa)
+        let pending_owned_qa = (envelope.signal_kind == AdaptiveRuntimeSignalKind::ReadyForOwnerQa)
             .then(|| {
                 let state = &self.adaptive_effort;
                 let port = state
@@ -223,15 +222,14 @@ impl ChatWidget {
                     .single_pending_owned_runtime_health_port()?;
                 let review_thread_id = self.thread_id?;
                 let origin_thread_id = state.review_origin_thread_id?;
-                if !self.valid_evidence_refs(
-                    &envelope.evidence_refs,
-                    AdaptiveEvidenceOutcome::Success,
-                ) || self
-                    .owner_qa_prerequisite_admission_with_runtime(
-                        &envelope.evidence_refs,
-                        Some(port),
-                    )
-                    .is_err()
+                if !self
+                    .valid_evidence_refs(&envelope.evidence_refs, AdaptiveEvidenceOutcome::Success)
+                    || self
+                        .owner_qa_prerequisite_admission_with_runtime(
+                            &envelope.evidence_refs,
+                            Some(port),
+                        )
+                        .is_err()
                 {
                     return None;
                 }
@@ -256,12 +254,13 @@ impl ChatWidget {
             // permission to schedule another model attempt meanwhile.
             self.adaptive_effort.pending_attempt = None;
             self.adaptive_effort.successor_admission = None;
-            self.app_event_tx.send(AppEvent::ReviewOwnedRuntimeHealthAtQa {
-                validation_thread_id: pending.validation_thread_id,
-                origin_thread_id: pending.origin_thread_id,
-                source_turn_id: pending.source_turn_id.clone(),
-                review_request_id: pending.review_request_id,
-            });
+            self.app_event_tx
+                .send(AppEvent::ReviewOwnedRuntimeHealthAtQa {
+                    validation_thread_id: pending.validation_thread_id,
+                    origin_thread_id: pending.origin_thread_id,
+                    source_turn_id: pending.source_turn_id.clone(),
+                    review_request_id: pending.review_request_id,
+                });
             self.adaptive_effort.pending_owned_runtime_qa = Some(pending);
             self.save_adaptive_effort_for_current_thread();
             return true;
@@ -700,13 +699,13 @@ impl ChatWidget {
                         .to_string(),
                 );
             }
-            let runtime_gate = crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(
-                vec![port],
-            );
+            let runtime_gate =
+                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(vec![
+                    port,
+                ]);
             if !outstanding.iter().any(|entry| {
                 entry.gate == runtime_gate
-                    && entry.state
-                        == crate::adaptive_gate_prerequisites::AdaptiveGateState::Pending
+                    && entry.state == crate::adaptive_gate_prerequisites::AdaptiveGateState::Pending
             }) {
                 return Err("runtime-health requirement is blocked or not pending".to_string());
             }
@@ -750,10 +749,7 @@ impl ChatWidget {
         origin_thread_id: codex_protocol::ThreadId,
         source_turn_id: &str,
         review_request_id: uuid::Uuid,
-        result: Result<
-            codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse,
-            String,
-        >,
+        result: Result<codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse, String>,
     ) {
         let matches_pending = self
             .adaptive_effort
@@ -790,17 +786,25 @@ impl ChatWidget {
                     .duration_since(std::time::UNIX_EPOCH)
                     .map_err(|_| "SETUP_BLOCKED: QA clock unavailable".to_string())?
                     .as_millis() as u64;
-                let observation_id = uuid::Uuid::parse_str(&observation.observation_id)
-                    .map_err(|_| "SETUP_BLOCKED: malformed Core observation identity".to_string())?;
+                let observation_id =
+                    uuid::Uuid::parse_str(&observation.observation_id).map_err(|_| {
+                        "SETUP_BLOCKED: malformed Core observation identity".to_string()
+                    })?;
                 let same_root = std::path::Path::new(&observation.source_root)
                     .canonicalize()
                     .ok()
-                    .zip(std::path::Path::new(&pending.expected_root).canonicalize().ok())
+                    .zip(
+                        std::path::Path::new(&pending.expected_root)
+                            .canonicalize()
+                            .ok(),
+                    )
                     .is_some_and(|(observed, expected)| observed == expected);
                 if observation_id.is_nil()
                     || observation.owner_pid == 0
                     || observation.approved_port != pending.approved_port
-                    || !observation.source_sha.eq_ignore_ascii_case(&pending.expected_sha)
+                    || !observation
+                        .source_sha
+                        .eq_ignore_ascii_case(&pending.expected_sha)
                     || !same_root
                     || now_ms
                         .checked_sub(observation.observed_at_ms)
@@ -882,8 +886,7 @@ mod tests {
 
     #[tokio::test]
     async fn codexdd_046_3d1g_forged_qa_response_without_host_request_refuses() {
-        let (mut chat, _sender, _rx, _op_rx) =
-            make_chatwidget_manual_with_sender().await;
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let validator = ThreadId::new();
         let original = ThreadId::new();
         chat.thread_id = Some(validator);
@@ -892,14 +895,16 @@ mod tests {
             original,
             "forged-qa",
             uuid::Uuid::new_v4(),
-            Ok(codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse {
-                source_root: std::env::temp_dir().display().to_string(),
-                source_sha: "a".repeat(40),
-                approved_port: 4431,
-                owner_pid: 777,
-                observed_at_ms: 1,
-                observation_id: uuid::Uuid::new_v4().to_string(),
-            }),
+            Ok(
+                codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse {
+                    source_root: std::env::temp_dir().display().to_string(),
+                    source_sha: "a".repeat(40),
+                    approved_port: 4431,
+                    owner_pid: 777,
+                    observed_at_ms: 1,
+                    observation_id: uuid::Uuid::new_v4().to_string(),
+                },
+            ),
         );
         assert_eq!(chat.adaptive_effort.workflow_terminal, None);
         assert!(chat.adaptive_effort.pending_owned_runtime_qa.is_none());
@@ -907,8 +912,7 @@ mod tests {
 
     #[tokio::test]
     async fn codexdd_046_3d1g_late_or_replayed_core_qa_token_refuses() {
-        let (mut chat, _sender, _rx, _op_rx) =
-            make_chatwidget_manual_with_sender().await;
+        let (mut chat, _sender, _rx, _op_rx) = make_chatwidget_manual_with_sender().await;
         let validator = ThreadId::new();
         let original = ThreadId::new();
         let correlation = uuid::Uuid::new_v4();
@@ -921,17 +925,16 @@ mod tests {
         chat.adaptive_effort.pending_signal = Some(AdaptivePendingSignal::Consumed {
             source_turn_id: "review-turn".to_string(),
         });
-        chat.adaptive_effort.pending_owned_runtime_qa =
-            Some(AdaptiveOwnedRuntimeQaWait {
-                review_request_id: correlation,
-                validation_thread_id: validator,
-                origin_thread_id: original,
-                source_turn_id: "review-turn".to_string(),
-                evidence_refs: vec!["independent-native-review".to_string()],
-                expected_root: source_root.path().display().to_string(),
-                expected_sha: "a".repeat(40),
-                approved_port: 4431,
-            });
+        chat.adaptive_effort.pending_owned_runtime_qa = Some(AdaptiveOwnedRuntimeQaWait {
+            review_request_id: correlation,
+            validation_thread_id: validator,
+            origin_thread_id: original,
+            source_turn_id: "review-turn".to_string(),
+            evidence_refs: vec!["independent-native-review".to_string()],
+            expected_root: source_root.path().display().to_string(),
+            expected_sha: "a".repeat(40),
+            approved_port: 4431,
+        });
         let late = codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse {
             source_root: source_root.path().display().to_string(),
             source_sha: "a".repeat(40),

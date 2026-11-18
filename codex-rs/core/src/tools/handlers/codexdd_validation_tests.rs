@@ -1139,12 +1139,9 @@ fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() 
     );
     let mut unauthorized_preview = preview.clone();
     unauthorized_preview.required_gates = None;
-    assert!(validate_native_authorized_target(
-        &nested,
-        Some(&unauthorized_preview),
-        &sha,
-    )
-    .is_err());
+    assert!(
+        validate_native_authorized_target(&nested, Some(&unauthorized_preview), &sha,).is_err()
+    );
 
     let mut incomplete = binding.clone();
     incomplete.source_sha = None;

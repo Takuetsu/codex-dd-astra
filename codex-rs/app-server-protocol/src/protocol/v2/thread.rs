@@ -1869,17 +1869,14 @@ mod codexdd_046_3d1f_protocol_tests {
         });
         let params: ThreadOwnedRuntimeHealthReviewParams =
             serde_json::from_value(payload).expect("original Core thread identifier");
-        assert_eq!(
-            params.thread_id,
-            "7c8f006e-199e-41d7-a98a-a0e675a2e116"
-        );
-        assert!(serde_json::from_value::<ThreadOwnedRuntimeHealthReviewParams>(
-            serde_json::json!({
+        assert_eq!(params.thread_id, "7c8f006e-199e-41d7-a98a-a0e675a2e116");
+        assert!(
+            serde_json::from_value::<ThreadOwnedRuntimeHealthReviewParams>(serde_json::json!({
                 "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116",
                 "sessionId": 101,
-            })
-        )
-        .is_err());
+            }))
+            .is_err()
+        );
     }
 }
 

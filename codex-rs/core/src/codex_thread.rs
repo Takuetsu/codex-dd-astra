@@ -838,12 +838,7 @@ impl CodexThread {
                 .session
                 .services
                 .unified_exec_manager
-                .observe_unique_owner_approved_health(
-                    &self.session,
-                    argv,
-                    &root,
-                    port,
-                )
+                .observe_unique_owner_approved_health(&self.session, argv, &root, port)
                 .await?;
             verify_head().await?;
             Ok(CodexDDOwnedRuntimeHealthReview {

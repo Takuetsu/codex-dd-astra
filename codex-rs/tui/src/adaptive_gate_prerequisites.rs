@@ -520,14 +520,13 @@ mod codexdd_046_3d1g_runtime_gate_tests {
             AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431]),
             AdaptiveRequiredGate::IndependentValidation,
         ];
-        let mut ledger = AdaptiveGateLedger::new(
-            "authorized preview",
-            source.path(),
-            &sha,
-            required,
-        )
-        .expect("pinned gate");
-        assert_eq!(ledger.single_pending_owned_runtime_health_port(), Some(4431));
+        let mut ledger =
+            AdaptiveGateLedger::new("authorized preview", source.path(), &sha, required)
+                .expect("pinned gate");
+        assert_eq!(
+            ledger.single_pending_owned_runtime_health_port(),
+            Some(4431)
+        );
         ledger
             .mark_blocked(
                 &AdaptiveRequiredGate::OwnedRuntimeHealth(vec![4431]),

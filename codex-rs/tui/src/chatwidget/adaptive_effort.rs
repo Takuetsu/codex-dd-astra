@@ -674,11 +674,10 @@ impl ChatWidget {
             crate::adaptive_worker::AdaptiveTaskKind::SourceChange
                 | crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview
         ) || !state.gate_ledger.as_ref()?.matches_authorized_source(
-                &binding.authorized_scope,
-                std::path::Path::new(&pin.source_root),
-                &pin.source_sha,
-            )
-        {
+            &binding.authorized_scope,
+            std::path::Path::new(&pin.source_root),
+            &pin.source_sha,
+        ) {
             return None;
         }
         Some(pin.source_sha.as_str())

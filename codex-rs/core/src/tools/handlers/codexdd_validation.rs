@@ -1002,9 +1002,7 @@ fn validate_native_authorized_target(
     // separate runtime-health gate; benchmark and unapproved preview refuse.
     let approved_preview = worker.task_kind.as_deref() == Some("operations_preview")
         && original_owner_preview_gate(worker).is_ok();
-    if !approved_preview
-        && !matches!(worker.task_kind.as_deref(), None | Some("source_change"))
-    {
+    if !approved_preview && !matches!(worker.task_kind.as_deref(), None | Some("source_change")) {
         return Err(
             "SETUP_BLOCKED: operations/benchmark Worker without original runtime authority cannot execute source MechanicalValidation. No profile ran."
                 .to_string(),
