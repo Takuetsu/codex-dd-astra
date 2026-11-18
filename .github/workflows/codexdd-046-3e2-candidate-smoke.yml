@@ -1,0 +1,163 @@
+# CodexDD 0.4.6 3E.2 — source-pinned nonproduction RC1 candidate smoke.
+# This is a test fixture on an isolated branch, not a release, merge, installation or owner QA.
+name: CodexDD 0.4.6 RC1 candidate Windows smoke
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-rc1
+    paths:
+      - .github/workflows/codexdd-046-3e2-candidate-smoke.yml
+      - codex-rs/codexdd-version.txt
+      - codex-rs/cli/tests/version_reporting.rs
+      - codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap
+      - 'codex-rs/core/src/**'
+      - 'codex-rs/tui/src/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-046-rc1-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  candidate-source:
+    name: 3E.2 RC1 exact-source and product/upstream identity
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-rc1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact isolated candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify current candidate and unmodified upstream provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.6-rc1'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor 6bee467cc006a30f267efa53e313cc56dd2de739 HEAD
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.6'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          grep -Fq 'starts_with("codexdd 0.4.6+g")' codex-rs/cli/tests/version_reporting.rs
+          grep -Fq '  codexdd: 0.4.6 (dev)' codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap
+          ! grep -Fq '  codexdd: 0.4.3 (dev)' codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap
+          git diff --check 6bee467cc006a30f267efa53e313cc56dd2de739 HEAD
+          echo "RC1 source identity and distinct upstream marker verified: $GITHUB_SHA"
+
+  candidate-format:
+    name: 3E.2 RC1 Rustfmt
+    needs: candidate-source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Source-format check, no edits
+        working-directory: codex-rs
+        run: cargo fmt --all -- --check
+
+  candidate-windows-native:
+    name: 3E.2 RC1 Windows CLI version, TUI snapshot, D02, 3B.4 and cold READY
+    needs: [candidate-source, candidate-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction candidate without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify pinned candidate source and isolate native work paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'RC1 candidate SHA mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-rc1') { throw 'Wrong candidate branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.6') { throw 'Wrong candidate product version' }
+          if ((Get-Content -Raw 'codex-rs/upstream-codex-release.txt').Trim() -ne 'rust-v0.162.0') { throw 'Upstream version unexpectedly changed' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3e2'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $root 'target')"
+            'CARGO_NET_GIT_FETCH_WITH_CLI=true'
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Make DotSlash available to native Core children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          Copy-Item -LiteralPath $dotslash -Destination (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe') -Force
+      - name: Pin Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure checksum-verified sandboxed Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Verify real codexdd 0.4.6 CLI version on Windows
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-cli --test version_reporting version_reports_codexdd_product_and_git_build -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Real RC1 native CLI version test failed' }
+          Write-Host "RC1 CLI VERSION VERIFIED SHA=$env:GITHUB_SHA"
+      - name: Verify TUI version snapshot, live D02 QA and no-progress/cold-resume controls
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $groups = @(
+            @{ Filter = 'slash_copy_picker_copies_status_fields_and_preserves_source_after_copying'; Expected = 1 },
+            @{ Filter = 'codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready'; Expected = 1 },
+            @{ Filter = 'codexdd_046_3b4_'; Expected = 8 },
+            @{ Filter = 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'; Expected = 1 }
+          )
+          foreach ($group in $groups) {
+            $filter = $group.Filter
+            $expected = [int]$group.Expected
+            $listed = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listed | Out-Host
+            $expectedList = "$expected test" + $(if ($expected -eq 1) { '' } else { 's' }) + ', 0 benchmarks'
+            if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains($expectedList))) {
+              throw "RC1 native test enumeration mismatch: $filter (exit=$listExit)"
+            }
+            $result = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+            $testExit = $LASTEXITCODE
+            $result | Out-Host
+            if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains("test result: ok. $expected passed; 0 failed; 0 ignored;"))) {
+              throw "RC1 source-matched test failed: $filter (exit=$testExit)"
+            }
+            Write-Host "RC1 VERIFIED_NATIVE_GROUP $filter count=$expected SHA=$env:GITHUB_SHA"
+          }
+          Write-Host 'RC1 focused candidate smoke complete. No real installed service QA or release signoff.'
+      - name: Verify candidate checkout unchanged
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $changes = git status --porcelain
+          $changes | Out-Host
+          if ($LASTEXITCODE -ne 0 -or $changes) { throw 'RC1 native tests modified candidate checkout or status failed' }
+          Write-Host 'RC1 exact SHA clean; no promotion, release, installation, or production runtime receipt.'
