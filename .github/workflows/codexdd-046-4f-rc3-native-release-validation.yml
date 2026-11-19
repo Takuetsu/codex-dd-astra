@@ -27,14 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: 4869a2cefd091ddf17ca6959766a816df8302667
+          ref: 5cf06f336572307936530f93591bae1561b946c7
           persist-credentials: false
           fetch-depth: 2
       - name: Exact RC3 identity and narrow security-error diff check
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = '4869a2cefd091ddf17ca6959766a816df8302667'
+          test "$(git rev-parse HEAD)" = '5cf06f336572307936530f93591bae1561b946c7'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.6'
           test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
           git diff --check HEAD^ HEAD
@@ -54,7 +54,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 345
     env:
-      CODEXDD_CANDIDATE_SHA: 4869a2cefd091ddf17ca6959766a816df8302667
+      CODEXDD_CANDIDATE_SHA: 5cf06f336572307936530f93591bae1561b946c7
       CARGO_INCREMENTAL: "0"
       CARGO_PROFILE_DEV_DEBUG: "0"
       CARGO_BUILD_JOBS: "2"
@@ -63,7 +63,7 @@ jobs:
       - name: Checkout exact RC3 source, not audit-document commit
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: 4869a2cefd091ddf17ca6959766a816df8302667
+          ref: 5cf06f336572307936530f93591bae1561b946c7
           persist-credentials: false
           fetch-depth: 1
       - name: Assert exact candidate SHA, product/upstream identity and isolated target
@@ -157,6 +157,16 @@ jobs:
           & cargo test --locked -p codex-state --lib thread_settings_applied_updates_resume_metadata -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'RC3 native state snapshot test failed; do not start full 21-stage profile' }
           Write-Host "RC3_STATE_SNAPSHOT_REGRESSION_PASS=$env:CODEXDD_CANDIDATE_SHA"
+      - name: Verify exact RC3 Windows thread-store snapshot test before full release
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:CODEXDD_CANDIDATE_SHA) { throw 'RC3 source drift before thread-store test' }
+          # Stage 8 E0063 was in this real native library test target.
+          & cargo test --locked -p codex-thread-store --lib thread_settings_applied_updates_live_metadata -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'RC3 native thread-store settings test failed; do not start full release' }
+          Write-Host "RC3_THREAD_STORE_SNAPSHOT_PASS=$env:CODEXDD_CANDIDATE_SHA"
       - name: Execute unchanged repo-owned 21-stage release profile against exact RC3
         shell: pwsh
         run: |
@@ -243,7 +253,7 @@ jobs:
       - name: Upload nonproduction evidence for later 3F.2 hash/security audit
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: codexdd-046-rc3-4869a2ce-UNSIGNED-verification-only
+          name: codexdd-046-rc3-5cf06f33-UNSIGNED-verification-only
           path: ${{ runner.temp }}/codexdd-046-rc3-unsigned-evidence/*
           if-no-files-found: error
           retention-days: 7
