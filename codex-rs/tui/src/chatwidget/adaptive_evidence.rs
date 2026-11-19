@@ -854,8 +854,14 @@ mod tests {
             .outstanding(&chat.adaptive_effort.evidence_registry);
         assert_eq!(
             pending.len(),
-            2,
-            "even valid independent Core PASS leaves unrun release and owned listener gates pending"
+            3,
+            "a replayed or unbound independent result must not discharge the independent, release, or owned listener gates"
+        );
+        assert!(
+            pending
+                .iter()
+                .any(|gate| gate.gate == AdaptiveRequiredGate::IndependentValidation),
+            "the forged/unbound review must leave independent Validation pending"
         );
         assert!(
             chat.owner_qa_prerequisite_admission(&["real-independent-review".to_string()])

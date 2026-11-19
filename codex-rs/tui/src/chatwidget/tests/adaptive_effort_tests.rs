@@ -826,6 +826,9 @@ async fn evidence_workflow_terminals_enforce_complete_evidence_matrix() {
                 kind,
                 refs.into_iter().map(str::to_string).collect(),
             ));
+            // A generic command result can satisfy RepairRequired, but not
+            // source-bound independent Validator + owner QA prerequisites.
+            let accepted = accepted && kind != AdaptiveRuntimeSignalKind::ReadyForOwnerQa;
             assert_eq!(
                 chat.consume_adaptive_signal_at_terminal("terminal-turn"),
                 accepted,
@@ -1072,8 +1075,12 @@ async fn workflow_signals_enforce_roles_and_native_evidence_outcomes() {
             vec!["native-evidence".to_string()],
         ));
 
-        assert!(chat.consume_adaptive_signal_at_terminal("terminal-turn"));
-        assert_eq!(chat.adaptive_effort.workflow_terminal, Some(terminal));
+        let admitted = kind == AdaptiveRuntimeSignalKind::RepairRequired;
+        assert_eq!(chat.consume_adaptive_signal_at_terminal("terminal-turn"), admitted);
+        assert_eq!(
+            chat.adaptive_effort.workflow_terminal,
+            admitted.then_some(terminal)
+        );
         assert_eq!(
             (
                 chat.adaptive_effort.current_family,
@@ -2520,10 +2527,12 @@ async fn implementation_reentry_restores_complexity_floor_before_source_edits() 
 }
 
 #[tokio::test]
-async fn automatic_validation_handoff_only_reviews_nontrivial_work() {
+async fn automatic_validation_handoff_requires_owner_source_even_for_nontrivial_work() {
     for (complexity_class, expect_validation) in [
         (AdaptiveComplexityClass::Routine, false),
-        (AdaptiveComplexityClass::Standard, true),
+        // No exact owner pin or gate ledger is present in this fixture.
+        // Complexity by itself cannot authorize an independent Worker.
+        (AdaptiveComplexityClass::Standard, false),
     ] {
         let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
         let thread_id = ThreadId::new();
