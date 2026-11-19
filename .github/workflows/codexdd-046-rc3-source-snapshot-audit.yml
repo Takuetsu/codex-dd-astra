@@ -40,13 +40,26 @@ jobs:
               for m in re.finditer(r'\bThreadSettingsSnapshot\s*\{',s):
                   line=s.count('\n',0,m.start())+1
                   near=s[m.end():].splitlines()[:58]
-                  found=any('codexdd_first_worker' in x for x in near)
-                  locations.append((str(p),line,found,near[:6]))
-          for path,line,found,near in locations:
-              print(f'CONSTRUCTOR {path}:{line} has_first_worker_within_58_lines={found}')
+                  previous=s[max(0,m.start()-12):m.start()]
+                  # A method with "-> ThreadSettingsSnapshot {" is a return
+                  # type followed by a body, not a struct literal.
+                  is_method=bool(re.search(r'->\s*
+          PY
+          git diff --check
+,previous))
+                  # A Rust struct update "..existing" supplies unspecified
+                  # fields, including the Core-owned optional Worker marker.
+                  inherited=any(re.match(r'^\s*\.\.\s*[A-Za-z_]\w*',x) for x in near)
+                  present=any('codexdd_first_worker' in x for x in near)
+                  classification=('return-type' if is_method else
+                      'struct-update' if inherited else
+                      'explicit-marker' if present else 'MISSING_MARKER')
+                  locations.append((str(p),line,classification,near[:6]))
+          for path,line,classification,near in locations:
+              print(f'SNAPSHOT_REFERENCE {path}:{line} class={classification}')
               for x in near: print('  '+x)
-          missing=[(p,n) for p,n,found,_ in locations if not found]
-          print(f'REVIEW_COUNTS total={len(locations)} first_worker_nearby={len(locations)-len(missing)} missing_or_requires_review={len(missing)}')
+          missing=[(p,n) for p,n,classification,_ in locations if classification=='MISSING_MARKER']
+          print(f'REVIEW_COUNTS total={len(locations)} missing_explicit_constructor_fields={len(missing)}')
           if missing:
               print('REVIEW_MISSING_SNAPSHOT_FIELDS',missing)
               raise SystemExit(1)
