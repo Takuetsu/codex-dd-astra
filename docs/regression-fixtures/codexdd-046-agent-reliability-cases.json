@@ -1,0 +1,677 @@
+{
+  "schema": "codexdd-0.4.6-regression-contract-v1",
+  "preparation_date": "2026-11-05",
+  "source_baseline": "b25550dcb2c6e84a84074b603086c9db6f32a63b",
+  "branch_parent_checkpoint": "3d21a5614fb2142a2371884ef3c7eef1550d785e",
+  "status": "specification_only_not_executed",
+  "interpretation": "Expected reason/disposition labels are proposed contract vocabulary, not claims of existing implementation or test results.",
+  "required_evidence_fields": [
+    "candidate_source_sha",
+    "authorized_target_root",
+    "repository_identity",
+    "worker_identity",
+    "effective_role",
+    "assigned_task_kind",
+    "required_gate_scope",
+    "command_or_profile",
+    "run_id",
+    "timestamp_utc",
+    "tool_or_native_signal",
+    "actual_result",
+    "remaining_prerequisites"
+  ],
+  "cases": [
+    {
+      "id": "A01",
+      "priority": "P0",
+      "implementation_packet": "3B.3",
+      "area": "gate-provenance",
+      "scenario": "Focused 55/55 passes but owner-required full regression never ran",
+      "given": {
+        "role": "validation",
+        "source_sha": "sha-current",
+        "focused_pass": true,
+        "official_full_gate": "not_run",
+        "required_full_gate": true
+      },
+      "stimulus": "request_ready_for_owner_qa",
+      "expected": {
+        "disposition": "gate_pending",
+        "trusted_terminal": "none",
+        "assertions": [
+          "retain focused proof",
+          "identify exact outstanding official gate",
+          "no full READY from partial success"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_trusted_signal.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "A02",
+      "priority": "P0",
+      "implementation_packet": "3B.3",
+      "area": "gate-provenance",
+      "scenario": "Source proof green while required host listeners 4331/4332 and health request absent",
+      "given": {
+        "role": "validation",
+        "required_runtime_preview": true,
+        "source_pass": true,
+        "listener_4331": false,
+        "listener_4332": false,
+        "health_response": "connection_refused"
+      },
+      "stimulus": "request_ready_for_owner_qa",
+      "expected": {
+        "disposition": "operations_pending",
+        "trusted_terminal": "none",
+        "assertions": [
+          "must require current actual service response",
+          "never synthesize health evidence",
+          "preserve completed source evidence"
+        ]
+      },
+      "test_owner": "tui/adaptive_evidence_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "A03",
+      "priority": "P0",
+      "implementation_packet": "3B.3",
+      "area": "gate-provenance",
+      "scenario": "Successful exec proof belongs to earlier candidate source SHA",
+      "given": {
+        "role": "validation",
+        "candidate_sha": "sha-new",
+        "evidence_sha": "sha-old",
+        "evidence_outcome": "pass"
+      },
+      "stimulus": "submit_prior_exec_reference",
+      "expected": {
+        "disposition": "evidence_rejected",
+        "trusted_terminal": "none",
+        "assertions": [
+          "reject despite successful outcome",
+          "report source SHA mismatch",
+          "do not rerun unrelated completed tests"
+        ]
+      },
+      "test_owner": "tui/adaptive_evidence_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "A04",
+      "priority": "P0",
+      "implementation_packet": "3B.3",
+      "area": "gate-provenance",
+      "scenario": "Successful exec proof belongs to different worker or narrower gate",
+      "given": {
+        "role": "validation",
+        "worker_id": "validator-B",
+        "evidence_worker_id": "author-A",
+        "requested_gate": "full",
+        "evidence_gate": "focused"
+      },
+      "stimulus": "submit_external_exec_reference",
+      "expected": {
+        "disposition": "evidence_rejected",
+        "trusted_terminal": "none",
+        "assertions": [
+          "reject wrong worker and scope",
+          "require independent matching evidence",
+          "no fabricated terminal"
+        ]
+      },
+      "test_owner": "tui/adaptive_evidence_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "A05",
+      "priority": "P0",
+      "implementation_packet": "3C.1",
+      "area": "trusted-terminal",
+      "scenario": "Independent validator has current required full source and owned live preview proof",
+      "given": {
+        "role": "validation",
+        "independent": true,
+        "source_sha_matches": true,
+        "required_cases_complete": true,
+        "official_gate_pass": true,
+        "required_operations_pass": true,
+        "native_signal_emitted": true
+      },
+      "stimulus": "emit_trusted_ready_for_owner_qa",
+      "expected": {
+        "disposition": "ready_for_owner_qa",
+        "trusted_terminal": "ready_for_owner_qa",
+        "assertions": [
+          "all required evidence fresh and scope-bound",
+          "trusted native signal required",
+          "owner QA itself remains pending"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_trusted_signal.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "A06",
+      "priority": "P0",
+      "implementation_packet": "3C.1",
+      "area": "trusted-terminal",
+      "scenario": "Valid scoped evidence exists but native terminal signal transport fails",
+      "given": {
+        "role": "validation",
+        "scoped_evidence_pass": true,
+        "native_signal_emitted": false,
+        "completed_tests_reusable": true
+      },
+      "stimulus": "finish_validation_terminalization",
+      "expected": {
+        "disposition": "blocked_or_one_recovery",
+        "trusted_terminal": "none",
+        "assertions": [
+          "at most one authorized safe recovery",
+          "preserve prior evidence and candidate",
+          "do not promote prose or rerun completed tests to obtain a signal"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_signal_transport.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "A07",
+      "priority": "P0",
+      "implementation_packet": "3B.3",
+      "area": "trusted-terminal",
+      "scenario": "Implementation LVO source pass is not independent owner QA",
+      "given": {
+        "role": "implementation",
+        "native_work_packet_receipt": "pass",
+        "candidate_sha_matches": true,
+        "independent_validation": false
+      },
+      "stimulus": "emit_implementation_terminal",
+      "expected": {
+        "disposition": "ready_for_validation",
+        "trusted_terminal": "ready_for_validation",
+        "assertions": [
+          "preserve independent validator requirement",
+          "never substitute source pass for owner QA"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_trusted_signal.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "B01",
+      "priority": "P0",
+      "implementation_packet": "3B.1",
+      "area": "target-identity",
+      "scenario": "Owner launches at milestone root but authorized candidate is nested Git worktree",
+      "given": {
+        "launch_cwd": "D:\\bw58",
+        "authorized_target": "D:\\bw58\\.worktrees\\candidate",
+        "target_sha": "sha-nested",
+        "launch_root_sha": "sha-parent"
+      },
+      "stimulus": "preflight_target_before_mechanical",
+      "expected": {
+        "disposition": "target_bound_or_setup_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "bind authorized nested SHA explicitly or stop",
+          "do not silently use parent root",
+          "do not change owner's launch convention"
+        ]
+      },
+      "test_owner": "core/tools/handlers/codexdd_validation_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "B02",
+      "priority": "P0",
+      "implementation_packet": "3B.1",
+      "area": "target-identity",
+      "scenario": "Nearest Git root is a different repository from authorized target",
+      "given": {
+        "authorized_repo": "breakwater",
+        "observed_repo": "unrelated-game",
+        "authorized_sha": "sha-A",
+        "observed_sha": "sha-B"
+      },
+      "stimulus": "preflight_target_before_mechanical",
+      "expected": {
+        "disposition": "setup_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "report expected and actual repository/path/SHA",
+          "no cross-repo fallback",
+          "no native validation started"
+        ]
+      },
+      "test_owner": "core/tools/handlers/codexdd_validation_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "B03",
+      "priority": "P0",
+      "implementation_packet": "3B.2",
+      "area": "profile-admission",
+      "scenario": "Authorized checkout lacks required work_packet script",
+      "given": {
+        "role": "implementation",
+        "phase": "pre_mechanical",
+        "profile": "work_packet",
+        "script_exists": false,
+        "source_sha_matches": true
+      },
+      "stimulus": "preflight_native_profile",
+      "expected": {
+        "disposition": "setup_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "distinguish missing profile from source test FAIL",
+          "do not fabricate PASS",
+          "one actionable expected script path"
+        ]
+      },
+      "test_owner": "core/tools/handlers/codexdd_validation_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "B04",
+      "priority": "P0",
+      "implementation_packet": "3B.2",
+      "area": "role-admission",
+      "scenario": "Repair Worker lacks Implementation-only protected LVO tool",
+      "given": {
+        "role": "repair",
+        "tool": "run_codexdd_validation",
+        "tool_available": false
+      },
+      "stimulus": "request_native_implementation_validation",
+      "expected": {
+        "disposition": "expected_role_restriction",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not grant Implementation-only tool",
+          "allow only authorized repo-owned independent commands",
+          "do not label this fact a product defect"
+        ]
+      },
+      "test_owner": "core/tools/registry.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "B05",
+      "priority": "P0",
+      "implementation_packet": "3B.1",
+      "area": "target-identity",
+      "scenario": "Preflight observes staged and unstaged candidate changes",
+      "given": {
+        "authorized_repo": true,
+        "head_matches": true,
+        "staged_changes": true,
+        "unstaged_changes": true
+      },
+      "stimulus": "preflight_mechanical",
+      "expected": {
+        "disposition": "preserve_and_require_explicit_candidate_state",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not reset or clean working tree",
+          "do not silently validate wrong commit",
+          "explain dirty candidate binding"
+        ]
+      },
+      "test_owner": "tui/managed_worktree_tools_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "B06",
+      "priority": "P0",
+      "implementation_packet": "3B.2",
+      "area": "profile-admission",
+      "scenario": "Correctly bound Node or Rust contract-v1 LVO profile is present",
+      "given": {
+        "role": "implementation",
+        "source_sha_matches": true,
+        "authorized_root_matches": true,
+        "profile_available": true,
+        "profile_kind": "node_or_rust"
+      },
+      "stimulus": "preflight_native_profile",
+      "expected": {
+        "disposition": "preflight_pass",
+        "trusted_terminal": "none",
+        "assertions": [
+          "retain protected no-source-edit mechanical phase",
+          "native runner still must produce real receipt",
+          "no pass inferred solely from script existence"
+        ]
+      },
+      "test_owner": "core/tools/handlers/codexdd_validation_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "C01",
+      "priority": "P0",
+      "implementation_packet": "3B.4",
+      "area": "progress",
+      "scenario": "Infrastructure tool refusal repeats with unchanged evidence digest",
+      "given": {
+        "error_class": "infrastructure",
+        "same_evidence_digest": true,
+        "new_authorized_step": false,
+        "successor_attempts": 2
+      },
+      "stimulus": "decide_successor",
+      "expected": {
+        "disposition": "blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "at most one useful bounded recovery",
+          "zero no-progress model-family escalation",
+          "persist specific reason and pending action"
+        ]
+      },
+      "test_owner": "tui/adaptive_controller_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "C02",
+      "priority": "P0",
+      "implementation_packet": "3B.4",
+      "area": "progress",
+      "scenario": "Missing profile persists across adaptive continuations",
+      "given": {
+        "error_class": "setup",
+        "profile_available": false,
+        "evidence_digest_changed": false
+      },
+      "stimulus": "decide_successor",
+      "expected": {
+        "disposition": "setup_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "no repeated profile invocation without change",
+          "no model upgrade from setup failure",
+          "preserve source changes"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_trusted_signal.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "C03",
+      "priority": "P0",
+      "implementation_packet": "3B.4",
+      "area": "progress",
+      "scenario": "Multi-turn implementation produces a new admissible commit and scoped test evidence",
+      "given": {
+        "role": "implementation",
+        "new_candidate_sha": true,
+        "new_valid_evidence": true,
+        "authorized_phase_remaining": true
+      },
+      "stimulus": "decide_successor",
+      "expected": {
+        "disposition": "continue_productive_work",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not impose arbitrary total turn cap",
+          "keep pending phase and source provenance",
+          "respect native validation policy"
+        ]
+      },
+      "test_owner": "tui/adaptive_controller_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "C04",
+      "priority": "P0",
+      "implementation_packet": "3B.4",
+      "area": "progress",
+      "scenario": "Restricted protected tool is refused by established policy",
+      "given": {
+        "error_class": "policy",
+        "source_edit_forbidden": true,
+        "evidence_digest_changed": false
+      },
+      "stimulus": "decide_successor",
+      "expected": {
+        "disposition": "policy_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not pressure model to bypass policy",
+          "do not reinterpret refusal as implementation defect",
+          "offer permitted next action or stop"
+        ]
+      },
+      "test_owner": "core/tools/registry.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "C05",
+      "priority": "P0",
+      "implementation_packet": "3B.4",
+      "area": "progress",
+      "scenario": "Resume restores digest and pending requirements with no new proof",
+      "given": {
+        "persisted_digest": "digest-v1",
+        "restored_digest": "digest-v1",
+        "pending_requirements": [
+          "full_gate"
+        ],
+        "new_evidence": false
+      },
+      "stimulus": "resume_and_decide_successor",
+      "expected": {
+        "disposition": "blocked_or_one_recovery",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not discard pending full gate",
+          "no duplicate no-op turn chain",
+          "preserve exact task/source binding"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_runtime_bridge.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "D01",
+      "priority": "P0",
+      "implementation_packet": "3D.1",
+      "area": "task-kind",
+      "scenario": "Authorized 2-vs-4 thread benchmark requests no source modification",
+      "given": {
+        "task_kind": "benchmark",
+        "source_change_requested": false,
+        "threads": [
+          2,
+          4
+        ],
+        "approved_command": true,
+        "resource_lock_owned": true
+      },
+      "stimulus": "route_task_and_measure",
+      "expected": {
+        "disposition": "benchmark_evidence_or_setup_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "never force source mechanical_validation work_packet",
+          "record actual 2 and 4 thread measurements before completion",
+          "no invented benchmark result"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_effort.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "D02",
+      "priority": "P0",
+      "implementation_packet": "3D.1",
+      "area": "task-kind",
+      "scenario": "Authorized QA preview has owned listener and real successful health response",
+      "given": {
+        "task_kind": "operations_preview",
+        "owned_process": true,
+        "approved_port": true,
+        "health_http_status": 200,
+        "source_sha_matches": true
+      },
+      "stimulus": "verify_service_readiness",
+      "expected": {
+        "disposition": "operations_verified",
+        "trusted_terminal": "none",
+        "assertions": [
+          "retain response timestamp and scope",
+          "do not equate readiness with full gate until all requirements complete",
+          "do not add privileged service architecture"
+        ]
+      },
+      "test_owner": "tui/chatwidget/adaptive_trusted_signal.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "D03",
+      "priority": "P0",
+      "implementation_packet": "3D.1",
+      "area": "task-kind",
+      "scenario": "Stale host.pid points to foreign protected process",
+      "given": {
+        "task_kind": "operations_preview",
+        "pid_file_present": true,
+        "pid_owned_by_current_task": false,
+        "required_restart": true
+      },
+      "stimulus": "attempt_safe_restart",
+      "expected": {
+        "disposition": "ownership_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not kill or signal foreign PID",
+          "no implicit elevation or shared daemon modification",
+          "report ownership evidence and next safe handoff"
+        ]
+      },
+      "test_owner": "core/tools/registry.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "E01",
+      "priority": "P1_conditional",
+      "implementation_packet": "3D.2",
+      "area": "capacity",
+      "scenario": "One available worker slot under configured V1/V2 limit",
+      "given": {
+        "configured_limit_known": true,
+        "available_slots": 1,
+        "requested_new_workers": 1
+      },
+      "stimulus": "spawn_worker",
+      "expected": {
+        "disposition": "spawn_allowed",
+        "trusted_terminal": "none",
+        "assertions": [
+          "reserve exactly one capacity slot",
+          "release reservation on failed spawn",
+          "do not raise configured limit"
+        ]
+      },
+      "test_owner": "core/agent/registry_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "E02",
+      "priority": "P1_conditional",
+      "implementation_packet": "3D.2",
+      "area": "capacity",
+      "scenario": "Spawn request exceeds configured remaining worker seats",
+      "given": {
+        "configured_limit_known": true,
+        "available_slots": 0,
+        "requested_new_workers": 8
+      },
+      "stimulus": "spawn_worker",
+      "expected": {
+        "disposition": "capacity_blocked",
+        "trusted_terminal": "none",
+        "assertions": [
+          "typed capacity refusal without treating deliberate cap as leak",
+          "preserve sibling workers",
+          "no automatic limit increase"
+        ]
+      },
+      "test_owner": "core/agent/control/residency_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "F01",
+      "priority": "P1_conditional",
+      "implementation_packet": "3D.3",
+      "area": "provider",
+      "scenario": "Alternate backend does not support required tool_choice",
+      "given": {
+        "backend_supported_configuration": "unverified",
+        "terminalization_request": true,
+        "supports_tool_choice_required": false,
+        "response_status": 400
+      },
+      "stimulus": "build_or_send_terminalization_request",
+      "expected": {
+        "disposition": "provider_blocked_or_supported_fallback",
+        "trusted_terminal": "none",
+        "assertions": [
+          "do not repeatedly submit unsupported field",
+          "no auth/sandbox bypass or model pressure",
+          "activate repair only after supported backend repro"
+        ]
+      },
+      "test_owner": "core/client_tests.rs",
+      "execution_state": "contract_only"
+    },
+    {
+      "id": "G01",
+      "priority": "P1_conditional",
+      "implementation_packet": "3C.2",
+      "area": "assignment",
+      "scenario": "First nonblank Worker assignment has Markdown heading before [adaptive_worker]",
+      "given": {
+        "first_nonblank": "## Assignment",
+        "header_later_in_message": true,
+        "role_initially_bound": false
+      },
+      "stimulus": "parse_first_worker_assignment",
+      "expected": {
+        "disposition": "unbound_with_guidance",
+        "trusted_terminal": "none",
+        "assertions": [
+          "no silent later privileged binding",
+          "explain exact first-line header syntax",
+          "do not treat expected rejection as code defect"
+        ]
+      },
+      "test_owner": "tui/adaptive_worker_tests.rs",
+      "execution_state": "contract_only"
+    }
+  ],
+  "acceptance": {
+    "deterministic_p0_cases": 21,
+    "conditional_p1_cases": 4,
+    "false_ready_max": 0,
+    "wrong_root_validation_max": 0,
+    "foreign_process_actions_max": 0,
+    "fabricated_native_receipts_max": 0,
+    "unauthorized_role_grants_max": 0,
+    "unchanged_evidence_successor_recoveries_max": 1,
+    "unjustified_model_escalations_max": 0,
+    "paired_live_trials_min": 10,
+    "paired_completion_min_of_10": 9,
+    "paired_completion_regression_allowed_count_max": 1,
+    "paired_median_total_tokens_ratio_max": 1.15,
+    "paired_median_wall_clock_ratio_max": 1.2,
+    "paired_operator_interventions_ratio_max": 1,
+    "thresholds_status": "provisional_owner_review_required_before_benchmark_or_policy_change"
+  }
+}

@@ -83,7 +83,7 @@ function Write-CodexDDNativeOutput {
 function Invoke-CodexDDValidationProfile {
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateSet("targeted", "work-packet", "release")]
+        [ValidateSet("targeted", "work-packet", "release", "independent-review")]
         [string]$Profile,
 
         [Parameter(Mandatory = $true)]

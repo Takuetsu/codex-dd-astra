@@ -728,6 +728,8 @@ mod tests {
                 thread_id: None,
                 thread_settings: ThreadSettingsSnapshot {
                     disabled_plugin_ids: Vec::new(),
+                    // This metadata-only fixture contains no Core-approved first Worker.
+                    codexdd_first_worker: None,
                     model: "gpt-5.2-codex".to_string(),
                     model_provider_id: "updated-provider".to_string(),
                     service_tier: None,

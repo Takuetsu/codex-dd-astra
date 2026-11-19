@@ -209,6 +209,7 @@ async fn spawn_process_portable(
     }
 
     let mut child = pair.slave.spawn_command(command_builder)?;
+    let local_os_pid = child.process_id();
     #[cfg(unix)]
     // portable-pty establishes the spawned PTY child as a new session leader on
     // Unix, so PID == PGID and we can reuse the pipe backend's process-group
@@ -300,6 +301,7 @@ async fn spawn_process_portable(
             #[cfg(unix)]
             process_group_id,
         }),
+        local_os_pid,
         reader_handle,
         Vec::new(),
         writer_handle,
@@ -412,6 +414,7 @@ async fn spawn_process_preserving_fds(
         command.spawn()?
     };
     drop(slave);
+    let local_os_pid = child.id();
     #[cfg(target_os = "linux")]
     let process_group_id = child
         .id()
@@ -459,6 +462,7 @@ async fn spawn_process_preserving_fds(
     let handle = ProcessHandle::new(
         writer_tx,
         Box::new(RawPidTerminator { process_group_id }),
+        local_os_pid,
         reader_handle,
         Vec::new(),
         writer_handle,

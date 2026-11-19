@@ -372,6 +372,7 @@ async fn lost_initial_thread_reply_keeps_startup_draft_offline() -> Result<()> {
             &app.local_settings,
             app.config.clone(),
             ThreadParamsMode::Remote,
+            session.uses_embedded_app_server(),
             /*remote_cwd_override*/ None,
             session.thread_tool_transport(),
             crate::app_server_session::StartupLaunchChoices::default(),

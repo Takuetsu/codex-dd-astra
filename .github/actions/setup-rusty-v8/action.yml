@@ -42,7 +42,18 @@ runs:
         fi
 
         mkdir -p "${binding_dir}"
-        curl -fsSL "${base_url}/${checksums_name}" -o "${checksums_path}"
+        # Release-asset HTTP 502/503 responses are transient on hosted runners.
+        # Retry transport failures only within a bounded window; checksum pins
+        # and all subsequent byte-for-byte verification remain mandatory.
+        fetch_release_asset() {
+          local asset_name="$1"
+          local destination="$2"
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 240 \
+            --connect-timeout 20 --max-time 180 \
+            "${base_url}/${asset_name}" --output "${destination}"
+        }
+        fetch_release_asset "${checksums_name}" "${checksums_path}"
         # Check the original manifest bytes even when either checksum file uses CRLF.
         expected_manifest_checksum="$(grep -F "  ${checksums_name}" "${trusted_checksums}" | cut -d ' ' -f 1)"
         actual_manifest_checksum="$(python3 -c 'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "${checksums_path}")"
@@ -50,8 +61,8 @@ runs:
           echo "Checksum mismatch for ${checksums_name}: expected ${expected_manifest_checksum}, got ${actual_manifest_checksum}" >&2
           exit 1
         fi
-        curl -fsSL "${base_url}/${archive_name}" -o "${archive_path}"
-        curl -fsSL "${base_url}/${binding_name}" -o "${binding_path}"
+        fetch_release_asset "${archive_name}" "${archive_path}"
+        fetch_release_asset "${binding_name}" "${binding_path}"
 
         if [[ "$(wc -l < "${checksums_path}")" -ne 2 ]]; then
           echo "Expected exactly two checksums for ${TARGET} in ${checksums_path}" >&2

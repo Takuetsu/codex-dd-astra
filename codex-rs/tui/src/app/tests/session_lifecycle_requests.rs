@@ -73,6 +73,7 @@ async fn daybreak_command_persists_and_confirms_each_selection() -> Result<()> {
         &app.local_settings,
         enabled_config.clone(),
         crate::app_server_session::ThreadParamsMode::Embedded,
+        server.uses_embedded_app_server(),
         /*remote_cwd_override*/ None,
         server.thread_tool_transport(),
         crate::app_server_session::StartupLaunchChoices::default(),
@@ -1052,6 +1053,11 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
     app.config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
         role: AdaptiveWorkerRoleToml::Validation,
         authorized_scope: Some("opaque/startup-scope".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+        required_gates: None,
+        benchmark: None,
     });
     let (mut app_server, requests, proxy) = Box::pin(start_recording_app_server(
         &app.config,
@@ -1072,6 +1078,7 @@ async fn external_transport_registers_dynamic_tools_and_finds_task_mentions() ->
         &app.local_settings,
         app.config.clone(),
         crate::app_server_session::ThreadParamsMode::Embedded,
+        app_server.uses_embedded_app_server(),
         /*remote_cwd_override*/ None,
         app_server.thread_tool_transport(),
         crate::app_server_session::StartupLaunchChoices::default(),
@@ -1362,6 +1369,7 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         &app.local_settings,
         app.config.clone(),
         crate::app_server_session::ThreadParamsMode::Embedded,
+        app_server.uses_embedded_app_server(),
         /*remote_cwd_override*/ None,
         app_server.thread_tool_transport(),
         crate::app_server_session::StartupLaunchChoices::default(),
@@ -1753,6 +1761,7 @@ async fn older_external_server_starts_without_unsupported_dynamic_tools_or_histo
         &app.local_settings,
         app.config.clone(),
         crate::app_server_session::ThreadParamsMode::Embedded,
+        app_server.uses_embedded_app_server(),
         /*remote_cwd_override*/ None,
         app_server.thread_tool_transport(),
         crate::app_server_session::StartupLaunchChoices::default(),
@@ -4985,6 +4994,580 @@ async fn new_session_worker_binding_resets_dirty_adaptive_state() -> Result<()> 
 
     server.shutdown().await?;
     proxy.await??;
+    Ok(())
+}
+
+fn codexdd_046_3c1b2j2_source_fixture() -> (tempfile::TempDir, String) {
+    let root = tempfile::tempdir().expect("disposable source checkout");
+    let git = |args: &[&str]| {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(root.path())
+            .args(args)
+            .output()
+            .expect("native Git command");
+        assert!(
+            output.status.success(),
+            "git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("UTF-8 Git output")
+    };
+    git(&["init", "-q"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD lifecycle test",
+        "-c",
+        "user.email=codexdd@example.invalid",
+        "commit",
+        "--allow-empty",
+        "--no-gpg-sign",
+        "-q",
+        "-m",
+        "owner source candidate",
+    ]);
+    let sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    (root, sha)
+}
+
+fn codexdd_046_3c1b2j2_prepare_source_owner(
+    app: &mut App,
+    scope: &str,
+    source: &std::path::Path,
+    sha: &str,
+) {
+    use crate::adaptive_complexity::AdaptiveComplexityClass;
+    use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+    use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+    use crate::adaptive_worker::AdaptiveTaskKind;
+    use crate::adaptive_worker::AdaptiveWorkerPreflight;
+    use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+
+    let state = app.chat_widget.adaptive_effort_for_test_mut();
+    state.enabled = true;
+    state.worker_context = AdaptiveWorkerContext {
+        role: AdaptiveWorkerRole::Implementation,
+        authorized_scope: Some(scope.to_string()),
+    };
+    state.worker_assignment_locked = true;
+    state.assignment_preflight = Some(AdaptiveWorkerPreflight {
+        task_kind: AdaptiveTaskKind::SourceChange,
+        source_root: source.display().to_string(),
+        source_sha: sha.to_string(),
+    });
+    state.gate_ledger = Some(
+        AdaptiveGateLedger::new(
+            scope,
+            source,
+            sha,
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("owner source prerequisites"),
+    );
+    state.complexity_class = Some(AdaptiveComplexityClass::Standard);
+    state.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+}
+
+#[tokio::test]
+async fn codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates() -> Result<()> {
+    use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+
+    let (source_root, sha) = codexdd_046_3c1b2j2_source_fixture();
+    let candidate = source_root.path().canonicalize()?;
+    let scope = "3C.1b.2j2 exact owner-approved source task";
+    let (mut app, mut events, _initial_widget_ops) = make_test_app_with_channels().await;
+    let implementation = ThreadId::new();
+    let original_cwd = app.config.cwd.to_path_buf();
+    assert_ne!(
+        original_cwd, candidate,
+        "launch root must differ from pinned worktree"
+    );
+    app.enqueue_primary_thread_session(
+        test_thread_session(implementation, original_cwd),
+        Vec::new(),
+    )
+    .await?;
+    codexdd_046_3c1b2j2_prepare_source_owner(&mut app, scope, &candidate, &sha);
+    let source_ledger = app
+        .chat_widget
+        .adaptive_effort_for_test()
+        .gate_ledger
+        .clone()
+        .expect("owner source gates");
+    let binding = app
+        .chat_widget
+        .automatic_validation_binding()
+        .expect("terminal source authorizes one independent Validator");
+    let prompt = app
+        .chat_widget
+        .automatic_validation_prompt_for_new_worker(&binding)
+        .expect("automatic review prompt");
+
+    let (mut server, requests, proxy) = start_recording_app_server(&app.config, None, None).await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::NewSession {
+            name: None,
+            worker_binding: Some(binding),
+        },
+    )
+    .await?;
+
+    let validator = app
+        .chat_widget
+        .thread_id()
+        .expect("fresh Validator attached");
+    assert_ne!(validator, implementation);
+    assert_eq!(app.current_displayed_thread_id(), Some(validator));
+    assert_eq!(
+        app.config.cwd.as_path().canonicalize()?,
+        candidate,
+        "Validator must select the same canonical authorized Git root on Windows"
+    );
+    assert_eq!(app.chat_widget.current_model(), "gpt-6-sol");
+    let state = app.chat_widget.adaptive_effort_for_test();
+    assert_eq!(state.worker_context.role, AdaptiveWorkerRole::Validation);
+    assert_eq!(
+        state.worker_context.authorized_scope.as_deref(),
+        Some(scope)
+    );
+    assert_eq!(state.review_origin_thread_id, Some(implementation));
+    assert_eq!(
+        state
+            .assignment_preflight
+            .as_ref()
+            .expect("Validator source pin")
+            .source_sha,
+        sha
+    );
+    assert_eq!(state.gate_ledger, Some(source_ledger));
+    assert_eq!(state.workflow_terminal, None);
+    assert_eq!(
+        state
+            .gate_ledger
+            .as_ref()
+            .expect("fresh pending gates")
+            .outstanding(&state.evidence_registry)
+            .len(),
+        2,
+        "no native PASS is granted by moving the owner gate ledger"
+    );
+    assert!(
+        state
+            .evidence_registry
+            .conclusive_refs_for_thread(
+                validator,
+                crate::adaptive_evidence::AdaptiveEvidenceOutcome::Success
+            )
+            .is_empty()
+    );
+
+    let starts = recorded_params(&requests, "thread/start");
+    assert_eq!(starts.len(), 1);
+    assert_eq!(starts[0]["model"], "gpt-6-sol");
+    assert_eq!(starts[0]["config"]["adaptive_worker"]["role"], "validation");
+    assert_eq!(starts[0]["config"]["adaptive_worker"]["source_sha"], sha);
+    assert_eq!(
+        starts[0]["config"]["adaptive_worker"]["source_root"],
+        serde_json::json!(candidate.display().to_string())
+    );
+    assert_eq!(
+        starts[0]["config"]["adaptive_worker"]["task_kind"],
+        "source_change"
+    );
+    assert!(
+        starts[0]["config"]["adaptive_worker"]["required_gates"].is_null(),
+        "the new Worker may not author or replace the original owner gate manifest"
+    );
+    let started_cwd = starts[0]["cwd"].as_str().expect("native thread/start cwd");
+    assert_eq!(std::path::Path::new(started_cwd).canonicalize()?, candidate);
+
+    // A newly attached App-owned ChatWidget uses CodexOpTarget::AppEvent.
+    // The direct Op receiver returned by the original test widget does not
+    // observe the replacement widget's initial submission.
+    let submitted = std::iter::from_fn(|| events.try_recv().ok())
+        .filter_map(|event| match event {
+            AppEvent::CodexOp(Op::UserTurn { items, cwd, .. }) => Some((items, cwd)),
+            AppEvent::SubmitThreadOp {
+                thread_id,
+                op: Op::UserTurn { items, cwd, .. },
+            } => {
+                assert_eq!(thread_id, validator, "Validator must own its first turn");
+                Some((items, cwd))
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        submitted.len(),
+        1,
+        "fresh Validator must submit exactly one initial user-origin assignment"
+    );
+    let (items, cwd) = submitted
+        .into_iter()
+        .next()
+        .expect("exactly one Validator turn");
+    assert_eq!(cwd.canonicalize()?, candidate);
+    assert_eq!(
+        items,
+        vec![UserInput::Text {
+            text: prompt.text,
+            text_elements: Vec::new(),
+        }],
+        "new Validator must receive the generated independent assignment once"
+    );
+
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_source() -> Result<()>
+{
+    for scenario in ["missing-ledger", "removed-root", "sha-drift"] {
+        let (source_root, sha) = codexdd_046_3c1b2j2_source_fixture();
+        let candidate = source_root.path().canonicalize()?;
+        let (mut app, mut events, _ops) = make_test_app_with_channels().await;
+        let implementation = ThreadId::new();
+        let original_cwd = app.config.cwd.to_path_buf();
+        app.enqueue_primary_thread_session(
+            test_thread_session(implementation, original_cwd.clone()),
+            Vec::new(),
+        )
+        .await?;
+        codexdd_046_3c1b2j2_prepare_source_owner(
+            &mut app,
+            "approved source refusal scope",
+            &candidate,
+            &sha,
+        );
+        let binding = app
+            .chat_widget
+            .automatic_validation_binding()
+            .expect("candidate's terminal requests a Validator");
+
+        if scenario == "missing-ledger" {
+            app.chat_widget.adaptive_effort_for_test_mut().gate_ledger = None;
+        } else if scenario == "removed-root" {
+            std::fs::remove_dir_all(&candidate)?;
+        } else {
+            let output = std::process::Command::new("git")
+                .arg("-C")
+                .arg(&candidate)
+                .args([
+                    "-c",
+                    "user.name=CodexDD lifecycle test",
+                    "-c",
+                    "user.email=codexdd@example.invalid",
+                    "commit",
+                    "--allow-empty",
+                    "--no-gpg-sign",
+                    "-q",
+                    "-m",
+                    "candidate moved after owner approval",
+                ])
+                .output()?;
+            assert!(
+                output.status.success(),
+                "fixture SHA drift failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        let (mut server, requests, proxy) =
+            start_recording_app_server(&app.config, None, None).await?;
+        while events.try_recv().is_ok() {}
+        let mut tui = crate::tui::test_support::make_test_tui()?;
+        app.handle_event(
+            &mut tui,
+            &mut server,
+            AppEvent::NewSession {
+                name: None,
+                worker_binding: Some(binding),
+            },
+        )
+        .await?;
+        assert_eq!(
+            app.chat_widget.thread_id(),
+            Some(implementation),
+            "{scenario}"
+        );
+        assert_eq!(
+            app.current_displayed_thread_id(),
+            Some(implementation),
+            "{scenario}"
+        );
+        assert_eq!(app.config.cwd.to_path_buf(), original_cwd, "{scenario}");
+        assert!(
+            recorded_params(&requests, "thread/start").is_empty(),
+            "{scenario}: invalid source must not create an unpinned Validator"
+        );
+        let messages = std::iter::from_fn(|| events.try_recv().ok())
+            .filter_map(|event| match event {
+                AppEvent::InsertHistoryCell(cell) => {
+                    Some(lines_to_single_string(&cell.display_lines(/*width*/ 200)))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            messages.contains("SETUP_BLOCKED")
+                && messages
+                    .to_ascii_lowercase()
+                    .contains("no validation worker started"),
+            "{scenario}: expected actionable source-pinning refusal, observed: {messages}"
+        );
+        server.shutdown().await?;
+        proxy.await??;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator() -> Result<()> {
+    let (checkout, sha) = codexdd_046_3c1b2j2_source_fixture();
+    let root = checkout.path().canonicalize()?;
+    let scope = "3C.1b.2j3a owner-initiated automatic Validator";
+    let (mut app, mut events, _initial_ops) = make_test_app_with_channels().await;
+    let origin = ThreadId::new();
+    app.enqueue_primary_thread_session(
+        test_thread_session(origin, app.config.cwd.to_path_buf()),
+        Vec::new(),
+    )
+    .await?;
+    codexdd_046_3c1b2j2_prepare_source_owner(&mut app, scope, &root, &sha);
+    let binding = app
+        .chat_widget
+        .automatic_validation_binding()
+        .expect("source terminal bound Validator");
+    assert_eq!(
+        app.chat_widget.automatic_validation_source_sha(&binding),
+        Some(sha.as_str())
+    );
+    let prompt = app
+        .chat_widget
+        .automatic_validation_prompt_for_new_worker(&binding)
+        .expect("independent first assignment");
+    let (mut server, requests, proxy) = start_recording_app_server(&app.config, None, None).await?;
+    let mut tui = crate::tui::test_support::make_test_tui()?;
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::StartAutomaticValidation {
+            origin_thread_id: origin,
+            source_sha: sha.clone(),
+            worker_binding: binding.clone(),
+        },
+    )
+    .await?;
+    let validator = app.chat_widget.thread_id().expect("fresh Validator");
+    assert_ne!(validator, origin);
+    assert_eq!(app.current_displayed_thread_id(), Some(validator));
+    assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
+    assert_eq!(
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .review_origin_thread_id,
+        Some(origin)
+    );
+    assert_eq!(
+        app.chat_widget
+            .adaptive_effort_for_test()
+            .gate_ledger
+            .as_ref()
+            .expect("inherited owner ledger")
+            .outstanding(&app.chat_widget.adaptive_effort_for_test().evidence_registry)
+            .len(),
+        2,
+        "a new Validator starts with pending gates, not synthetic PASS"
+    );
+    let first_turns = std::iter::from_fn(|| events.try_recv().ok())
+        .filter_map(|event| match event {
+            AppEvent::CodexOp(Op::UserTurn { items, cwd, .. }) => Some((items, cwd)),
+            AppEvent::SubmitThreadOp {
+                thread_id,
+                op: Op::UserTurn { items, cwd, .. },
+            } => {
+                assert_eq!(thread_id, validator);
+                Some((items, cwd))
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(first_turns.len(), 1, "one independent assignment");
+    let (items, cwd) = &first_turns[0];
+    assert_eq!(cwd.canonicalize()?, root);
+    assert_eq!(
+        items,
+        &vec![UserInput::Text {
+            text: prompt.text,
+            text_elements: Vec::new(),
+        }]
+    );
+
+    // The exact same queued event cannot create another Validation Worker
+    // once the origin is no longer the displayed Implementation thread.
+    app.handle_event(
+        &mut tui,
+        &mut server,
+        AppEvent::StartAutomaticValidation {
+            origin_thread_id: origin,
+            source_sha: sha,
+            worker_binding: binding,
+        },
+    )
+    .await?;
+    assert_eq!(app.chat_widget.thread_id(), Some(validator));
+    assert_eq!(recorded_params(&requests, "thread/start").len(), 1);
+    let later = std::iter::from_fn(|| events.try_recv().ok()).collect::<Vec<_>>();
+    assert!(
+        !later.iter().any(|event| {
+            matches!(
+                event,
+                AppEvent::CodexOp(Op::UserTurn { .. })
+                    | AppEvent::SubmitThreadOp {
+                        op: Op::UserTurn { .. },
+                        ..
+                    }
+            )
+        }),
+        "replayed automatic event cannot submit a second Validator prompt"
+    );
+    assert!(
+        later.iter().any(|event| {
+            matches!(event, AppEvent::InsertHistoryCell(cell)
+                if lines_to_single_string(&cell.display_lines(200)).contains("SETUP_BLOCKED"))
+        }),
+        "replayed handoff must explain the stale-source refusal"
+    );
+    server.shutdown().await?;
+    proxy.await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded_state()
+-> Result<()> {
+    for scenario in [
+        "foreign-origin",
+        "wrong-sha",
+        "lost-ledger",
+        "changed-head",
+        "reloaded-without-terminal",
+        "repair-role",
+    ] {
+        let (checkout, sha) = codexdd_046_3c1b2j2_source_fixture();
+        let root = checkout.path().canonicalize()?;
+        let (mut app, mut events, _ops) = make_test_app_with_channels().await;
+        let origin = ThreadId::new();
+        app.enqueue_primary_thread_session(
+            test_thread_session(origin, app.config.cwd.to_path_buf()),
+            Vec::new(),
+        )
+        .await?;
+        codexdd_046_3c1b2j2_prepare_source_owner(
+            &mut app,
+            "single authorized replay-refusal scope",
+            &root,
+            &sha,
+        );
+        let binding = app
+            .chat_widget
+            .automatic_validation_binding()
+            .expect("original source terminal");
+        let request_origin = if scenario == "foreign-origin" {
+            ThreadId::new()
+        } else {
+            origin
+        };
+        let request_sha = if scenario == "wrong-sha" {
+            "f".repeat(40)
+        } else {
+            sha.clone()
+        };
+        match scenario {
+            "lost-ledger" => {
+                app.chat_widget.adaptive_effort_for_test_mut().gate_ledger = None;
+            }
+            "changed-head" => {
+                let output = std::process::Command::new("git")
+                    .arg("-C")
+                    .arg(&root)
+                    .args([
+                        "-c",
+                        "user.name=CodexDD j3 replay test",
+                        "-c",
+                        "user.email=codexdd@example.invalid",
+                        "commit",
+                        "--allow-empty",
+                        "--no-gpg-sign",
+                        "-q",
+                        "-m",
+                        "source changed after original handoff",
+                    ])
+                    .output()?;
+                assert!(output.status.success(), "{scenario}: Git SHA drift setup");
+            }
+            "reloaded-without-terminal" => {
+                app.chat_widget
+                    .adaptive_effort_for_test_mut()
+                    .workflow_terminal = None;
+            }
+            "repair-role" => {
+                app.chat_widget
+                    .adaptive_effort_for_test_mut()
+                    .worker_context
+                    .role = AdaptiveWorkerRole::Repair;
+            }
+            _ => {}
+        }
+        let (mut server, requests, proxy) =
+            start_recording_app_server(&app.config, None, None).await?;
+        let mut tui = crate::tui::test_support::make_test_tui()?;
+        while events.try_recv().is_ok() {}
+        app.handle_event(
+            &mut tui,
+            &mut server,
+            AppEvent::StartAutomaticValidation {
+                origin_thread_id: request_origin,
+                source_sha: request_sha,
+                worker_binding: binding,
+            },
+        )
+        .await?;
+        assert_eq!(
+            app.current_displayed_thread_id(),
+            Some(origin),
+            "{scenario}"
+        );
+        assert_eq!(app.chat_widget.thread_id(), Some(origin), "{scenario}");
+        assert!(
+            recorded_params(&requests, "thread/start").is_empty(),
+            "{scenario}: stale handoff created an unauthorized new Worker"
+        );
+        let messages = std::iter::from_fn(|| events.try_recv().ok())
+            .filter_map(|event| match event {
+                AppEvent::InsertHistoryCell(cell) => {
+                    Some(lines_to_single_string(&cell.display_lines(200)))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            messages.contains("SETUP_BLOCKED"),
+            "{scenario}: expected actionable handoff refusal: {messages}"
+        );
+        server.shutdown().await?;
+        proxy.await??;
+    }
     Ok(())
 }
 

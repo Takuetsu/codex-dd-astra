@@ -200,6 +200,30 @@ impl TurnRequestProcessor {
             .map(|response| Some(response.into()))
     }
 
+    /// A request cannot adopt a disk PID or restart a process. If the
+    /// original Core thread has unloaded, no retained handle can validate.
+    pub(crate) async fn thread_owned_runtime_health_review(
+        &self,
+        params: ThreadOwnedRuntimeHealthReviewParams,
+    ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
+        let (_, thread) = self.load_thread(&params.thread_id).await?;
+        let observed = thread
+            .review_codexdd_owned_runtime_health()
+            .await
+            .map_err(invalid_request)?;
+        Ok(Some(
+            ThreadOwnedRuntimeHealthReviewResponse {
+                source_root: observed.source_root,
+                source_sha: observed.source_sha,
+                approved_port: observed.approved_port,
+                owner_pid: observed.owner_pid,
+                observed_at_ms: observed.observed_at_ms,
+                observation_id: observed.observation_id,
+            }
+            .into(),
+        ))
+    }
+
     pub(crate) async fn thread_workflow_state_update(
         &self,
         params: ThreadWorkflowStateUpdateParams,
@@ -215,6 +239,118 @@ impl TurnRequestProcessor {
                         "setAdaptiveState requires adaptiveState".to_string(),
                     ));
                 };
+                let gate_checkpoint = state
+                    .gate_checkpoint
+                    .as_ref()
+                    .map(|checkpoint| {
+                        let payload = serde_json::to_vec(checkpoint).map_err(|err| {
+                            invalid_request(format!("invalid gate checkpoint: {err}"))
+                        })?;
+                        if payload.len() > 8192 {
+                            return Err(invalid_request(
+                                "gate checkpoint exceeds bounded size".to_string(),
+                            ));
+                        }
+                        let parsed: codex_rollout::AdaptiveGateCheckpointSnapshot =
+                            serde_json::from_slice(&payload).map_err(|err| {
+                                invalid_request(format!("invalid typed gate checkpoint: {err}"))
+                            })?;
+                        // Windows canonicalize may return a verbatim \\?\ prefix
+                        // while the authorized startup path is in DOS notation.
+                        // Compare resolved worktrees, never raw path spelling.
+                        let same_root = state
+                            .authorized_source_root
+                            .as_deref()
+                            .and_then(|root| std::path::Path::new(root).canonicalize().ok())
+                            .zip(
+                                std::path::Path::new(&parsed.source_root)
+                                    .canonicalize()
+                                    .ok(),
+                            )
+                            .is_some_and(|(authorized, reported)| authorized == reported);
+                        let gate_shapes_valid = (|| {
+                            use codex_rollout::AdaptiveRequiredGateSnapshot as Gate;
+                            if parsed.required_gates.is_empty()
+                                || parsed.required_gates.len() > 16
+                                || parsed
+                                    .required_gates
+                                    .iter()
+                                    .filter(|gate| matches!(gate, Gate::IndependentValidation))
+                                    .count()
+                                    != 1
+                                || parsed.blocked_gates.len() > parsed.required_gates.len()
+                            {
+                                return false;
+                            }
+                            for (index, gate) in parsed.required_gates.iter().enumerate() {
+                                if parsed.required_gates[..index].contains(gate) {
+                                    return false;
+                                }
+                                match gate {
+                                    Gate::SourceProfile(profile)
+                                        if matches!(
+                                            profile.as_str(),
+                                            "targeted" | "work_packet" | "release"
+                                        ) => {}
+                                    Gate::OwnedRuntimeHealth(ports)
+                                        if !ports.is_empty()
+                                            && ports.len() <= 8
+                                            && ports.iter().all(|port| *port != 0)
+                                            && ports
+                                                .iter()
+                                                .collect::<std::collections::BTreeSet<_>>()
+                                                .len()
+                                                == ports.len() => {}
+                                    Gate::IndependentValidation => {}
+                                    _ => return false,
+                                }
+                            }
+                            for (index, (gate, reason)) in parsed.blocked_gates.iter().enumerate() {
+                                if !parsed.required_gates.contains(gate)
+                                    || reason.trim().is_empty()
+                                    || reason.len() > 128
+                                    || parsed.blocked_gates[..index]
+                                        .iter()
+                                        .any(|(previous, _)| previous == gate)
+                                {
+                                    return false;
+                                }
+                            }
+                            true
+                        })();
+                        if parsed.schema_version != 1
+                            || parsed.owner_thread_id != params.thread_id
+                            || parsed.owner_role != state.worker_role
+                            || !matches!(
+                                parsed.owner_role.as_str(),
+                                "implementation" | "validation" | "repair"
+                            )
+                            || state.authorized_scope.as_deref()
+                                != Some(parsed.authorized_scope.as_str())
+                            || parsed.authorized_scope.trim().is_empty()
+                            || parsed.authorized_scope.len() > 1024
+                            || !same_root
+                            || parsed.source_root.len() > 4096
+                            || parsed.source_sha.len() != 40
+                            || !parsed
+                                .source_sha
+                                .bytes()
+                                .all(|byte| byte.is_ascii_hexdigit())
+                            || state
+                                .authorized_source_sha
+                                .as_deref()
+                                .is_none_or(|sha| !sha.eq_ignore_ascii_case(&parsed.source_sha))
+                            || !state.worker_assignment_locked
+                            || !gate_shapes_valid
+                        {
+                            return Err(invalid_request(
+                                "gate checkpoint does not match the locked Worker and source"
+                                    .to_string(),
+                            ));
+                        }
+                        Ok(parsed)
+                    })
+                    .transpose()?;
                 codex_rollout::WorkflowStateItem::set_adaptive_state(
                     codex_rollout::AdaptiveWorkflowStateSnapshot {
                         enabled: state.enabled,
@@ -244,8 +380,25 @@ impl TurnRequestProcessor {
                         }),
                         attempt_number: state.attempt_number,
                         paused_by_user: state.paused_by_user,
+                        transient_retry_consumed: state
+                            .transient_retry_consumed
+                            .unwrap_or_default(),
+                        unfinished_turn_pressure: state
+                            .unfinished_turn_pressure
+                            .unwrap_or_default(),
+                        last_processed_turn_id: state.last_processed_turn_id,
+                        // Retry pressure is a non-authoritative fact. Do not
+                        // persist any consumed permit or Core evidence here.
+                        consecutive_no_native_progress_turns: state
+                            .consecutive_no_native_progress_turns
+                            .unwrap_or_default(),
+                        last_no_native_progress_turn_id: state.last_no_native_progress_turn_id,
                         worker_role: state.worker_role,
                         authorized_scope: state.authorized_scope,
+                        assignment_task_kind: state.assignment_task_kind,
+                        authorized_source_root: state.authorized_source_root,
+                        authorized_source_sha: state.authorized_source_sha,
+                        gate_checkpoint,
                         worker_assignment_locked: state.worker_assignment_locked,
                         workflow_terminal: state.workflow_terminal,
                     },

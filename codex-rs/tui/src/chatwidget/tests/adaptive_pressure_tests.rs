@@ -68,6 +68,8 @@ fn register_work_packet_receipt(
                 crate::adaptive_evidence::CODEXDD_WORK_PACKET_PROFILE.to_string(),
             ),
             validation_failure_fingerprint: None,
+            native_source_provenance: None,
+            worker_binding: None,
         });
 }
 
@@ -182,7 +184,7 @@ async fn workflow_success_overrides_automatic_failure_pressure() {
 }
 
 #[tokio::test]
-async fn validation_failure_then_success_latches_owner_qa_terminal() {
+async fn generic_validation_command_success_cannot_claim_owner_qa_terminal() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
     let validation_turn = "validation-turn";
@@ -217,10 +219,14 @@ async fn validation_failure_then_success_latches_owner_qa_terminal() {
     });
     chat.turn_lifecycle.agent_turn_running = false;
 
-    assert!(chat.consume_adaptive_signal_at_terminal(validation_turn));
-    assert_eq!(
-        chat.adaptive_effort.workflow_terminal,
-        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    assert!(!chat.consume_adaptive_signal_at_terminal(validation_turn));
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert!(
+        matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Cancelled { .. })
+        ),
+        "generic shell PASS is not an independent Core Validator receipt"
     );
     assert_eq!(chat.adaptive_effort.pending_attempt, None);
     assert_eq!(chat.adaptive_effort.successor_admission, None);
@@ -232,7 +238,7 @@ async fn validation_failure_then_success_latches_owner_qa_terminal() {
 }
 
 #[tokio::test]
-async fn invalid_workflow_signal_before_pressure_does_not_suppress_escalation() {
+async fn invalid_ready_signal_before_pressure_cannot_escalate_or_claim_qa() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
     let turn_id = "invalid-before-pressure";
@@ -255,19 +261,21 @@ async fn invalid_workflow_signal_before_pressure_does_not_suppress_escalation() 
     chat.register_adaptive_evidence(&failed_command(thread_id, turn_id, "failure-2"));
 
     chat.turn_lifecycle.agent_turn_running = false;
-    assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
     assert_eq!(
         chat.adaptive_effort.current_effort,
-        Some(AdaptiveEffort::Medium)
+        Some(AdaptiveEffort::Low)
     );
-    assert_ne!(
-        chat.adaptive_effort.workflow_terminal,
-        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 2/2"),
+        "native failure pressure remains visible but a forged READY cannot authorize escalation"
     );
 }
 
 #[tokio::test]
-async fn invalid_workflow_signal_after_pressure_does_not_suppress_escalation() {
+async fn invalid_ready_signal_after_pressure_cannot_escalate_or_claim_qa() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
     let turn_id = "invalid-after-pressure";
@@ -290,14 +298,16 @@ async fn invalid_workflow_signal_after_pressure_does_not_suppress_escalation() {
     });
 
     chat.turn_lifecycle.agent_turn_running = false;
-    assert!(chat.consume_adaptive_signal_at_terminal(turn_id));
+    assert!(!chat.consume_adaptive_signal_at_terminal(turn_id));
     assert_eq!(
         chat.adaptive_effort.current_effort,
-        Some(AdaptiveEffort::Medium)
+        Some(AdaptiveEffort::Low)
     );
-    assert_ne!(
-        chat.adaptive_effort.workflow_terminal,
-        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert!(
+        chat.adaptive_effort_status_text()
+            .contains("Failure pressure: 2/2"),
+        "native failure pressure remains visible but a forged READY cannot authorize escalation"
     );
 }
 
@@ -620,7 +630,7 @@ async fn completed_repair_waits_for_late_ready_for_validation_and_admits_no_succ
 }
 
 #[tokio::test]
-async fn completed_validation_waits_for_late_owner_qa_and_admits_no_successor() {
+async fn completed_validation_rejects_late_generic_owner_qa_and_admits_no_successor() {
     let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(None).await;
     let thread_id = ThreadId::new();
     let turn_id = "late-ready-for-owner-qa";
@@ -664,9 +674,13 @@ async fn completed_validation_waits_for_late_owner_qa_and_admits_no_successor() 
         },
     });
 
-    assert_eq!(
-        chat.adaptive_effort.workflow_terminal,
-        Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+    assert_eq!(chat.adaptive_effort.workflow_terminal, None);
+    assert!(
+        matches!(
+            chat.adaptive_effort.pending_signal,
+            Some(AdaptivePendingSignal::Cancelled { .. })
+        ),
+        "a late command PASS must not become owner QA"
     );
     assert_eq!(chat.adaptive_effort.attempt_number, 1);
     assert_eq!(chat.adaptive_effort.unfinished_turn_pressure, 0);

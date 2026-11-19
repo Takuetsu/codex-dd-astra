@@ -1012,6 +1012,13 @@ impl App {
             }
             return;
         }
+        // An automatic independent Validator may only be created from the
+        // terminalized owner Worker with an intact, still-matching source and
+        // required-gate ledger. A missing/moved candidate must not silently
+        // create an unpinned Validator in the launcher's milestone root.
+        let automatic_validation_handoff = worker_binding.as_ref().is_some_and(|binding| {
+            self.chat_widget.automatic_validation_binding().as_ref() == Some(binding)
+        });
         let initial_user_message = initial_user_message.or_else(|| {
             worker_binding.as_ref().and_then(|binding| {
                 self.chat_widget
@@ -1022,6 +1029,17 @@ impl App {
         let fresh_adaptive_effort = self
             .chat_widget
             .fresh_adaptive_effort_for_new_worker(worker_binding.as_ref());
+        if automatic_validation_handoff
+            && (fresh_adaptive_effort.review_origin_thread_id.is_none()
+                || fresh_adaptive_effort.assignment_preflight.is_none()
+                || fresh_adaptive_effort.gate_ledger.is_none())
+        {
+            self.chat_widget.add_error_message(
+                "SETUP_BLOCKED: automatic independent Validator handoff lacks the current owner-authorized source and gate ledger; no Validation Worker started."
+                    .to_string(),
+            );
+            return;
+        }
         // Start a fresh in-memory session while preserving resumability via persisted rollout
         // history. If an initial message is provided, `enqueue_primary_thread_session` suppresses it
         // until the new session is configured and any replayed turns have been rendered.
@@ -1043,6 +1061,43 @@ impl App {
             &self.cli_kv_overrides,
             &self.harness_overrides,
         );
+        // The launcher may be at the milestone root while the authorized Git
+        // worktree is nested elsewhere. Only a verified live source handoff
+        // selects that explicit target as the fresh Validator's Core CWD.
+        // Missing/moved paths fail closed; no ancestor repository fallback.
+        if fresh_adaptive_effort.review_origin_thread_id.is_some()
+            && let Some(pin) = fresh_adaptive_effort.assignment_preflight.as_ref()
+        {
+            let selected = match std::path::Path::new(&pin.source_root).canonicalize() {
+                Ok(root) => root,
+                Err(err) => {
+                    self.chat_widget.add_error_message(format!(
+                        "SETUP_BLOCKED: authorized independent Validator worktree {} is unavailable ({err}); no Validation Worker started.",
+                        pin.source_root,
+                    ));
+                    return;
+                }
+            };
+            // Recheck the live Git root, clean working tree and exact HEAD
+            // before thread/start. An inherited ledger alone is not proof
+            // that the on-disk checkout still matches its owner source SHA.
+            if let Err(err) =
+                crate::adaptive_worker::preflight_inherited_validation_target(pin, &selected)
+            {
+                self.chat_widget
+                    .add_error_message(format!("{err} No Validation Worker started."));
+                return;
+            }
+            match codex_utils_absolute_path::AbsolutePathBuf::try_from(selected) {
+                Ok(root) => config.cwd = root,
+                Err(err) => {
+                    self.chat_widget.add_error_message(format!(
+                        "SETUP_BLOCKED: authorized independent Validator CWD is invalid ({err}); no Validation Worker started."
+                    ));
+                    return;
+                }
+            }
+        }
         if bound_worker
             && let (Some(family), Some(effort)) = (
                 fresh_adaptive_effort.current_family,
@@ -1058,6 +1113,9 @@ impl App {
                 crate::adaptive_policy::AdaptiveEffort::Max => ReasoningEffortConfig::Max,
             });
         }
+        let handoff_pin = fresh_adaptive_effort
+            .review_origin_thread_id
+            .and(fresh_adaptive_effort.assignment_preflight.as_ref());
         if let Some(binding) = worker_binding {
             config.adaptive_worker = Some(codex_config::config_toml::AdaptiveWorkerConfigToml {
                 role: match binding.role {
@@ -1075,6 +1133,23 @@ impl App {
                     }
                 },
                 authorized_scope: Some(binding.authorized_scope),
+                source_root: handoff_pin.map(|pin| pin.source_root.clone()),
+                source_sha: handoff_pin.map(|pin| pin.source_sha.clone()),
+                task_kind: handoff_pin.map(|pin| {
+                    match pin.task_kind {
+                        crate::adaptive_worker::AdaptiveTaskKind::SourceChange => "source_change",
+                        crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => {
+                            "operations_preview"
+                        }
+                        crate::adaptive_worker::AdaptiveTaskKind::Benchmark => "benchmark",
+                    }
+                    .to_string()
+                }),
+                // Gate and benchmark authority live only in the originating
+                // owner's first assignment. A Validator/Repair handoff cannot
+                // acquire a new command/lock grant from generated handoff text.
+                required_gates: None,
+                benchmark: None,
             });
         }
         match app_server

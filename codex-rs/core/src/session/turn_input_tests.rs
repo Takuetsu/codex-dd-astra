@@ -1089,3 +1089,253 @@ async fn steer_preserves_request_origin(
     );
     session.abort_all_tasks(TurnAbortReason::Interrupted).await;
 }
+
+#[tokio::test]
+async fn codexdd_046_3b2f_actual_first_core_user_turn_latches_role() {
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let (session, _context, _rx) = make_session_and_context_with_rx().await;
+    let first = "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"test packet\"\n\nImplement.";
+    let submission = submit_start_only(
+        &session,
+        SubmittedTurnInput::UserInput {
+            content: vec![UserInput::Text {
+                text: first.to_string(),
+                text_elements: Vec::new(),
+            }],
+            client_id: Some("first-user".to_string()),
+        },
+    )
+    .await;
+    assert!(matches!(submission, TurnInputSubmission::Started { .. }));
+    {
+        let state = session.state.lock().await;
+        assert!(state.first_worker_authority.locked());
+        assert_eq!(
+            state
+                .first_worker_authority
+                .binding()
+                .map(|worker| worker.role),
+            Some(AdaptiveWorkerRoleToml::Implementation)
+        );
+    }
+    // Core has not installed the latch in the native TurnContext yet;
+    // the guarded runner must not accept the first-message-only binding.
+    assert!(session.get_config().await.adaptive_worker.is_none());
+    session.abort_all_tasks(TurnAbortReason::Interrupted).await;
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2f_invalid_first_core_turn_can_retry_without_rebind() {
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let (session, _context, _rx) = make_session_and_context_with_rx().await;
+    let invalid = "[adaptive_worker]\nrole = \"wrong\"\nauthorized_scope = \"bad\"\n\nWork.";
+    let first = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: invalid.to_string(),
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::StartIfIdle,
+        "bad-first".to_string(),
+    )
+    .await;
+    let first_error = first.expect_err("malformed Worker header must reject first turn");
+    assert!(first_error.to_string().contains("SETUP_BLOCKED:"));
+    assert!(!session.state.lock().await.first_worker_authority.locked());
+    assert!(session.active_turn.lock().await.is_none());
+
+    let corrected =
+        "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"bound review\"\n\nReview.";
+    let second = submit_start_only(
+        &session,
+        SubmittedTurnInput::UserInput {
+            content: vec![UserInput::Text {
+                text: corrected.to_string(),
+                text_elements: Vec::new(),
+            }],
+            client_id: Some("valid-first".to_string()),
+        },
+    )
+    .await;
+    assert!(matches!(second, TurnInputSubmission::Started { .. }));
+    {
+        let state = session.state.lock().await;
+        assert_eq!(
+            state
+                .first_worker_authority
+                .binding()
+                .map(|worker| worker.role),
+            Some(AdaptiveWorkerRoleToml::Validation)
+        );
+    }
+    session.abort_all_tasks(TurnAbortReason::Interrupted).await;
+}
+
+#[test]
+fn codexdd_046_3b2j_candidate_submission_is_standalone_and_explicit() {
+    let header = format!(
+        "[codexdd_candidate]\\nprevious_sha = \"{}\"\\ncandidate_sha = \"{}\"\\n\\nAuthorize this exact reviewed candidate.",
+        "a".repeat(40),
+        "b".repeat(40)
+    )
+    .replace("\\n", "\n");
+    let input = SubmittedTurnInput::UserInput {
+        content: vec![UserInput::Text {
+            text: header.clone(),
+            text_elements: Vec::new(),
+        }],
+        client_id: Some("direct-owner".to_string()),
+    };
+    let proposal = parse_candidate_submission(&input)
+        .expect("parsed")
+        .expect("candidate");
+    assert_eq!(proposal.previous_sha, "a".repeat(40));
+    assert_eq!(proposal.candidate_sha, "b".repeat(40));
+    let with_attachment = SubmittedTurnInput::UserInput {
+        content: vec![
+            UserInput::Text {
+                text: header,
+                text_elements: Vec::new(),
+            },
+            UserInput::Text {
+                text: "extra input".to_string(),
+                text_elements: Vec::new(),
+            },
+        ],
+        client_id: None,
+    };
+    assert!(parse_candidate_submission(&with_attachment).is_err());
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2j_unbound_candidate_does_not_consume_turn() {
+    let (session, _context, _rx) = make_session_and_context_with_rx().await;
+    let header = format!(
+        "[codexdd_candidate]\nprevious_sha = \"{}\"\ncandidate_sha = \"{}\"\n\nAuthorize exact successor.",
+        "a".repeat(40),
+        "b".repeat(40)
+    );
+    let submission = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: header,
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::StartIfIdle,
+        "candidate-not-authorized".to_string(),
+    )
+    .await;
+    assert!(
+        submission
+            .expect_err("no persisted Worker authority")
+            .to_string()
+            .contains("SETUP_BLOCKED:")
+    );
+    assert!(session.active_turn.lock().await.is_none());
+    assert!(!session.state.lock().await.first_worker_authority.locked());
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2j_candidate_cannot_steer_an_active_turn() {
+    let (session, turn_context, _rx) = make_session_and_context_with_rx().await;
+    session
+        .spawn_task(
+            Arc::clone(&turn_context),
+            Vec::new(),
+            NeverEndingTask {
+                kind: TaskKind::Regular,
+                listen_to_cancellation_token: true,
+            },
+        )
+        .await;
+    let header = format!(
+        "[codexdd_candidate]\nprevious_sha = \"{}\"\ncandidate_sha = \"{}\"\n\nAuthorize exact successor.",
+        "a".repeat(40),
+        "b".repeat(40)
+    );
+    let not_idle = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: header.clone(),
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::StartOrSteer,
+        "candidate-during-task".to_string(),
+    )
+    .await
+    .expect("idle-only admission returns a typed refusal");
+    assert!(matches!(
+        not_idle,
+        TurnInputSubmission::NotSubmitted {
+            reason: NotSubmittedReason::NotIdle
+        }
+    ));
+    let explicit_steer = handle(
+        &session,
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: header,
+            text_elements: Vec::new(),
+        }]),
+        TurnInputMode::Steer {
+            expected_turn_id: turn_context.sub_id.clone(),
+        },
+        "candidate-explicit-steer".to_string(),
+    )
+    .await;
+    assert!(
+        explicit_steer
+            .expect_err("candidate steering must be rejected")
+            .to_string()
+            .contains("SETUP_BLOCKED:")
+    );
+    session.abort_all_tasks(TurnAbortReason::Interrupted).await;
+}
+
+#[tokio::test]
+async fn codexdd_046_3b2h_subsequent_turn_requires_flushed_first_source_binding() {
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let (session, _context, _rx) = make_session_and_context_with_rx().await;
+    let root = if cfg!(windows) {
+        r"C:\authorized\candidate"
+    } else {
+        "/tmp/authorized/candidate"
+    };
+    let first = format!(
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"exact source\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement."
+    );
+    let submission = submit_start_only(
+        &session,
+        SubmittedTurnInput::UserInput {
+            content: vec![UserInput::Text {
+                text: first,
+                text_elements: Vec::new(),
+            }],
+            client_id: Some("source-owner".to_string()),
+        },
+    )
+    .await;
+    assert!(matches!(submission, TurnInputSubmission::Started { .. }));
+    let before = session.new_default_turn().await;
+    assert!(before.config.adaptive_worker.is_none());
+    {
+        let mut state = session.state.lock().await;
+        assert!(state.first_worker_authority.mark_checkpointed());
+    }
+    let after = session.new_default_turn().await;
+    let binding = after
+        .config
+        .adaptive_worker
+        .as_ref()
+        .expect("durably accepted Worker authority must reach next native turn");
+    assert_eq!(binding.role, AdaptiveWorkerRoleToml::Implementation);
+    assert_eq!(binding.source_root.as_deref(), Some(root));
+    assert_eq!(
+        binding.source_sha.as_deref(),
+        Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    );
+    assert!(session.get_config().await.adaptive_worker.is_none());
+    session.abort_all_tasks(TurnAbortReason::Interrupted).await;
+}

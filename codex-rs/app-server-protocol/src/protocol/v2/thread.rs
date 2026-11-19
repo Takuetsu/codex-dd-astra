@@ -32,6 +32,7 @@ pub use codex_protocol::dynamic_tools::DynamicToolNamespaceTool;
 pub use codex_protocol::dynamic_tools::DynamicToolSpec;
 use codex_protocol::models::ResponseItem;
 use codex_protocol::openai_models::ReasoningEffort;
+use codex_protocol::protocol::CodexddFirstWorkerSnapshot;
 use codex_protocol::protocol::ThreadGoalStatus as CoreThreadGoalStatus;
 use codex_protocol::protocol::TokenUsage as CoreTokenUsage;
 use codex_protocol::protocol::TokenUsageInfo as CoreTokenUsageInfo;
@@ -330,6 +331,11 @@ pub struct ThreadSettings {
 pub struct ThreadSettingsUpdatedNotification {
     pub thread_id: String,
     pub thread_settings: ThreadSettings,
+    /// Core-owned first-user source pin. Only the matching embedded native Core
+    /// may authorize a TUI candidate transition; no external tool input is accepted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub codexdd_first_worker: Option<CodexddFirstWorkerSnapshot>,
 }
 
 #[derive(
@@ -465,6 +471,12 @@ pub struct ThreadResumeResponse {
     pub reasoning_effort: Option<ReasoningEffort>,
     /// Effective collaboration mode. Absent when resuming from an older server.
     pub collaboration_mode: Option<CollaborationMode>,
+    /// Durable, same-thread Core Worker source authority, when restored.
+    /// The client may only reconcile this for its own embedded, unforked session.
+    /// Absent on older servers and on threads without a pinned Worker.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub codexdd_first_worker: Option<CodexddFirstWorkerSnapshot>,
     /// @deprecated Always `explicitRequestOnly`. Use `reasoningEffort` for Ultra behavior.
     #[experimental("thread/resume.multiAgentMode")]
     #[serde(default)]
@@ -1768,8 +1780,41 @@ pub struct ThreadAdaptiveWorkflowState {
     pub validation_status: Option<ThreadAdaptiveValidationStatus>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
+    /// Consumed one-time infrastructure retry budget; never grants permission or evidence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub transient_retry_consumed: Option<bool>,
+    /// Same-route unfinished-turn pressure, capped and non-authoritative.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub unfinished_turn_pressure: Option<u8>,
+    /// Last processed terminal/unfinished turn, retained for replay refusal only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub last_processed_turn_id: Option<String>,
+    /// Progress pressure only; not a tool result, receipt or successor permit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub consecutive_no_native_progress_turns: Option<u8>,
+    /// Source turn already counted toward pressure; prevents cold-resume double count.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub last_no_native_progress_turn_id: Option<String>,
     pub worker_role: String,
     pub authorized_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub assignment_task_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub authorized_source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub authorized_source_sha: Option<String>,
+    /// Source-/Worker-bound pending requirements only; never prior success.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub gate_checkpoint: Option<JsonValue>,
     pub worker_assignment_locked: bool,
     pub workflow_terminal: Option<String>,
 }
@@ -1790,6 +1835,50 @@ pub struct ThreadWorkflowStateUpdateParams {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]
 pub struct ThreadWorkflowStateUpdateResponse {}
+
+/// Fresh read-only Core observer result, never a checkpoint or native QA PASS.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "v2/")]
+pub struct ThreadOwnedRuntimeHealthReviewParams {
+    /// Only the original loaded Core thread is selected by the trusted TUI.
+    /// Core selects its unique matching retained child, never the caller.
+    pub thread_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct ThreadOwnedRuntimeHealthReviewResponse {
+    pub source_root: String,
+    pub source_sha: String,
+    pub approved_port: u16,
+    pub owner_pid: u32,
+    pub observed_at_ms: u64,
+    pub observation_id: String,
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1f_protocol_tests {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3d1f_review_requires_original_core_process_identifier() {
+        let payload = serde_json::json!({
+            "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116"
+        });
+        let params: ThreadOwnedRuntimeHealthReviewParams =
+            serde_json::from_value(payload).expect("original Core thread identifier");
+        assert_eq!(params.thread_id, "7c8f006e-199e-41d7-a98a-a0e675a2e116");
+        assert!(
+            serde_json::from_value::<ThreadOwnedRuntimeHealthReviewParams>(serde_json::json!({
+                "threadId": "7c8f006e-199e-41d7-a98a-a0e675a2e116",
+                "sessionId": 101,
+            }))
+            .is_err()
+        );
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]

@@ -346,6 +346,7 @@ fn thread_resume_response_round_trips_initial_turns_page() {
         active_permission_profile: None,
         reasoning_effort: None,
         collaboration_mode: None,
+        codexdd_first_worker: None,
         multi_agent_mode: Default::default(),
         initial_turns_page: Some(TurnsPage {
             data: Vec::new(),

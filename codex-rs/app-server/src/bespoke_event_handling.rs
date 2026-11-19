@@ -1278,19 +1278,25 @@ pub(crate) async fn apply_bespoke_event_handling(
                 .await;
         }
         EventMsg::ThreadRolledBack(_) | EventMsg::ThreadQueueChanged(_) => {}
-        EventMsg::ThreadSettingsApplied(_) => {
+        EventMsg::ThreadSettingsApplied(event) => {
+            // Core owns Worker authority. Never treat a model/tool argument or
+            // foreign replay's thread-settings snapshot as a source transition.
+            let native_worker = (event.thread_id == Some(conversation_id))
+                .then(|| event.thread_settings.codexdd_first_worker.clone())
+                .flatten();
             let thread_settings =
                 thread_settings_from_config_snapshot(&conversation.config_snapshot().await);
             let changed = {
                 let mut state = thread_state.lock().await;
                 state.note_thread_settings(thread_settings.clone())
             };
-            if changed {
+            if changed || native_worker.is_some() {
                 outgoing
                     .send_server_notification(ServerNotification::ThreadSettingsUpdated(
                         ThreadSettingsUpdatedNotification {
                             thread_id: conversation_id.to_string(),
                             thread_settings,
+                            codexdd_first_worker: native_worker,
                         },
                     ))
                     .await;

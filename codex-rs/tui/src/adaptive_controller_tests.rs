@@ -76,6 +76,19 @@ fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
     let blocked = reduce_adaptive_controller(retry.state, AdaptiveClassification::RetrySameLevel);
     assert_eq!(blocked.decision, AdaptiveControllerDecision::Blocked);
     assert_eq!(blocked.state.attempt_number, 2);
+    // An unproductive same-route continuation cannot restore a spent retry.
+    // Only a justified route transition or new evidence can rearm it.
+    let (no_op, pressure) = reduce_unfinished_authorized_turn(retry.state, 0);
+    assert_eq!(pressure, 1);
+    assert!(no_op.state.transient_retry_consumed);
+    assert!(matches!(
+        no_op.decision,
+        AdaptiveControllerDecision::ContinueSameRoute { .. }
+    ));
+    assert_eq!(
+        reduce_adaptive_controller(no_op.state, AdaptiveClassification::RetrySameLevel).decision,
+        AdaptiveControllerDecision::Blocked
+    );
     let moved = reduce_adaptive_controller(state, AdaptiveClassification::EscalationEligible);
     assert!(!moved.state.transient_retry_consumed);
     assert_eq!(
@@ -85,6 +98,68 @@ fn retry_is_route_local_and_only_one_transient_retry_is_allowed() {
             next_attempt: 3
         }
     );
+}
+
+#[test]
+fn codexdd_046_3b4_c01_transient_infrastructure_retries_only_once_without_escalation() {
+    let state = AdaptiveControllerState::initial(AdaptiveFamily::Astra);
+    let classification = classify_outcome(AdaptiveOutcomeSignal::Failure(
+        AdaptiveFailureKind::TransientInfrastructure,
+    ));
+    assert_eq!(classification, AdaptiveClassification::RetrySameLevel);
+    let first = reduce_adaptive_controller(state, classification);
+    assert_eq!(
+        first.decision,
+        AdaptiveControllerDecision::RetrySameLevel {
+            route: state.current_route,
+            next_attempt: 2,
+        }
+    );
+    assert!(first.state.transient_retry_consumed);
+    assert_eq!(first.state.current_route, state.current_route);
+    // A second identical refusal carries no independent capability evidence:
+    // do not spend a model tier or reset the original one-retry budget.
+    let second = reduce_adaptive_controller(first.state, classification);
+    assert_eq!(second.decision, AdaptiveControllerDecision::Blocked);
+    assert_eq!(second.state.current_route, state.current_route);
+    assert_eq!(second.state.attempt_number, 2);
+    assert_eq!(
+        second.state.terminal,
+        Some(AdaptiveWorkflowTerminal::Blocked)
+    );
+    let repeated = reduce_adaptive_controller(second.state, classification);
+    assert_eq!(repeated.decision, AdaptiveControllerDecision::NoAction);
+}
+
+#[test]
+fn codexdd_046_3b4_c02_c04_setup_and_policy_refusals_never_escalate() {
+    for kind in [
+        AdaptiveFailureKind::Authentication,
+        AdaptiveFailureKind::Quota,
+        AdaptiveFailureKind::Environment,
+        AdaptiveFailureKind::Permission,
+        AdaptiveFailureKind::Dependency,
+        AdaptiveFailureKind::ModelUnavailable,
+        AdaptiveFailureKind::OwnerDecision,
+        AdaptiveFailureKind::AuthorizationOrScope,
+        AdaptiveFailureKind::Unknown,
+    ] {
+        let state = AdaptiveControllerState::initial(AdaptiveFamily::Astra);
+        let classification = classify_outcome(AdaptiveOutcomeSignal::Failure(kind));
+        assert_eq!(classification, AdaptiveClassification::Blocked);
+        let result = reduce_adaptive_controller(state, classification);
+        assert_eq!(result.decision, AdaptiveControllerDecision::Blocked);
+        assert_eq!(result.state.current_route, state.current_route);
+        assert_eq!(result.state.attempt_number, 1);
+        assert_eq!(
+            result.state.terminal,
+            Some(AdaptiveWorkflowTerminal::Blocked)
+        );
+        assert_eq!(
+            reduce_adaptive_controller(result.state, classification).decision,
+            AdaptiveControllerDecision::NoAction
+        );
+    }
 }
 
 #[test]

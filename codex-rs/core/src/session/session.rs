@@ -167,6 +167,14 @@ pub(crate) struct SessionConfiguration {
 }
 
 impl SessionConfiguration {
+    /// Startup-configured Worker authority is immutable external input.
+    /// This accessor avoids exposing the legacy session config to Core state.
+    pub(crate) fn startup_worker_authority(
+        &self,
+    ) -> Option<codex_config::config_toml::AdaptiveWorkerConfigToml> {
+        self.original_config_do_not_use.adaptive_worker.clone()
+    }
+
     pub(super) fn cwd(&self) -> &AbsolutePathBuf {
         &self.legacy_fallback_cwd
     }
@@ -332,6 +340,7 @@ impl SessionConfiguration {
             personality: self.step_settings.personality,
             collaboration_mode: self.step_settings.collaboration_mode.clone(),
             disabled_plugin_ids: self.disabled_plugin_ids.clone(),
+            codexdd_first_worker: None,
         }
     }
 
@@ -667,6 +676,19 @@ impl Session {
     /// Returns the identity shared by the root thread and all descendant threads.
     pub(crate) fn session_id(&self) -> SessionId {
         self.services.agent_control.identity()
+    }
+
+    /// D02 QA may trust only the original Core-accepted Worker assignment.
+    /// First-user authority must have been durably checkpointed; on resume a
+    /// partial or historical prompt alone cannot restore permission.
+    pub(crate) async fn original_codexdd_runtime_worker(
+        &self,
+    ) -> Option<codex_config::config_toml::AdaptiveWorkerConfigToml> {
+        let state = self.state.lock().await;
+        state
+            .session_configuration
+            .startup_worker_authority()
+            .or_else(|| state.first_worker_authority.runtime_binding())
     }
 
     pub(crate) async fn originator(&self) -> String {

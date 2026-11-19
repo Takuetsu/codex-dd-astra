@@ -38,6 +38,22 @@ try {
     # core_test_support::stdio_server_bin() checks this exact env var.
     $env:CARGO_BIN_EXE_test_stdio_server = $helperPath
     Write-Host "Using MCP fixture: $helperPath"
+
+    # The following release TUI adaptive tests launch the real app-server
+    # child via assert_cmd. Building an app-server library test alone does
+    # not produce target/debug/codex-app-server.exe.
+    Write-Host "Preparing real app-server executable for downstream native TUI tests."
+    & cargo build --locked -p codex-app-server --bin codex-app-server
+    $serverExit = [int]$LASTEXITCODE
+    if ($serverExit -ne 0) {
+        Write-Host "App-server executable build failed with exit code $serverExit."
+        exit $serverExit
+    }
+    $serverPath = Join-Path $targetDir "debug\codex-app-server.exe"
+    if (-not (Test-Path -LiteralPath $serverPath -PathType Leaf)) {
+        throw "Native app-server executable missing after build: $serverPath"
+    }
+    Write-Host "Using real app-server child: $serverPath"
     & cargo nextest run --no-fail-fast -p codex-app-server --lib
     exit ([int]$LASTEXITCODE)
 }

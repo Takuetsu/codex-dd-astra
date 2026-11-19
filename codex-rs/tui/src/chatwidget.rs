@@ -259,6 +259,8 @@ mod activity_presentation;
 mod adaptive_admission;
 pub(crate) mod adaptive_effort;
 mod adaptive_evidence;
+#[cfg(all(test, target_os = "windows"))]
+mod adaptive_live_app_server_tests;
 mod adaptive_runtime_bridge;
 mod adaptive_signal_transport;
 mod adaptive_trusted_signal;

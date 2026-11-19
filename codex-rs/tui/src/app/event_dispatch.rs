@@ -164,6 +164,35 @@ impl App {
             }
             AppEvent::PluginMentionsLoaded { ref cwd, .. }
                 if cwds_differ(cwd, self.config.cwd.as_path()) => {}
+            AppEvent::StartAutomaticValidation {
+                origin_thread_id,
+                source_sha,
+                worker_binding,
+            } => {
+                let owned_source = self.current_displayed_thread_id()
+                    == Some(origin_thread_id)
+                    && self.chat_widget.thread_id() == Some(origin_thread_id)
+                    && self
+                        .chat_widget
+                        .automatic_validation_source_sha(&worker_binding)
+                        == Some(source_sha.as_str());
+                if !owned_source {
+                    self.chat_widget.add_error_message(
+                        "SETUP_BLOCKED: stale or foreign automatic Validator handoff; the current Implementation Worker does not own this source SHA and gate ledger. No Validation Worker started."
+                            .to_string(),
+                    );
+                } else {
+                    self.start_fresh_session_with_worker_binding(
+                        tui,
+                        app_server,
+                        /*session_start_source*/ None,
+                        /*initial_user_message*/ None,
+                        /*new_thread_name*/ None,
+                        Some(worker_binding),
+                    )
+                    .await;
+                }
+            }
             AppEvent::NewSession {
                 name,
                 worker_binding,
@@ -786,14 +815,14 @@ impl App {
                 // Stop on any post-mutation failure: accepting input against the old displayed
                 // transcript would hide the fact that server history has already changed.
                 tokio::time::timeout(Duration::from_secs(/*secs*/ 10), async {
-                    while let Some(event) = app_server.next_event().await {
+                    while let Some(event) = app_server.next_observed_event().await {
                         let is_reverted = matches!(
-                            &event,
+                            event.event(),
                             AppServerEvent::ServerNotification(notification)
                                 if matches!(notification.as_ref(), ServerNotification::ThreadReverted(notification)
                                     if notification.thread_id == thread_id.to_string())
                         );
-                        self.handle_app_server_event(app_server, event).await;
+                        self.handle_observed_app_server_event(app_server, event).await;
                         if is_reverted {
                             return Ok(());
                         }
@@ -2075,6 +2104,30 @@ impl App {
             AppEvent::UpdateAdaptiveEffortState(state) => {
                 self.sync_active_thread_adaptive_effort_to_cached_session(state)
                     .await;
+            }
+            AppEvent::ReviewOwnedRuntimeHealthAtQa {
+                validation_thread_id,
+                origin_thread_id,
+                source_turn_id,
+                review_request_id,
+            } => {
+                let result = if self.current_displayed_thread_id() != Some(validation_thread_id)
+                    || self.chat_widget.thread_id() != Some(validation_thread_id)
+                {
+                    Err("SETUP_BLOCKED: QA thread switched before Core health review".to_string())
+                } else {
+                    app_server
+                        .review_core_owned_runtime_health(origin_thread_id)
+                        .await
+                        .map_err(|error| error.to_string())
+                };
+                self.chat_widget.complete_owned_runtime_qa_review(
+                    validation_thread_id,
+                    origin_thread_id,
+                    &source_turn_id,
+                    review_request_id,
+                    result,
+                );
             }
             AppEvent::PersistWorkflowState {
                 thread_id,

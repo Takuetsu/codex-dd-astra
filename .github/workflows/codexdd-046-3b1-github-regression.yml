@@ -1,0 +1,3363 @@
+# CodexDD 0.4.6 Phase 3B.1 — nonproduction, source-matched GitHub verification.
+# No release publishing, installation, runner-controlled worktree changes, or production merge.
+# One-shot 3B.2n native CI diagnostic for noninteractive Core handler; no release or model authority changes.
+name: CodexDD 0.4.6 3B.1 GitHub regression
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-agent-reliability
+    paths:
+      - .github/workflows/codexdd-046-3b1-github-regression.yml
+      - codex-rs/config/src/config_toml.rs
+      - codex-rs/tui/src/adaptive_worker.rs
+      - codex-rs/tui/src/adaptive_benchmark.rs
+      - codex-rs/tui/src/adaptive_owned_runtime.rs
+      # Owner-gate schema field compatibility across TUI startup/test surfaces.
+      - codex-rs/tui/src/app/working_directory.rs
+      - codex-rs/tui/src/app/session_lifecycle.rs
+      - codex-rs/tui/src/adaptive_worker_tests.rs
+      - codex-rs/tui/src/app/tests/session_lifecycle_requests.rs
+      - codex-rs/tui/src/app_server_session/rollout_history_tests.rs
+      - codex-rs/tui/src/adaptive_evidence.rs
+      - codex-rs/tui/src/adaptive_evidence_tests.rs
+      - codex-rs/tui/src/adaptive_gate_prerequisites.rs
+      - codex-rs/tui/src/lib.rs
+      - codex-rs/tui/src/app_server_session.rs
+      - codex-rs/tui/src/app_event.rs
+      - codex-rs/tui/src/app/event_dispatch.rs
+      - codex-rs/tui/src/app_server_session/live_core_command_tests.rs
+      # Real OS process regression changes must enter source/format and native CI.
+      - codex-rs/tui/src/app_server_session/real_process_restart_tests.rs
+      - codex-rs/tui/src/app/app_server_event_targets.rs
+      - codex-rs/tui/src/app/tests.rs
+      - codex-rs/tui/src/app/tests/adaptive_native_event_routing.rs
+      - codex-rs/tui/src/app/tests/adaptive_cold_process_event_routing.rs
+      - codex-rs/tui/src/app/tests/adaptive_live_coupled_process.rs
+      - codex-rs/tui/src/chatwidget/tests/app_server.rs
+      - codex-rs/tui/src/chatwidget/settings.rs
+      - codex-rs/app-server/src/bespoke_event_handling.rs
+      - codex-rs/app-server-protocol/src/protocol/common.rs
+      - codex-rs/core/src/agent/control_tests.rs
+      - codex-rs/core/src/session/session.rs
+      - codex-rs/core/src/session/thread_settings.rs
+      - codex-rs/core/src/session/turn_context.rs
+      - codex-rs/core/src/tools/handlers/codexdd_validation.rs
+      - codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs
+      # D02 native producer registration/QA prerequisite changes must trigger CI.
+      - codex-rs/core/src/tools/handlers/codexdd_owned_runtime.rs
+      - codex-rs/core/src/tools/handlers/mod.rs
+      - codex-rs/core/src/tools/spec_plan.rs
+      # D02 QA Core review RPC is always in the same SHA's source/format checks.
+      - codex-rs/core/src/codex_thread.rs
+      - codex-rs/app-server/src/message_processor.rs
+      - codex-rs/app-server/src/request_processors.rs
+      - codex-rs/app-server/src/request_processors/turn_processor.rs
+      - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+      - codex-rs/app-server-protocol/src/protocol/v2/tests.rs
+      # D02 Core-held real service QA acceptance must trigger same-SHA Windows.
+      - codex-rs/app-server/tests/suite/v2/mod.rs
+      - codex-rs/app-server/tests/suite/v2/codexdd_owned_runtime_native.rs
+      # D02 Core-owned OS process identity must never bypass source-pinned CI.
+      - codex-rs/core/src/unified_exec/mod.rs
+      - codex-rs/core/src/unified_exec/process.rs
+      - codex-rs/core/src/unified_exec/process_manager.rs
+      - codex-rs/core/src/unified_exec/owned_runtime_health.rs
+      - codex-rs/core/Cargo.toml
+      - codex-rs/utils/pty/src/process.rs
+      - codex-rs/utils/pty/src/pty.rs
+      - codex-rs/utils/pty/src/pipe.rs
+      - codex-rs/utils/pty/src/pipe_tests.rs
+      - codex-rs/core/src/tools/registry.rs
+      - codex-rs/core/src/tools/registry_tests.rs
+      - codex-rs/core/src/session/worker_authority.rs
+      - codex-rs/core/src/session/turn_input.rs
+      - codex-rs/core/src/session/turn_input_tests.rs
+      - codex-rs/protocol/src/protocol.rs
+      - codex-rs/core/src/state/session.rs
+      - codex-rs/core/src/session/mod.rs
+      - codex-rs/core/src/thread_manager_tests.rs
+      - codex-rs/tui/src/session_state.rs
+      - codex-rs/tui/src/chatwidget/adaptive_effort.rs
+      - codex-rs/tui/src/chatwidget/input_submission.rs
+      - codex-rs/tui/src/chatwidget/tests/adaptive_effort_tests.rs
+      - codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs
+      - codex-rs/tui/src/chatwidget/adaptive_evidence.rs
+      - codex-rs/tui/src/chatwidget/adaptive_live_app_server_tests.rs
+      - codex-rs/history/src/lib.rs
+      - codex-rs/history/src/tests.rs
+      - codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+      - codex-rs/app-server/src/request_processors/thread_lifecycle.rs
+      - codex-rs/app-server/src/request_processors/turn_processor.rs
+      - codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs
+      - codex-rs/app-server/tests/suite/v2/mod.rs
+      - codex-rs/app-server/tests/suite/v2/codexdd_candidate_native.rs
+      - codex-rs/app-server/tests/suite/v2/codexdd_worker_handoff_native.rs
+      - docs/regression-fixtures/codexdd-046-agent-reliability-cases.json
+      # Native 3C.1b.2d profile/contract changes must trigger their own CI.
+      - scripts/codexdd-validation-common.ps1
+      - scripts/codexdd-test-independent.ps1
+      - scripts/codexdd-independent-profile-contract-tests.ps1
+      - scripts/codexdd-validation-contract-tests.ps1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-046-3b1-${{ github.ref }}
+  # Only an explicitly requested exact-source 3C or scoped 3D native acceptance supersedes obsolete runs.
+  cancel-in-progress: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]') || contains(github.event.head_commit.message, '[3d1b1-native]') || contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]') || contains(github.event.head_commit.message, '[3d1c-native]') || contains(github.event.head_commit.message, '[3b4-native]') || contains(github.event.head_commit.message, '[3d1d-native]')) }}
+
+jobs:
+  source-contract:
+    name: 3B.1 source and regression-contract preflight
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact WIP source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Require exact branch, SHA and nonproduction baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/dd/codexdd-v0.4.6-agent-reliability'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.4'
+          git merge-base --is-ancestor b25550dcb2c6e84a84074b603086c9db6f32a63b HEAD
+      - name: Check scoped 25-case fixture and source integration (nonexecuting)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          fixture = json.loads(Path("docs/regression-fixtures/codexdd-046-agent-reliability-cases.json").read_text(encoding="utf-8"))
+          cases = fixture["cases"]
+          assert len(cases) == 25
+          assert len({case["id"] for case in cases}) == 25
+          assert sum(case["priority"] == "P0" for case in cases) == 21
+          assert sum(case["priority"] == "P1_conditional" for case in cases) == 4
+          required = {
+              "codex-rs/tui/src/adaptive_worker.rs": (
+                  "preflight_mechanical_target",
+                  "configured_worker_binding",
+                  "pinned_worktree_identity_rejects_wrong_root_sha_and_dirty_edits",
+              ),
+              "codex-rs/tui/src/chatwidget/adaptive_effort.rs": (
+                  "let assignment_preflight = self.assignment_preflight.clone()",
+                  "source_pin_survives_adaptive_activation_and_new_model_route",
+              ),
+              "codex-rs/tui/src/app_server_session.rs": (
+                  "configured_worker_authority",
+                  "worker_assignment_locked = lock_assignment",
+                  "pinned_startup_worker_source_is_transmitted_only_to_embedded_core",
+              ),
+              "codex-rs/core/src/tools/handlers/codexdd_validation.rs": (
+                  "validate_native_authorized_target",
+                  "source_identity_mismatch",
+                  "source_identity_changed",
+              ),
+              "codex-rs/tui/src/session_state.rs": (
+                  "persisted pinned source requires locked Worker role",
+                  "cannot restore protected MechanicalValidation",
+              ),
+              "codex-rs/history/src/lib.rs": ("pub authorized_source_sha: Option<String>",),
+              "codex-rs/app-server-protocol/src/protocol/v2/thread.rs": ("pub authorized_source_sha: Option<String>",),
+          }
+          for path, markers in required.items():
+              content = Path(path).read_text(encoding="utf-8")
+              for marker in markers:
+                  assert marker in content, f"{path}: missing {marker}"
+          print("Source markers and 25-case contract shape PASS (not an executable Rust test).")
+          PY
+      - name: Assert read-only checkout and unchanged Cargo lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+
+  rust-format:
+    name: Rustfmt 3B.1 source review
+    needs: source-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Validate Rust formatting without edits
+        working-directory: codex-rs
+        shell: bash
+        run: cargo fmt -- --config imports_granularity=Item --check
+
+  windows-3b2-native-focused:
+    name: 3B.2i focused Windows Git-boundary, restart and TUI pin tests
+    # An explicit commit-message opt-in runs only these narrow regressions.
+    # Scoped 3B.2i-g retest after Core snapshot projection fix, source/format PASS #42867935907.
+    # Revalidated after exact-source and Rustfmt PASS (#42859946221) for 3B.2i-g.
+    # This is neither the full Windows gate nor a production/release action.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2-focused-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 95
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact development commit with no write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up disposable native Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2-native'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows child processes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Test bounded Git subprocess termination
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-core --lib codexdd_046_3b2p_ -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-f subprocess timeout/cleanup regression failed' }
+      - name: Test real app-server candidate authorization and cold resume
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-app-server --test all codexdd_046_3b2n_ -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-e real-process candidate authorization or cold resume failed' }
+      - name: Test embedded TUI pin reconciliation after cold resume
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib codexdd_046_3b2q_ -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-g embedded TUI source pin reconciliation failed' }
+      - name: Test TUI Git subprocess timeout and direct-child reap
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2r_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.2i-h expected exactly one bounded TUI Git subprocess regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-h TUI Git child timeout/cleanup regression failed' }
+      - name: Confirm no source mutation or release activity
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "Focused native test at $env:GITHUB_SHA only; no install, release, or merge."
+          git status --short
+
+  windows-3b2j-lvo-native:
+    name: 3B.2j focused Windows native LVO Git bound and source identity
+    # Opt-in only. Reuses exact-source checks and repo-pinned Windows setup.
+    # No broad Windows regression suite, release, installation, or source mutation.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2j-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up isolated Windows Rust compilation paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2j source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2j-native'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run bounded native LVO Git timeout and authorized source regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filters = @(
+            'codexdd_046_3b2s_',
+            'native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha'
+          )
+          foreach ($filter in $filters) {
+            $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+              throw "3B.2j expected exactly one native Core test for $filter"
+            }
+            & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture
+            if ($LASTEXITCODE -ne 0) { throw "3B.2j native Core regression failed: $filter" }
+          }
+      - name: Confirm no source mutation, merge, release, or installation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.2j focused native tests at $env:GITHUB_SHA only; no production work."
+          git status --short
+
+  windows-3b2k-rust-native-profile:
+    name: 3B.2k native Windows repo-owned Rust targeted profile
+    # Explicit one-shot nonrelease smoke of the actual repository-owned PS1.
+    # Does not claim live Core tool/Worker acceptance or Node profile acceptance.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2k-native-rust]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare isolated Windows test build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2k source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2k-native-rust'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Install pinned cargo-nextest
+        uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        with:
+          tool: nextest
+      - name: Verify 16 MiB profile stack and isolate native detached-fork regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $profilePaths = @(
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-targeted.ps1'),
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-workpacket.ps1'),
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-release.ps1')
+          )
+          foreach ($profilePath in $profilePaths) {
+            $contents = Get-Content -LiteralPath $profilePath -Raw
+            if ($contents -notmatch '\$env:RUST_MIN_STACK\s*=\s*"16777216"') {
+              throw "Expected 16 MiB Rust stack in repo-owned profile: $profilePath"
+            }
+          }
+          $env:RUST_MIN_STACK = '16777216'
+          $filter = 'detached_fork_restores_persisted_adaptive_workflow_state'
+          & cargo nextest run --locked -p codex-tui --lib --no-fail-fast --test-threads 1 $filter
+          if ($LASTEXITCODE -ne 0) {
+            throw '3B.2k isolated detached-fork test still fails; full Rust profile deliberately not executed'
+          }
+      - name: Execute real Rust targeted LVO script and verify contract-v1 stages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2k-rust-targeted.log'
+          $profile = Join-Path $env:GITHUB_WORKSPACE 'scripts\codexdd-test-targeted.ps1'
+          if (-not (Test-Path -LiteralPath $profile -PathType Leaf)) { throw 'Rust targeted profile unavailable' }
+          $ErrorActionPreference = 'Continue'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $profile 2>&1 | Tee-Object -FilePath $log
+          $nativeExit = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          $prefix = 'CODEXDD_VALIDATION_JSON '
+          $events = @(Get-Content -LiteralPath $log | Where-Object { $_.StartsWith($prefix) } | ForEach-Object {
+            $_.Substring($prefix.Length) | ConvertFrom-Json
+          })
+          $begins = @($events | Where-Object { $_.event -eq 'profile_begin' })
+          $ends = @($events | Where-Object { $_.event -eq 'profile_end' })
+          $stageBegins = @($events | Where-Object { $_.event -eq 'stage_begin' })
+          $stageEnds = @($events | Where-Object { $_.event -eq 'stage_end' })
+          if ($begins.Count -ne 1 -or $ends.Count -ne 1) { throw 'Missing or repeated profile contract terminal' }
+          if ($begins[0].contract_version -ne 1 -or $ends[0].contract_version -ne 1) { throw 'Wrong contract version' }
+          if ($begins[0].profile -ne 'targeted' -or $ends[0].profile -ne 'targeted') { throw 'Wrong native profile' }
+          if ($begins[0].stage_count -ne 3) { throw 'Expected three real Rust targeted stages' }
+          if ($stageBegins.Count -ne 3 -or $stageEnds.Count -ne 3) { throw 'Missing real stages in contract' }
+          $expected = @('diff-check', 'core-adaptive-tests', 'tui-adaptive-tests')
+          for ($i = 0; $i -lt 3; $i++) {
+            $ordinal = $i + 1
+            if ($stageBegins[$i].stage -ne $expected[$i] -or $stageEnds[$i].stage -ne $expected[$i]) {
+              throw "Wrong stage at ordinal $ordinal"
+            }
+            if ($stageBegins[$i].ordinal -ne $ordinal -or $stageEnds[$i].ordinal -ne $ordinal) {
+              throw "Wrong ordinal at $ordinal"
+            }
+            if ($stageEnds[$i].status -ne 'pass' -or $stageEnds[$i].native_exit_code -ne 0) {
+              throw "Rust native stage did not PASS: $($expected[$i])"
+            }
+          }
+          if ($nativeExit -ne 0 -or $ends[0].status -ne 'pass' -or $ends[0].exit_code -ne 0 -or $ends[0].completed_stages -ne 3) {
+            throw "Rust native targeted profile did not complete: process exit $nativeExit; contract status $($ends[0].status)"
+          }
+          Write-Host "3B.2k actual Rust targeted profile PASS: three native stages and matching exit/contract."
+      - name: Confirm no source mutation or release activity
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.2k Rust profile evidence at $env:GITHUB_SHA; no release, install or merge."
+          git status --short
+
+  windows-3b2l-validator-negative:
+    name: 3B.2l native Windows Validator and LVO refusal regressions
+    # Negative policy only; does not simulate or authorize a live independent validator.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2l-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare isolated native Windows Core test paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2l source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2l-native-validator'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows child processes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute six native Core authority and refusal checks
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filters = @(
+            'codexdd_046_3b2_native_role_gate_rejects_independent_workers',
+            'codexdd_046_3b2d_protected_mechanical_requires_core_bound_source',
+            'codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair',
+            'codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker',
+            'adaptive_validation_terminalization_allows_only_trusted_signal_tool',
+            'codexdd_046_3b2_mechanical_node_rust_commands_remain_bounded'
+          )
+          foreach ($filter in $filters) {
+            $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+              throw "3B.2l requires exactly one native Core test: $filter"
+            }
+            & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture
+            if ($LASTEXITCODE -ne 0) { throw "3B.2l native Core refusal test failed: $filter" }
+          }
+          Write-Host "3B.2l negative-policy native Windows acceptance: all six tests executed and passed."
+      - name: Confirm no source mutation, release, or installation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "Focused negative-policy test on exact $env:GITHUB_SHA; no production actions."
+          git status --short
+
+  windows-3b2m-native-wrapper:
+    name: 3B.2m native Windows LVO wrapper and native exit integrity
+    # Small source-exact native fixture; does not invoke the live Core handler or Worker.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b2m-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare isolated Windows Core test build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2m source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2m-native-wrapper'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows child processes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Test actual native PowerShell LVO wrapper and forged PASS rejection
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # A Worker-authority test shares the 3B.2m prefix. Match exactly.
+          $filter = 'tools::handlers::codexdd_validation::tests::codexdd_046_3b2m_native_wrapper_records_real_exit_and_rejects_forged_pass'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --exact --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.2m expected one native PowerShell wrapper fixture test'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2m native wrapper/exit-integrity fixture failed' }
+          Write-Host '3B.2m native wrapper test executed and passed; no live Worker receipt claimed.'
+      - name: Confirm no source mutation or release activity
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.2m exact-source native fixture at $env:GITHUB_SHA only; no release or installation."
+          git status --short
+
+  windows-3b2n-core-handler-native:
+    name: 3B.2n/3B.2o native Core handler and policy refusal regression
+    # Disposable synthetic repository fixture; tests actual Core handler/tool
+    # execution but does not claim live model Worker or official project profile.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b2n-core-native]') || contains(github.event.head_commit.message, '[3b2o-policy-native]'))
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Isolate Windows Core integration paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.2n wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b2n-core-handler'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute real Core LVO handler with trusted source and disposable profile
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'tools::handlers::codexdd_validation::tests::codexdd_046_3b2t_real_core_lvo_handler_runs_trusted_pinned_fixture'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --exact --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.2n expected exactly one real Core LVO handler integration case'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2n Core native handler integration failed' }
+          Write-Host '3B.2n synthetic fixture passed through real Core native handler; not a project validation receipt.'
+          $policyFilter = 'tools::handlers::codexdd_validation::tests::codexdd_046_3b2o_policy_denial_is_typed_nonrepairable_setup_blocker'
+          $policyListing = & cargo test --locked -p codex-core --lib $policyFilter -- --exact --list 2>&1
+          $policyListExit = $LASTEXITCODE
+          $policyListing | Out-Host
+          if ($policyListExit -ne 0 -or ($policyListing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.2o expected exactly one policy refusal classifier test'
+          }
+          & cargo test --locked -p codex-core --lib $policyFilter -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.2o policy refusal classification regression failed' }
+          Write-Host '3B.2o policy refusal is a nonrepairable SETUP_BLOCKED result; no permissions changed.'
+      - name: Confirm no source mutation or release activity
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.2n exact-source isolated handler smoke at $env:GITHUB_SHA; no release or installation."
+          git status --short
+
+  windows-rust:
+    name: Windows TUI 3B.1 compile and focused regression tests
+    # Broad Windows recompilation is a deliberate final gate, not a push-time
+    # debug loop. Run focused source/format checks on normal development pushes.
+    if: github.event_name == 'workflow_dispatch'
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact branch without repository write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Configure isolated Windows workspace without Dev Drive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source SHA' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Make DotSlash reachable from Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Compile TUI with new Worker and persisted protocol tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          cargo check --locked -p codex-tui --lib --tests
+          if ($LASTEXITCODE -ne 0) { throw '3B.1 Windows TUI compile failed' }
+      - name: Compile app-server candidate authority notification path
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          cargo check --locked -p codex-app-server --lib --tests
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-c app-server Core candidate bridge did not compile' }
+      - name: Compile native Core LVO regression test sources
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          cargo check --locked -p codex-core --lib --tests
+          if ($LASTEXITCODE -ne 0) { throw '3B.1c Core native validation tests did not compile' }
+      - name: Execute Core native exact-target regression tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'native_authorized_target'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate Core source identity tests'
+          }
+          if (($listing -join "`n") -notmatch '2 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly two Core source identity tests'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw 'Native Core source identity regression failed' }
+      - name: Execute 3B.2 native role, profile and bounded command-policy regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2 Core regressions'
+          }
+          if (($listing -join "`n") -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly three 3B.2 Core regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2 Core role/profile/command regressions failed' }
+      - name: Execute 3B.2d fail-closed Core source-authority regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2d_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2d Core regressions'
+          }
+          if (($listing -join "`n") -notmatch '2 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly two 3B.2d Core regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2d unbound Core authority regression failed' }
+      - name: Execute 3B.2e shared first-Worker header Core regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2e_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate shared authority parser regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '2 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly two 3B.2e shared-parser Core regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2e shared authority parser regressions failed' }
+      - name: Execute 3B.2f Core first-message admission regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2f_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate Core Worker admission regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '5 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected five 3B.2f Core Worker regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw 'Core first-message regressions failed' }
+      - name: Execute 3B.2g Core Worker persistence snapshot regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2g_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate Core Worker snapshot regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly three 3B.2g Core snapshot regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw 'Core first-message snapshot regressions failed' }
+      - name: Execute 3B.2h durable Core-to-runner source binding regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2h_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2h Core-to-runner regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly three 3B.2h authority regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2h Core source binding regressions failed' }
+      - name: Execute 3B.2i-a read-only Core candidate-verifier regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2i_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2i Core candidate-verifier regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '4 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly four 3B.2i Core candidate-verifier tests'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i read-only candidate verifier failed' }
+      - name: Execute 3B.2i-f bounded Git subprocess negative control
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-core --lib codexdd_046_3b2p_ -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { throw 'Bounded candidate Git child cleanup failed' }
+      - name: Execute 3B.2i-b owner-origin candidate admission regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2j_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate 3B.2i-b Core input regressions'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly three 3B.2i-b Core input regressions'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-b owner candidate admission tests failed' }
+      - name: Execute 3B.2i-d successor cold-resume Core snapshot regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2m_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate successor snapshot regression'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly one 3B.2i-d Core snapshot regression'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2
+          if ($LASTEXITCODE -ne 0) { throw '3B.2i-d successor snapshot regression failed' }
+      - name: Execute 3B.1 executable Worker and persistence regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filters = @(
+            'pinned_',
+            'source_pin_survives_adaptive_activation_and_new_model_route',
+            'source_pins_restore_and_partial_pins_are_rejected',
+            'startup_worker_authority_is_checked_before_any_thread_starts',
+            'pinned_startup_worker_source_is_transmitted_only_to_embedded_core',
+            'codexdd_046_3b2c_',
+            'codexdd_046_3b2k_',
+            'codexdd_046_3b2l_'
+          )
+          foreach ($filter in $filters) {
+            Write-Host "::group::Cargo test filter $filter"
+            $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              $listing | Out-Host
+              throw "Cannot enumerate Rust tests: $filter"
+            }
+            if (($listing -join "`n") -notmatch '[1-9][0-9]* tests?, 0 benchmarks') {
+              $listing | Out-Host
+              throw "No test discovered for filter: $filter"
+            }
+            & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2
+            if ($LASTEXITCODE -ne 0) { throw "Rust regression failed: $filter" }
+            Write-Host "::endgroup::"
+          }
+      - name: Execute 3B.2i-e real app-server candidate and cold-resume acceptance
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b2n_'
+          $listing = & cargo test --locked -p codex-app-server --test all $filter -- --list 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $listing | Out-Host
+            throw 'Cannot enumerate native app-server candidate acceptance'
+          }
+          if (($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            $listing | Out-Host
+            throw 'Expected exactly one native candidate-and-restart test'
+          }
+          & cargo test --locked -p codex-app-server --test all $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Real-process candidate authorization/cold-resume acceptance failed' }
+      - name: Report no release or installation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host 'GitHub source verification only. No deployment, install, release or production merge.'
+
+  windows-3b3b-native-provenance:
+    name: 3B.3b-3C.1b.2a Windows evidence contracts
+    # Explicit owner-directed GitHub-only scoped diagnostic: isolated disposable
+    # evidence fixtures, never a real project profile or release acceptance.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3b3b-native]') || contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]'))
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Isolate native Windows provenance fixture paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.3b wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production version baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3b3b'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Validate Core native receipt source-root summary
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'tools::handlers::codexdd_validation::tests::operator_summary_adds_run_and_candidate_identity_without_full_log_output'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --exact --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3B.3b expected exactly one Core operator-source-root summary test'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --exact --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3b native Core source-root receipt test failed' }
+      - name: Validate six TUI evidence identity and rejection regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b3b_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '6 tests, 0 benchmarks') {
+            throw '3B.3b expected exactly six TUI provenance fixture cases'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3b TUI source and gate provenance tests failed' }
+      - name: Validate four 3B.3c prerequisite-ledger negative controls
+        if: contains(github.event.head_commit.message, '[3b3c-native]') || contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b3c_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '4 tests, 0 benchmarks') {
+            throw '3B.3c expected exactly four source/runtime/Validator prerequisite fixtures'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3c pending gate and evidence invalidation regression failed' }
+      - name: Validate three 3B.3d checkpoint and fail-closed restore regressions
+        if: contains(github.event.head_commit.message, '[3b3d-native]') || contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b3d_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw '3B.3d expected exactly three source-bound checkpoint tests'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3d restart checkpoint and source isolation tests failed' }
+      - name: Validate three 3B.3d.2 durable protocol and rollout restart regressions
+        if: contains(github.event.head_commit.message, '[3b3d2-native]') || contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b3d2_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw '3B.3d.2 expected three typed protocol and pending-resume fixtures'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.3d.2 checkpoint persistence and Worker isolation failed' }
+      - name: Validate 3C.1a negative READY gate and existing RepairRequired control
+        if: contains(github.event.head_commit.message, '[3c1a-native]') || contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $groups = @(
+            @{ Filter = 'codexdd_046_3c1a_'; Count = 2 },
+            @{ Filter = 'green_reviewer_command_without_required_gates_cannot_claim_owner_qa'; Count = 1 },
+            @{ Filter = 'repair_required_terminal_overrides_armed_failure_pressure_and_admits_no_successor'; Count = 1 }
+          )
+          foreach ($group in $groups) {
+            $filter = $group.Filter
+            $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch "$($group.Count) tests?, 0 benchmarks") {
+              throw "3C.1a unexpected number of tests for $filter"
+            }
+            & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+            if ($LASTEXITCODE -ne 0) { throw "3C.1a READY/refusal regression failed for $filter" }
+          }
+      - name: Validate 3C.1b.1 two legacy READY replay negatives and old terminal compatibility
+        if: contains(github.event.head_commit.message, '[3c1b1-native]') || contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b1_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '2 tests, 0 benchmarks') {
+            throw '3C.1b.1 requires two exact legacy READY replay tests'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.1 legacy READY replay refusal failed' }
+          $legacy = 'restored_snapshot_preserves_non_ready_terminals_but_quarantines_unverified_ready'
+          $other = & cargo test --locked -p codex-tui --lib $legacy -- --list 2>&1
+          $otherExit = $LASTEXITCODE
+          $other | Out-Host
+          if ($otherExit -ne 0 -or ($other -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw '3C.1b.1 missing pre-existing terminal compatibility test'
+          }
+          & cargo test --locked -p codex-tui --lib $legacy -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.1 prior terminal compatibility failed' }
+      - name: Validate three 3C.1b.2a synthetic native independent review contract regressions
+        if: contains(github.event.head_commit.message, '[3c1b2a-native]')
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2a_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw '3C.1b.2a expected exactly three source-bound independent review contract cases'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2a independent review provenance matcher failed' }
+      - name: Confirm no source mutation, install or release
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3B.3b exact-source synthetic fixtures at $env:GITHUB_SHA; no native project acceptance or release."
+          git status --short
+
+  windows-3c1b2b-independent-core:
+    name: 3C.1b.2b native Core independent Validator producer and role refusal
+    # Source-scoped Windows unit proof only. No live external worker handoff,
+    # production approval, game worktrees, release or installation.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2b-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact independent-review source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Isolate native independent review Core test output
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2b wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong development branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong product baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2b'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Require exactly three native independent Core regression cases
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2b_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw '3C.1b.2b expected exactly three independent native Core cases'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2b independent Core producer/policy controls failed' }
+      - name: Report nonrelease Core-only boundary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2b Core-only source $env:GITHUB_SHA; independent Worker handoff and live READY remain unproven."
+          git status --short
+
+  windows-3c1b2c-validator-handoff:
+    name: 3C.1b.2c TUI native independent handoff evidence and READY refusal
+    # A source-only disposable Windows compile/test gate, not a live app-server
+    # handshake, real independent production PASS, project install or release.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2c-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction handoff source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify source identity and isolate Windows TUI test root
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2c wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong source branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2c'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Validate three source-bound TUI independent handoff regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2c_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw 'Expected exactly three live-state handoff and native review tests'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2c independent handoff/refusal regressions failed' }
+      - name: Recheck existing three independent receipt provenance controls
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2a_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw 'Earlier independent review matcher controls missing'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Prior independent review matcher regressed' }
+      - name: Confirm no distribution or game project changes
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2c source-only TUI fixtures $env:GITHUB_SHA; real cross-process validation and release remain open."
+          git status --short
+
+  windows-3c1b2d-independent-profile:
+    name: 3C.1b.2d real repo-owned independent profile and contract-v1 refusal
+    # Verifies the actual profile script exists, parses, has a fixed stage list
+    # and emits properly classified native event/exit results on Windows.
+    # The fixtures are NOT a real review or owner QA acceptance.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2d-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm exact 0.4.6 candidate identity and native scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong source checkout' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Unexpected product baseline' }
+          foreach ($file in @(
+            'scripts/codexdd-validation-common.ps1',
+            'scripts/codexdd-test-independent.ps1',
+            'scripts/codexdd-independent-profile-contract-tests.ps1'
+          )) {
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing $file" }
+          }
+      - name: Execute native independent review profile contract fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-independent-profile-contract-tests.ps1'
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2d independent profile script/contract regression failed' }
+      - name: Check existing implementation profile fixture compatibility
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-validation-contract-tests.ps1'
+          if ($LASTEXITCODE -ne 0) { throw 'Existing targeted contract profile regression failed' }
+      - name: Confirm checkout unchanged and no release
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2d Windows profile/contract fixtures on $env:GITHUB_SHA. NOT an independent Core PASS or owner READY."
+          git status --short
+
+  windows-3c1b2e-owner-gate-issuance:
+    name: 3C.1b.2e owner-issued native gate manifests and READY refusal
+    # Exact-source native Windows unit validation; no real independent worker,
+    # production app-server acceptance, BREAKWATER source or installation.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2e-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact source with no persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify branch and source and isolate Windows test target
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2e wrong Git SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2e'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath configuration failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Prove exactly one typed config manifest parser regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2e_'
+          $listing = & cargo test --locked -p codex-config --lib $filter -- --list 2>&1
+          $listingExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listingExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Missing 3C.1b.2e typed config/unknown-fields parser test'
+          }
+          & cargo test --locked -p codex-config --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2e config gate parser failed' }
+      - name: Prove five native TUI owner gate issuance and refusal regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2e_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listingExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listingExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '5 tests, 0 benchmarks') {
+            throw 'Expected five 3C.1b.2e source/operations/immutability/refusal cases'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2e owner gate issuance regressions failed' }
+      - name: Preserve prior source-bound independent handoff
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2c_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listingExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listingExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw 'Existing 3C.1b.2c native handoff cases not enumerated'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Existing independent handoff regressed' }
+      - name: State exact nonrelease boundary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2e unit fixtures at $env:GITHUB_SHA; no live owner QA, runtime listener, candidate promotion or installation."
+          git status --short
+
+  windows-3c1b2f-native-two-worker-core:
+    name: 3C.1b.2f native two-worker Core PASS and source/role refusal
+    # Exercises actual native Core tool handlers with two separately bound
+    # sessions and a clean disposable Git candidate. It is not full TUI/
+    # app-server handoff and does not assert production owner QA READY.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2f-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Confirm source identity and isolate Windows build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2f wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong source branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2f'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Prove exactly one real two-worker native Core integration test
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2f_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Expected one native two-Worker Core receipt/refusal test'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2f separate native Core handoff proof failed' }
+      - name: Recheck prior independent native producer role/security controls
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2b_'
+          $listing = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '3 tests, 0 benchmarks') {
+            throw 'Earlier independent Core role/source tests missing'
+          }
+          & cargo test --locked -p codex-core --lib $filter -- --test-threads=2 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Earlier independent Core gate regressed' }
+      - name: Preserve development-only boundary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2f native Core test only on $env:GITHUB_SHA; app-server/TUI interprocess handoff and release acceptance remain pending."
+          git status --short
+
+  windows-3c1b2g-appserver-native-two-threads:
+    name: 3C.1b.2g real app-server two-thread native receipts and cold resume
+    # Real Core built-in tools, two JSON-RPC threads and disposable Git source.
+    # No real TUI READY decision, production model, project install or release.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2g-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify branch and source and isolate Windows runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2g wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2g'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Verify one real app-server two-thread native receipt regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2g_'
+          $listing = & cargo test --locked -p codex-app-server --test all $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Exactly one native 3C.1b.2g app-server two-thread test required'
+          }
+          & cargo test --locked -p codex-app-server --test all $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Real app-server two-thread independent receipt/cold resume test failed' }
+      - name: Confirm no source modification or release
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2g disposable Windows app-server integration only at $env:GITHUB_SHA; TUI READY and release still pending."
+          git status --short
+
+  windows-3c1b2h-tui-native-ready:
+    name: 3C.1b.2h Windows TUI native receipt ingestion and READY gate refusals
+    # 3C.1b.2g already proved real separate app-server Core receipts and
+    # cold-resume. This is the next TUI event-router/gate admission seam;
+    # fixture notifications here are not another real app-server process.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2h-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Pin nonproduction Windows TUI source and isolated build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2h wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2h'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Validate exactly two new 3C.1b.2h TUI READY admission tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2h_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or ($listing -join [Environment]::NewLine) -notmatch '2 tests, 0 benchmarks') {
+            throw 'Expected exactly two TUI item/completed, gate and READY regressions'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2h TUI gate ingestion or READY refusal failed' }
+      - name: Recheck all three original 3C.1b.2c handoff regression cases
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2c_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $requiredNames = @(
+            'codexdd_046_3c1b2c_handoff_rejects_unterminalized_foreign_or_unpinned_source',
+            'codexdd_046_3c1b2c_live_handoff_preserves_exact_source_gates_without_terminal',
+            'codexdd_046_3c1b2c_native_completion_handoff_rechecks_source_and_review'
+          )
+          $reportedTests = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $reportedTests -notmatch '3 tests, 0 benchmarks') {
+            throw 'Expected exactly three existing 3C.1b.2c TUI handoff regressions'
+          }
+          foreach ($name in $requiredNames) {
+            if (-not $reportedTests.Contains($name)) { throw "Missing 3C.1b.2c regression: $name" }
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Original 3C.1b.2c handoff regressed' }
+      - name: Confirm no installation, release or source mutation
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2h nonproduction TUI fixture acceptance only at $env:GITHUB_SHA; native whole-TUI and 0.4.6 release gates still open."
+          git status --short
+
+  windows-3c1b2i-real-appserver-tui:
+    name: 3C.1b.2i actual native app-server stream into TUI gate and READY
+    # Windows-only complete Core + JSON-RPC + TUI reducer integration.
+    # Test fixture has no production keys, project access, installs or uploads.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2i-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout source SHA without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify source and isolate all Windows native build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2i wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2i'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Build actual Windows app-server process used by TUI integration test
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to build real 3C.1b.2i Windows app-server' }
+      - name: Run exactly one real native app-server-to-TUI handoff acceptance test
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2i_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2i_real_app_server_to_tui_native_ready_handoff')) {
+            throw 'Expected exactly one real source-bound native app-server-to-TUI regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2i real Windows app-server to TUI acceptance FAILED' }
+      - name: Preserve nonproduction and clean repository state
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "Nonproduction 3C.1b.2i Windows isolated candidate $env:GITHUB_SHA only; release and installation remain blocked."
+          git status --short
+
+  windows-3c1b2j1-app-routing:
+    name: 3C.1b.2j1 Windows App event routing and foreign READY refusal
+    # App event multiplexer / foreground buffer test only. Typed fixture
+    # notifications do not replace the Core-native proof in 3C.1b.2i.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j1-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j1 source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j1 wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run exactly one 3C.1b.2j1 native App-routing regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2j1_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence')) {
+            throw 'Expected exactly one normal App event-router and foreign READY refusal test'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j1 normal App routing failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j1 native App routing test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+  windows-3c1b2j2-validator-handoff:
+    name: 3C.1b.2j2 Windows automatic Validator handoff and missing/drifted SHA refusals
+    # App-managed source-bound fresh Validator lifecycle. Initial READY is
+    # a typed fixture; native Core receipts remain proved by 3C.1b.2i.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j2-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j2 source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j2 wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j2'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run exactly two 3C.1b.2j2 native Validator lifecycle tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2j2_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '2 tests, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j2_app_starts_pinned_fresh_validator_with_owner_gates') -or -not $all.Contains('codexdd_046_3c1b2j2_auto_validator_refuses_unpinned_moved_or_drifted_source')) {
+            throw 'Expected two source-bound fresh Validator handoff and refusal regressions'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j2 native Validator handoff or source refusal failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j2 native Validator lifecycle test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+  windows-3c1b2j3a-replay-refusal:
+    name: 3C.1b.2j3a Windows origin-bound automatic handoff and replay refusals
+    # App-owned automatic handoff event, checked against its original source.
+    # Cold-process app-server receipt proof remains a separate j3b gate.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3a-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j3a source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3a wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3a'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run two 3C.1b.2j3a App automatic-handoff replay regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2j3a_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '2 tests, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator') -or -not $all.Contains('codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded_state')) {
+            throw 'Expected two source-origin and replay refusal regressions'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3a origin-bound handoff or replay refusal failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j3a source-origin handoff replay test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+  windows-3c1b2j3b1-cold-checkpoint:
+    name: 3C.1b.2j3b1 Windows embedded cold app-server checkpoint and source-drift refusals
+    # Real embedded app-server shutdown/restart and TUI rollout mapping.
+    # This verifies pending gates and no replay of old READY/PASS.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b1-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j3b1 source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3b1 wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3b1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Run exactly one 3C.1b.2j3b1 embedded cold-restart regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2j3b1_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b1_real_cold_resume_keeps_gates_pending_and_refuses_source_drift')) {
+            throw 'Expected one real embedded cold-resume TUI gate-checkpoint regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b1 real cold-process restoration or drift refusal failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j3b1 cold-process checkpoint proof only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+  windows-3c1b2j3b2a-real-process:
+    name: 3C.1b.2j3b2a Windows real OS app-server restart and TUI gate-checkpoint refusal
+    # Separate OS app-server executable and the normal TUI remote client mapper.
+    # Historical READY/PASS must not return after real child shutdown and restart.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2a-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j3b2a source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3b2a wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3b2a'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Build isolated real app-server executable and run one 3C.1b.2j3b2a native TUI regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'Real app-server executable build failed' }
+          $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
+          $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
+          $filter = 'codexdd_046_3c1b2j3b2a_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b2a_real_os_restart_does_not_resurrect_ready_or_native_pass')) {
+            throw 'Expected exactly one real OS process TUI checkpoint regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --ignored --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2a real OS process restart or stale authority refusal failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j3b2a real OS process checkpoint test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+
+  windows-3c1b2j3b2b1-native-cross-process:
+    name: 3C.1b.2j3b2b1 real native two-Worker receipts across app-server restart
+    # One-shot exact-source native rerun after Rustfmt: verify source resume and stale replay rejection.
+    # Windows-only real app-server OS restart between original source and independent Validator native receipts.
+    # Test fixture has no production keys, project access, installs or uploads.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b1-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 100
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout source SHA without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify source and isolate all Windows native build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3b2b1 wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3b2b1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to Windows subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository Rust 1.95 toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure repository-verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Build exact Windows app-server executable for cold native two-Worker proof
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to build real 3C.1b.2j3b2b1 Windows app-server' }
+      - name: Run one cross-process Core-to-TUI receipt and replay-refusal regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3c1b2j3b2b1_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b2b1_real_native_receipts_across_restart_refuse_replay')) {
+            throw 'Expected exactly one cold native Core source-to-Validator replay regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2b1 native cross-process receipt/refusal FAILED' }
+      - name: Preserve nonproduction and clean repository state
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "Nonproduction 3C.1b.2j3b2b1 cold OS-process Native Worker candidate $env:GITHUB_SHA only; release and installation remain blocked."
+          git status --short
+
+  windows-3c1b2j3b2b2a-cold-app-routing:
+    name: 3C.1b.2j3b2b2a Windows real OS App event routing and cold automatic Validator replay refusal
+    # Exact-source native retest after verified Rustfmt fixes; guard source-PASS authority across cold OS restart.
+    # App foreground event buffer and source-bound automatic handoff after real cold OS restart.
+    # Synthetic old READY fixture never grants native PASS; full coupled native sequence still open.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b2a-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j3b2b2a source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3b2b2a wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3b2b2a'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Build isolated real app-server executable and run one 3C.1b.2j3b2b2a native TUI regression
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'Real app-server executable build failed' }
+          $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
+          $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
+          $filter = 'codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff')) {
+            throw 'Expected exactly one real OS cold App dispatcher regression'
+          }
+          & cargo test --locked -p codex-tui --lib $filter -- --ignored --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C.1b.2j3b2b2a real OS cold App event or stale handoff refusal failed' }
+          # Run the pinned-source restore guard independently, using the same compiled test binary.
+          $sourceGuard = 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
+          $guardList = & cargo test --locked -p codex-tui --lib $sourceGuard -- --list 2>&1
+          $guardExit = $LASTEXITCODE
+          $guardList | Out-Host
+          if ($guardExit -ne 0 -or ($guardList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Missing exact pinned-source cold restore guard'
+          }
+          & cargo test --locked -p codex-tui --lib $sourceGuard -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Source-pinned ready_for_validation cold restore guard failed' }
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j3b2b2a real OS cold App dispatcher negative test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+
+  windows-3c1b2j3b2b2b-positive-coupled:
+    name: 3C.1b.2j3b2b2b Windows positive App-owned two native Workers across real process restart
+    # Same source: five 3C.2 diagnostics, positive App/Core restart, two cold controls, two replay refusals and one foreign-routing refusal.
+    # Exact-source positive acceptance: authentic Core receipts via real WebSocket App routing and automatic Validator.
+    # Source Core PASS before child restart; App creates separate native Validator after restart; one READY.
+    # No fixture READY/PASS, no bypass, no active worktree, release and installation remain held.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3c1b2j3b2b2b-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout pinned nonproduction candidate without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify 3C.1b.2j3b2b2b source SHA and isolate Windows build paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3C.1b.2j3b2b2b wrong source SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong 0.4.6 branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Wrong production baseline' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3c1b2j3b2b2b'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native Windows test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Build real app-server and prove one positive App-owned native end-to-end Windows test
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'Real app-server executable build failed' }
+          $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw 'Real app-server exe absent' }
+          $env:CODEXDD_REAL_APP_SERVER_BIN = $binary
+          # No enumeration-only or accidentally ignored test can satisfy this exact-source native gate.
+          function Invoke-RequiredNativeTest {
+            param([string]$TestFilter, [int]$RequiredCount, [switch]$RunIgnored)
+            $nativeArgs = @('test', '--locked', '-p', 'codex-tui', '--lib', $TestFilter, '--')
+            if ($RunIgnored) { $nativeArgs += '--ignored' }
+            $nativeArgs += @('--test-threads=1', '--nocapture')
+            $result = & cargo @nativeArgs 2>&1
+            $nativeExit = $LASTEXITCODE
+            $result | Out-Host
+            $nativeText = $result -join [Environment]::NewLine
+            if ($nativeExit -ne 0 -or -not $nativeText.Contains("test result: ok. $RequiredCount passed; 0 failed; 0 ignored;")) {
+              throw "Exact-source native $TestFilter must report $RequiredCount passed, 0 failed, 0 ignored (exit=$nativeExit)"
+            }
+          }
+          # Run independent 3C.2 status diagnostics on the same exact compiled source first.
+          $statusFilter = 'codexdd_046_3c2'
+          $statusList = & cargo test --locked -p codex-tui --lib $statusFilter -- --list 2>&1
+          $statusExit = $LASTEXITCODE
+          $statusList | Out-Host
+          $statusOutput = $statusList -join [Environment]::NewLine
+          if ($statusExit -ne 0 -or $statusOutput -notmatch '5 tests, 0 benchmarks' -or -not $statusOutput.Contains('codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof') -or -not $statusOutput.Contains('codexdd_046_3c2a_status_reports_exact_pin_pending_gates_and_role_specific_tool') -or -not $statusOutput.Contains('codexdd_046_3c2a_cold_paused_status_never_implies_historic_ready') -or -not $statusOutput.Contains('codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice') -or -not $statusOutput.Contains('codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread')) {
+            throw 'Expected exactly five 3C.2a/b/c source/role/tool diagnostics'
+          }
+          Invoke-RequiredNativeTest -TestFilter $statusFilter -RequiredCount 5
+          $filter = 'codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          $all = $listing -join [Environment]::NewLine
+          if ($listExit -ne 0 -or $all -notmatch '1 test, 0 benchmarks' -or -not $all.Contains('codexdd_046_3c1b2j3b2b2b_real_app_owned_native_validator_after_restart')) {
+            throw 'Expected exactly one true App-owned two-Worker OS restart regression'
+          }
+          Invoke-RequiredNativeTest -TestFilter $filter -RequiredCount 1 -RunIgnored
+          # Current-source negative controls prevent a positive route from weakening cold replay refusal.
+          $negative = 'codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff'
+          $negativeList = & cargo test --locked -p codex-tui --lib $negative -- --list 2>&1
+          $negativeExit = $LASTEXITCODE
+          $negativeList | Out-Host
+          if ($negativeExit -ne 0 -or ($negativeList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Exactly one real-process cold App replay negative test must be present'
+          }
+          Invoke-RequiredNativeTest -TestFilter $negative -RequiredCount 1 -RunIgnored
+          $coldGuard = 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
+          $guardList = & cargo test --locked -p codex-tui --lib $coldGuard -- --list 2>&1
+          $guardExit = $LASTEXITCODE
+          $guardList | Out-Host
+          if ($guardExit -ne 0 -or ($guardList -join [Environment]::NewLine) -notmatch '1 test, 0 benchmarks') {
+            throw 'Exactly one source-pinned cold READY restoration guard must be present'
+          }
+          Invoke-RequiredNativeTest -TestFilter $coldGuard -RequiredCount 1
+          # Cover stale, duplicate, selected-thread and foreign READY routing on the identical native SHA.
+          $replayFilter = 'codexdd_046_3c1b2j3a_'
+          $replayList = & cargo test --locked -p codex-tui --lib $replayFilter -- --list 2>&1
+          $replayExit = $LASTEXITCODE
+          $replayList | Out-Host
+          $replayNames = $replayList -join [Environment]::NewLine
+          if ($replayExit -ne 0 -or $replayNames -notmatch '2 tests, 0 benchmarks' -or -not $replayNames.Contains('codexdd_046_3c1b2j3a_auto_handoff_refuses_duplicate_after_new_validator') -or -not $replayNames.Contains('codexdd_046_3c1b2j3a_auto_handoff_refuses_stale_origin_sha_and_reloaded_state')) {
+            throw 'Both exact-source duplicate/stale origin handoff refusals must be present'
+          }
+          Invoke-RequiredNativeTest -TestFilter $replayFilter -RequiredCount 2
+
+          $routingFilter = 'codexdd_046_3c1b2j1_'
+          $routingList = & cargo test --locked -p codex-tui --lib $routingFilter -- --list 2>&1
+          $routingExit = $LASTEXITCODE
+          $routingList | Out-Host
+          $routingNames = $routingList -join [Environment]::NewLine
+          if ($routingExit -ne 0 -or $routingNames -notmatch '1 test, 0 benchmarks' -or -not $routingNames.Contains('codexdd_046_3c1b2j1_app_routes_only_selected_thread_native_evidence')) {
+            throw 'Exact-source App foreground routing and foreign READY refusal must be present'
+          }
+          Invoke-RequiredNativeTest -TestFilter $routingFilter -RequiredCount 1
+
+      - name: Confirm nonproduction-only scoped regression
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "3C.1b.2j3b2b2b positive native App/Core OS-restart lifecycle test only at $env:GITHUB_SHA; full TUI, release and installation are not authorized."
+          git status --short
+
+  windows-3d1b1-owned-host-admission:
+    name: 3D.1b1 Windows source-pinned owned-host PID/port admission (no runtime PASS)
+    # Explicit opt-in, after source/format green; read-only admission plus disposable owned-child fixture.
+    # D02/D03 positive preflight and negative foreign-PID controls, NOT full operations evidence.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3d1b1-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact branch with no write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify immutable source and isolated native paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong native SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Nonproduction baseline modified' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1b1'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute exact D01-D03 preflight and prior 3C refusal regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Invoke-TestGroup {
+            param([string]$Name, [int]$ExpectedCount)
+            $list = & cargo test --locked -p codex-tui --lib $Name -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listText = $list -join [Environment]::NewLine
+            $list | Out-Host
+            if ($listExit -ne 0 -or -not $listText.Contains("$ExpectedCount test") -or -not $listText.Contains('0 benchmarks')) {
+              throw "Required $Name test enumeration missing (expected $ExpectedCount)"
+            }
+            $output = & cargo test --locked -p codex-tui --lib $Name -- --test-threads=1 --nocapture 2>&1
+            $exit = $LASTEXITCODE
+            $output | Out-Host
+            $text = $output -join [Environment]::NewLine
+            if ($exit -ne 0 -or -not $text.Contains("test result: ok. $ExpectedCount passed; 0 failed; 0 ignored;")) {
+              throw "Required $Name native pass missing ($ExpectedCount expected, exit=$exit)"
+            }
+          }
+          Invoke-TestGroup 'codexdd_046_3d1b1_' 1
+          Invoke-TestGroup 'codexdd_046_3d1b0_' 1
+          Invoke-TestGroup 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked' 1
+          Invoke-TestGroup 'codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice' 1
+      - name: Assert no source edits, release, runtime PASS or installed change
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "Source-pinned 3D.1b1 guarded admission and negative controls only. No host runtime receipt, benchmark, release or installation authorized."
+
+  windows-3d1b2-owned-live-http:
+    name: 3D.1b2 Windows source-pinned owner HTTP and transient ticket refusals (no gate PASS)
+    # Explicit opt-in, after source/format green; read-only admission plus disposable owned-child fixture.
+    # D02 real loopback owned PID plus HTTP 200 and 503 refusal; no native ledger PASS yet.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1b2-native]') || contains(github.event.head_commit.message, '[3d1b2b1-native]') || contains(github.event.head_commit.message, '[3d1b2b2-native]'))
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact branch with no write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify immutable source and isolated native paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Wrong native SHA' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Nonproduction baseline modified' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1b2'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpath setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native test subprocesses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use repository-pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Execute exact D01-D03 preflight and prior 3C refusal regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Invoke-TestGroup {
+            param([string]$Name, [int]$ExpectedCount)
+            $list = & cargo test --locked -p codex-tui --lib $Name -- --list 2>&1
+            $listExit = $LASTEXITCODE
+            $listText = $list -join [Environment]::NewLine
+            $list | Out-Host
+            if ($listExit -ne 0 -or -not $listText.Contains("$ExpectedCount test") -or -not $listText.Contains('0 benchmarks')) {
+              throw "Required $Name test enumeration missing (expected $ExpectedCount)"
+            }
+            $output = & cargo test --locked -p codex-tui --lib $Name -- --test-threads=1 --nocapture 2>&1
+            $exit = $LASTEXITCODE
+            $output | Out-Host
+            $text = $output -join [Environment]::NewLine
+            if ($exit -ne 0 -or -not $text.Contains("test result: ok. $ExpectedCount passed; 0 failed; 0 ignored;")) {
+              throw "Required $Name native pass missing ($ExpectedCount expected, exit=$exit)"
+            }
+          }
+          Invoke-TestGroup 'codexdd_046_3d1b2_' 2
+          Invoke-TestGroup 'codexdd_046_3d1b2b2_' 3
+          Invoke-TestGroup 'codexdd_046_3d1b2b1_' 2
+          Invoke-TestGroup 'codexdd_046_3d1b1_' 1
+          Invoke-TestGroup 'codexdd_046_3d1b0_' 1
+          Invoke-TestGroup 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked' 1
+          Invoke-TestGroup 'codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice' 1
+      - name: Assert no source edits, release, runtime PASS or installed change
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "Source-pinned 3D.1b2 guarded admission and negative controls only. No host runtime receipt, benchmark, release or installation authorized."
+
+  windows-3d1c-benchmark-native:
+    name: 3D.1c Windows source-pinned real 2-vs-4 guarded benchmark admission (no QA PASS)
+    # Owner-authorized disposable benchmark fixture only. No host/process manager.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3d1c-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 80
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify exact original SHA and disposable Windows paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Benchmark source mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Production baseline changed' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1c'
+          $target = Join-Path $root 'target'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $target, $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$target"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          $target = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe'
+          Copy-Item -LiteralPath $dotslash -Destination $target -Force
+      - name: Use pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure verified Windows V8 artifact
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      # The first native build is expensive on disposable Windows runners.
+      # Save the compiled, source-fingerprinted Cargo artifacts immediately
+      # after compilation so failing tests do not force another cold build.
+      # A restored cache NEVER substitutes for current-source test execution.
+      - name: Restore isolated Windows 3D.1c Rust build cache
+        id: benchmark-cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Compile source-bound native TUI tests once
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib --no-run
+          if ($LASTEXITCODE -ne 0) { throw 'Native TUI test compilation failed' }
+      - name: Save verified compiled Windows test cache before execution
+        if: steps.benchmark-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Run actual 2 and 4 OS-process benchmark measurements and refusal tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $group = 'codexdd_046_3d1c_'
+          $list = & cargo test --locked -p codex-tui --lib $group -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $list | Out-Host
+          if ($listExit -ne 0 -or -not (($list -join [Environment]::NewLine).Contains('3 tests, 0 benchmarks'))) {
+            throw 'Required three D01 native tests not enumerated'
+          }
+          $output = & cargo test --locked -p codex-tui --lib $group -- --test-threads=1 --nocapture 2>&1
+          $exit = $LASTEXITCODE
+          $output | Out-Host
+          if ($exit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 3 passed; 0 failed; 0 ignored;'))) {
+            throw "Native benchmark fixture failed (exit=$exit)"
+          }
+          # Real in-process Core must execute one harmless disposable agent command
+          # and emit its own source-authenticated start/completion lifecycle.
+          # This proves event ingress, NOT the two-command benchmark or QA gate.
+          $realCoreTest = 'codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycle'
+          $realCoreList = & cargo test --locked -p codex-tui --lib $realCoreTest -- --list 2>&1
+          $realCoreListExit = $LASTEXITCODE
+          $realCoreList | Out-Host
+          if ($realCoreListExit -ne 0 -or -not (($realCoreList -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'Required embedded Core command-ingress test not enumerated'
+          }
+          $realCoreOutput = & cargo test --locked -p codex-tui --lib $realCoreTest -- --test-threads=1 --nocapture 2>&1
+          $realCoreExit = $LASTEXITCODE
+          $realCoreOutput | Out-Host
+          if ($realCoreExit -ne 0 -or -not (($realCoreOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "Real embedded Core command-ingress test failed (exit=$realCoreExit)"
+          }
+          # First-owner command/lock must be immutable in memory and absent from
+          # persisted snapshots, new Validator Workers and forged source/scope.
+          $authorityTest = 'codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral'
+          $authorityList = & cargo test --locked -p codex-tui --lib $authorityTest -- --list 2>&1
+          $authorityListExit = $LASTEXITCODE
+          $authorityList | Out-Host
+          if ($authorityListExit -ne 0 -or -not (($authorityList -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'Required original-owner benchmark authority test not enumerated'
+          }
+          $authorityOutput = & cargo test --locked -p codex-tui --lib $authorityTest -- --test-threads=1 --nocapture 2>&1
+          $authorityExit = $LASTEXITCODE
+          $authorityOutput | Out-Host
+          if ($authorityExit -ne 0 -or -not (($authorityOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "Required original-owner benchmark authority pass missing (exit=$authorityExit)"
+          }
+          # Original launcher commands and lock must remain ephemeral to local
+          # embedded transport, and must not be inherited by remote sessions.
+          $startupTest = 'codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral'
+          $startupList = & cargo test --locked -p codex-tui --lib $startupTest -- --list 2>&1
+          $startupListExit = $LASTEXITCODE
+          $startupList | Out-Host
+          if ($startupListExit -ne 0 -or -not (($startupList -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'Required launcher-local benchmark regression not enumerated'
+          }
+          $startupOutput = & cargo test --locked -p codex-tui --lib $startupTest -- --test-threads=1 --nocapture 2>&1
+          $startupExit = $LASTEXITCODE
+          $startupOutput | Out-Host
+          if ($startupExit -ne 0 -or -not (($startupOutput -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "Launcher-local benchmark authority test failed (exit=$startupExit)"
+          }
+          # Native Windows coverage must exercise both no-fork executable authority
+          # and the earlier Phase 3C cold-resume source/READY refusal. Rustfmt
+          # and successful compilation alone do not establish these properties.
+          foreach ($protected in @(
+            'codexdd_046_3d1c2b_fork_refuses_inherited_original_benchmark_authority',
+            'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume'
+          )) {
+            $enumerated = & cargo test --locked -p codex-tui --lib $protected -- --list 2>&1
+            $enumeratedExit = $LASTEXITCODE
+            $enumerated | Out-Host
+            if ($enumeratedExit -ne 0 -or -not (($enumerated -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+              throw "Required fork/cold-resume refusal test not enumerated: $protected"
+            }
+            $verified = & cargo test --locked -p codex-tui --lib $protected -- --test-threads=1 --nocapture 2>&1
+            $verifiedExit = $LASTEXITCODE
+            $verified | Out-Host
+            if ($verifiedExit -ne 0 -or -not (($verified -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+              throw "Required fork/cold-resume refusal test failed: $protected (exit=$verifiedExit)"
+            }
+          }
+          $negative = 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked'
+          & cargo test --locked -p codex-tui --lib $negative -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Existing non-source gate refusal regressed' }
+      - name: Confirm no production, source edits, releases or installs
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "D01 isolated native admission only; no 3D acceptance, host manager, production or release."
+
+  windows-3b4-progress-native:
+    name: 3B.4 Windows no-progress cold-resume persistence and negative controls
+    # The checkpoint records retry pressure only. No native proof, QA PASS,
+    # host-process rights, release, install or benchmark authority is restored.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && contains(github.event.head_commit.message, '[3b4-native]')
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact source without write credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Pin isolated Windows 3B.4 Rust target
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw '3B.4 source identity mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Production version changed' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1c'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $root 'target')"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Expose DotSlash to native test children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          Copy-Item -LiteralPath $dotslash -Destination (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe') -Force
+      - name: Use pinned Rust 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure checksum-verified Windows V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Restore verified native Rust compilation cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Compile current-source TUI tests
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib --no-run
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 current-source TUI compile failed' }
+      - name: Verify eight 3B.4 persistence, replay, productive-turn and refusal regressions
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3b4_'
+          $listing = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listing | Out-Host
+          if ($listExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains('8 tests, 0 benchmarks'))) {
+            throw 'Expected exactly eight 3B.4 bounded-progress, replay and typed-refusal tests'
+          }
+          $output = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $output | Out-Host
+          if ($testExit -ne 0 -or -not (($output -join [Environment]::NewLine).Contains('test result: ok. 8 passed; 0 failed; 0 ignored;'))) {
+            throw "3B.4 native progress and refusal tests failed (exit=$testExit)"
+          }
+      - name: Protect previous native source cold-resume refusal
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3C pinned READY cold-resume refusal regressed' }
+          # Pure controller regression: a no-evidence continuation must not
+          # rearm a consumed transient-infrastructure retry on the same route.
+          & cargo test --locked -p codex-tui --lib retry_is_route_local_and_only_one_transient_retry_is_allowed -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 spent infrastructure retry was rearmed without evidence' }
+          & cargo test --locked -p codex-tui --lib genuine_native_activity_resets_no_progress_streak -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 real native activity no longer resets no-progress watchdog' }
+          & cargo test --locked -p codex-tui --lib control_only_tool_lookups_do_not_mask_implementation_stall -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw '3B.4 control-only queries masked missing progress' }
+          & cargo test --locked -p codex-history --lib workflow_state_rollout_records_round_trip_without_thread_identity -- --test-threads=1 --nocapture
+          if ($LASTEXITCODE -ne 0) { throw 'Legacy workflow history compatibility regressed' }
+      - name: Confirm nonrelease, nonproduction and clean source
+        if: always()
+        shell: pwsh
+        run: |
+          git status --short
+          Write-Host "3B.4 source-pinned non-authoritative retry-pressure checkpoint only; D02 and release gates remain open."
+
+  windows-3d1d-integrated-native:
+    name: 3D.1d Windows same-SHA D01-D03 plus 3B.4 and retained 3C safety baseline
+    # The D02 integrated native gate is opt-in; green source/format checks alone
+    # do not execute or satisfy the Windows Implementation -> Validator -> READY test.
+    # Use [3d1i-native] on an exact-source verification commit to run this gate.
+    # This is not a release or production Core runtime-health PASS.
+    if: github.event_name == 'push' && github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-agent-reliability' && (contains(github.event.head_commit.message, '[3d1d-native]') || contains(github.event.head_commit.message, '[3d1e-native]') || contains(github.event.head_commit.message, '[3d1f-native]') || contains(github.event.head_commit.message, '[3d1g-native]') || contains(github.event.head_commit.message, '[3d1h-native]') || contains(github.event.head_commit.message, '[3d1i-native]'))
+    needs: [source-contract, rust-format]
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact nonproduction source without credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Pin development SHA and isolated native work paths
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw 'Integrated source SHA mismatch' }
+          if ($env:GITHUB_REF -ne 'refs/heads/dd/codexdd-v0.4.6-agent-reliability') { throw 'Wrong development branch' }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -ne '0.4.4') { throw 'Protected production version drifted' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-3d1c'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $root 'target')"
+            "CARGO_NET_GIT_FETCH_WITH_CLI=true"
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'Git longpaths setup failed' }
+      - name: Install pinned DotSlash
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Make DotSlash available to native Core children
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          Copy-Item -LiteralPath $dotslash -Destination (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe') -Force
+      - name: Pin Rust toolchain 1.95
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - name: Configure checksum-verified Rusty V8
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Reuse source-revalidated Windows Cargo build cache
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/codexdd-046-3d1c/target
+          key: codexdd-046-3d1c-windows2022-rust195-v1-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Validate real direct local OS PID identity and driver refusal on Windows
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = 'codexdd_046_3d1d2_'
+          $listed = & cargo test --locked -p codex-utils-pty --lib $name -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('2 tests, 0 benchmarks'))) {
+            throw 'Missing OS-PID and driver-backed refusal tests on exact source'
+          }
+          $result = & cargo test --locked -p codex-utils-pty --lib $name -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 real OS PID identity or remote-driver refusal failed (exit=$testExit)"
+          }
+          Write-Host "D02 Core-owned local OS PID prereq: 2 verified native Windows tests; no health gate minted"
+      - name: Validate bounded Core-owned Windows TCP/HTTP observer and refusal controls
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1d3_'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('3 tests, 0 benchmarks'))) {
+            throw 'Expected exactly three Core-owned D02 listener/HTTP regressions'
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 3 passed; 0 failed; 0 ignored;'))) {
+            throw "Core-owned D02 listener/HTTP negative tests failed (exit=$testExit)"
+          }
+          Write-Host "D02 Core-native bounded TCP/HTTP proof: 3 checks passed; health admission remains PENDING"
+      - name: Verify original-owner Core health tool command and scope admission
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1e_'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('2 tests, 0 benchmarks'))) {
+            throw 'Expected two original-owner Core health admission regressions'
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 2 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 original-owner Core health authorization tests failed (exit=$testExit)"
+          }
+          Write-Host "Core original-owner gate authorization verified; no QA PASS minted"
+      - name: Check live Core QA review protocol and model argument refusal
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $spec = & cargo test --locked -p codex-app-server-protocol --lib codexdd_046_3d1f_ -- --test-threads=1 --nocapture 2>&1
+          $specExit = $LASTEXITCODE
+          $spec | Out-Host
+          if ($specExit -ne 0 -or -not (($spec -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 Core QA review protocol test failed (exit=$specExit)"
+          }
+          $core = & cargo test --locked -p codex-core --lib codexdd_046_3d1f_ -- --test-threads=1 --nocapture 2>&1
+          $coreExit = $LASTEXITCODE
+          $core | Out-Host
+          if ($coreExit -ne 0 -or -not (($core -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 Core QA argument integrity test failed (exit=$coreExit)"
+          }
+          Write-Host "D02 read-only QA path refuses forged model authority; final gate still pending."
+      - name: Compile exact-source native TUI test executable once
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & cargo test --locked -p codex-tui --lib --no-run
+          if ($LASTEXITCODE -ne 0) { throw 'Current-source integrated TUI tests did not compile' }
+      - name: Verify D02 exact original-child selection and one-use live QA admission
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Assert-NativeTests {
+            param([string]$Package, [int]$Expected)
+            $filter = 'codexdd_046_3d1g_'
+            $listing = & cargo test --locked -p $Package --lib $filter -- --list 2>&1
+            $listingExit = $LASTEXITCODE
+            $listing | Out-Host
+            if ($listingExit -ne 0 -or -not (($listing -join [Environment]::NewLine).Contains("$Expected tests, 0 benchmarks"))) {
+              throw "D02 one-use QA native test inventory failed: $Package"
+            }
+            $result = & cargo test --locked -p $Package --lib $filter -- --test-threads=1 --nocapture 2>&1
+            $exit = $LASTEXITCODE
+            $result | Out-Host
+            if ($exit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains("test result: ok. $Expected passed; 0 failed; 0 ignored;"))) {
+              throw "D02 one-use QA native regressions failed: $Package (exit=$exit)"
+            }
+          }
+          Assert-NativeTests -Package codex-core -Expected 2
+          Assert-NativeTests -Package codex-tui -Expected 4
+          $owner = & cargo test --locked -p codex-core --lib native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha -- --test-threads=1 --nocapture 2>&1
+          $ownerExit = $LASTEXITCODE
+          $owner | Out-Host
+          if ($ownerExit -ne 0 -or -not (($owner -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 operations-preview source-validation boundary failed (exit=$ownerExit)"
+          }
+          Write-Host 'D02 original Core child selection, operations preview route and replay refusal verified; full real-worker QA acceptance still pending.'
+      - name: Verify D02 independent operations-preview Validator is source-pinned
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1h_independent_operations_preview_keeps_role_and_sha_guard'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw 'D02 independent operations-preview native role and SHA test missing'
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 independent preview Validator acceptance failed (exit=$testExit)"
+          }
+          Write-Host 'Bounded independent operations-preview review verified; Core runtime health still separately required.'
+      - name: Verify D02 real Core-owned Windows HTTP 200 QA and cold-resume refusal
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1h_real_core_owned_http_review_and_cold_resume'
+          $listed = & cargo test --locked -p codex-app-server --test all $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 real Core-held health test missing or did not compile (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-app-server --test all $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 real Core-held Windows health QA acceptance failed (exit=$testExit)"
+          }
+          Write-Host 'Verified real Windows Core-owned HTTP health review, fresh observation and cold-resume refusal. Full independent TUI QA still requires acceptance.'
+      - name: Verify D02 native independent Validator tool exposure
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_native_independent_validator_preview_tool_admitted'
+          $listed = & cargo test --locked -p codex-core --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 native Validator tool exposure regression missing (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-core --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 independent operations-preview tool admission refused (exit=$testExit)"
+          }
+      - name: Verify D02 automatic Validator handoff stays on owner-pinned source
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_automatic_preview_validator_preserves_exact_source'
+          $listed = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 automatic Validator exact-source preflight missing (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 operations-preview automatic Validator source handoff failed (exit=$testExit)"
+          }
+      - name: Verify D02 native operations-preview receipt cannot bypass source or runtime gates
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_operations_validator_receipt_cannot_cross_source_gate'
+          $list = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $list | Out-Host
+          if ($listExit -ne 0 -or -not (($list -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 operations-review gate-binding test missing (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 operations-preview native receipt cross-gate refusal failed (exit=$testExit)"
+          }
+      - name: Verify D02 real Implementation to independent Validation to live QA READY
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $filter = 'codexdd_046_3d1i_real_ops_preview_independent_validator_live_qa_ready'
+          $listed = & cargo test --locked -p codex-tui --lib $filter -- --list 2>&1
+          $listExit = $LASTEXITCODE
+          $listed | Out-Host
+          if ($listExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains('1 test, 0 benchmarks'))) {
+            throw "D02 end-to-end native TUI/Core QA test absent at this SHA (exit=$listExit)"
+          }
+          $result = & cargo test --locked -p codex-tui --lib $filter -- --test-threads=1 --nocapture 2>&1
+          $testExit = $LASTEXITCODE
+          $result | Out-Host
+          if ($testExit -ne 0 -or -not (($result -join [Environment]::NewLine).Contains('test result: ok. 1 passed; 0 failed; 0 ignored;'))) {
+            throw "D02 real Core and independent Validator QA READY failed (exit=$testExit)"
+          }
+          Write-Host 'D02 real source-pinned Implementation, independent Validator, fresh Core OS/HTTP review and one-use READY verified.'
+      - name: Verify D01 D02 D03 C01-C05 and retained 3C regression matrix
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Invoke-NativeGroup {
+            param([string]$Filter, [int]$Expected)
+            $listed = & cargo test --locked -p codex-tui --lib $Filter -- --list 2>&1
+            $listingExit = $LASTEXITCODE
+            $listed | Out-Host
+            if ($listingExit -ne 0 -or -not (($listed -join [Environment]::NewLine).Contains("$Expected test" + $(if ($Expected -eq 1) { '' } else { 's' }) + ', 0 benchmarks'))) {
+              throw "Integrated test list mismatch for $Filter ($Expected required)"
+            }
+            $result = & cargo test --locked -p codex-tui --lib $Filter -- --test-threads=1 --nocapture 2>&1
+            $code = $LASTEXITCODE
+            $result | Out-Host
+            if ($code -ne 0 -or -not (($result -join [Environment]::NewLine).Contains("test result: ok. $Expected passed; 0 failed; 0 ignored;"))) {
+              throw "Integrated native test failed: $Filter (expected $Expected, exit=$code)"
+            }
+            Write-Host "VERIFIED_NATIVE_GROUP $Filter count=$Expected SHA=$env:GITHUB_SHA"
+          }
+          # Native 2 vs 4 comparison with independently authenticated local
+          # in-process Core lifecycle; a source-only PASS cannot substitute.
+          Invoke-NativeGroup 'codexdd_046_3d1c_' 3
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_real_embedded_core_exec_emits_authenticated_lifecycle' 1
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral' 1
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral' 1
+          Invoke-NativeGroup 'codexdd_046_3d1c2b_fork_refuses_inherited_original_benchmark_authority' 1
+          # Original owner-held disposable Child, real Windows PID/HTTP 200
+          # and 503; spoofed PID/wrong port/wildcard/ambiguous listener refuses.
+          Invoke-NativeGroup 'codexdd_046_3d1b2_' 2
+          Invoke-NativeGroup 'codexdd_046_3d1b2b1_' 2
+          Invoke-NativeGroup 'codexdd_046_3d1b2b2_' 3
+          Invoke-NativeGroup 'codexdd_046_3d1b1_' 1
+          Invoke-NativeGroup 'codexdd_046_3d1b0_' 1
+          # Unproductive/no-progress continuation and persistence guards.
+          Invoke-NativeGroup 'codexdd_046_3b4_' 8
+          # Preserve 3C cold resume and non-source gate refusal boundaries.
+          Invoke-NativeGroup 'codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume' 1
+          Invoke-NativeGroup 'codexdd_046_3c1b2e_operations_health_remains_pending_and_benchmark_is_blocked' 1
+          Invoke-NativeGroup 'codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice' 1
+          Write-Host "3D.1d focused integrated proof complete. Core-owned health producer and owner QA remain OPEN."
+      - name: Verify repository remains unchanged by native test execution
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $changes = git status --porcelain
+          $changes | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot verify clean source after integrated tests' }
+          if ($changes) { throw 'Integrated test unexpectedly modified checkout' }
+          Write-Host "One exact SHA; disposable Windows fixtures only. No installed CodexDD, production, release or trusted D02 receipt."

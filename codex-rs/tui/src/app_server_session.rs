@@ -106,6 +106,8 @@ use codex_app_server_protocol::ThreadMemoryModeSetResponse;
 use codex_app_server_protocol::ThreadMetadataGitInfoUpdateParams;
 use codex_app_server_protocol::ThreadMetadataUpdateParams;
 use codex_app_server_protocol::ThreadMetadataUpdateResponse;
+use codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewParams;
+use codex_app_server_protocol::ThreadOwnedRuntimeHealthReviewResponse;
 use codex_app_server_protocol::ThreadReadParams;
 use codex_app_server_protocol::ThreadReadResponse;
 use codex_app_server_protocol::ThreadResumeParams;
@@ -324,8 +326,68 @@ pub(crate) struct AppServerBootstrap {
     pub(crate) collaboration_modes: Vec<codex_protocol::config_types::CollaborationModeMask>,
 }
 
+/// Ephemeral provenance for events actually read from the app-server stream.
+///
+/// Only AppServerSession::next_observed_event constructs this value. A normal
+/// test-callable event handler cannot turn a separately supplied notification
+/// into a trusted local Core event. Even this token is NOT a benchmark receipt:
+/// command authorization, execution and held-lock continuity remain mandatory.
+pub(crate) struct AppServerObservedEvent {
+    event: AppServerEvent,
+    local_in_process_origin: bool,
+    origin_session_id: Uuid,
+}
+
+impl AppServerObservedEvent {
+    pub(crate) fn event(&self) -> &AppServerEvent {
+        &self.event
+    }
+
+    pub(crate) fn into_event(self) -> AppServerEvent {
+        self.event
+    }
+
+    /// An observation belongs only to the exact live embedded Core session
+    /// that read it. Reconnecting to a different Core instance cannot reuse
+    /// an older event's provenance, even when the thread ID is unchanged.
+    pub(crate) fn is_from_local_core_session(&self, session: &AppServerSession) -> bool {
+        self.local_in_process_origin
+            && self.origin_session_id == session.event_source_id
+            && session.uses_embedded_app_server()
+            && session.thread_params_mode == ThreadParamsMode::Embedded
+    }
+
+    /// Identify native command lifecycle notifications received through this
+    /// local Core session, never from a shaped or replayed protocol struct.
+    pub(crate) fn is_local_core_command_lifecycle(&self, session: &AppServerSession) -> bool {
+        if !self.is_from_local_core_session(session) {
+            return false;
+        }
+        match &self.event {
+            AppServerEvent::ServerNotification(notification) => match notification.as_ref() {
+                codex_app_server_protocol::ServerNotification::ItemStarted(start) => {
+                    matches!(
+                        &start.item,
+                        codex_app_server_protocol::ThreadItem::CommandExecution { .. }
+                    )
+                }
+                codex_app_server_protocol::ServerNotification::ItemCompleted(done) => {
+                    matches!(
+                        &done.item,
+                        codex_app_server_protocol::ThreadItem::CommandExecution { .. }
+                    )
+                }
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
+
 pub(crate) struct AppServerSession {
     client: AppServerClient,
+    /// Fresh opaque identity for this connection, never exported or persisted.
+    event_source_id: Uuid,
     next_request_id: i64,
     history_pagination: HashMap<ThreadId, history::ThreadHistoryPagination>,
     task_tool_threads: HashSet<ThreadId>,
@@ -433,6 +495,7 @@ impl AppServerSession {
     pub(crate) fn new(client: AppServerClient, thread_params_mode: ThreadParamsMode) -> Self {
         Self {
             client,
+            event_source_id: Uuid::new_v4(),
             next_request_id: 1,
             history_pagination: HashMap::new(),
             task_tool_threads: HashSet::new(),
@@ -586,6 +649,19 @@ impl AppServerSession {
 
     pub(crate) fn remote_cwd_override(&self) -> Option<&std::path::Path> {
         self.remote_cwd_override.as_deref()
+    }
+
+    /// The real OS-process WebSocket fixture is a same-host local daemon, not
+    /// a remote workspace. Keep production remote mode unchanged: only the
+    /// #[cfg(test)] native fixture may select the local-daemon parameter policy.
+    #[cfg(test)]
+    pub(crate) fn with_same_host_daemon_params_for_test(mut self) -> Self {
+        assert!(
+            !self.uses_embedded_app_server(),
+            "same-host daemon acceptance requires an independent app-server process"
+        );
+        self.thread_params_mode = ThreadParamsMode::Embedded;
+        self
     }
 
     pub(crate) fn uses_remote_workspace(&self) -> bool {
@@ -842,6 +918,22 @@ impl AppServerSession {
         self.client.next_event().await
     }
 
+    /// This is the only entry point that can attach local Core provenance to a
+    /// notification. Replayed, directly constructed or remote events cannot
+    /// acquire this observation marker through the regular App event handler.
+    pub(crate) async fn next_observed_event(&mut self) -> Option<AppServerObservedEvent> {
+        let local_in_process_origin = self.uses_embedded_app_server()
+            && self.thread_params_mode == ThreadParamsMode::Embedded;
+        self.client
+            .next_event()
+            .await
+            .map(|event| AppServerObservedEvent {
+                event,
+                local_in_process_origin,
+                origin_session_id: self.event_source_id,
+            })
+    }
+
     #[cfg(test)]
     pub(crate) async fn start_thread(&mut self, config: &Config) -> Result<AppServerStartedThread> {
         self.start_thread_with_session_start_source(
@@ -862,6 +954,14 @@ impl AppServerSession {
         remote_cwd_override: Option<&std::path::Path>,
         selected_profile: Option<&PermissionProfileSelection>,
     ) -> Result<AppServerStartedThread> {
+        // Bind launcher Worker authority before creating a Core thread. Both the
+        // direct startup path and this interactive start path must agree.
+        let startup_binding = config
+            .adaptive_worker
+            .as_ref()
+            .map(crate::adaptive_worker::configured_worker_authority)
+            .transpose()
+            .map_err(|message| color_eyre::eyre::eyre!(message))?;
         let request_id = self.next_request_id();
         let session_config = self.session_config_with_effective_service_tier(config);
         let mut params = thread_start_params_from_config(
@@ -918,6 +1018,25 @@ impl AppServerSession {
         started.task_tools_available = task_tools_available;
         if task_tools_available {
             self.remember_task_tool_thread(started.session.thread_id);
+        }
+        if let Some((context, preflight, ledger)) = startup_binding {
+            let lock_assignment = context.role
+                != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
+                || context.authorized_scope.is_some();
+            // Both transport and parameter mode must identify the local Core;
+            // same-host daemon or remote transports never inherit execution plans.
+            started.session.adaptive_effort.original_benchmark_config =
+                original_launcher_benchmark_config(
+                    config,
+                    self.thread_params_mode(),
+                    self.uses_embedded_app_server(),
+                    &context,
+                    preflight.as_ref(),
+                );
+            started.session.adaptive_effort.worker_context = context;
+            started.session.adaptive_effort.assignment_preflight = preflight;
+            started.session.adaptive_effort.gate_ledger = ledger;
+            started.session.adaptive_effort.worker_assignment_locked = lock_assignment;
         }
         Ok(started)
     }
@@ -1414,6 +1533,30 @@ impl AppServerSession {
             .wrap_err("thread/inject_items failed during TUI side conversation setup")
     }
 
+    /// Only a live embedded Core connection can supply a trustworthy QA
+    /// review. A remote session or a restored notification cannot pass.
+    pub(crate) async fn review_core_owned_runtime_health(
+        &mut self,
+        original_thread_id: ThreadId,
+    ) -> Result<ThreadOwnedRuntimeHealthReviewResponse> {
+        if self.thread_params_mode != ThreadParamsMode::Embedded || !self.uses_embedded_app_server()
+        {
+            color_eyre::eyre::bail!(
+                "SETUP_BLOCKED: D02 QA requires the original live embedded Core"
+            );
+        }
+        let request_id = self.next_request_id();
+        self.client
+            .request_typed(ClientRequest::ThreadOwnedRuntimeHealthReview {
+                request_id,
+                params: ThreadOwnedRuntimeHealthReviewParams {
+                    thread_id: original_thread_id.to_string(),
+                },
+            })
+            .await
+            .wrap_err("thread/ownedRuntimeHealth/review refused")
+    }
+
     pub(crate) async fn thread_workflow_state_update(
         &mut self,
         thread_id: ThreadId,
@@ -1836,15 +1979,45 @@ impl AppServerSession {
     }
 }
 
+/// Retain first-owner commands only for an actual local in-process Core.
+/// Parameter mode alone does not establish transport identity: a same-host
+/// daemon can use Embedded parameters while delivering untrusted external events.
+fn original_launcher_benchmark_config(
+    config: &Config,
+    thread_params_mode: ThreadParamsMode,
+    trusted_embedded_transport: bool,
+    context: &crate::adaptive_worker::AdaptiveWorkerContext,
+    pin: Option<&crate::adaptive_worker::AdaptiveWorkerPreflight>,
+) -> Option<codex_config::config_toml::AdaptiveWorkerConfigToml> {
+    (trusted_embedded_transport
+        && thread_params_mode == ThreadParamsMode::Embedded
+        && context.role == crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+        && pin.is_some_and(|pin| {
+            pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+        }))
+    .then(|| config.adaptive_worker.clone())
+    .flatten()
+    .filter(|original| original.benchmark.is_some())
+}
+
 pub(crate) async fn start_thread_with_request_handle(
     request_handle: AppServerRequestHandle,
     local_settings: &LocalSettings,
     config: Config,
     thread_params_mode: ThreadParamsMode,
+    trusted_embedded_transport: bool,
     remote_cwd_override: Option<PathBuf>,
     thread_tool_transport: ThreadToolTransport,
     launch_choices: StartupLaunchChoices,
 ) -> Result<AppServerStartedThread> {
+    // Validate configured authority *before* the app-server thread/start RPC.
+    // The first user message must never override a launcher-bound Worker.
+    let startup_binding = config
+        .adaptive_worker
+        .as_ref()
+        .map(crate::adaptive_worker::configured_worker_authority)
+        .transpose()
+        .map_err(|message| color_eyre::eyre::eyre!(message))?;
     let request_id = RequestId::String(format!("startup-thread-start-{}", Uuid::new_v4()));
     let mut params = thread_start_params_from_config(
         &config,
@@ -1866,8 +2039,27 @@ pub(crate) async fn start_thread_with_request_handle(
         started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
             .await?;
     started.task_tools_available = task_tools_available;
-    if let Some(binding) = config.adaptive_worker.clone() {
-        started.session.adaptive_effort.worker_context = binding.into();
+    if let Some((context, preflight, ledger)) = startup_binding {
+        // An explicitly configured role or scope is immutable; an intentionally
+        // unspecified empty startup role remains eligible for its first header.
+        let lock_assignment = context.role
+            != crate::adaptive_worker::AdaptiveWorkerRole::Unspecified
+            || context.authorized_scope.is_some();
+        // Keep the original benchmark commands transient and local. Neither
+        // Embedded parameters on an external transport nor a remote thread
+        // may recover executable owner authority from startup configuration.
+        started.session.adaptive_effort.original_benchmark_config =
+            original_launcher_benchmark_config(
+                &config,
+                thread_params_mode,
+                trusted_embedded_transport,
+                &context,
+                preflight.as_ref(),
+            );
+        started.session.adaptive_effort.worker_context = context;
+        started.session.adaptive_effort.assignment_preflight = preflight;
+        started.session.adaptive_effort.gate_ledger = ledger;
+        started.session.adaptive_effort.worker_assignment_locked = lock_assignment;
     }
     Ok(started)
 }
@@ -2043,6 +2235,19 @@ fn config_request_overrides_from_config(
     }
     if config.bypass_hook_trust {
         overrides.insert("bypass_hook_trust".to_string(), true.into());
+    }
+    // The TUI launcher may construct an immutable Worker pin after loading
+    // config layers (for example when starting a managed nested worktree).
+    // Propagate a pinned binding to the embedded Core runtime; otherwise the
+    // native LVO handler would still use its own nearest-CWD Git root.
+    // Do not leak local host paths to a remote backend.
+    if thread_params_mode == ThreadParamsMode::Embedded
+        && let Some(binding) = config.adaptive_worker.as_ref()
+        && (binding.source_root.is_some()
+            || binding.source_sha.is_some()
+            || binding.task_kind.is_some())
+    {
+        overrides.insert("adaptive_worker".to_string(), serde_json::json!(binding));
     }
     Some(overrides)
 }
@@ -2450,7 +2655,7 @@ async fn thread_session_state_from_thread_start_response(
 async fn thread_session_state_from_thread_resume_response(
     response: &ThreadResumeResponse,
     local_settings: &LocalSettings,
-    _thread_params_mode: ThreadParamsMode,
+    thread_params_mode: ThreadParamsMode,
 ) -> Result<ThreadSessionState, String> {
     // The server owns restored rules. This legacy projection is for display only;
     // normal turns do not send it back as an execution override.
@@ -2481,7 +2686,71 @@ async fn thread_session_state_from_thread_resume_response(
     .await?;
     session.collaboration_mode = response.collaboration_mode.clone().map(Box::new);
     session.daybreak_enabled = response.thread.daybreak_enabled.unwrap_or(false);
+    // Only an embedded, same-thread Core cold resume can reconcile a previously
+    // locked TUI pin. Forks and remote responses may not acquire local Worker authority.
+    reconcile_resumed_core_worker(
+        &mut session.adaptive_effort,
+        response.codexdd_first_worker.as_ref(),
+        session.cwd.as_path(),
+        matches!(thread_params_mode, ThreadParamsMode::Embedded),
+        session.forked_from_id.is_some(),
+    )
+    .await;
     Ok(session)
+}
+
+/// Reconcile the separately persisted TUI Workflow state from the matching
+/// embedded Core's durable resume snapshot. This never creates a new Worker
+/// assignment, silently rebinds scope/root, or substitutes the current Git HEAD.
+async fn reconcile_resumed_core_worker(
+    state: &mut crate::chatwidget::adaptive_effort::AdaptiveEffortState,
+    core_worker: Option<&codex_protocol::protocol::CodexddFirstWorkerSnapshot>,
+    runtime_cwd: &std::path::Path,
+    embedded: bool,
+    forked: bool,
+) {
+    if !embedded || forked {
+        return;
+    }
+    let Some(worker) = core_worker else {
+        return;
+    };
+    let current = state.assignment_preflight.clone();
+    let context = state.worker_context.clone();
+    let locked = state.worker_assignment_locked;
+    let core = worker.clone();
+    let cwd = runtime_cwd.to_path_buf();
+    // The TUI Git child has per-step deadlines and direct-child reaping.
+    // Keep an outer budget above their aggregate worst case, without
+    // accepting a source pin when either boundary fails.
+    let checked = tokio::time::timeout(
+        std::time::Duration::from_secs(35),
+        tokio::task::spawn_blocking(move || {
+            crate::adaptive_worker::reconcile_core_candidate_preflight(
+                current.as_ref(),
+                &context,
+                locked,
+                &core,
+                cwd.as_path(),
+            )
+        }),
+    )
+    .await;
+    match checked {
+        Ok(Ok(Ok(Some(pin)))) => state.assignment_preflight = Some(pin),
+        Ok(Ok(Ok(None))) => {}
+        Ok(Ok(Err(blocker))) => {
+            tracing::warn!(%blocker, "refusing Core candidate pin on TUI cold resume");
+        }
+        Ok(Err(error)) => {
+            tracing::warn!(%error, "Core candidate cold-resume preflight task failed");
+        }
+        Err(_) => {
+            tracing::warn!(
+                "Core candidate cold-resume preflight timed out; keeping TUI pin unchanged"
+            );
+        }
+    }
 }
 
 async fn thread_session_state_from_thread_fork_response(
@@ -2649,6 +2918,10 @@ pub(crate) fn app_server_rate_limit_snapshots(
     snapshots
 }
 
+#[cfg(all(test, windows))]
+#[path = "app_server_session/real_process_restart_tests.rs"]
+pub(crate) mod real_process_restart_tests;
+
 #[cfg(test)]
 #[path = "app_server_session/reasoning_defaults_tests.rs"]
 mod reasoning_defaults_tests;
@@ -2660,6 +2933,10 @@ mod workspace_roots_tests;
 #[cfg(test)]
 #[path = "app_server_session/prompt_history_tests.rs"]
 mod prompt_history_tests;
+
+#[cfg(all(test, windows))]
+#[path = "app_server_session/live_core_command_tests.rs"]
+mod live_core_command_tests;
 
 #[cfg(test)]
 mod tests {
@@ -2964,6 +3241,252 @@ mod tests {
                 "{message}"
             );
         }
+    }
+
+    #[tokio::test]
+    async fn pinned_startup_worker_source_is_transmitted_only_to_embedded_core() {
+        use codex_config::config_toml::AdaptiveWorkerConfigToml;
+        use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+        let temp = tempfile::tempdir().expect("tempdir");
+        let mut config = build_config(&temp).await;
+        let root = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let sha = "a".repeat(40);
+        config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("approved isolated candidate".to_string()),
+            source_root: Some(root.to_string()),
+            source_sha: Some(sha.clone()),
+            task_kind: Some("source_change".to_string()),
+            required_gates: None,
+            benchmark: None,
+        });
+        let local =
+            thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
+        let config_map = local.config.expect("launcher config map");
+        let pinned = config_map
+            .get("adaptive_worker")
+            .expect("native core must receive startup pin");
+        assert_eq!(pinned["source_root"], serde_json::json!(root));
+        assert_eq!(pinned["source_sha"], serde_json::json!(sha));
+        assert_eq!(pinned["task_kind"], "source_change");
+
+        let remote = thread_start_params_from_config(&config, ThreadParamsMode::Remote, None, None);
+        assert!(
+            remote
+                .config
+                .as_ref()
+                .is_none_or(|config| !config.contains_key("adaptive_worker")),
+            "local host source paths must not be transmitted to remote runtimes"
+        );
+
+        config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("legacy unpinned worker".to_string()),
+            source_root: None,
+            source_sha: None,
+            task_kind: None,
+            required_gates: None,
+            benchmark: None,
+        });
+        let legacy =
+            thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
+        assert!(
+            legacy
+                .config
+                .as_ref()
+                .is_none_or(|config| !config.contains_key("adaptive_worker")),
+            "old Workers must retain prior startup override behavior"
+        );
+    }
+
+    // Observe the real server's thread-created event through the production
+    // transport reader. A manually constructed App event cannot mint the
+    // ephemeral origin marker used by the benchmark provenance boundary.
+    async fn codexdd_046_3d1c2b_read_native_thread_start(
+        session: &mut AppServerSession,
+        thread_id: ThreadId,
+    ) -> Result<AppServerObservedEvent> {
+        let deadline =
+            tokio::time::Instant::now() + std::time::Duration::from_secs(/*secs*/ 10);
+        for _ in 0..20 {
+            let event = tokio::time::timeout_at(deadline, session.next_observed_event())
+                .await?
+                .ok_or_else(|| color_eyre::eyre::eyre!("native Core stream ended"))?;
+            if matches!(
+                event.event(),
+                AppServerEvent::ServerNotification(notification)
+                    if matches!(
+                        notification.as_ref(),
+                        codex_app_server_protocol::ServerNotification::ThreadStarted(start)
+                            if start.thread.id == thread_id.to_string()
+                    )
+            ) {
+                return Ok(event);
+            }
+        }
+        color_eyre::eyre::bail!("bounded local Core stream did not emit the thread start")
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3d1c2b_launcher_benchmark_only_local_ephemeral() -> Result<()> {
+        use codex_config::config_toml::AdaptiveOwnerBenchmarkToml;
+        use codex_config::config_toml::AdaptiveWorkerConfigToml;
+        use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+        let temp = tempfile::tempdir()?;
+        let candidate = temp.path().join("benchmark-candidate");
+        std::fs::create_dir(&candidate)?;
+        let run_git = |args: &[&str]| -> Result<String> {
+            let output = std::process::Command::new("git")
+                .current_dir(&candidate)
+                .args(args)
+                .output()?;
+            assert!(output.status.success(), "test Git failed: {output:?}");
+            Ok(String::from_utf8(output.stdout)?)
+        };
+        run_git(&["init", "-q"])?;
+        run_git(&[
+            "-c",
+            "user.name=CodexDD fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-q",
+            "-m",
+            "isolated benchmark",
+        ])?;
+        let sha = run_git(&["rev-parse", "HEAD"])?.trim().to_string();
+        let mut config = ConfigBuilder::default()
+            .codex_home(temp.path().to_path_buf())
+            .harness_overrides(ConfigOverrides {
+                cwd: Some(candidate.clone()),
+                ..ConfigOverrides::default()
+            })
+            .build()
+            .await?;
+        config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Implementation,
+            authorized_scope: Some("original launcher benchmark".to_string()),
+            source_root: Some(candidate.to_string_lossy().to_string()),
+            source_sha: Some(sha),
+            task_kind: Some("benchmark".to_string()),
+            required_gates: None,
+            benchmark: Some(AdaptiveOwnerBenchmarkToml {
+                command_2: "owner-approved-two".to_string(),
+                command_4: "owner-approved-four".to_string(),
+                resource_lock: temp
+                    .path()
+                    .join("benchmark.lock")
+                    .to_string_lossy()
+                    .to_string(),
+                max_duration_ms: 20_000,
+            }),
+        });
+
+        let mut local = crate::start_embedded_app_server_for_picker(&config).await?;
+        assert!(
+            local.uses_embedded_app_server()
+                && local.thread_params_mode() == ThreadParamsMode::Embedded,
+            "only a real embedded transport may be the origin of a trusted native stream"
+        );
+        let started = local.start_thread(&config).await?;
+        let observed =
+            codexdd_046_3d1c2b_read_native_thread_start(&mut local, started.session.thread_id)
+                .await?;
+        assert!(
+            observed.is_from_local_core_session(&local),
+            "only the real in-process Core reader may produce local event provenance"
+        );
+        assert!(
+            !observed.is_local_core_command_lifecycle(&local),
+            "a Core thread-start event is not a benchmark command receipt"
+        );
+        // A new in-process Core instance is not the original source, even
+        // though it runs on this same machine and uses embedded parameters.
+        let another_core = crate::start_embedded_app_server_for_picker(&config).await?;
+        assert!(
+            !observed.is_from_local_core_session(&another_core),
+            "stale Core events cannot inherit the new session's trusted origin"
+        );
+        another_core.shutdown().await?;
+        let owner = &started.session.adaptive_effort;
+        assert!(owner.worker_assignment_locked);
+        assert_eq!(
+            owner
+                .bound_original_benchmark()
+                .expect("local launcher retains original benchmark authority")
+                .benchmark
+                .as_ref()
+                .expect("approved commands")
+                .command_2,
+            "owner-approved-two"
+        );
+        let durable =
+            serde_json::to_string(&owner.durable_workflow_snapshot(started.session.thread_id))?;
+        assert!(!durable.contains("owner-approved-two"));
+        assert!(!durable.contains("owner-approved-four"));
+        assert!(
+            original_launcher_benchmark_config(
+                &config,
+                ThreadParamsMode::Embedded,
+                false,
+                &owner.worker_context,
+                owner.assignment_preflight.as_ref(),
+            )
+            .is_none(),
+            "same-host daemon parameters do not imply trusted in-process Core"
+        );
+        assert!(
+            original_launcher_benchmark_config(
+                &config,
+                ThreadParamsMode::Remote,
+                true,
+                &owner.worker_context,
+                owner.assignment_preflight.as_ref(),
+            )
+            .is_none(),
+            "remote thread parameters cannot retain local benchmark authority"
+        );
+        local.shutdown().await?;
+
+        // A remote session cannot borrow local launcher command/lock authority.
+        let mut remote = crate::start_embedded_app_server_for_picker(&config).await?;
+        remote.thread_params_mode = ThreadParamsMode::Remote;
+        assert!(
+            remote.uses_embedded_app_server()
+                && remote.thread_params_mode() != ThreadParamsMode::Embedded,
+            "even a local Core process with remote parameters cannot yield trusted owner events"
+        );
+        let remote_started = remote.start_thread(&config).await?;
+        let remote_event = codexdd_046_3d1c2b_read_native_thread_start(
+            &mut remote,
+            remote_started.session.thread_id,
+        )
+        .await?;
+        assert!(
+            !remote_event.is_from_local_core_session(&remote),
+            "remote thread parameters must not acquire trusted local Core provenance"
+        );
+        assert!(
+            !remote_event.is_local_core_command_lifecycle(&remote),
+            "an untrusted transport may never authorize benchmark command evidence"
+        );
+        assert!(
+            remote_started
+                .session
+                .adaptive_effort
+                .bound_original_benchmark()
+                .is_err(),
+            "remote must not inherit launcher-local benchmark commands"
+        );
+        remote.shutdown().await?;
+        Ok(())
     }
 
     #[tokio::test]
@@ -3844,8 +4367,17 @@ mod tests {
                     ),
                     attempt_number: 3,
                     paused_by_user: false,
+                    transient_retry_consumed: Some(false),
+                    unfinished_turn_pressure: Some(0),
+                    last_processed_turn_id: None,
+                    consecutive_no_native_progress_turns: Some(0),
+                    last_no_native_progress_turn_id: None,
                     worker_role: "implementation".to_string(),
                     authorized_scope: Some("detached fork regression".to_string()),
+                    assignment_task_kind: None,
+                    authorized_source_root: None,
+                    authorized_source_sha: None,
+                    gate_checkpoint: None,
                     worker_assignment_locked: true,
                     workflow_terminal: None,
                 }),
@@ -4262,6 +4794,349 @@ mod tests {
         );
     }
 
+    /// A new embedded app-server process must restore TUI gate requirements
+    /// from the recorded rollout, but not a previous Validator READY/PASS.
+    /// The fixture does not create new Core-native receipts or reauthorize a
+    /// moved source SHA: those remain separate real-producer test boundaries.
+    #[tokio::test]
+    async fn codexdd_046_3c1b2j3b1_real_cold_resume_keeps_gates_pending_and_refuses_source_drift()
+    -> Result<()> {
+        use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+        use crate::adaptive_gate_prerequisites::AdaptiveGateState;
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        use crate::adaptive_policy::AdaptiveEffort;
+        use crate::adaptive_policy::AdaptiveFamily;
+        use crate::adaptive_worker::AdaptiveTaskKind;
+        use crate::adaptive_worker::AdaptiveWorkerContext;
+        use crate::adaptive_worker::AdaptiveWorkerPreflight;
+        use crate::adaptive_worker::AdaptiveWorkerRole;
+        use crate::adaptive_worker::AdaptiveWorkflowTerminal;
+
+        let home = tempfile::tempdir()?;
+        let source = tempfile::tempdir()?;
+        let source_root = source.path().canonicalize()?;
+        let git = |args: &[&str]| -> Result<String> {
+            let result = std::process::Command::new("git")
+                .arg("-C")
+                .arg(&source_root)
+                .args(args)
+                .output()?;
+            assert!(
+                result.status.success(),
+                "fixture Git command failed: {}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            Ok(String::from_utf8(result.stdout)?.trim().to_string())
+        };
+        git(&["init", "-q"])?;
+        git(&[
+            "-c",
+            "user.name=CodexDD cold-resume fixture",
+            "-c",
+            "user.email=codexdd@example.invalid",
+            "commit",
+            "--allow-empty",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "approved original source",
+        ])?;
+        let approved_sha = git(&["rev-parse", "HEAD"])?;
+        let scope = "3C.1b.2j3b1 authorized separate Validator";
+        let config = build_config(&home).await;
+        let thread_id = ThreadId::from_string(
+            &create_fake_rollout(
+                home.path(),
+                "2025-01-05T12-00-00",
+                "2025-01-05T12:00:00Z",
+                "Saved independent Validator assignment",
+                Some(config.model_provider_id.as_str()),
+                /*git_info*/ None,
+            )
+            .map_err(|error| {
+                color_eyre::eyre::eyre!("failed to create Validator rollout: {error}")
+            })?,
+        )?;
+
+        let mut original = crate::chatwidget::adaptive_effort::AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::High),
+            attempt_number: 1,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Validation,
+                authorized_scope: Some(scope.to_string()),
+            },
+            worker_assignment_locked: true,
+            assignment_preflight: Some(AdaptiveWorkerPreflight {
+                task_kind: AdaptiveTaskKind::SourceChange,
+                source_root: source_root.display().to_string(),
+                source_sha: approved_sha.clone(),
+            }),
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+            ..Default::default()
+        };
+        original.gate_ledger = Some(
+            AdaptiveGateLedger::new(
+                scope,
+                &source_root,
+                &approved_sha,
+                vec![
+                    AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                    AdaptiveRequiredGate::IndependentValidation,
+                ],
+            )
+            .map_err(|reason| {
+                color_eyre::eyre::eyre!("invalid Validator gate fixture: {reason}")
+            })?,
+        );
+        let persisted = original.durable_workflow_snapshot(thread_id);
+        assert!(
+            persisted.gate_checkpoint.is_some(),
+            "original owner gate requirements must have a durable checkpoint"
+        );
+        assert_eq!(
+            persisted.workflow_terminal.as_deref(),
+            Some("ready_for_owner_qa")
+        );
+
+        let settings = LocalSettings::from(&config);
+        let mut first = crate::start_embedded_app_server_for_picker(&config).await?;
+        first
+            .resume_thread(
+                &settings,
+                config.clone(),
+                thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        first
+            .thread_workflow_state_update(
+                thread_id,
+                ThreadWorkflowStateOperation::SetAdaptiveState,
+                Some("historical-validator-ready-turn".to_string()),
+                Some(persisted),
+            )
+            .await?;
+        first.shutdown().await?;
+
+        // Spawn a fresh embedded app-server, not an in-memory reuse of the
+        // previous session. The TUI mapper rehydrates its rollout checkpoint.
+        let mut cold = crate::start_embedded_app_server_for_picker(&config).await?;
+        let resumed = cold
+            .resume_thread(
+                &settings,
+                config.clone(),
+                thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        assert_eq!(resumed.session.thread_id, thread_id);
+        let restored = &resumed.session.adaptive_effort;
+        assert_eq!(restored.worker_context.role, AdaptiveWorkerRole::Validation);
+        assert_eq!(
+            restored.worker_context.authorized_scope.as_deref(),
+            Some(scope)
+        );
+        assert!(restored.worker_assignment_locked);
+        assert_eq!(
+            restored
+                .assignment_preflight
+                .as_ref()
+                .expect("same-thread source pin preserved")
+                .source_sha,
+            approved_sha
+        );
+        assert_eq!(restored.workflow_terminal, None);
+        assert!(
+            restored.paused_by_user,
+            "historical READY cannot resume as trusted"
+        );
+        assert_eq!(restored.review_origin_thread_id, None);
+        assert_eq!(restored.evidence_registry.len(), 0);
+        assert!(restored.pending_signal.is_none());
+        assert!(restored.successor_admission.is_none());
+        let outstanding = restored
+            .gate_ledger
+            .as_ref()
+            .expect("restored exact owner requirements")
+            .outstanding(&restored.evidence_registry);
+        assert_eq!(outstanding.len(), 2);
+        assert!(
+            outstanding
+                .iter()
+                .all(|gate| gate.state == AdaptiveGateState::Pending),
+            "historical Core PASS receipts cannot be replayed from a gate checkpoint"
+        );
+        cold.shutdown().await?;
+
+        // A different Git HEAD must not be promoted by another cold resume.
+        git(&[
+            "-c",
+            "user.name=CodexDD cold-resume fixture",
+            "-c",
+            "user.email=codexdd@example.invalid",
+            "commit",
+            "--allow-empty",
+            "--no-gpg-sign",
+            "-q",
+            "-m",
+            "unapproved changed HEAD",
+        ])?;
+        assert_ne!(git(&["rev-parse", "HEAD"])?, approved_sha);
+        let mut moved = crate::start_embedded_app_server_for_picker(&config).await?;
+        let stale = moved
+            .resume_thread(
+                &settings,
+                config.clone(),
+                thread_id,
+                ResumeModelSettings::RestoreFromThread,
+            )
+            .await?;
+        let stale_state = &stale.session.adaptive_effort;
+        assert_eq!(stale_state.workflow_terminal, None);
+        assert_eq!(stale_state.evidence_registry.len(), 0);
+        assert!(stale_state.paused_by_user);
+        assert_eq!(
+            stale_state
+                .assignment_preflight
+                .as_ref()
+                .expect("saved original pin, not current Git HEAD")
+                .source_sha,
+            approved_sha,
+            "cold resume must not silently repin to a later checkout"
+        );
+        assert!(
+            crate::adaptive_worker::preflight_mechanical_target(
+                stale_state.assignment_preflight.as_ref(),
+                &source_root,
+            )
+            .is_err(),
+            "changed HEAD must refuse exact-source validation"
+        );
+        moved.shutdown().await?;
+
+        // Unavailable original worktree cannot recover a gate checkpoint.
+        std::fs::remove_dir_all(&source_root)?;
+        let mut missing = crate::start_embedded_app_server_for_picker(&config).await?;
+        assert!(
+            missing
+                .resume_thread(
+                    &settings,
+                    config,
+                    thread_id,
+                    ResumeModelSettings::RestoreFromThread,
+                )
+                .await
+                .is_err(),
+            "removed owner root must not restore a trusted Validator session"
+        );
+        missing.shutdown().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant() {
+        let repo = tempfile::tempdir().expect("isolated source");
+        let root = repo.path();
+        let git = |args: &[&str]| -> String {
+            let result = std::process::Command::new("git")
+                .arg("-C")
+                .arg(root)
+                .args(args)
+                .output()
+                .expect("Git fixture");
+            assert!(
+                result.status.success(),
+                "Git failed: {}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            String::from_utf8(result.stdout)
+                .expect("Git output")
+                .trim()
+                .to_string()
+        };
+        git(&["init"]);
+        git(&["config", "user.email", "codexdd-resume@example.invalid"]);
+        git(&["config", "user.name", "CodexDD resume fixture"]);
+        std::fs::write(root.join("source.txt"), "original").expect("first file");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "first source"]);
+        let original_sha = git(&["rev-parse", "HEAD"]);
+        std::fs::write(root.join("source.txt"), "authorized successor").expect("next file");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "authorized successor"]);
+        let candidate_sha = git(&["rev-parse", "HEAD"]);
+
+        let mut state = crate::chatwidget::adaptive_effort::AdaptiveEffortState::default();
+        state.worker_context = crate::adaptive_worker::AdaptiveWorkerContext {
+            role: crate::adaptive_worker::AdaptiveWorkerRole::Implementation,
+            authorized_scope: Some("approved source packet".to_string()),
+        };
+        state.worker_assignment_locked = true;
+        state.assignment_preflight = Some(crate::adaptive_worker::AdaptiveWorkerPreflight {
+            task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+            source_root: root.display().to_string(),
+            source_sha: original_sha.clone(),
+        });
+        let core = codex_protocol::protocol::CodexddFirstWorkerSnapshot {
+            role: "implementation".to_string(),
+            authorized_scope: "approved source packet".to_string(),
+            source_root: Some(root.display().to_string()),
+            source_sha: Some(candidate_sha.clone()),
+            task_kind: Some("source_change".to_string()),
+        };
+        // Remote clients, forks and absent native credentials never rebind the pin.
+        reconcile_resumed_core_worker(&mut state, Some(&core), root, false, false).await;
+        reconcile_resumed_core_worker(&mut state, Some(&core), root, true, true).await;
+        reconcile_resumed_core_worker(&mut state, None, root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            original_sha
+        );
+
+        reconcile_resumed_core_worker(&mut state, Some(&core), root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            candidate_sha
+        );
+        assert_eq!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Implementation
+        );
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("approved source packet")
+        );
+
+        let mut invalid = core.clone();
+        invalid.authorized_scope = "other scope".to_string();
+        reconcile_resumed_core_worker(&mut state, Some(&invalid), root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            candidate_sha
+        );
+
+        std::fs::write(root.join("source.txt"), "later candidate").expect("later file");
+        git(&["add", "source.txt"]);
+        git(&["commit", "-m", "later candidate"]);
+        let later_sha = git(&["rev-parse", "HEAD"]);
+        std::fs::write(root.join("preserve-untracked.txt"), "user edit").expect("user edit");
+        invalid = core;
+        invalid.source_sha = Some(later_sha);
+        reconcile_resumed_core_worker(&mut state, Some(&invalid), root, true, false).await;
+        assert_eq!(
+            state.assignment_preflight.as_ref().unwrap().source_sha,
+            candidate_sha
+        );
+        assert_eq!(
+            std::fs::read_to_string(root.join("preserve-untracked.txt"))
+                .expect("user edit retained"),
+            "user edit"
+        );
+    }
+
     #[tokio::test]
     async fn resume_response_restores_turns_from_thread_items() {
         let temp_dir = tempfile::tempdir().expect("tempdir");
@@ -4271,6 +5146,7 @@ mod tests {
         let read_only_profile = PermissionProfile::read_only();
         let response = ThreadResumeResponse {
             disabled_plugin_ids: Vec::new(),
+            codexdd_first_worker: None,
             thread: codex_app_server_protocol::Thread {
                 originator: None,
                 environments: None,
@@ -4364,6 +5240,14 @@ mod tests {
             turns_backwards_cursor: None,
             items_backwards_cursor: None,
         };
+
+        // Older app-servers omit the additive Core Worker field. The resume
+        // payload must remain backward-compatible and confer no new authority.
+        let mut legacy = serde_json::to_value(&response).expect("resume JSON");
+        legacy.as_object_mut().unwrap().remove("codexddFirstWorker");
+        let decoded: ThreadResumeResponse =
+            serde_json::from_value(legacy).expect("legacy resume JSON");
+        assert!(decoded.codexdd_first_worker.is_none());
 
         let started = started_thread_from_resume_response(
             response.clone(),

@@ -1,6 +1,7 @@
 mod adaptive_signal;
 pub(crate) mod apply_patch;
 pub(crate) mod apply_patch_spec;
+mod codexdd_owned_runtime;
 mod codexdd_validation;
 mod current_time;
 mod dynamic;
@@ -60,6 +61,9 @@ pub use adaptive_signal::AdaptiveSignalHandler;
 pub use apply_patch::ApplyPatchHandler;
 use codex_protocol::models::AdditionalPermissionProfile;
 use codex_protocol::protocol::AskForApproval;
+pub use codexdd_owned_runtime::CodexDDOwnedRuntimeHealthHandler;
+pub(crate) use codexdd_owned_runtime::original_owner_preview_gate;
+pub use codexdd_validation::CodexDDIndependentValidationHandler;
 pub use codexdd_validation::CodexDDValidationHandler;
 pub use current_time::CurrentTimeHandler;
 pub use dynamic::DynamicToolHandler;

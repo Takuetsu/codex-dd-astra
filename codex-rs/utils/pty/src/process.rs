@@ -109,6 +109,9 @@ type ResizeFn = Box<dyn FnMut(TerminalSize) -> anyhow::Result<()> + Send>;
 
 /// Handle for driving an interactive process (PTY or pipe).
 pub struct ProcessHandle {
+    /// OS identity captured from the direct local child spawn; never a
+    /// synthetic terminal session ID or a guessed PID from model output.
+    local_os_pid: Option<u32>,
     writer_tx: StdMutex<Option<mpsc::Sender<Vec<u8>>>>,
     killer: StdMutex<Option<Box<dyn ChildTerminator>>>,
     reader_handle: StdMutex<Option<JoinHandle<()>>>,
@@ -136,6 +139,7 @@ impl ProcessHandle {
     pub(crate) fn new(
         writer_tx: mpsc::Sender<Vec<u8>>,
         killer: Box<dyn ChildTerminator>,
+        local_os_pid: Option<u32>,
         reader_handle: JoinHandle<()>,
         reader_abort_handles: Vec<AbortHandle>,
         writer_handle: JoinHandle<()>,
@@ -146,6 +150,7 @@ impl ProcessHandle {
         resizer: Option<ResizeFn>,
     ) -> Self {
         Self {
+            local_os_pid,
             writer_tx: StdMutex::new(Some(writer_tx)),
             killer: StdMutex::new(Some(killer)),
             reader_handle: StdMutex::new(Some(reader_handle)),
@@ -175,6 +180,17 @@ impl ProcessHandle {
     /// True if the child process has exited.
     pub fn has_exited(&self) -> bool {
         self.exit_status.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    /// Read-only direct-child OS identity while its owned process handle is live.
+    /// An OS PID alone is not a runtime-health receipt; callers must still
+    /// verify original Core owner, exact launch, listener and fresh HTTP health.
+    /// Driver-backed/remote sessions intentionally have no local OS identity.
+    pub fn live_local_os_pid(&self) -> Option<u32> {
+        if self.has_exited() {
+            return None;
+        }
+        self.local_os_pid.filter(|pid| *pid != 0)
     }
 
     /// Returns the exit code if known.
@@ -459,6 +475,7 @@ pub fn spawn_from_driver(driver: ProcessDriver) -> SpawnedProcess {
             #[cfg(windows)]
             interrupt_terminates,
         }),
+        /*local_os_pid*/ None,
         reader_handle,
         stderr_reader_handle
             .map(|handle| handle.abort_handle())

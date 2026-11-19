@@ -215,6 +215,19 @@ impl UnifiedExecProcess {
         }
     }
 
+    /// A direct local child has a real OS PID held by Core's process session.
+    /// Never substitute a synthetic exec-process ID or a remote driver ID.
+    /// This is only a live identity lookup, not health or gate authorization.
+    pub(super) fn live_local_os_pid(&self) -> Option<u32> {
+        if self.has_exited() || self.timed_out() {
+            return None;
+        }
+        match &self.process_handle {
+            ProcessHandle::Local(process_handle) => process_handle.live_local_os_pid(),
+            ProcessHandle::ExecServer(_) => None,
+        }
+    }
+
     pub(super) fn exit_code(&self) -> Option<i32> {
         if self.timed_out() {
             return Some(124);

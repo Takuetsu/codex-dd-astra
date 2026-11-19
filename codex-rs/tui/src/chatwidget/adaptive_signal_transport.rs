@@ -15,6 +15,8 @@ impl ChatWidget {
             return;
         };
         let source_turn_id = notification.signal.source_turn_id.clone();
+        let is_owner_qa_signal =
+            notification.signal.signal_kind == AdaptiveRuntimeSignalKind::ReadyForOwnerQa;
         notification.signal.evidence_refs.sort();
         notification.signal.evidence_refs.dedup();
 
@@ -131,6 +133,13 @@ impl ChatWidget {
             let trusted_signal_consumed =
                 self.consume_adaptive_signal_at_terminal(source_turn_id.as_str());
             if !trusted_signal_consumed {
+                // A late, explicitly rejected owner-QA claim is not an unfinished
+                // turn. Never silently convert it into another Validation attempt:
+                // the Core-native independent review and owner gates remain
+                // mandatory, and the refused signal is already tombstoned.
+                if is_owner_qa_signal {
+                    return;
+                }
                 self.apply_adaptive_unfinished_authorized_turn(source_turn_id.as_str());
             }
             // Same-route continuations can be admitted immediately. Route-changing continuations

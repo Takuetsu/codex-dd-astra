@@ -26,6 +26,7 @@ fn spawn_startup_thread_start(
 ) {
     let request_handle = app_server.request_handle();
     let thread_params_mode = app_server.thread_params_mode();
+    let trusted_embedded_transport = app_server.uses_embedded_app_server();
     let remote_cwd_override = app_server.remote_cwd_override().map(Path::to_path_buf);
     let thread_tool_transport = app_server.thread_tool_transport();
     tokio::spawn(async move {
@@ -34,6 +35,7 @@ fn spawn_startup_thread_start(
             &local_settings,
             config,
             thread_params_mode,
+            trusted_embedded_transport,
             remote_cwd_override,
             thread_tool_transport,
             launch_choices,
@@ -1334,10 +1336,10 @@ See the Codex keymap documentation for supported actions and examples."
                             app.handle_exit_mode(&mut app_server, ExitMode::ShutdownFirst).await
                         }
                     }
-                    app_server_event = app_server.next_event(), if listen_for_app_server_events && !app.reconnect.offline
+                    app_server_event = app_server.next_observed_event(), if listen_for_app_server_events && !app.reconnect.offline
                         && (matches!(app.app_server_target, AppServerTarget::Embedded) || !has_pending_app_events) => {
                         match app_server_event {
-                            Some(event) => app.handle_app_server_event(&app_server, event).await,
+                            Some(event) => app.handle_observed_app_server_event(&app_server, event).await,
                             None => {
                                 listen_for_app_server_events = false;
                                 app.begin_reconnect();

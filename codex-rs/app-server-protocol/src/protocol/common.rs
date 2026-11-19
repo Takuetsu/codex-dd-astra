@@ -878,6 +878,13 @@ client_request_definitions! {
         serialization: thread_id(params.thread_id),
         response: v2::ThreadInjectItemsResponse,
     },
+    /// Read-only D02 recheck on the original live Core process store.
+    /// This is not a persisted PASS or permission to emit READY.
+    ThreadOwnedRuntimeHealthReview => "thread/ownedRuntimeHealth/review" {
+        params: v2::ThreadOwnedRuntimeHealthReviewParams,
+        serialization: thread_id(params.thread_id),
+        response: v2::ThreadOwnedRuntimeHealthReviewResponse,
+    },
     /// Persist a codex-dd workflow-terminal mutation without creating model-visible history.
     ThreadWorkflowStateUpdate => "thread/workflowState/update" {
         params: v2::ThreadWorkflowStateUpdateParams,
@@ -4537,6 +4544,7 @@ mod tests {
         let notification =
             ServerNotification::ThreadSettingsUpdated(v2::ThreadSettingsUpdatedNotification {
                 thread_id: "thr_123".to_string(),
+                codexdd_first_worker: None,
                 thread_settings: v2::ThreadSettings {
                     disabled_plugin_ids: Vec::new(),
                     cwd: absolute_path("/tmp/repo"),

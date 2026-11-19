@@ -4,6 +4,7 @@
 use super::session::Session;
 use super::session::SessionSettingsUpdate;
 use super::step_settings::StepSettingsUpdate;
+use super::worker_authority::CandidateShaAuthorization;
 use crate::WithTurnExtensionData;
 use crate::config::ConstraintResult;
 use codex_history::RolloutItem;
@@ -17,15 +18,97 @@ use codex_thread_store::ThreadStoreResult;
 use tokio::sync::SemaphorePermit;
 
 impl Session {
-    /// Captures and flushes current settings under the shared persistence permit.
+    /// Retains the established thread-settings checkpoint API for callers that
+    /// only need a successful write or error, without exposing Worker authority.
     pub(crate) async fn checkpoint_thread_settings(&self) -> ThreadStoreResult<()> {
+        self.checkpoint_thread_settings_with_durability()
+            .await
+            .map(|_| ())
+    }
+
+    /// Captures and flushes current settings under the shared persistence permit.
+    /// No live recorder means no durable first-message authority can be granted.
+    pub(crate) async fn checkpoint_thread_settings_with_durability(
+        &self,
+    ) -> ThreadStoreResult<bool> {
         let _settings_guard = acquire_persistence_lock(self).await;
-        if let Some(live_thread) = self.live_thread() {
-            live_thread
-                .append_items(&[RolloutItem::EventMsg(applied_event(self).await)])
-                .await?;
-            live_thread.flush().await?;
-        }
+        let Some(live_thread) = self.live_thread() else {
+            return Ok(false);
+        };
+        live_thread
+            .append_items(&[RolloutItem::EventMsg(applied_event(self).await)])
+            .await?;
+        live_thread.flush().await?;
+        Ok(true)
+    }
+    /// Bind an explicitly requested descendant only after the native thread
+    /// store appends and flushes its exact same-thread settings snapshot.
+    /// No Core/TUI execution authority is changed on validation or IO failure.
+    pub(crate) async fn authorize_candidate_sha(
+        &self,
+        requested: &CandidateShaAuthorization,
+    ) -> Result<(), String> {
+        let _settings_guard = acquire_persistence_lock(self).await;
+        let Some(live_thread) = self.live_thread() else {
+            return Err(
+                "SETUP_BLOCKED: candidate source requires a live durable thread store".to_string(),
+            );
+        };
+        let worker_authority = {
+            let state = tokio::time::timeout(std::time::Duration::from_secs(15), self.state.lock())
+                .await
+                .map_err(|_| {
+                    "SETUP_BLOCKED: timed out acquiring Core Worker state for candidate".to_string()
+                })?;
+            state.first_worker_authority.clone()
+        };
+        // Git performs blocking process IO. Do not hold SessionState or occupy
+        // Core's async executor while inspecting an untrusted worktree.
+        let candidate = requested.clone();
+        let prospective = tokio::time::timeout(
+            std::time::Duration::from_secs(35),
+            tokio::task::spawn_blocking(move || {
+                worker_authority.verified_candidate_snapshot(&candidate)
+            }),
+        )
+        .await
+        .map_err(|_| {
+            "SETUP_BLOCKED: candidate preflight exceeded its total 35-second budget".to_string()
+        })?
+        .map_err(|err| format!("SETUP_BLOCKED: candidate Git preflight task failed: {err}"))??;
+        let mut snapshot = self.thread_settings_snapshot().await;
+        snapshot.codexdd_first_worker = Some(prospective.clone());
+        let msg = EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
+            thread_id: Some(self.thread_id()),
+            thread_settings: snapshot.clone(),
+        });
+        live_thread
+            .append_items(&[RolloutItem::EventMsg(msg)])
+            .await
+            .map_err(|error| {
+                format!("SETUP_BLOCKED: candidate checkpoint append failed: {error}")
+            })?;
+        live_thread.flush().await.map_err(|error| {
+            format!("SETUP_BLOCKED: candidate checkpoint flush failed: {error}")
+        })?;
+        // The persistence permit excludes competing settings checkpoints.
+        // Any interrupted step after flush is recovered from the native record.
+        self.state
+            .lock()
+            .await
+            .first_worker_authority
+            .apply_durable_candidate(requested, &prospective)?;
+        // The matching embedded TUI needs a trusted Core-owned post-flush
+        // settings notification. Never emit this before native persistence
+        // succeeds; the event itself does not add another durable checkpoint.
+        self.send_event_raw_without_materializing_rollout(Event {
+            id: format!("codexdd-candidate-{}", requested.candidate_sha),
+            msg: EventMsg::ThreadSettingsApplied(ThreadSettingsAppliedEvent {
+                thread_id: Some(self.thread_id()),
+                thread_settings: snapshot,
+            }),
+        })
+        .await;
         Ok(())
     }
 }

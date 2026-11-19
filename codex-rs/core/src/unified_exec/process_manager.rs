@@ -3,6 +3,7 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::num::NonZeroUsize;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -28,6 +29,7 @@ use crate::plugins::metrics::finish_and_track_measurements;
 use crate::sandboxing::ExecOptions;
 use crate::sandboxing::ExecRequest;
 use crate::sandboxing::ExecServerEnvConfig;
+use crate::session::session::Session;
 use crate::tools::ApprovalContext;
 use crate::tools::context::ExecCommandToolOutput;
 use crate::tools::events::ToolEmitter;
@@ -446,6 +448,213 @@ fn terminate_process_on_network_denial(
 }
 
 impl UnifiedExecProcessManager {
+    /// D02 read-only identity lookup for a directly launched local process.
+    /// The caller MUST obtain the expected argv and cwd from immutable owner
+    /// authority, not a model-supplied claim. The Core Arc owner, original
+    /// call ID, exact launch argv, cwd and live OS handle must all match.
+    ///
+    /// This method does not probe HTTP, create a receipt, mint READY, adopt
+    /// foreign processes or authorize any new execution.
+    pub(crate) async fn inspect_owned_local_os_pid(
+        &self,
+        original_session: &Arc<Session>,
+        exec_session_id: i32,
+        original_call_id: &str,
+        original_owner_command: &[String],
+        original_owner_cwd: &PathUri,
+    ) -> Result<u32, &'static str> {
+        if original_call_id.is_empty() || original_owner_command.is_empty() {
+            return Err("SETUP_BLOCKED: missing original Core call or owner command");
+        }
+        let store = self.process_store.lock().await;
+        let entry = store
+            .processes
+            .get(&exec_session_id)
+            .ok_or("SETUP_BLOCKED: no live Core-owned exec session")?;
+        let session = entry
+            .session
+            .upgrade()
+            .ok_or("SETUP_BLOCKED: original Core session is gone")?;
+        if !Arc::ptr_eq(&session, original_session)
+            || entry.call_id != original_call_id
+            || entry.original_command.as_slice() != original_owner_command
+            || entry.cwd != *original_owner_cwd
+        {
+            return Err("SETUP_BLOCKED: Core owner, original command or cwd mismatch");
+        }
+        entry.process.live_local_os_pid().ok_or(
+            "SETUP_BLOCKED: no live local OS process handle; remote and exited sessions refuse",
+        )
+    }
+
+    /// D02: a bounded read-only HTTP observation made only for the exact
+    /// owner-held local Core exec session. Both the OS listener and the Core
+    /// process store are rechecked. This does NOT create a gate receipt.
+    #[cfg(windows)]
+    #[allow(dead_code)]
+    pub(crate) async fn observe_core_owned_loopback_health(
+        &self,
+        original_session: &Arc<Session>,
+        exec_session_id: i32,
+        original_call_id: &str,
+        original_owner_command: &[String],
+        original_owner_cwd: &PathUri,
+        approved_port: u16,
+    ) -> Result<super::owned_runtime_health::CoreOwnedLoopbackObservation, String> {
+        if approved_port == 0 {
+            return Err("SETUP_BLOCKED: missing exact approved health port".to_string());
+        }
+        let before = self
+            .inspect_owned_local_os_pid(
+                original_session,
+                exec_session_id,
+                original_call_id,
+                original_owner_command,
+                original_owner_cwd,
+            )
+            .await
+            .map_err(str::to_string)?;
+        // Windows TCP owner lookup and HTTP I/O are synchronous and bounded.
+        // Keep them off the async executor and never hold the process-store
+        // mutex while probing a listener.
+        let observed = tokio::task::spawn_blocking(move || {
+            super::owned_runtime_health::observe_read_only_owned_loopback(before, approved_port)
+        })
+        .await
+        .map_err(|error| format!("SETUP_BLOCKED: native health worker failed: {error}"))??;
+        let after = self
+            .inspect_owned_local_os_pid(
+                original_session,
+                exec_session_id,
+                original_call_id,
+                original_owner_command,
+                original_owner_cwd,
+            )
+            .await
+            .map_err(str::to_string)?;
+        if before != after || observed.owner_pid != after || observed.approved_port != approved_port
+        {
+            return Err(
+                "SETUP_BLOCKED: original Core owner changed during health observation".to_string(),
+            );
+        }
+        Ok(observed)
+    }
+
+    /// Only the Core process store supplies the original launch identity:
+    /// a model can name an exec session but cannot approve argv, cwd or PID.
+    /// The original process must remain held by this exact Core Session.
+    #[cfg(windows)]
+    pub(crate) async fn observe_original_owner_approved_health(
+        &self,
+        original_session: &Arc<Session>,
+        exec_session_id: i32,
+        approved_argv: &[String],
+        approved_root: &Path,
+        approved_port: u16,
+    ) -> Result<super::owned_runtime_health::CoreOwnedLoopbackObservation, String> {
+        if exec_session_id <= 0 || approved_argv.is_empty() || approved_port == 0 {
+            return Err(
+                "SETUP_BLOCKED: missing bounded original owner runtime authority".to_string(),
+            );
+        }
+        let approved_root = approved_root
+            .canonicalize()
+            .map_err(|_| "SETUP_BLOCKED: original owner checkout unavailable".to_string())?;
+        let (call_id, launch_cwd) = {
+            let store = self.process_store.lock().await;
+            let entry = store
+                .processes
+                .get(&exec_session_id)
+                .ok_or("SETUP_BLOCKED: original Core-owned process no longer exists")?;
+            let session = entry
+                .session
+                .upgrade()
+                .ok_or("SETUP_BLOCKED: original Core process session expired")?;
+            let observed_root = entry
+                .cwd
+                .to_abs_path()
+                .map_err(|_| "SETUP_BLOCKED: original process cwd is not local")?
+                .as_path()
+                .canonicalize()
+                .map_err(|_| "SETUP_BLOCKED: original process cwd disappeared")?;
+            if !Arc::ptr_eq(&session, original_session)
+                || entry.call_id.is_empty()
+                || entry.original_command.as_slice() != approved_argv
+                || observed_root != approved_root
+            {
+                return Err(
+                    "SETUP_BLOCKED: process lacks original Core owner, argv or checkout"
+                        .to_string(),
+                );
+            }
+            (entry.call_id.clone(), entry.cwd.clone())
+        };
+        self.observe_core_owned_loopback_health(
+            original_session,
+            exec_session_id,
+            &call_id,
+            approved_argv,
+            &launch_cwd,
+            approved_port,
+        )
+        .await
+    }
+
+    /// QA does not receive or select a model-supplied Core exec session ID.
+    /// Only one live original-session child with exact approved argv, root,
+    /// and direct OS handle can qualify. Ambiguity and cold resume refuse.
+    #[cfg(windows)]
+    pub(crate) async fn observe_unique_owner_approved_health(
+        &self,
+        original_session: &Arc<Session>,
+        approved_argv: &[String],
+        approved_root: &Path,
+        approved_port: u16,
+    ) -> Result<super::owned_runtime_health::CoreOwnedLoopbackObservation, String> {
+        if approved_argv.is_empty() || approved_port == 0 {
+            return Err("SETUP_BLOCKED: missing original owner argv or port".to_string());
+        }
+        let canonical_root = approved_root
+            .canonicalize()
+            .map_err(|_| "SETUP_BLOCKED: original owner root unavailable".to_string())?;
+        let eligible = {
+            let store = self.process_store.lock().await;
+            store
+                .processes
+                .iter()
+                .filter_map(|(&session_id, entry)| {
+                    let held_session = entry.session.upgrade()?;
+                    if !Arc::ptr_eq(&held_session, original_session)
+                        || entry.call_id.is_empty()
+                        || entry.original_command.as_slice() != approved_argv
+                        || entry.process.live_local_os_pid().is_none()
+                    {
+                        return None;
+                    }
+                    let entry_root = entry
+                        .cwd
+                        .to_abs_path()
+                        .ok()?
+                        .as_path()
+                        .canonicalize()
+                        .ok()?;
+                    (entry_root == canonical_root).then_some(session_id)
+                })
+                .take(2)
+                .collect::<Vec<_>>()
+        };
+        let session_id = unique_original_owner_session_id(eligible)?;
+        self.observe_original_owner_approved_health(
+            original_session,
+            session_id,
+            approved_argv,
+            &canonical_root,
+            approved_port,
+        )
+        .await
+    }
+
     pub(crate) async fn allocate_process_id(&self) -> i32 {
         loop {
             let mut store = self.process_store.lock().await;
@@ -1212,6 +1421,7 @@ impl UnifiedExecProcessManager {
             plugin_metrics_sidecar: plugin_metrics_sidecar.clone(),
             call_id: context.call_id.clone(),
             process_id,
+            original_command: command.to_vec(),
             cwd: cwd.clone(),
             initial_exec_command_active,
             hook_command,
@@ -1890,3 +2100,30 @@ enum ProcessStatus {
 #[cfg(test)]
 #[path = "process_manager_tests.rs"]
 mod tests;
+
+#[cfg(windows)]
+fn unique_original_owner_session_id(eligible: Vec<i32>) -> Result<i32, String> {
+    match eligible.as_slice() {
+        [session_id] if *session_id > 0 => Ok(*session_id),
+        [] => Err("SETUP_BLOCKED: original Core session has no live approved process".to_string()),
+        _ => Err("SETUP_BLOCKED: multiple or invalid original Core process handles".to_string()),
+    }
+}
+
+#[cfg(all(test, windows))]
+mod codexdd_046_3d1g_unique_owner_tests {
+    use super::unique_original_owner_session_id;
+
+    #[test]
+    fn codexdd_046_3d1g_only_unique_original_core_process_is_admitted() {
+        assert_eq!(unique_original_owner_session_id(vec![101]), Ok(101));
+        assert!(unique_original_owner_session_id(vec![]).is_err());
+        assert!(unique_original_owner_session_id(vec![0]).is_err());
+    }
+
+    #[test]
+    fn codexdd_046_3d1g_ambiguous_process_store_refuses() {
+        assert!(unique_original_owner_session_id(vec![101, 202]).is_err());
+        assert!(unique_original_owner_session_id(vec![101, 101]).is_err());
+    }
+}

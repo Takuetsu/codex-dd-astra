@@ -51,6 +51,8 @@ mod async_watcher;
 mod errors;
 mod head_tail_buffer;
 mod oneshot;
+#[cfg(windows)]
+pub(crate) mod owned_runtime_health;
 mod process;
 mod process_manager;
 mod process_state;
@@ -193,6 +195,9 @@ struct ProcessEntry {
     plugin_metrics_sidecar: Option<SharedPluginMetricsSidecar>,
     call_id: String,
     process_id: i32,
+    /// Immutable OS launch argv from the original Core execution request.
+    /// Never reconstruct command identity from model narrative or hook output.
+    original_command: Vec<String>,
     cwd: PathUri,
     initial_exec_command_active: Arc<std::sync::atomic::AtomicBool>,
     hook_command: String,

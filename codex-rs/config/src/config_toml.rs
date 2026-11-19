@@ -170,12 +170,193 @@ pub enum AdaptiveWorkerRoleToml {
     Repair,
 }
 
+/// Owner-specified, bounded gate contract. A typed ledger is constructed
+/// only on an original externally authorized first assignment. No model turn
+/// can add, remove or reinterpret these required gates.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(deny_unknown_fields)]
+pub struct AdaptiveOwnerGateToml {
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ports: Option<Vec<u16>>,
+    /// Original owner-approved argv for a read-only operations-preview check.
+    /// This is launch identity, never new executable-launch permission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command_argv: Option<Vec<String>>,
+}
+
+/// Exact task-specific benchmark authority supplied by the original Worker owner.
+/// This is a command identity contract, not shell execution permission or QA PASS.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(deny_unknown_fields)]
+pub struct AdaptiveOwnerBenchmarkToml {
+    pub command_2: String,
+    pub command_4: String,
+    pub resource_lock: String,
+    pub max_duration_ms: u64,
+}
+
 /// Immutable governance context bound to the initial Worker by its launcher.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct AdaptiveWorkerConfigToml {
     pub role: AdaptiveWorkerRoleToml,
     pub authorized_scope: Option<String>,
+    /// Optional exact checkout anchor, bound at startup before model turns.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_sha: Option<String>,
+    /// Bounded task classifier, never a new permission/Worker role.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_kind: Option<String>,
+    /// Omitted for legacy bindings; an omission cannot clear READY gates.
+    /// In a first-message header, use inline TOML tables on one line.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_gates: Option<Vec<AdaptiveOwnerGateToml>>,
+    /// Exact owner-approved two/four-command and resource-lock contract.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub benchmark: Option<AdaptiveOwnerBenchmarkToml>,
+}
+
+/// Decode a user-origin first-message Worker header without granting tool rights.
+/// Core must still commit an accepted first-user-turn binding separately.
+pub fn parse_adaptive_worker_first_message(
+    text: &str,
+) -> Result<Option<AdaptiveWorkerConfigToml>, String> {
+    const RAW_START: &str = "\u{1b}[200~";
+    const RAW_END: &str = "\u{1b}[201~";
+    const TEXT_START: &str = "[200~";
+    const TEXT_END: &str = "[201~";
+
+    let mut normalized = text.to_string();
+    let mut removed_leading_marker = false;
+    if let Some((offset, _)) = normalized
+        .char_indices()
+        .find(|(_, ch)| !ch.is_whitespace())
+    {
+        for marker in [RAW_START, TEXT_START] {
+            if normalized[offset..].starts_with(marker) {
+                normalized.replace_range(offset..offset + marker.len(), "");
+                removed_leading_marker = true;
+                break;
+            }
+        }
+    }
+    let trailing_non_whitespace_len = normalized.trim_end_matches(char::is_whitespace).len();
+    for marker in [RAW_END, TEXT_END] {
+        if normalized[..trailing_non_whitespace_len].ends_with(marker) {
+            let marker_start = trailing_non_whitespace_len - marker.len();
+            normalized.replace_range(marker_start..trailing_non_whitespace_len, "");
+            break;
+        }
+    }
+
+    let mut lines = normalized.lines();
+    let Some(first_non_blank) = lines.by_ref().find(|line| !line.trim().is_empty()) else {
+        return Ok(None);
+    };
+    if first_non_blank.trim() != "[adaptive_worker]" {
+        if removed_leading_marker {
+            return Err("Worker binding rejected: bracketed-paste marker detected before [adaptive_worker], but the normalized first nonblank line was not [adaptive_worker]. Retry with a clean first assignment.".to_string());
+        }
+        return Ok(None);
+    }
+
+    let mut header = String::from("[adaptive_worker]\n");
+    let mut found_delimiter = false;
+    for line in lines.by_ref() {
+        if line.trim().is_empty() {
+            found_delimiter = true;
+            break;
+        }
+        header.push_str(line);
+        header.push('\n');
+    }
+    if !found_delimiter {
+        return Err(
+            "[adaptive_worker] must be followed by a blank line before the Worker assignment"
+                .to_string(),
+        );
+    }
+    if !lines.any(|line| !line.trim().is_empty()) {
+        return Err("Worker assignment body must not be empty".to_string());
+    }
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct FirstMessageAssignment {
+        adaptive_worker: FirstMessageWorkerTable,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct FirstMessageWorkerTable {
+        role: AdaptiveWorkerRoleToml,
+        authorized_scope: Option<String>,
+        source_root: Option<String>,
+        source_sha: Option<String>,
+        task_kind: Option<String>,
+        required_gates: Option<Vec<AdaptiveOwnerGateToml>>,
+        benchmark: Option<AdaptiveOwnerBenchmarkToml>,
+    }
+    let parsed: FirstMessageAssignment = toml::from_str(&header)
+        .map_err(|err| format!("invalid [adaptive_worker] header: {err}"))?;
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: parsed.adaptive_worker.role,
+        authorized_scope: parsed.adaptive_worker.authorized_scope,
+        source_root: parsed.adaptive_worker.source_root,
+        source_sha: parsed.adaptive_worker.source_sha,
+        task_kind: parsed.adaptive_worker.task_kind,
+        required_gates: parsed.adaptive_worker.required_gates,
+        benchmark: parsed.adaptive_worker.benchmark,
+    };
+    if worker.role == AdaptiveWorkerRoleToml::Unspecified {
+        return Err("Worker role must be implementation, validation, or repair".to_string());
+    }
+    let scope = worker
+        .authorized_scope
+        .as_deref()
+        .unwrap_or_default()
+        .trim();
+    if scope.is_empty() {
+        return Err("adaptive Worker authorized_scope must not be empty".to_string());
+    }
+    worker.authorized_scope = Some(scope.to_string());
+
+    let task_kind = worker.task_kind.as_deref().unwrap_or("source_change");
+    if !matches!(
+        task_kind,
+        "source_change" | "operations_preview" | "benchmark"
+    ) {
+        return Err(format!(
+            "invalid Worker task_kind '{task_kind}'; expected source_change, operations_preview or benchmark"
+        ));
+    }
+    match (worker.source_root.as_deref(), worker.source_sha.as_deref()) {
+        (None, None) if task_kind == "source_change" => {}
+        (Some(root), Some(sha)) => {
+            let root = root.trim();
+            let sha = sha.trim();
+            if !Path::new(root).is_absolute() {
+                return Err(
+                    "Worker source_root must be an absolute authorized worktree path".to_string(),
+                );
+            }
+            if sha.len() != 40 || !sha.bytes().all(|ch| ch.is_ascii_hexdigit()) {
+                return Err("Worker source_sha must be an exact 40-character Git SHA".to_string());
+            }
+            worker.source_root = Some(root.to_string());
+            worker.source_sha = Some(sha.to_ascii_lowercase());
+        }
+        _ => {
+            return Err("Worker target preflight requires source_root and source_sha together; operations/benchmark tasks must also bind a source".to_string());
+        }
+    }
+    Ok(Some(worker))
 }
 
 /// Base config deserialized from ~/.codex/config.toml.
@@ -1055,6 +1236,79 @@ authorized_scope = "codex-rs/config"
             .expect("Worker authority must be retained");
         assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
         assert_eq!(worker.authorized_scope.as_deref(), Some("codex-rs/config"));
+        assert_eq!(worker.source_root, None);
+        assert_eq!(worker.source_sha, None);
+        assert_eq!(worker.task_kind, None);
+    }
+
+    #[test]
+    fn adaptive_worker_config_accepts_bound_source_and_task_kind() {
+        let cfg: ConfigToml = toml::from_str(
+            r#"
+[adaptive_worker]
+role = "implementation"
+authorized_scope = "isolated benchmark"
+source_root = "C:\\approved\\candidate"
+source_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+task_kind = "benchmark"
+"#,
+        )
+        .expect("typed startup Worker authority");
+        let worker = cfg.adaptive_worker.expect("worker");
+        assert_eq!(worker.role, AdaptiveWorkerRoleToml::Implementation);
+        assert_eq!(
+            worker.source_root.as_deref(),
+            Some(r"C:\approved\candidate")
+        );
+        assert_eq!(
+            worker.source_sha.as_deref(),
+            Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        );
+        assert_eq!(worker.task_kind.as_deref(), Some("benchmark"));
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2e_owner_manifest_is_typed_and_unknown_fields_are_refused() {
+        let root = if cfg!(windows) {
+            r"C:\approved\isolated-gate-candidate"
+        } else {
+            "/tmp/approved/isolated-gate-candidate"
+        };
+        let header = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"owner-required task\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\ntask_kind = \"source_change\"\nrequired_gates = [{{ kind = \"source_profile\", profile = \"work_packet\" }}, {{ kind = \"independent_validation\" }}]\n"
+        );
+        let config: ConfigToml = toml::from_str(&header).expect("typed startup gate manifest");
+        let gates = config
+            .adaptive_worker
+            .as_ref()
+            .and_then(|worker| worker.required_gates.as_ref())
+            .expect("exact owner-specified gates");
+        assert_eq!(gates.len(), 2);
+        assert_eq!(gates[0].kind, "source_profile");
+        assert_eq!(gates[0].profile.as_deref(), Some("work_packet"));
+        assert_eq!(gates[1].kind, "independent_validation");
+        assert!(gates[1].profile.is_none() && gates[1].ports.is_none());
+
+        let first = format!("{header}\nImplement only this approved scope.");
+        let parsed = parse_adaptive_worker_first_message(&first)
+            .expect("same owner first-message grammar")
+            .expect("first-message Worker binding");
+        assert_eq!(
+            parsed.required_gates,
+            config
+                .adaptive_worker
+                .expect("startup binding")
+                .required_gates
+        );
+
+        let bad = header.replace(
+            r#"kind = "independent_validation" }"#,
+            r#"kind = "independent_validation", unexpected = "pass" }"#,
+        );
+        assert!(
+            toml::from_str::<ConfigToml>(&bad).is_err(),
+            "unrecognized gate fields must never become inferred authority"
+        );
     }
 
     #[test]

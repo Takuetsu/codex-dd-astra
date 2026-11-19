@@ -385,6 +385,7 @@ mod tests {
         let notification =
             ServerNotification::ThreadSettingsUpdated(ThreadSettingsUpdatedNotification {
                 thread_id: thread_id.to_string(),
+                codexdd_first_worker: None,
                 thread_settings: test_thread_settings(),
             });
 

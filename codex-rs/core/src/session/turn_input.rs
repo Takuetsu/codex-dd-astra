@@ -18,10 +18,13 @@ use super::session::SessionSettingsUpdate;
 use super::thread_settings;
 use super::turn_context::NewTurnContextOptions;
 use super::turn_context::TurnContext;
+use super::worker_authority::CandidateShaAuthorization;
+use super::worker_authority::parse_candidate_sha_authorization;
 use crate::WithTurnExtensionData;
 use crate::state::ActiveTurn;
 use crate::state::TurnState;
 use crate::tasks::RegularTask;
+use codex_config::config_toml::AdaptiveWorkerConfigToml;
 use codex_history::CodexHarnessMetadata;
 use codex_history::ResponseItemEnvelope;
 use codex_history::UserInputOrigin;
@@ -316,11 +319,133 @@ pub(super) async fn handle_recovery(
     result
 }
 
+/// A candidate authorization is an independent exact-source user instruction,
+/// never an implicit consequence of Git HEAD changing or model/tool prose.
+fn parse_candidate_submission(
+    input: &SubmittedTurnInput,
+) -> CodexResult<Option<CandidateShaAuthorization>> {
+    let SubmittedTurnInput::UserInput { content, .. } = input else {
+        return Ok(None);
+    };
+    let Some(UserInput::Text { text, .. }) = content.first() else {
+        return Ok(None);
+    };
+    let proposed = parse_candidate_sha_authorization(text)
+        .map_err(|error| CodexErr::InvalidRequest(format!("SETUP_BLOCKED: {error}")))?;
+    if proposed.is_some() && content.len() != 1 {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: candidate authorization must be a standalone text-only user instruction"
+                .to_string(),
+        ));
+    }
+    Ok(proposed)
+}
+
+async fn prepare_candidate_submission(
+    session: &Session,
+    input: &SubmittedTurnInput,
+    start: &TurnStartOptions,
+) -> CodexResult<Option<CandidateShaAuthorization>> {
+    let requested = parse_candidate_submission(input)?;
+    if requested.is_none() {
+        return Ok(None);
+    }
+    if !is_direct_user_origin(start) {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: candidate authorization requires a direct owner-origin user turn"
+                .to_string(),
+        ));
+    }
+    let state = session.state.lock().await;
+    if matches!(
+        &state.session_configuration.session_source,
+        SessionSource::SubAgent(_) | SessionSource::Internal(_)
+    ) {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: delegated or internal sessions cannot authorize candidate sources"
+                .to_string(),
+        ));
+    }
+    Ok(requested)
+}
+
+/// A first Worker header is accepted only on a direct user-origin request.
+fn is_direct_user_origin(start: &TurnStartOptions) -> bool {
+    start.parent_turn_id.is_none() && matches!(start.turn_trigger.as_deref(), None | Some("user"))
+}
+
+async fn prepare_first_worker_authority(
+    session: &Session,
+    input: &SubmittedTurnInput,
+    direct_user: bool,
+) -> CodexResult<Option<Option<AdaptiveWorkerConfigToml>>> {
+    if !direct_user {
+        return Ok(None);
+    }
+    let SubmittedTurnInput::UserInput { content, .. } = input else {
+        return Ok(None);
+    };
+    // Do not skip initial non-text input to discover a later authority header.
+    let first_text = match content.first() {
+        Some(UserInput::Text { text, .. }) => Some(text.as_str()),
+        _ => None,
+    };
+    session
+        .state
+        .lock()
+        .await
+        .first_worker_authority
+        .prepare(first_text)
+        .map_err(|error| CodexErr::InvalidRequest(format!("SETUP_BLOCKED: {error}")))
+}
+
+async fn accept_first_worker_authority(
+    session: &Session,
+    proposed: Option<Option<AdaptiveWorkerConfigToml>>,
+) {
+    let accepted_first_binding = {
+        let mut state = session.state.lock().await;
+        state.first_worker_authority.accept(proposed)
+            && state.first_worker_authority.first_user_snapshot().is_some()
+    };
+    if accepted_first_binding {
+        match session.checkpoint_thread_settings_with_durability().await {
+            Ok(true) => {
+                session
+                    .state
+                    .lock()
+                    .await
+                    .first_worker_authority
+                    .mark_checkpointed();
+            }
+            Ok(false) => {
+                tracing::warn!("no live thread store: first Worker source remains unprivileged");
+            }
+            Err(error) => {
+                // A failed flush cannot create a native runner credential.
+                tracing::warn!(%error, "first Worker checkpoint failed; source remains blocked");
+            }
+        }
+    }
+}
+
 async fn start_or_steer(
     session: &Arc<Session>,
     request: WithTurnExtensionData<TurnInputRequest>,
     submission_id: String,
 ) -> CodexResult<TurnInputSubmission> {
+    // A source handoff must never become steering for an in-flight Worker.
+    // Route to the idle-only admission path, which reserves the turn first.
+    if parse_candidate_submission(&request.request.input)?.is_some() {
+        return start_if_idle(
+            session,
+            request,
+            submission_id,
+            TurnStartKind::User,
+            /*expected_previous_turn_id*/ None,
+        )
+        .await;
+    }
     let WithTurnExtensionData {
         request,
         turn_extension_init,
@@ -334,6 +459,7 @@ async fn start_or_steer(
         ..
     } = request;
     let origin = UserInputOrigin::from_turn_trigger(start.turn_trigger.as_deref());
+    let direct_user = is_direct_user_origin(&start);
     let has_explicit_input = match &input {
         SubmittedTurnInput::UserInput { content, .. } => !content.is_empty(),
         SubmittedTurnInput::ResponseItem(ResponseItem::FunctionCallOutput {
@@ -347,6 +473,7 @@ async fn start_or_steer(
             ));
         }
     };
+    let proposed_worker = prepare_first_worker_authority(session, &input, direct_user).await?;
     let settings = PreparedTurnInputSettings::prepare(
         session,
         WithTurnExtensionData {
@@ -368,6 +495,7 @@ async fn start_or_steer(
         .await
     {
         Ok((turn_id, root_turn_id)) => {
+            accept_first_worker_authority(session, proposed_worker).await;
             settings.apply_steered(session, submission_id).await?;
             Ok(TurnInputSubmission::Steered {
                 turn_id,
@@ -403,6 +531,7 @@ async fn start_or_steer(
             else {
                 unreachable!("explicit user input can enter Plan mode");
             };
+            accept_first_worker_authority(session, proposed_worker).await;
             if let Some(responsesapi_client_metadata) = responsesapi_client_metadata {
                 turn_context
                     .turn_metadata_state
@@ -517,6 +646,30 @@ async fn start_if_idle(
         });
     }
 
+    let requested_candidate = if kind == TurnStartKind::User {
+        match prepare_candidate_submission(session, &input, &start).await {
+            Ok(requested) => requested,
+            Err(error) => {
+                session.clear_reserved_idle_turn(&turn_state).await;
+                return Err(error);
+            }
+        }
+    } else {
+        None
+    };
+
+    let proposed_worker = if kind == TurnStartKind::User {
+        match prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await {
+            Ok(proposal) => proposal,
+            Err(error) => {
+                session.clear_reserved_idle_turn(&turn_state).await;
+                return Err(error);
+            }
+        }
+    } else {
+        None
+    };
+
     let settings = match PreparedTurnInputSettings::prepare(
         session,
         WithTurnExtensionData {
@@ -533,6 +686,19 @@ async fn start_if_idle(
             return Err(error);
         }
     };
+    if let Some(requested) = &requested_candidate {
+        if settings.thread_settings_update.is_some() {
+            session.clear_reserved_idle_turn(&turn_state).await;
+            return Err(CodexErr::InvalidRequest(
+                "SETUP_BLOCKED: candidate authorization cannot combine with settings changes"
+                    .to_string(),
+            ));
+        }
+        if let Err(error) = session.authorize_candidate_sha(requested).await {
+            session.clear_reserved_idle_turn(&turn_state).await;
+            return Err(CodexErr::InvalidRequest(error));
+        }
+    }
     let turn_context = match settings
         .apply_started(session, submission_id.clone(), kind)
         .await
@@ -549,6 +715,7 @@ async fn start_if_idle(
             return Err(error);
         }
     };
+    accept_first_worker_authority(session, proposed_worker).await;
     if let Some(responsesapi_client_metadata) = responsesapi_client_metadata {
         turn_context
             .turn_metadata_state
@@ -597,6 +764,11 @@ async fn steer(
     expected_turn_id: String,
     submission_id: String,
 ) -> CodexResult<TurnInputSubmission> {
+    if parse_candidate_submission(&request.request.input)?.is_some() {
+        return Err(CodexErr::InvalidRequest(
+            "SETUP_BLOCKED: candidate authorization cannot steer an active turn".to_string(),
+        ));
+    }
     let WithTurnExtensionData {
         request,
         turn_extension_init,
@@ -615,6 +787,8 @@ async fn steer(
             "only user input can steer a turn".to_string(),
         ));
     }
+    let proposed_worker =
+        prepare_first_worker_authority(session, &input, is_direct_user_origin(&start)).await?;
     let settings = PreparedTurnInputSettings::prepare(
         session,
         WithTurnExtensionData {
@@ -636,6 +810,7 @@ async fn steer(
         .await
     {
         Ok((turn_id, root_turn_id)) => {
+            accept_first_worker_authority(session, proposed_worker).await;
             settings.apply_steered(session, submission_id).await?;
             Ok(TurnInputSubmission::Steered {
                 turn_id,

@@ -10,6 +10,14 @@ mod math_interruption_tests;
 #[path = "tests/security_setup_tests.rs"]
 mod security_setup_tests;
 
+#[cfg(windows)]
+#[path = "tests/adaptive_cold_process_event_routing.rs"]
+mod adaptive_cold_process_event_routing;
+#[cfg(windows)]
+#[path = "tests/adaptive_live_coupled_process.rs"]
+mod adaptive_live_coupled_process;
+#[path = "tests/adaptive_native_event_routing.rs"]
+mod adaptive_native_event_routing;
 #[path = "tests/advanced_reasoning_tests.rs"]
 mod advanced_reasoning_tests;
 #[path = "tests/agents_navigation_tests.rs"]
@@ -9742,6 +9750,7 @@ async fn inactive_thread_settings_notification_updates_cached_collaboration_mode
 
     let notification = ThreadSettingsUpdatedNotification {
         thread_id: inactive_thread_id.to_string(),
+        codexdd_first_worker: None,
         thread_settings: ThreadSettings {
             disabled_plugin_ids: Vec::new(),
             cwd: test_absolute_path("/tmp/thread-settings"),

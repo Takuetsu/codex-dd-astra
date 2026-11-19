@@ -10,6 +10,8 @@ use crate::tools::handlers::AdaptiveSignalHandler;
 use crate::tools::handlers::ApplyPatchHandler;
 use crate::tools::handlers::CodeModeExecuteHandler;
 use crate::tools::handlers::CodeModeWaitHandler;
+use crate::tools::handlers::CodexDDIndependentValidationHandler;
+use crate::tools::handlers::CodexDDOwnedRuntimeHealthHandler;
 use crate::tools::handlers::CodexDDValidationHandler;
 use crate::tools::handlers::CurrentTimeHandler;
 use crate::tools::handlers::DynamicToolHandler;
@@ -51,6 +53,7 @@ use crate::tools::handlers::multi_agents_v2::ListAgentsHandler as ListAgentsHand
 use crate::tools::handlers::multi_agents_v2::SendMessageHandler as SendMessageHandlerV2;
 use crate::tools::handlers::multi_agents_v2::SpawnAgentHandler as SpawnAgentHandlerV2;
 use crate::tools::handlers::multi_agents_v2::WaitAgentHandler as WaitAgentHandlerV2;
+use crate::tools::handlers::original_owner_preview_gate;
 use crate::tools::handlers::tool_search_spec::ToolSearchSourceListing;
 use crate::tools::handlers::view_image_spec::ViewImageToolOptions;
 use crate::tools::hosted_spec::WebSearchToolOptions;
@@ -70,6 +73,7 @@ use codex_login::AuthManager;
 use codex_mcp::CODEX_APPS_MCP_SERVER_NAME;
 use codex_prompts::ResolvedModelMessages;
 use codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+use codex_protocol::CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER;
 use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
 use codex_protocol::account::PlanType;
 use codex_protocol::config_types::WebSearchMode;
@@ -1219,6 +1223,69 @@ fn add_mcp_resource_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     }
 }
 
+/// Tool exposure is a separate boundary from the handler's native source
+/// checks. A pinned independent Validator for an approved operations preview
+/// must receive the same review tool as a source-change Validator, while
+/// Implementation/Repair/Benchmark and unbound workers cannot gain it.
+fn original_core_validator_tool_allowed(
+    worker: &codex_config::config_toml::AdaptiveWorkerConfigToml,
+) -> bool {
+    matches!(
+        worker.role,
+        codex_config::config_toml::AdaptiveWorkerRoleToml::Validation
+    ) && matches!(
+        worker.task_kind.as_deref(),
+        Some("source_change" | "operations_preview")
+    ) && worker
+        .authorized_scope
+        .as_deref()
+        .is_some_and(|scope| !scope.trim().is_empty() && scope.len() <= 1024)
+        && worker
+            .source_root
+            .as_deref()
+            .is_some_and(|root| !root.trim().is_empty())
+        && worker
+            .source_sha
+            .as_deref()
+            .is_some_and(|sha| sha.len() == 40 && sha.bytes().all(|byte| byte.is_ascii_hexdigit()))
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1i_validator_registration_tests {
+    use super::original_core_validator_tool_allowed;
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    #[test]
+    fn codexdd_046_3d1i_native_independent_validator_preview_tool_admitted() {
+        let mut worker = AdaptiveWorkerConfigToml {
+            role: AdaptiveWorkerRoleToml::Validation,
+            authorized_scope: Some("one source-pinned original preview".to_string()),
+            source_root: Some("C:\\codexdd-test-source".to_string()),
+            source_sha: Some("a".repeat(40)),
+            task_kind: Some("operations_preview".to_string()),
+            required_gates: None,
+            benchmark: None,
+        };
+        assert!(original_core_validator_tool_allowed(&worker));
+        worker.task_kind = Some("source_change".to_string());
+        assert!(original_core_validator_tool_allowed(&worker));
+        worker.task_kind = Some("benchmark".to_string());
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.task_kind = Some("operations_preview".to_string());
+        worker.role = AdaptiveWorkerRoleToml::Implementation;
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.role = AdaptiveWorkerRoleToml::Repair;
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.role = AdaptiveWorkerRoleToml::Validation;
+        worker.source_sha = Some("untrusted".to_string());
+        assert!(!original_core_validator_tool_allowed(&worker));
+        worker.source_sha = Some("a".repeat(40));
+        worker.authorized_scope = None;
+        assert!(!original_core_validator_tool_allowed(&worker));
+    }
+}
+
 #[instrument(level = "trace", skip_all)]
 fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut ToolRegistry) {
     let turn_context = context.turn_context;
@@ -1235,6 +1302,43 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
     );
     if turn_trigger.as_deref() == Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER) {
         registry.add_with_exposure(CodexDDValidationHandler, ToolExposure::DirectModelOnly);
+    }
+
+    // A Validation Worker gets a separate native producer only with the
+    // complete Core-bound first-assignment identity. The handler repeats every
+    // role/root/SHA/scope check immediately before and after native execution.
+    // Terminalization remains report-only, and the Implementation LVO is
+    // never exposed as the independent review tool.
+    let has_validator_binding = turn_context
+        .config
+        .adaptive_worker
+        .as_ref()
+        .is_some_and(original_core_validator_tool_allowed);
+    if has_validator_binding
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+    {
+        registry.add_with_exposure(
+            CodexDDIndependentValidationHandler,
+            ToolExposure::DirectModelOnly,
+        );
+    }
+
+    // The original Worker must explicitly bind an exact launch argv and
+    // loopback port. No source, benchmark, remote or Validation authority.
+    if cfg!(windows)
+        && turn_context
+            .config
+            .adaptive_worker
+            .as_ref()
+            .is_some_and(|worker| original_owner_preview_gate(worker).is_ok())
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_VALIDATION_TERMINALIZATION_TURN_TRIGGER)
+        && turn_trigger.as_deref() != Some(CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER)
+    {
+        registry.add_with_exposure(
+            CodexDDOwnedRuntimeHealthHandler,
+            ToolExposure::DirectModelOnly,
+        );
     }
 
     if turn_context.config.update_plan_enabled {

@@ -8,15 +8,17 @@ use crate::adaptive_complexity::implementation_floor;
 use crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD;
 use crate::adaptive_evidence::ADAPTIVE_FAILURE_PRESSURE_THRESHOLD;
 use crate::adaptive_evidence::AdaptiveEvidenceRegistry;
+use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 pub(crate) use crate::adaptive_policy::AdaptiveEffort;
 pub(crate) use crate::adaptive_policy::AdaptiveFailureKind;
 pub(crate) use crate::adaptive_policy::AdaptiveFamily;
 pub(crate) use crate::adaptive_policy::AdaptiveOutcome;
 use crate::adaptive_worker::AdaptiveWorkerContext;
+use crate::adaptive_worker::AdaptiveWorkerPreflight;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
 use crate::adaptive_worker::NewWorkerBinding;
-use crate::adaptive_worker::parse_adaptive_worker_assignment;
+use crate::adaptive_worker::parse_adaptive_owner_assignment;
 use codex_app_server_protocol::AdaptiveRuntimeSignalEnvelope;
 
 pub(crate) const CODEXDD_VALIDATION_REPAIR_LIMIT: u8 = 2;
@@ -59,6 +61,20 @@ pub(crate) struct AdaptiveSuccessorPermit {
 pub(crate) enum AdaptiveSuccessorAdmission {
     Reserved(AdaptiveSuccessorPermit),
     Consumed(AdaptiveSuccessorPermit),
+}
+
+/// In-memory one-use correlation for a QA health recheck. No accepted
+/// runtime-health receipt is ever serialized into the workflow checkpoint.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AdaptiveOwnedRuntimeQaWait {
+    pub(crate) review_request_id: uuid::Uuid,
+    pub(crate) validation_thread_id: codex_protocol::ThreadId,
+    pub(crate) origin_thread_id: codex_protocol::ThreadId,
+    pub(crate) source_turn_id: String,
+    pub(crate) evidence_refs: Vec<String>,
+    pub(crate) expected_root: String,
+    pub(crate) expected_sha: String,
+    pub(crate) approved_port: u16,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -116,6 +132,7 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) last_outcome: Option<AdaptiveOutcome>,
     pub(crate) last_failure_kind: Option<AdaptiveFailureKind>,
     pub(crate) worker_context: AdaptiveWorkerContext,
+    pub(crate) assignment_preflight: Option<AdaptiveWorkerPreflight>,
     pub(crate) worker_assignment_locked: bool,
     pub(crate) workflow_terminal: Option<AdaptiveWorkflowTerminal>,
     pub(crate) transient_retry_consumed: bool,
@@ -127,6 +144,17 @@ pub(crate) struct AdaptiveEffortState {
     pub(crate) successor_admission: Option<AdaptiveSuccessorAdmission>,
     pub(crate) pending_signal: Option<AdaptivePendingSignal>,
     pub(crate) evidence_registry: AdaptiveEvidenceRegistry,
+    /// Pending source-/Worker-bound requirements, never cached success authority.
+    pub(crate) gate_ledger: Option<AdaptiveGateLedger>,
+    /// First user-turn benchmark authority; never serialized or inherited by a Validator.
+    pub(crate) original_benchmark_config:
+        Option<codex_config::config_toml::AdaptiveWorkerConfigToml>,
+    /// Ephemeral parent Implementation thread for a fresh, source-bound review.
+    /// Never persisted or inferred from a model-provided thread ID.
+    pub(crate) review_origin_thread_id: Option<codex_protocol::ThreadId>,
+    /// Only the host's pending live QA RPC can complete this in-memory
+    /// correlation. Missing sessions and cold resumes never restore it.
+    pub(crate) pending_owned_runtime_qa: Option<AdaptiveOwnedRuntimeQaWait>,
     pub(crate) complexity_class: Option<AdaptiveComplexityClass>,
     pub(crate) implementation_phase: Option<AdaptiveImplementationPhase>,
     pub(crate) validation_repair_fingerprint: Option<String>,
@@ -181,6 +209,24 @@ impl AdaptiveEffortState {
                 .unwrap_or_else(default_initial_route),
             AdaptiveWorkerRole::Unspecified | AdaptiveWorkerRole::Repair => default_initial_route(),
         };
+        // Preserve the same pinned source for the automatically spawned independent
+        // validation of this exact scope, never for an unrelated fresh assignment.
+        let assignment_preflight = if self.worker_assignment_locked
+            && self.worker_context.role == AdaptiveWorkerRole::Implementation
+            && self.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+        {
+            binding
+                .filter(|binding| binding.role == AdaptiveWorkerRole::Validation)
+                .and_then(|binding| {
+                    self.worker_context
+                        .authorized_scope
+                        .as_deref()
+                        .filter(|scope| scope.trim() == binding.authorized_scope.trim())
+                        .and(self.assignment_preflight.clone())
+                })
+        } else {
+            None
+        };
         let implementation_phase = (worker_context.role == AdaptiveWorkerRole::Implementation
             && self.complexity_class.is_some())
         .then_some(AdaptiveImplementationPhase::Implementation);
@@ -191,12 +237,52 @@ impl AdaptiveEffortState {
             current_effort: enabled.then_some(initial_route.effort),
             attempt_number: enabled.then_some(1).unwrap_or_default(),
             worker_context,
+            assignment_preflight,
             worker_assignment_locked: binding.is_some(),
             complexity_class: self.complexity_class,
             implementation_phase,
             budget_mode: self.budget_mode,
             ..Default::default()
         }
+    }
+
+    /// Handoff authority originates from the terminalized source Worker,
+    /// not an arbitrary matching scope or a replayed checkpoint. In-memory
+    /// registry refs are copied only so each exact gate can be revalidated.
+    fn inherit_authorized_independent_review(
+        &mut self,
+        previous: &Self,
+        binding: &NewWorkerBinding,
+        origin_thread_id: codex_protocol::ThreadId,
+    ) {
+        let Some(pin) = self.assignment_preflight.as_ref() else {
+            return;
+        };
+        let Some(ledger) = previous.gate_ledger.as_ref() else {
+            return;
+        };
+        if binding.role != AdaptiveWorkerRole::Validation
+            || previous.worker_context.role != AdaptiveWorkerRole::Implementation
+            || !previous.worker_assignment_locked
+            || previous.workflow_terminal != Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+            || previous.worker_context.authorized_scope.as_deref()
+                != Some(binding.authorized_scope.as_str())
+            || !matches!(
+                pin.task_kind,
+                crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+                    | crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview
+            )
+            || !ledger.matches_authorized_source(
+                &binding.authorized_scope,
+                std::path::Path::new(&pin.source_root),
+                &pin.source_sha,
+            )
+        {
+            return;
+        }
+        self.gate_ledger = Some(ledger.clone());
+        self.evidence_registry = previous.evidence_registry.clone();
+        self.review_origin_thread_id = Some(origin_thread_id);
     }
 
     pub(crate) fn activate_adaptive_startup(&mut self, preferred_family: AdaptiveFamily) {
@@ -277,9 +363,22 @@ impl AdaptiveEffortState {
             return Ok(false);
         }
         self.worker_assignment_locked = true;
-        match parse_adaptive_worker_assignment(text) {
-            Ok(Some(worker_context)) => {
+        match parse_adaptive_owner_assignment(text) {
+            Ok(Some((worker_context, assignment_preflight, gate_ledger))) => {
                 self.worker_context = worker_context;
+                self.assignment_preflight = assignment_preflight;
+                self.gate_ledger = gate_ledger;
+                // The exact original assignment is the only source of benchmark
+                // commands and scratch lock. Subsequent model turns cannot revise it.
+                self.original_benchmark_config =
+                    codex_config::config_toml::parse_adaptive_worker_first_message(text)?.filter(
+                        |original| {
+                            original.role
+                                == codex_config::config_toml::AdaptiveWorkerRoleToml::Implementation
+                                && original.task_kind.as_deref() == Some("benchmark")
+                                && original.benchmark.is_some()
+                        },
+                    );
                 Ok(true)
             }
             Ok(None) => Ok(false),
@@ -287,13 +386,45 @@ impl AdaptiveEffortState {
         }
     }
 
+    pub(crate) fn bound_original_benchmark(
+        &self,
+    ) -> Result<&codex_config::config_toml::AdaptiveWorkerConfigToml, String> {
+        let original = self.original_benchmark_config.as_ref().ok_or_else(|| {
+            "SETUP_BLOCKED: original Worker has no authorized benchmark command/lock contract"
+                .to_string()
+        })?;
+        let pin = self
+            .assignment_preflight
+            .as_ref()
+            .ok_or_else(|| "SETUP_BLOCKED: original benchmark source pin missing".to_string())?;
+        if !self.worker_assignment_locked
+            || self.worker_context.role != AdaptiveWorkerRole::Implementation
+            || pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::Benchmark
+            || original.authorized_scope != self.worker_context.authorized_scope
+            || original.source_root.as_deref() != Some(pin.source_root.as_str())
+            || !original
+                .source_sha
+                .as_deref()
+                .is_some_and(|sha| sha.eq_ignore_ascii_case(&pin.source_sha))
+        {
+            return Err(
+                "SETUP_BLOCKED: original benchmark role, scope or source changed".to_string(),
+            );
+        }
+        Ok(original)
+    }
+
     fn activate_adaptive_family(&mut self, preferred_family: AdaptiveFamily, clear_pause: bool) {
         let worker_context = self.worker_context.clone();
+        let assignment_preflight = self.assignment_preflight.clone();
         let worker_assignment_locked = self.worker_assignment_locked
             || worker_context.role != AdaptiveWorkerRole::Unspecified
             || worker_context.authorized_scope.is_some();
         let workflow_terminal = self.workflow_terminal;
         let evidence_registry = self.evidence_registry.clone();
+        let gate_ledger = self.gate_ledger.clone();
+        let original_benchmark_config = self.original_benchmark_config.clone();
+        let review_origin_thread_id = self.review_origin_thread_id;
         let complexity_class = self.complexity_class;
         let implementation_phase = self.implementation_phase;
         let consecutive_no_native_progress_turns = self.consecutive_no_native_progress_turns;
@@ -316,6 +447,7 @@ impl AdaptiveEffortState {
             last_outcome: None,
             last_failure_kind: None,
             worker_context,
+            assignment_preflight,
             worker_assignment_locked,
             workflow_terminal,
             transient_retry_consumed: false,
@@ -326,6 +458,11 @@ impl AdaptiveEffortState {
             successor_admission: None,
             pending_signal: None,
             evidence_registry,
+            gate_ledger,
+            original_benchmark_config,
+            review_origin_thread_id,
+            // A model/route reset cannot retain an in-flight host QA permit.
+            pending_owned_runtime_qa: None,
             complexity_class,
             implementation_phase,
             validation_repair_fingerprint,
@@ -338,6 +475,7 @@ impl AdaptiveEffortState {
 
     pub(crate) fn durable_workflow_snapshot(
         &self,
+        owner_thread_id: codex_protocol::ThreadId,
     ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
         let family_name = |family: AdaptiveFamily| match family {
             AdaptiveFamily::Luna => "luna",
@@ -400,8 +538,53 @@ impl AdaptiveEffortState {
             }),
             attempt_number: self.attempt_number,
             paused_by_user: self.paused_by_user,
+            // A consumed retry is non-authoritative pressure, not a successor permit.
+            transient_retry_consumed: Some(self.transient_retry_consumed),
+            unfinished_turn_pressure: Some(self.unfinished_turn_pressure),
+            // A replay marker may survive, but never a native result or permit.
+            last_processed_turn_id: self.last_processed_terminal_turn_id.clone(),
+            // Preserve only bounded pressure and the last counted turn; neither
+            // grants a successor or restores native evidence after a restart.
+            consecutive_no_native_progress_turns: Some(
+                if self.worker_context.role == AdaptiveWorkerRole::Implementation {
+                    self.consecutive_no_native_progress_turns
+                } else {
+                    0
+                },
+            ),
+            last_no_native_progress_turn_id: (self.worker_context.role
+                == AdaptiveWorkerRole::Implementation
+                && self.consecutive_no_native_progress_turns > 0)
+                .then(|| self.last_processed_terminal_turn_id.clone())
+                .flatten(),
             worker_role: worker_role.to_string(),
             authorized_scope: self.worker_context.authorized_scope.clone(),
+            assignment_task_kind: self.assignment_preflight.as_ref().map(|pin| {
+                match pin.task_kind {
+                    crate::adaptive_worker::AdaptiveTaskKind::SourceChange => "source_change",
+                    crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview => {
+                        "operations_preview"
+                    }
+                    crate::adaptive_worker::AdaptiveTaskKind::Benchmark => "benchmark",
+                }
+                .to_string()
+            }),
+            authorized_source_root: self
+                .assignment_preflight
+                .as_ref()
+                .map(|pin| pin.source_root.clone()),
+            authorized_source_sha: self
+                .assignment_preflight
+                .as_ref()
+                .map(|pin| pin.source_sha.clone()),
+            gate_checkpoint: self.gate_ledger.as_ref().and_then(|ledger| {
+                // The generated value contains requirements and blockers only.
+                // If the Worker is unbound, never serialize an authority hint.
+                ledger
+                    .checkpoint_for_worker(owner_thread_id, self.worker_context.role)
+                    .ok()
+                    .and_then(|checkpoint| serde_json::to_value(checkpoint).ok())
+            }),
             worker_assignment_locked: self.worker_assignment_locked,
             workflow_terminal: workflow_terminal.map(str::to_string),
         }
@@ -473,6 +656,35 @@ impl ChatWidget {
         })
     }
 
+    /// A newly queued automatic handoff is only authoritative while its
+    /// source Implementation Worker is still displayed and terminalized.
+    /// A generic manually requested Validation session is not this event.
+    pub(crate) fn automatic_validation_source_sha(
+        &self,
+        binding: &NewWorkerBinding,
+    ) -> Option<&str> {
+        let state = &self.adaptive_effort;
+        if self.automatic_validation_binding().as_ref() != Some(binding)
+            || state.worker_context.role != AdaptiveWorkerRole::Implementation
+            || !state.worker_assignment_locked
+        {
+            return None;
+        }
+        let pin = state.assignment_preflight.as_ref()?;
+        if !matches!(
+            pin.task_kind,
+            crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+                | crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview
+        ) || !state.gate_ledger.as_ref()?.matches_authorized_source(
+            &binding.authorized_scope,
+            std::path::Path::new(&pin.source_root),
+            &pin.source_sha,
+        ) {
+            return None;
+        }
+        Some(pin.source_sha.as_str())
+    }
+
     pub(crate) fn automatic_validation_prompt_for_new_worker(
         &self,
         binding: &NewWorkerBinding,
@@ -484,7 +696,7 @@ impl ChatWidget {
         let complexity = self.adaptive_effort.complexity_class?.label();
         Some(
             format!(
-                "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. If the change is green, report ready_for_owner_qa with successful native evidence refs. If a blocker is found, report repair_required with failing native evidence refs.",
+                "[Adaptive quality review] Independently validate the completed implementation in the current working tree for the exact authorized scope: {}. Complexity class: {}. Do not assume the Implementation/Repair Worker was correct, and do not modify the implementation while acting as Validation. Inspect coupling, duplication, abstractions, architectural fit, unintended state/API/concurrency effects, unnecessary complexity, and test quality. Run objective validation appropriate to the scope. For an authorized pinned source, call the direct built-in run_codexdd_independent_validation tool with profile=independent_review; a generic command PASS or the Implementation-only runner is not an independent review. Include the native independent-review receipt ID in the successful evidence refs when reporting ready_for_owner_qa. Any remaining source, runtime or independent gate means READY must stay pending. If a blocker is found, report repair_required with failing native evidence refs.",
                 binding.authorized_scope,
                 complexity,
             )
@@ -496,7 +708,15 @@ impl ChatWidget {
         &self,
         binding: Option<&NewWorkerBinding>,
     ) -> AdaptiveEffortState {
-        self.adaptive_effort.fresh_for_new_worker(binding)
+        let mut fresh = self.adaptive_effort.fresh_for_new_worker(binding);
+        if let (Some(binding), Some(origin_thread_id)) = (binding, self.thread_id) {
+            fresh.inherit_authorized_independent_review(
+                &self.adaptive_effort,
+                binding,
+                origin_thread_id,
+            );
+        }
+        fresh
     }
 
     pub(super) fn save_adaptive_effort_for_current_thread(&self) {
@@ -512,7 +732,7 @@ impl ChatWidget {
                     .adaptive_effort
                     .workflow_terminal
                     .and_then(|_| self.adaptive_effort.last_processed_terminal_turn_id.clone()),
-                adaptive_state: Some(self.adaptive_effort.durable_workflow_snapshot()),
+                adaptive_state: Some(self.adaptive_effort.durable_workflow_snapshot(thread_id)),
             });
         }
     }
@@ -811,6 +1031,9 @@ impl ChatWidget {
             .unwrap_or("None");
         let validation_repair_remaining =
             CODEXDD_VALIDATION_REPAIR_LIMIT.saturating_sub(state.validation_repair_cycles_used);
+        let non_source_task = state.assignment_preflight.as_ref().is_some_and(|pin| {
+            pin.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        });
         let validation_next = match state.workflow_terminal {
             Some(AdaptiveWorkflowTerminal::ReadyForValidation) => "handoff ready",
             Some(AdaptiveWorkflowTerminal::Blocked) => "owner review required",
@@ -834,8 +1057,111 @@ impl ChatWidget {
                 None => "implementation",
             },
         };
+        let validation_next = if non_source_task {
+            "owner-approved operations/benchmark path (not source work_packet)"
+        } else {
+            validation_next
+        };
+        let source_pin = state.assignment_preflight.as_ref().map_or_else(
+            || "None (do not infer a worktree from the launch cwd)".to_string(),
+            |pin| format!("{} @ {}", pin.source_root, pin.source_sha),
+        );
+        let pending_gates = state.gate_ledger.as_ref().map_or_else(
+            || "Not specified by an authorized owner".to_string(),
+            |ledger| {
+                let outstanding = ledger.outstanding(&state.evidence_registry);
+                if outstanding.is_empty() {
+                    "None (still requires a trusted terminal signal)".to_string()
+                } else {
+                    outstanding
+                        .iter()
+                        .map(|item| {
+                            let name = match &item.gate {
+                                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::SourceProfile(profile) => {
+                                    format!("source:{profile}")
+                                }
+                                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::OwnedRuntimeHealth(ports) => {
+                                    format!("runtime:{ports:?}")
+                                }
+                                crate::adaptive_gate_prerequisites::AdaptiveRequiredGate::IndependentValidation => {
+                                    "independent_review".to_string()
+                                }
+                            };
+                            let status = match &item.state {
+                                crate::adaptive_gate_prerequisites::AdaptiveGateState::Pending => {
+                                    "PENDING"
+                                }
+                                crate::adaptive_gate_prerequisites::AdaptiveGateState::Blocked(_) => {
+                                    "BLOCKED"
+                                }
+                            };
+                            format!("{name} {status}")
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                }
+            },
+        );
+        let native_tool = match state.worker_context.role {
+            AdaptiveWorkerRole::Implementation => {
+                "run_codexdd_validation (Core live tool/profile availability not inferred from historical LVO status)"
+            }
+            AdaptiveWorkerRole::Validation => {
+                "run_codexdd_independent_validation (Core live tool/profile availability must be verified)"
+            }
+            AdaptiveWorkerRole::Repair => {
+                "Repair cannot substitute for a fresh independent Validator"
+            }
+            AdaptiveWorkerRole::Unspecified => {
+                "Not authorized until the first user-origin Worker assignment"
+            }
+        };
+        let native_tool = if non_source_task {
+            "No source-validation tool applies; operations-specific native availability not yet established"
+        } else {
+            native_tool
+        };
+        let next_action = if !state.enabled {
+            "Enable adaptive mode, then supply one owner-origin Worker assignment."
+        } else if !worker_is_bound && state.worker_assignment_locked {
+            "The first Worker assignment is locked but invalid. Preserve evidence; start a new Worker thread with a valid [adaptive_worker] header in its first nonblank user message."
+        } else if !worker_is_bound {
+            "Start the first nonblank user message with [adaptive_worker], role and authorized_scope; source changes also require source_root, source_sha, task_kind and required_gates."
+        } else if state.paused_by_user {
+            "Hold: confirm the original source and owner prerequisites; resume only with fresh native proof. Historic READY is not authority."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa) {
+            "Await independent owner QA approval; do not auto-release or reuse this READY after restart."
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::Blocked) {
+            "Owner review required; preserve task state and do not escalate or fabricate evidence."
+        } else if non_source_task {
+            // A non-source Worker needs task-specific, owner-approved proof,
+            // never the protected source-only MechanicalValidation profile.
+            match state.assignment_preflight.as_ref().map(|pin| pin.task_kind) {
+                Some(crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview) => {
+                    "Non-source operations/benchmark task: verify exact authorized source, owned process and approved port; only then use guarded, permitted tools to check a fresh HTTP health response. Missing ownership or response requires SETUP_BLOCKED and owner handoff, not a foreign process restart. Do not run source work_packet or claim READY."
+                }
+                Some(crate::adaptive_worker::AdaptiveTaskKind::Benchmark) => {
+                    "Non-source operations/benchmark task: require an exact owner-approved benchmark command and resource lock for the pinned source; collect fresh 2-thread and 4-thread measurements through guarded tools. Missing authorization, lock or either measurement requires SETUP_BLOCKED. Do not run source work_packet or claim READY."
+                }
+                _ => {
+                    "Non-source operations/benchmark task: no approved source-only profile applies. Do not run source work_packet or claim READY."
+                }
+            }
+        } else if state.workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation) {
+            "Start exactly one fresh independent Validator for the current source SHA and owner gates."
+        } else if state.gate_ledger.is_none() && state.assignment_preflight.is_some() {
+            "Source-pinned Worker needs an explicit owner gate manifest; no READY or Validator handoff."
+        } else if state.worker_context.role == AdaptiveWorkerRole::Validation {
+            "Run a fresh Core-native independent_review against the exact pinned source; old source receipts cannot satisfy this gate."
+        } else if state.worker_context.role == AdaptiveWorkerRole::Implementation
+            && state.implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
+        {
+            "Run current Core-native work_packet (and targeted if required) for the pinned SHA; inspect tool/profile setup blockers."
+        } else {
+            "Continue the authorized Worker route; check first-message role, source pin and actual Core tool/profile readiness before claiming completion."
+        };
         let codexdd_identity = codex_build_info::codexdd_compact_identity();
-        format!(
+        let report = format!(
             "Adaptive Effort\n  codexdd: {}\n  Enabled: {}\n  Preference: {}\n  Current: {} {}\n  Budget mode: {}\n  Complexity: {}\n  Implementation phase: {}\n  Implementation floor: {}\n  Attempt: {}\n  Failure pressure: {}/{}\n  Unfinished pressure: {}/{}\n  Paused: {}\n  Last outcome: {}\n  Last failure: {}\n  Worker role: {}\n  Worker scope: {}\n  Worker binding: {}\n  Workflow terminal: {}\n  LVO last: {}\n  LVO run: {}\n  LVO candidate: {}\n  LVO failed stage: {}\n  LVO failure fingerprint: {}\n  LVO repair budget: {}/{} used ({} remaining)\n  LVO next: {}\n  LVO log: {}",
             codexdd_identity,
             if state.enabled { "yes" } else { "no" },
@@ -868,6 +1194,9 @@ impl ChatWidget {
             validation_repair_remaining,
             validation_next,
             validation_log
+        );
+        format!(
+            "{report}\n  Authorized source: {source_pin}\n  Pending prerequisites: {pending_gates}\n  Native tool required: {native_tool}\n  Next action: {next_action}"
         )
     }
 }
@@ -876,7 +1205,177 @@ impl ChatWidget {
 mod tests {
     use super::*;
 
+    #[test]
+    fn codexdd_046_3d1c2b_original_owner_benchmark_is_immutable_and_ephemeral() {
+        let root = if cfg!(windows) {
+            r"C:\fixture\candidate"
+        } else {
+            "/tmp/fixture/candidate"
+        };
+        let message = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"benchmark authority\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\ntask_kind = \"benchmark\"\nbenchmark = {{ command_2 = \"approved-two\", command_4 = \"approved-four\", resource_lock = \"scratch-lock\", max_duration_ms = 20000 }}\n\nRun the bounded benchmark."
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&message), Ok(true));
+        assert_eq!(
+            state
+                .bound_original_benchmark()
+                .unwrap()
+                .benchmark
+                .as_ref()
+                .unwrap()
+                .command_2,
+            "approved-two"
+        );
+        state.activate_adaptive_family(AdaptiveFamily::Sol, false);
+        assert!(state.bound_original_benchmark().is_ok());
+        let replacement = message.replace("approved-two", "unapproved-two");
+        assert_eq!(
+            state.observe_worker_assignment_text(&replacement),
+            Ok(false)
+        );
+        assert_eq!(
+            state
+                .bound_original_benchmark()
+                .unwrap()
+                .benchmark
+                .as_ref()
+                .unwrap()
+                .command_2,
+            "approved-two"
+        );
+        let snapshot = serde_json::to_string(
+            &state.durable_workflow_snapshot(codex_protocol::ThreadId::new()),
+        )
+        .unwrap();
+        assert!(!snapshot.contains("approved-two"));
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: "benchmark authority".to_string(),
+        };
+        assert!(
+            state
+                .fresh_for_new_worker(Some(&binding))
+                .bound_original_benchmark()
+                .is_err()
+        );
+        state.worker_context.authorized_scope = Some("forged scope".to_string());
+        assert!(state.bound_original_benchmark().is_err());
+    }
+
     const VALIDATION_ASSIGNMENT: &str = "[adaptive_worker]\nrole = \"validation\"\nauthorized_scope = \"Z-A0.45B-R2 independent verification\"\n\nReview the exact pushed R2 candidate.";
+
+    fn codexdd_046_3c1b2c_source_parent(
+        root: &std::path::Path,
+        scope: &str,
+    ) -> AdaptiveEffortState {
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        let sha = "a".repeat(40);
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some(scope.to_string()),
+            },
+            worker_assignment_locked: true,
+            assignment_preflight: Some(AdaptiveWorkerPreflight {
+                task_kind: crate::adaptive_worker::AdaptiveTaskKind::SourceChange,
+                source_root: root.display().to_string(),
+                source_sha: sha.clone(),
+            }),
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+            ..Default::default()
+        };
+        state.gate_ledger = Some(
+            AdaptiveGateLedger::new(
+                scope,
+                root,
+                &sha,
+                vec![
+                    AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                    AdaptiveRequiredGate::IndependentValidation,
+                ],
+            )
+            .expect("owner-specified gate requirements"),
+        );
+        state
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2c_live_handoff_preserves_exact_source_gates_without_terminal() {
+        let root = tempfile::tempdir().expect("isolated candidate");
+        let scope = "isolated authorized task";
+        let parent = codexdd_046_3c1b2c_source_parent(root.path(), scope);
+        let parent_thread_id = codex_protocol::ThreadId::new();
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: scope.to_string(),
+        };
+        let mut validator = parent.fresh_for_new_worker(Some(&binding));
+        validator.inherit_authorized_independent_review(&parent, &binding, parent_thread_id);
+        assert_eq!(validator.review_origin_thread_id, Some(parent_thread_id));
+        assert_eq!(validator.assignment_preflight, parent.assignment_preflight);
+        assert_eq!(validator.gate_ledger, parent.gate_ledger);
+        assert_eq!(validator.workflow_terminal, None);
+        assert_eq!(
+            validator
+                .gate_ledger
+                .as_ref()
+                .expect("transferred requirements")
+                .outstanding(&validator.evidence_registry)
+                .len(),
+            2,
+            "no source or independent success is inferred from the transfer"
+        );
+        let persisted = serde_json::to_value(
+            validator.durable_workflow_snapshot(codex_protocol::ThreadId::new()),
+        )
+        .expect("requirements-only snapshot");
+        assert!(
+            persisted.get("reviewOriginThreadId").is_none(),
+            "source Worker identity is ephemeral, never restored as READY authority"
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2c_handoff_rejects_unterminalized_foreign_or_unpinned_source() {
+        let root = tempfile::tempdir().expect("isolated candidate");
+        let scope = "isolated authorized task";
+        let parent = codexdd_046_3c1b2c_source_parent(root.path(), scope);
+        let parent_thread_id = codex_protocol::ThreadId::new();
+        let binding = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: scope.to_string(),
+        };
+
+        let mut not_ready = parent.clone();
+        not_ready.workflow_terminal = None;
+        let mut validator = not_ready.fresh_for_new_worker(Some(&binding));
+        validator.inherit_authorized_independent_review(&not_ready, &binding, parent_thread_id);
+        assert_eq!(validator.review_origin_thread_id, None);
+        assert!(validator.gate_ledger.is_none());
+
+        let wrong_scope = NewWorkerBinding {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: "other task".to_string(),
+        };
+        let mut foreign = parent.fresh_for_new_worker(Some(&wrong_scope));
+        foreign.inherit_authorized_independent_review(&parent, &wrong_scope, parent_thread_id);
+        assert_eq!(foreign.review_origin_thread_id, None);
+        assert!(foreign.gate_ledger.is_none());
+        assert!(foreign.assignment_preflight.is_none());
+
+        let mut wrong_source = parent.clone();
+        wrong_source
+            .assignment_preflight
+            .as_mut()
+            .expect("pin")
+            .source_sha = "b".repeat(40);
+        let mut rejected = wrong_source.fresh_for_new_worker(Some(&binding));
+        rejected.inherit_authorized_independent_review(&wrong_source, &binding, parent_thread_id);
+        assert_eq!(rejected.review_origin_thread_id, None);
+        assert!(rejected.gate_ledger.is_none());
+    }
 
     #[test]
     fn plain_adaptive_startup_waits_for_external_worker_binding() {
@@ -912,6 +1411,8 @@ mod tests {
                 tool_name: None,
                 validation_profile: None,
                 validation_failure_fingerprint: None,
+                native_source_provenance: None,
+                worker_binding: None,
             });
         let binding = NewWorkerBinding {
             role: AdaptiveWorkerRole::Validation,
@@ -1156,6 +1657,80 @@ mod tests {
     }
 
     #[test]
+    fn codexdd_046_3c1b2e_owner_first_turn_gates_survive_route_but_cannot_be_rewritten() {
+        use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+        use std::process::Command;
+
+        let root = tempfile::tempdir().expect("isolated pinned gate fixture");
+        for args in [
+            vec!["init", "-q"],
+            vec![
+                "-c",
+                "user.name=CodexDD Gate Fixture",
+                "-c",
+                "user.email=codexdd@example.test",
+                "commit",
+                "--allow-empty",
+                "-q",
+                "-m",
+                "owner gate authority",
+            ],
+        ] {
+            let status = Command::new("git")
+                .arg("-C")
+                .arg(root.path())
+                .args(&args)
+                .status()
+                .expect("Git available");
+            assert!(status.success(), "fixture Git command failed");
+        }
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root.path())
+            .args(["rev-parse", "HEAD"])
+            .output()
+            .expect("candidate HEAD");
+        assert!(output.status.success());
+        let sha = String::from_utf8(output.stdout).expect("UTF8 HEAD");
+        let manifest = r#"[{ kind = "source_profile", profile = "work_packet" }, { kind = "independent_validation" }]"#;
+        let first = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"locked owner QA task\"\nsource_root = '{}'\nsource_sha = \"{}\"\ntask_kind = \"source_change\"\nrequired_gates = {manifest}\n\nImplement the exact assigned task.",
+            root.path().display(),
+            sha.trim()
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
+        let original_ledger = state
+            .gate_ledger
+            .clone()
+            .expect("issued by first owner turn");
+        let outstanding = original_ledger.outstanding(&state.evidence_registry);
+        assert_eq!(outstanding.len(), 2);
+        assert!(
+            outstanding
+                .iter()
+                .any(|item| { item.gate == AdaptiveRequiredGate::IndependentValidation })
+        );
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+        state.activate_adaptive_family(AdaptiveFamily::Sol61, false);
+        assert_eq!(state.gate_ledger, Some(original_ledger.clone()));
+        assert_eq!(
+            state.observe_worker_assignment_text(
+                "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"different scope\"\nrequired_gates = []\n\nRemove gates."
+            ),
+            Ok(false),
+            "later user turns cannot clear or replace the original requirements"
+        );
+        assert_eq!(state.gate_ledger, Some(original_ledger));
+        let snapshot = state.durable_workflow_snapshot(codex_protocol::ThreadId::new());
+        let requirements = snapshot.gate_checkpoint.expect("pending gates are durable");
+        assert!(requirements.get("requiredGates").is_some());
+        assert!(requirements.get("sourceRefs").is_none());
+        assert!(requirements.get("independentReviewRef").is_none());
+        assert_eq!(state.workflow_terminal, None);
+    }
+
+    #[test]
     fn first_assignment_binds_once_and_later_messages_cannot_mutate_authority() {
         let mut state = AdaptiveEffortState::default();
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
@@ -1218,6 +1793,70 @@ mod tests {
     }
 
     #[test]
+    fn source_pin_survives_adaptive_activation_and_new_model_route() {
+        let root = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let first = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"pinned source\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement against the approved checkout."
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
+        let expected = state
+            .assignment_preflight
+            .clone()
+            .expect("first assignment pin");
+
+        state.activate_adaptive_startup(AdaptiveFamily::Astra);
+        assert_eq!(state.assignment_preflight.as_ref(), Some(&expected));
+        assert!(state.worker_assignment_locked);
+        state.activate_adaptive_family(AdaptiveFamily::Sol61, false);
+        assert_eq!(state.assignment_preflight.as_ref(), Some(&expected));
+        assert_eq!(
+            state.worker_context.authorized_scope.as_deref(),
+            Some("pinned source")
+        );
+    }
+
+    #[test]
+    fn pinned_first_assignment_is_immutable_across_later_turns() {
+        let root = if cfg!(windows) {
+            r"D:\bw58\.worktrees\candidate"
+        } else {
+            "/tmp/bw58/.worktrees/candidate"
+        };
+        let first = format!(
+            "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"source worktree\"\nsource_root = '{root}'\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nImplement within the authorized target."
+        );
+        let mut state = AdaptiveEffortState::default();
+        assert_eq!(state.observe_worker_assignment_text(&first), Ok(true));
+        assert_eq!(
+            state
+                .assignment_preflight
+                .as_ref()
+                .expect("pin")
+                .source_root,
+            root
+        );
+        assert_eq!(
+            state.observe_worker_assignment_text(
+                "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"other\"\n\nSwitch source."
+            ),
+            Ok(false)
+        );
+        assert_eq!(
+            state
+                .assignment_preflight
+                .as_ref()
+                .expect("immutable pin")
+                .source_root,
+            root
+        );
+    }
+
+    #[test]
     fn malformed_first_header_locks_thread_unbound() {
         let mut state = AdaptiveEffortState::default();
         state.activate_adaptive_startup(AdaptiveFamily::Astra);
@@ -1261,5 +1900,186 @@ mod tests {
             state.worker_context.authorized_scope.as_deref(),
             Some("preconfigured implementation gate")
         );
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c2a_status_unbound_explains_first_user_role_and_missing_tool_proof() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        chat.adaptive_effort
+            .activate_adaptive_startup(AdaptiveFamily::Astra);
+        let status = chat.adaptive_effort_status_text();
+        assert!(status.contains("Worker binding: Awaiting first assignment"));
+        assert!(status.contains("Pending prerequisites: Not specified by an authorized owner"));
+        assert!(status.contains(
+            "Native tool required: Not authorized until the first user-origin Worker assignment"
+        ));
+        assert!(
+            status.contains(
+                "Next action: Start the first nonblank user message with [adaptive_worker]"
+            )
+        );
+        assert!(status.contains("source_root, source_sha, task_kind and required_gates"));
+        assert!(!status.contains("READY_FOR_OWNER_QA\n  Authorized source:"));
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        chat.adaptive_effort
+            .activate_adaptive_startup(AdaptiveFamily::Astra);
+        let invalid = "[adaptive_worker]\nrole = \"reviewer\"\nauthorized_scope = \"x\"\n\nx";
+        assert!(
+            chat.adaptive_effort
+                .observe_worker_assignment_text(invalid)
+                .is_err()
+        );
+        assert!(chat.adaptive_effort.worker_assignment_locked);
+        assert_eq!(
+            chat.adaptive_effort.worker_context.role,
+            AdaptiveWorkerRole::Unspecified
+        );
+        let status = chat.adaptive_effort_status_text();
+        assert!(status.contains("Next action: The first Worker assignment is locked but invalid"));
+        assert!(status.contains("Preserve evidence; start a new Worker thread"));
+        assert!(status.contains("Native tool required: Not authorized"));
+        assert!(!status.contains("Next action: Start the first nonblank user message"));
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c2a_status_reports_exact_pin_pending_gates_and_role_specific_tool() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("disposable source");
+        let sha = "a".repeat(40);
+        let mut state = codexdd_046_3c1b2c_source_parent(source.path(), "bounded status scope");
+        state.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        state.workflow_terminal = None;
+        chat.adaptive_effort = state.clone();
+        let source_status = chat.adaptive_effort_status_text();
+        assert!(source_status.contains(&format!(
+            "Authorized source: {} @ {sha}",
+            source.path().display()
+        )));
+        assert!(source_status.contains("source:work_packet PENDING"));
+        assert!(source_status.contains("independent_review PENDING"));
+        assert!(source_status.contains("Native tool required: run_codexdd_validation"));
+        assert!(source_status.contains("Core live tool/profile availability not inferred"));
+        assert!(source_status.contains("Next action: Run current Core-native work_packet"));
+
+        state.worker_context.role = AdaptiveWorkerRole::Validation;
+        state.review_origin_thread_id = Some(codex_protocol::ThreadId::new());
+        chat.adaptive_effort = state;
+        let validation_status = chat.adaptive_effort_status_text();
+        assert!(
+            validation_status.contains("Native tool required: run_codexdd_independent_validation")
+        );
+        assert!(
+            validation_status.contains("Next action: Run a fresh Core-native independent_review")
+        );
+        assert!(validation_status.contains("independent_review PENDING"));
+        assert!(
+            !validation_status
+                .contains("Next action: Start exactly one fresh independent Validator")
+        );
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c2a_cold_paused_status_never_implies_historic_ready() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("disposable source");
+        let mut state = codexdd_046_3c1b2c_source_parent(source.path(), "paused source");
+        state.workflow_terminal = None;
+        state.paused_by_user = true;
+        chat.adaptive_effort = state;
+        let status = chat.adaptive_effort_status_text();
+        assert!(status.contains("Next action: Hold: confirm the original source"));
+        assert!(status.contains("Historic READY is not authority"));
+        assert!(status.contains("source:work_packet PENDING"));
+        assert!(!status.contains("Next action: Start exactly one fresh independent Validator"));
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3c2b_status_prioritizes_blocked_and_non_source_over_profile_advice() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("disposable source");
+        let mut state = codexdd_046_3c1b2c_source_parent(source.path(), "non-source status");
+        state.complexity_class = Some(AdaptiveComplexityClass::Standard);
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::Blocked);
+        chat.adaptive_effort = state.clone();
+        let blocked = chat.adaptive_effort_status_text();
+        assert!(blocked.contains("Next action: Owner review required"));
+        assert!(!blocked.contains("Next action: Run current Core-native work_packet"));
+
+        state.workflow_terminal = None;
+        state
+            .assignment_preflight
+            .as_mut()
+            .expect("owner task kind")
+            .task_kind = crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview;
+        state.gate_ledger = None;
+        chat.adaptive_effort = state.clone();
+        let operations = chat.adaptive_effort_status_text();
+        assert!(operations.contains("Next action: Non-source operations/benchmark task:"));
+        assert!(operations.contains("Do not run source work_packet"));
+        assert!(operations.contains("Native tool required: No source-validation tool applies"));
+        assert!(operations.contains("LVO next: owner-approved operations/benchmark path"));
+        assert!(!operations.contains("LVO next: work_packet"));
+        assert!(!operations.contains("Next action: Run current Core-native work_packet"));
+
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForValidation);
+        chat.adaptive_effort = state;
+        let old_terminal = chat.adaptive_effort_status_text();
+        assert!(old_terminal.contains("Next action: Non-source operations/benchmark task:"));
+        assert!(
+            !old_terminal.contains("Next action: Start exactly one fresh independent Validator")
+        );
+        assert!(!old_terminal.contains("Native tool required: run_codexdd_validation"));
+    }
+
+    #[tokio::test]
+    async fn codexdd_046_3d1b0_non_source_status_requires_owner_proof_and_safe_block() {
+        let (mut chat, _sender, _app_events, _ops) =
+            crate::chatwidget::tests::make_chatwidget_manual_with_sender().await;
+        let source = tempfile::tempdir().expect("disposable source");
+        let mut state = codexdd_046_3c1b2c_source_parent(source.path(), "owner non-source task");
+        state.implementation_phase = Some(AdaptiveImplementationPhase::MechanicalValidation);
+        state.workflow_terminal = None;
+        state
+            .assignment_preflight
+            .as_mut()
+            .expect("source-bound owner task")
+            .task_kind = crate::adaptive_worker::AdaptiveTaskKind::OperationsPreview;
+        chat.adaptive_effort = state.clone();
+        let preview = chat.adaptive_effort_status_text();
+        assert!(preview.contains("owned process and approved port"));
+        assert!(preview.contains("fresh HTTP health response"));
+        assert!(preview.contains("SETUP_BLOCKED and owner handoff"));
+        assert!(!preview.contains("Next action: Run current Core-native work_packet"));
+        assert!(!preview.contains("Next action: Start exactly one fresh independent Validator"));
+
+        state
+            .assignment_preflight
+            .as_mut()
+            .expect("source-bound benchmark task")
+            .task_kind = crate::adaptive_worker::AdaptiveTaskKind::Benchmark;
+        chat.adaptive_effort = state.clone();
+        let benchmark = chat.adaptive_effort_status_text();
+        assert!(benchmark.contains("owner-approved benchmark command and resource lock"));
+        assert!(benchmark.contains("2-thread and 4-thread measurements"));
+        assert!(benchmark.contains("Missing authorization, lock or either measurement"));
+        assert!(!benchmark.contains("Next action: Run current Core-native work_packet"));
+        assert!(!benchmark.contains("Next action: Start exactly one fresh independent Validator"));
+
+        state.workflow_terminal = Some(AdaptiveWorkflowTerminal::Blocked);
+        chat.adaptive_effort = state;
+        let blocked = chat.adaptive_effort_status_text();
+        assert!(blocked.contains("Next action: Owner review required"));
+        assert!(!blocked.contains("Next action: Non-source operations/benchmark task:"));
     }
 }

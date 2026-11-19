@@ -409,7 +409,34 @@ impl ChatWidget {
             return;
         }
 
+        let core_worker = notification.codexdd_first_worker;
         self.apply_thread_settings(notification.thread_settings);
+        // Only this thread's embedded Core may provide a new durable source pin.
+        // A remote or externally routed app-server notification never grants
+        // local protected MechanicalValidation authority.
+        if let Some(worker) = core_worker
+            && self.remote_connection.is_none()
+            && matches!(&self.codex_op_target, CodexOpTarget::AppEvent)
+        {
+            match crate::adaptive_worker::reconcile_core_candidate_preflight(
+                self.adaptive_effort.assignment_preflight.as_ref(),
+                &self.adaptive_effort.worker_context,
+                self.adaptive_effort.worker_assignment_locked,
+                &worker,
+                self.config.cwd.as_path(),
+            ) {
+                Ok(Some(pin)) => {
+                    self.adaptive_effort.assignment_preflight = Some(pin);
+                    self.save_adaptive_effort_for_current_thread();
+                }
+                Ok(None) => {}
+                Err(blocker) => {
+                    tracing::warn!(%blocker, "refused Core candidate pin reconciliation");
+                    // Existing pin stays unchanged. Never infer authority from
+                    // a rejected event or relax native source checks.
+                }
+            }
+        }
     }
 
     #[cfg(test)]

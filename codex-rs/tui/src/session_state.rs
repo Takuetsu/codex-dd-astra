@@ -7,6 +7,8 @@ use std::path::PathBuf;
 
 use crate::adaptive_complexity::AdaptiveComplexityClass;
 use crate::adaptive_complexity::AdaptiveImplementationPhase;
+use crate::adaptive_gate_prerequisites::AdaptiveGateCheckpoint;
+use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
 use crate::adaptive_worker::AdaptiveWorkerContext;
 use crate::adaptive_worker::AdaptiveWorkerRole;
 use crate::adaptive_worker::AdaptiveWorkflowTerminal;
@@ -68,18 +70,64 @@ pub(crate) struct ThreadSessionState {
     pub(crate) adaptive_effort: AdaptiveEffortState,
 }
 
+/// Forks may retain workflow context, but never executable first-owner
+/// benchmark authority, per-turn native evidence, or pending handoff signals.
+fn fork_safe_adaptive_state(parent: &AdaptiveEffortState) -> AdaptiveEffortState {
+    let mut inherited = parent.clone();
+    inherited.original_benchmark_config = None;
+    inherited.pending_signal = None;
+    inherited.pending_attempt = None;
+    inherited.successor_admission = None;
+    inherited.unfinished_turn_pressure = 0;
+    inherited.evidence_registry = Default::default();
+    inherited
+}
+
+#[cfg(test)]
+mod codexdd_046_3d1c2b_fork_authority_regression {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3d1c2b_fork_refuses_inherited_original_benchmark_authority() {
+        let root = if cfg!(windows) {
+            r"C:\fixture\candidate"
+        } else {
+            "/tmp/fixture/candidate"
+        };
+        let message = format!(
+            r#"[adaptive_worker]
+role = "implementation"
+authorized_scope = "benchmark authority"
+source_root = '{root}'
+source_sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+task_kind = "benchmark"
+benchmark = {{ command_2 = "approved-two", command_4 = "approved-four", resource_lock = "scratch-lock", max_duration_ms = 20000 }}
+
+Run the bounded benchmark."#
+        );
+        let mut parent = AdaptiveEffortState::default();
+        assert_eq!(parent.observe_worker_assignment_text(&message), Ok(true));
+        assert!(parent.bound_original_benchmark().is_ok());
+
+        let child = fork_safe_adaptive_state(&parent);
+        assert_eq!(
+            child.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+        );
+        assert!(child.worker_assignment_locked);
+        assert!(child.original_benchmark_config.is_none());
+        assert!(child.bound_original_benchmark().is_err());
+        assert!(parent.bound_original_benchmark().is_ok());
+    }
+}
+
 impl ThreadSessionState {
     /// Copies adaptive state exactly once from the immediate typed fork parent.
     pub(crate) fn inherit_adaptive_effort_from(&mut self, parent: &Self) {
         if self.forked_from_id == Some(parent.thread_id)
             && self.adaptive_effort == AdaptiveEffortState::default()
         {
-            self.adaptive_effort = parent.adaptive_effort.clone();
-            self.adaptive_effort.pending_signal = None;
-            self.adaptive_effort.pending_attempt = None;
-            self.adaptive_effort.successor_admission = None;
-            self.adaptive_effort.unfinished_turn_pressure = 0;
-            self.adaptive_effort.evidence_registry = Default::default();
+            self.adaptive_effort = fork_safe_adaptive_state(&parent.adaptive_effort);
         }
     }
 
@@ -193,6 +241,15 @@ fn apply_persisted_adaptive_workflow_state(
     state: codex_history::AdaptiveWorkflowStateSnapshot,
     source_turn_id: Option<String>,
 ) -> Result<(), String> {
+    apply_persisted_adaptive_workflow_state_for_thread(adaptive_effort, state, source_turn_id, None)
+}
+
+fn apply_persisted_adaptive_workflow_state_for_thread(
+    adaptive_effort: &mut AdaptiveEffortState,
+    state: codex_history::AdaptiveWorkflowStateSnapshot,
+    source_turn_id: Option<String>,
+    owner_thread_id: Option<ThreadId>,
+) -> Result<(), String> {
     let starting_family = restore_family(state.starting_family)?;
     let current_family = restore_family(state.current_family)?;
     let current_effort = restore_effort(state.current_effort)?;
@@ -215,6 +272,61 @@ fn apply_persisted_adaptive_workflow_state(
             "persisted implementation phase requires a bound Implementation Worker with accepted complexity"
                 .to_string(),
         );
+    }
+    // Preserve bounded retry pressure, not native evidence. Malformed,
+    // over-limit or foreign-role snapshots cannot extend the successor budget.
+    let no_native_streak = state.consecutive_no_native_progress_turns;
+    let last_no_native_turn = state.last_no_native_progress_turn_id.as_deref();
+    if no_native_streak > crate::chatwidget::adaptive_effort::CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT
+        || (no_native_streak > 0) != last_no_native_turn.is_some()
+        || last_no_native_turn.is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
+        || (no_native_streak > 0
+            && (!state.enabled
+                || !state.worker_assignment_locked
+                || state
+                    .authorized_scope
+                    .as_deref()
+                    .is_none_or(|scope| scope.trim().is_empty())
+                || worker_role != AdaptiveWorkerRole::Implementation
+                || complexity_class.is_none()
+                || implementation_phase.is_none()
+                || workflow_terminal.is_some()))
+    {
+        return Err(
+            "persisted no-native-progress digest is invalid or exceeds its cap".to_string(),
+        );
+    }
+    // C05: a restart must not grant an extra unfinished-turn continuation,
+    // and must not double-process the same terminal turn after native progress.
+    // These bounded facts can only restrict continuation, never authorize it.
+    let unfinished_pressure = state.unfinished_turn_pressure;
+    let last_processed = state.last_processed_turn_id.as_deref();
+    if unfinished_pressure >= crate::adaptive_controller::ADAPTIVE_UNFINISHED_TURN_THRESHOLD
+        || last_processed.is_some_and(|turn| turn.trim().is_empty() || turn.len() > 256)
+        || (unfinished_pressure > 0
+            && (!state.enabled
+                || workflow_terminal.is_some()
+                || worker_role == AdaptiveWorkerRole::Unspecified
+                || state
+                    .authorized_scope
+                    .as_deref()
+                    .is_none_or(|scope| scope.trim().is_empty())
+                || last_processed.is_none()))
+        || (no_native_streak > 0
+            && last_processed.is_some()
+            && last_no_native_turn != last_processed)
+    {
+        return Err("persisted unfinished-turn progress digest is invalid".to_string());
+    }
+    // Retain spent same-route infrastructure retry pressure across restart.
+    // This fact cannot reauthorize a pending successor or constitute native proof.
+    if state.transient_retry_consumed
+        && (!state.enabled
+            || state.attempt_number < 2
+            || current_family.is_none()
+            || current_effort.is_none())
+    {
+        return Err("persisted consumed transient retry is internally inconsistent".to_string());
     }
     let validation_repair_cycles_used = state.validation_repair_cycles_used;
     let validation_repair_fingerprint = state.validation_repair_fingerprint;
@@ -279,6 +391,82 @@ fn apply_persisted_adaptive_workflow_state(
         );
     }
 
+    let assignment_preflight = crate::adaptive_worker::validated_assignment_preflight(
+        state.assignment_task_kind.as_deref(),
+        state.authorized_source_root.as_deref(),
+        state.authorized_source_sha.as_deref(),
+    )?;
+    if let Some(preflight) = assignment_preflight.as_ref() {
+        if !state.worker_assignment_locked
+            || worker_role == AdaptiveWorkerRole::Unspecified
+            || state
+                .authorized_scope
+                .as_deref()
+                .is_none_or(|scope| scope.trim().is_empty())
+        {
+            return Err(
+                "persisted pinned source requires locked Worker role and nonempty scope"
+                    .to_string(),
+            );
+        }
+        if implementation_phase == Some(AdaptiveImplementationPhase::MechanicalValidation)
+            && preflight.task_kind != crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        {
+            return Err(
+                "persisted operations/benchmark task cannot restore protected MechanicalValidation"
+                    .to_string(),
+            );
+        }
+    }
+    // A persisted checkpoint describes required gates, never a native PASS.
+    // A missing authenticated owner thread or a mismatched locked worktree
+    // must not recover a previous READY terminal or any source authority.
+    let gate_ledger = match state.gate_checkpoint.as_ref() {
+        Some(checkpoint) => {
+            let owner_thread_id = owner_thread_id.ok_or_else(|| {
+                "persisted gate checkpoint needs the original Worker thread".to_string()
+            })?;
+            let pin = assignment_preflight
+                .as_ref()
+                .ok_or_else(|| "persisted gate checkpoint needs a pinned source".to_string())?;
+            let scope = state
+                .authorized_scope
+                .as_deref()
+                .ok_or_else(|| "persisted gate checkpoint needs authorized scope".to_string())?;
+            if !state.worker_assignment_locked {
+                return Err("persisted gate checkpoint needs a locked Worker".to_string());
+            }
+            let encoded = serde_json::to_value(checkpoint)
+                .map_err(|err| format!("invalid persisted gate checkpoint: {err}"))?;
+            let typed: AdaptiveGateCheckpoint = serde_json::from_value(encoded)
+                .map_err(|err| format!("invalid typed gate checkpoint: {err}"))?;
+            Some(AdaptiveGateLedger::restore_pending(
+                typed,
+                owner_thread_id,
+                worker_role,
+                scope,
+                std::path::Path::new(&pin.source_root),
+                &pin.source_sha,
+            )?)
+        }
+        None => None,
+    };
+    // Restored snapshots have no admissible native source or independent
+    // Validator receipts. Quarantine owner READY and source-pinned Implementation
+    // READY used for automatic Validator handoff: a persisted gate manifest is
+    // only pending requirements, never evidence of a live source PASS.
+    // Keep legacy unpinned Repair handoffs compatible with existing resumes.
+    let restored_ready_is_unverified = workflow_terminal
+        == Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa)
+        || (workflow_terminal == Some(AdaptiveWorkflowTerminal::ReadyForValidation)
+            && assignment_preflight.as_ref().is_some_and(|pin| {
+                pin.task_kind == crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+            }));
+    let workflow_terminal = if restored_ready_is_unverified {
+        None
+    } else {
+        workflow_terminal
+    };
     let budget_mode = adaptive_effort.budget_mode;
 
     if state.enabled
@@ -298,25 +486,42 @@ fn apply_persisted_adaptive_workflow_state(
         current_family,
         current_effort,
         attempt_number: state.attempt_number,
-        paused_by_user: state.paused_by_user,
+        paused_by_user: state.paused_by_user || restored_ready_is_unverified,
         last_outcome: None,
         last_failure_kind: None,
         worker_context: AdaptiveWorkerContext {
             role: worker_role,
             authorized_scope: state.authorized_scope,
         },
+        assignment_preflight,
         worker_assignment_locked: state.worker_assignment_locked,
         workflow_terminal,
-        transient_retry_consumed: false,
-        unfinished_turn_pressure: 0,
-        // Restored state has no trustworthy per-turn native evidence; restart
-        // the in-memory progress streak rather than inheriting a stale count.
-        consecutive_no_native_progress_turns: 0,
-        last_processed_terminal_turn_id: workflow_terminal.and(source_turn_id),
+        transient_retry_consumed: state.transient_retry_consumed,
+        unfinished_turn_pressure: unfinished_pressure,
+        // Only bounded pressure and the last processed turn survive. No native
+        // evidence or successor permit can be recovered from this checkpoint.
+        consecutive_no_native_progress_turns: no_native_streak,
+        last_processed_terminal_turn_id: if workflow_terminal.is_some() {
+            source_turn_id.or(state.last_processed_turn_id)
+        } else {
+            state
+                .last_processed_turn_id
+                .or(state.last_no_native_progress_turn_id)
+        },
         pending_attempt: None,
         successor_admission: None,
         pending_signal: None,
         evidence_registry: Default::default(),
+        gate_ledger,
+        // The original owner's executable benchmark commands and scratch-lock
+        // authority exist only in the live first-message Worker state. A cold
+        // restore must fail closed instead of reconstructing them from history.
+        original_benchmark_config: None,
+        // Restart cannot recreate a live cross-Worker handoff or trusted
+        // independent receipt from the persisted requirements-only snapshot.
+        review_origin_thread_id: None,
+        // Cold resume never restores a live Core QA request or its correlation.
+        pending_owned_runtime_qa: None,
         complexity_class,
         implementation_phase,
         validation_repair_fingerprint,
@@ -326,6 +531,19 @@ fn apply_persisted_adaptive_workflow_state(
         budget_mode,
     };
     Ok(())
+}
+
+/// A legacy SetReadyForOwnerQa rollout item is an old assertion, not current
+/// evidence. The independent gate is not replayable after restart; hold this
+/// worker for an explicit owner decision without triggering retries.
+fn suspend_unverified_legacy_ready(adaptive_effort: &mut AdaptiveEffortState) {
+    adaptive_effort.workflow_terminal = None;
+    adaptive_effort.paused_by_user = true;
+    adaptive_effort.last_processed_terminal_turn_id = None;
+    adaptive_effort.unfinished_turn_pressure = 0;
+    adaptive_effort.pending_attempt = None;
+    adaptive_effort.pending_signal = None;
+    adaptive_effort.successor_admission = None;
 }
 
 pub(crate) async fn restore_persisted_workflow_state(
@@ -348,17 +566,18 @@ pub(crate) async fn restore_persisted_workflow_state(
     match codex_history::restored_workflow_state(items.iter()) {
         codex_history::RestoredWorkflowState::None => {}
         codex_history::RestoredWorkflowState::ReadyForOwnerQa => {
-            adaptive_effort.workflow_terminal = Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa);
-            adaptive_effort.unfinished_turn_pressure = 0;
-            adaptive_effort.pending_attempt = None;
-            adaptive_effort.pending_signal = None;
-            adaptive_effort.successor_admission = None;
+            suspend_unverified_legacy_ready(adaptive_effort);
         }
         codex_history::RestoredWorkflowState::Adaptive {
             state,
             source_turn_id,
         } => {
-            apply_persisted_adaptive_workflow_state(adaptive_effort, state, source_turn_id)?;
+            apply_persisted_adaptive_workflow_state_for_thread(
+                adaptive_effort,
+                state,
+                source_turn_id,
+                Some(thread_id),
+            )?;
         }
         codex_history::RestoredWorkflowState::Unsupported => {
             adaptive_effort.enabled = false;
@@ -396,10 +615,19 @@ mod tests {
                 validation_repair_cycles_used: 0,
                 validation_targeted_retest_required: false,
                 validation_status: None,
+                transient_retry_consumed: false,
+                unfinished_turn_pressure: 0,
+                last_processed_turn_id: None,
+                consecutive_no_native_progress_turns: 0,
+                last_no_native_progress_turn_id: None,
                 attempt_number: 6,
                 paused_by_user: false,
                 worker_role: "repair".to_string(),
                 authorized_scope: Some("Z-A0.47B bounded repair".to_string()),
+                assignment_task_kind: None,
+                authorized_source_root: None,
+                authorized_source_sha: None,
+                gate_checkpoint: None,
                 worker_assignment_locked: true,
                 workflow_terminal: Some("ready_for_validation".to_string()),
             },
@@ -435,18 +663,20 @@ mod tests {
     }
 
     #[test]
-    fn restored_snapshot_accepts_every_hard_workflow_terminal() {
-        for (persisted, expected) in [
+    fn restored_snapshot_preserves_non_ready_terminals_but_quarantines_unverified_ready() {
+        for (persisted, expected, held_for_owner) in [
             (
                 "ready_for_validation",
-                AdaptiveWorkflowTerminal::ReadyForValidation,
+                Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+                false,
             ),
-            ("repair_required", AdaptiveWorkflowTerminal::RepairRequired),
             (
-                "ready_for_owner_qa",
-                AdaptiveWorkflowTerminal::ReadyForOwnerQa,
+                "repair_required",
+                Some(AdaptiveWorkflowTerminal::RepairRequired),
+                false,
             ),
-            ("blocked", AdaptiveWorkflowTerminal::Blocked),
+            ("ready_for_owner_qa", None, true),
+            ("blocked", Some(AdaptiveWorkflowTerminal::Blocked), false),
         ] {
             let mut adaptive = AdaptiveEffortState::default();
             apply_persisted_adaptive_workflow_state(
@@ -462,10 +692,19 @@ mod tests {
                     validation_repair_cycles_used: 0,
                     validation_targeted_retest_required: false,
                     validation_status: None,
+                    transient_retry_consumed: false,
+                    unfinished_turn_pressure: 0,
+                    last_processed_turn_id: None,
+                    consecutive_no_native_progress_turns: 0,
+                    last_no_native_progress_turn_id: None,
                     attempt_number: 1,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
                     authorized_scope: Some("bounded scope".to_string()),
+                    assignment_task_kind: None,
+                    authorized_source_root: None,
+                    authorized_source_sha: None,
+                    gate_checkpoint: None,
                     worker_assignment_locked: true,
                     workflow_terminal: Some(persisted.to_string()),
                 },
@@ -473,7 +712,8 @@ mod tests {
             )
             .expect("terminal snapshot should restore");
 
-            assert_eq!(adaptive.workflow_terminal, Some(expected));
+            assert_eq!(adaptive.workflow_terminal, expected);
+            assert_eq!(adaptive.paused_by_user, held_for_owner);
             assert_eq!(adaptive.pending_attempt, None);
             assert_eq!(adaptive.pending_signal, None);
             assert_eq!(adaptive.successor_admission, None);
@@ -496,10 +736,19 @@ mod tests {
                 validation_repair_cycles_used: 0,
                 validation_targeted_retest_required: false,
                 validation_status: None,
+                transient_retry_consumed: false,
+                unfinished_turn_pressure: 0,
+                last_processed_turn_id: None,
+                consecutive_no_native_progress_turns: 0,
+                last_no_native_progress_turn_id: None,
                 attempt_number: 4,
                 paused_by_user: true,
                 worker_role: "validation".to_string(),
                 authorized_scope: Some("independent validation".to_string()),
+                assignment_task_kind: None,
+                authorized_source_root: None,
+                authorized_source_sha: None,
+                gate_checkpoint: None,
                 worker_assignment_locked: true,
                 workflow_terminal: None,
             },
@@ -538,10 +787,19 @@ mod tests {
                     validation_repair_cycles_used: 0,
                     validation_targeted_retest_required: false,
                     validation_status: None,
+                    transient_retry_consumed: false,
+                    unfinished_turn_pressure: 0,
+                    last_processed_turn_id: None,
+                    consecutive_no_native_progress_turns: 0,
+                    last_no_native_progress_turn_id: None,
                     attempt_number: 2,
                     paused_by_user: false,
                     worker_role: "repair".to_string(),
                     authorized_scope: Some("family restore compatibility".to_string()),
+                    assignment_task_kind: None,
+                    authorized_source_root: None,
+                    authorized_source_sha: None,
+                    gate_checkpoint: None,
                     worker_assignment_locked: true,
                     workflow_terminal: None,
                 },
@@ -753,5 +1011,640 @@ mod codexdd_complexity_persistence_regression {
         assert_eq!(adaptive.evidence_registry.len(), 0);
         assert_eq!(adaptive.last_outcome, None);
         assert_eq!(adaptive.last_failure_kind, None);
+    }
+
+    #[test]
+    fn source_pins_restore_and_partial_pins_are_rejected() {
+        let root = if cfg!(windows) {
+            r"C:\approved\candidate"
+        } else {
+            "/tmp/approved/candidate"
+        };
+        let json = format!(
+            r#"{{
+            "enabled": true,
+            "starting_family": "astra",
+            "current_family": "sol",
+            "current_effort": "medium",
+            "attempt_number": 2,
+            "paused_by_user": false,
+            "worker_role": "implementation",
+            "authorized_scope": "pinned test",
+            "worker_assignment_locked": true,
+            "workflow_terminal": null,
+            "complexity_class": "standard",
+            "implementation_phase": "implementation",
+            "assignment_task_kind": "source_change",
+            "authorized_source_root": {},
+            "authorized_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }}"#,
+            serde_json::to_string(root).expect("json path")
+        );
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_str(&json).expect("valid snapshot");
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut adaptive, snapshot, None)
+            .expect("pinned source must survive restart");
+        let pin = adaptive.assignment_preflight.expect("restored pin");
+        assert_eq!(pin.source_root, root);
+        assert_eq!(pin.source_sha, "a".repeat(40));
+        assert_eq!(
+            pin.task_kind,
+            crate::adaptive_worker::AdaptiveTaskKind::SourceChange
+        );
+
+        let invalid: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(serde_json::json!({
+                "enabled": true,
+                "starting_family": "astra",
+                "current_family": "sol",
+                "current_effort": "medium",
+                "attempt_number": 2,
+                "paused_by_user": false,
+                "worker_role": "implementation",
+                "authorized_scope": "partial pin",
+                "worker_assignment_locked": true,
+                "workflow_terminal": null,
+                "authorized_source_root": root,
+            }))
+            .expect("JSON schema accepts old optionality");
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut adaptive, invalid, None)
+                .expect_err("incomplete source pin must fail closed")
+                .contains("source_root and source_sha together")
+        );
+
+        let unlocked: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_str(&json.replace(
+                "\"worker_assignment_locked\": true",
+                "\"worker_assignment_locked\": false",
+            ))
+            .expect("snapshot is readable");
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut adaptive, unlocked, None)
+                .expect_err("unlocked pin must never become restart authority")
+                .contains("requires locked Worker role")
+        );
+
+        let incompatible: codex_history::AdaptiveWorkflowStateSnapshot = serde_json::from_str(
+            &json
+                .replace(
+                    "\"assignment_task_kind\": \"source_change\"",
+                    "\"assignment_task_kind\": \"benchmark\"",
+                )
+                .replace(
+                    "\"implementation_phase\": \"implementation\"",
+                    "\"implementation_phase\": \"mechanical_validation\"",
+                ),
+        )
+        .expect("snapshot is readable");
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut adaptive, incompatible, None)
+                .expect_err("benchmark cannot resume source mechanical phase")
+                .contains("cannot restore protected MechanicalValidation")
+        );
+    }
+}
+
+#[cfg(test)]
+mod codexdd_046_3b3d2_persistence_tests {
+    use super::*;
+    use crate::adaptive_gate_prerequisites::AdaptiveGateLedger;
+    use crate::adaptive_gate_prerequisites::AdaptiveGateState;
+    use crate::adaptive_gate_prerequisites::AdaptiveRequiredGate;
+    use crate::adaptive_worker::AdaptiveTaskKind;
+    use crate::adaptive_worker::AdaptiveWorkerPreflight;
+
+    fn pinned_wire_state(
+        source_root: &std::path::Path,
+        owner: ThreadId,
+    ) -> codex_app_server_protocol::ThreadAdaptiveWorkflowState {
+        let scope = "isolated persistent gate handoff";
+        let ledger = AdaptiveGateLedger::new(
+            scope,
+            source_root,
+            &"a".repeat(40),
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("exact authorized requirements");
+        let mut adaptive = AdaptiveEffortState::default();
+        adaptive.worker_context = AdaptiveWorkerContext {
+            role: AdaptiveWorkerRole::Validation,
+            authorized_scope: Some(scope.to_string()),
+        };
+        adaptive.assignment_preflight = Some(AdaptiveWorkerPreflight {
+            task_kind: AdaptiveTaskKind::SourceChange,
+            source_root: source_root.display().to_string(),
+            source_sha: "a".repeat(40),
+        });
+        adaptive.worker_assignment_locked = true;
+        adaptive.gate_ledger = Some(ledger);
+        let snapshot = adaptive.durable_workflow_snapshot(owner);
+        let checkpoint = snapshot.gate_checkpoint.as_ref().expect("durable gates");
+        let text = serde_json::to_string(checkpoint).expect("small bounded JSON");
+        assert!(text.contains("independent_validation"));
+        assert!(!text.contains("native-lvo-evidence"));
+        assert!(!text.contains("native-run-123"));
+        snapshot
+    }
+
+    fn history_snapshot(
+        wire: &codex_app_server_protocol::ThreadAdaptiveWorkflowState,
+    ) -> codex_history::AdaptiveWorkflowStateSnapshot {
+        serde_json::from_value(serde_json::json!({
+            "enabled": true,
+            "starting_family": "astra",
+            "current_family": "sol",
+            "current_effort": "low",
+            "attempt_number": 1,
+            "paused_by_user": false,
+            "worker_role": "validation",
+            "authorized_scope": wire.authorized_scope,
+            "assignment_task_kind": wire.assignment_task_kind,
+            "authorized_source_root": wire.authorized_source_root,
+            "authorized_source_sha": wire.authorized_source_sha,
+            "worker_assignment_locked": true,
+            "workflow_terminal": "ready_for_owner_qa",
+            "gate_checkpoint": wire.gate_checkpoint,
+        }))
+        .expect("strict typed rollout checkpoint")
+    }
+
+    #[test]
+    fn codexdd_046_3c1b2j3b2b2a_source_pinned_ready_cannot_reauthorize_after_cold_resume() {
+        let checkout = tempfile::tempdir().expect("isolated candidate");
+        let owner = ThreadId::new();
+        let scope = "3C.1b.2j3b2b2a original Implementation scope";
+        let sha = "a".repeat(40);
+        let ledger = AdaptiveGateLedger::new(
+            scope,
+            checkout.path(),
+            &sha,
+            vec![
+                AdaptiveRequiredGate::SourceProfile("work_packet".to_string()),
+                AdaptiveRequiredGate::IndependentValidation,
+            ],
+        )
+        .expect("locked source gate manifest");
+        let state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Astra),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::High),
+            attempt_number: 1,
+            complexity_class: Some(AdaptiveComplexityClass::Standard),
+            implementation_phase: Some(AdaptiveImplementationPhase::MechanicalValidation),
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some(scope.to_string()),
+            },
+            assignment_preflight: Some(AdaptiveWorkerPreflight {
+                task_kind: AdaptiveTaskKind::SourceChange,
+                source_root: checkout.path().display().to_string(),
+                source_sha: sha.clone(),
+            }),
+            worker_assignment_locked: true,
+            gate_ledger: Some(ledger),
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForValidation),
+            ..Default::default()
+        };
+        let wire = state.durable_workflow_snapshot(owner);
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(serde_json::json!({
+                "enabled": true,
+                "starting_family": "astra",
+                "current_family": "sol",
+                "current_effort": "high",
+                "attempt_number": 1,
+                "paused_by_user": false,
+                "worker_role": "implementation",
+                "authorized_scope": scope,
+                "assignment_task_kind": "source_change",
+                "authorized_source_root": checkout.path(),
+                "authorized_source_sha": sha,
+                "worker_assignment_locked": true,
+                "complexity_class": "standard",
+                "implementation_phase": "mechanical_validation",
+                "workflow_terminal": "ready_for_validation",
+                "gate_checkpoint": wire.gate_checkpoint,
+            }))
+            .expect("typed source-locked rollout checkpoint");
+        let mut resumed = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state_for_thread(
+            &mut resumed,
+            snapshot,
+            Some("old-source-terminal".to_string()),
+            Some(owner),
+        )
+        .expect("original owner state and pending gates still restore");
+        assert_eq!(
+            resumed.worker_context.role,
+            AdaptiveWorkerRole::Implementation
+        );
+        assert_eq!(
+            resumed.complexity_class,
+            Some(AdaptiveComplexityClass::Standard)
+        );
+        assert_eq!(
+            resumed.implementation_phase,
+            Some(AdaptiveImplementationPhase::MechanicalValidation)
+        );
+        assert_eq!(
+            resumed
+                .assignment_preflight
+                .as_ref()
+                .expect("source identity kept")
+                .source_sha,
+            sha
+        );
+        assert_eq!(resumed.workflow_terminal, None);
+        assert!(
+            resumed.paused_by_user,
+            "historical source READY without fresh native PASS must be held for owner"
+        );
+        assert_eq!(resumed.last_processed_terminal_turn_id, None);
+        assert_eq!(resumed.evidence_registry.len(), 0);
+        assert!(resumed.pending_signal.is_none());
+        assert!(resumed.successor_admission.is_none());
+        assert_eq!(
+            resumed
+                .gate_ledger
+                .as_ref()
+                .expect("original required gates")
+                .outstanding(&resumed.evidence_registry)
+                .len(),
+            2,
+            "original requirements remain pending, never implicitly PASS"
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3b3d2_protocol_and_rollout_restart_require_revalidation() {
+        let temp = tempfile::tempdir().expect("worktree");
+        let owner = ThreadId::new();
+        let wire = pinned_wire_state(temp.path(), owner);
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            history_snapshot(&wire),
+            Some("old-ready-turn".to_string()),
+            Some(owner),
+        )
+        .expect("current Worker identity and source");
+        let pending = adaptive
+            .gate_ledger
+            .as_ref()
+            .expect("restored requirements")
+            .outstanding(&Default::default());
+        assert_eq!(pending.len(), 2);
+        assert_eq!(pending[0].state, AdaptiveGateState::Pending);
+        assert_eq!(pending[1].state, AdaptiveGateState::Pending);
+        assert_eq!(adaptive.workflow_terminal, None);
+        assert_eq!(adaptive.evidence_registry.len(), 0);
+        assert!(adaptive.pending_signal.is_none());
+        assert!(adaptive.successor_admission.is_none());
+    }
+
+    #[test]
+    fn codexdd_046_3b3d2_legacy_snapshot_remains_compatible_without_gates() {
+        let temp = tempfile::tempdir().expect("worktree");
+        let owner = ThreadId::new();
+        let wire = pinned_wire_state(temp.path(), owner);
+        let mut snapshot = serde_json::to_value(history_snapshot(&wire)).expect("rollout JSON");
+        snapshot
+            .as_object_mut()
+            .expect("object")
+            .remove("gate_checkpoint");
+        let mut adaptive = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state_for_thread(
+            &mut adaptive,
+            serde_json::from_value(snapshot).expect("legacy rollout"),
+            None,
+            Some(owner),
+        )
+        .expect("old state is backward compatible");
+        assert!(adaptive.gate_ledger.is_none());
+        assert_eq!(adaptive.workflow_terminal, None);
+        assert!(adaptive.paused_by_user);
+        // Missing checkpoint means the old READY report is not current proof.
+    }
+
+    #[test]
+    fn codexdd_046_3b3d2_rejects_wrong_owner_stale_sha_and_unbound_restore() {
+        let temp = tempfile::tempdir().expect("worktree");
+        let owner = ThreadId::new();
+        let wire = pinned_wire_state(temp.path(), owner);
+        let baseline = history_snapshot(&wire);
+        let mut adaptive = AdaptiveEffortState::default();
+        assert!(
+            apply_persisted_adaptive_workflow_state_for_thread(
+                &mut adaptive,
+                baseline.clone(),
+                None,
+                Some(ThreadId::new()),
+            )
+            .is_err()
+        );
+        assert!(
+            apply_persisted_adaptive_workflow_state_for_thread(
+                &mut adaptive,
+                baseline.clone(),
+                None,
+                None,
+            )
+            .is_err()
+        );
+
+        let mut forged = serde_json::to_value(baseline).expect("rollout JSON");
+        forged["authorized_source_sha"] = serde_json::json!("b".repeat(40));
+        let incompatible = serde_json::from_value(forged).expect("typed old format");
+        assert!(
+            apply_persisted_adaptive_workflow_state_for_thread(
+                &mut adaptive,
+                incompatible,
+                None,
+                Some(owner),
+            )
+            .is_err()
+        );
+        assert!(adaptive.gate_ledger.is_none());
+    }
+}
+
+#[cfg(test)]
+mod codexdd_046_3c1b1_resume_guards {
+    use super::*;
+
+    #[test]
+    fn codexdd_046_3c1b1_standalone_legacy_ready_is_held_without_evidence() {
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            workflow_terminal: Some(AdaptiveWorkflowTerminal::ReadyForOwnerQa),
+            ..Default::default()
+        };
+        suspend_unverified_legacy_ready(&mut state);
+        assert_eq!(state.workflow_terminal, None);
+        assert!(state.paused_by_user);
+        assert_eq!(state.last_processed_terminal_turn_id, None);
+        assert!(state.pending_signal.is_none());
+        assert!(state.successor_admission.is_none());
+        assert!(state.pending_attempt.is_none());
+        assert_eq!(state.evidence_registry.len(), 0);
+    }
+
+    #[test]
+    fn codexdd_046_3c1b1_legacy_ready_snapshot_with_source_pin_is_not_readiness() {
+        let root = tempfile::tempdir().expect("disposable authorized root");
+        let sha = "a".repeat(40);
+        let snapshot: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(serde_json::json!({
+                "enabled": true,
+                "starting_family": "astra",
+                "current_family": "sol",
+                "current_effort": "low",
+                "attempt_number": 2,
+                "paused_by_user": false,
+                "worker_role": "validation",
+                "authorized_scope": "isolated legacy Validator task",
+                "assignment_task_kind": "source_change",
+                "authorized_source_root": root.path(),
+                "authorized_source_sha": sha,
+                "worker_assignment_locked": true,
+                "workflow_terminal": "ready_for_owner_qa"
+            }))
+            .expect("legacy snapshot without gate checkpoint");
+        let mut state = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(
+            &mut state,
+            snapshot,
+            Some("prior-green-turn".to_string()),
+        )
+        .expect("backward-compatible but unverified READY");
+        assert_eq!(state.workflow_terminal, None);
+        assert!(state.paused_by_user);
+        assert_eq!(state.last_processed_terminal_turn_id, None);
+        assert!(state.gate_ledger.is_none());
+        assert!(state.evidence_registry.len() == 0);
+        assert_eq!(
+            state.worker_context.role,
+            crate::adaptive_worker::AdaptiveWorkerRole::Validation
+        );
+    }
+}
+
+#[cfg(test)]
+mod codexdd_046_3b4_no_native_progress_persistence_tests {
+    use super::*;
+
+    fn progress_snapshot(
+        count: u8,
+        last_turn: Option<&str>,
+    ) -> codex_history::AdaptiveWorkflowStateSnapshot {
+        serde_json::from_value(serde_json::json!({
+            "enabled": true,
+            "starting_family": "sol",
+            "current_family": "sol",
+            "current_effort": "medium",
+            "complexity_class": "standard",
+            "implementation_phase": "implementation",
+            "attempt_number": 4,
+            "paused_by_user": false,
+            "worker_role": "implementation",
+            "authorized_scope": "bounded original Implementation progress",
+            "worker_assignment_locked": true,
+            "transient_retry_consumed": false,
+            "unfinished_turn_pressure": 0,
+            "last_processed_turn_id": null,
+            "consecutive_no_native_progress_turns": count,
+            "last_no_native_progress_turn_id": last_turn
+        }))
+        .expect("valid non-authoritative progress checkpoint")
+    }
+
+    #[test]
+    fn codexdd_046_3b4_progress_pressure_survives_cold_resume_without_native_authority() {
+        let mut state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Sol),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::Medium),
+            attempt_number: 4,
+            complexity_class: Some(AdaptiveComplexityClass::Standard),
+            implementation_phase: Some(AdaptiveImplementationPhase::Implementation),
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("bounded original Implementation progress".to_string()),
+            },
+            worker_assignment_locked: true,
+            transient_retry_consumed: true,
+            consecutive_no_native_progress_turns: 2,
+            last_processed_terminal_turn_id: Some("last-no-native-turn".to_string()),
+            ..Default::default()
+        };
+        let wire = state.durable_workflow_snapshot(ThreadId::new());
+        assert_eq!(wire.transient_retry_consumed, Some(true));
+        assert_eq!(wire.unfinished_turn_pressure, Some(0));
+        assert_eq!(
+            wire.last_processed_turn_id.as_deref(),
+            Some("last-no-native-turn")
+        );
+        assert_eq!(wire.consecutive_no_native_progress_turns, Some(2));
+        assert_eq!(
+            wire.last_no_native_progress_turn_id.as_deref(),
+            Some("last-no-native-turn")
+        );
+
+        state = AdaptiveEffortState::default();
+        let mut persisted = progress_snapshot(2, Some("last-no-native-turn"));
+        persisted.transient_retry_consumed = true;
+        apply_persisted_adaptive_workflow_state(&mut state, persisted, None)
+            .expect("bounded pressure restores but no native evidence does");
+        assert!(state.transient_retry_consumed);
+        assert_eq!(state.consecutive_no_native_progress_turns, 2);
+        assert_eq!(
+            state.last_processed_terminal_turn_id.as_deref(),
+            Some("last-no-native-turn")
+        );
+        assert_eq!(state.evidence_registry.len(), 0);
+        assert!(state.pending_attempt.is_none());
+        assert!(state.pending_signal.is_none());
+        assert!(state.successor_admission.is_none());
+        assert_eq!(
+            state.consecutive_no_native_progress_turns.saturating_add(1),
+            crate::chatwidget::adaptive_effort::CODEXDD_NO_NATIVE_PROGRESS_TURN_LIMIT
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3b4_progress_digest_refuses_over_limit_foreign_and_missing_turn() {
+        let mut restored = AdaptiveEffortState::default();
+        let invalid = progress_snapshot(4, Some("turn-4"));
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut restored, invalid, None)
+                .expect_err("counter beyond supported limit")
+                .contains("no-native-progress digest")
+        );
+        let mut foreign = progress_snapshot(2, Some("turn-2"));
+        foreign.worker_role = "validation".to_string();
+        // A Validation snapshot cannot carry an Implementation-only phase.
+        // Remove that separate invalidity so this case reaches the 3B.4
+        // progress-digest role guard instead of failing the earlier phase guard.
+        foreign.implementation_phase = None;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut restored, foreign, None)
+                .expect_err("Validation may not inherit Implementation pressure")
+                .contains("no-native-progress digest")
+        );
+        let missing_turn = progress_snapshot(2, None);
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut restored, missing_turn, None)
+                .expect_err("a streak must identify the already-counted source turn")
+                .contains("no-native-progress digest")
+        );
+        let inconsistent = progress_snapshot(0, Some("turn-unearned"));
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut restored, inconsistent, None)
+                .expect_err("zero streak cannot carry an unearned counted turn")
+                .contains("no-native-progress digest")
+        );
+        let mut unearned_retry = progress_snapshot(0, None);
+        unearned_retry.transient_retry_consumed = true;
+        unearned_retry.attempt_number = 1;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut restored, unearned_retry, None)
+                .expect_err("initial route cannot have consumed a retry")
+                .contains("consumed transient retry")
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3b4_c05_replay_and_unfinished_pressure_survive_resume() {
+        let state = AdaptiveEffortState {
+            enabled: true,
+            starting_family: Some(AdaptiveFamily::Sol),
+            current_family: Some(AdaptiveFamily::Sol),
+            current_effort: Some(AdaptiveEffort::Medium),
+            attempt_number: 4,
+            worker_context: AdaptiveWorkerContext {
+                role: AdaptiveWorkerRole::Implementation,
+                authorized_scope: Some("bounded original Implementation progress".to_string()),
+            },
+            worker_assignment_locked: true,
+            unfinished_turn_pressure: 1,
+            last_processed_terminal_turn_id: Some("productive-turn".to_string()),
+            ..Default::default()
+        };
+        let wire = state.durable_workflow_snapshot(ThreadId::new());
+        assert_eq!(wire.unfinished_turn_pressure, Some(1));
+        assert_eq!(
+            wire.last_processed_turn_id.as_deref(),
+            Some("productive-turn")
+        );
+        let mut persisted = progress_snapshot(0, None);
+        persisted.unfinished_turn_pressure = 1;
+        persisted.last_processed_turn_id = Some("productive-turn".to_string());
+        let mut resumed = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut resumed, persisted.clone(), None)
+            .expect("bounded no-op pressure and replay marker survive");
+        assert_eq!(resumed.unfinished_turn_pressure, 1);
+        assert_eq!(
+            resumed.last_processed_terminal_turn_id.as_deref(),
+            Some("productive-turn")
+        );
+        assert_eq!(resumed.evidence_registry.len(), 0);
+        assert!(resumed.pending_attempt.is_none());
+        assert!(resumed.successor_admission.is_none());
+        assert!(resumed.pending_signal.is_none());
+
+        let mut exhausted = persisted.clone();
+        exhausted.unfinished_turn_pressure = 2;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut resumed, exhausted, None)
+                .expect_err("out of range pressure must refuse")
+                .contains("unfinished-turn progress digest")
+        );
+        let mut missing_marker = persisted;
+        missing_marker.last_processed_turn_id = None;
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut resumed, missing_marker, None)
+                .expect_err("pressure without a counted source turn must refuse")
+                .contains("unfinished-turn progress digest")
+        );
+        let mut inconsistent = progress_snapshot(1, Some("no-native-turn"));
+        inconsistent.last_processed_turn_id = Some("unrelated-turn".to_string());
+        assert!(
+            apply_persisted_adaptive_workflow_state(&mut resumed, inconsistent, None)
+                .expect_err("mismatched replay and no-native source turn must refuse")
+                .contains("unfinished-turn progress digest")
+        );
+    }
+
+    #[test]
+    fn codexdd_046_3b4_legacy_snapshot_without_progress_fields_restores_zero() {
+        let mut legacy = serde_json::to_value(progress_snapshot(0, None))
+            .expect("serialize legacy-compatible history snapshot");
+        let object = legacy
+            .as_object_mut()
+            .expect("serialized history snapshot is an object");
+        object.remove("transient_retry_consumed");
+        object.remove("unfinished_turn_pressure");
+        object.remove("last_processed_turn_id");
+        object.remove("consecutive_no_native_progress_turns");
+        object.remove("last_no_native_progress_turn_id");
+        let legacy: codex_history::AdaptiveWorkflowStateSnapshot =
+            serde_json::from_value(legacy).expect("legacy defaults");
+        let mut restored = AdaptiveEffortState::default();
+        apply_persisted_adaptive_workflow_state(&mut restored, legacy, None)
+            .expect("pre-3B.4 snapshots remain compatible");
+        assert!(!restored.transient_retry_consumed);
+        assert_eq!(restored.unfinished_turn_pressure, 0);
+        assert_eq!(restored.consecutive_no_native_progress_turns, 0);
+        assert_eq!(restored.last_processed_terminal_turn_id, None);
     }
 }

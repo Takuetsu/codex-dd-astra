@@ -4,6 +4,33 @@ use std::fs;
 use tempfile::tempdir;
 
 #[test]
+fn codexdd_046_3b2s_native_lvo_git_child_timeout_is_setup_blocked_and_reaped() {
+    use std::process::Command;
+
+    #[cfg(windows)]
+    let command = {
+        let mut command = Command::new("powershell.exe");
+        command.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Start-Sleep -Seconds 5",
+        ]);
+        command
+    };
+    #[cfg(not(windows))]
+    let command = {
+        let mut command = Command::new("sleep");
+        command.arg("5");
+        command
+    };
+    let error = run_bounded_lvo_git_command(command, "synthetic-stall", Duration::from_millis(150))
+        .expect_err("stalled native LVO Git child must fail closed");
+    assert!(error.contains("SETUP_BLOCKED: native LVO Git synthetic-stall timed out"));
+    assert!(error.contains("process terminated"));
+}
+
+#[test]
 fn profiles_map_to_fixed_scripts_and_bounded_timeouts() {
     assert_eq!(
         [
@@ -165,6 +192,546 @@ fn powershell_command_escapes_trusted_paths_and_contains_no_model_shell_input() 
     );
 }
 
+/// Exercise the real Windows PowerShell wrapper and actual process exit-file
+/// capture without invoking a real Worker or trusting a model-supplied receipt.
+/// Both fixture branches intentionally emit a syntactically complete PASS; the
+/// nonzero native process exit must override that apparent result.
+#[cfg(windows)]
+#[test]
+fn codexdd_046_3b2m_native_wrapper_records_real_exit_and_rejects_forged_pass() {
+    let temp = tempdir().expect("fixture root");
+    let repository_root = temp.path().join("owner's LVO test");
+    let scripts = repository_root.join("scripts");
+    fs::create_dir_all(&scripts).expect("create scripts");
+    let script = scripts.join("codexdd-test-targeted.ps1");
+    fs::write(
+        &script,
+        r#"
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_begin","profile":"targeted","stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_begin","profile":"targeted","stage":"fixture-check","ordinal":1,"stage_count":1}')
+[Console]::Error.WriteLine('native fixture stderr; not a validation event')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_end","profile":"targeted","stage":"fixture-check","ordinal":1,"status":"pass","native_exit_code":0}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_end","profile":"targeted","status":"pass","exit_code":0,"completed_stages":1}')
+$nativeExit = [int]$env:CODEXDD_FIXTURE_NATIVE_EXIT
+exit $nativeExit
+"#,
+    )
+    .expect("write isolated fixture profile");
+
+    for native_exit in [0, 7] {
+        let log = temp.path().join(format!("fixture-{native_exit}.log"));
+        let exit_file = temp.path().join(format!("fixture-{native_exit}.exit"));
+        let command = validation_powershell_command(&repository_root, &script, &log, &exit_file);
+        let output = Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command"])
+            .arg(command)
+            .env("CODEXDD_FIXTURE_NATIVE_EXIT", native_exit.to_string())
+            .output()
+            .expect("run the actual native PowerShell LVO wrapper");
+        assert_eq!(
+            output.status.code(),
+            Some(native_exit),
+            "wrapper did not preserve the native fixture exit"
+        );
+        let captured = fs::read_to_string(&log).expect("required full native LVO log");
+        assert!(captured.contains("native fixture stderr"));
+        let recorded_exit: i32 = fs::read_to_string(&exit_file)
+            .expect("required native exit sidecar")
+            .trim()
+            .parse()
+            .expect("parse recorded native exit");
+        assert_eq!(recorded_exit, native_exit);
+
+        let mut summary = parse_validation_summary(ValidationProfile::Targeted, &captured, &log)
+            .expect("fixture has valid, complete contract-v1 records");
+        // Both branches emit PASS: only the actual process exit decides whether
+        // that claim can be trusted. This is not a production test receipt.
+        assert_eq!(summary.status, "pass");
+        enforce_native_exit_consistency(&mut summary, Some(recorded_exit));
+        if native_exit == 0 {
+            assert_eq!(summary.status, "pass");
+            assert_eq!(summary.exit_code, 0);
+            assert_eq!(summary.stages.len(), 1);
+        } else {
+            assert_eq!(summary.status, "error");
+            assert_eq!(summary.exit_code, 2);
+            assert_eq!(summary.error_type.as_deref(), Some("native_exit_mismatch"));
+            assert_eq!(
+                validation_failure_fingerprint(ValidationProfile::Targeted, &summary),
+                None,
+                "forged PASS and nonzero exit must not authorize repair"
+            );
+        }
+    }
+}
+
+/// Real Core tool invocation with an independently Core-bound source pin and
+/// a tiny repository-owned native Windows test fixture. The fixture exercises
+/// admission, ExecCommandHandler delegation, native log, exact process exit,
+/// post-execution SHA check and a completed operator control receipt.
+/// It does not impersonate a production Worker or validate a real project.
+#[cfg(windows)]
+#[tokio::test]
+async fn codexdd_046_3b2t_real_core_lvo_handler_runs_trusted_pinned_fixture() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use std::sync::Arc;
+
+    let temp = tempdir().expect("isolated LVO owner root");
+    let source_root = temp.path().join("source-candidate");
+    let script_dir = source_root.join("scripts");
+    fs::create_dir_all(&script_dir).expect("create native profile root");
+    let profile = script_dir.join("codexdd-test-targeted.ps1");
+    fs::write(
+        &profile,
+        r#"
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_begin","profile":"targeted","stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_begin","profile":"targeted","stage":"isolated-source-check","ordinal":1,"stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_end","profile":"targeted","stage":"isolated-source-check","ordinal":1,"status":"pass","native_exit_code":0}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_end","profile":"targeted","status":"pass","exit_code":0,"completed_stages":1}')
+exit 0
+"#,
+    )
+    .expect("write test-only native profile");
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&source_root)
+            .args(args)
+            .output()
+            .expect("test fixture Git available");
+        assert!(
+            output.status.success(),
+            "Git fixture {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("fixture Git UTF-8")
+    };
+    git(&["init", "-q"]);
+    git(&["add", "scripts/codexdd-test-targeted.ps1"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD LVO fixture",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "-q",
+        "-m",
+        "native profile fixture source pin",
+    ]);
+    let expected_sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    let expected_root = source_root.canonicalize().expect("canonical source");
+
+    let (session, turn, events) =
+        crate::session::tests::make_session_and_context_with_auth_and_config_and_rx(
+            codex_login::CodexAuth::from_api_key("Test API Key"),
+            Vec::new(),
+            |config| {
+                config.cwd =
+                    codex_utils_absolute_path::AbsolutePathBuf::try_from(source_root.clone())
+                        .expect("valid isolated absolute root");
+                // This fixture has no frontend for interactive approvals, and
+                // the default Windows test profile has no enforceable sandbox.
+                // Explicitly grant unrestricted exec ONLY in this disposable
+                // test session. Production permissions are unchanged; this
+                // proves the Core source/role binding and native receipt path,
+                // not restricted-sandbox or unapproved command execution.
+                config.permissions.approval_policy = codex_config::Constrained::allow_any(
+                    codex_protocol::protocol::AskForApproval::Never,
+                );
+                config
+                    .permissions
+                    .set_permission_profile(codex_protocol::models::PermissionProfile::Disabled)
+                    .expect("disposable Core fixture must explicitly authorize execution");
+                config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+                    role: AdaptiveWorkerRoleToml::Implementation,
+                    authorized_scope: Some("isolated test-only native profile".to_string()),
+                    source_root: Some(expected_root.display().to_string()),
+                    source_sha: Some(expected_sha.clone()),
+                    task_kind: Some("source_change".to_string()),
+                    required_gates: None,
+                    benchmark: None,
+                });
+            },
+        )
+        .await;
+    assert!(
+        turn.config
+            .adaptive_worker
+            .as_ref()
+            .is_some_and(|worker| worker.source_sha.as_deref() == Some(expected_sha.as_str())),
+        "Core turn must retain the trusted source credential"
+    );
+    turn.turn_metadata_state.set_turn_trigger(
+        codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+    );
+    let invocation = ToolInvocation {
+        session,
+        step_context: crate::session::step_context::StepContext::for_test(Arc::clone(&turn)),
+        turn,
+        cancellation_token: tokio_util::sync::CancellationToken::new(),
+        tracker: Arc::new(tokio::sync::Mutex::new(
+            crate::turn_diff_tracker::TurnDiffTracker::new(),
+        )),
+        call_id: "3b2t-native-core-tool".to_string(),
+        tool_name: ToolName::plain(TOOL_NAME),
+        source: crate::tools::context::ToolCallSource::Direct,
+        payload: ToolPayload::Function {
+            arguments: serde_json::json!({"profile":"targeted"}).to_string(),
+        },
+    };
+    let handler = CodexDDValidationHandler;
+    let outcome = tokio::time::timeout(Duration::from_secs(45), handler.handle(invocation)).await;
+    let output = match outcome {
+        Ok(result) => result.expect("real Core handler must complete the native fixture"),
+        Err(_) => {
+            let mut observed = Vec::new();
+            while let Ok(event) = events.try_recv() {
+                let name = match event.msg {
+                    codex_protocol::protocol::EventMsg::ExecApprovalRequest(_) => {
+                        "exec_approval_request"
+                    }
+                    codex_protocol::protocol::EventMsg::ExecCommandBegin(_) => "exec_begin",
+                    codex_protocol::protocol::EventMsg::ExecCommandEnd(_) => "exec_end",
+                    _ => "other",
+                };
+                observed.push(name);
+            }
+            panic!(
+                "native handler exceeded 45s in noninteractive CI; observed event kinds: {observed:?}"
+            );
+        }
+    };
+    let receipt: serde_json::Value =
+        serde_json::from_str(&output.log_output()).expect("structured LVO receipt");
+    // Preserve detailed native receipt diagnostics on failure without stderr writes.
+    assert_eq!(receipt["profile"], "targeted");
+    assert_eq!(
+        receipt["status"], "pass",
+        "3B.2n native LVO receipt: {receipt}"
+    );
+    assert_eq!(receipt["exit_code"], 0);
+    assert_eq!(receipt["head_sha"], expected_sha);
+    assert_eq!(receipt["stages"].as_array().map(Vec::len), Some(1));
+    assert_eq!(receipt["stages"][0]["stage"], "isolated-source-check");
+    assert_eq!(receipt["stages"][0]["status"], "pass");
+    assert_eq!(receipt["stages"][0]["native_exit_code"], 0);
+    assert!(
+        output.success_for_logging(),
+        "control receipt must reflect native PASS"
+    );
+    assert!(
+        git(&["status", "--porcelain=v1", "--untracked-files=all"])
+            .trim()
+            .is_empty(),
+        "LVO must preserve source worktree"
+    );
+}
+
+/// Execute two real Core built-in tools against one isolated committed Git
+/// candidate, in two separate sessions with strictly different Worker roles.
+/// This is native Windows process/evidence proof, not a real app-server
+/// handoff, the full six-stage project script or owner READY acceptance.
+#[cfg(windows)]
+#[tokio::test]
+async fn codexdd_046_3c1b2f_real_two_worker_core_receipts_and_refusals() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use std::sync::Arc;
+
+    let isolated = tempdir().expect("private disposable acceptance root");
+    let source_root = isolated.path().join("source-candidate");
+    let scripts = source_root.join("scripts");
+    fs::create_dir_all(&scripts).expect("create isolated profile directory");
+
+    let fixture = r#"
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_begin","profile":"work-packet","stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_begin","profile":"work-packet","stage":"source-candidate-check","ordinal":1,"stage_count":1}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"stage_end","profile":"work-packet","stage":"source-candidate-check","ordinal":1,"status":"pass","native_exit_code":0}')
+[Console]::Out.WriteLine('CODEXDD_VALIDATION_JSON {"contract_version":1,"event":"profile_end","profile":"work-packet","status":"pass","exit_code":0,"completed_stages":1}')
+exit 0
+"#;
+    fs::write(scripts.join("codexdd-test-workpacket.ps1"), fixture)
+        .expect("write committed Implementation profile fixture");
+    let independent = fixture
+        .replace("work-packet", "independent-review")
+        .replace("source-candidate-check", "independent-candidate-check");
+    fs::write(scripts.join("codexdd-test-independent.ps1"), independent)
+        .expect("write committed independent review fixture");
+
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&source_root)
+            .args(args)
+            .output()
+            .expect("Git must exist on the Windows runner");
+        assert!(
+            output.status.success(),
+            "fixture git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr),
+        );
+        String::from_utf8(output.stdout).expect("Git UTF-8")
+    };
+    git(&["init", "-q"]);
+    git(&[
+        "add",
+        "scripts/codexdd-test-workpacket.ps1",
+        "scripts/codexdd-test-independent.ps1",
+    ]);
+    git(&[
+        "-c",
+        "user.name=CodexDD two-worker acceptance",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "-q",
+        "-m",
+        "source bound native two-worker review fixture",
+    ]);
+    let expected_sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    let canonical = source_root.canonicalize().expect("canonical source root");
+    let bound_scope = "owner-authorized two-worker acceptance";
+    let auth = || codex_login::CodexAuth::from_api_key("Test API Key");
+
+    let (source_session, source_turn, mut source_events) =
+        crate::session::tests::make_session_and_context_with_auth_and_config_and_rx(
+            auth(),
+            Vec::new(),
+            |config| {
+                config.cwd =
+                    codex_utils_absolute_path::AbsolutePathBuf::try_from(source_root.clone())
+                        .expect("valid fixture root");
+                // Test-only policy: no user approval loop or production access.
+                config.permissions.approval_policy = codex_config::Constrained::allow_any(
+                    codex_protocol::protocol::AskForApproval::Never,
+                );
+                config
+                    .permissions
+                    .set_permission_profile(codex_protocol::models::PermissionProfile::Disabled)
+                    .expect("allow fixture-local test-only PowerShell");
+                config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+                    role: AdaptiveWorkerRoleToml::Implementation,
+                    authorized_scope: Some(bound_scope.to_string()),
+                    source_root: Some(canonical.display().to_string()),
+                    source_sha: Some(expected_sha.clone()),
+                    task_kind: Some("source_change".to_string()),
+                    required_gates: None,
+                    benchmark: None,
+                });
+            },
+        )
+        .await;
+    source_turn.turn_metadata_state.set_turn_trigger(
+        codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER.to_string(),
+    );
+    let source_invocation = ToolInvocation {
+        session: source_session,
+        step_context: crate::session::step_context::StepContext::for_test(Arc::clone(&source_turn)),
+        turn: source_turn,
+        cancellation_token: tokio_util::sync::CancellationToken::new(),
+        tracker: Arc::new(tokio::sync::Mutex::new(
+            crate::turn_diff_tracker::TurnDiffTracker::new(),
+        )),
+        call_id: "3c1b2f-source-core-receipt".to_string(),
+        tool_name: ToolName::plain(TOOL_NAME),
+        source: crate::tools::context::ToolCallSource::Direct,
+        payload: ToolPayload::Function {
+            arguments: serde_json::json!({"profile":"work_packet"}).to_string(),
+        },
+    };
+    let implementation_output = tokio::time::timeout(
+        Duration::from_secs(60),
+        CodexDDValidationHandler.handle(source_invocation),
+    )
+    .await
+    .expect("Implementation source profile cannot hang")
+    .expect("Implementation source tool must finish");
+    let source_receipt: serde_json::Value =
+        serde_json::from_str(&implementation_output.log_output())
+            .expect("real structured source tool output");
+    assert_eq!(source_receipt["status"], "pass", "{source_receipt}");
+    assert_eq!(source_receipt["profile"], "work-packet");
+    assert_eq!(source_receipt["head_sha"], expected_sha);
+    assert_eq!(source_receipt["exit_code"], 0);
+    assert_eq!(source_receipt["stages"].as_array().map(Vec::len), Some(1));
+    let emitted_source = std::iter::from_fn(|| source_events.try_recv().ok())
+        .filter_map(|event| match event.msg {
+            codex_protocol::protocol::EventMsg::ItemCompleted(completed) => match completed.item {
+                TurnItem::DynamicToolCall(item) if item.tool == TOOL_NAME => {
+                    Some((completed.thread_id, item))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .last()
+        .expect("Implementation Core must emit an authentic completed source item");
+    assert_eq!(emitted_source.1.success, Some(true));
+    assert_eq!(emitted_source.1.arguments["profile"], "work_packet");
+    assert_eq!(emitted_source.1.arguments["head_sha"], expected_sha);
+
+    let (review_session, review_turn, mut review_events) =
+        crate::session::tests::make_session_and_context_with_auth_and_config_and_rx(
+            auth(),
+            Vec::new(),
+            |config| {
+                config.cwd =
+                    codex_utils_absolute_path::AbsolutePathBuf::try_from(source_root.clone())
+                        .expect("valid exact review root");
+                config.permissions.approval_policy = codex_config::Constrained::allow_any(
+                    codex_protocol::protocol::AskForApproval::Never,
+                );
+                config
+                    .permissions
+                    .set_permission_profile(codex_protocol::models::PermissionProfile::Disabled)
+                    .expect("allow disposable test-only Validator profile");
+                config.adaptive_worker = Some(AdaptiveWorkerConfigToml {
+                    role: AdaptiveWorkerRoleToml::Validation,
+                    authorized_scope: Some(bound_scope.to_string()),
+                    source_root: Some(canonical.display().to_string()),
+                    source_sha: Some(expected_sha.clone()),
+                    task_kind: Some("source_change".to_string()),
+                    required_gates: None,
+                    benchmark: None,
+                });
+            },
+        )
+        .await;
+    let review_invocation = ToolInvocation {
+        session: Arc::clone(&review_session),
+        step_context: crate::session::step_context::StepContext::for_test(Arc::clone(&review_turn)),
+        turn: Arc::clone(&review_turn),
+        cancellation_token: tokio_util::sync::CancellationToken::new(),
+        tracker: Arc::new(tokio::sync::Mutex::new(
+            crate::turn_diff_tracker::TurnDiffTracker::new(),
+        )),
+        call_id: "3c1b2f-independent-core-receipt".to_string(),
+        tool_name: ToolName::plain(INDEPENDENT_TOOL_NAME),
+        source: crate::tools::context::ToolCallSource::Direct,
+        payload: ToolPayload::Function {
+            arguments: serde_json::json!({"profile":"independent_review"}).to_string(),
+        },
+    };
+    let review_output = tokio::time::timeout(
+        Duration::from_secs(60),
+        CodexDDIndependentValidationHandler.handle(review_invocation.clone()),
+    )
+    .await
+    .expect("independent native Validator cannot hang")
+    .expect("separately bound native review must finish");
+    let review_receipt: serde_json::Value = serde_json::from_str(&review_output.log_output())
+        .expect("real structured independent review output");
+    assert_eq!(
+        review_receipt["status"], "pass",
+        "3C.1b.2f native Validator receipt: {review_receipt}"
+    );
+    assert_eq!(review_receipt["profile"], "independent-review");
+    assert_eq!(review_receipt["exit_code"], 0);
+    assert_eq!(review_receipt["head_sha"], expected_sha);
+    assert_eq!(
+        review_receipt["source_root"],
+        canonical.display().to_string(),
+    );
+    assert_eq!(review_receipt["stages"].as_array().map(Vec::len), Some(1));
+    assert_eq!(
+        review_receipt["stages"][0]["stage"],
+        "independent-candidate-check"
+    );
+    assert_eq!(review_receipt["stages"][0]["native_exit_code"], 0);
+    assert_ne!(review_receipt["run_id"], source_receipt["run_id"]);
+
+    let emitted_review = std::iter::from_fn(|| review_events.try_recv().ok())
+        .filter_map(|event| match event.msg {
+            codex_protocol::protocol::EventMsg::ItemCompleted(completed) => match completed.item {
+                TurnItem::DynamicToolCall(item) if item.tool == INDEPENDENT_TOOL_NAME => {
+                    Some((completed.thread_id, item))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .last()
+        .expect("Core must emit a distinct independent native completion item");
+    assert_ne!(
+        emitted_review.0, emitted_source.0,
+        "separate Core Worker sessions must have distinct thread identities"
+    );
+    assert_eq!(emitted_review.1.success, Some(true));
+    assert_eq!(emitted_review.1.arguments["profile"], "independent_review");
+    assert_eq!(emitted_review.1.arguments["head_sha"], expected_sha);
+    assert_eq!(
+        emitted_review.1.arguments["run_id"],
+        review_receipt["run_id"],
+    );
+
+    // Directly invoking the Implementation LVO in the Validation session
+    // cannot promote a separate Reviewer back into an Implementation Worker.
+    let blocked_lvo = ToolInvocation {
+        call_id: "3c1b2f-reviewer-cannot-execute-implementation-lvo".to_string(),
+        tool_name: ToolName::plain(TOOL_NAME),
+        payload: ToolPayload::Function {
+            arguments: serde_json::json!({"profile":"work_packet"}).to_string(),
+        },
+        ..review_invocation.clone()
+    };
+    let blocked_output = tokio::time::timeout(
+        Duration::from_secs(20),
+        CodexDDValidationHandler.handle(blocked_lvo),
+    )
+    .await
+    .expect("refusal cannot hang")
+    .expect("refusal must emit typed completed tool receipt");
+    let blocked: serde_json::Value =
+        serde_json::from_str(&blocked_output.log_output()).expect("structured refusal");
+    assert_eq!(blocked["status"], "error");
+    assert_eq!(blocked["error_type"], "source_identity_mismatch");
+    assert!(!blocked_output.success_for_logging());
+
+    // A changed clean HEAD also must not be accepted under a stale pin,
+    // even though the same script is still available.
+    fs::write(
+        source_root.join("source-change.txt"),
+        "new source without owner approval",
+    )
+    .expect("fixture source edit");
+    git(&["add", "source-change.txt"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD two-worker acceptance",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "-q",
+        "-m",
+        "unauthorized candidate successor",
+    ]);
+    let moved_sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    assert_ne!(moved_sha, expected_sha);
+    let stale = ToolInvocation {
+        call_id: "3c1b2f-stale-validator-pin".to_string(),
+        ..review_invocation
+    };
+    let stale_output = tokio::time::timeout(
+        Duration::from_secs(20),
+        CodexDDIndependentValidationHandler.handle(stale),
+    )
+    .await
+    .expect("stale-source refusal cannot hang")
+    .expect("stale-source refusal is a completed tool result");
+    let stale_receipt: serde_json::Value =
+        serde_json::from_str(&stale_output.log_output()).expect("typed stale-source refusal");
+    assert_eq!(stale_receipt["status"], "error");
+    assert_eq!(stale_receipt["error_type"], "source_identity_mismatch");
+    assert!(!stale_output.success_for_logging());
+    assert!(
+        git(&["status", "--porcelain=v1", "--untracked-files=all"])
+            .trim()
+            .is_empty(),
+        "native checks must never mutate the disposable source"
+    );
+}
+
 #[test]
 fn parser_returns_compact_pass_summary() {
     let log = concat!(
@@ -256,6 +823,7 @@ fn operator_summary_adds_run_and_candidate_identity_without_full_log_output() {
         run_id: "run-42",
         branch: Some("dd/status-evidence"),
         head_sha: "0123456789abcdef",
+        source_root: Some("C:\\candidate".to_string()),
     };
 
     let value = serde_json::to_value(operator).expect("operator summary");
@@ -264,6 +832,7 @@ fn operator_summary_adds_run_and_candidate_identity_without_full_log_output() {
     assert_eq!(value["run_id"], "run-42");
     assert_eq!(value["branch"], "dd/status-evidence");
     assert_eq!(value["head_sha"], "0123456789abcdef");
+    assert_eq!(value["source_root"], "C:\\candidate");
     assert_eq!(
         value["log_path"],
         "C:\\codexdd\\validation\\run-42\\validation.log"
@@ -451,4 +1020,648 @@ fn parser_fails_closed_without_terminal_event() {
 fn path_component_sanitization_is_windows_safe() {
     assert_eq!(sanitize_path_component("call:42/abc?x"), "call_42_abc_x");
     assert_eq!(sanitize_path_component(""), "run");
+}
+
+#[test]
+fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use std::process::Command;
+
+    let temp = tempdir().expect("fixture");
+    let milestone = temp.path().join("milestone");
+    fs::create_dir_all(&milestone).expect("create milestone");
+    let git = |root: &Path, args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .expect("git must be installed for preflight regression");
+        assert!(
+            output.status.success(),
+            "git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("Git response UTF8")
+    };
+    git(&milestone, &["init", "-q"]);
+    git(
+        &milestone,
+        &[
+            "-c",
+            "user.name=CodexDD Fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "source anchor",
+        ],
+    );
+    let nested = milestone.join(".worktrees").join("candidate");
+    git(
+        &milestone,
+        &[
+            "worktree",
+            "add",
+            "--detach",
+            nested.to_str().expect("UTF8 path"),
+            "HEAD",
+        ],
+    );
+    let sha = git(&nested, &["rev-parse", "HEAD"]).trim().to_string();
+    let binding = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Implementation,
+        authorized_scope: Some("approved nested candidate".to_string()),
+        source_root: Some(nested.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("source_change".to_string()),
+        required_gates: None,
+        benchmark: None,
+    };
+    assert_eq!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha),
+        Ok(())
+    );
+    assert!(
+        validate_native_authorized_target(&milestone, Some(&binding), &sha)
+            .expect_err("wrong selected root must not fall back")
+            .contains("native LVO selected")
+    );
+
+    let mut wrong_sha = binding.clone();
+    wrong_sha.source_sha = Some("f".repeat(40));
+    assert!(
+        validate_native_authorized_target(&nested, Some(&wrong_sha), &sha)
+            .expect_err("wrong candidate")
+            .contains("authorized source SHA")
+    );
+
+    let mut benchmark = binding.clone();
+    benchmark.task_kind = Some("benchmark".to_string());
+    assert!(
+        validate_native_authorized_target(&nested, Some(&benchmark), &sha)
+            .expect_err("benchmark must not enter mechanical source validation")
+            .contains("operations/benchmark Worker")
+    );
+
+    // Approved previews can run source work_packet before independent QA,
+    // but only the separate Core live process producer can satisfy health.
+    let mut preview = binding.clone();
+    preview.task_kind = Some("operations_preview".to_string());
+    preview.required_gates = Some(vec![
+        codex_config::config_toml::AdaptiveOwnerGateToml {
+            kind: "owned_runtime_health".to_string(),
+            profile: None,
+            ports: Some(vec![4431]),
+            command_argv: Some(vec!["powershell.exe".to_string(), "-NoProfile".to_string()]),
+        },
+        codex_config::config_toml::AdaptiveOwnerGateToml {
+            kind: "independent_validation".to_string(),
+            profile: None,
+            ports: None,
+            command_argv: None,
+        },
+    ]);
+    assert_eq!(
+        validate_native_authorized_target(&nested, Some(&preview), &sha),
+        Ok(())
+    );
+    let mut unauthorized_preview = preview;
+    unauthorized_preview.required_gates = None;
+    assert!(
+        validate_native_authorized_target(&nested, Some(&unauthorized_preview), &sha,).is_err()
+    );
+
+    let mut incomplete = binding.clone();
+    incomplete.source_sha = None;
+    assert!(
+        validate_native_authorized_target(&nested, Some(&incomplete), &sha)
+            .expect_err("partial pin must not validate")
+            .contains("source_root and source_sha together")
+    );
+
+    fs::write(nested.join("candidate.txt"), "preserve edits").expect("fixture edits");
+    git(&nested, &["add", "candidate.txt"]);
+    assert!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha)
+            .expect_err("staged candidate cannot receive exact SHA proof")
+            .contains("Preserve edits")
+    );
+    assert_eq!(
+        fs::read_to_string(nested.join("candidate.txt")).expect("edit intact"),
+        "preserve edits"
+    );
+    git(&nested, &["reset", "--quiet", "--", "candidate.txt"]);
+    fs::remove_file(nested.join("candidate.txt")).expect("fixture cleanup");
+    assert_eq!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha),
+        Ok(())
+    );
+
+    git(
+        &nested,
+        &[
+            "-c",
+            "user.name=CodexDD Fixture",
+            "-c",
+            "user.email=codexdd@example.test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "new candidate HEAD",
+        ],
+    );
+    assert!(
+        validate_native_authorized_target(&nested, Some(&binding), &sha)
+            .expect_err("post-exec SHA drift cannot retain PASS")
+            .contains("authorized source SHA")
+    );
+}
+
+#[test]
+fn native_authorized_target_keeps_legacy_unpinned_compatibility() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("fixture");
+    let old_binding = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Implementation,
+        authorized_scope: Some("legacy source work".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+        required_gates: None,
+        benchmark: None,
+    };
+    let unpinned = temp.path();
+    let sha = "a".repeat(40);
+    assert_eq!(
+        validate_native_authorized_target(unpinned, None, &sha),
+        Ok(())
+    );
+    assert_eq!(
+        validate_native_authorized_target(unpinned, Some(&old_binding), &sha),
+        Ok(())
+    );
+}
+
+#[test]
+fn codexdd_046_3b2_native_role_gate_rejects_independent_workers() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("role fixture");
+    let sha = "a".repeat(40);
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("independent owner QA".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+        required_gates: None,
+        benchmark: None,
+    };
+    for role in [
+        AdaptiveWorkerRoleToml::Validation,
+        AdaptiveWorkerRoleToml::Repair,
+    ] {
+        worker.role = role;
+        let blocker = validate_native_authorized_target(temp.path(), Some(&worker), &sha)
+            .expect_err("independent role must not enter Implementation-only LVO");
+        assert!(blocker.starts_with("SETUP_BLOCKED:"));
+        assert!(blocker.contains("Validation/Repair Worker"));
+        assert!(blocker.contains("No profile ran"));
+    }
+
+    worker.role = AdaptiveWorkerRoleToml::Unspecified;
+    worker.source_root = Some(temp.path().display().to_string());
+    worker.source_sha = Some(sha.clone());
+    worker.task_kind = Some("source_change".to_string());
+    let blocker = validate_native_authorized_target(temp.path(), Some(&worker), &sha)
+        .expect_err("pinned source without Implementation role must fail closed");
+    assert!(blocker.contains("explicitly bound Implementation Worker"));
+
+    worker.role = AdaptiveWorkerRoleToml::Implementation;
+    worker.source_sha = None;
+    let blocker = validate_native_authorized_target(temp.path(), Some(&worker), &sha)
+        .expect_err("partial pin must never be accepted");
+    assert!(blocker.contains("source_root and source_sha together"));
+}
+
+#[test]
+fn codexdd_046_3b2o_policy_denial_is_typed_nonrepairable_setup_blocker() {
+    let denied = "exec_command failed: CreateProcess Rejected: blocked by policy";
+    assert_eq!(
+        classify_missing_native_log(Some(denied)),
+        "execution_policy_blocked"
+    );
+    assert_eq!(
+        classify_missing_native_log(Some("exec_command failed: log unavailable")),
+        "missing_native_log"
+    );
+    assert_eq!(classify_missing_native_log(None), "missing_native_log");
+
+    let summary = native_setup_blocker_summary(
+        ValidationProfile::Targeted,
+        classify_missing_native_log(Some(denied)),
+        "SETUP_BLOCKED: execution policy denied native validation".to_string(),
+        Path::new("isolated-policy-denial.log"),
+    );
+    assert_eq!(summary.status, "error");
+    assert_eq!(summary.exit_code, 2);
+    assert_eq!(
+        summary.error_type.as_deref(),
+        Some("execution_policy_blocked")
+    );
+    assert!(summary.stages.is_empty());
+    assert_eq!(summary.failed_stage, None);
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::Targeted, &summary),
+        None,
+        "command policy refusal must not manufacture a repair fingerprint"
+    );
+}
+
+#[test]
+fn codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker() {
+    let tmp = tempdir().expect("no-git fixture");
+    let missing_git = find_active_repository_root(tmp.path())
+        .expect_err("missing repo must not select an ancestor");
+    assert!(missing_git.contains("no .git root was found"));
+
+    let summary = native_setup_blocker_summary(
+        ValidationProfile::WorkPacket,
+        "repository_unavailable",
+        format!("SETUP_BLOCKED: {missing_git}"),
+        Path::new("isolated-validation.log"),
+    );
+    assert_eq!(summary.profile, "work-packet");
+    assert_eq!(summary.status, "error");
+    assert_eq!(summary.exit_code, 2);
+    assert!(summary.stages.is_empty());
+    assert_eq!(
+        summary.error_type.as_deref(),
+        Some("repository_unavailable")
+    );
+    assert!(
+        summary
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .starts_with("SETUP_BLOCKED:")
+    );
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::WorkPacket, &summary),
+        None
+    );
+
+    for kind in [
+        "source_identity_unavailable",
+        "profile_unavailable",
+        "source_identity_mismatch",
+    ] {
+        let setup = native_setup_blocker_summary(
+            ValidationProfile::Targeted,
+            kind,
+            "SETUP_BLOCKED: source/profile not ready".to_string(),
+            Path::new("isolated-validation.log"),
+        );
+        assert_eq!(setup.status, "error");
+        assert_eq!(setup.failed_stage, None);
+        assert_eq!(
+            validation_failure_fingerprint(ValidationProfile::Targeted, &setup),
+            None
+        );
+    }
+}
+
+#[test]
+fn codexdd_046_3b2d_protected_mechanical_requires_core_bound_source() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let trigger = codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+    let legacy = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Implementation,
+        authorized_scope: Some("legacy without native pin".to_string()),
+        source_root: None,
+        source_sha: None,
+        task_kind: None,
+        required_gates: None,
+        benchmark: None,
+    };
+    for worker in [None, Some(&legacy)] {
+        let blocker = native_mechanical_source_authority_blocker(Some(trigger), worker)
+            .expect("missing Core binding must stop protected native validation");
+        assert!(blocker.starts_with("SETUP_BLOCKED:"));
+        assert!(blocker.contains("Core-bound"));
+        assert!(blocker.contains("No profile ran"));
+    }
+    let mut pinned = legacy;
+    pinned.source_root = Some("C:\\authorized\\worktree".to_string());
+    pinned.source_sha = Some("a".repeat(40));
+    assert_eq!(
+        native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned)),
+        None
+    );
+    // A pinned Validation or Repair role cannot acquire Implementation authority.
+    pinned.role = AdaptiveWorkerRoleToml::Validation;
+    assert!(native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned)).is_some());
+    pinned.role = AdaptiveWorkerRoleToml::Repair;
+    assert!(native_mechanical_source_authority_blocker(Some(trigger), Some(&pinned)).is_some());
+}
+
+#[test]
+fn codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair() {
+    let trigger = codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER;
+    let message = native_mechanical_source_authority_blocker(Some(trigger), None)
+        .expect("unbound protected validation must block");
+    let summary = native_setup_blocker_summary(
+        ValidationProfile::WorkPacket,
+        "source_authority_unavailable",
+        message,
+        Path::new("isolated-validation.log"),
+    );
+    assert_eq!(summary.status, "error");
+    assert_eq!(summary.exit_code, 2);
+    assert_eq!(summary.failed_stage, None);
+    assert!(summary.stages.is_empty());
+    assert_eq!(
+        summary.error_type.as_deref(),
+        Some("source_authority_unavailable")
+    );
+    assert_eq!(
+        validation_failure_fingerprint(ValidationProfile::WorkPacket, &summary),
+        None
+    );
+    assert_eq!(
+        native_mechanical_source_authority_blocker(Some("user"), None),
+        None
+    );
+    assert_eq!(native_mechanical_source_authority_blocker(None, None), None);
+}
+
+#[test]
+fn codexdd_046_3b2e_core_first_header_decoder_does_not_grant_tool_authority() {
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+    use codex_config::config_toml::parse_adaptive_worker_first_message;
+
+    let root = if cfg!(windows) {
+        r"C:\approved\candidate"
+    } else {
+        "/tmp/approved/candidate"
+    };
+    let header = format!(
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"approved source packet\"\nsource_root = '{root}'\nsource_sha = \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n\nImplement the approved source."
+    );
+    let binding = parse_adaptive_worker_first_message(&header)
+        .expect("first Worker header")
+        .expect("binding");
+    assert_eq!(binding.role, AdaptiveWorkerRoleToml::Implementation);
+    assert_eq!(binding.source_root.as_deref(), Some(root));
+    assert_eq!(
+        binding.source_sha.as_deref(),
+        Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    );
+    assert!(
+        native_mechanical_source_authority_blocker(
+            Some(codex_protocol::CODEXDD_ADAPTIVE_MECHANICAL_VALIDATION_TURN_TRIGGER),
+            None,
+        )
+        .is_some()
+    );
+}
+
+#[test]
+fn codexdd_046_3b2e_core_first_header_decoder_rejects_unsafe_headers() {
+    use codex_config::config_toml::parse_adaptive_worker_first_message;
+
+    assert_eq!(
+        parse_adaptive_worker_first_message(
+            "Normal task.\n[adaptive_worker]\nrole = \"implementation\""
+        ),
+        Ok(None)
+    );
+    for text in [
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"scope\"\n\n",
+        "[adaptive_worker]\nrole = \"unspecified\"\nauthorized_scope = \"scope\"\n\nWork.",
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"scope\"\nsource_sha = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\nWork.",
+        "[adaptive_worker]\nrole = \"implementation\"\nauthorized_scope = \"scope\"\nunknown = \"unexpected\"\n\nWork.",
+    ] {
+        assert!(
+            parse_adaptive_worker_first_message(text).is_err(),
+            "unexpected Worker authority: {text}"
+        );
+    }
+}
+
+#[test]
+fn codexdd_046_3c1b2b_independent_profile_is_fixed_and_cannot_be_impersonated_by_lvo() {
+    assert_eq!(
+        parse_native_profile(r#"{"profile":"independent_review"}"#, true).unwrap(),
+        ValidationProfile::IndependentReview
+    );
+    assert!(parse_native_profile(r#"{"profile":"targeted"}"#, true).is_err());
+    assert!(parse_native_profile(r#"{"profile":"work_packet"}"#, true).is_err());
+    assert!(parse_native_profile(r#"{"profile":"independent_review"}"#, false).is_err());
+    assert!(parse_native_profile(r#"{"profile":"targeted","extra":true}"#, false).is_err());
+    assert_eq!(
+        ValidationProfile::IndependentReview.script_name(),
+        "codexdd-test-independent.ps1"
+    );
+    assert_eq!(
+        ValidationProfile::IndependentReview.contract_name(),
+        "independent-review"
+    );
+}
+
+#[test]
+fn codexdd_046_3d1h_independent_operations_preview_keeps_role_and_sha_guard() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("isolated owner review source");
+    let root = temp.path();
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .expect("Git available for isolated D02 validator");
+        assert!(output.status.success(), "disposable review Git failed");
+        String::from_utf8(output.stdout)
+            .expect("UTF8 HEAD")
+            .trim()
+            .to_string()
+    };
+    git(&["init", "-q"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD D02 Validator",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "--allow-empty",
+        "-q",
+        "-m",
+        "pinned operations review",
+    ]);
+    let sha = git(&["rev-parse", "HEAD"]);
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("original owner operations preview".to_string()),
+        source_root: Some(root.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("operations_preview".to_string()),
+        required_gates: None,
+        benchmark: None,
+    };
+    assert_eq!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha),
+        Ok(())
+    );
+    worker.role = AdaptiveWorkerRoleToml::Implementation;
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha).is_err(),
+        "Implementation cannot impersonate independent review"
+    );
+    worker.role = AdaptiveWorkerRoleToml::Validation;
+    worker.task_kind = Some("benchmark".to_string());
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha).is_err(),
+        "benchmark cannot inherit operations-preview review"
+    );
+    worker.task_kind = Some("operations_preview".to_string());
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &"f".repeat(40))
+            .is_err(),
+        "source SHA drift must refuse independent preview review"
+    );
+    assert!(
+        validate_native_independent_authorized_target(root, None, &sha).is_err(),
+        "unbound Validator cannot produce independent review"
+    );
+}
+
+#[test]
+fn codexdd_046_3c1b2b_independent_review_requires_bound_validation_role_and_scope() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("isolated independent Validator");
+    let root = temp.path();
+    let sha = "a".repeat(40);
+    let mut worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("separate owner-approved review".to_string()),
+        source_root: Some(root.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("source_change".to_string()),
+        required_gates: None,
+        benchmark: None,
+    };
+    assert!(
+        validate_native_independent_authorized_target(root, None, &sha)
+            .expect_err("unbound model cannot produce independent receipt")
+            .contains("Core-bound Worker")
+    );
+    for role in [
+        AdaptiveWorkerRoleToml::Implementation,
+        AdaptiveWorkerRoleToml::Repair,
+        AdaptiveWorkerRoleToml::Unspecified,
+    ] {
+        worker.role = role;
+        assert!(
+            validate_native_independent_authorized_target(root, Some(&worker), &sha)
+                .expect_err("only Validation role may produce independent receipt")
+                .contains("requires Validation role")
+        );
+    }
+    worker.role = AdaptiveWorkerRoleToml::Validation;
+    worker.authorized_scope = None;
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha)
+            .expect_err("missing scope is not review authority")
+            .contains("owner-authorized scope")
+    );
+    worker.authorized_scope = Some("separate owner-approved review".to_string());
+    worker.source_sha = None;
+    assert!(
+        validate_native_independent_authorized_target(root, Some(&worker), &sha)
+            .expect_err("missing source SHA is not review authority")
+            .contains("source root and SHA")
+    );
+}
+
+#[test]
+fn codexdd_046_3c1b2b_independent_review_checks_real_git_root_head_and_clean_source() {
+    use codex_config::config_toml::AdaptiveWorkerConfigToml;
+    use codex_config::config_toml::AdaptiveWorkerRoleToml;
+
+    let temp = tempdir().expect("review Git fixture");
+    let root = temp.path().join("candidate");
+    fs::create_dir(&root).expect("candidate root");
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&root)
+            .args(args)
+            .output()
+            .expect("Git available");
+        assert!(
+            output.status.success(),
+            "git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("Git output UTF8")
+    };
+    git(&["init", "-q"]);
+    git(&[
+        "-c",
+        "user.name=CodexDD Review Fixture",
+        "-c",
+        "user.email=codexdd@example.test",
+        "commit",
+        "--allow-empty",
+        "-q",
+        "-m",
+        "independent source anchor",
+    ]);
+    let sha = git(&["rev-parse", "HEAD"]).trim().to_string();
+    let worker = AdaptiveWorkerConfigToml {
+        role: AdaptiveWorkerRoleToml::Validation,
+        authorized_scope: Some("independent review source-change".to_string()),
+        source_root: Some(root.display().to_string()),
+        source_sha: Some(sha.clone()),
+        task_kind: Some("source_change".to_string()),
+        required_gates: None,
+        benchmark: None,
+    };
+    assert_eq!(
+        validate_native_independent_authorized_target(&root, Some(&worker), &sha),
+        Ok(())
+    );
+    assert!(
+        validate_native_independent_authorized_target(temp.path(), Some(&worker), &sha)
+            .expect_err("parent is not the pinned candidate")
+            .contains("selected")
+    );
+    assert!(
+        validate_native_independent_authorized_target(&root, Some(&worker), &"f".repeat(40))
+            .expect_err("wrong observed SHA cannot be accepted")
+            .contains("authorized source SHA")
+    );
+    fs::write(root.join("uncommitted-review.txt"), "untrusted change").expect("dirty fixture");
+    assert!(
+        validate_native_independent_authorized_target(&root, Some(&worker), &sha)
+            .expect_err("dirty source cannot produce a review receipt")
+            .contains("staged/unstaged/untracked")
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("uncommitted-review.txt")).expect("preserve edits"),
+        "untrusted change"
+    );
 }

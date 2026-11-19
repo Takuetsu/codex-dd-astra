@@ -169,10 +169,38 @@ pub struct AdaptiveValidationStatusSnapshot {
     pub log_path: String,
 }
 
+/// The explicitly required gate types are persisted as requirements only.
+/// They carry no successful evidence or terminal authority.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AdaptiveRequiredGateSnapshot {
+    SourceProfile(String),
+    OwnedRuntimeHealth(Vec<u16>),
+    IndependentValidation,
+}
+
+/// Strict v1 checkpoint for source-/Worker-bound outstanding prerequisites.
+/// Native receipts, run IDs, successes, logs, and operation authorizations are excluded.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AdaptiveGateCheckpointSnapshot {
+    pub schema_version: u8,
+    pub owner_thread_id: String,
+    pub owner_role: String,
+    pub authorized_scope: String,
+    pub source_root: String,
+    pub source_sha: String,
+    pub required_gates: Vec<AdaptiveRequiredGateSnapshot>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub blocked_gates: Vec<(AdaptiveRequiredGateSnapshot, String)>,
+}
+
 /// Durable codex-dd adaptive workflow facts that may safely survive process restart.
 ///
 /// Ephemeral authorization state such as pending signals, pending attempts, successor permits,
-/// unfinished pressure, and evidence registries is intentionally excluded.
+/// unfinished successor permits and native evidence registries is intentionally excluded.
+/// The bounded no-native-progress streak and its last counted turn are
+/// non-authoritative retry pressure only, never evidence of a successful run.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub struct AdaptiveWorkflowStateSnapshot {
     pub enabled: bool,
@@ -196,9 +224,32 @@ pub struct AdaptiveWorkflowStateSnapshot {
     pub validation_status: Option<AdaptiveValidationStatusSnapshot>,
     pub attempt_number: u32,
     pub paused_by_user: bool,
+    /// Already-spent same-route infrastructure retry; no authority or evidence.
+    #[serde(default)]
+    pub transient_retry_consumed: bool,
+    /// Bounded no-op successor pressure; never an admission permit.
+    #[serde(default)]
+    pub unfinished_turn_pressure: u8,
+    /// Previously counted turn; prevents replay after a successful native turn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_processed_turn_id: Option<String>,
+    /// Bounded Implementation retry pressure; never native evidence or authorization.
+    #[serde(default)]
+    pub consecutive_no_native_progress_turns: u8,
+    /// Source turn of the last counted no-native-progress result, for replay refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_no_native_progress_turn_id: Option<String>,
     pub worker_role: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authorized_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assignment_task_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorized_source_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorized_source_sha: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gate_checkpoint: Option<AdaptiveGateCheckpointSnapshot>,
     pub worker_assignment_locked: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workflow_terminal: Option<String>,
