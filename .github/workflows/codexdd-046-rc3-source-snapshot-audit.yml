@@ -1,0 +1,54 @@
+# Cheap source-only inventory for all ThreadSettingsSnapshot construction sites.
+# Not a production test, signoff or release stage.
+name: CodexDD 0.4.6 source snapshot constructor audit
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-3f1-audit
+    paths:
+      - .github/workflows/codexdd-046-rc3-source-snapshot-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot-constructor-inventory:
+    name: Exact RC3 all Rust ThreadSettingsSnapshot constructor inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: 5cf06f336572307936530f93591bae1561b946c7
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm exact candidate and inventory snapshot constructors
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "5cf06f336572307936530f93591bae1561b946c7"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.6'
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('codex-rs')
+          locations=[]
+          for p in sorted(root.rglob('*.rs')):
+              s=p.read_text(encoding='utf-8')
+              for m in re.finditer(r'\bThreadSettingsSnapshot\s*\{',s):
+                  line=s.count('\n',0,m.start())+1
+                  near=s[m.end():].splitlines()[:58]
+                  found=any('codexdd_first_worker' in x for x in near)
+                  locations.append((str(p),line,found,near[:6]))
+          for path,line,found,near in locations:
+              print(f'CONSTRUCTOR {path}:{line} has_first_worker_within_58_lines={found}')
+              for x in near: print('  '+x)
+          missing=[(p,n) for p,n,found,_ in locations if not found]
+          print(f'REVIEW_COUNTS total={len(locations)} first_worker_nearby={len(locations)-len(missing)} missing_or_requires_review={len(missing)}')
+          if missing:
+              print('REVIEW_MISSING_SNAPSHOT_FIELDS',missing)
+              raise SystemExit(1)
+          PY
+          git diff --check
