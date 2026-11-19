@@ -309,7 +309,10 @@ pub(crate) fn preflight_owned_runtime_target(
     let scope = worker
         .authorized_scope
         .as_deref()
-        .expect("checked nonempty owner scope");
+        .filter(|scope| !scope.trim().is_empty())
+        .ok_or_else(|| {
+            "SETUP_BLOCKED: owned host preview requires original Implementation scope".to_string()
+        })?;
     if !ledger.is_some_and(|gates| {
         gates.authorizes_runtime_health_port(
             scope,

@@ -165,6 +165,9 @@ pub(crate) fn observe_owned_loopback_health(
     child: &mut Child,
 ) -> Result<AdaptiveOwnedHttpObservation, String> {
     preflight_owned_runtime_target(worker, pin, ledger, runtime_cwd, port, reported_pid, child)?;
+    let pin = pin.ok_or_else(|| {
+        "SETUP_BLOCKED: owned runtime health requires the exact authorized source pin".to_string()
+    })?;
     if loopback_listener_owner(port)? != reported_pid {
         return Err("SETUP_BLOCKED: approved port is served by a foreign process".to_string());
     }
@@ -224,7 +227,7 @@ pub(crate) fn observe_owned_loopback_health(
         .map_err(|_| "SETUP_BLOCKED: observation clock is unavailable".to_string())?
         .as_millis() as u64;
     Ok(AdaptiveOwnedHttpObservation {
-        source_sha: pin.expect("validated source pin").source_sha.clone(),
+        source_sha: pin.source_sha.clone(),
         owned_pid: reported_pid,
         approved_port: port,
         http_status: 200,
@@ -264,14 +267,19 @@ pub(crate) fn issue_owned_health_ticket(
 ) -> Result<AdaptiveOwnedHealthTicket, String> {
     let observation =
         observe_owned_loopback_health(worker, pin, ledger, runtime_cwd, port, reported_pid, child)?;
-    let pin = pin.expect("native observation required exact pin");
+    let pin = pin.ok_or_else(|| {
+        "SETUP_BLOCKED: owned health ticket requires the exact authorized source pin".to_string()
+    })?;
     let source_root = Path::new(&pin.source_root)
         .canonicalize()
         .map_err(|error| format!("SETUP_BLOCKED: verified source root disappeared: {error}"))?;
     let authorized_scope = worker
         .authorized_scope
         .as_deref()
-        .expect("native observation required owner scope")
+        .filter(|scope| !scope.trim().is_empty())
+        .ok_or_else(|| {
+            "SETUP_BLOCKED: owned health ticket requires the original owner scope".to_string()
+        })?
         .to_string();
     Ok(AdaptiveOwnedHealthTicket {
         authorized_scope,
