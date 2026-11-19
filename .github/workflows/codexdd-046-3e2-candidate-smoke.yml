@@ -124,6 +124,20 @@ jobs:
           & cargo test --locked -p codex-cli --test version_reporting version_reports_codexdd_product_and_git_build -- --test-threads=1 --nocapture
           if ($LASTEXITCODE -ne 0) { throw 'Real RC1 native CLI version test failed' }
           Write-Host "RC1 CLI VERSION VERIFIED SHA=$env:GITHUB_SHA"
+      - name: Build the source-matched app-server executable required by native D02
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # TUI's real D02 fixture launches this OS child. A successful
+          # codex-cli test or codex-tui --lib compile does not build the app-server bin.
+          & cargo build --locked -p codex-app-server --bin codex-app-server
+          if ($LASTEXITCODE -ne 0) { throw 'RC1 native app-server child binary did not build' }
+          $binary = Join-Path $env:CARGO_TARGET_DIR 'debug\codex-app-server.exe'
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
+            throw "RC1 native app-server child binary missing at $binary"
+          }
+          Write-Host "RC1 native app-server executable verified SHA=$env:GITHUB_SHA"
       - name: Verify TUI version snapshot, live D02 QA and no-progress/cold-resume controls
         shell: pwsh
         working-directory: codex-rs
