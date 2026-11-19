@@ -1076,7 +1076,10 @@ async fn workflow_signals_enforce_roles_and_native_evidence_outcomes() {
         ));
 
         let admitted = kind == AdaptiveRuntimeSignalKind::RepairRequired;
-        assert_eq!(chat.consume_adaptive_signal_at_terminal("terminal-turn"), admitted);
+        assert_eq!(
+            chat.consume_adaptive_signal_at_terminal("terminal-turn"),
+            admitted
+        );
         assert_eq!(
             chat.adaptive_effort.workflow_terminal,
             admitted.then_some(terminal)
