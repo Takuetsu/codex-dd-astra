@@ -40,6 +40,10 @@ Adaptive Effort
   LVO repair budget: 0/2 used (2 remaining)
   LVO next: n/a
   LVO log: None
+  Authorized source: None (do not infer a worktree from the launch cwd)
+  Pending prerequisites: Not specified by an authorized owner
+  Native tool required: Not authorized until the first user-origin Worker assignment
+  Next action: Enable adaptive mode, then supply one owner-origin Worker assignment.
   Thread name:         Clipboard example
   Collaboration mode:  Default
   Session:             00000000-0000-0000-0000-000000000123
