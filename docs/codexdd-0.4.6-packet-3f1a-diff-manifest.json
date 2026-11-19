@@ -1,0 +1,1507 @@
+{
+  "schema": "codexdd-046-3f1a-inventory-v1",
+  "generated_at": "2026-11-19",
+  "repo": "Takuetsu/codex-dd-astra",
+  "production_base": "b25550dcb2c6e84a84074b603086c9db6f32a63b",
+  "rc1_source_sha": "8818334c5cf2e22154fea4c0cfcd25a8baf66f55",
+  "frozen05_sha": "a69ce2ee19a50b834bc116246f94940bef8b8806",
+  "compare_status": "ahead",
+  "commits_ahead": 465,
+  "review_independent": false,
+  "audit_signed_off": false,
+  "changed_path_count": 165,
+  "triage_counts": {
+    "P0-high-security-review": 34,
+    "P1-build-provenance-review": 10,
+    "P2-general-semantic-review": 33,
+    "P2-test-coverage-review": 23,
+    "P3-documentation-review": 65
+  },
+  "files": [
+    {
+      "path": ".github/actions/setup-rusty-v8/action.yml",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 3,
+      "changes": 17,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": ".github/workflows/codexdd-046-3b1-github-regression.yml",
+      "status": "added",
+      "additions": 3363,
+      "deletions": 0,
+      "changes": 3363,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": ".github/workflows/codexdd-046-3e2-candidate-smoke.yml",
+      "status": "added",
+      "additions": 179,
+      "deletions": 0,
+      "changes": 179,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0,
+      "changes": 11,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "changes": 8,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/tests.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "status": "modified",
+      "additions": 89,
+      "deletions": 0,
+      "changes": 89,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 2,
+      "changes": 10,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/message_processor.rs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors.rs",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "changes": 2,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/thread_lifecycle.rs",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "changes": 4,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/thread_processor.rs",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "changes": 4,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/turn_processor.rs",
+      "status": "modified",
+      "additions": 153,
+      "deletions": 0,
+      "changes": 153,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/codexdd_candidate_native.rs",
+      "status": "added",
+      "additions": 245,
+      "deletions": 0,
+      "changes": 245,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/codexdd_owned_runtime_native.rs",
+      "status": "added",
+      "additions": 316,
+      "deletions": 0,
+      "changes": 316,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/codexdd_worker_handoff_native.rs",
+      "status": "added",
+      "additions": 372,
+      "deletions": 0,
+      "changes": 372,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/mod.rs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/cli/tests/version_reporting.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/codexdd-version.txt",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "status": "modified",
+      "additions": 254,
+      "deletions": 0,
+      "changes": 254,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/Cargo.toml",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "changes": 9,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control_tests.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "status": "modified",
+      "additions": 70,
+      "deletions": 0,
+      "changes": 70,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/lib.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/session/mod.rs",
+      "status": "modified",
+      "additions": 40,
+      "deletions": 5,
+      "changes": 45,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 0,
+      "changes": 22,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/session/thread_settings.rs",
+      "status": "modified",
+      "additions": 90,
+      "deletions": 7,
+      "changes": 97,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn_context.rs",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "changes": 17,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn_input_tests.rs",
+      "status": "modified",
+      "additions": 249,
+      "deletions": 0,
+      "changes": 249,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn_input.rs",
+      "status": "modified",
+      "additions": 175,
+      "deletions": 0,
+      "changes": 175,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/core/src/session/worker_authority.rs",
+      "status": "added",
+      "additions": 908,
+      "deletions": 0,
+      "changes": 908,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/core/src/state/session.rs",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "changes": 7,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/thread_manager_tests.rs",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "changes": 9,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/codexdd_owned_runtime.rs",
+      "status": "added",
+      "additions": 419,
+      "deletions": 0,
+      "changes": 419,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/codexdd_validation_tests.rs",
+      "status": "modified",
+      "additions": 1222,
+      "deletions": 0,
+      "changes": 1222,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/codexdd_validation.rs",
+      "status": "modified",
+      "additions": 671,
+      "deletions": 66,
+      "changes": 737,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/mod.rs",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "changes": 4,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/tools/registry_tests.rs",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 0,
+      "changes": 33,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "status": "modified",
+      "additions": 104,
+      "deletions": 0,
+      "changes": 104,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/mod.rs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/owned_runtime_health.rs",
+      "status": "added",
+      "additions": 307,
+      "deletions": 0,
+      "changes": 307,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/process_manager.rs",
+      "status": "modified",
+      "additions": 237,
+      "deletions": 0,
+      "changes": 237,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/process.rs",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "changes": 13,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/history/src/lib.rs",
+      "status": "modified",
+      "additions": 52,
+      "deletions": 1,
+      "changes": 53,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/history/src/tests.rs",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 0,
+      "changes": 18,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 0,
+      "changes": 22,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/rollout/src/lib.rs",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "changes": 2,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/Cargo.toml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "changes": 2,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_benchmark.rs",
+      "status": "added",
+      "additions": 1435,
+      "deletions": 0,
+      "changes": 1435,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_controller_tests.rs",
+      "status": "modified",
+      "additions": 75,
+      "deletions": 0,
+      "changes": 75,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_controller.rs",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "changes": 4,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_evidence_tests.rs",
+      "status": "modified",
+      "additions": 1081,
+      "deletions": 0,
+      "changes": 1081,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_evidence.rs",
+      "status": "modified",
+      "additions": 347,
+      "deletions": 8,
+      "changes": 355,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_gate_prerequisites.rs",
+      "status": "added",
+      "additions": 561,
+      "deletions": 0,
+      "changes": 561,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_owned_runtime.rs",
+      "status": "added",
+      "additions": 883,
+      "deletions": 0,
+      "changes": 883,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_worker_tests.rs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/adaptive_worker.rs",
+      "status": "modified",
+      "additions": 1438,
+      "deletions": 99,
+      "changes": 1537,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 0,
+      "changes": 18,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "status": "modified",
+      "additions": 887,
+      "deletions": 3,
+      "changes": 890,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/live_core_command_tests.rs",
+      "status": "added",
+      "additions": 377,
+      "deletions": 0,
+      "changes": 377,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/prompt_history_tests.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/real_process_restart_tests.rs",
+      "status": "added",
+      "additions": 299,
+      "deletions": 0,
+      "changes": 299,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session/rollout_history_tests.rs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_event_targets.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_events.rs",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 0,
+      "changes": 16,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "status": "modified",
+      "additions": 56,
+      "deletions": 3,
+      "changes": 59,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/session_lifecycle.rs",
+      "status": "modified",
+      "additions": 75,
+      "deletions": 0,
+      "changes": 75,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/startup.rs",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "changes": 6,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "changes": 9,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/adaptive_cold_process_event_routing.rs",
+      "status": "added",
+      "additions": 319,
+      "deletions": 0,
+      "changes": 319,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/adaptive_live_coupled_process.rs",
+      "status": "added",
+      "additions": 543,
+      "deletions": 0,
+      "changes": 543,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/adaptive_native_event_routing.rs",
+      "status": "added",
+      "additions": 161,
+      "deletions": 0,
+      "changes": 161,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/disconnect_tests.rs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "status": "modified",
+      "additions": 583,
+      "deletions": 0,
+      "changes": 583,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/startup_defaults_tests.rs",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "changes": 2,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/app/working_directory.rs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "changes": 2,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/adaptive_effort.rs",
+      "status": "modified",
+      "additions": 827,
+      "deletions": 7,
+      "changes": 834,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/adaptive_evidence.rs",
+      "status": "modified",
+      "additions": 629,
+      "deletions": 1,
+      "changes": 630,
+      "triage": "P0-high-security-review",
+      "first_pass": "selected boundary read; NOT independent signoff"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/adaptive_live_app_server_tests.rs",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/adaptive_runtime_bridge.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/adaptive_trusted_signal.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P0-high-security-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/input_submission.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/settings.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/adaptive_effort_tests.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/adaptive_pressure_tests.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/tui/src/session_state.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/utils/pty/src/pipe_tests.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-test-coverage-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/utils/pty/src/pipe.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/utils/pty/src/process.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "codex-rs/utils/pty/src/pty.rs",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P2-general-semantic-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.4-active-agent-stability-triage-2026-11-05.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-agent-reliability-design.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-new-thread-handoff.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3a1-evidence.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3a2-source-authority-map.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3a3-regression-contract.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b1-source-preflight-wip.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b1b-github-source-hardening.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b1c-native-source-binding.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2a-native-profile-policy.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2c-first-message-intake.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2d-core-authority-hold.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2e-shared-worker-grammar.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2f-core-first-user-intake.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2g-core-worker-snapshots.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2h-durable-core-native-turn-binding.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-a-candidate-verifier.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-b-owner-candidate-authorization.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-c-core-tui-candidate-pin.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-d-resume-notification-regressions.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-e-native-appserver-acceptance.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-f-bounded-git-preflight.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-g-embedded-tui-cold-resume-pin.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2i-h-bounded-tui-git-preflight.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2j-bounded-lvo-git-preflight.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2k-native-profile-acceptance.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2l-independent-validator-native-policy.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2m-native-wrapper-receipt-integrity.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2n-real-core-lvo-tool-handoff.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b2o-native-execution-policy-refusal.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b3a-gate-provenance-audit.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b3b-provenance-matching.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b3c1-explicit-prerequisite-ledger.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b3d1-source-bound-checkpoint.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b3d2-persistent-gate-bridge.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3b4-focused-verification-2026-11-17.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c-consolidated-acceptance.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1a-ready-admission-negative-controls.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b1-legacy-ready-replay.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2a-independent-review-contract.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2b-core-native-independent-validator.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2c-source-bound-validator-handoff.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2d-independent-profile-runtime.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2e-owner-gate-issuance.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2f-native-two-worker-core-integration.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2g-appserver-two-worker-receipts.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2h-tui-ready-notification-boundary.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2i-live-appserver-tui-terminal.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j1-app-transport-routing.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j2-native-validator-lifecycle.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j3a-source-origin-event-replay.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j3b1-cold-tui-checkpoint.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j3b2a-real-process-tui-checkpoint.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j3b2b1-native-receipt-restart.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j3b2b2a-cold-app-event-boundary.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c1b2j3b2b2b-positive-app-core-restart.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3c2a-role-status-diagnostics.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3d1a-task-route-ownership-reconnaissance.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3d1b2b3-core-runtime-health-producer.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3d1d-integrated-native-acceptance-2026-11-18.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-packet-3e1-candidate-identity.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-0.4.6-throughput-recovery-adaptation-2026-11-10.md",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-major-phase-work-packet-standard.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/codexdd-roadmap.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "docs/regression-fixtures/codexdd-046-agent-reliability-cases.json",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P3-documentation-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "scripts/codexdd-independent-profile-contract-tests.ps1",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "scripts/codexdd-test-independent.ps1",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "scripts/codexdd-test-targeted.ps1",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "scripts/codexdd-test-workpacket.ps1",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    },
+    {
+      "path": "scripts/codexdd-validation-common.ps1",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "triage": "P1-build-provenance-review",
+      "first_pass": "not reviewed in depth"
+    }
+  ]
+}
