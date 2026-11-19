@@ -1,0 +1,248 @@
+# Nonproduction 0.4.6 acceptance: execute unmodified 21-stage native release script
+# against exact RC3 implementation commit, not this audit branch's documentation SHA.
+# Never sign, tag, merge, publish or install the resulting unsigned evidence artifacts.
+name: CodexDD 0.4.6 RC3 exact-source 21-stage Windows acceptance
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-3f1-audit
+    paths:
+      - .github/workflows/codexdd-046-4f-rc3-native-release-validation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codexdd-046-rc3-native-release-audit
+  cancel-in-progress: false
+
+jobs:
+  candidate-format-preflight:
+    name: 4F RC3 source identity and Rustfmt before native compile
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-3f1-audit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: fab0579b9919d601c3afb8bd5731f8c5e77b5056
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Exact RC3 identity and narrow security-error diff check
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'fab0579b9919d601c3afb8bd5731f8c5e77b5056'
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.6'
+          test "$(tr -d '\r\n' < codex-rs/upstream-codex-release.txt)" = 'rust-v0.162.0'
+          git diff --check HEAD^ HEAD
+          test -z "$(git status --porcelain)"
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt
+      - name: Rustfmt all source without edits
+        working-directory: codex-rs
+        shell: bash
+        run: cargo fmt --all -- --check
+
+  windows-full-native-release-profile:
+    needs: candidate-format-preflight
+    name: 4F RC3 unmodified 21-stage Windows release profile + independent native regression
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-3f1-audit'
+    runs-on: windows-2022
+    timeout-minutes: 345
+    env:
+      CODEXDD_CANDIDATE_SHA: fab0579b9919d601c3afb8bd5731f8c5e77b5056
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_BUILD_JOBS: "2"
+      RUST_MIN_STACK: "16777216"
+    steps:
+      - name: Checkout exact RC3 source, not audit-document commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: fab0579b9919d601c3afb8bd5731f8c5e77b5056
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Assert exact candidate SHA, product/upstream identity and isolated target
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $source -cne $env:CODEXDD_CANDIDATE_SHA) {
+            throw "Full native release source SHA mismatch: $source"
+          }
+          if ((Get-Content -Raw 'codex-rs/codexdd-version.txt').Trim() -cne '0.4.6') { throw 'Not CodexDD 0.4.6' }
+          if ((Get-Content -Raw 'codex-rs/upstream-codex-release.txt').Trim() -cne 'rust-v0.162.0') { throw 'Unexpected upstream' }
+          if ((git status --porcelain)) { throw 'Source checkout not clean' }
+          $root = Join-Path $env:RUNNER_TEMP 'codexdd-046-rc3-full-native'
+          $temp = Join-Path $root 'temp'
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          @(
+            "CARGO_TARGET_DIR=$(Join-Path $root 'target')"
+            'CARGO_NET_GIT_FETCH_WITH_CLI=true'
+            "TEMP=$temp"
+            "TMP=$temp"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+          git config --global core.longpaths true
+          if ($LASTEXITCODE -ne 0) { throw 'git long paths unavailable' }
+          Write-Host "PINNED_RC3_ACCEPTANCE_SOURCE=$source"
+      - name: Pin Rust 1.95 with rustfmt and clippy
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: rustfmt, clippy
+      - name: Install pinned DotSlash for native child resolution
+        uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
+      - name: Ensure DotSlash exists in WindowsApps for Core child processes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dotslash = (Get-Command dotslash -ErrorAction Stop).Source
+          Copy-Item -LiteralPath $dotslash -Destination (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\dotslash.exe') -Force
+      - name: Pin checksum-verified Rusty V8 artifacts
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Cheap Windows harness and Cargo-nextest prerequisites
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & rustc --version
+          if ($LASTEXITCODE -ne 0) { throw 'rustc unavailable' }
+          & cargo clippy --version
+          if ($LASTEXITCODE -ne 0) { throw 'clippy unavailable' }
+          & cargo fmt --version
+          if ($LASTEXITCODE -ne 0) { throw 'rustfmt unavailable' }
+          if (-not (Get-Command powershell.exe -ErrorAction SilentlyContinue)) { throw 'Windows PowerShell 5.1 missing' }
+          if (-not (Get-Command cargo-nextest -ErrorAction SilentlyContinue)) {
+            Write-Host 'Installing pinned cargo-nextest 0.9.108 from locked crates.io source.'
+            & cargo install --locked cargo-nextest --version 0.9.108
+            if ($LASTEXITCODE -ne 0) { throw 'Pinned cargo-nextest install failed; environment hold (no product verdict)' }
+          }
+          & cargo nextest --version
+          if ($LASTEXITCODE -ne 0) { throw 'cargo-nextest unavailable' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-native-release-harness-tests.ps1'
+          if ($LASTEXITCODE -ne 0) { throw 'Windows release harness preflight failed' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-validation-contract-tests.ps1'
+          if ($LASTEXITCODE -ne 0) { throw 'native validation contract preflight failed' }
+          Write-Host 'RC3_RELEASE_ENVIRONMENT_PREFLIGHT_PASS'
+      - name: Prepare and independently verify pinned Windows V8 in offline release cache
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-prepare-rusty-v8.ps1' -Prepare
+          if ($LASTEXITCODE -ne 0) { throw 'Trusted Windows V8 cache preparation failed' }
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-prepare-rusty-v8.ps1'
+          if ($LASTEXITCODE -ne 0) { throw 'Trusted Windows V8 offline re-verification failed' }
+          Write-Host 'RC3_RELEASE_V8_MANIFEST_PASS'
+      - name: Strict native Windows core-tui Clippy before full release profile
+        shell: pwsh
+        working-directory: codex-rs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:CODEXDD_CANDIDATE_SHA) { throw 'RC3 candidate drift before Clippy' }
+          & cargo clippy --tests -p codex-core -p codex-tui
+          if ($LASTEXITCODE -ne 0) { throw 'RC3 exact-source Windows release Clippy failed; stop before 21-stage profile' }
+          Write-Host "RC3_NATIVE_RELEASE_CLIPPY_PASS=$env:CODEXDD_CANDIDATE_SHA"
+      - name: Execute unchanged repo-owned 21-stage release profile against exact RC3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:CODEXDD_CANDIDATE_SHA) { throw 'Candidate HEAD drift' }
+          $out = Join-Path $env:RUNNER_TEMP 'codexdd-046-rc3-full-native'
+          $log = Join-Path $out 'release-profile.log'
+          $prev = $ErrorActionPreference
+          try {
+            $ErrorActionPreference = 'Continue'
+            & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-test-release.ps1' 2>&1 | Tee-Object -FilePath $log
+            $exit = $LASTEXITCODE
+          }
+          finally { $ErrorActionPreference = $prev }
+          if ($exit -ne 0) { throw "Exact RC3 21-stage native release script failed (exit=$exit)" }
+          $terminal = @(Get-Content -LiteralPath $log | Where-Object { $_.StartsWith('CODEXDD_VALIDATION_JSON ') -and $_.Contains('"event":"profile_end"') })
+          if ($terminal.Count -ne 1) { throw "Expected one release contract terminal, got $($terminal.Count)" }
+          $receipt = $terminal[0].Substring('CODEXDD_VALIDATION_JSON '.Length) | ConvertFrom-Json
+          if ($receipt.profile -cne 'release' -or $receipt.status -cne 'pass' -or [int]$receipt.completed_stages -ne 21) {
+            throw '21-stage native contract is not exact full PASS'
+          }
+          Write-Host "RC3_ALL_21_NATIVE_RELEASE_STAGES_PASS=$env:CODEXDD_CANDIDATE_SHA"
+      - name: Run separate repo-owned independent objective validation profile
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prev = $ErrorActionPreference
+          $log = Join-Path $env:RUNNER_TEMP 'codexdd-046-rc3-full-native\independent-native.log'
+          try {
+            $ErrorActionPreference = 'Continue'
+            & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'scripts/codexdd-test-independent.ps1' 2>&1 | Tee-Object -FilePath $log
+            $exit = $LASTEXITCODE
+          }
+          finally { $ErrorActionPreference = $prev }
+          if ($exit -ne 0) { throw "RC3 independent objective native profile failed (exit=$exit)" }
+          $terminal = @(Get-Content -LiteralPath $log | Where-Object { $_.StartsWith('CODEXDD_VALIDATION_JSON ') -and $_.Contains('"event":"profile_end"') })
+          if ($terminal.Count -ne 1) { throw 'Independent profile missing terminal event' }
+          $receipt = $terminal[0].Substring('CODEXDD_VALIDATION_JSON '.Length) | ConvertFrom-Json
+          if ($receipt.profile -cne 'independent-review' -or $receipt.status -cne 'pass' -or [int]$receipt.completed_stages -ne 6) {
+            throw 'Independent native objective review profile not complete'
+          }
+          Write-Host 'RC3_INDEPENDENT_OBJECTIVE_TESTS_PASS_NOT_SECURITY_SIGNOFF'
+      - name: Prepare exact-SHA unsigned verification EXE/hash/PDB inventory (not distribution)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $release = Join-Path $env:CARGO_TARGET_DIR 'release'
+          $out = Join-Path $env:RUNNER_TEMP 'codexdd-046-rc3-unsigned-evidence'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $files = @()
+          foreach ($name in @('codex.exe', 'codex-code-mode-host.exe')) {
+            $src = Join-Path $release $name
+            if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { throw "CLI release evidence missing: $src" }
+            Copy-Item -LiteralPath $src -Destination $out
+            $files += (Get-Item -LiteralPath $src)
+          }
+          foreach ($pdb in @(Get-ChildItem -LiteralPath $release -Filter '*.pdb' -File -ErrorAction SilentlyContinue)) {
+            if ($pdb.BaseName -in @('codex','codex-code_mode_host','codex_code_mode_host','codex-code-mode-host')) {
+              Copy-Item -LiteralPath $pdb.FullName -Destination $out
+              $files += $pdb
+            }
+          }
+          $manifest = [ordered]@{
+            schema='codexdd-046-nonrelease-evidence-v1'
+            source_sha=$env:CODEXDD_CANDIDATE_SHA
+            product='0.4.6'
+            upstream='rust-v0.162.0'
+            runner='windows-2022'
+            provenance='GitHub-hosted isolated unsigned verification; requires security/owner approvals before distribution'
+            signed=$false
+            approved_release=$false
+            release_profile_stages_passed=21
+            independent_native_objective_stages_passed=6
+            files=@($files | ForEach-Object {
+              [ordered]@{
+                name=$_.Name
+                bytes=$_.Length
+                sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+              }
+            })
+          }
+          $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $out 'provenance.json') -Encoding utf8
+          Write-Host 'RC3_UNSIGNED_EVIDENCE_HASHED_NO_PRODUCTION_RELEASE'
+      - name: Upload nonproduction evidence for later 3F.2 hash/security audit
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codexdd-046-rc3-fab0579b-UNSIGNED-verification-only
+          path: ${{ runner.temp }}/codexdd-046-rc3-unsigned-evidence/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Verify exact unchanged source; no installation, signing or promotion
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD).Trim() -cne $env:CODEXDD_CANDIDATE_SHA) { throw 'Candidate SHA drift' }
+          $changes = git status --porcelain
+          $changes | Out-Host
+          if ($LASTEXITCODE -ne 0 -or $changes) { throw 'Candidate source checkout modified by native profile' }
+          Write-Host 'RC3 exact-source checkout unchanged; no installation, publication, signing or owner security signoff.'
