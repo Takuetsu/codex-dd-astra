@@ -8,6 +8,8 @@ on:
       - dd/codexdd-v0.4.6-rc1
     paths:
       - .github/workflows/codexdd-046-3e2-candidate-smoke.yml
+      # Candidate version/provenance record participates in the source preflight.
+      - docs/codexdd-0.4.6-packet-3e1-candidate-identity.md
       - codex-rs/codexdd-version.txt
       - codex-rs/cli/tests/version_reporting.rs
       - codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap
