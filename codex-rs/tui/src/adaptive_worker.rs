@@ -1359,7 +1359,7 @@ mod tests {
                 "invalid startup source authority must not start a thread"
             );
         }
-        let mut unscoped = config.clone();
+        let mut unscoped = config;
         unscoped.authorized_scope = None;
         assert!(configured_worker_binding(&unscoped).is_err());
     }

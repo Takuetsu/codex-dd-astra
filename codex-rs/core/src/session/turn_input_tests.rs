@@ -1160,15 +1160,16 @@ async fn codexdd_046_3b2f_invalid_first_core_turn_can_retry_without_rebind() {
     )
     .await;
     assert!(matches!(second, TurnInputSubmission::Started { .. }));
-    let state = session.state.lock().await;
-    assert_eq!(
-        state
-            .first_worker_authority
-            .binding()
-            .map(|worker| worker.role),
-        Some(AdaptiveWorkerRoleToml::Validation)
-    );
-    drop(state);
+    {
+        let state = session.state.lock().await;
+        assert_eq!(
+            state
+                .first_worker_authority
+                .binding()
+                .map(|worker| worker.role),
+            Some(AdaptiveWorkerRoleToml::Validation)
+        );
+    }
     session.abort_all_tasks(TurnAbortReason::Interrupted).await;
 }
 

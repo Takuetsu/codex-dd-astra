@@ -699,7 +699,7 @@ mod tests {
                 .args(args)
                 .output()
                 .expect("Git available");
-            assert!(output.status.success(), "{:?}", output);
+            assert!(output.status.success(), "{output:?}");
             String::from_utf8(output.stdout).expect("Git stdout")
         };
         git(&["init", "-q"]);
@@ -719,8 +719,8 @@ mod tests {
         let binding = AdaptiveWorkerConfigToml {
             role: AdaptiveWorkerRoleToml::Implementation,
             authorized_scope: Some("owner-approved D01 isolated benchmark".to_string()),
-            source_root: Some(root_text.clone()),
-            source_sha: Some(sha.clone()),
+            source_root: Some(root_text),
+            source_sha: Some(sha),
             task_kind: Some("benchmark".to_string()),
             required_gates: None,
             benchmark: Some(AdaptiveOwnerBenchmarkToml {
@@ -906,7 +906,7 @@ mod tests {
                 clock_ms(),
             )
             .expect("native Core unified-exec completion is an eligible measurement");
-        let mut foreign_done = core_done.clone();
+        let mut foreign_done = core_done;
         if let ThreadItem::CommandExecution { source, .. } = &mut foreign_done.item {
             *source = CommandExecutionSource::UserShell;
         }

@@ -404,21 +404,9 @@ exit 0
     };
     let receipt: serde_json::Value =
         serde_json::from_str(&output.log_output()).expect("structured LVO receipt");
-    if receipt["status"] != "pass" {
-        // The real handler must remain fail-closed. Surface the typed receipt
-        // from this disposable fixture before asserting, to distinguish a
-        // denied executor from invalid profile output or source-pin mismatch.
-        eprintln!(
-            "3B.2n native LVO receipt: status={}, error_type={}, message={}, exit_code={}, log_path={}",
-            receipt["status"],
-            receipt["error_type"],
-            receipt["message"],
-            receipt["exit_code"],
-            receipt["log_path"]
-        );
-    }
+    // Preserve detailed native receipt diagnostics on failure without stderr writes.
     assert_eq!(receipt["profile"], "targeted");
-    assert_eq!(receipt["status"], "pass");
+    assert_eq!(receipt["status"], "pass", "3B.2n native LVO receipt: {receipt}");
     assert_eq!(receipt["exit_code"], 0);
     assert_eq!(receipt["head_sha"], expected_sha);
     assert_eq!(receipt["stages"].as_array().map(Vec::len), Some(1));
@@ -631,10 +619,7 @@ exit 0
     .expect("separately bound native review must finish");
     let review_receipt: serde_json::Value = serde_json::from_str(&review_output.log_output())
         .expect("real structured independent review output");
-    if review_receipt["status"] != "pass" {
-        eprintln!("3C.1b.2f native Validator receipt: {review_receipt}");
-    }
-    assert_eq!(review_receipt["status"], "pass");
+    assert_eq!(review_receipt["status"], "pass", "3C.1b.2f native Validator receipt: {review_receipt}");
     assert_eq!(review_receipt["profile"], "independent-review");
     assert_eq!(review_receipt["exit_code"], 0);
     assert_eq!(review_receipt["head_sha"], expected_sha);
@@ -1137,7 +1122,7 @@ fn native_authorized_target_checks_real_nested_git_worktree_and_candidate_sha() 
         validate_native_authorized_target(&nested, Some(&preview), &sha),
         Ok(())
     );
-    let mut unauthorized_preview = preview.clone();
+    let mut unauthorized_preview = preview;
     unauthorized_preview.required_gates = None;
     assert!(
         validate_native_authorized_target(&nested, Some(&unauthorized_preview), &sha,).is_err()

@@ -1609,7 +1609,7 @@ mod codexdd_046_3b4_no_native_progress_persistence_tests {
                 .expect_err("out of range pressure must refuse")
                 .contains("unfinished-turn progress digest")
         );
-        let mut missing_marker = persisted.clone();
+        let mut missing_marker = persisted;
         missing_marker.last_processed_turn_id = None;
         assert!(
             apply_persisted_adaptive_workflow_state(&mut resumed, missing_marker, None)
