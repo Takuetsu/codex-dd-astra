@@ -1,8 +1,8 @@
 # CodexDD 0.4.6 — Packet 3E.1 isolated candidate identity
 
-**Created:** 2026-11-18  
-**Candidate branch:** `dd/codexdd-v0.4.6-rc1`, isolated, never production and not a release publication.  
-**Source parent:** development checkpoint `6bee467cc006a30f267efa53e313cc56dd2de739`; last exact native regression-tested *source* SHA `87e89e416611553c22807c9df6a4b25c7d0589ed`; [3D.1d evidence](codexdd-0.4.6-packet-3d1d-integrated-native-acceptance-2026-11-18.md), [Windows run #44403595032](https://github.com/Takuetsu/codex-dd-astra/actions/runs/44403595032).  
+**Created:** 2026-11-18
+**Candidate branch:** `dd/codexdd-v0.4.6-rc1`, isolated, never production and not a release publication.
+**Source parent:** development checkpoint `6bee467cc006a30f267efa53e313cc56dd2de739`; last exact native regression-tested *source* SHA `87e89e416611553c22807c9df6a4b25c7d0589ed`; [3D.1d evidence](codexdd-0.4.6-packet-3d1d-integrated-native-acceptance-2026-11-18.md), [Windows run #44403595032](https://github.com/Takuetsu/codex-dd-astra/actions/runs/44403595032).
 **Disposition:** **CANDIDATE METADATA ALLOCATED; CLI/TUI VERSION AND FINAL RELEASE VALIDATION PENDING.**
 
 ## Compact packet card
