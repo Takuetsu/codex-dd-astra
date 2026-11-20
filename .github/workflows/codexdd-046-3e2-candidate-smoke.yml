@@ -13,8 +13,8 @@ on:
       - codex-rs/codexdd-version.txt
       - codex-rs/cli/tests/version_reporting.rs
       - codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__slash_copy_whole_status.snap
-      - 'codex-rs/core/src/**'
-      - 'codex-rs/tui/src/**'
+      - "codex-rs/core/src/**"
+      - "codex-rs/tui/src/**"
   workflow_dispatch:
 
 permissions:
