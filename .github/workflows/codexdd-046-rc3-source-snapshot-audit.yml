@@ -1,6 +1,7 @@
-# Cheap source-only inventory for all ThreadSettingsSnapshot construction sites.
-# Not a production test, signoff or release stage.
-name: CodexDD 0.4.6 source snapshot constructor audit
+# Nonproduction, source-only inventory of RC3 ThreadSettingsSnapshot references.
+# This intentionally checks exact RC3 implementation source, not the audit branch.
+# Not a security signoff or permission to merge, install, sign or release.
+name: CodexDD 0.4.6 RC3 source snapshot constructor audit
 
 on:
   push:
@@ -15,53 +16,53 @@ permissions:
 
 jobs:
   snapshot-constructor-inventory:
-    name: Exact RC3 all Rust ThreadSettingsSnapshot constructor inventory
+    name: Exact RC3 Rust ThreadSettingsSnapshot constructor inventory
+    if: github.repository == 'Takuetsu/codex-dd-astra'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: 5cf06f336572307936530f93591bae1561b946c7
+          ref: 2acc2209b65f3186b00490b1c4b0cc444a636f4c
           persist-credentials: false
-          fetch-depth: 1
-      - name: Confirm exact candidate and inventory snapshot constructors
+      - name: Confirm exact RC3 source and enumerate constructors
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "5cf06f336572307936530f93591bae1561b946c7"
+          test "$(git rev-parse HEAD)" = '2acc2209b65f3186b00490b1c4b0cc444a636f4c'
           test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.6'
           python3 - <<'PY'
           from pathlib import Path
           import re
-          root=Path('codex-rs')
-          locations=[]
-          for p in sorted(root.rglob('*.rs')):
-              s=p.read_text(encoding='utf-8')
-              for m in re.finditer(r'\bThreadSettingsSnapshot\s*\{',s):
-                  line=s.count('\n',0,m.start())+1
-                  near=s[m.end():].splitlines()[:58]
-                  previous=s[max(0,m.start()-12):m.start()]
-                  # A method with "-> ThreadSettingsSnapshot {" is a return
-                  # type followed by a body, not a struct literal.
-                  is_method=bool(re.search(r'->\s*
-          PY
-          git diff --check
-,previous))
-                  # A Rust struct update "..existing" supplies unspecified
-                  # fields, including the Core-owned optional Worker marker.
-                  inherited=any(re.match(r'^\s*\.\.\s*[A-Za-z_]\w*',x) for x in near)
-                  present=any('codexdd_first_worker' in x for x in near)
-                  classification=('return-type' if is_method else
-                      'struct-update' if inherited else
-                      'explicit-marker' if present else 'MISSING_MARKER')
-                  locations.append((str(p),line,classification,near[:6]))
-          for path,line,classification,near in locations:
-              print(f'SNAPSHOT_REFERENCE {path}:{line} class={classification}')
-              for x in near: print('  '+x)
-          missing=[(p,n) for p,n,classification,_ in locations if classification=='MISSING_MARKER']
-          print(f'REVIEW_COUNTS total={len(locations)} missing_explicit_constructor_fields={len(missing)}')
-          if missing:
-              print('REVIEW_MISSING_SNAPSHOT_FIELDS',missing)
+
+          root = Path("codex-rs")
+          records = []
+          for path in sorted(root.rglob("*.rs")):
+              source = path.read_text(encoding="utf-8")
+              for m in re.finditer(r"\bThreadSettingsSnapshot\s*\{", source):
+                  line = source.count("\n", 0, m.start()) + 1
+                  prefix = source[max(0, m.start() - 80):m.start()]
+                  # A function return type followed by a body is not a literal.
+                  if re.search(r"->\s*$", prefix):
+                      classification = "return-type"
+                  else:
+                      # A struct-update expression inherits omitted fields.
+                      fragment = "\n".join(source[m.end():].splitlines()[:58])
+                      inherited = bool(re.search(r"(?m)^\s*\.\.\s*[A-Za-z_]\w*", fragment))
+                      explicit = "codexdd_first_worker" in fragment
+                      classification = (
+                          "struct-update" if inherited else
+                          "explicit-marker" if explicit else
+                          "MISSING_MARKER"
+                      )
+                  records.append((str(path), line, classification))
+                  print(f"SNAPSHOT_REFERENCE {path}:{line} class={classification}")
+
+          missing = [(p, n) for p, n, c in records if c == "MISSING_MARKER"]
+          print(f"REVIEW_COUNTS total={len(records)} missing_explicit_constructor_fields={len(missing)}")
+          if not records or missing:
+              print("REVIEW_MISSING_SNAPSHOT_FIELDS", missing)
               raise SystemExit(1)
           PY
           git diff --check
+          test -z "$(git status --porcelain)"
