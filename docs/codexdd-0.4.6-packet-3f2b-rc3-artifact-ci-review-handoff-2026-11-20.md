@@ -20,6 +20,17 @@
 | Independent non-author review | [draft PR #88](https://github.com/Takuetsu/codex-dd-astra/pull/88) is open/unmerged; zero submitted reviews and no requested reviewer as of audit. The connected owner `Takuetsu` is the candidate author and cannot provide independent approval. | **PENDING** |
 | Owner Windows acceptance | Non-elevated Daniel-CL real agents, daemon/process restart, paired scenarios, rollback backup and owner signoff have no verified acceptance receipts in this audit. | **PENDING** |
 
+## 2026-11-20 exact blocker log classification (no waivers)
+
+Direct job logs for [blocking-ci #44598846102](https://github.com/Takuetsu/codex-dd-astra/actions/runs/44598846102) were inspected:
+
+- **Codespell**: one finding, `docs/codexdd-0.4.6-packet-3b1b-github-source-hardening.md:30`, `re-used` -> `reused`.
+- **Prettier**: 50 source-file warnings (49 Markdown files and one `.github/workflows/codexdd-046-3e2-candidate-smoke.yml`). The 0.4.3 frozen Prettier baseline checker passed and must not be bypassed. A source-only staging branch `dd/codexdd-v0.4.6-rc3-ci-repair` is used to format without mutating the SHA that passed the Windows full native profile.
+- **Blob policy**: old `openai/fence@e6b39c80... # pin@v0.10.0` failed **before checkout**: `Fence setup failed ... /run/fence-launcher/.../action/bin/fence: Permission denied`; the subsequent missing clean-worktree action was a consequence of skipped checkout. The source diff's blob sizes were **not** checked. Staged upgrade to publisher's signed-off immutable Action commit `7cba9082252803421a0e433f29198de6d0063221 # pin@v0.13.1` needs an actual successful rerun, not a policy waiver.
+- **cargo-deny**: 42 `error[vulnerability]` entries and a handful of warnings for currently locked crates, including `crypto-bigint`, `hickory-proto`, `hickory-resolver`, `openssl`, `libsqlite3-sys`, `quinn-proto` and others. Crucially **`codex-rs/Cargo.lock` Git blob `0c913b46674d3593ee84f1fee5508d16e33efae5` and `codex-rs/deny.toml` blob `ea7fdc149fc880c6b36d75c29851641034289a4e` are byte-identical between the 0.4.4 production baseline and exact RC3**. These are *inherited, newly reported security exposures*, not 0.4.6 newly introduced dependencies, but they remain real. Do **not** silence cargo-deny, expand ignore lists, or alter policy until a qualified security reviewer and the owner approve a risk decision. Repairing the transitive graph needs an explicitly scoped dependency migration and new source-bound validation; it cannot be certified by the existing RC3 21-stage build receipt.
+
+**Release hold remains mandatory:** this is a CI diagnosis and isolated hygiene repair, not a claim that the four required check families passed.
+
 ## Independent reviewer work packet — exact RC3, not self-signoff
 
 Request a reviewer **distinct from the author/account `Takuetsu`**, with source access, to assess exact candidate-vs-production diff and read the prior [3F.1 inventory](https://github.com/Takuetsu/codex-dd-astra/blob/dceecbec6b065ced7bd36f0e63e40e918a0919bf/docs/codexdd-0.4.6-packet-3f1a-source-security-inventory-2026-11-19.md). Priority findings:
