@@ -90,8 +90,15 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- docs .github/workflows/codexdd-046-3e2-candidate-smoke.yml
+          # The workflow bot lacks workflow-edit authority: deliver the exact
+          # Prettier result for that one YAML file to the authorized GitHub
+          # connector; do not circumvent the bot's permission boundary.
+          printf 'FORMATTED_CANDIDATE_SMOKE_YAML_BASE64='
+          base64 -w0 .github/workflows/codexdd-046-3e2-candidate-smoke.yml
+          printf '\\n'
+          git restore -- .github/workflows/codexdd-046-3e2-candidate-smoke.yml
+          git add -- docs
           git diff --cached --check
-          git commit -m 'style(0.4.6): Prettier-only docs and CI smoke workflow'
+          git commit -m 'style(0.4.6): Prettier-only milestone documentation'
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/dd/codexdd-v0.4.6-rc3-ci-repair
           echo 'RC3_STAGING_FORMAT_ONLY_PUSH_COMPLETE'
