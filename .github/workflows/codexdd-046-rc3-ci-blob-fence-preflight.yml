@@ -16,7 +16,7 @@ jobs:
   existing-policy:
     name: New pinned Fence audit plus actual 512k changed-blob scan
     if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-3f1-audit'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 12
     steps:
       - uses: openai/fence@7cba9082252803421a0e433f29198de6d0063221 # pin@v0.13.1
