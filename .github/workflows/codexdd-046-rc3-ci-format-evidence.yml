@@ -43,8 +43,20 @@ jobs:
           node-version: 22
       - name: Install pinned formatting dependencies
         run: pnpm install --frozen-lockfile
-      - name: Apply exact repository Prettier formatter
-        run: pnpm run format:fix
+      - name: Apply repeatable repository Prettier formatting until stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "PRETTIER_FORMAT_PASS=${pass}"
+            pnpm run format:fix
+            if pnpm run format; then
+              echo "PRETTIER_STABLE_AT_PASS=${pass}"
+              exit 0
+            fi
+          done
+          echo 'Prettier remains non-idempotent after three passes' >&2
+          exit 1
       - name: Reject runtime source/policy changes and validate formatting
         shell: bash
         run: |
