@@ -1,7 +1,6 @@
-# Nonproduction, source-only inventory of RC3 ThreadSettingsSnapshot references.
-# This intentionally checks exact RC3 implementation source, not the audit branch.
-# Not a security signoff or permission to merge, install, sign or release.
-name: CodexDD 0.4.6 RC3 source snapshot constructor audit
+# Cheap, audit-only source inventory for all ThreadSettingsSnapshot literals.
+# No production test, permission change, signing, or release approval.
+name: CodexDD 0.4.6 RC3 snapshot constructor inventory
 
 on:
   push:
@@ -16,8 +15,7 @@ permissions:
 
 jobs:
   snapshot-constructor-inventory:
-    name: Exact RC3 Rust ThreadSettingsSnapshot constructor inventory
-    if: github.repository == 'Takuetsu/codex-dd-astra'
+    name: Exact RC3 all Rust ThreadSettingsSnapshot constructor inventory
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -25,7 +23,8 @@ jobs:
         with:
           ref: 2acc2209b65f3186b00490b1c4b0cc444a636f4c
           persist-credentials: false
-      - name: Confirm exact RC3 source and enumerate constructors
+          fetch-depth: 1
+      - name: Confirm exact candidate and inventory snapshot constructors
         shell: bash
         run: |
           set -euo pipefail
@@ -34,35 +33,28 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           root = Path("codex-rs")
-          records = []
-          for path in sorted(root.rglob("*.rs")):
-              source = path.read_text(encoding="utf-8")
-              for m in re.finditer(r"\bThreadSettingsSnapshot\s*\{", source):
-                  line = source.count("\n", 0, m.start()) + 1
-                  prefix = source[max(0, m.start() - 80):m.start()]
-                  # A function return type followed by a body is not a literal.
-                  if re.search(r"->\s*$", prefix):
-                      classification = "return-type"
-                  else:
-                      # A struct-update expression inherits omitted fields.
-                      fragment = "\n".join(source[m.end():].splitlines()[:58])
-                      inherited = bool(re.search(r"(?m)^\s*\.\.\s*[A-Za-z_]\w*", fragment))
-                      explicit = "codexdd_first_worker" in fragment
-                      classification = (
-                          "struct-update" if inherited else
-                          "explicit-marker" if explicit else
-                          "MISSING_MARKER"
-                      )
-                  records.append((str(path), line, classification))
-                  print(f"SNAPSHOT_REFERENCE {path}:{line} class={classification}")
-
-          missing = [(p, n) for p, n, c in records if c == "MISSING_MARKER"]
-          print(f"REVIEW_COUNTS total={len(records)} missing_explicit_constructor_fields={len(missing)}")
-          if not records or missing:
+          locations = []
+          for p in sorted(root.rglob("*.rs")):
+              s = p.read_text(encoding="utf-8")
+              for m in re.finditer(r"\bThreadSettingsSnapshot\s*\{", s):
+                  line = s.count("\n", 0, m.start()) + 1
+                  near = s[m.end():].splitlines()[:58]
+                  previous = s[max(0, m.start() - 180):m.start()]
+                  # A function return type plus body is not a struct literal.
+                  is_method = bool(re.search(r"->\s*$", previous))
+                  inherited = any(re.match(r"^\s*\.\.\s*[A-Za-z_]\w*", x) for x in near)
+                  present = any("codexdd_first_worker" in x for x in near)
+                  classification = ("return-type" if is_method else
+                                    "struct-update" if inherited else
+                                    "explicit-marker" if present else "MISSING_MARKER")
+                  locations.append((str(p), line, classification))
+          for path, line, classification in locations:
+              print(f"SNAPSHOT_REFERENCE {path}:{line} class={classification}")
+          missing = [(p, n) for p, n, cls in locations if cls == "MISSING_MARKER"]
+          print(f"REVIEW_COUNTS total={len(locations)} missing_explicit_constructor_fields={len(missing)}")
+          if missing:
               print("REVIEW_MISSING_SNAPSHOT_FIELDS", missing)
               raise SystemExit(1)
           PY
           git diff --check
-          test -z "$(git status --porcelain)"
