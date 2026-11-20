@@ -1,0 +1,85 @@
+# One-shot CI hygiene repair against a disposable RC3 derivative, NOT the release candidate.
+# May write only the named staging ref. Does not alter product source, run 21-stage CI,
+# grant security approval, or perform production promotion.
+name: CodexDD 0.4.6 RC3 nonproduction format repair
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-3f1-audit
+    paths:
+      - .github/workflows/codexdd-046-rc3-ci-format-evidence.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format-staging-only:
+    name: Format checked-in docs on disposable CI repair branch
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-3f1-audit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact disposable RC3 CI repair source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: 41f1513711577472487c4ea53b18a57656216e64
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify only authorized, nonrelease staging source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "41f1513711577472487c4ea53b18a57656216e64"
+          test "$(tr -d '\r\n' < codex-rs/codexdd-version.txt)" = '0.4.6'
+          test -z "$(git status --porcelain)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+        with:
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+      - name: Install pinned formatting dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Apply exact repository Prettier formatter
+        run: pnpm run format:fix
+      - name: Reject runtime source/policy changes and validate formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run format
+          python3 .github/scripts/check_codexdd_prettier_baseline.py
+          git diff --check
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          if not changed:
+              raise SystemExit('No formatting updates produced; expected known debt')
+          for path in changed:
+              authorized = (
+                  path.startswith('docs/codexdd-0.4.6-')
+                  or path == 'docs/codexdd-0.4.4-active-agent-stability-triage-2026-11-05.md'
+                  or path == 'docs/codexdd-major-phase-work-packet-standard.md'
+                  or path == '.github/workflows/codexdd-046-3e2-candidate-smoke.yml'
+              )
+              if not authorized:
+                  raise SystemExit(f'REJECT_UNEXPECTED_FORMAT_CHANGE={path}')
+          print(f'RC3_NONRUNTIME_PRETTIER_FORMAT_DIFF_ONLY={len(changed)}')
+          for p in changed: print('FORMATTED', p)
+          PY
+      - name: Commit formatting only to disposable staging branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- docs .github/workflows/codexdd-046-3e2-candidate-smoke.yml
+          git diff --cached --check
+          git commit -m 'style(0.4.6): Prettier-only docs and CI smoke workflow'
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/dd/codexdd-v0.4.6-rc3-ci-repair
+          echo 'RC3_STAGING_FORMAT_ONLY_PUSH_COMPLETE'
