@@ -1,0 +1,41 @@
+# Focused nonproduction PR blob-size/fence compatibility probe.
+# No branch write, no release native suite, no policy downgrade.
+name: CodexDD 0.4.6 RC3 blob policy focused preflight
+
+on:
+  push:
+    branches:
+      - dd/codexdd-v0.4.6-3f1-audit
+    paths:
+      - .github/workflows/codexdd-046-rc3-ci-blob-fence-preflight.yml
+
+permissions:
+  contents: read
+
+jobs:
+  existing-policy:
+    name: New pinned Fence audit plus actual 512k changed-blob scan
+    if: github.repository == 'Takuetsu/codex-dd-astra' && github.ref == 'refs/heads/dd/codexdd-v0.4.6-3f1-audit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: openai/fence@7cba9082252803421a0e433f29198de6d0063221 # pin@v0.13.1
+        with:
+          mode: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: 41f1513711577472487c4ea53b18a57656216e64
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact ref and existing changed-blob policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '41f1513711577472487c4ea53b18a57656216e64'
+          python3 scripts/check_blob_size.py \
+            --base 'b25550dcb2c6e84a84074b603086c9db6f32a63b' \
+            --head '41f1513711577472487c4ea53b18a57656216e64' \
+            --max-bytes 512000 \
+            --allowlist .github/blob-size-allowlist.txt
+          test -z "$(git status --porcelain)"
+          echo 'RC3_FOCUSED_FENCE_AND_REAL_BLOB_POLICY_PASS'
