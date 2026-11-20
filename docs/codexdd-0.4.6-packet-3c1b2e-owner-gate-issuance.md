@@ -21,7 +21,7 @@ task_kind = "source_change"
 required_gates = [{ kind = "source_profile", profile = "work_packet" }, { kind = "independent_validation" }]
 ```
 
-For a first user message, include a **blank line and a nonempty task instruction** after the table. This example is *not* authorization for any real candidate.
+For a first user message, include a **blank line and a nonempty task instruction** after the table. This example is _not_ authorization for any real candidate.
 
 Accepted requirement kinds: `{kind="source_profile",profile="targeted"|"work_packet"|"release"}`, `{kind="owned_runtime_health",ports=[nonzero,unique,owner-approved TCP ports]}`, and `{kind="independent_validation"}`. The independent gate must appear **exactly once**. A source-change task needs at least one `work_packet` or `release` gate; targeted alone cannot substitute. Extra explicitly approved gates are retained, not silently removed.
 

@@ -4,16 +4,16 @@
 
 ## Why another targeted control is required
 
-3C.1b.2j3b2b1 used *real Core-native source/independent receipts and app-server process replacement*, but delivered the typed stream directly into the production ChatWidget reducer, not through the normal `App::handle_app_server_event` foreground channel. 3C.1b.2j3b2a used real WebSocket TUI remapping and durable state restoration, but its previous READY state came from a saved fixture and did not traverse an App-owned automatically created Worker. Existing 3C.1b.2j2/j3a App automatic handoff tests used recording/embedded servers and did not span real OS processes.
+3C.1b.2j3b2b1 used _real Core-native source/independent receipts and app-server process replacement_, but delivered the typed stream directly into the production ChatWidget reducer, not through the normal `App::handle_app_server_event` foreground channel. 3C.1b.2j3b2a used real WebSocket TUI remapping and durable state restoration, but its previous READY state came from a saved fixture and did not traverse an App-owned automatically created Worker. Existing 3C.1b.2j2/j3a App automatic handoff tests used recording/embedded servers and did not span real OS processes.
 
 This bounded subpacket supplies the **negative cold-App event routing seam** without pretending it is the complete coupled acceptance.
 
 ## Focused source and controls
 
 - Test: `codexdd_046_3c1b2j3b2b2a_cold_real_process_app_rejects_old_auto_handoff` in `codex-rs/tui/src/app/tests/adaptive_cold_process_event_routing.rs`; Windows/ignored-by-default only.
-- Create a disposable Git SHA and local CODEX_HOME. Persist an *explicitly fixture-derived historical Implementation* `ReadyForValidation` state with both original owner-required gates to the first genuine app-server OS process through `thread/workflowState/update`. Shutdown/reap that child and resume the same saved rollout using a second real `codex-app-server.exe` process with the normal TUI WebSocket `AppServerSession` mapper.
+- Create a disposable Git SHA and local CODEX*HOME. Persist an \_explicitly fixture-derived historical Implementation* `ReadyForValidation` state with both original owner-required gates to the first genuine app-server OS process through `thread/workflowState/update`. Shutdown/reap that child and resume the same saved rollout using a second real `codex-app-server.exe` process with the normal TUI WebSocket `AppServerSession` mapper.
 - Require cold remapping to retain original source root, SHA, role and pending requirements, but clear historical terminal/success evidence and pause pending authorization.
-- Attach that live remote session to the normal TUI `App` selected-thread channel. Feed a *deliberately stale* old adaptive runtime signal via `App::handle_app_server_event`, inspect its own foreground buffer, and consume with `App::handle_thread_event_now`. No native PASS or terminal may materialize.
+- Attach that live remote session to the normal TUI `App` selected-thread channel. Feed a _deliberately stale_ old adaptive runtime signal via `App::handle_app_server_event`, inspect its own foreground buffer, and consume with `App::handle_thread_event_now`. No native PASS or terminal may materialize.
 - Present a queued `StartAutomaticValidation` for original thread/SHA to the real App dispatcher. It must refuse while there is no valid active source READY, leaving the same source selected and no owner READY persistence. Advance source HEAD and repeat to verify the stale identity remains untrusted.
 - The test reuses exactly the previously accepted b2a real OS child startup/reaping helper, with no changes to runtime product policy or source permissions. Source remains disposable; no installation/game changes.
 

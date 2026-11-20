@@ -26,11 +26,11 @@ An operations prerequisite cannot be satisfied without **actual owned listener a
 - `codexdd_046_3b3c_a07_implementation_pass_is_not_independent_validation`: source PASS preserves independent gate; later conflicting provenance invalidates previously observed native source receipt
 - `codexdd_046_3b3c_requirements_reject_missing_or_duplicate_authority`: reject missing/duplicate independent, unsupported profile, duplicate/empty ports and blank scope
 
-The tests use disposable temporary roots and synthetic typed completion fixture records. They assert *source matching logic only* and make no claim about actual Node/BREAKWATER preview health, a real independent agent, official full regression, owner QA or release.
+The tests use disposable temporary roots and synthetic typed completion fixture records. They assert _source matching logic only_ and make no claim about actual Node/BREAKWATER preview health, a real independent agent, official full regression, owner QA or release.
 
 ## Validation and remaining dependencies
 
-3B.3b **accepted** at source `a249ab5bf06839f07219a05510260739f4252abf` through Windows GitHub Actions [#43054633002](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43054633002): source preflight and Rustfmt passed, native Core 1/1 and TUI 6/6 passed. This does *not* validate 3B.3c's new files.
+3B.3b **accepted** at source `a249ab5bf06839f07219a05510260739f4252abf` through Windows GitHub Actions [#43054633002](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43054633002): source preflight and Rustfmt passed, native Core 1/1 and TUI 6/6 passed. This does _not_ validate 3B.3c's new files.
 
 3B.3c.1 is a new source checkpoint requiring its own exact-head cheap format and focused native proof. No permissions or operator-owned gates are waived. Separate unfinished obligations: private BREAKWATER Node/independent live validation; 3B.3d durable handoff; 3C.1 trusted terminal gate/transport; 3D.1 actual runtime-health owner; 3B.4 progress digest, and later full acceptance/release.
 
