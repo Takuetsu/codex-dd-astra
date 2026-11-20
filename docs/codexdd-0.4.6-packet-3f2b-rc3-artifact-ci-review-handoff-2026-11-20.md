@@ -51,3 +51,21 @@ Reviewer must provide file/line and proof for findings, and explicitly APPROVE o
 5. Perform medium-integrity real-agent Daniel-CL acceptance separately; do not install or activate Breakwater soak without owner authorization.
 
 **Audit conclusions: full artifact/CI clearance NOT achieved, and the passing 21-stage profile cannot override the other failures.**
+
+## 2026-11-20 three-family CI repair results (staging only)
+
+**Draft PR:** [#89](https://github.com/Takuetsu/codex-dd-astra/pull/89), `dd/codexdd-v0.4.6-rc3-ci-repair` @ `61c0fb8909ec454c823d8354687e5283ef762430` against original RC3 `2acc2209...`, **DO NOT MERGE**.
+
+**Exact PR check run:** [blocking-ci #44764297392](https://github.com/Takuetsu/codex-dd-astra/actions/runs/44764297392), four required check families:
+
+| Family | Final job result | Evidence / effect |
+|---|---|---|
+| Codespell | **PASS** | One typo corrected in docs. |
+| repo-checks (including Prettier) | **PASS** | 49 docs + one CI smoke YAML formatted with repository formatter; earlier 0.4.3 frozen baseline still enforced. [one-shot formatter #44763720708](https://github.com/Takuetsu/codex-dd-astra/actions/runs/44763720708) passed source-only scope assertions. |
+| Blob size policy | **PASS** | Pinned publisher Fence v0.13.1, supported Ubuntu 26.04; unchanged 512,000-byte actual diff scanner. First [focused Fence/blob run #44764011900](https://github.com/Takuetsu/codex-dd-astra/actions/runs/44764011900) passed; normal PR check now also PASS. Earlier Ubuntu 24.04 Fence failed startup; no bypass or `continue-on-error`. |
+| cargo-deny | **FAIL — SECURITY HOLD** | Same 42 `error[vulnerability]` advisories as original RC3; bans/licenses/sources passed. `Cargo.lock` and `deny.toml` are byte-identical to production 0.4.4. Requires separately authorized dependency migration plus validation or explicit, qualified owner/security risk review; NO blanket ignore/waiver. |
+
+Standard PR-fast Windows adaptive validation was started by the normal `blocking-ci` workflow and may finish separately; **this is not the already-passing 21-stage release profile**, which was neither changed nor rerun.
+
+**Exact code delta:** GitHub compare `2acc2209...61c0fb89` showed 51 paths changed **only in docs and two CI YAML files**, zero `codex-rs` / executable / dependency lockfile paths. Original full native release proof remains pinned to original RC3, and PR #88 remains draft at its original head. The staged hygiene patch is not independent security approval, full CI green, or authority to update that candidate, install or soak.
+
