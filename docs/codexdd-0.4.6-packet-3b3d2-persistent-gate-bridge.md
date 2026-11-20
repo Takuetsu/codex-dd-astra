@@ -14,7 +14,7 @@ Source owners: `tui/src/chatwidget/adaptive_effort.rs`, `tui/src/session_state.r
 - The TUI state may hold an optional live requirement ledger; new or unrelated Worker bindings start without inherited gate authority. Existing source and Worker pin data are left unchanged.
 - The TUI serializes its ledger to a camelCase v1 checkpoint only with a bound owner thread and Worker role. No registry or successful evidence record is serialized.
 - App-server protocol adds optional `gateCheckpoint` as structured JSON. The app-server validates it into the strict `codex-history` checkpoint type before persistence, bounds payload to 8 KiB, and refuses wrong thread/role/scope/source identity or unlocked Worker. Absence is backward compatible.
-- The rollout JSON includes a typed optional checkpoint with required gates and blockers only. On restore, the TUI checks owner thread, Worker role, authorized scope, worktree and immutable source SHA against the saved outer assignment. Malformed or foreign checkpoints fail closed; a correctly matched checkpoint restores *pending* gates, not prior tool success.
+- The rollout JSON includes a typed optional checkpoint with required gates and blockers only. On restore, the TUI checks owner thread, Worker role, authorized scope, worktree and immutable source SHA against the saved outer assignment. Malformed or foreign checkpoints fail closed; a correctly matched checkpoint restores _pending_ gates, not prior tool success.
 - An old `ready_for_owner_qa` terminal attached to a restored checkpoint is suppressed, pending new verification. Legacy snapshots without a checkpoint remain backward compatible; legacy READY admission tightening is separately owned by 3C.1.
 
 ## Focused tests added (not yet run)

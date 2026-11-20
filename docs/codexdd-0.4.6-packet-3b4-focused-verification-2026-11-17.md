@@ -22,7 +22,7 @@ These are executable source-matched Windows regressions, not an end-to-end owner
 ## Remaining constraints
 
 1. The `AdaptiveGateLedger` continues to require genuinely revalidatable Core evidence for source, independent Validator and owned runtime-health gates. None of the 3B.4 checks grants that authority.
-2. An ordinary successful command is not by itself proof of a changed *applicable* evidence digest. The C01–C05 focused checks do not establish every causal distinction in the full 3A.3 progress-digest contract. This must remain an integrated acceptance check, not an inferred PASS.
+2. An ordinary successful command is not by itself proof of a changed _applicable_ evidence digest. The C01–C05 focused checks do not establish every causal distinction in the full 3A.3 progress-digest contract. This must remain an integrated acceptance check, not an inferred PASS.
 3. No ten-pair comparison against equal-access ordinary Codex has been completed; no token, wall-clock, intervention or completion target is claimed.
 4. D01/D02/D03 must be reviewed on one final source SHA alongside the retained 3C safety regressions. D02 still has no production Core-owned health receipt, and the final release gates are open.
 5. Conditional P1 E/F/G issues remain bounded diagnostic holds until source-matched supporting evidence exists.

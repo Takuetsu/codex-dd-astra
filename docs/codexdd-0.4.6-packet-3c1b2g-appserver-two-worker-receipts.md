@@ -5,13 +5,14 @@
 
 ## Scope
 
-The preceding packet proved actual Core-owned native PowerShell execution in two *separate in-memory Core sessions*. This packet tests a wider seam: real Windows app-server JSON-RPC `thread/start`, two distinct source-pinned Worker identities, model-origin built-in validation tool invocations, the app-server `item/completed` event stream, and a fresh process cold-resume of both Worker identity snapshots.
+The preceding packet proved actual Core-owned native PowerShell execution in two _separate in-memory Core sessions_. This packet tests a wider seam: real Windows app-server JSON-RPC `thread/start`, two distinct source-pinned Worker identities, model-origin built-in validation tool invocations, the app-server `item/completed` event stream, and a fresh process cold-resume of both Worker identity snapshots.
 
 ## Fixture and assertions
 
-The new `codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume` test is Windows-only and uses a *disposable* Git candidate with exactly two committed one-stage native PowerShell scripts. The scripts contain contract-v1 output and no network, source mutation, model-supplied shell commands or personal project content. A local mock Responses server makes deterministic built-in tool calls with fixed profile selectors; **the Core built-in handlers really execute the committed scripts**, then the real app-server transports their native completed receipts over JSON-RPC.
+The new `codexdd_046_3c1b2g_real_app_server_two_worker_receipts_and_cold_resume` test is Windows-only and uses a _disposable_ Git candidate with exactly two committed one-stage native PowerShell scripts. The scripts contain contract-v1 output and no network, source mutation, model-supplied shell commands or personal project content. A local mock Responses server makes deterministic built-in tool calls with fixed profile selectors; **the Core built-in handlers really execute the committed scripts**, then the real app-server transports their native completed receipts over JSON-RPC.
 
 In sequence:
+
 1. The Implementation app-server thread starts **without** a launcher Worker override. Its first direct user-origin message supplies a strict `[adaptive_worker]` header (role, scope, source root, exact SHA, source_change). Core durably checkpoints this immutable authority. A separate successor turn marked `codexdd_adaptive_mechanical_validation` invokes `run_codexdd_validation` with `work_packet`. The test waits for the real `item/completed` event and requires matching thread/turn/call IDs, native PASS, completed status and timestamp, exact canonical source path, matching SHA, and a nonempty native run ID.
 2. The Validation thread starts as a **different real app-server thread** with a **separate first direct user-origin** `[adaptive_worker]` authorization for the same source/scope but the distinct Validation role. Its successor ordinary, non-terminalization turn invokes `run_codexdd_independent_validation` with `independent_review`. The same checks apply, but the tool name and profile must be the distinct independent native producer. Thread IDs and native run IDs must differ, and the source candidate must remain clean.
 3. The original app-server shuts down gracefully. A second app-server process cold-resumes both thread IDs and must restore their separate Core-owned role, authorized scope, exact SHA and root. No role promotion or source repinning is authorized.
@@ -36,7 +37,7 @@ The corrected integration test now sends a real original first user-origin `[ada
 
 ## Accepted 3C.1b.2g — verified native Windows run #128
 
-[GitHub Actions #43296361647](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43296361647), SHA `ad20adee456fa55a725678e5786dfab9cda2ff03`: **SUCCESS**, 22m25s. Linux source-contract preflight, Rustfmt, and the single targeted real Windows app-server two-thread test are all green. The test executed two separately owner-initialized source-pinned Core sessions, both real native PowerShell profiles, two distinct forwarded `item/completed` receipts, and cold-resumed both exact Worker snapshots after restarting the app-server process. This closes *only* 3C.1b.2g; there is no owner READY or production app install implied. The next packet is 3C.1b.2h, TUI notification/gate/READY admission.
+[GitHub Actions #43296361647](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43296361647), SHA `ad20adee456fa55a725678e5786dfab9cda2ff03`: **SUCCESS**, 22m25s. Linux source-contract preflight, Rustfmt, and the single targeted real Windows app-server two-thread test are all green. The test executed two separately owner-initialized source-pinned Core sessions, both real native PowerShell profiles, two distinct forwarded `item/completed` receipts, and cold-resumed both exact Worker snapshots after restarting the app-server process. This closes _only_ 3C.1b.2g; there is no owner READY or production app install implied. The next packet is 3C.1b.2h, TUI notification/gate/READY admission.
 
 ## What a green result does and does not mean
 

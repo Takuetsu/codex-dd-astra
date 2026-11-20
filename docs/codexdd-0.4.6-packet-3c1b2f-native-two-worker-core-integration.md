@@ -10,10 +10,11 @@ Prior packets proved owner-issued gate construction, strict TUI receipt matching
 ## Isolated true native execution
 
 The new `codexdd_046_3c1b2f_real_two_worker_core_receipts_and_refusals` native Windows test:
-1. Creates a disposable Git candidate with *only* two tiny test-specific repository-owned PowerShell scripts. Both scripts emit the actual contract-v1 validation events and return actual native process exit codes. They are committed before an exact 40-character SHA is bound. The scripts never modify their candidate.
+
+1. Creates a disposable Git candidate with _only_ two tiny test-specific repository-owned PowerShell scripts. Both scripts emit the actual contract-v1 validation events and return actual native process exit codes. They are committed before an exact 40-character SHA is bound. The scripts never modify their candidate.
 2. Creates a Core Implementation session with explicit root/SHA/scope and calls the real `CodexDDValidationHandler` (`work_packet`). Verifies process success, source SHA, native stage, and a genuine completed `ItemCompleted` Core tool item.
-3. Creates a separately bound Core Validation session for the *same* authorized source and calls the real `CodexDDIndependentValidationHandler` (`independent_review`). Verifies native PASS/exit 0, exact root/SHA, unique run ID, distinct thread identity, independent tool name and correctly bound ItemCompleted arguments.
-4. Directly invokes the Implementation-only LVO from the Validation session and verifies a typed non-PASS source identity blocker (no role promotion). After a synthetic **committed** candidate update, reruns independent validation under the *stale* source pin and verifies a typed refusal, while preserving a clean disposable checkout.
+3. Creates a separately bound Core Validation session for the _same_ authorized source and calls the real `CodexDDIndependentValidationHandler` (`independent_review`). Verifies native PASS/exit 0, exact root/SHA, unique run ID, distinct thread identity, independent tool name and correctly bound ItemCompleted arguments.
+4. Directly invokes the Implementation-only LVO from the Validation session and verifies a typed non-PASS source identity blocker (no role promotion). After a synthetic **committed** candidate update, reruns independent validation under the _stale_ source pin and verifies a typed refusal, while preserving a clean disposable checkout.
 
 The test config explicitly disables interactive permission prompts **only for its isolated disposable Core sessions** so the native test can execute unattended on Windows CI. Production and release policy remain unchanged; this test does not authorize unattended scripts in game projects.
 

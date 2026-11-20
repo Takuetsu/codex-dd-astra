@@ -15,7 +15,7 @@
 
 **Observed:** 2026-11-04 Z-A0.58A STONKS diagnostic session had no listeners on the required host/frontend ports 4331/4332 and health checks refused connections. Its adaptive terminalization nevertheless cited older successful exec refs and declared green owner handoff without a live preview. In Z-A0.56E1 a fresh independent validator ended with an unproven/missing trusted `ready_for_owner_qa` or `repair_required` signal after real scoped proof and extra continuation turns; one documented attempt correctly ended BLOCKED rather than falsely green.
 
-**Unknown:** exact installed version and trusted terminal event state were not independently proved in all reports. In some examples partial `source validated` outcome was truthful, but a claim of completed *full owner-authorized runtime gate* was not.
+**Unknown:** exact installed version and trusted terminal event state were not independently proved in all reports. In some examples partial `source validated` outcome was truthful, but a claim of completed _full owner-authorized runtime gate_ was not.
 
 **Reproduce on 0.4.4:** fresh nonauthor Validation Worker, pinned SHA, valid 55/55 focused proof, explicit pending/full gate or required runtime+LAN preview absent, older successful exec refs; inspect `/status`, typed signal ledger, source SHA and real service state. Also run a genuinely complete case.
 
@@ -27,7 +27,7 @@
 
 **Observed:** BREAKWATER Z-A0.57E benchmark Worker started from D:\\bw57 while requested source lived in a different clean 4035e248 worktree; it entered MechanicalValidation without running benchmarks and `run_codexdd_validation(work_packet)` reported `profile_unavailable` against an old root. The script existed at the correct authorized SHA. Z-A0.58A reported absent D:\\bw58\\scripts\\codexdd-test-workpacket.ps1. The 2026-11-04 Z-A0.56E1 Repair Worker had no native runner; **missing tool in Repair role is NOT automatically a bug**, because normal LVO `work_packet` is reserved for Implementation. Distinguish role/permission, checkout mismatch, actual profile availability and provider capabilities.
 
-**Reproduce on 0.4.4:** two same-project Git worktrees (active parent and target nested), only target has declared contract-v1 `work_packet`; verify the tool's selected worktree ID, binding, permission/role, CWD and exact source SHA *before* protected phase admission. Include missing script, wrong launch root, unbound first assignment, dirty/staged checkpoint and supported Node/Rust cases.
+**Reproduce on 0.4.4:** two same-project Git worktrees (active parent and target nested), only target has declared contract-v1 `work_packet`; verify the tool's selected worktree ID, binding, permission/role, CWD and exact source SHA _before_ protected phase admission. Include missing script, wrong launch root, unbound first assignment, dirty/staged checkpoint and supported Node/Rust cases.
 
 **Expected:** never validate an unrelated worktree or treat a missing script as source-test FAIL/model incapability. Preflight target identity and profile/tool availability before Mechanical Validation. If absent, single actionable `SETUP_BLOCKED` with observed target/candidate/required registration, preserving staged/uncommitted files. Do not fabricate native PASS, bypass no-write gates or rerun a heavy benchmark as LVO.
 
