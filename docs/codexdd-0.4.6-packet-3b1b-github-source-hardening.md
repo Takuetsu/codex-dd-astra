@@ -27,7 +27,7 @@ This is a bounded continuation of 3B.1 using **GitHub source editing only**, per
 - This GitHub commit does **not** certify successful Rust format/compilation or execution of any regression. No GitHub Actions or Daniel-CL run was initiated; source review/static wiring checks are not native validation.
 - Legacy Worker assignments with no explicit pin can still rely on older behavior. Do not call missing target authority fixed for every installed agent.
 - TUI pre-admission checking `config.cwd` is not proof that the core native `run_codexdd_validation` handler will use the same authorized target: core currently uses its own `turn_environment.cwd()`/nearest `.git`. An exact target/receipt enforcement path must be established before 3B.1 and 3B.2 can be called release-ready.
-- A source-changing Implementation Worker can change candidate HEAD; the start pin and independently validated post-implementation SHA must be reconciled explicitly, not silently mutated or re-used as fresh validator proof.
+- A source-changing Implementation Worker can change candidate HEAD; the start pin and independently validated post-implementation SHA must be reconciled explicitly, not silently mutated or reused as fresh validator proof.
 - No privileged operations, process manager, role bypass, broad workflow framework, 0.4.5 changes, CI promotion, merge, install or version bump are authorized.
 
 **Next packet:** 3B.1c / exact native target and evolving candidate boundary, plus focused executable negative/positive tests before accepting 3B.1. Continue GitHub-side source work only until owner explicitly changes validation instructions.
