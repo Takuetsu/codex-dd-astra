@@ -1,0 +1,77 @@
+name: RC3 isolated SQLite security validation
+on:
+  push:
+    branches: [dd/codexdd-v0.4.6-rc3-security-lab]
+    paths: [.github/workflows/codexdd-046-rc3-security-lab.yml]
+permissions:
+  contents: read
+jobs:
+  sqlite-batch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: codex-rs
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          components: clippy
+      - name: Verify baseline and reproduce compatible security updates
+        id: baseline
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          cargo update -p openssl -p quinn-proto -p quinn-udp@0.5.14 -p quinn-udp@0.6.1 -p rustls-webpki -p webpki-root-certs -p webpki-roots -p zstd -p zstd-safe -p zstd-sys
+          cargo metadata --locked --format-version 1 --no-deps > /dev/null
+      - name: Resolve minimum SQLite and SQLx candidate
+        id: resolve
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('Cargo.toml')
+          text = p.read_text()
+          for crate in ('sqlx', 'sqlx-macros', 'sqlx-sqlite'):
+              pattern = r'(?m)^(' + re.escape(crate) + r' = \{ version = ")=0\.9\.0(")'
+              text, count = re.subn(pattern, r'\g<1>=0.9.1\g<2>', text)
+              assert count == 1, (crate, count)
+          old = 'libsqlite3-sys = { version = "0.37", default-features = false }'
+          assert text.count(old) == 1
+          p.write_text(text.replace(old, old.replace('0.37', '0.39')))
+          PY
+          cargo update -p sqlx -p sqlx-macros -p sqlx-sqlite -p libsqlite3-sys
+          cargo metadata --locked --format-version 1 --no-deps > /dev/null
+          python3 - <<'PY'
+          import tomllib
+          with open('Cargo.lock', 'rb') as f:
+              packages = tomllib.load(f)['package']
+          for name in ('sqlx','sqlx-core','sqlx-macros','sqlx-macros-core','sqlx-sqlite','libsqlite3-sys'):
+              versions = [p['version'] for p in packages if p['name'] == name]
+              print(name, versions)
+              assert len(versions) == 1
+              assert versions[0].startswith('0.39.') if name == 'libsqlite3-sys' else versions[0] == '0.9.1'
+          PY
+          git diff --check
+      - name: Record candidate patch for review
+        if: always()
+        run: |
+          git diff --stat
+          echo 'RC3-CANDIDATE-DIFF-BEGIN'
+          git diff --no-ext-diff --binary -- Cargo.toml Cargo.lock
+          echo 'RC3-CANDIDATE-DIFF-END'
+      - name: Focused state regression tests
+        if: ${{ steps.resolve.outcome == 'success' }}
+        run: cargo test --locked -p codex-state --lib
+      - name: Full unchanged security policy
+        if: ${{ !cancelled() && steps.resolve.outcome == 'success' }}
+        uses: EmbarkStudios/cargo-deny-action@82eb9f621fbc699dd0918f3ea06864c14cc84246 # v2
+        with:
+          rust-version: 1.95.0
+          manifest-path: ./codex-rs/Cargo.toml
