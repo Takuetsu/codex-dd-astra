@@ -27,6 +27,7 @@ use codex_protocol::protocol::SubAgentActivityKind;
 use codex_protocol::protocol::SubAgentSource;
 use codex_protocol::protocol::ThreadHistoryMode;
 use codex_protocol::protocol::ThreadSettingsOverrides;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::UserInput;
 use codex_thread_store::LoadThreadHistoryParams;
 use core_test_support::hooks::trust_discovered_hooks;
@@ -1682,7 +1683,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
                 let already_read = self.0.swap(true, std::sync::atomic::Ordering::Relaxed);
                 Box::pin(async move {
                     anyhow::ensure!(already_read, "parent clock unavailable");
-                    Ok(chrono::Utc::now())
+                    Ok(Timestamp::now())
                 })
             }
 

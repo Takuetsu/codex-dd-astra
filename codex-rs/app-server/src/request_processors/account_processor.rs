@@ -6,7 +6,6 @@ use super::*;
 use crate::auth_mode::auth_mode_to_api;
 use crate::external_auth::ExternalAuthBridge;
 use crate::outgoing_message::AccountNotification;
-use chrono::DateTime;
 use codex_app_server_protocol::DesktopOnboardingEntrypoint;
 use codex_app_server_protocol::GetAccountRateLimitsParams;
 use codex_login::LoginOnboardingEntrypoint;
@@ -14,6 +13,7 @@ use codex_login::login_with_bedrock_access_keys;
 use codex_mcp::ema_auth_scope;
 use codex_model_provider::is_supported_amazon_bedrock_region;
 use codex_otel::auth_storage::AuthStorageOriginator;
+use codex_protocol::timestamp::Timestamp;
 use codex_rmcp_client::EnterpriseOAuthCredentialGuard;
 
 mod bedrock_gov_cloud;
@@ -1548,7 +1548,7 @@ fn workspace_message_timestamp_from_backend(
 ) -> Result<Option<i64>, JSONRPCErrorError> {
     timestamp
         .map(|timestamp| {
-            DateTime::parse_from_rfc3339(&timestamp)
+            Timestamp::parse_from_rfc3339(&timestamp)
                 .map(|timestamp| timestamp.timestamp())
                 .map_err(|err| {
                     internal_error(format!(

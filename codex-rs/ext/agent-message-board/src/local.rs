@@ -18,13 +18,12 @@ use crate::SubscriptionRequest;
 use crate::SubscriptionState;
 use crate::SubscriptionTarget;
 use caseless::default_case_fold_str;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::AgentPath;
 use codex_protocol::SessionId;
 use codex_protocol::ThreadId;
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::Result;
+use codex_protocol::timestamp::Timestamp;
 use codex_state::SqliteConfig;
 use futures::StreamExt;
 use serde::Deserialize;
@@ -399,7 +398,7 @@ impl LocalAgentMessageBoard {
         conn: &mut SqliteConnection,
         name: &str,
         author: &AgentPath,
-        now: DateTime<Utc>,
+        now: Timestamp,
     ) -> Result<()> {
         let inserted = sqlx::query("INSERT OR IGNORE INTO channels(board,name,name_search,created_at,timestamp,author) VALUES(?,?,?,?,?,?)")
             .bind(self.identity.to_string()).bind(name).bind(default_case_fold_str(name)).bind(now.to_rfc3339()).bind(now.timestamp_micros()).bind(author.to_string())
@@ -478,9 +477,8 @@ impl LocalAgentMessageBoard {
         .ok_or_else(|| invalid("channel not found in this board"))?;
         Ok(ChannelSummary {
             channel_name: name.to_string(),
-            created_at: DateTime::parse_from_rfc3339(row.get("created_at"))
-                .map_err(storage_error)?
-                .with_timezone(&Utc),
+            created_at: Timestamp::parse_from_rfc3339(row.get("created_at"))
+                .map_err(storage_error)?,
             created_by: AgentPath::try_from(row.get::<String, _>("author")).map_err(invalid)?,
             message_count: row.get::<i64, _>("message_count") as usize,
             last_message_id: row

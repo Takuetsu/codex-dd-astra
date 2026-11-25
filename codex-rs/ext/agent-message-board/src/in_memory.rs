@@ -14,13 +14,12 @@ use crate::SubscriptionRequest;
 use crate::SubscriptionState;
 use crate::SubscriptionTarget;
 use caseless::default_case_fold_str;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::AgentPath;
 use codex_protocol::SessionId;
 use codex_protocol::ThreadId;
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::Result;
+use codex_protocol::timestamp::Timestamp;
 use futures::StreamExt;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -149,7 +148,7 @@ impl State {
             .transpose()
     }
 
-    fn insert_channel(&mut self, name: &str, author: AgentPath, now: DateTime<Utc>) -> Result<()> {
+    fn insert_channel(&mut self, name: &str, author: AgentPath, now: Timestamp) -> Result<()> {
         if name.is_empty()
             || name.len() > 128
             || name.trim() != name

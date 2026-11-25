@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::sync::OnceLock;
@@ -9,8 +10,6 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::TestAppServer;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
-use chrono::Duration as ChronoDuration;
-use chrono::Utc;
 use codex_app_server_protocol::HookMetadata;
 use codex_app_server_protocol::HookTrustStatus;
 use codex_app_server_protocol::HooksListParams;
@@ -43,6 +42,7 @@ use flate2::write::GzEncoder;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use test_case::test_case;
+use time::Duration as SignedDuration;
 use tokio::time::sleep;
 use tokio::time::timeout;
 use wiremock::Mock;
@@ -2510,7 +2510,7 @@ async fn plugin_list_honors_global_remote_catalog_cache_ttl() -> Result<()> {
 
     rewrite_cached_remote_catalog_fetched_at(
         codex_home.path(),
-        Utc::now() - ChronoDuration::hours(4),
+        Timestamp::now() - SignedDuration::hours(4),
     )?;
     server.reset().await;
     mount_delayed_remote_plugin_list(&server, "GLOBAL", &refreshed_body).await;
@@ -4068,7 +4068,7 @@ async fn plugin_list_fetches_workspace_directory_kind_when_remote_plugin_disable
 
     rewrite_cached_remote_catalog_fetched_at(
         codex_home.path(),
-        Utc::now() - ChronoDuration::hours(4),
+        Timestamp::now() - SignedDuration::hours(4),
     )?;
     server.reset().await;
     mount_delayed_remote_plugin_list(&server, "WORKSPACE", &refreshed_workspace_plugin_body).await;
@@ -5094,7 +5094,7 @@ fn cached_remote_catalog_plugin_ids(codex_home: &std::path::Path) -> Result<Vec<
 
 fn rewrite_cached_remote_catalog_fetched_at(
     codex_home: &std::path::Path,
-    fetched_at: chrono::DateTime<Utc>,
+    fetched_at: Timestamp,
 ) -> Result<()> {
     let cache_dir = codex_home.join("cache/remote_plugin_catalog");
     for entry in std::fs::read_dir(cache_dir)? {

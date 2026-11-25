@@ -261,10 +261,13 @@ impl Session {
             let current_date = self
                 .read_clock_for_context(turn_context, "environment_date")
                 .await?
-                .map(|current_time| {
-                    current_time
-                        .with_timezone(&chrono::Local)
-                        .format("%Y-%m-%d")
+                .and_then(|current_time| {
+                    jiff::Timestamp::from_second(current_time.timestamp()).ok()
+                })
+                .map(|timestamp| {
+                    timestamp
+                        .to_zoned(jiff::tz::TimeZone::system())
+                        .date()
                         .to_string()
                 });
             world_state.add_section(

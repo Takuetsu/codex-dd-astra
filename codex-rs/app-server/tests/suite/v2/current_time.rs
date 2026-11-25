@@ -2,9 +2,6 @@ use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
 use app_test_support::create_final_assistant_message_sse_response;
-use chrono::DateTime;
-use chrono::Local;
-use chrono::Utc;
 use codex_app_server_protocol::ClientRequest;
 use codex_app_server_protocol::CurrentTimeReadResponse;
 use codex_app_server_protocol::JSONRPCMessage;
@@ -14,6 +11,7 @@ use codex_app_server_protocol::ThreadStartResponse;
 use codex_app_server_protocol::TurnStartParams;
 use codex_app_server_protocol::TurnStartResponse;
 use codex_app_server_protocol::UserInput;
+use codex_protocol::timestamp::Timestamp;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
@@ -113,10 +111,10 @@ clock_source = "external"
             .iter()
             .any(|text| text == CURRENT_TIME_REMINDER)
     );
-    let current_date = DateTime::<Utc>::from_timestamp(CURRENT_TIME_AT, 0)
-        .expect("test timestamp should be valid")
-        .with_timezone(&Local)
-        .format("%Y-%m-%d")
+    let current_date = jiff::Timestamp::from_second(CURRENT_TIME_AT)
+        .unwrap()
+        .to_zoned(jiff::tz::TimeZone::system())
+        .date()
         .to_string();
     assert!(request.message_input_texts("user").iter().any(|text| {
         text.contains("<environment_context>")

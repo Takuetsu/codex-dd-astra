@@ -13,7 +13,6 @@ use crate::shell_snapshot::ShellSnapshotSandbox;
 use crate::tools::sandboxing::configured_windows_sandbox_selection;
 use crate::tools::sandboxing::executor_windows_sandbox_selection;
 use arc_swap::ArcSwap;
-use chrono::Utc;
 use codex_core_plugins::PluginCommandAttribution;
 use codex_core_plugins::ResolvedPluginMetricsOperation;
 use codex_core_plugins::TrustedPluginRoots;
@@ -929,9 +928,9 @@ struct TurnGrants {
 
 fn local_time_context() -> (String, String) {
     match iana_time_zone::get_timezone() {
-        Ok(timezone) => (Local::now().format("%Y-%m-%d").to_string(), timezone),
+        Ok(timezone) => (jiff::Zoned::now().date().to_string(), timezone),
         Err(_) => (
-            Utc::now().format("%Y-%m-%d").to_string(),
+            jiff::Timestamp::now().strftime("%Y-%m-%d").to_string(),
             "Etc/UTC".to_string(),
         ),
     }

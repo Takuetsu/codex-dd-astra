@@ -72,6 +72,10 @@ impl Timestamp {
         self.timestamp() * 1_000 + i64::from(self.nanos / 1_000_000)
     }
 
+    pub fn timestamp_micros(&self) -> i64 {
+        self.timestamp() * 1_000_000 + i64::from(self.nanos / 1_000)
+    }
+
     pub fn timestamp_nanos_opt(&self) -> Option<i64> {
         i64::try_from(self.unix_timestamp_nanos()).ok()
     }

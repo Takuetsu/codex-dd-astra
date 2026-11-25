@@ -1,5 +1,6 @@
 //! A denied credential refresh ends 401 recovery without changing stored credentials.
 
+use codex_protocol::timestamp::Timestamp;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -37,7 +38,7 @@ async fn denied_oauth_refresh_terminates_401_recovery_and_preserves_auth() -> Re
             "refresh_token": "current-refresh-token",
             "account_id": "workspace-one"
         },
-        "last_refresh": chrono::Utc::now()
+        "last_refresh": Timestamp::now()
     }))?;
     std::fs::write(home.path().join("auth.json"), &auth_json)?;
     let auth = AuthManager::shared(

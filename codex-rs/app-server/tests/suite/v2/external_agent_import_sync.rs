@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::fs::FileTimes;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -37,7 +38,7 @@ const NATIVE_ASSISTANT: &str = "native Codex answer";
 
 fn source_record(cwd: &Path, role: &str, text: &str) -> Value {
     json!({
-        "timestamp": chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        "timestamp": Timestamp::now().to_rfc3339_opts(codex_protocol::timestamp::SecondsFormat::Secs, true),
         "type": role,
         "cwd": cwd,
         "message": { "content": text },

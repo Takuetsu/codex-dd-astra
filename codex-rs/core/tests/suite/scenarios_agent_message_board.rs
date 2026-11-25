@@ -7,6 +7,7 @@ use codex_features::Feature;
 use codex_protocol::items::TurnItem;
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::MultiAgentVersion;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::UserInput;
 use core_test_support::context_snapshot;
 use core_test_support::context_snapshot::ContextSnapshotOptions;
@@ -41,10 +42,7 @@ impl codex_core::TimeProvider for BoardClock {
     fn current_time(&self, _thread_id: codex_protocol::ThreadId) -> codex_core::TimeFuture<'_> {
         Box::pin(async move {
             match self {
-                Self::Available => Ok(chrono::DateTime::parse_from_rfc3339(
-                    "2026-09-18T12:00:00Z",
-                )?
-                .with_timezone(&chrono::Utc)),
+                Self::Available => Ok(Timestamp::parse_from_rfc3339("2026-09-18T12:00:00Z")?),
                 Self::Unavailable => Err(anyhow::anyhow!("board clock unavailable")),
             }
         })

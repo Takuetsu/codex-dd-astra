@@ -45,6 +45,7 @@ use codex_protocol::openai_models::ReasoningEffort as ReasoningEffortConfig;
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::SessionSource;
 use codex_protocol::protocol::W3cTraceContext;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::UserInput;
 use codex_rollout_trace::ConversationPart;
 use codex_rollout_trace::InferenceTraceContext;
@@ -1053,7 +1054,7 @@ async fn responses_websocket_reconnects_after_account_switch() {
                     serde_json::to_vec(&json!({
                         "auth_mode": "chatgpt",
                         "tokens": tokens,
-                        "last_refresh": chrono::Utc::now(),
+                        "last_refresh": Timestamp::now(),
                     }))
                     .unwrap(),
                 )

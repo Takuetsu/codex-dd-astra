@@ -12,8 +12,6 @@ use crate::protocol::Operation;
 use crate::protocol::Registration;
 use crate::protocol::Watch;
 use anyhow::Context;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_agent_message_board_extension::AgentMessageBoard;
 use codex_agent_message_board_extension::ChannelQuery;
 use codex_agent_message_board_extension::ChannelSummary;
@@ -38,6 +36,7 @@ use codex_protocol::SessionId;
 use codex_protocol::ThreadId;
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::Result;
+use codex_protocol::timestamp::Timestamp;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
 use futures::future::BoxFuture;
@@ -58,7 +57,7 @@ pub struct RemoteAgentMessageBoard {
     board_url: Url,
     board: SessionId,
     token: AccessToken,
-    clock: Arc<dyn Fn(ThreadId) -> BoxFuture<'static, Result<DateTime<Utc>>> + Send + Sync>,
+    clock: Arc<dyn Fn(ThreadId) -> BoxFuture<'static, Result<Timestamp>> + Send + Sync>,
 }
 
 impl RemoteAgentMessageBoard {
@@ -87,14 +86,14 @@ impl RemoteAgentMessageBoard {
             board_url,
             board,
             token,
-            clock: Arc::new(|_| Box::pin(async { Ok(Utc::now()) })),
+            clock: Arc::new(|_| Box::pin(async { Ok(Timestamp::now()) })),
         })
     }
 
     /// Supply the runtime's configured clock for research's simulated time.
     pub fn with_clock(
         mut self,
-        clock: impl Fn(ThreadId) -> BoxFuture<'static, Result<DateTime<Utc>>> + Send + Sync + 'static,
+        clock: impl Fn(ThreadId) -> BoxFuture<'static, Result<Timestamp>> + Send + Sync + 'static,
     ) -> Self {
         self.clock = Arc::new(clock);
         self

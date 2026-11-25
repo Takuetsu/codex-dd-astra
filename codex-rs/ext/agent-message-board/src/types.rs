@@ -1,8 +1,7 @@
 //! Message-board records shared by backends and tool adapters.
 
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::AgentPath;
+use codex_protocol::timestamp::Timestamp;
 use serde::Deserialize;
 use serde::Serialize;
 use serde::Serializer;
@@ -15,7 +14,7 @@ pub struct PostMetadata {
     pub channel_name: String,
     pub author: AgentPath,
     pub thread_id: Uuid,
-    pub created_at: DateTime<Utc>,
+    pub created_at: Timestamp,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,14 +40,14 @@ pub struct ThreadSummary {
     pub thread_id: Uuid,
     pub root_post: PostPreview,
     pub reply_count: usize,
-    pub last_activity_at: DateTime<Utc>,
+    pub last_activity_at: Timestamp,
     pub latest_reply: Option<PostPreview>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelSummary {
     pub channel_name: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: Timestamp,
     pub created_by: AgentPath,
     pub message_count: usize,
     pub last_message_id: Option<Uuid>,
