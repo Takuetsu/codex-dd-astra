@@ -25,6 +25,8 @@ mod responses;
 mod runtime;
 mod socket_path;
 mod socks5;
+#[cfg(test)]
+mod timestamp_compatibility_tests;
 mod state;
 #[cfg(target_os = "macos")]
 mod system_dns;
