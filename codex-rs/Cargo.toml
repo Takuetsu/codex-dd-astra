@@ -352,7 +352,7 @@ chardetng = "0.1.17"
 chrono = "0.4.43"
 clap = "4"
 clap_complete = "4"
-clatter = { version = "2.2.0", default-features = false, features = [
+clatter = { version = "3.0.0", default-features = false, features = [
     "alloc",
     "getrandom",
     "use-25519",
@@ -650,6 +650,9 @@ inherits = "test"
 opt-level = 0
 
 [patch.crates-io]
+age = { path = "../third_party/vendor/age" }
+age-core = { path = "../third_party/vendor/age-core" }
+clatter = { path = "../third_party/vendor/clatter" }
 hickory-net = { path = "../third_party/vendor/hickory-net" }
 i18n-config = { path = "../third_party/vendor/i18n-config" }
 keyring = { path = "../third_party/vendor/keyring" }

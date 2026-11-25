@@ -6,6 +6,7 @@ use crate::incoming::Incoming;
 use gst::glib::subclass::prelude::ObjectSubclassIsExt;
 use gstreamer_audio::gst_base::subclass::prelude::BaseSinkImpl;
 use pretty_assertions::assert_eq;
+use rtc::interceptor::AttributedPacket;
 use rtc::interceptor::Packet;
 use rtc::interceptor::TaggedPacket;
 use rtc::sansio::Protocol;
@@ -98,7 +99,7 @@ fn jitter_buffer_preserves_packets_delivered_in_a_burst() {
             .handle_read(TaggedPacket {
                 now: Instant::now(),
                 transport: Default::default(),
-                message: Packet::Rtp(rtc::rtp::Packet {
+                message: AttributedPacket::new(Packet::Rtp(rtc::rtp::Packet {
                     header: rtc::rtp::header::Header {
                         version: 2,
                         payload_type: crate::audio_track::OPUS_PAYLOAD_TYPE,
@@ -108,7 +109,7 @@ fn jitter_buffer_preserves_packets_delivered_in_a_burst() {
                         ..Default::default()
                     },
                     payload: encoded.clone().into(),
-                }),
+                })),
             })
             .unwrap();
         let packet = incoming.take().unwrap().unwrap();
@@ -207,7 +208,7 @@ fn real_decoder_renders_current_rtp_and_rejects_pre_epoch_arrivals() {
                 .handle_read(TaggedPacket {
                     now: Instant::now(),
                     transport: Default::default(),
-                    message: Packet::Rtp(rtc::rtp::Packet {
+                    message: AttributedPacket::new(Packet::Rtp(rtc::rtp::Packet {
                         header: rtc::rtp::header::Header {
                             version: 2,
                             payload_type: crate::audio_track::OPUS_PAYLOAD_TYPE,
@@ -217,7 +218,7 @@ fn real_decoder_renders_current_rtp_and_rejects_pre_epoch_arrivals() {
                             ..Default::default()
                         },
                         payload: encoded.into(),
-                    }),
+                    })),
                 })
                 .unwrap();
             let mut packet = incoming.take().unwrap().unwrap();

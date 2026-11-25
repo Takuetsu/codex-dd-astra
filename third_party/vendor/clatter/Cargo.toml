@@ -1,0 +1,97 @@
+[package]
+name = "clatter"
+version = "3.0.0+codexdd.1"
+edition = "2024"
+rust-version = "1.85.0"
+license = "MIT"
+description = "no_std compatible implementation of Noise protocol framework with Post-Quantum extensions"
+documentation = "https://docs.rs/clatter"
+repository = "https://github.com/jmlepisto/clatter"
+
+keywords = [
+    "noise",
+    "noise-protocol",
+    "crypto",
+    "protocol",
+    "post-quantum",
+]
+
+categories = [
+    "cryptography",
+    "no-std",
+    "no-std::no-alloc",
+    "algorithms",
+]
+
+exclude = [
+    "vectors/*",
+    ".github/*",
+    "tests/*",
+    "fuzz/*",
+]
+
+[features]
+default = [
+    "std",
+    "use-aes-gcm",
+    "use-chacha20poly1305",
+    "use-sha",
+    "use-blake2",
+    "use-25519",
+    "use-rust-crypto-ml-kem",
+]
+
+alloc = []
+std = [
+    "alloc",
+    "sha2?/std",
+    "blake2?/std",
+    "hqc-kem?/std",
+    "zeroize/std",
+    "rand",
+]
+
+core = [
+    "use-aes-gcm",
+    "use-chacha20poly1305",
+    "use-sha",
+    "use-blake2",
+    "use-25519",
+    "use-rust-crypto-ml-kem",
+]
+
+getrandom = ["dep:getrandom"]
+rand = ["dep:rand"]
+
+use-sha = ["sha2"]
+use-blake2 = ["blake2"]
+use-aes-gcm = ["aes-gcm"]
+use-chacha20poly1305 = ["chacha20poly1305"]
+use-rust-crypto-ml-kem = ["ml-kem"]
+use-rust-crypto-hqc-kem = ["hqc-kem"]
+use-25519 = ["x25519-dalek"]
+
+# docs.rs-specific configuration
+[package.metadata.docs.rs]
+all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+# Mandatory
+arrayvec = { version = "0.7.6", default-features = false, features = ["zeroize"] }
+rand_core = "0.10.1"
+zeroize = { version = "1.8.1", default-features = false, features = ["zeroize_derive"] }
+
+# Optional
+aes-gcm = { version = "0.11.1", default-features = false, features = ["aes"], optional = true }
+blake2 = { version = "0.10.6", default-features = false, optional = true }
+chacha20poly1305 = { version = "0.11.0", default-features = false, features = ["rand_core"], optional = true }
+ml-kem = { version = "0.3.2", default-features = false, features = ["zeroize"], optional = true }
+hqc-kem = { version = "0.1.0-rc.0", default-features = false, features = ["kgen", "ecap", "dcap"], optional = true }
+sha2 = { version = "0.10.9", default-features = false, optional = true }
+thiserror-no-std = { version = "2.0.2", default-features = false }
+x25519-dalek = { version = "3.0.0", default-features = false, features = ["static_secrets", "zeroize"], optional = true }
+displaydoc = { version = "0.2.5", default-features = false }
+getrandom = { version = "0.3.3", optional = true }
+rand = { version = "0.10.2", default-features = false, features = ["thread_rng"], optional = true }
