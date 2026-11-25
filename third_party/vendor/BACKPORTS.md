@@ -24,3 +24,10 @@ These source overlays retain the original upstream licenses and identify local r
 - [Upstream commit 2ce7b1d](https://github.com/kellpossible/cargo-i18n/commit/2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4) replaces both parser calls and their error type with `toml`. This overlay applies those three changes and uses the compatible `toml` already locked in the workspace. This removes the dependency affected by RUSTSEC-2026-0374, an unmaintained-library advisory.
 - Daniel-CL validation: all nine secrets tests passed and the lockfile and all-feature audit confirm `basic-toml` is absent. The Bazel dependency query passed. The separately pinned Linux cargo-deny 0.19.0 license scan also passed after ZIP's backend adjustment.
 - Removal: replace the overlay with the published upstream parser migration and rerun the secrets tests and full dependency policy.
+
+## Linux credential store and D-Bus
+
+- Base: [keyring 3.6.3](https://crates.io/crates/keyring/3.6.3), source revision `315cbdf6c6a9153d8c9f88b56568f29862d3e39d`, crate SHA-256 `eebcc3aff044e5944a8fbaf69eb277d11986064cba30c468730e8b9909fb551c`.
+- The manifest overlay adopts published [secret-service 6.0.0](https://crates.io/crates/secret-service/6.0.0) and [zbus 6.5.0](https://crates.io/crates/zbus/6.5.0) for the existing asynchronous backend. The TUI and typed error checks also use the published versions. The lockfile no longer contains the crates affected by RUSTSEC-2026-0370, -0371, and -0372. Credential lookup, storage attributes and fallback behavior keep their original implementation.
+- Validation: four Windows and six locked Linux credential-store tests passed. In a private Linux D-Bus session, keyring 3.6.3 wrote an isolated test credential, the overlay read and updated it, and the baseline read and deleted it. The full policy still reports only unrelated advisory errors.
+- Removal: adopt a release that can use maintained D-Bus crates while retaining platform storage behavior. Repeat the old-to-new and new-to-old credential checks before dropping the overlay.

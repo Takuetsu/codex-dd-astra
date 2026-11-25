@@ -652,6 +652,7 @@ opt-level = 0
 [patch.crates-io]
 hickory-net = { path = "../third_party/vendor/hickory-net" }
 i18n-config = { path = "../third_party/vendor/i18n-config" }
+keyring = { path = "../third_party/vendor/keyring" }
 rama-dns = { path = "../third_party/vendor/rama-dns" }
 zip = { path = "../third_party/vendor/zip" }
 # Uncomment to debug local changes.
