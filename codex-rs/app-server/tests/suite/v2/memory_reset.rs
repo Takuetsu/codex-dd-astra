@@ -1,12 +1,12 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use chrono::Utc;
 use codex_app_server_protocol::MemoryResetResponse;
 use codex_features::Feature;
 use codex_protocol::MemoryVersion;
 use codex_protocol::ThreadId;
 use codex_protocol::protocol::SessionSource;
+use codex_protocol::timestamp::Timestamp;
 use codex_state::Stage1JobClaimOutcome;
 use codex_state::StateRuntime;
 use codex_state::ThreadMetadataBuilder;
@@ -85,7 +85,7 @@ async fn seed_stage1_output(
     codex_home: &Path,
     version: MemoryVersion,
 ) -> Result<ThreadId> {
-    let now = Utc::now();
+    let now = Timestamp::now();
     let thread_id = ThreadId::from_string(&Uuid::new_v4().to_string())?;
     let worker_id = ThreadId::from_string(&Uuid::new_v4().to_string())?;
     let mut builder = ThreadMetadataBuilder::new(

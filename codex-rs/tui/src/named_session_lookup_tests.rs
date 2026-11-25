@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -91,9 +92,8 @@ fn thread_metadata(
     rollout_path: PathBuf,
     title: &str,
 ) -> codex_state::ThreadMetadata {
-    let created_at = chrono::DateTime::parse_from_rfc3339("2025-02-01T10:00:00Z")
-        .expect("timestamp should parse")
-        .with_timezone(&chrono::Utc);
+    let created_at =
+        Timestamp::parse_from_rfc3339("2025-02-01T10:00:00Z").expect("timestamp should parse");
     let mut builder = ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
@@ -298,8 +298,8 @@ async fn rejects_duplicate_labels_across_server_pages() -> color_eyre::Result<()
             format!("other-{index}")
         };
         let mut metadata = thread_metadata(&config, thread_id, rollout_path, &name);
-        metadata.recency_at += chrono::Duration::seconds(index);
-        metadata.updated_at += chrono::Duration::seconds(index);
+        metadata.recency_at += time::Duration::seconds(index);
+        metadata.updated_at += time::Duration::seconds(index);
         upsert_thread(&runtime, metadata).await?;
     }
 

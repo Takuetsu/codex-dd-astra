@@ -13,7 +13,8 @@ use crate::ThreadAttachmentOwnerPage;
 use crate::runtime::test_support::test_thread_metadata;
 use crate::runtime::test_support::unique_temp_dir;
 use anyhow::Result;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_protocol::ThreadId;
 use codex_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
@@ -341,7 +342,7 @@ async fn attachments_survive_restart_and_archive_but_cascade_on_thread_deletion(
 
     let rollout_path = codex_home.join("archived.jsonl");
     reopened
-        .mark_archived(thread_id, &rollout_path, Utc::now())
+        .mark_archived(thread_id, &rollout_path, Timestamp::now())
         .await?;
     reopened.mark_unarchived(thread_id, &rollout_path).await?;
     assert_eq!(
@@ -481,7 +482,7 @@ async fn attachment_reverse_lookup_filters_pages_and_tracks_membership() -> Resu
         .mark_archived(
             thread_ids[0],
             &codex_home.join("archived.jsonl"),
-            Utc::now(),
+            Timestamp::now(),
         )
         .await?;
     let archived_thread = ThreadAttachmentOwner {

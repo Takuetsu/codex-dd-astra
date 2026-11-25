@@ -1,7 +1,7 @@
-use chrono::Utc;
 use codex_protocol::ThreadId;
 use codex_protocol::protocol::SessionSource;
 use codex_protocol::protocol::ThreadHistoryMode;
+use codex_protocol::timestamp::Timestamp;
 use codex_rollout::ThreadItem;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
@@ -119,7 +119,7 @@ async fn search_matches_selected_rollout_across_path_spellings_and_compression()
                 let mut metadata = codex_state::ThreadMetadataBuilder::new(
                     thread_id,
                     selected_path.clone(),
-                    Utc::now(),
+                    Timestamp::now(),
                     SessionSource::Cli,
                 )
                 .build("test-provider");

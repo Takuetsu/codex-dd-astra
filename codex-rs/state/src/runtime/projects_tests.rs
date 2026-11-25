@@ -23,7 +23,7 @@ async fn project_lifecycle_preserves_order_and_clears_assignments() -> anyhow::R
     let metadata = ThreadMetadataBuilder::new(
         thread_id,
         home.join("thread.jsonl"),
-        chrono::Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     )
     .build("test-provider");
@@ -66,7 +66,7 @@ async fn project_lifecycle_preserves_order_and_clears_assignments() -> anyhow::R
     assert!(!unchanged.1);
     assert_eq!(unchanged.0.updated_at_ms, project.updated_at_ms);
     runtime
-        .touch_thread_updated_at(thread_id, chrono::Utc::now())
+        .touch_thread_updated_at(thread_id, Timestamp::now())
         .await?;
     assert_eq!(
         runtime.get_project(&project.id).await?,
@@ -77,7 +77,7 @@ async fn project_lifecycle_preserves_order_and_clears_assignments() -> anyhow::R
         .mark_archived(
             thread_id,
             home.join("archived.jsonl").as_path(),
-            chrono::Utc::now(),
+            Timestamp::now(),
         )
         .await?;
     assert_eq!(
@@ -95,13 +95,13 @@ async fn project_lifecycle_preserves_order_and_clears_assignments() -> anyhow::R
         Some(project.clone())
     );
     runtime
-        .mark_archived(thread_id, &metadata.rollout_path, chrono::Utc::now())
+        .mark_archived(thread_id, &metadata.rollout_path, Timestamp::now())
         .await?;
     let active_thread_id = ThreadId::default();
     let active_metadata = ThreadMetadataBuilder::new(
         active_thread_id,
         home.join("active.jsonl"),
-        chrono::Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     )
     .build("test-provider");
@@ -148,7 +148,7 @@ async fn project_lifecycle_preserves_order_and_clears_assignments() -> anyhow::R
         .set_thread_project(&active_thread_id.to_string(), Some(&project.id))
         .await?;
     runtime
-        .mark_archived(thread_id, &metadata.rollout_path, chrono::Utc::now())
+        .mark_archived(thread_id, &metadata.rollout_path, Timestamp::now())
         .await?;
     let (affected_active_thread_ids, affected_archived_thread_ids) =
         runtime.delete_project(&project.id).await?.unwrap();
@@ -421,11 +421,11 @@ async fn project_list_orders_and_pages_recency_with_roots_and_nulls() -> anyhow:
                 let mut metadata = ThreadMetadataBuilder::new(
                     id,
                     home.join(format!("{id}.jsonl")),
-                    chrono::DateTime::from_timestamp_millis(timestamp).unwrap(),
+                    Timestamp::from_timestamp_millis(timestamp).unwrap(),
                     SessionSource::Exec,
                 )
                 .build("test-provider");
-                metadata.archived_at = archived.then(chrono::Utc::now);
+                metadata.archived_at = archived.then(Timestamp::now);
                 runtime.upsert_thread(&metadata).await?;
                 // Force exact ties despite the monotonic timestamp allocator.
                 sqlx::query("UPDATE threads SET recency_at_ms = ?, recency_at = ? WHERE id = ?")
@@ -710,7 +710,7 @@ async fn initial_project_assignment_is_inserted_with_thread_row() -> anyhow::Res
     let mut metadata = ThreadMetadataBuilder::new(
         thread_id,
         home.join("thread.jsonl"),
-        chrono::Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     )
     .build("test-provider");
@@ -725,7 +725,7 @@ async fn initial_project_assignment_is_inserted_with_thread_row() -> anyhow::Res
     let mut missing_project_metadata = ThreadMetadataBuilder::new(
         missing_thread_id,
         home.join("missing-project.jsonl"),
-        chrono::Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     )
     .build("test-provider");

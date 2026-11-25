@@ -2,6 +2,7 @@
 
 use super::*;
 use codex_protocol::MemoryVersion;
+use codex_protocol::timestamp::Timestamp;
 use core_test_support::responses::sse_response;
 use pretty_assertions::assert_eq;
 use wiremock::Mock;
@@ -19,7 +20,7 @@ async fn dual_write_extracts_and_consolidates_into_independent_stores() -> anyho
     let source = seed_stage1_candidate(
         &db,
         home.path(),
-        chrono::Utc::now() - chrono::Duration::hours(2),
+        Timestamp::now() - time::Duration::hours(2),
         "dual-write",
     )
     .await?;

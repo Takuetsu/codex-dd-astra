@@ -122,6 +122,7 @@ use crate::app_backtrack::BacktrackState;
 use crate::app_backtrack::nth_user_position;
 use crate::app_backtrack::user_count;
 use crate::app_event::HistoryBatchEntryResponse;
+use codex_protocol::timestamp::Timestamp;
 
 async fn drain_managed_worktree_start(app: &mut App, server: &mut AppServerSession) {
     if let Some((mode, name, worker_binding)) = app.pending_start_managed_worktree.take() {
@@ -313,8 +314,7 @@ async fn duplicate_named_resume_renders_error_without_replacing_current_session(
         );
         let thread_id = ThreadId::from_string(&thread_id)?;
         thread_ids.push(thread_id);
-        let created_at =
-            chrono::DateTime::parse_from_rfc3339(timestamp)?.with_timezone(&chrono::Utc);
+        let created_at = Timestamp::parse_from_rfc3339(timestamp)?;
         let mut metadata = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             path.to_path_buf(),

@@ -1,6 +1,7 @@
 use super::StateRuntime;
 use crate::model::datetime_to_epoch_millis;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Row;
@@ -69,7 +70,7 @@ ON CONFLICT(import_id) DO UPDATE SET
         )
         .bind(import_id)
         .bind(provider_id)
-        .bind(datetime_to_epoch_millis(Utc::now()))
+        .bind(datetime_to_epoch_millis(Timestamp::now()))
         .bind(serde_json::to_string(successes)?)
         .bind(serde_json::to_string(failures)?)
         .execute(self.pool.as_ref())

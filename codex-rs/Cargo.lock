@@ -1988,7 +1988,6 @@ dependencies = [
  "async-channel",
  "base64 0.22.1",
  "bytes",
- "chrono",
  "codex-client",
  "codex-http-client",
  "codex-protocol",
@@ -1997,6 +1996,7 @@ dependencies = [
  "eventsource-stream",
  "futures",
  "http",
+ "jiff 0.2.23",
  "pretty_assertions",
  "rcgen",
  "regex-lite",
@@ -3481,7 +3481,6 @@ name = "codex-goal-extension"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "codex-analytics",
  "codex-core",
  "codex-extension-api",
@@ -3939,7 +3938,6 @@ name = "codex-memories-write"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "codex-backend-client",
  "codex-config",
  "codex-core",
@@ -3965,6 +3963,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "time",
  "tokio",
  "tracing",
  "uuid",
@@ -4250,7 +4249,6 @@ version = "0.162.0"
 dependencies = [
  "anyhow",
  "chardetng",
- "chrono",
  "codex-async-utils",
  "codex-execpolicy",
  "codex-extension-items",
@@ -4269,6 +4267,7 @@ dependencies = [
  "icu_decimal",
  "icu_locale_core",
  "icu_provider",
+ "jiff 0.2.23",
  "landlock",
  "pretty_assertions",
  "quick-xml 0.41.0",
@@ -4282,6 +4281,7 @@ dependencies = [
  "sys-locale",
  "tempfile",
  "thiserror 2.0.18",
+ "time",
  "tokio",
  "tracing",
  "ts-rs",
@@ -4413,7 +4413,6 @@ name = "codex-rollout"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "codex-extension-items",
  "codex-file-search",
  "codex-git-utils",
@@ -4607,7 +4606,6 @@ name = "codex-state"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "codex-git-utils",
  "codex-history",
  "codex-protocol",
@@ -4623,6 +4621,7 @@ dependencies = [
  "sqlx-macros",
  "sqlx-sqlite",
  "strum 0.27.2",
+ "time",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4693,7 +4692,6 @@ dependencies = [
 name = "codex-thread-store"
 version = "0.162.0"
 dependencies = [
- "chrono",
  "codex-app-server-protocol",
  "codex-extension-items",
  "codex-git-utils",
@@ -4848,6 +4846,7 @@ dependencies = [
  "tempfile",
  "textwrap 0.16.2",
  "thiserror 2.0.18",
+ "time",
  "tokio",
  "tokio-stream",
  "tokio-tungstenite",

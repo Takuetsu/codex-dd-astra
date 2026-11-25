@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 #![allow(clippy::expect_used)]
 
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_absolute_path::test_support::PathExt;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -1998,7 +1999,7 @@ async fn seed_thread_metadata(
             .sqlite()
             .home()
             .join(format!("rollout-{thread_id}.jsonl")),
-        chrono::Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     );
     runtime.upsert_thread(&builder.build("test-provider")).await

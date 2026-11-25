@@ -466,12 +466,10 @@ fn blob_retry_after(headers: &http::HeaderMap) -> Option<Duration> {
     if let Ok(seconds) = value.parse() {
         return Some(Duration::from_secs(seconds));
     }
-    let date = chrono::DateTime::parse_from_rfc2822(value).ok()?;
-    Some(
-        date.signed_duration_since(chrono::Utc::now())
-            .to_std()
-            .unwrap_or_default(),
-    )
+    let date = jiff::fmt::rfc2822::DateTimeParser::new()
+        .parse_timestamp(value)
+        .ok()?;
+    Some(Duration::try_from(date.duration_since(jiff::Timestamp::now())).unwrap_or_default())
 }
 
 #[cfg(test)]

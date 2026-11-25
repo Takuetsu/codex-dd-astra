@@ -4,6 +4,7 @@ use codex_app_server_protocol::ModelUpgradeInfo;
 use codex_app_server_protocol::ReasoningEffortOption;
 use codex_protocol::openai_models::ModelPreset;
 use codex_protocol::openai_models::ReasoningEffortPreset;
+use codex_protocol::timestamp::Timestamp;
 
 pub fn supported_models(models: Vec<ModelPreset>, include_hidden: bool) -> Vec<Model> {
     models
@@ -23,10 +24,7 @@ fn model_from_preset(preset: ModelPreset) -> Model {
             upgrade_copy: upgrade.upgrade_copy.clone(),
             model_link: upgrade.model_link.clone(),
             migration_markdown: upgrade.migration_markdown.clone(),
-            retirement_at: upgrade
-                .retirement_at
-                .as_ref()
-                .map(chrono::DateTime::timestamp),
+            retirement_at: upgrade.retirement_at.as_ref().map(Timestamp::timestamp),
         }),
         availability_nux: preset.availability_nux.map(Into::into),
         display_name: preset.display_name.to_string(),

@@ -1,7 +1,7 @@
+use codex_protocol::timestamp::Timestamp;
 use std::path::Path;
 use std::path::PathBuf;
 
-use chrono::Utc;
 use codex_protocol::SanitizedGitUrl;
 use codex_protocol::ThreadId;
 use codex_protocol::protocol::GitInfo;
@@ -668,7 +668,7 @@ async fn metadata_for_missing_sqlite_row(
     let created_at = patch
         .created_at
         .or(patch.updated_at)
-        .unwrap_or_else(Utc::now);
+        .unwrap_or_else(Timestamp::now);
     let mut builder = ThreadMetadataBuilder::new(
         thread_id,
         rollout_path.to_path_buf(),
@@ -942,6 +942,7 @@ mod tests {
     use codex_protocol::models::PermissionProfile;
     use codex_protocol::openai_models::ReasoningEffort;
     use codex_protocol::protocol::ThreadHistoryMode;
+    use codex_protocol::timestamp::Timestamp;
     use codex_utils_absolute_path::test_support::PathExt;
     use futures::FutureExt;
     use pretty_assertions::assert_eq;
@@ -1988,7 +1989,7 @@ mod tests {
     #[test]
     fn sqlite_failures_are_best_effort_for_observed_metadata_updates() {
         assert!(!sqlite_write_failure_should_block(&ThreadMetadataPatch {
-            updated_at: Some(Utc::now()),
+            updated_at: Some(Timestamp::now()),
             ..Default::default()
         }));
         assert!(!sqlite_write_failure_should_block(&ThreadMetadataPatch {

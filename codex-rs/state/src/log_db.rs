@@ -21,6 +21,7 @@
 //! # }
 //! ```
 
+use codex_protocol::timestamp::Timestamp;
 use std::future::Future;
 use std::sync::Arc;
 use std::sync::OnceLock;
@@ -546,8 +547,10 @@ async fn flush(
     // the entries are dropped because the in memory buffer has it's own space-constrainted rules for preserving logs
     if let Err(error) = &result {
         let error = crate::telemetry::classify_error(error);
-        let timestamp =
-            chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, /*use_z*/ true);
+        let timestamp = Timestamp::now().to_rfc3339_opts(
+            codex_protocol::timestamp::SecondsFormat::Millis,
+            /*use_z*/ true,
+        );
         let entry_count = entries.len();
         has_write_failure.store(true, Ordering::Relaxed);
         failure_reporter.read().unwrap_or_else(std::sync::PoisonError::into_inner).report_failure(&format!(

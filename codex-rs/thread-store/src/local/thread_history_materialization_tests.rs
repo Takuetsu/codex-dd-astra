@@ -1,9 +1,9 @@
+use codex_protocol::timestamp::Timestamp;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::Duration;
 
-use chrono::Utc;
 use codex_app_server_protocol::McpToolCallResult;
 use codex_app_server_protocol::ThreadItem;
 use codex_protocol::ThreadId;
@@ -679,7 +679,7 @@ async fn paginated_realtime_items_materialize_separately_in_rollout_order() {
                 item.id,
                 i64::try_from(line.ordinal.expect("paginated rollout ordinal"))
                     .expect("ordinal fits SQLite integer"),
-                chrono::DateTime::parse_from_rfc3339(line.timestamp.as_str())
+                Timestamp::parse_from_rfc3339(line.timestamp.as_str())
                     .expect("valid rollout timestamp")
                     .timestamp_millis(),
                 serde_json::to_value(item.content)
@@ -1791,7 +1791,7 @@ async fn summary_items_use_final_answers_and_ignore_nonterminal_messages() {
     let mut builder = codex_state::ThreadMetadataBuilder::new(
         thread_id,
         home.path().join("missing-rollout.jsonl"),
-        Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     );
     builder.history_mode = ThreadHistoryMode::Paginated;

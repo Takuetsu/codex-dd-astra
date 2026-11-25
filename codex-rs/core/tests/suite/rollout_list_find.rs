@@ -1,10 +1,10 @@
 #![allow(clippy::unwrap_used)]
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_absolute_path::test_support::PathExt;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use chrono::Utc;
 use codex_core::RolloutRecorder;
 use codex_core::RolloutRecorderParams;
 use codex_core::config::ConfigBuilder;
@@ -80,7 +80,7 @@ async fn upsert_thread_metadata(
     let mut builder = ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
-        Utc::now(),
+        Timestamp::now(),
         SessionSource::default(),
     );
     builder.cwd = codex_home.to_path_buf();

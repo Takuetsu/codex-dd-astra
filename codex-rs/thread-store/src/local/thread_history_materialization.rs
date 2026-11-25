@@ -1,9 +1,9 @@
+use codex_protocol::timestamp::Timestamp;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 
-use chrono::DateTime;
 use codex_app_server_protocol::ThreadHistoryChangeSet;
 use codex_app_server_protocol::project_rollout_line;
 use codex_protocol::ThreadId;
@@ -249,7 +249,7 @@ fn read_projection_steps_sync(
             || (!is_inherited_subagent_history
                 && matches!(&line.item, RolloutItem::RealtimeItem(_)))
         {
-            match DateTime::parse_from_rfc3339(line.timestamp.as_str()) {
+            match Timestamp::parse_from_rfc3339(line.timestamp.as_str()) {
                 Ok(timestamp) => Some(timestamp.timestamp_millis()),
                 Err(err) => {
                     warn!(

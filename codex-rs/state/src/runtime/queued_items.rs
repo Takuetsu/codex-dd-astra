@@ -79,7 +79,7 @@ impl SqliteQueueStore {
         thread_id: ThreadId,
         payload_json: &str,
     ) -> anyhow::Result<QueuedUserSubmissionRecord> {
-        let now_ms = datetime_to_epoch_millis(Utc::now());
+        let now_ms = datetime_to_epoch_millis(Timestamp::now());
         let row = sqlx::query(
             "INSERT INTO queued_items (
                 id, thread_id, payload_json, queue_order,
@@ -139,7 +139,7 @@ impl SqliteQueueStore {
              RETURNING id, thread_id, payload_json",
         )
         .bind(payload_json)
-        .bind(datetime_to_epoch_millis(Utc::now()))
+        .bind(datetime_to_epoch_millis(Timestamp::now()))
         .bind(thread_id.to_string())
         .bind(item_id)
         .fetch_optional(self.pool.as_ref())
@@ -182,7 +182,7 @@ impl SqliteQueueStore {
             )
             .into());
         }
-        let now_ms = datetime_to_epoch_millis(Utc::now());
+        let now_ms = datetime_to_epoch_millis(Timestamp::now());
         let max_queue_order = rows.last().map_or(-1, |(_, queue_order)| *queue_order);
         for (index, item_id) in ordered_ids.iter().enumerate() {
             sqlx::query(

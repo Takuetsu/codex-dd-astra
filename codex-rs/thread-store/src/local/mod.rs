@@ -811,6 +811,7 @@ impl ThreadStore for LocalThreadStore {
 
 #[cfg(test)]
 mod tests {
+    use codex_protocol::timestamp::Timestamp;
     #[path = "acquisition_tests.rs"]
     mod acquisition_tests;
     #[path = "delegated_preview_tests.rs"]
@@ -997,7 +998,7 @@ mod tests {
         let mut builder = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             stale_rollout_path,
-            chrono::Utc::now(),
+            Timestamp::now(),
             SessionSource::Cli,
         );
         builder.history_mode = ThreadHistoryMode::Paginated;
@@ -1592,7 +1593,7 @@ mod tests {
         let mut builder = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             home.path().join("missing-rollout.jsonl"),
-            chrono::Utc::now(),
+            Timestamp::now(),
             SessionSource::Exec,
         );
         builder.history_mode = ThreadHistoryMode::Legacy;

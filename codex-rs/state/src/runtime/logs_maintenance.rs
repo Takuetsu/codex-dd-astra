@@ -2,7 +2,8 @@
 //! SQLite keeps freed pages for reuse.
 
 use super::StateRuntime;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use std::time::Duration;
@@ -31,7 +32,7 @@ impl StateRuntime {
                 }
                 if let Err(err) = prune_by_age_and_size(
                     &runtime.logs_pool,
-                    Utc::now().timestamp(),
+                    Timestamp::now().timestamp(),
                     LOG_DATABASE_BUDGET_BYTES,
                 )
                 .await

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use anyhow::anyhow;
-use chrono::DateTime;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_protocol::ThreadId;
 use serde::Serialize;
 use sqlx::Row;
@@ -66,8 +66,8 @@ pub struct ThreadGoal {
     pub token_budget: Option<i64>,
     pub tokens_used: i64,
     pub time_used_seconds: i64,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Timestamp,
+    pub updated_at: Timestamp,
 }
 
 pub(crate) struct ThreadGoalRow {

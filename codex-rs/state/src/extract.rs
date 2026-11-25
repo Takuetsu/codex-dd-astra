@@ -217,8 +217,8 @@ mod tests {
     use super::rollout_item_affects_thread_metadata;
     use crate::ThreadMetadataBuilder;
     use crate::model::ThreadMetadata;
-    use chrono::DateTime;
-    use chrono::Utc;
+    use codex_protocol::timestamp::Timestamp;
+
     use codex_history::RolloutItem;
     use codex_protocol::ThreadId;
     use codex_protocol::config_types::ApprovalsReviewer;
@@ -363,7 +363,7 @@ mod tests {
         let thread_id = ThreadId::new();
         let source = SessionSource::SubAgent(SubAgentSource::Other("guardian".to_string()));
         let mut metadata =
-            ThreadMetadataBuilder::new(thread_id, PathBuf::new(), Utc::now(), source.clone())
+            ThreadMetadataBuilder::new(thread_id, PathBuf::new(), Timestamp::now(), source.clone())
                 .build("test-provider");
         let session_meta = RolloutItem::SessionMeta(SessionMetaLine {
             meta: SessionMeta {
@@ -819,7 +819,7 @@ mod tests {
 
     fn metadata_for_test() -> ThreadMetadata {
         let id = ThreadId::from_string(&Uuid::from_u128(42).to_string()).expect("thread id");
-        let created_at = DateTime::<Utc>::from_timestamp(1_735_689_600, 0).expect("timestamp");
+        let created_at = Timestamp::from_timestamp(1_735_689_600, 0).expect("timestamp");
         ThreadMetadata {
             creator_user_id: None,
             creator_account_id: None,

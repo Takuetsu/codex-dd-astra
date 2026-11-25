@@ -3,7 +3,8 @@
 use super::test_support::test_config;
 use super::test_support::write_session_file_with_history_mode;
 use super::*;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -35,7 +36,7 @@ async fn timestamp_updates_repair_missing_rows_then_touch_only_timestamp_columns
         let params = UpdateThreadMetadataParams {
             thread_id,
             patch: ThreadMetadataPatch {
-                updated_at: Some(Utc::now()),
+                updated_at: Some(Timestamp::now()),
                 ..Default::default()
             },
             include_archived: false,

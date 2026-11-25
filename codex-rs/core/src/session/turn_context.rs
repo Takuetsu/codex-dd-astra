@@ -13,6 +13,7 @@ use crate::shell_snapshot::ShellSnapshotSandbox;
 use crate::tools::sandboxing::configured_windows_sandbox_selection;
 use crate::tools::sandboxing::executor_windows_sandbox_selection;
 use arc_swap::ArcSwap;
+use chrono::Utc;
 use codex_core_plugins::PluginCommandAttribution;
 use codex_core_plugins::ResolvedPluginMetricsOperation;
 use codex_core_plugins::TrustedPluginRoots;
