@@ -25,6 +25,8 @@ pub struct Timestamp {
 }
 
 const NANOS_PER_SECOND: u32 = 1_000_000_000;
+const MIN_YEAR: i32 = -262_143;
+const MAX_YEAR: i32 = 262_142;
 
 #[derive(Debug, thiserror::Error)]
 #[error("invalid RFC 3339 timestamp")]
@@ -49,7 +51,10 @@ impl Timestamp {
 
     pub fn from_timestamp(seconds: i64, nanos: u32) -> Option<Self> {
         let seconds = UtcDateTime::from_unix_timestamp(seconds).ok()?;
-        if nanos >= 2 * NANOS_PER_SECOND || (nanos >= NANOS_PER_SECOND && seconds.second() != 59) {
+        if !(MIN_YEAR..=MAX_YEAR).contains(&seconds.year())
+            || nanos >= 2 * NANOS_PER_SECOND
+            || (nanos >= NANOS_PER_SECOND && seconds.second() != 59)
+        {
             return None;
         }
         Some(Self {
@@ -61,7 +66,7 @@ impl Timestamp {
     pub fn from_timestamp_millis(millis: i64) -> Option<Self> {
         UtcDateTime::from_unix_timestamp_nanos(i128::from(millis) * 1_000_000)
             .ok()
-            .map(Self::from_utc)
+            .and_then(Self::checked_from_utc)
     }
 
     pub fn timestamp(&self) -> i64 {
@@ -89,7 +94,7 @@ impl Timestamp {
             return self
                 .regular_time()
                 .checked_add(duration)
-                .map(Self::from_utc);
+                .and_then(Self::checked_from_utc);
         }
         // A fractional adjustment can stay within this second or the leap
         // second that follows it. Whole seconds cross that two-second interval.
@@ -105,7 +110,9 @@ impl Timestamp {
         } else {
             duration
         };
-        self.regular_time().checked_add(delta).map(Self::from_utc)
+        self.regular_time()
+            .checked_add(delta)
+            .and_then(Self::checked_from_utc)
     }
 
     pub fn checked_sub(self, duration: Duration) -> Option<Self> {
@@ -114,7 +121,7 @@ impl Timestamp {
         } else {
             self.regular_time()
                 .checked_sub(duration)
-                .map(Self::from_utc)
+                .and_then(Self::checked_from_utc)
         }
     }
 
@@ -178,17 +185,24 @@ impl Timestamp {
     }
 
     fn from_utc(date: UtcDateTime) -> Self {
-        Self {
+        Self::checked_from_utc(date).expect("timestamp outside the supported calendar range")
+    }
+
+    fn checked_from_utc(date: UtcDateTime) -> Option<Self> {
+        if !(MIN_YEAR..=MAX_YEAR).contains(&date.year()) {
+            return None;
+        }
+        Some(Self {
             second: date
                 .replace_nanosecond(0)
                 .expect("zero nanoseconds is valid"),
             nanos: date.nanosecond(),
-        }
+        })
     }
 
     fn parse_second(value: &str, parse: impl FnOnce(&str) -> Option<UtcDateTime>) -> Option<Self> {
         if value.as_bytes().get(17..19) != Some(b"60") {
-            return parse(value).map(Self::from_utc);
+            return parse(value).and_then(Self::checked_from_utc);
         }
         // Parse the same civil second and offset through time, retaining the
         // leap marker before its RFC 3339 parser can round it away.
@@ -246,10 +260,26 @@ impl Timestamp {
         DisplayTimestamp(self, digits, use_z)
     }
 
-    pub(crate) fn local(self) -> Option<jiff::Zoned> {
+    pub fn local(self) -> Option<jiff::Zoned> {
+        self.in_timezone(jiff::tz::TimeZone::system())
+    }
+
+    pub fn utc(self) -> Option<jiff::Zoned> {
+        self.in_timezone(jiff::tz::TimeZone::UTC)
+    }
+
+    fn in_timezone(self, timezone: jiff::tz::TimeZone) -> Option<jiff::Zoned> {
         jiff::Timestamp::from_nanosecond(self.regular_time().unix_timestamp_nanos())
             .ok()
-            .map(|timestamp| timestamp.to_zoned(jiff::tz::TimeZone::system()))
+            .map(|timestamp| timestamp.to_zoned(timezone))
+    }
+}
+
+impl std::str::FromStr for Timestamp {
+    type Err = InvalidTimestamp;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::parse_from_rfc3339(value)
     }
 }
 
@@ -341,8 +371,27 @@ mod tests {
 
         assert_eq!(timestamp.timestamp(), -1);
         assert_eq!(timestamp.timestamp_millis(), -1);
+        assert_eq!(timestamp.timestamp_micros(), -1);
         let restored = Timestamp::from_timestamp_millis(-1).unwrap();
         assert_eq!(restored.to_rfc3339(), "1969-12-31T23:59:59.999+00:00");
+    }
+
+    #[test]
+    fn legacy_calendar_bounds_keep_epoch_microseconds_representable() {
+        let min = time::macros::utc_datetime!(-262143-01-01 00:00:00);
+        let max = time::macros::utc_datetime!(+262142-12-31 23:59:59);
+        let first = Timestamp::from_timestamp(min.unix_timestamp(), 0).unwrap();
+        let last = Timestamp::from_timestamp(max.unix_timestamp(), 999_999_999).unwrap();
+
+        assert_eq!(first.timestamp_micros(), min.unix_timestamp() * 1_000_000);
+        assert_eq!(
+            last.timestamp_micros(),
+            max.unix_timestamp() * 1_000_000 + 999_999
+        );
+        assert!(first.checked_sub(Duration::NANOSECOND).is_none());
+        assert!(last.checked_add(Duration::NANOSECOND).is_none());
+        assert!(Timestamp::from_timestamp(min.unix_timestamp() - 1, 0).is_none());
+        assert!(Timestamp::from_timestamp(max.unix_timestamp() + 1, 0).is_none());
     }
 
     #[test]
