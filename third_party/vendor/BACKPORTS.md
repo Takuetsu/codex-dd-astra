@@ -17,3 +17,10 @@ These source overlays retain the original upstream licenses and identify local r
 - Upstream backend support: [zip2 PR 685](https://github.com/zip-rs/zip2/pull/685) uses the existing `bzip2-sys` backend with the `bzip2-rs` feature. The local manifest makes the dependency feature reference weak because the same list already enables the dependency explicitly. This prevents activating ZIP's unrelated default bzip2 feature and removes `libbz2-rs-sys` from the locked graph. No codec or archive handling source changed.
 - Daniel-CL validation: 16 plugin startup tests passed, including a bzip2 archive extraction regression. The all-features Linux-target license scan found zero errors, and the Bazel plugin dependency query passed.
 - Removal: switch to a patched release whose supported bzip2 feature resolves the approved backend alone. Recheck the full compression list, the Linux lock graph and the archive tests.
+
+## Localization TOML parser
+
+- Base: [i18n-config 0.4.8](https://crates.io/crates/i18n-config/0.4.8), source revision `ae88dc79fda061e1bbf96b8d8e8fe8d23f1e52e7`, crate SHA-256 `3e06b90c8a0d252e203c94344b21e35a30f3a3a85dc7db5af8f8df9f3e0c63ef`.
+- [Upstream commit 2ce7b1d](https://github.com/kellpossible/cargo-i18n/commit/2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4) replaces both parser calls and their error type with `toml`. This overlay applies those three changes and uses the compatible `toml` already locked in the workspace. This removes the dependency affected by RUSTSEC-2026-0374, an unmaintained-library advisory.
+- Daniel-CL validation: all nine secrets tests passed and the lockfile and all-feature audit confirm `basic-toml` is absent. The Bazel dependency query passed. The separately pinned Linux cargo-deny 0.19.0 license scan also passed after ZIP's backend adjustment.
+- Removal: replace the overlay with the published upstream parser migration and rerun the secrets tests and full dependency policy.
