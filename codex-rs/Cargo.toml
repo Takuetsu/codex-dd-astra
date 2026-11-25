@@ -650,6 +650,8 @@ inherits = "test"
 opt-level = 0
 
 [patch.crates-io]
+hickory-net = { path = "../third_party/vendor/hickory-net" }
+rama-dns = { path = "../third_party/vendor/rama-dns" }
 # Uncomment to debug local changes.
 # ratatui = { path = "../../ratatui" }
 crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "ed1cdab335221515706178d68495bba2aed1924f" }
