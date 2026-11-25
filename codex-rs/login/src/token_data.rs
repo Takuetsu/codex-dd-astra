@@ -1,7 +1,6 @@
 use base64::Engine;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::auth::PlanType;
+use codex_protocol::timestamp::Timestamp;
 use serde::Deserialize;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -139,11 +138,9 @@ fn decode_jwt_payload<T: DeserializeOwned>(jwt: &str) -> Result<T, IdTokenInfoEr
     Ok(claims)
 }
 
-pub fn parse_jwt_expiration(jwt: &str) -> Result<Option<DateTime<Utc>>, IdTokenInfoError> {
+pub fn parse_jwt_expiration(jwt: &str) -> Result<Option<Timestamp>, IdTokenInfoError> {
     let claims: StandardJwtClaims = decode_jwt_payload(jwt)?;
-    Ok(claims
-        .exp
-        .and_then(|exp| DateTime::<Utc>::from_timestamp(exp, 0)))
+    Ok(claims.exp.and_then(|exp| Timestamp::from_timestamp(exp, 0)))
 }
 
 // Keep membership parsing separate from ordinary auth claims: a malformed optional

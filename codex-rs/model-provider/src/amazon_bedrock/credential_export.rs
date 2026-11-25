@@ -2,6 +2,7 @@
 //! The caller holds the guard across login and export to coalesce auth recovery.
 //! Exported secrets remain in memory; command output is bounded and never logged.
 
+use codex_protocol::timestamp::Timestamp;
 use std::io;
 use std::ops::Deref;
 use std::path::Component;
@@ -12,8 +13,6 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use chrono::DateTime;
-use chrono::Utc;
 use codex_aws_auth::AwsAccessKeys;
 use codex_aws_auth::AwsCredentialsProvider;
 use codex_model_provider_info::AwsCredentialExportConfig;
@@ -98,15 +97,13 @@ impl CachedCredentials {
             ));
         }
         let refresh_at = if let Some(expiration) = credentials.expiration {
-            let expiration = DateTime::parse_from_rfc3339(&expiration).map_err(|_| {
+            let expiration = Timestamp::parse_from_rfc3339(&expiration).map_err(|_| {
                 io::Error::new(
                     io::ErrorKind::InvalidData,
                     "AWS credential export Expiration must be an RFC 3339 timestamp",
                 )
             })?;
-            let lifetime = expiration
-                .signed_duration_since(DateTime::<Utc>::from(now))
-                .to_std()
+            let lifetime = Duration::try_from(expiration - Timestamp::from(now))
                 .ok()
                 .filter(|lifetime| !lifetime.is_zero())
                 .ok_or_else(|| {

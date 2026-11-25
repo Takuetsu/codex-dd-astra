@@ -1,10 +1,10 @@
 //! Validates gateway token lifetimes and renders bounded diagnostics from shared OAuth errors.
 
+use codex_protocol::timestamp::Timestamp;
 use std::io;
 
 use crate::oauth::OAuthError;
 use crate::oauth::sanitize_url_for_logging;
-use chrono::Utc;
 use codex_secrets::redact_secrets;
 use serde::Deserialize;
 use serde::Serialize;
@@ -60,7 +60,7 @@ impl TokenResponse {
             .map(|expires_in| {
                 let expires_in = i64::try_from(expires_in)
                     .map_err(|_| io::Error::other("provider OAuth token lifetime is too large"))?;
-                Utc::now()
+                Timestamp::now()
                     .timestamp()
                     .checked_add(expires_in)
                     .ok_or_else(|| io::Error::other("provider OAuth token expiry overflows"))

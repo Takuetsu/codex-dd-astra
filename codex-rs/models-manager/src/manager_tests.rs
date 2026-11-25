@@ -19,6 +19,7 @@ use codex_protocol::auth::AuthMode;
 use codex_protocol::error::CodexErr;
 use codex_protocol::openai_models::ModelAccessPrograms;
 use codex_protocol::openai_models::ModelsResponse;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::turn_input::CyberAccessProgram;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -613,7 +614,7 @@ c2ln",
             refresh_token: "test".to_string(),
             account_id: Some("account_id".to_string()),
         }),
-        last_refresh: Some(Utc::now()),
+        last_refresh: Some(Timestamp::now()),
         agent_identity: None,
         personal_access_token: None,
         bedrock_api_key: None,

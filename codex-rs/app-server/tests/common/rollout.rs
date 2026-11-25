@@ -11,6 +11,7 @@ use codex_protocol::protocol::ThreadSource;
 use codex_protocol::protocol::TokenCountEvent;
 use codex_protocol::protocol::TokenUsage;
 use codex_protocol::protocol::TokenUsageInfo;
+use codex_protocol::timestamp::Timestamp;
 use core_test_support::test_path_buf;
 use serde_json::json;
 use std::fs;
@@ -316,7 +317,7 @@ fn create_fake_rollout_with_source_and_parent_thread_id(
     ];
 
     fs::write(&file_path, lines.join("\n") + "\n")?;
-    let parsed = chrono::DateTime::parse_from_rfc3339(meta_rfc3339)?.with_timezone(&chrono::Utc);
+    let parsed = Timestamp::parse_from_rfc3339(meta_rfc3339)?;
     let times = FileTimes::new().set_modified(parsed.into());
     std::fs::OpenOptions::new()
         .append(true)

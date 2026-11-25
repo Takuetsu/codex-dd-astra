@@ -297,7 +297,6 @@ version = "0.162.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
- "chrono",
  "codex-app-server-protocol",
  "codex-config",
  "codex-core",
@@ -2250,7 +2249,6 @@ version = "0.162.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
- "chrono",
  "codex-api",
  "codex-app-server-protocol",
  "codex-config",
@@ -3788,7 +3786,6 @@ version = "0.162.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
- "chrono",
  "codex-agent-identity",
  "codex-config",
  "codex-http-client",
@@ -3818,6 +3815,7 @@ dependencies = [
  "sha2 0.10.9",
  "tempfile",
  "thiserror 2.0.18",
+ "time",
  "tiny_http",
  "tokio",
  "tracing",
@@ -3998,7 +3996,6 @@ name = "codex-model-provider"
 version = "0.162.0"
 dependencies = [
  "base64 0.22.1",
- "chrono",
  "codex-agent-identity",
  "codex-api",
  "codex-aws-auth",

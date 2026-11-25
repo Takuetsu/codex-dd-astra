@@ -22,7 +22,7 @@ async fn file_storage_load_returns_auth_dot_json() -> anyhow::Result<()> {
         auth_mode: Some(AuthMode::ApiKey),
         openai_api_key: Some("test-key".to_string()),
         tokens: None,
-        last_refresh: Some(Utc::now()),
+        last_refresh: Some(Timestamp::now()),
         agent_identity: None,
         personal_access_token: None,
         bedrock_api_key: None,
@@ -46,7 +46,7 @@ async fn file_storage_save_persists_auth_dot_json() -> anyhow::Result<()> {
         auth_mode: Some(AuthMode::ApiKey),
         openai_api_key: Some("test-key".to_string()),
         tokens: None,
-        last_refresh: Some(Utc::now()),
+        last_refresh: Some(Timestamp::now()),
         agent_identity: None,
         personal_access_token: None,
         bedrock_api_key: None,
@@ -301,7 +301,7 @@ fn ephemeral_storage_save_load_delete_is_in_memory_only() -> anyhow::Result<()> 
         auth_mode: Some(AuthMode::ApiKey),
         openai_api_key: Some("sk-ephemeral".to_string()),
         tokens: None,
-        last_refresh: Some(Utc::now()),
+        last_refresh: Some(Timestamp::now()),
         agent_identity: None,
         personal_access_token: None,
         bedrock_api_key: None,
@@ -630,3 +630,11 @@ mod policy;
 
 #[path = "storage_error_tests.rs"]
 mod errors;
+
+#[test]
+fn persisted_auth_refresh_timestamp_keeps_existing_utc_format() {
+    let auth: AuthDotJson =
+        serde_json::from_str(r#"{"last_refresh":"2025-08-31T18:22:41.5-02:00"}"#).unwrap();
+    let persisted = serde_json::to_value(auth).unwrap();
+    assert_eq!(persisted["last_refresh"], "2025-08-31T20:22:41.500Z");
+}
