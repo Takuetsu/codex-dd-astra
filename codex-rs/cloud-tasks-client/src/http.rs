@@ -12,8 +12,7 @@ use crate::TaskStatus;
 use crate::TaskSummary;
 use crate::TurnAttempt;
 use crate::api::TaskText;
-use chrono::DateTime;
-use chrono::Utc;
+use jiff::Timestamp;
 
 use codex_api::SharedAuthProvider;
 use codex_backend_client as backend;
@@ -718,13 +717,8 @@ mod api {
         }
     }
 
-    fn parse_timestamp_value(v: Option<&Value>) -> Option<DateTime<Utc>> {
-        let ts = v?.as_f64()?;
-        let secs = ts as i64;
-        let nanos = ((ts - secs as f64) * 1_000_000_000.0) as u32;
-        Some(DateTime::<Utc>::from(
-            std::time::UNIX_EPOCH + std::time::Duration::new(secs.max(0) as u64, nanos),
-        ))
+    fn parse_timestamp_value(v: Option<&Value>) -> Option<Timestamp> {
+        parse_backend_timestamp(v?.as_f64()?)
     }
 
     fn map_task_list_item_to_summary(src: backend::TaskListItem) -> TaskSummary {
@@ -774,15 +768,16 @@ mod api {
         TaskStatus::Pending
     }
 
-    fn parse_updated_at(ts: Option<&f64>) -> DateTime<Utc> {
-        if let Some(v) = ts {
-            let secs = *v as i64;
-            let nanos = ((*v - secs as f64) * 1_000_000_000.0) as u32;
-            return DateTime::<Utc>::from(
-                std::time::UNIX_EPOCH + std::time::Duration::new(secs.max(0) as u64, nanos),
-            );
-        }
-        Utc::now()
+    fn parse_updated_at(ts: Option<&f64>) -> Timestamp {
+        ts.copied()
+            .and_then(parse_backend_timestamp)
+            .unwrap_or_else(Timestamp::now)
+    }
+
+    fn parse_backend_timestamp(timestamp: f64) -> Option<Timestamp> {
+        let secs = timestamp as i64;
+        let nanos = ((timestamp - secs as f64) * 1_000_000_000.0) as u32;
+        Timestamp::new(secs.max(0), nanos as i32).ok()
     }
 
     fn env_label_from_status_display(v: Option<&HashMap<String, Value>>) -> Option<String> {
@@ -909,7 +904,7 @@ mod api {
 }
 
 fn append_error_log(message: &str) {
-    let ts = Utc::now().to_rfc3339();
+    let ts = crate::format_log_timestamp(Timestamp::now());
     if let Ok(mut f) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)

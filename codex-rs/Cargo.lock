@@ -2620,7 +2620,6 @@ name = "codex-cloud-tasks"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "clap",
  "codex-cloud-tasks-client",
  "codex-cloud-tasks-mock-client",
@@ -2634,6 +2633,7 @@ dependencies = [
  "crossterm",
  "http",
  "insta",
+ "jiff 0.2.23",
  "owo-colors",
  "pretty_assertions",
  "ratatui",
@@ -2653,11 +2653,11 @@ name = "codex-cloud-tasks-client"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "codex-api",
  "codex-backend-client",
  "codex-git-utils",
  "codex-http-client",
+ "jiff 0.2.23",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -2667,9 +2667,9 @@ dependencies = [
 name = "codex-cloud-tasks-mock-client"
 version = "0.162.0"
 dependencies = [
- "chrono",
  "codex-cloud-tasks-client",
  "diffy",
+ "jiff 0.2.23",
 ]
 
 [[package]]
