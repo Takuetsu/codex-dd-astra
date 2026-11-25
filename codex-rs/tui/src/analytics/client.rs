@@ -145,8 +145,8 @@ impl Live {
         let start = days
             .checked_sub(/*rhs*/ 1)
             .and_then(|offset| {
-                end.checked_sub(jiff::Span::new().days(i64::from(offset)))
-                    .ok()
+                let days = jiff::Span::new().try_days(i64::from(offset)).ok()?;
+                end.checked_sub(days).ok()
             })
             .ok_or("Invalid analytics date range.")?;
         let session = self.session().await?;
