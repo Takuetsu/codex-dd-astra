@@ -1,7 +1,6 @@
 use super::super::reset_credits::ResetCreditOption;
 use super::super::reset_credits::reset_credit_options;
 use super::*;
-use chrono::TimeZone;
 use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditOutcome;
 use codex_app_server_protocol::ConsumeAccountRateLimitResetCreditResponse;
 use codex_app_server_protocol::RateLimitResetCredit;
@@ -58,12 +57,8 @@ fn reset_credit_with_title(id: &str, expires_at: Option<i64>, title: &str) -> Ra
     }
 }
 
-fn expiry_timestamp(day: u32, hour: u32, minute: u32) -> i64 {
-    chrono::Local
-        .with_ymd_and_hms(2026, 6, day, hour, minute, 0)
-        .single()
-        .expect("valid test timestamp")
-        .timestamp()
+fn expiry_timestamp(day: i8, hour: i8, minute: i8) -> i64 {
+    crate::clock_format::local_fixture(2026, 6, day, hour, minute, 0).timestamp()
 }
 
 fn show_rate_limit_reset_confirmation_from_event(

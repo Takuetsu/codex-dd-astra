@@ -2,6 +2,7 @@
 
 use super::super::client::tests::live;
 use super::*;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -84,7 +85,7 @@ async fn slow_repairing_chat_listing_keeps_estimate_budget_and_ranks_across_page
                         "id": format!("chat-{index}"), "sessionId": format!("chat-{index}"),
                         "preview": "", "name": format!("Chat {index}"), "ephemeral": false,
                         "modelProvider": "openai", "createdAt": 0,
-                        "updatedAt": chrono::Utc::now().timestamp(), "status": {"type": "idle"},
+                        "updatedAt": Timestamp::now().timestamp(), "status": {"type": "idle"},
                         "cwd": std::env::temp_dir(), "cliVersion": "test", "source": "cli", "turns": [],
                     })).collect::<Vec<_>>();
                     json!({"data": data, "nextCursor": if pages.len() == 1 { Some("next") } else { None }})

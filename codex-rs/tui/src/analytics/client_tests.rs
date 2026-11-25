@@ -5,6 +5,7 @@ use crate::analytics::sections::Section;
 use crate::legacy_core::config::ConfigBuilder;
 use base64::Engine;
 use codex_config::LoaderOverrides;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -28,7 +29,7 @@ pub(in crate::analytics) fn sign_in(home: &std::path::Path, account: &str, user:
     let auth = serde_json::from_value(json!({
         "auth_mode": "chatgpt", "tokens": {"id_token": token, "access_token": token,
             "refresh_token": "test-refresh", "account_id": account},
-        "last_refresh": chrono::Utc::now(),
+        "last_refresh": Timestamp::now(),
     }))
     .unwrap();
     codex_login::save_auth(
@@ -390,7 +391,7 @@ async fn analytics_matches_app_account_routes_and_parameters() {
         server.reset().await;
         let (_home, live) = live(&server, plan).await;
         let today = live.end_date;
-        let start = (today - chrono::Days::new(/*num*/ 6)).to_string();
+        let start = (today - jiff::Span::new().days(/*num*/ 6)).to_string();
         let response = if endpoint == "usage/daily-workspace-user-credit-usage" {
             let breakdown = extra.iter().find(|(key, _)| *key == "breakdown").unwrap().1;
             json!({"data": [], "series": [], "breakdown": breakdown})

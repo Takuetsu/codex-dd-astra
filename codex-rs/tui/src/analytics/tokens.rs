@@ -2,14 +2,15 @@
 
 use super::models::*;
 use super::report_data::AnalyticsData;
-use chrono::NaiveDate;
+use codex_protocol::timestamp::Timestamp;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 pub(super) fn history(
     response: AnalyticsData,
     grouping: AccountAnalyticsGrouping,
-    start: NaiveDate,
-    end: NaiveDate,
+    start: Date,
+    end: Date,
 ) -> Result<AccountAnalyticsHistory, String> {
     filtered_history(response, grouping, start, end, /*model_filter*/ None)
 }
@@ -17,15 +18,15 @@ pub(super) fn history(
 pub(super) fn filtered_history(
     response: AnalyticsData,
     grouping: AccountAnalyticsGrouping,
-    start: NaiveDate,
-    end: NaiveDate,
+    start: Date,
+    end: Date,
     model_filter: Option<&str>,
 ) -> Result<AccountAnalyticsHistory, String> {
-    let mut days: BTreeMap<NaiveDate, BTreeMap<String, f64>> = BTreeMap::new();
+    let mut days: BTreeMap<Date, BTreeMap<String, f64>> = BTreeMap::new();
     for record in response.data {
         let date = record
             .date
-            .parse::<NaiveDate>()
+            .parse::<Date>()
             .map_err(|_| "Invalid token report date.")?;
         if date < start || date > end {
             continue;
@@ -110,7 +111,7 @@ pub(super) fn filtered_history(
         unit: AccountAnalyticsUnit::Tokens,
         updated_at: response
             .data_freshness_ts
-            .and_then(|time| chrono::DateTime::parse_from_rfc3339(&time).ok())
+            .and_then(|time| Timestamp::parse_from_rfc3339(&time).ok())
             .map(|time| time.timestamp()),
         data: days
             .into_iter()

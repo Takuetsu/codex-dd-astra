@@ -8,6 +8,7 @@ use codex_app_server_protocol::ThreadListParams;
 use codex_app_server_protocol::ThreadListResponse;
 use codex_backend_client::TaskUsage;
 use codex_backend_client::TaskUsageThread;
+use codex_protocol::timestamp::Timestamp;
 use futures::StreamExt;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -34,7 +35,7 @@ impl Chat {
 pub(super) struct Chats {
     pub rows: Vec<Chat>,
     pub truncated: bool,
-    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub updated_at: Option<Timestamp>,
 }
 
 pub(super) async fn read(
@@ -123,10 +124,9 @@ pub(super) async fn read(
                     response
                         .data_as_of
                         .as_deref()
-                        .map(chrono::DateTime::parse_from_rfc3339)
+                        .map(Timestamp::parse_from_rfc3339)
                         .transpose()
-                        .map_err(|_| "Invalid task usage timestamp.")?
-                        .map(|time| time.with_timezone(&chrono::Utc)),
+                        .map_err(|_| "Invalid task usage timestamp.")?,
                 );
                 usage.extend(
                     response
@@ -235,7 +235,7 @@ async fn descendants(
     Ok(TaskUsageThread {
         thread_id: root.id.clone(),
         created_at: (root.created_at > 0)
-            .then(|| chrono::DateTime::from_timestamp(root.created_at, /*nsecs*/ 0))
+            .then(|| Timestamp::from_timestamp(root.created_at, /*nsecs*/ 0))
             .flatten()
             .map(|time| time.to_rfc3339()),
         descendant_thread_ids,

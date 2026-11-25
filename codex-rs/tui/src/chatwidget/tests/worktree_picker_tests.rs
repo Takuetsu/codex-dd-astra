@@ -3,6 +3,7 @@
 use super::*;
 use crate::worktree_browser::Entry;
 use crate::worktree_browser::Owner;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -175,7 +176,7 @@ async fn worktree_browser_actions_and_stale_results() {
         owner: Owner::Resumable(ThreadSummary {
             id: owner,
             title: "Fix login form".to_string(),
-            updated_at: chrono::Utc::now().timestamp() - 7_200,
+            updated_at: Timestamp::now().timestamp() - 7_200,
         }),
     };
     chat.on_managed_worktrees_loaded(request, Ok(vec![entry.clone()]));
@@ -281,7 +282,7 @@ async fn worktree_browser_names_archived_and_missing_owners() {
                 owner: Owner::Archived(ThreadSummary {
                     id: owner,
                     title: "Fix settings".to_string(),
-                    updated_at: chrono::Utc::now().timestamp() - 86_400,
+                    updated_at: Timestamp::now().timestamp() - 86_400,
                 }),
             },
             Entry {

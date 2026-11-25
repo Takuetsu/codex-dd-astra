@@ -29,6 +29,8 @@ use crate::keymap::VimOperatorKeymap;
 use crate::keymap::VimSearchKeymap;
 use crate::keymap::VimTextObjectKeymap;
 use crate::width::display_width;
+#[cfg(test)]
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::ByteRange;
 use codex_protocol::user_input::TextElement as UserTextElement;
 use crossterm::event::KeyCode;
@@ -4475,13 +4477,8 @@ mod tests {
         // Seed the RNG based on the current day in Pacific Time (PST/PDT). This
         // keeps the fuzz test deterministic within a day while still varying
         // day-to-day to improve coverage.
-        let pst_today_seed: u64 = (chrono::Utc::now() - chrono::Duration::hours(8))
-            .date_naive()
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_utc()
-            .timestamp() as u64;
-        let mut rng = rand::rngs::StdRng::seed_from_u64(pst_today_seed);
+        let pst_today_seed = (Timestamp::now().timestamp() - 8 * 3_600).div_euclid(86_400) * 86_400;
+        let mut rng = rand::rngs::StdRng::seed_from_u64(pst_today_seed as u64);
 
         for _case in 0..500 {
             let mut ta = TextArea::new();

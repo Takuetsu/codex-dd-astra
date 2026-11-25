@@ -379,7 +379,7 @@ impl AnalyticsView {
             coverage.push(
                 format!(
                     "Updated {} UTC · recent activity may be delayed",
-                    time.format(self.clock_format.date_time_format())
+                    crate::clock_format::format_utc(time, self.clock_format.date_time_format())
                 )
                 .set_style(secondary_style())
                 .into(),

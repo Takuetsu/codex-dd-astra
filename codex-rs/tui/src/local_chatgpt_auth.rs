@@ -64,7 +64,6 @@ mod tests {
     use super::*;
 
     use base64::Engine;
-    use chrono::Utc;
     use codex_login::AuthDotJson;
     use codex_login::auth::login_with_chatgpt_auth_tokens;
     use codex_login::save_auth;

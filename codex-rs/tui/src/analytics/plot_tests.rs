@@ -367,9 +367,9 @@ fn selected_callout_keeps_the_authoritative_daily_total() {
 
 #[test]
 fn narrow_long_range_charts_never_truncate_dates() {
-    let start: NaiveDate = "2026-01-01".parse().unwrap();
+    let start: Date = "2026-01-01".parse().unwrap();
     let history = start
-        .iter_days()
+        .series(jiff::Span::new().days(1))
         .take(/*n*/ 30)
         .map(|date| AccountAnalyticsDay {
             date,
@@ -470,10 +470,10 @@ fn duplicate_message_dates_render_the_full_other_remainder() {
 
 #[test]
 fn seven_day_totals_render_without_selecting_each_bar() {
-    let start: NaiveDate = "2026-01-01".parse().unwrap();
+    let start: Date = "2026-01-01".parse().unwrap();
     let rows = (0..7)
         .map(|index| AccountAnalyticsDay {
-            date: start + chrono::Duration::days(index),
+            date: start + jiff::Span::new().days(index),
             total: 111.0 + index as f64 * 100.0,
             values: vec![value("a", 111.0 + index as f64 * 100.0)],
         })
@@ -499,10 +499,10 @@ fn seven_day_totals_render_without_selecting_each_bar() {
 
 #[test]
 fn narrow_equal_height_totals_remain_separate_numbers() {
-    let start: NaiveDate = "2026-01-01".parse().unwrap();
+    let start: Date = "2026-01-01".parse().unwrap();
     let rows = (0..7)
         .map(|index| AccountAnalyticsDay {
-            date: start + chrono::Duration::days(index),
+            date: start + jiff::Span::new().days(index),
             total: 111.0,
             values: vec![value("a", /*value*/ 111.0)],
         })

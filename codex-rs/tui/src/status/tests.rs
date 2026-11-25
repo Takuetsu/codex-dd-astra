@@ -24,10 +24,6 @@ use crate::token_usage::TokenUsageInfo;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
 use app_test_support::write_models_cache;
-use chrono::Duration as ChronoDuration;
-use chrono::Local;
-use chrono::TimeZone;
-use chrono::Utc;
 use codex_app_server_protocol::AskForApproval;
 use codex_app_server_protocol::CreditsSnapshot;
 use codex_app_server_protocol::RateLimitSnapshot;
@@ -52,6 +48,7 @@ use codex_protocol::permissions::FileSystemPath;
 use codex_protocol::permissions::FileSystemSandboxEntry;
 use codex_protocol::permissions::FileSystemSpecialPath;
 use codex_protocol::permissions::NetworkSandboxPolicy;
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_absolute_path::AbsolutePathBuf;
 use codex_utils_path_uri::PathUri;
 use insta::assert_snapshot;
@@ -59,10 +56,11 @@ use pretty_assertions::assert_eq;
 use ratatui::prelude::*;
 use std::sync::Arc;
 use tempfile::TempDir;
+use time::Duration as SignedDuration;
 
 #[test]
 fn stale_monthly_limit_marks_fresh_rolling_snapshot_stale() {
-    let now = Local::now();
+    let now = Timestamp::now();
     let snapshot = RateLimitSnapshotDisplay {
         limit_name: "codex".to_string(),
         normal_model_slug: None,
@@ -75,7 +73,7 @@ fn stale_monthly_limit_marks_fresh_rolling_snapshot_stale() {
         secondary: None,
         credits: None,
         individual_limit: Some(SpendControlLimitSnapshotDisplay {
-            captured_at: now - ChronoDuration::minutes(20),
+            captured_at: now - SignedDuration::minutes(20),
             percent_remaining: 68.0,
             used: "8,000".to_string(),
             limit: "25,000".to_string(),
@@ -221,10 +219,8 @@ fn buffer_to_text(buffer: &Buffer, width: u16) -> String {
     sanitize_directory(lines).join("\n")
 }
 
-fn reset_at_from(captured_at: &chrono::DateTime<chrono::Local>, seconds: i64) -> i64 {
-    (*captured_at + ChronoDuration::seconds(seconds))
-        .with_timezone(&Utc)
-        .timestamp()
+fn reset_at_from(captured_at: &Timestamp, seconds: i64) -> i64 {
+    (*captured_at + SignedDuration::seconds(seconds)).timestamp()
 }
 
 fn permissions_text_for(config: &Config) -> Option<String> {
@@ -233,10 +229,7 @@ fn permissions_text_for(config: &Config) -> Option<String> {
 
 fn permissions_text_for_width(config: &Config, width: u16) -> Option<String> {
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let composite = new_status_output(
         config,
@@ -288,10 +281,7 @@ async fn status_snapshot_includes_reasoning_details() {
         total_tokens: 2_250,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -408,10 +398,7 @@ async fn status_snapshot_shows_chatgpt_plan_without_email() {
         }
     );
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
 
     let composite = new_status_output(
@@ -717,10 +704,7 @@ async fn status_snapshot_shows_active_user_defined_profile() {
         .expect("set permission profile");
 
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
 
@@ -766,10 +750,7 @@ async fn status_uses_server_provider_id_and_auth_requirement() {
     config.model_provider.base_url =
         Some("https://bedrock-mantle.us-east-1.api.aws/openai/v1".to_string());
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
 
     config.model_provider.requires_openai_auth = true;
@@ -875,10 +856,7 @@ async fn status_snapshot_shows_auto_review_permissions() {
         .expect("set permission profile");
 
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
 
@@ -970,10 +948,7 @@ async fn status_snapshot_includes_forked_from() {
         total_tokens: 1_200,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 8, 9, 10, 11, 12)
-        .single()
-        .expect("valid time");
+    let captured_at = crate::clock_format::local_fixture(2024, 8, 9, 10, 11, 12);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
@@ -1024,10 +999,7 @@ async fn status_snapshot_includes_monthly_limit() {
         total_tokens: 1_200,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 5, 6, 7, 8, 9)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 5, 6, 7, 8, 9);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1089,10 +1061,7 @@ async fn status_snapshot_includes_enterprise_monthly_credit_limit() {
         reasoning_output_tokens: 0,
         total_tokens: 1_200,
     };
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 5, 6, 7, 8, 9)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 5, 6, 7, 8, 9);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1168,10 +1137,7 @@ async fn status_snapshot_uses_generic_limit_labels_for_unsupported_windows() {
         total_tokens: 1_200,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 5, 6, 7, 8, 9)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 5, 6, 7, 8, 9);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1227,10 +1193,7 @@ async fn status_snapshot_shows_unlimited_credits() {
     let config = test_config(&temp_home).await;
     let account_display = test_status_account_display();
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 2, 3, 4, 5, 6)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 2, 3, 4, 5, 6);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1280,10 +1243,7 @@ async fn status_snapshot_shows_positive_credits() {
     let config = test_config(&temp_home).await;
     let account_display = test_status_account_display();
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 3, 4, 5, 6, 7)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 3, 4, 5, 6, 7);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1333,10 +1293,7 @@ async fn status_snapshot_shows_available_credits_without_display_balance() {
     let config = test_config(&temp_home).await;
     let account_display = test_status_account_display();
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 4, 5, 6, 7, 8)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 4, 5, 6, 7, 8);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
     for balance in [
@@ -1394,10 +1351,7 @@ async fn status_snapshot_respects_unlimited_without_has_credits_flag() {
     let config = test_config(&temp_home).await;
     let account_display = test_status_account_display();
     let usage = TokenUsage::default();
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 5, 6, 7, 8, 9)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 5, 6, 7, 8, 9);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1457,10 +1411,7 @@ async fn status_card_token_usage_excludes_cached_tokens() {
         total_tokens: 2_100,
     };
 
-    let now = chrono::Local
-        .with_ymd_and_hms(2024, 1, 1, 0, 0, 0)
-        .single()
-        .expect("timestamp");
+    let now = crate::clock_format::local_fixture(2024, 1, 1, 0, 0, 0);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
@@ -1509,7 +1460,7 @@ async fn status_wraps_long_paths_and_session_ids_without_losing_text() {
         /*forked_from*/ None,
         /*rate_limits*/ &[],
         /*_plan_type*/ None,
-        Local::now(),
+        Timestamp::now(),
         "gpt-5.5",
         /*collaboration_mode*/ None,
         /*reasoning_effort_override*/ None,
@@ -1560,10 +1511,7 @@ async fn status_snapshot_wraps_in_narrow_terminal() {
         total_tokens: 2_250,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1622,10 +1570,7 @@ async fn status_snapshot_wraps_halfwidth_kana_in_narrow_terminal() {
         plan: Some("ｶﾞﾊﾟ plan".to_string()),
     };
     let usage = TokenUsage::default();
-    let now = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let now = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let composite = new_status_output(
         &config,
         Some(&account),
@@ -1666,10 +1611,7 @@ async fn status_snapshot_shows_missing_limits_message() {
         total_tokens: 750,
     };
 
-    let now = chrono::Local
-        .with_ymd_and_hms(2024, 2, 3, 4, 5, 6)
-        .single()
-        .expect("timestamp");
+    let now = crate::clock_format::local_fixture(2024, 2, 3, 4, 5, 6);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
@@ -1714,10 +1656,7 @@ async fn status_snapshot_uses_default_reasoning_when_config_empty() {
         total_tokens: 750,
     };
 
-    let now = chrono::Local
-        .with_ymd_and_hms(2024, 2, 3, 4, 5, 6)
-        .single()
-        .expect("timestamp");
+    let now = crate::clock_format::local_fixture(2024, 2, 3, 4, 5, 6);
     for (is_local_daemon, snapshot) in [
         (
             None,
@@ -1783,10 +1722,7 @@ async fn status_snapshot_shows_refreshing_limits_notice() {
         reasoning_output_tokens: 0,
         total_tokens: 750,
     };
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 6, 7, 8, 9, 10)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 6, 7, 8, 9, 10);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -1844,10 +1780,7 @@ async fn transcript_overlay_remeasures_status_after_rate_limit_refresh() {
     config.model = Some("gpt-5.1-codex-max".to_string());
     set_workspace_cwd(&mut config, test_path_buf("/workspace/tests").abs());
     let usage = TokenUsage::default();
-    let now = Local
-        .with_ymd_and_hms(2024, 6, 7, 8, 9, 10)
-        .single()
-        .expect("timestamp");
+    let now = crate::clock_format::local_fixture(2024, 6, 7, 8, 9, 10);
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
 
     let (status, handle) = new_status_output_with_rate_limits_handle(
@@ -1942,10 +1875,7 @@ async fn status_snapshot_includes_credits_and_limits() {
         total_tokens: 2_200,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 7, 8, 9, 10, 11)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 7, 8, 9, 10, 11);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -2027,10 +1957,7 @@ async fn status_snapshot_shows_unavailable_limits_message() {
         plan_type: None,
         rate_limit_reached_type: None,
     };
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 6, 7, 8, 9, 10)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 6, 7, 8, 9, 10);
     let rate_display = rate_limit_snapshot_display(&snapshot, captured_at);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
@@ -2087,10 +2014,7 @@ async fn status_snapshot_treats_refreshing_empty_limits_as_unavailable() {
         plan_type: None,
         rate_limit_reached_type: None,
     };
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 6, 7, 8, 9, 10)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 6, 7, 8, 9, 10);
     let rate_display = rate_limit_snapshot_display(&snapshot, captured_at);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
@@ -2137,10 +2061,7 @@ async fn status_snapshot_shows_stale_limits_message() {
         total_tokens: 2_250,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 1, 2, 3, 4, 5)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 1, 2, 3, 4, 5);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -2162,7 +2083,7 @@ async fn status_snapshot_shows_stale_limits_message() {
         rate_limit_reached_type: None,
     };
     let rate_display = rate_limit_snapshot_display(&snapshot, captured_at);
-    let now = captured_at + ChronoDuration::minutes(20);
+    let now = captured_at + SignedDuration::minutes(20);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
@@ -2207,10 +2128,7 @@ async fn status_snapshot_cached_limits_hide_credits_without_flag() {
         total_tokens: 1_450,
     };
 
-    let captured_at = chrono::Local
-        .with_ymd_and_hms(2024, 9, 10, 11, 12, 13)
-        .single()
-        .expect("timestamp");
+    let captured_at = crate::clock_format::local_fixture(2024, 9, 10, 11, 12, 13);
     let snapshot = RateLimitSnapshot {
         limit_id: None,
         limit_name: None,
@@ -2236,7 +2154,7 @@ async fn status_snapshot_cached_limits_hide_credits_without_flag() {
         rate_limit_reached_type: None,
     };
     let rate_display = rate_limit_snapshot_display(&snapshot, captured_at);
-    let now = captured_at + ChronoDuration::minutes(20);
+    let now = captured_at + SignedDuration::minutes(20);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = token_info_for(&model_slug, &config, &usage);
@@ -2287,10 +2205,7 @@ async fn status_context_window_uses_last_usage() {
         total_tokens: 13_679,
     };
 
-    let now = chrono::Local
-        .with_ymd_and_hms(2024, 6, 1, 12, 0, 0)
-        .single()
-        .expect("timestamp");
+    let now = crate::clock_format::local_fixture(2024, 6, 1, 12, 0, 0);
 
     let model_slug = get_model_offline_for_tests(config.model.as_deref());
     let token_info = TokenUsageInfo {
@@ -2364,19 +2279,16 @@ async fn status_permissions_include_executor_profile_root() {
 
 #[test]
 fn reset_timestamps_follow_clock_preference() {
-    let captured_at = Local
-        .with_ymd_and_hms(
-            /*year*/ 2026, /*month*/ 9, /*day*/ 21, /*hour*/ 0, /*min*/ 0,
-            /*sec*/ 0,
-        )
-        .single()
-        .unwrap();
+    let captured_at = crate::clock_format::local_fixture(
+        /*year*/ 2026, /*month*/ 9, /*day*/ 21, /*hour*/ 0, /*min*/ 0,
+        /*sec*/ 0,
+    );
     let labels = [ClockFormat::TwelveHour, ClockFormat::TwentyFourHour]
         .into_iter()
         .flat_map(|clock_format| {
             [0, 12, 23, 24].map(|hours| {
                 super::helpers::format_reset_timestamp(
-                    captured_at + ChronoDuration::hours(hours),
+                    captured_at + SignedDuration::hours(hours),
                     captured_at,
                     clock_format,
                 )

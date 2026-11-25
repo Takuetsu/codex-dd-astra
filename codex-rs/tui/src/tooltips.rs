@@ -175,12 +175,11 @@ pub(crate) fn render_tooltip(mut template: &str, keymap: Option<&RuntimeKeymap>)
 pub(crate) mod announcement {
     use crate::tooltips::ANNOUNCEMENT_TIP_URL;
     use crate::version::CODEX_CLI_VERSION;
-    use chrono::NaiveDate;
-    use chrono::Utc;
     use codex_http_client::ClientRouteClass;
     use codex_http_client::HttpClientFactory;
     use codex_http_client::RouteAwareClientPool;
     use codex_protocol::account::PlanType;
+    use jiff::civil::Date;
     use regex_lite::Regex;
     use serde::Deserialize;
     use std::sync::OnceLock;
@@ -229,8 +228,8 @@ pub(crate) mod announcement {
     #[derive(Debug)]
     struct AnnouncementTip {
         content: String,
-        from_date: Option<NaiveDate>,
-        to_date: Option<NaiveDate>,
+        from_date: Option<Date>,
+        to_date: Option<Date>,
         version_regex: Option<Regex>,
         target_app: String,
         target_plan_types: Option<Vec<PlanType>>,
@@ -289,7 +288,7 @@ pub(crate) mod announcement {
         }
 
         pub(super) fn select(&self, plan: Option<PlanType>) -> Option<String> {
-            let today = Utc::now().date_naive();
+            let today = crate::clock_format::utc_today();
             self.0
                 .iter()
                 .rev()
@@ -319,11 +318,11 @@ pub(crate) mod announcement {
             }
 
             let from_date = match raw.from_date {
-                Some(date) => Some(NaiveDate::parse_from_str(&date, "%Y-%m-%d").ok()?),
+                Some(date) => Some(Date::strptime("%Y-%m-%d", &date).ok()?),
                 None => None,
             };
             let to_date = match raw.to_date {
-                Some(date) => Some(NaiveDate::parse_from_str(&date, "%Y-%m-%d").ok()?),
+                Some(date) => Some(Date::strptime("%Y-%m-%d", &date).ok()?),
                 None => None,
             };
             let version_regex = match raw.version_regex {
@@ -362,7 +361,7 @@ pub(crate) mod announcement {
                 .is_none_or(|regex| regex.is_match(version))
         }
 
-        fn date_matches(&self, today: NaiveDate) -> bool {
+        fn date_matches(&self, today: Date) -> bool {
             if let Some(from) = self.from_date
                 && today < from
             {

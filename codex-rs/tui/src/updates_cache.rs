@@ -1,6 +1,5 @@
 use crate::legacy_core::config::Config;
-use chrono::DateTime;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;
@@ -10,7 +9,7 @@ use std::path::PathBuf;
 pub(crate) struct VersionInfo {
     pub(crate) latest_version: String,
     // ISO-8601 timestamp (RFC3339)
-    pub(crate) last_checked_at: DateTime<Utc>,
+    pub(crate) last_checked_at: Timestamp,
     #[serde(default)]
     pub(crate) dismissed_version: Option<String>,
 }
@@ -34,7 +33,7 @@ pub(crate) async fn dismiss_version(config: &Config, version: &str) -> anyhow::R
         Ok(info) => info,
         Err(_) => VersionInfo {
             latest_version: version.to_string(),
-            last_checked_at: DateTime::<Utc>::UNIX_EPOCH,
+            last_checked_at: Timestamp::UNIX_EPOCH,
             dismissed_version: None,
         },
     };

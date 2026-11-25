@@ -7,7 +7,7 @@ use super::styles::secondary_style;
 use crate::key_hint;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow as truncate;
 use crate::style::accent_style;
-use chrono::Datelike;
+use codex_protocol::timestamp::Timestamp;
 use crossterm::event::KeyCode;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -123,20 +123,20 @@ impl AnalyticsView {
             let interval = if dates.start().year() != dates.end().year() && width < 50 {
                 format!(
                     "{}–{}",
-                    dates.start().format("%m/%d/%Y"),
-                    dates.end().format("%m/%d/%Y")
+                    dates.start().strftime("%m/%d/%Y"),
+                    dates.end().strftime("%m/%d/%Y")
                 )
             } else if dates.start().year() == dates.end().year() {
                 format!(
                     "{}–{}",
-                    dates.start().format("%b %-d"),
-                    dates.end().format("%b %-d, %Y")
+                    dates.start().strftime("%b %-d"),
+                    dates.end().strftime("%b %-d, %Y")
                 )
             } else {
                 format!(
                     "{}–{}",
-                    dates.start().format("%b %-d, %Y"),
-                    dates.end().format("%b %-d, %Y")
+                    dates.start().strftime("%b %-d, %Y"),
+                    dates.end().strftime("%b %-d, %Y")
                 )
             };
             rows[0].push((
@@ -275,12 +275,12 @@ impl AnalyticsView {
             .history
             .ready()
             .and_then(|report| report.updated_at)
-            .and_then(|value| chrono::DateTime::from_timestamp(value, /*nsecs*/ 0));
+            .and_then(|value| Timestamp::from_timestamp(value, /*nsecs*/ 0));
         let metadata = updated
             .map(|updated| {
                 format!(
                     "Updated · {} UTC",
-                    updated.format(self.clock_format.date_time_format())
+                    crate::clock_format::format_utc(updated, self.clock_format.date_time_format())
                 )
             })
             .unwrap_or_default();

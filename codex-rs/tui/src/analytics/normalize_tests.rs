@@ -6,7 +6,7 @@ use serde_json::json;
 
 #[test]
 fn turn_start_includes_all_features_and_missing_attribution_is_unavailable() {
-    let date = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let date = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     let response = serde_json::from_value(json!({"data": [{"date": "2026-01-09", "attribution": [
         {"thread_source": "user", "turn_trigger": "composer", "value": 30},
         {"thread_source": "subagent", "value": 70}
@@ -44,8 +44,8 @@ fn turn_start_includes_all_features_and_missing_attribution_is_unavailable() {
 
 #[test]
 fn signed_credits_keep_daily_activity_when_the_period_nets_to_zero() {
-    let start = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 8).unwrap();
-    let end = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let start = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 8).unwrap();
+    let end = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     let response = serde_json::from_value(json!({"data": [
         {"date": "2026-01-08", "product_surface": "cli", "credit_amount": 0.004},
         {"date": "2026-01-09", "product_surface": "desktop_app", "credit_amount": -0.004}
@@ -77,7 +77,7 @@ fn signed_credits_keep_daily_activity_when_the_period_nets_to_zero() {
 
 #[test]
 fn message_surfaces_include_both_desktop_clients_and_unmapped_counts() {
-    let date = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let date = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     let response = serde_json::from_value(
         json!({"data": [{"date": "2026-01-09", "totals": {"turns": 10}, "clients": [
             {"client_id": "CODEX_DESKTOP_APP", "turns": 2},
@@ -112,7 +112,7 @@ fn message_surfaces_include_both_desktop_clients_and_unmapped_counts() {
 
 #[test]
 fn enterprise_credit_series_keep_labels_signed_values_and_freshness() {
-    let date = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let date = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     let response = serde_json::from_value(json!({
         "series": [{"key": "medium", "label": "Medium", "total": 12.5}, {"key": "high", "label": "High", "total": -0.004}],
         "data_freshness_ts": "2026-01-09T10:00:00Z",
@@ -145,7 +145,7 @@ fn enterprise_credit_series_keep_labels_signed_values_and_freshness() {
 
 #[test]
 fn credit_timestamps_and_legacy_model_usage_follow_app_fallbacks() {
-    let date = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let date = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     let credits = serde_json::from_value(json!({"data": [{"date": "2026-01-09T05:00:00Z", "product_surface": "cli", "credit_amount": 12.5}]})).unwrap();
     let usage = serde_json::from_value(json!({"data": [{"date": "2026-01-09", "models": [{"model": "model-a", "credits": 12.5}]}]})).unwrap();
     let credits = history(credits, Report::Credits, Grouping::Surface, date, date)
@@ -166,8 +166,8 @@ fn credit_timestamps_and_legacy_model_usage_follow_app_fallbacks() {
 
 #[test]
 fn count_reports_preserve_explicit_zero_and_omit_unreported_days() {
-    let start = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 8).unwrap();
-    let end = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 10).unwrap();
+    let start = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 8).unwrap();
+    let end = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 10).unwrap();
     for (report, field) in [
         (Report::Messages, "totals"),
         (Report::Plugins, "plugin_usage_overviews"),
@@ -297,7 +297,7 @@ fn complete_attribution_wins_consistently_and_incomplete_attribution_is_not_mixe
 
 #[test]
 fn duplicate_message_dates_preserve_each_records_other_remainder() {
-    let date = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let date = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     for grouping in [Grouping::Model, Grouping::Surface] {
         let response = serde_json::from_value(json!({"data": [
             {"date": "2026-01-09", "totals": {"turns": 10}, "models": [{"model": "example", "turns": 8}], "clients": [{"client_id": "CODEX_CLI", "turns": 8}]},
@@ -336,7 +336,7 @@ fn duplicate_message_dates_preserve_each_records_other_remainder() {
 
 #[test]
 fn unsupported_message_groupings_fail_even_without_records() {
-    let date = NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
+    let date = Date::new(/*year*/ 2026, /*month*/ 1, /*day*/ 9).unwrap();
     for grouping in [
         Grouping::Feature,
         Grouping::TaskStart,

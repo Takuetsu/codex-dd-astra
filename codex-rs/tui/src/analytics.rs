@@ -53,6 +53,7 @@ use crossterm::event::KeyEventKind;
 use crossterm::event::MouseButton;
 use crossterm::event::MouseEventKind;
 use data::Load;
+use jiff::civil::Date;
 use sections::Section;
 use sections::SectionState;
 use sections::SectionStates;
@@ -91,7 +92,7 @@ pub(crate) struct AnalyticsView {
     follow_selection: bool,
     viewport_height: usize,
     ranges: [usize; 3],
-    end_date: chrono::NaiveDate,
+    end_date: Date,
     token_model: Option<String>,
     pub(crate) is_done: bool,
 }
@@ -128,7 +129,7 @@ impl AnalyticsView {
             follow_selection: true,
             viewport_height: 1,
             ranges: [0; 3],
-            end_date: chrono::Utc::now().date_naive(),
+            end_date: crate::clock_format::utc_today(),
             token_model: None,
             is_done: false,
         };
@@ -162,7 +163,7 @@ impl AnalyticsView {
 
     pub(crate) fn refresh(&mut self) {
         self.invalidate_mouse_targets();
-        self.end_date = chrono::Utc::now().date_naive();
+        self.end_date = crate::clock_format::utc_today();
         self.live = self.connection.as_ref().map(|(config, _, _)| {
             std::sync::Arc::new(client::Live::new(
                 std::sync::Arc::clone(config),

@@ -5,7 +5,6 @@ use super::*;
 use crate::pager_overlay::TranscriptHistoryState;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::rollout_path;
-use chrono::TimeZone;
 use codex_app_server_protocol::ThreadItemsListResponse;
 use codex_protocol::items::AgentMessageContent;
 use codex_protocol::items::AgentMessageItem;
@@ -28,13 +27,10 @@ pub(super) async fn completed_history_app(
     app.local_settings.transcript_mode = crate::transcript_mode::TranscriptMode::Terminal;
     app.local_settings.tui.alternate_screen = codex_config::types::AltScreenMode::Never;
     app.local_settings.tui.terminal_resize_reflow_max_rows = Some(2);
-    let completed_at = chrono::Local
-        .with_ymd_and_hms(
-            /*year*/ 2000, /*month*/ 9, /*day*/ 6, /*hour*/ 14,
-            /*min*/ 32, /*sec*/ 0,
-        )
-        .single()
-        .expect("unambiguous local completion time");
+    let completed_at = crate::clock_format::local_fixture(
+        /*year*/ 2000, /*month*/ 9, /*day*/ 6, /*hour*/ 14, /*min*/ 32,
+        /*sec*/ 0,
+    );
     let timestamp = completed_at.to_rfc3339();
     let filename_timestamp = "2000-09-06T14-32-00";
     let thread_id = create_fake_paginated_rollout(

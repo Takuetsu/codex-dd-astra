@@ -2,10 +2,8 @@
 
 use super::*;
 use crate::clock_format::ClockFormat;
-use chrono::DateTime;
-use chrono::Datelike;
-use chrono::Local;
-use chrono::NaiveDate;
+use codex_protocol::timestamp::Timestamp;
+use jiff::civil::Date;
 
 /// Completion metadata shown after the assistant's final response.
 ///
@@ -20,8 +18,8 @@ pub struct FinalMessageSeparator {
     elapsed_seconds: Option<u64>,
     worker_total_seconds: Option<u64>,
     runtime_metrics: Option<RuntimeMetricsSummary>,
-    completed_at: Option<DateTime<Local>>,
-    display_date: NaiveDate,
+    completed_at: Option<jiff::Zoned>,
+    display_date: Date,
     clock_format: ClockFormat,
 }
 impl FinalMessageSeparator {
@@ -35,17 +33,17 @@ impl FinalMessageSeparator {
             worker_total_seconds: None,
             runtime_metrics,
             completed_at: None,
-            display_date: Local::now().date_naive(),
+            display_date: jiff::Zoned::now().date(),
             clock_format: ClockFormat::TwelveHour,
         }
     }
 
     pub(crate) fn with_completed_at(
         mut self,
-        completed_at: DateTime<Local>,
+        completed_at: Timestamp,
         clock_format: ClockFormat,
     ) -> Self {
-        self.completed_at = Some(completed_at);
+        self.completed_at = completed_at.local();
         self.clock_format = clock_format;
         self
     }
@@ -63,7 +61,7 @@ impl FinalMessageSeparator {
         self
     }
 
-    fn label(&self, today: NaiveDate) -> Option<String> {
+    fn label(&self, today: Date) -> Option<String> {
         if let Some(total_seconds) = self.worker_total_seconds {
             let hours = total_seconds / 3_600;
             let minutes = (total_seconds % 3_600) / 60;
@@ -79,8 +77,8 @@ impl FinalMessageSeparator {
 
             let mut label_parts = vec![format!("TOTAL TIME WORKED: {total}"), "DONE".to_string()];
 
-            if let Some(completed_at) = self.completed_at {
-                let date_format = if completed_at.date_naive() == today {
+            if let Some(completed_at) = &self.completed_at {
+                let date_format = if completed_at.date() == today {
                     ""
                 } else if completed_at.year() == today.year() {
                     "%b %-d at "
@@ -90,8 +88,8 @@ impl FinalMessageSeparator {
 
                 label_parts.push(format!(
                     "{}{}",
-                    completed_at.format(date_format),
-                    completed_at.format(self.clock_format.time_format()),
+                    completed_at.strftime(date_format),
+                    completed_at.strftime(self.clock_format.time_format()),
                 ));
             }
 
@@ -114,8 +112,8 @@ impl FinalMessageSeparator {
             };
             label_parts.push(format!("Worked for {elapsed}"));
         }
-        if let Some(completed_at) = self.completed_at {
-            let date_format = if completed_at.date_naive() == today {
+        if let Some(completed_at) = &self.completed_at {
+            let date_format = if completed_at.date() == today {
                 ""
             } else if completed_at.year() == today.year() {
                 "%b %-d at "
@@ -124,8 +122,8 @@ impl FinalMessageSeparator {
             };
             label_parts.push(format!(
                 "{}{}",
-                completed_at.format(date_format),
-                completed_at.format(self.clock_format.time_format()),
+                completed_at.strftime(date_format),
+                completed_at.strftime(self.clock_format.time_format()),
             ));
         }
         if let Some(metrics_label) = self.runtime_metrics.and_then(runtime_metrics_label) {

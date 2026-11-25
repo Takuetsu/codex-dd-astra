@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -78,7 +79,7 @@ impl SessionLogger {
 
 fn now_ts() -> String {
     // RFC3339 for readability; consumers can parse as needed.
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+    Timestamp::now().to_rfc3339_opts(codex_protocol::timestamp::SecondsFormat::Millis, true)
 }
 
 pub(crate) fn maybe_init(config: &Config) {
@@ -95,7 +96,7 @@ pub(crate) fn maybe_init(config: &Config) {
         let mut p = config.log_dir.clone();
         let filename = format!(
             "session-{}.jsonl",
-            chrono::Utc::now().format("%Y%m%dT%H%M%SZ")
+            crate::clock_format::format_utc(Timestamp::now(), "%Y%m%dT%H%M%SZ")
         );
         p.push(filename);
         p

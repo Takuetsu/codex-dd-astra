@@ -25,11 +25,11 @@ mod responses;
 mod runtime;
 mod socket_path;
 mod socks5;
-#[cfg(test)]
-mod timestamp_compatibility_tests;
 mod state;
 #[cfg(target_os = "macos")]
 mod system_dns;
+#[cfg(test)]
+mod timestamp_compatibility_tests;
 mod upstream;
 #[cfg(target_os = "windows")]
 mod windows_proxy_ingress;

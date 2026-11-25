@@ -5,6 +5,7 @@ use super::AnalyticsView;
 use super::chats;
 use super::data::Load;
 use super::models::AccountKind;
+use jiff::civil::Date;
 
 /// Stable identities preserve selections while account layouts change their order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -267,13 +268,10 @@ impl AnalyticsView {
         }
     }
 
-    pub(super) fn section_date_range(
-        &self,
-        section: Section,
-    ) -> std::ops::RangeInclusive<chrono::NaiveDate> {
+    pub(super) fn section_date_range(&self, section: Section) -> std::ops::RangeInclusive<Date> {
         let end = self.end_date;
         let range = self.ranges[self.range_group(section) as usize];
-        (end - chrono::Days::new(if range == 0 { 6 } else { 29 }))..=end
+        (end - jiff::Span::new().days(if range == 0 { 6 } else { 29 }))..=end
     }
 
     pub(super) fn change_range(&mut self) {

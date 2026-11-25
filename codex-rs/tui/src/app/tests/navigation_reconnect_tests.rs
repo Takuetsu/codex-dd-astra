@@ -10,6 +10,7 @@ use crate::app_event::WindowsSandboxEnableMode;
 use crate::app_server_session::ThreadParamsMode;
 use crate::bottom_pane::BottomPaneView;
 use codex_app_server_client::AppServerEvent;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -100,7 +101,7 @@ async fn reconnect_daemon_command_center_after_socket_replacement_without_a_conv
             Ok(serde_json::from_value(json!({
                 "id": id.to_string(), "sessionId": id.to_string(), "preview": name, "name": name,
                 "ephemeral": false, "modelProvider": "test-provider", "createdAt": 1,
-                "updatedAt": chrono::Utc::now().timestamp() - 120, "status": status,
+                "updatedAt": Timestamp::now().timestamp() - 120, "status": status,
                 "cwd": app.config.cwd, "cliVersion": "0.0.0", "source": "cli", "turns": []
             }))?)
         };

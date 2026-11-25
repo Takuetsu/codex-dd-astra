@@ -2,11 +2,8 @@
 //! Charts and their totals share the same daily series; no account activity is read.
 
 use crate::analytics::sections::Section;
-pub(super) const END_DATE: chrono::NaiveDate =
-    match chrono::NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 9, /*day*/ 2) {
-        Some(date) => date,
-        None => panic!("invalid test date"),
-    };
+use jiff::civil::Date;
+pub(super) const END_DATE: Date = jiff::civil::date(2026, 9, 2);
 
 pub(super) const TOOL_DAILY: [[u32; 7]; 2] = [[34, 23, 29, 26, 22, 23, 29], [8, 6, 9, 8, 7, 5, 11]];
 
@@ -92,7 +89,7 @@ pub(super) fn history(
         series.extend(TOOL_DAILY[report - 3]);
         series
     };
-    let start = END_DATE - chrono::Days::new(if range == 0 { 6 } else { 29 });
+    let start = END_DATE - jiff::Span::new().days(if range == 0 { 6 } else { 29 });
     AccountAnalyticsHistory {
         unit: if report == 0 {
             AccountAnalyticsUnit::RelativeUsage
@@ -123,7 +120,7 @@ pub(super) fn history(
                     labels.into_iter().zip(values).collect()
                 };
                 AccountAnalyticsDay {
-                    date: start + chrono::Days::new(day as u64),
+                    date: start + jiff::Span::new().days(day as i64),
                     total: f64::from(total),
                     values: pairs
                         .into_iter()
@@ -180,7 +177,7 @@ pub(super) fn chats() -> super::chats::Chats {
 pub(super) fn tokens(range: usize, grouping: usize) -> super::models::AccountAnalyticsHistory {
     let response = serde_json::json!({"data_freshness_ts":"2026-09-02T16:00:00Z", "data":
         daily(Section::Usage, range).into_iter().enumerate().map(|(index, total)| serde_json::json!({
-            "date": (END_DATE - chrono::Days::new(if range == 0 { 6 } else { 29 }) + chrono::Days::new(index as u64)).to_string(),
+            "date": (END_DATE - jiff::Span::new().days(if range == 0 { 6 } else { 29 }) + jiff::Span::new().days(index as i64)).to_string(),
             "groups": [{"dimensions":{"model":"GPT-5.5"}, "uncached_text_input_tokens": total * 1000, "cached_text_input_tokens":total * 7000, "text_output_tokens":total * 500}]
         })).collect::<Vec<_>>()
     });
@@ -190,7 +187,7 @@ pub(super) fn tokens(range: usize, grouping: usize) -> super::models::AccountAna
             Err(_) => panic!("invalid test token response"),
         },
         super::data::GROUPINGS[grouping],
-        END_DATE - chrono::Days::new(if range == 0 { 6 } else { 29 }),
+        END_DATE - jiff::Span::new().days(if range == 0 { 6 } else { 29 }),
         END_DATE,
     ) {
         Ok(history) => history,

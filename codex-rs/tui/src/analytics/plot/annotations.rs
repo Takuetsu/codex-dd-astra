@@ -178,9 +178,9 @@ impl Renderer<'_> {
             } else {
                 "%b %-d"
             };
-            let mut label = self.days[start + index].0.format(format).to_string();
+            let mut label = self.days[start + index].0.strftime(format).to_string();
             if label.width() > plot_width {
-                label = self.days[start + index].0.format("%-d").to_string();
+                label = self.days[start + index].0.strftime("%-d").to_string();
             }
             if label.width() > plot_width {
                 continue;

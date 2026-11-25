@@ -8,8 +8,6 @@ use crate::style::accent_color;
 use crate::token_usage::TokenUsage;
 use crate::token_usage::TokenUsageInfo;
 use crate::version::CODEX_CLI_VERSION;
-use chrono::DateTime;
-use chrono::Local;
 use codex_app_server_protocol::AskForApproval;
 use codex_model_provider_info::WireApi;
 use codex_protocol::ThreadId;
@@ -21,6 +19,7 @@ use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
 use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
 use codex_protocol::models::PermissionProfile;
 use codex_protocol::openai_models::ReasoningEffort;
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_path_uri::PathUri;
 use codex_utils_sandbox_summary::summarize_permission_profile;
 use ratatui::prelude::*;
@@ -97,7 +96,7 @@ impl StatusHistoryHandle {
     pub(crate) fn finish_rate_limit_refresh(
         &self,
         rate_limits: &[RateLimitSnapshotDisplay],
-        now: DateTime<Local>,
+        now: Timestamp,
     ) {
         let rate_limits = if rate_limits.len() <= 1 {
             compose_rate_limit_data(rate_limits.first(), now)
@@ -155,7 +154,7 @@ pub(crate) fn new_status_output(
     forked_from: Option<ThreadId>,
     rate_limits: Option<&RateLimitSnapshotDisplay>,
     _plan_type: Option<PlanType>,
-    now: DateTime<Local>,
+    now: Timestamp,
     model_name: &str,
     collaboration_mode: Option<&str>,
     reasoning_effort_override: Option<Option<ReasoningEffort>>,
@@ -191,7 +190,7 @@ pub(crate) fn new_status_output_with_rate_limits(
     forked_from: Option<ThreadId>,
     rate_limits: &[RateLimitSnapshotDisplay],
     _plan_type: Option<PlanType>,
-    now: DateTime<Local>,
+    now: Timestamp,
     model_name: &str,
     collaboration_mode: Option<&str>,
     reasoning_effort_override: Option<Option<ReasoningEffort>>,
@@ -235,7 +234,7 @@ pub(crate) fn new_status_output_with_rate_limits_handle(
     forked_from: Option<ThreadId>,
     rate_limits: &[RateLimitSnapshotDisplay],
     _plan_type: Option<PlanType>,
-    now: DateTime<Local>,
+    now: Timestamp,
     model_name: &str,
     collaboration_mode: Option<&str>,
     reasoning_effort_override: Option<Option<ReasoningEffort>>,
@@ -290,7 +289,7 @@ impl StatusHistoryCell {
         forked_from: Option<ThreadId>,
         rate_limits: &[RateLimitSnapshotDisplay],
         _plan_type: Option<PlanType>,
-        now: DateTime<Local>,
+        now: Timestamp,
         model_name: &str,
         collaboration_mode: Option<&str>,
         reasoning_effort_override: Option<Option<ReasoningEffort>>,

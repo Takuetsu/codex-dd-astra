@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
@@ -32,8 +33,6 @@ use crate::tui::Tui;
 use crate::tui::TuiEvent;
 use crate::wrapping::RtOptions;
 use crate::wrapping::adaptive_wrap_lines;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_app_server_client::AppServerRequestHandle;
 use codex_app_server_protocol::ClientRequest;
 use codex_app_server_protocol::RequestId;
@@ -847,7 +846,7 @@ struct PickerState {
     // Resolve local filesystem membership once per cwd for each page-loading cycle.
     local_cwd_matches: HashMap<PathBuf, bool>,
     requester: FrameRequester,
-    relative_time_reference: Option<DateTime<Utc>>,
+    relative_time_reference: Option<Timestamp>,
     pagination: PaginationState,
     all_rows: Vec<Row>,
     filtered_rows: Vec<Row>,
@@ -975,8 +974,8 @@ struct Row {
     preview: String,
     thread_id: Option<ThreadId>,
     thread_name: Option<String>,
-    created_at: Option<DateTime<Utc>>,
-    updated_at: Option<DateTime<Utc>>,
+    created_at: Option<Timestamp>,
+    updated_at: Option<Timestamp>,
     cwd: Option<PathBuf>,
     git_branch: Option<String>,
 }
@@ -1452,7 +1451,7 @@ impl PickerState {
     }
 
     fn start_initial_load(&mut self) {
-        self.relative_time_reference = Some(Utc::now());
+        self.relative_time_reference = Some(Timestamp::now());
         self.reset_pagination();
         self.all_rows.clear();
         self.filtered_rows.clear();
@@ -2071,10 +2070,8 @@ fn row_from_app_server_thread(thread: Thread) -> Option<Row> {
         },
         thread_id: Some(thread_id),
         thread_name: thread.name,
-        created_at: chrono::DateTime::from_timestamp(thread.created_at, 0)
-            .map(|dt| dt.with_timezone(&Utc)),
-        updated_at: chrono::DateTime::from_timestamp(thread.updated_at, 0)
-            .map(|dt| dt.with_timezone(&Utc)),
+        created_at: Timestamp::from_timestamp(thread.created_at, 0),
+        updated_at: Timestamp::from_timestamp(thread.updated_at, 0),
         cwd: Some(thread.cwd.to_path_buf()),
         git_branch: thread.git_info.and_then(|git_info| git_info.branch),
     })
@@ -2135,10 +2132,8 @@ fn paths_match(a: &Path, b: &Path) -> bool {
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
-fn parse_timestamp_str(ts: &str) -> Option<DateTime<Utc>> {
-    chrono::DateTime::parse_from_rfc3339(ts)
-        .map(|dt| dt.with_timezone(&Utc))
-        .ok()
+fn parse_timestamp_str(ts: &str) -> Option<Timestamp> {
+    Timestamp::parse_from_rfc3339(ts).ok()
 }
 
 fn draw_picker(tui: &mut Tui, state: &PickerState, screen_size: Size) -> std::io::Result<()> {
@@ -2870,7 +2865,7 @@ fn render_comfortable_session_lines(
         return lines;
     }
 
-    let reference = state.relative_time_reference.unwrap_or_else(Utc::now);
+    let reference = state.relative_time_reference.unwrap_or_else(Timestamp::now);
     let created = format_relative_time(reference, row.created_at);
     let updated = format_relative_time(reference, row.updated_at.or(row.created_at));
     let branch = row.git_branch.as_deref();
@@ -2944,7 +2939,7 @@ fn render_dense_session_lines(
     width: u16,
 ) -> Vec<Line<'static>> {
     let marker = selection_marker(is_selected, is_expanded);
-    let reference = state.relative_time_reference.unwrap_or_else(Utc::now);
+    let reference = state.relative_time_reference.unwrap_or_else(Timestamp::now);
     let created = format_relative_time(reference, row.created_at);
     let updated = format_relative_time(reference, row.updated_at.or(row.created_at));
     let date = match state.sort_key {
@@ -3300,7 +3295,7 @@ fn render_expanded_session_details(
     state: &PickerState,
     width: u16,
 ) -> Vec<Line<'static>> {
-    let reference = state.relative_time_reference.unwrap_or_else(Utc::now);
+    let reference = state.relative_time_reference.unwrap_or_else(Timestamp::now);
     let session = match (row.thread_name.as_deref(), row.thread_id) {
         (Some(thread_name), Some(thread_id)) => format!("{thread_name} ({thread_id})"),
         (Some(thread_name), None) => thread_name.to_string(),
@@ -3473,8 +3468,8 @@ fn expanded_detail_line(label: &'static str, value: &str, width: u16) -> Line<'s
 
 fn expanded_time_detail_line(
     label: &'static str,
-    reference: DateTime<Utc>,
-    ts: Option<DateTime<Utc>>,
+    reference: Timestamp,
+    ts: Option<Timestamp>,
     width: u16,
     clock_format: ClockFormat,
 ) -> Line<'static> {
@@ -3489,11 +3484,11 @@ fn expanded_time_detail_line(
     expanded_detail_line(label, &value, width)
 }
 
-pub(crate) fn format_relative_time(reference: DateTime<Utc>, ts: Option<DateTime<Utc>>) -> String {
+pub(crate) fn format_relative_time(reference: Timestamp, ts: Option<Timestamp>) -> String {
     let Some(ts) = ts else {
         return "-".to_string();
     };
-    let seconds = (reference - ts).num_seconds().max(0);
+    let seconds = (reference - ts).whole_seconds().max(0);
     if seconds == 0 {
         return "now".to_string();
     }
@@ -3512,8 +3507,8 @@ pub(crate) fn format_relative_time(reference: DateTime<Utc>, ts: Option<DateTime
     format!("{days}d ago")
 }
 
-fn format_relative_time_long(reference: DateTime<Utc>, ts: DateTime<Utc>) -> String {
-    let seconds = (reference - ts).num_seconds().max(0);
+fn format_relative_time_long(reference: Timestamp, ts: Timestamp) -> String {
+    let seconds = (reference - ts).whole_seconds().max(0);
     if seconds == 0 {
         return "now".to_string();
     }
@@ -3539,12 +3534,14 @@ fn plural_time(value: i64, unit: &str) -> String {
     }
 }
 
-fn format_timestamp(ts: DateTime<Utc>, clock_format: ClockFormat) -> String {
-    ts.format(match clock_format {
-        ClockFormat::TwelveHour => "%Y-%m-%d %-I:%M:%S %p",
-        ClockFormat::TwentyFourHour => "%Y-%m-%d %H:%M:%S",
-    })
-    .to_string()
+fn format_timestamp(ts: Timestamp, clock_format: ClockFormat) -> String {
+    crate::clock_format::format_utc(
+        ts,
+        match clock_format {
+            ClockFormat::TwelveHour => "%Y-%m-%d %-I:%M:%S %p",
+            ClockFormat::TwentyFourHour => "%Y-%m-%d %H:%M:%S",
+        },
+    )
 }
 
 fn render_empty_state_line(state: &PickerState) -> Line<'static> {
@@ -3592,13 +3589,27 @@ fn render_empty_state_line(state: &PickerState) -> Line<'static> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Duration;
+
+    #[test]
+    fn absolute_resume_timestamp_keeps_the_utc_leap_second() {
+        let timestamp = Timestamp::parse_from_rfc3339("2017-01-01T05:29:60.500+05:30").unwrap();
+
+        assert_eq!(
+            format_timestamp(timestamp, ClockFormat::TwentyFourHour),
+            "2016-12-31 23:59:60"
+        );
+        assert_eq!(
+            format_timestamp(timestamp, ClockFormat::TwelveHour),
+            "2016-12-31 11:59:60 PM"
+        );
+    }
     use codex_app_server_protocol::ThreadItem;
     use codex_app_server_protocol::ThreadSourceKind;
     use codex_config::CONFIG_TOML_FILE;
     use codex_protocol::ThreadId;
     use codex_utils_absolute_path::test_support::PathBufExt;
     use codex_utils_absolute_path::test_support::test_path_buf;
+    use time::Duration;
 
     use crossterm::event::KeyCode;
     use crossterm::event::KeyEvent;
@@ -4143,9 +4154,8 @@ mod tests {
 
     #[test]
     fn relative_time_formats_zero_seconds_as_now() {
-        let reference = DateTime::parse_from_rfc3339("2026-05-02T12:00:00Z")
-            .expect("valid timestamp")
-            .with_timezone(&Utc);
+        let reference =
+            Timestamp::parse_from_rfc3339("2026-05-02T12:00:00Z").expect("valid timestamp");
 
         assert_eq!(format_relative_time(reference, Some(reference)), "now");
         assert_eq!(
@@ -4156,9 +4166,8 @@ mod tests {
 
     #[test]
     fn long_relative_time_uses_words() {
-        let reference = DateTime::parse_from_rfc3339("2026-05-02T12:00:00Z")
-            .expect("valid timestamp")
-            .with_timezone(&Utc);
+        let reference =
+            Timestamp::parse_from_rfc3339("2026-05-02T12:00:00Z").expect("valid timestamp");
 
         assert_eq!(format_relative_time_long(reference, reference), "now");
         assert_eq!(

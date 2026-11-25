@@ -9,6 +9,7 @@ use super::*;
 use crate::bottom_pane::selection_style;
 use crate::resume_picker::format_relative_time;
 use crate::status::format_directory_display;
+use codex_protocol::timestamp::Timestamp;
 
 fn columns(area: Rect) -> (Rect, Rect, Rect) {
     let metadata = if area.width >= 56 { 24 } else { 0 };
@@ -84,7 +85,7 @@ impl AgentsOverviewView {
                 .right_aligned()
                 .render(updated, buf);
         }
-        let reference = chrono::Utc::now();
+        let reference = Timestamp::now();
         let height = usize::from(viewport.height);
         state.page_height = height;
         let mut start = state.scroll.min(entries.len().saturating_sub(height));
@@ -239,7 +240,7 @@ impl AgentsOverviewView {
             if !updated.is_empty() {
                 let age = format_relative_time(
                     reference,
-                    chrono::DateTime::from_timestamp(task.thread.updated_at, /*nsecs*/ 0),
+                    Timestamp::from_timestamp(task.thread.updated_at, /*nsecs*/ 0),
                 );
                 Line::from(age)
                     .style(if index == self.selected {

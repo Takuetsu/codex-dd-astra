@@ -11,6 +11,7 @@ use codex_app_server_protocol::ThreadListParams;
 use codex_app_server_protocol::ThreadListResponse;
 use codex_app_server_protocol::ThreadSortKey;
 use codex_backend_client::ThreadUsage;
+use codex_protocol::timestamp::Timestamp;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -109,7 +110,7 @@ pub(super) async fn read(
 pub(super) async fn roots(
     handle: &AppServerRequestHandle,
 ) -> Result<Vec<codex_app_server_protocol::Thread>, String> {
-    let cutoff = chrono::Utc::now().timestamp() - 30 * 24 * 60 * 60;
+    let cutoff = Timestamp::now().timestamp() - 30 * 24 * 60 * 60;
     let mut threads = Vec::new();
     let mut cursor = None;
     let mut seen_cursors = HashSet::new();

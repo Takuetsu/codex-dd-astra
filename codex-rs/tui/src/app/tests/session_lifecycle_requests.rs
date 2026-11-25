@@ -36,6 +36,7 @@ use codex_protocol::items::TurnItem;
 use codex_protocol::items::UserMessageItem;
 use codex_protocol::protocol::ItemCompletedEvent;
 use codex_protocol::protocol::ReviewTarget;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::UserInput as CoreUserInput;
 use codex_state::SqliteConfig;
 use futures::SinkExt;
@@ -5777,7 +5778,7 @@ async fn command_center_read_only_open_requests_and_failure_preservation() -> Re
             .thread_read(thread_id, /*include_turns*/ false)
             .await?;
         // Keep the age label stable while the server exercises failure recovery.
-        thread.updated_at = chrono::Utc::now().timestamp() - 7 * 24 * 60 * 60;
+        thread.updated_at = Timestamp::now().timestamp() - 7 * 24 * 60 * 60;
         let mut view = app.agents_overview_view(vec![thread], Some(thread_id));
         view.handle_paste("Keep this draft".into());
         app.chat_widget.show_bottom_pane_view(Box::new(view));

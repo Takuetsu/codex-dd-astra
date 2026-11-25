@@ -8,6 +8,7 @@ use super::super::agents_overview_view::AgentsOverviewGrouping;
 use super::*;
 use crate::app::tests::make_test_app_with_channels;
 use crate::chatwidget::tests::helpers::normalize_agent_center_snapshot;
+use codex_protocol::timestamp::Timestamp;
 
 #[tokio::test]
 async fn overview_worktree_creation_busy_state() {
@@ -158,7 +159,7 @@ use ratatui::layout::Rect;
 use ratatui::style::Style;
 
 static OVERVIEW_TIMESTAMP: std::sync::LazyLock<i64> =
-    std::sync::LazyLock::new(|| chrono::Utc::now().timestamp() - 120);
+    std::sync::LazyLock::new(|| Timestamp::now().timestamp() - 120);
 
 #[tokio::test]
 async fn overview_right_opens_current_or_highlighted_task() {
