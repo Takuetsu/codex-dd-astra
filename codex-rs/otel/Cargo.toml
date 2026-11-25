@@ -16,7 +16,7 @@ workspace = true
 bytes = { workspace = true }
 codex-http-client = { workspace = true }
 opentelemetry-http = "0.31.0"
-chrono = { workspace = true }
+jiff = { workspace = true }
 codex-utils-absolute-path = { workspace = true }
 codex-utils-stream-parser = { workspace = true }
 codex-utils-string = { workspace = true }

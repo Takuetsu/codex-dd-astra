@@ -2,6 +2,17 @@ use super::*;
 use pretty_assertions::assert_eq;
 
 #[test]
+fn imported_timestamp_keeps_signed_epoch_and_offset() {
+    assert_eq!(
+        parse_timestamp("1969-12-31T21:59:59.999999999-02:00"),
+        Some(-1)
+    );
+    assert_eq!(parse_timestamp("1970-01-01 05:30:00+05:30"), Some(0));
+    assert_eq!(parse_timestamp("1970-01-01T00:00:00"), None);
+    assert_eq!(parse_timestamp("1970-01-01q00:00:00Z"), None);
+}
+
+#[test]
 fn converts_tool_use_blocks_to_bounded_external_agent_tags() {
     let block = serde_json::json!({
         "type": "tool_use",

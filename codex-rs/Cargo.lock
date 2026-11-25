@@ -1872,12 +1872,12 @@ version = "0.162.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
- "chrono",
  "codex-http-client",
  "codex-protocol",
  "crypto_box",
  "ed25519-dalek",
  "http",
+ "jiff 0.2.23",
  "jsonwebtoken",
  "pretty_assertions",
  "rand 0.9.3",
@@ -3328,7 +3328,6 @@ dependencies = [
 name = "codex-external-agent-migration"
 version = "0.162.0"
 dependencies = [
- "chrono",
  "codex-analytics",
  "codex-app-server-protocol",
  "codex-config",
@@ -3343,12 +3342,14 @@ dependencies = [
  "codex-rollout",
  "codex-thread-store",
  "codex-utils-output-truncation",
+ "jiff 0.2.23",
  "noyalib-serde-yaml",
  "pretty_assertions",
  "serde",
  "serde_json",
  "sha2 0.10.9",
  "tempfile",
+ "time",
  "tokio",
  "toml 0.9.11+spec-1.1.0",
  "tracing",
@@ -3452,7 +3453,6 @@ name = "codex-git-utils"
 version = "0.162.0"
 dependencies = [
  "anyhow",
- "chrono",
  "codex-file-system",
  "codex-protocol",
  "codex-utils-absolute-path",
@@ -3470,6 +3470,7 @@ dependencies = [
  "similar",
  "tempfile",
  "thiserror 2.0.18",
+ "time",
  "tokio",
  "ts-rs",
  "walkdir",
@@ -4092,7 +4093,6 @@ version = "0.162.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
- "chrono",
  "clap",
  "codex-utils-absolute-path",
  "codex-utils-home-dir",
@@ -4100,6 +4100,7 @@ dependencies = [
  "codex-utils-rustls-provider",
  "codex-windows-sandbox",
  "globset",
+ "jiff 0.2.23",
  "libc",
  "opentelemetry",
  "pretty_assertions",
@@ -4160,7 +4161,6 @@ name = "codex-otel"
 version = "0.162.0"
 dependencies = [
  "bytes",
- "chrono",
  "codex-api",
  "codex-http-client",
  "codex-protocol",
@@ -4170,6 +4170,7 @@ dependencies = [
  "eventsource-stream",
  "gethostname",
  "http",
+ "jiff 0.2.23",
  "libc",
  "opentelemetry",
  "opentelemetry-appender-tracing",

@@ -540,7 +540,9 @@ mod tests {
     }
 
     fn record(role: &str, text: &str, cwd: &Path) -> JsonValue {
-        let timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let timestamp = jiff::Timestamp::now()
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
+            .to_string();
         serde_json::json!({
             "type": role,
             "cwd": cwd,

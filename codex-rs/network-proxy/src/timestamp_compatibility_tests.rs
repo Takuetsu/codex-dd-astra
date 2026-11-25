@@ -21,7 +21,10 @@ fn har_preserves_utc_and_fractional_timestamp_spelling() {
         }))
         .unwrap();
 
-        assert_eq!(serde_json::to_value(page).unwrap()["startedDateTime"], expected);
+        assert_eq!(
+            serde_json::to_value(page).unwrap()["startedDateTime"],
+            expected
+        );
     }
 }
 
