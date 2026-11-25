@@ -1381,6 +1381,23 @@ fn read_extracted_backup_archive_git_sha_rejects_path_traversal_ref() {
     assert!(err.contains("invalid path components"));
 }
 
+#[test]
+fn curated_zipball_extracts_bzip2_entry() {
+    let mut writer = ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Bzip2);
+    writer.start_file("snapshot/plugin.json", options).unwrap();
+    writer.write_all(br#"{"name":"test-plugin"}"#).unwrap();
+    let archive = writer.finish().unwrap().into_inner();
+
+    let destination = tempfile::tempdir().unwrap();
+    extract_zipball_to_dir(&archive, destination.path()).unwrap();
+
+    assert_eq!(
+        std::fs::read(destination.path().join("plugin.json")).unwrap(),
+        br#"{"name":"test-plugin"}"#
+    );
+}
+
 fn curated_repo_zipball_bytes(sha: &str) -> Vec<u8> {
     let cursor = std::io::Cursor::new(Vec::new());
     let mut writer = ZipWriter::new(cursor);
