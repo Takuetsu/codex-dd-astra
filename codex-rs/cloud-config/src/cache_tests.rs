@@ -38,11 +38,11 @@ fn signed_cache_file(
 }
 
 fn valid_signed_payload() -> CloudConfigBundleCacheSignedPayload {
-    let cached_at = Utc::now();
+    let cached_at = Timestamp::now();
     CloudConfigBundleCacheSignedPayload {
         version: CLOUD_CONFIG_BUNDLE_CACHE_VERSION,
         cached_at,
-        expires_at: cached_at + ChronoDuration::minutes(30),
+        expires_at: cached_at + SignedDuration::minutes(30),
         chatgpt_user_id: Some("user-12345".to_string()),
         account_id: Some("account-12345".to_string()),
         bundle: test_bundle(),
@@ -55,6 +55,24 @@ fn write_cache_file(cache: &CloudConfigBundleCache, cache_file: &CloudConfigBund
         serde_json::to_vec_pretty(cache_file).expect("serialize cache"),
     )
     .expect("write cache");
+}
+
+#[test]
+fn legacy_signed_cache_timestamp_bytes_are_preserved() {
+    let bundle = serde_json::to_string(&test_bundle()).unwrap();
+    let legacy = format!(
+        concat!(
+            r#"{{"version":{},"cached_at":"2025-08-31T20:22:41.500Z","#,
+            r#""expires_at":"2025-08-31T21:22:41.123456Z","#,
+            r#""chatgpt_user_id":null,"account_id":null,"bundle":{}}}"#,
+        ),
+        CLOUD_CONFIG_BUNDLE_CACHE_VERSION, bundle,
+    );
+    let payload: CloudConfigBundleCacheSignedPayload = serde_json::from_str(&legacy).unwrap();
+    let bytes = cache_payload_bytes(&payload).unwrap();
+    assert_eq!(bytes, legacy.as_bytes());
+    let signature = sign_cache_payload(legacy.as_bytes()).unwrap();
+    assert!(verify_cache_signature(&bytes, &signature));
 }
 
 fn create_test_cache(codex_home: &Path) -> CloudConfigBundleCache {
@@ -87,7 +105,7 @@ async fn save_writes_signed_payload_and_loads_for_matching_identity() {
             .expect("parse cache");
     assert!(
         cache_file.signed_payload.expires_at
-            <= cache_file.signed_payload.cached_at + ChronoDuration::minutes(60)
+            <= cache_file.signed_payload.cached_at + SignedDuration::minutes(60)
     );
     assert!(cache_file.signed_payload.expires_at > cache_file.signed_payload.cached_at);
     assert_eq!(
@@ -188,7 +206,7 @@ async fn load_rejects_expired_cache() {
     let codex_home = tempdir().expect("tempdir");
     let cache = create_test_cache(codex_home.path());
     let mut signed_payload = valid_signed_payload();
-    signed_payload.expires_at = Utc::now() - ChronoDuration::seconds(1);
+    signed_payload.expires_at = Timestamp::now() - SignedDuration::seconds(1);
     write_cache_file(&cache, &signed_cache_file(signed_payload));
 
     assert_eq!(

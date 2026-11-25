@@ -6,6 +6,7 @@ use crate::remote::group_remote_installed_plugins_by_marketplaces;
 use codex_app_server_protocol::PluginAuthPolicy;
 use codex_app_server_protocol::PluginAvailability;
 use codex_app_server_protocol::PluginInstallPolicy;
+use codex_protocol::timestamp::Timestamp;
 use serde_json::json;
 
 fn image_url(renewal: &str) -> String {
@@ -51,8 +52,7 @@ fn behavioral_metadata_changes_still_invalidate() {
         |plugin| plugin.name.push_str("-other"),
         |plugin| plugin.version = Some("2.0.0".to_string()),
         |plugin| {
-            plugin.installed_at =
-                chrono::DateTime::from_timestamp(/*secs*/ 1, /*nsecs*/ 0)
+            plugin.installed_at = Timestamp::from_timestamp(/*secs*/ 1, /*nsecs*/ 0)
         },
         |plugin| plugin.enabled = false,
         |plugin| plugin.install_policy = PluginInstallPolicy::NotAvailable,

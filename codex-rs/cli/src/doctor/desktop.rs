@@ -7,9 +7,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use chrono::DateTime;
-use chrono::FixedOffset;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
 
 use super::CheckStatus;
 use super::DoctorCheck;
@@ -40,7 +38,7 @@ struct DesktopLog {
 }
 
 struct HandshakeEvent {
-    timestamp: DateTime<FixedOffset>,
+    timestamp: Timestamp,
     outcome: HandshakeOutcome,
     websocket: bool,
 }
@@ -78,7 +76,7 @@ pub(super) async fn collect() -> Option<DesktopDiagnostics> {
     let directory = desktop_log_root(application.identity);
     let (running, handshake) = match &directory {
         Some(root) => inspect_desktop_session(
-            &root.join(Utc::now().format("%Y/%m/%d").to_string()),
+            &root.join(jiff::Timestamp::now().strftime("%Y/%m/%d").to_string()),
             |pid| platform::application_running(&application, pid),
         ),
         None => (false, stopped_desktop_check()),
@@ -235,7 +233,7 @@ fn read_log_segment(path: &Path) -> io::Result<Vec<u8>> {
 impl DesktopLogEvent {
     fn parse(line: &str) -> Option<Self> {
         let (timestamp, line) = line.split_once(' ')?;
-        let timestamp = DateTime::parse_from_rfc3339(timestamp).ok()?;
+        let timestamp = Timestamp::parse_from_rfc3339(timestamp).ok()?;
         let (_, message) = line.split_once(" [AppServerConnection] ")?;
 
         if let Some(fields) = message

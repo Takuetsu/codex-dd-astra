@@ -488,7 +488,7 @@ pub(super) fn commit_setup_marker(
         version: SETUP_VERSION,
         offline_username: offline_user.to_string(),
         online_username: online_user.to_string(),
-        created_at: chrono::Utc::now().to_rfc3339(),
+        created_at: crate::logging::provisioning_timestamp(jiff::Timestamp::now()),
         proxy_ports: proxy_ports.to_vec(),
         allow_local_binding,
         read_roots: Vec::new(),

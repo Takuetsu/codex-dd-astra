@@ -1,6 +1,19 @@
 //! Coverage for cache identity validation and conditional freshness updates.
 
 use super::*;
+
+#[test]
+fn invalidated_catalog_keeps_legacy_persisted_timestamp() {
+    let legacy = "-262143-01-01T00:00:00Z";
+    let cache: ModelsCacheEntry = serde_json::from_value(serde_json::json!({
+        "fetched_at": legacy,
+        "models": [],
+    }))
+    .unwrap();
+
+    assert_eq!(cache.fetched_at, invalidated_fetched_at());
+    assert_eq!(serde_json::to_value(cache).unwrap()["fetched_at"], legacy);
+}
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
@@ -9,7 +22,7 @@ async fn mismatched_and_legacy_cache_entries_fetch_the_current_catalog() {
         let stale = remote_model("stale", "Stale", /*priority*/ 0);
         let current = remote_model("current", "Current", /*priority*/ 0);
         let cache = TestModelsCache::with_entry(ModelsCacheEntry {
-            fetched_at: Utc::now(),
+            fetched_at: Timestamp::now(),
             etag: Some("old-etag".into()),
             client_version: Some(crate::client_version_to_whole()),
             identity,
@@ -42,7 +55,7 @@ async fn matching_etag_cannot_renew_a_different_identity_or_catalog() {
     let home = tempdir().unwrap();
     let cache = FileModelsCache::new(home.path().join(MODEL_CACHE_FILE), DEFAULT_MODEL_CACHE_TTL);
     let expected = ModelsCacheEntry {
-        fetched_at: Utc::now() - chrono::Duration::hours(1),
+        fetched_at: Timestamp::now() - time::Duration::hours(1),
         etag: Some("etag".into()),
         client_version: Some(crate::client_version_to_whole()),
         identity: Some("first-account".into()),

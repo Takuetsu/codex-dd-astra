@@ -1,11 +1,10 @@
 use super::cache::FileModelsCache;
 use crate::cache::ModelsCache;
 use crate::cache::ModelsCacheEntry;
+use crate::cache::invalidated_fetched_at;
 use crate::collaboration_mode_presets::builtin_collaboration_mode_presets;
 use crate::config::ModelsManagerConfig;
 use crate::model_info;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_http_client::HttpClientFactory;
 use codex_login::AuthManager;
 use codex_protocol::auth::AuthMode;
@@ -15,6 +14,7 @@ use codex_protocol::openai_models::ModelInfo;
 use codex_protocol::openai_models::ModelPreset;
 use codex_protocol::openai_models::ModelVisibility;
 use codex_protocol::openai_models::ModelsResponse;
+use codex_protocol::timestamp::Timestamp;
 use std::fmt;
 use std::future::Future;
 use std::path::PathBuf;
@@ -345,7 +345,7 @@ impl OpenAiModelsManager {
     ) -> Self {
         Self {
             remote_models: RwLock::new(ModelsCacheEntry {
-                fetched_at: Utc::now(),
+                fetched_at: Timestamp::now(),
                 etag: None,
                 client_version: Some(crate::client_version_to_whole()),
                 identity: endpoint_client.identity(),
@@ -602,7 +602,7 @@ impl OpenAiModelsManager {
                             return Err(error);
                         }
                         // Keep this failure in memory even if persistent invalidation fails.
-                        current.fetched_at = DateTime::<Utc>::MIN_UTC;
+                        current.fetched_at = invalidated_fetched_at();
                         current.models.clear();
                         current.etag = None;
                         current.identity.clone_from(&request_identity);
@@ -616,7 +616,7 @@ impl OpenAiModelsManager {
                                 && entry.client_version.as_deref() == Some(&client_version)
                             {
                                 // Preserve backend lookup keys, but force a cache miss after restart.
-                                entry.fetched_at = DateTime::<Utc>::MIN_UTC;
+                                entry.fetched_at = invalidated_fetched_at();
                                 entry.etag = None;
                                 entry.models.clear();
                                 cache.store(&entry).await?;
@@ -635,7 +635,7 @@ impl OpenAiModelsManager {
             return Ok(());
         }
         let entry = ModelsCacheEntry {
-            fetched_at: Utc::now(),
+            fetched_at: Timestamp::now(),
             etag,
             client_version: Some(client_version),
             identity: Some(identity),
@@ -726,7 +726,7 @@ impl OpenAiModelsManager {
         {
             let current = self.remote_models.read().await;
             // A failed fetch must not be replaced by stale cache data even if invalidation failed.
-            if current.fetched_at == DateTime::<Utc>::MIN_UTC
+            if current.fetched_at == invalidated_fetched_at()
                 && current.identity.as_ref() == Some(&identity)
             {
                 return false;
@@ -743,7 +743,7 @@ impl OpenAiModelsManager {
                 return false;
             }
         };
-        if cache_entry.fetched_at == DateTime::<Utc>::MIN_UTC {
+        if cache_entry.fetched_at == invalidated_fetched_at() {
             return false;
         }
         if cache_entry.client_version.as_deref() != Some(client_version.as_str()) {
