@@ -237,7 +237,7 @@ async fn descendants(
         created_at: (root.created_at > 0)
             .then(|| Timestamp::from_timestamp(root.created_at, /*nsecs*/ 0))
             .flatten()
-            .map(|time| time.to_rfc3339()),
+            .map(Timestamp::to_rfc3339),
         descendant_thread_ids,
     })
 }
