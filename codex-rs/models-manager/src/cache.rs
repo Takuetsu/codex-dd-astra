@@ -66,7 +66,6 @@ pub struct ModelsCacheEntry {
     ///
     /// The legacy invalidation timestamp marks an invalidated catalog in memory and storage.
     /// The manager rejects it even if the backend uses native TTL.
-    #[serde(deserialize_with = "deserialize_fetched_at")]
     pub fetched_at: Timestamp,
     /// Endpoint ETag used to revalidate the catalog without downloading an unchanged payload.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -86,20 +85,11 @@ pub struct ModelsCacheEntry {
     pub models: Vec<ModelInfo>,
 }
 
-const LEGACY_INVALIDATED_FETCHED_AT: &str = "-262143-01-01T00:00:00Z";
-
 pub(crate) fn invalidated_fetched_at() -> Timestamp {
-    Timestamp::from_timestamp(-8_334_601_228_800, 0).expect("legacy invalidation timestamp")
-}
-
-fn deserialize_fetched_at<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Timestamp, D::Error> {
-    let value = std::borrow::Cow::<str>::deserialize(deserializer)?;
-    if value == LEGACY_INVALIDATED_FETCHED_AT {
-        return Ok(invalidated_fetched_at());
-    }
-    Timestamp::parse_from_rfc3339(&value).map_err(serde::de::Error::custom)
+    let Some(timestamp) = Timestamp::from_timestamp(-8_334_601_228_800, 0) else {
+        panic!("legacy invalidation timestamp");
+    };
+    timestamp
 }
 
 impl ModelsCacheEntry {

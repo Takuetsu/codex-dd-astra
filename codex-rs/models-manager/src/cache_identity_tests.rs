@@ -14,6 +14,21 @@ fn invalidated_catalog_keeps_legacy_persisted_timestamp() {
     assert_eq!(cache.fetched_at, invalidated_fetched_at());
     assert_eq!(serde_json::to_value(cache).unwrap()["fetched_at"], legacy);
 }
+
+#[test]
+fn catalog_reads_a_legacy_compact_utc_offset() {
+    let cache: ModelsCacheEntry = serde_json::from_value(serde_json::json!({
+        "fetched_at": "2026-11-25T15:00:00-0200",
+        "models": [],
+    }))
+    .unwrap();
+
+    assert_eq!(
+        serde_json::to_value(cache).unwrap()["fetched_at"],
+        "2026-11-25T17:00:00Z"
+    );
+}
+
 use pretty_assertions::assert_eq;
 
 #[tokio::test]
