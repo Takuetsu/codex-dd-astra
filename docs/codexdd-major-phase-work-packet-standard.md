@@ -39,14 +39,14 @@ The workflow therefore optimizes for short, recoverable implementation slices ra
 
 Before editing or dispatching a costly validation, record only the information necessary to execute a narrow task:
 
-| Field | Required content |
-| --- | --- |
-| Outcome | One observable agent behavior, or one confirmed defect class to repair |
-| Identity and authority | Owner-authorized milestone/role, exact repository + branch + base/candidate SHA and environment |
-| Owner | Source subsystem or owner path; links to current governing contract and test |
+| Field                        | Required content                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Outcome                      | One observable agent behavior, or one confirmed defect class to repair                                                           |
+| Identity and authority       | Owner-authorized milestone/role, exact repository + branch + base/candidate SHA and environment                                  |
+| Owner                        | Source subsystem or owner path; links to current governing contract and test                                                     |
 | Acceptance and focused proof | Observable acceptance criterion, focused tests, essential security/persistence negative controls, any required independent scope |
-| Exclusions | Adjacent feature/cleanup/history explicitly not included |
-| Stop and handoff | Evidence that should stop the packet, blocker classification, missing fact and next permitted action |
+| Exclusions                   | Adjacent feature/cleanup/history explicitly not included                                                                         |
+| Stop and handoff             | Evidence that should stop the packet, blocker classification, missing fact and next permitted action                             |
 
 Keep the card brief. Cite durable source/Drive records; never paste long prior-worker narratives as current authority. An already authorized packet may perform routine implementation decisions inside its scope, but may not cross an owner-reserved release, installation or scope gate.
 

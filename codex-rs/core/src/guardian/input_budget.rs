@@ -4,6 +4,7 @@
 //! finalization consumes it. Checkpoint recovery skips startup compaction and
 //! budgets the fresh full input against the preserved checkpoint.
 
+use codex_protocol::timestamp::Timestamp;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -181,7 +182,7 @@ pub(crate) async fn finalize(
         && step.turn.config.current_time_reminder.is_some()
     {
         let reminder = ContextualUserFragment::into(crate::context::CurrentTimeReminder::new(
-            chrono::Utc::now(),
+            Timestamp::now(),
         ));
         existing = existing.saturating_add(
             usize::try_from(estimate_item_token_count(&reminder)).unwrap_or(usize::MAX),

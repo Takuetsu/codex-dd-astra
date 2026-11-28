@@ -8,20 +8,15 @@ use crate::bottom_pane::ActionableBanner;
 use crate::bottom_pane::BannerDismissal;
 use crate::bottom_pane::SelectionItem;
 use crate::clock_format::ClockFormat;
-use chrono::DateTime;
-use chrono::Local;
+use codex_protocol::timestamp::Timestamp;
 
 impl BackendBanner {
     pub(crate) fn actionable_banner(&self, clock_format: ClockFormat) -> ActionableBanner {
         let reset_time = self
             .reset_at
-            .and_then(|timestamp| DateTime::from_timestamp(timestamp, /*nsecs*/ 0))
+            .and_then(|timestamp| Timestamp::from_timestamp(timestamp, /*nsecs*/ 0))
             .map(|time| {
-                crate::status::format_reset_timestamp(
-                    time.with_timezone(&Local),
-                    Local::now(),
-                    clock_format,
-                )
+                crate::status::format_reset_timestamp(time, Timestamp::now(), clock_format)
             });
         let copy = |text: &str| {
             let text: String = text

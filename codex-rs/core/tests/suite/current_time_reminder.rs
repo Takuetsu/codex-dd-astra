@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -9,9 +10,6 @@ use std::time::Duration;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use chrono::DateTime;
-use chrono::Local;
-use chrono::Utc;
 use codex_config::test_support::CloudConfigBundleFixture;
 use codex_core::SleepFuture;
 use codex_core::TimeFuture;
@@ -99,8 +97,7 @@ impl TimeProvider for TestTimeProvider {
         };
         Box::pin(async move {
             let timestamp = timestamp.map_err(anyhow::Error::msg)?;
-            Ok(DateTime::<Utc>::from_timestamp(timestamp, 0)
-                .expect("test timestamp should be valid"))
+            Ok(Timestamp::from_timestamp(timestamp, 0).expect("test timestamp should be valid"))
         })
     }
 
@@ -184,10 +181,10 @@ async fn environment_context_uses_external_current_time_on_each_turn() -> Result
         .zip([FIRST_TIME_UNIX_SECONDS, FIRST_TIME_UNIX_SECONDS + 86_400])
     {
         assert!(request.has_content_kinds(&["environments.environment_context"]));
-        let current_date = DateTime::<Utc>::from_timestamp(timestamp, 0)
-            .expect("test timestamp should be valid")
-            .with_timezone(&Local)
-            .format("%Y-%m-%d")
+        let current_date = jiff::Timestamp::from_second(timestamp)
+            .unwrap()
+            .to_zoned(jiff::tz::TimeZone::system())
+            .date()
             .to_string();
         assert!(request.message_input_texts("user").iter().any(|text| {
             text.contains("<environment_context>")

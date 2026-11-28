@@ -1,6 +1,5 @@
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::openai_models::ModelInfo;
+use codex_protocol::timestamp::Timestamp;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt;
@@ -65,9 +64,9 @@ pub type ModelsCacheFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>
 pub struct ModelsCacheEntry {
     /// Time when the catalog was fetched or last revalidated with the models endpoint.
     ///
-    /// `DateTime::<Utc>::MIN_UTC` marks an invalidated catalog, both in memory and in storage.
+    /// The legacy invalidation timestamp marks an invalidated catalog in memory and storage.
     /// The manager rejects it even if the backend uses native TTL.
-    pub fetched_at: DateTime<Utc>,
+    pub fetched_at: Timestamp,
     /// Endpoint ETag used to revalidate the catalog without downloading an unchanged payload.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub etag: Option<String>,
@@ -86,16 +85,23 @@ pub struct ModelsCacheEntry {
     pub models: Vec<ModelInfo>,
 }
 
+pub(crate) fn invalidated_fetched_at() -> Timestamp {
+    let Some(timestamp) = Timestamp::from_timestamp(-8_334_601_228_800, 0) else {
+        panic!("legacy invalidation timestamp");
+    };
+    timestamp
+}
+
 impl ModelsCacheEntry {
     /// Returns `true` when the cache entry has not exceeded the configured TTL.
     fn is_fresh(&self, ttl: Duration) -> bool {
         if ttl.is_zero() {
             return false;
         }
-        let Ok(ttl_duration) = chrono::Duration::from_std(ttl) else {
+        let Ok(ttl_duration) = time::Duration::try_from(ttl) else {
             return false;
         };
-        let age = Utc::now().signed_duration_since(self.fetched_at);
+        let age = Timestamp::now() - self.fetched_at;
         age <= ttl_duration
     }
 }
@@ -175,7 +181,7 @@ impl ModelsCache for FileModelsCache {
             {
                 return Ok(());
             }
-            entry.fetched_at = Utc::now();
+            entry.fetched_at = Timestamp::now();
             save_file(&self.cache_path, &entry).await
         })
     }

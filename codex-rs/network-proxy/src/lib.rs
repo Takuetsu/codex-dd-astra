@@ -28,6 +28,8 @@ mod socks5;
 mod state;
 #[cfg(target_os = "macos")]
 mod system_dns;
+#[cfg(test)]
+mod timestamp_compatibility_tests;
 mod upstream;
 #[cfg(target_os = "windows")]
 mod windows_proxy_ingress;

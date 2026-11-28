@@ -2,6 +2,7 @@
 //! Credential I/O runs off the async worker and writes retain the store lock through cancellation.
 //! Rotated credentials survive caller cancellation and remain pending until persistence succeeds.
 
+use codex_protocol::timestamp::Timestamp;
 use std::fmt;
 use std::io;
 use std::path::PathBuf;
@@ -19,7 +20,6 @@ use crate::oauth::TokenEndpoint;
 use crate::oauth::build_authorization_url;
 use crate::oauth::generate_pkce;
 use crate::oauth::generate_state;
-use chrono::Utc;
 use codex_http_client::ClientRouteClass;
 use codex_http_client::HttpClient;
 use codex_http_client::HttpClientBuilder;
@@ -511,7 +511,7 @@ impl fmt::Debug for GatewayAuthManager {
 fn token_is_usable(token: &StoredToken) -> bool {
     token
         .expires_at
-        .is_none_or(|expires_at| expires_at > Utc::now().timestamp() + REFRESH_SKEW_SECONDS)
+        .is_none_or(|expires_at| expires_at > Timestamp::now().timestamp() + REFRESH_SKEW_SECONDS)
 }
 
 fn validate_config(config: &GatewayAuthConfig) -> io::Result<()> {

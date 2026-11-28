@@ -5,8 +5,6 @@ use crate::rate_limits::parse_promo_message;
 use crate::rate_limits::parse_rate_limit_for_limit;
 use crate::rate_limits::parse_rate_limit_reached_type;
 use base64::Engine;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::auth::PlanType;
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::CodexErrorDetails;
@@ -15,6 +13,7 @@ use codex_protocol::error::RetryLimitReachedError;
 use codex_protocol::error::UnexpectedResponseError;
 use codex_protocol::error::UsageLimitReachedError;
 use codex_protocol::protocol::MisalignmentErrorDetails;
+use codex_protocol::timestamp::Timestamp;
 use http::HeaderMap;
 use serde::Deserialize;
 use serde_json::Value;
@@ -202,7 +201,7 @@ fn map_api_error_details(err: ApiError) -> CodexErr {
                             let resets_at = err
                                 .error
                                 .resets_at
-                                .and_then(|seconds| DateTime::<Utc>::from_timestamp(seconds, 0));
+                                .and_then(|seconds| Timestamp::from_timestamp(seconds, 0));
                             return CodexErr::UsageLimitReached(UsageLimitReachedError {
                                 plan_type: err.error.plan_type,
                                 resets_at,

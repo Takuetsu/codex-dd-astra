@@ -1,10 +1,9 @@
-use chrono::DateTime;
-use chrono::Utc;
 use codex_features::CurrentTimeReminderDeliveryMode;
 use codex_features::Feature;
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::Result as CodexResult;
 use codex_protocol::models::ResponseItem;
+use codex_protocol::timestamp::Timestamp;
 
 use super::session::Session;
 use super::turn_context::TurnContext;
@@ -39,7 +38,7 @@ pub(super) fn apply_persistent_defaults(config: &mut Config) {
 
 #[derive(Default)]
 pub(crate) struct CurrentTimeReminderState {
-    last_delivery_time: Option<DateTime<Utc>>,
+    last_delivery_time: Option<Timestamp>,
     last_window_id: Option<String>,
     last_clock_failure: Option<(String, uuid::Uuid)>,
     pending_user_or_tool_output_boundary: bool,
@@ -63,7 +62,7 @@ impl CurrentTimeReminderState {
     fn take_reminder_due(
         &mut self,
         window_id: &str,
-        current_time: DateTime<Utc>,
+        current_time: Timestamp,
         interval_seconds: u64,
         delivery_mode: CurrentTimeReminderDeliveryMode,
     ) -> bool {
@@ -81,9 +80,7 @@ impl CurrentTimeReminderState {
         let reminder_is_due = is_new_window
             || interval_seconds == 0
             || self.last_delivery_time.is_none_or(|last_delivery_time| {
-                current_time
-                    .signed_duration_since(last_delivery_time)
-                    .num_seconds()
+                (current_time - last_delivery_time).whole_seconds()
                     >= i64::try_from(interval_seconds).unwrap_or(i64::MAX)
             });
 
@@ -101,7 +98,7 @@ impl Session {
         &self,
         turn_context: &TurnContext,
         clock_read: &'static str,
-    ) -> CodexResult<Option<DateTime<Utc>>> {
+    ) -> CodexResult<Option<Timestamp>> {
         let error = match self
             .services
             .time_provider

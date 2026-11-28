@@ -14,7 +14,8 @@ use crate::ThreadAttachmentOwner;
 use crate::ThreadAttachmentOwnerPage;
 use crate::ThreadAttachmentPage;
 use anyhow::Context;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_protocol::ThreadId;
 use serde::Deserialize;
 use serde::Serialize;
@@ -48,7 +49,7 @@ impl StateRuntime {
         .bind(source_thread_id.to_string())
         .fetch_all(&mut *transaction)
         .await?;
-        let created_at = Utc::now().timestamp();
+        let created_at = Timestamp::now().timestamp();
         for row in rows {
             sqlx::query(
                 "INSERT INTO thread_attachments (id, thread_id, attachment_type, identity_key, payload, created_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -127,7 +128,7 @@ impl StateRuntime {
             attachment_type: attachment_type.to_string(),
             identity_key: identity_key.to_string(),
             payload: payload.clone(),
-            created_at: Utc::now().timestamp(),
+            created_at: Timestamp::now().timestamp(),
         };
         sqlx::query(
             "INSERT INTO thread_attachments (id, thread_id, attachment_type, identity_key, payload, created_at) VALUES (?, ?, ?, ?, ?, ?)",

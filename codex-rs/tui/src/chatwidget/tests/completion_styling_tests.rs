@@ -2,8 +2,7 @@
 
 use super::*;
 use crate::clock_format::ClockFormat;
-use chrono::Local;
-use chrono::TimeZone;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 
 const COMPLETED_AT: i64 = 1_700_000_000;
@@ -54,10 +53,11 @@ fn completion_labels(rx: &mut tokio::sync::mpsc::UnboundedReceiver<AppEvent>) ->
 }
 
 fn saved_completion_label() -> String {
-    Local
-        .timestamp_opt(COMPLETED_AT, /*nsecs*/ 0)
+    Timestamp::from_timestamp(COMPLETED_AT, /*nsecs*/ 0)
         .unwrap()
-        .format(&format!(
+        .local()
+        .unwrap()
+        .strftime(&format!(
             "%b %-d, %Y at {}",
             ClockFormat::system().time_format()
         ))
@@ -106,14 +106,17 @@ async fn completion_live_shows_known_durations_and_preserves_timestamp_fallback(
         let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
         handle_turn_started(&mut chat, "turn-1");
         let turn = completed_turn(Some(duration_ms), completed_at);
-        let before = Local::now();
+        let before = Timestamp::now();
         complete_turn(&mut chat, turn.clone());
-        let after = Local::now();
+        let after = Timestamp::now();
         let possible = [before, after].map(|time| {
             let time = if completed_at.is_some() {
                 saved_completion_label()
             } else {
-                time.format(ClockFormat::system().time_format()).to_string()
+                time.local()
+                    .unwrap()
+                    .strftime(ClockFormat::system().time_format())
+                    .to_string()
             };
             format!("{prefix}{time}")
         });
@@ -276,10 +279,11 @@ async fn completion_replay_waits_for_older_turn_items_to_load() {
     );
 
     chat.replay_thread_turns(vec![older], ReplayKind::ThreadSnapshot);
-    let older_time = Local
-        .timestamp_opt(older_completed_at, /*nsecs*/ 0)
+    let older_time = Timestamp::from_timestamp(older_completed_at, /*nsecs*/ 0)
         .unwrap()
-        .format(&format!(
+        .local()
+        .unwrap()
+        .strftime(&format!(
             "%b %-d, %Y at {}",
             ClockFormat::system().time_format()
         ))
@@ -340,7 +344,7 @@ fn completion_snapshot_normalization_preserves_clock_only_message_lines() {
         let footer =
             history_cell::FinalMessageSeparator::new(Some(3_723), /*runtime_metrics*/ None)
                 .with_completed_at(
-                    Local.timestamp_opt(COMPLETED_AT, /*nsecs*/ 0).unwrap(),
+                    Timestamp::from_timestamp(COMPLETED_AT, /*nsecs*/ 0).unwrap(),
                     clock_format,
                 );
         assert_eq!(

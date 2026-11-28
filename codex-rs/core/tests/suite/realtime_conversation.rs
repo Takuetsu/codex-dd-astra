@@ -1,6 +1,5 @@
 use anyhow::Context;
 use anyhow::Result;
-use chrono::Utc;
 use codex_app_server_protocol::ThreadRealtimeItemContent;
 use codex_app_server_protocol::ThreadRealtimeSessionOutcome;
 use codex_app_server_protocol::ThreadRealtimeTranscriptRole;
@@ -41,6 +40,7 @@ use codex_protocol::protocol::RealtimeVoice;
 use codex_protocol::protocol::SessionSource;
 use codex_protocol::protocol::ThreadHistoryMode;
 use codex_protocol::protocol::ThreadSource;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::UserInput;
 use codex_thread_store::ListTimelineParams;
 use core_test_support::responses;
@@ -244,7 +244,7 @@ async fn seed_recent_thread(
 ) -> Result<()> {
     let db = test.codex.state_db().context("state db enabled")?;
     let thread_id = ThreadId::new();
-    let updated_at = Utc::now();
+    let updated_at = Timestamp::now();
     let rollout_path = test
         .codex_home_path()
         .join(format!("rollout-{thread_id}.jsonl"));

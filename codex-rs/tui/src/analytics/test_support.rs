@@ -8,11 +8,11 @@ pub(super) async fn server() -> wiremock::MockServer {
         .and(wiremock::matchers::path_regex("^/backend-api/wham/(usage|analytics)/"))
         .respond_with(|request: &wiremock::Request| {
             let params = request.url.query_pairs().collect::<std::collections::HashMap<_, _>>();
-            let today = chrono::Utc::now().date_naive();
+            let today = crate::clock_format::utc_today();
             let start = params.get("start_date").map_or(today, |date| date.parse().unwrap());
             let end = params.get("end_date").map_or(today, |date| date.parse().unwrap());
             let route = request.url.path().rsplit('/').next().unwrap();
-            let data = start.iter_days().take_while(|date| *date <= end).map(|date| {
+            let data = start.series(jiff::Span::new().days(1)).take_while(|date| *date <= end).map(|date| {
                 let date = date.to_string();
                 match route {
                     "daily-token-usage-breakdown" | "daily-workspace-user-token-usage-breakdown" => json!({

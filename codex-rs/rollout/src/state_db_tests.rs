@@ -3,10 +3,7 @@
 use super::*;
 use crate::RolloutLine;
 use crate::list::parse_cursor;
-use chrono::DateTime;
-use chrono::NaiveDateTime;
-use chrono::Timelike;
-use chrono::Utc;
+
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::SessionMeta;
 use codex_protocol::protocol::SessionMetaLine;
@@ -23,11 +20,7 @@ fn cursor_to_anchor_normalizes_timestamp_format() {
     let cursor = parse_cursor(ts_str).expect("cursor should parse");
     let anchor = cursor_to_anchor(Some(&cursor)).expect("anchor should parse");
 
-    let naive =
-        NaiveDateTime::parse_from_str(ts_str, "%Y-%m-%dT%H-%M-%S").expect("ts should parse");
-    let expected_ts = DateTime::<Utc>::from_naive_utc_and_offset(naive, Utc)
-        .with_nanosecond(0)
-        .expect("nanosecond");
+    let expected_ts = Timestamp::parse_from_rfc3339("2026-01-27T12:34:56Z").expect("timestamp");
 
     assert_eq!(anchor.ts, expected_ts);
     assert_eq!(anchor.id, None);
@@ -65,7 +58,7 @@ async fn list_threads_db_rejects_mismatched_sqlite_config_without_cleanup() -> a
     let metadata = ThreadMetadataBuilder::new(
         thread_id,
         root.path().join("missing-rollout.jsonl"),
-        Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     )
     .build("test-provider");

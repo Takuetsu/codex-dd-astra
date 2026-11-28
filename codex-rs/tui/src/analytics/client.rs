@@ -11,6 +11,7 @@ use codex_backend_client::AnalyticsReport;
 use codex_backend_client::AnalyticsSession;
 use codex_backend_client::RequestError;
 use codex_protocol::account::PlanType;
+use jiff::civil::Date;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -19,7 +20,7 @@ use tokio::sync::OnceCell;
 pub(super) struct Live {
     pub(super) identity_invalidated: std::sync::atomic::AtomicBool,
     config: Arc<Config>,
-    end_date: chrono::NaiveDate,
+    end_date: Date,
     session: OnceCell<Session>,
     token_models: std::sync::RwLock<Vec<String>>,
     attributed_usage: std::sync::atomic::AtomicBool,
@@ -33,7 +34,7 @@ pub(super) struct Session {
 }
 
 impl Live {
-    pub(super) fn new(config: Arc<Config>, end_date: chrono::NaiveDate) -> Self {
+    pub(super) fn new(config: Arc<Config>, end_date: Date) -> Self {
         Self {
             identity_invalidated: std::sync::atomic::AtomicBool::new(/*v*/ false),
             config,
@@ -143,7 +144,10 @@ impl Live {
         let end = self.end_date;
         let start = days
             .checked_sub(/*rhs*/ 1)
-            .and_then(|offset| end.checked_sub_days(chrono::Days::new(u64::from(offset))))
+            .and_then(|offset| {
+                let days = jiff::Span::new().try_days(i64::from(offset)).ok()?;
+                end.checked_sub(days).ok()
+            })
             .ok_or("Invalid analytics date range.")?;
         let session = self.session().await?;
         self.ensure_identity().await?;

@@ -1,22 +1,21 @@
-use chrono::DateTime;
-use chrono::Utc;
-
 use super::ContextualUserFragment;
 use codex_protocol::models::ContentItemKind;
+use codex_protocol::timestamp::Timestamp;
 
 pub(crate) struct CurrentTimeReminder {
-    current_time: DateTime<Utc>,
+    current_time: Timestamp,
 }
 
 impl CurrentTimeReminder {
-    pub(crate) fn new(current_time: DateTime<Utc>) -> Self {
+    pub(crate) fn new(current_time: Timestamp) -> Self {
         Self { current_time }
     }
 
     pub(crate) fn formatted_time(&self) -> String {
-        self.current_time
-            .format("%Y-%m-%d %H:%M:%S UTC")
-            .to_string()
+        let utc = self
+            .current_time
+            .to_rfc3339_opts(codex_protocol::timestamp::SecondsFormat::Secs, true);
+        format!("{} UTC", utc.trim_end_matches('Z').replace('T', " "))
     }
 }
 

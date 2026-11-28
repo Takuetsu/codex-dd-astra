@@ -4,25 +4,22 @@ use super::models::AccountAnalyticsGrouping as Grouping;
 use super::models::AccountAnalyticsReport as Report;
 use super::models::*;
 use super::report_data::AnalyticsData;
-use chrono::DateTime;
-use chrono::NaiveDate;
+use codex_protocol::timestamp::Timestamp;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 /// Out-of-range legacy rows do not change attribution semantics for the requested period.
 pub(super) fn has_complete_attribution(
     response: &AnalyticsData,
-    start: NaiveDate,
-    end: NaiveDate,
+    start: Date,
+    end: Date,
 ) -> Result<bool, String> {
     response
         .data
         .iter()
         .try_fold(/*init*/ true, |complete, record| {
-            let date = NaiveDate::parse_from_str(
-                record.date.get(..10).unwrap_or(&record.date),
-                "%Y-%m-%d",
-            )
-            .map_err(|_| String::from("Analytics returned an invalid date."))?;
+            let date = Date::strptime("%Y-%m-%d", record.date.get(..10).unwrap_or(&record.date))
+                .map_err(|_| String::from("Analytics returned an invalid date."))?;
             Ok(complete && (date < start || date > end || record.attribution.is_some()))
         })
 }
@@ -31,8 +28,8 @@ pub(super) fn history(
     response: AnalyticsData,
     report: Report,
     grouping: Grouping,
-    start: NaiveDate,
-    end: NaiveDate,
+    start: Date,
+    end: Date,
 ) -> Result<Option<AccountAnalyticsHistory>, String> {
     if report == Report::Messages {
         match grouping {
@@ -48,11 +45,10 @@ pub(super) fn history(
     }
     let attributed = has_complete_attribution(&response, start, end)?;
     let series = response.series.as_ref();
-    let mut days: BTreeMap<NaiveDate, (f64, BTreeMap<String, f64>)> = BTreeMap::new();
+    let mut days: BTreeMap<Date, (f64, BTreeMap<String, f64>)> = BTreeMap::new();
     for record in response.data {
-        let date =
-            NaiveDate::parse_from_str(record.date.get(..10).unwrap_or(&record.date), "%Y-%m-%d")
-                .map_err(|_| String::from("Analytics returned an invalid date."))?;
+        let date = Date::strptime("%Y-%m-%d", record.date.get(..10).unwrap_or(&record.date))
+            .map_err(|_| String::from("Analytics returned an invalid date."))?;
         if date < start || date > end {
             continue;
         }
@@ -272,7 +268,10 @@ pub(super) fn history(
         }
     }
     if report == Report::Credits {
-        for date in start.iter_days().take_while(|date| *date <= end) {
+        for date in start
+            .series(jiff::Span::new().days(1))
+            .take_while(|date| *date <= end)
+        {
             days.entry(date).or_default();
         }
     }
@@ -288,7 +287,7 @@ pub(super) fn history(
         updated_at: response
             .data_freshness_ts
             .as_deref()
-            .and_then(|timestamp| DateTime::parse_from_rfc3339(timestamp).ok())
+            .and_then(|timestamp| Timestamp::parse_from_rfc3339(timestamp).ok())
             .map(|timestamp| timestamp.timestamp()),
         data: days
             .into_iter()

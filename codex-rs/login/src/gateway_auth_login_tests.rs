@@ -141,7 +141,7 @@ async fn rejected_credentials_stay_not_ready_until_replaced() {
         &manager,
         "rejected",
         Some("revoked-refresh"),
-        Utc::now().timestamp() + 3600,
+        Timestamp::now().timestamp() + 3600,
     );
     Mock::given(method("POST"))
         .and(path("/token"))
@@ -193,7 +193,7 @@ async fn rejected_credentials_stay_not_ready_until_replaced() {
         &manager,
         "replacement",
         Some("new-refresh"),
-        Utc::now().timestamp() + 3600,
+        Timestamp::now().timestamp() + 3600,
     );
     assert_eq!(
         manager.status().await.unwrap(),
@@ -206,7 +206,7 @@ async fn rejected_credentials_stay_not_ready_until_replaced() {
         &manager,
         "no-refresh",
         /*refresh_token*/ None,
-        Utc::now().timestamp() + 3600,
+        Timestamp::now().timestamp() + 3600,
     );
     assert_eq!(
         manager
@@ -275,7 +275,7 @@ async fn expired_readiness_stays_not_ready_while_refresh_is_blocked() {
         let expired = StoredToken {
             access_token: "expired".into(),
             refresh_token: Some("refresh".into()),
-            expires_at: Some(Utc::now().timestamp() - 1),
+            expires_at: Some(Timestamp::now().timestamp() - 1),
         };
         manager.save_token(&expired).unwrap();
         // Seed the last successful observation with a credential that has since expired.
@@ -351,14 +351,14 @@ async fn external_credentials_recover_missing_and_failed_readiness() {
                 &manager,
                 "old",
                 /*refresh_token*/ None,
-                Utc::now().timestamp() + 3600,
+                Timestamp::now().timestamp() + 3600,
             );
             assert_eq!(manager.resolve_access_token().await.unwrap(), "old");
             save_token(
                 &manager,
                 "baseline",
                 /*refresh_token*/ None,
-                Utc::now().timestamp() + 3600,
+                Timestamp::now().timestamp() + 3600,
             );
             let cancel = Notify::new();
             manager
@@ -382,14 +382,14 @@ async fn external_credentials_recover_missing_and_failed_readiness() {
             &manager,
             "expired",
             /*refresh_token*/ None,
-            Utc::now().timestamp() - 1,
+            Timestamp::now().timestamp() - 1,
         );
         assert_eq!(manager.status().await.unwrap(), expected);
         save_token(
             &manager,
             "replacement",
             /*refresh_token*/ None,
-            Utc::now().timestamp() + 3600,
+            Timestamp::now().timestamp() + 3600,
         );
         if !failed_login {
             // A request may load the replacement before the next readiness read.
@@ -470,7 +470,7 @@ async fn legacy_policy_authorizes_missing_and_rejected_credentials() {
                 &manager,
                 "rejected",
                 Some("revoked"),
-                Utc::now().timestamp() - 1,
+                Timestamp::now().timestamp() - 1,
             );
             Mock::given(method("POST"))
                 .and(body_string_contains("grant_type=refresh_token"))

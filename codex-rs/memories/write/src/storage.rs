@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use codex_state::Stage1Output;
 use std::collections::HashSet;
 use std::fmt::Write as _;
@@ -160,7 +161,7 @@ pub fn rollout_summary_file_stem(memory: &Stage1Output) -> String {
 
 fn rollout_summary_file_stem_from_parts(
     thread_id: codex_protocol::ThreadId,
-    source_updated_at: chrono::DateTime<chrono::Utc>,
+    source_updated_at: Timestamp,
     rollout_slug: Option<&str>,
 ) -> String {
     const ROLLOUT_SLUG_MAX_LEN: usize = 60;
@@ -175,16 +176,13 @@ fn rollout_summary_file_stem_from_parts(
                 .get_timestamp()
                 .and_then(|uuid_timestamp| {
                     let (seconds, nanos) = uuid_timestamp.to_unix();
-                    i64::try_from(seconds).ok().and_then(|secs| {
-                        chrono::DateTime::<chrono::Utc>::from_timestamp(secs, nanos)
-                    })
+                    i64::try_from(seconds)
+                        .ok()
+                        .and_then(|secs| Timestamp::from_timestamp(secs, nanos))
                 })
                 .unwrap_or(source_updated_at);
             let short_hash_seed = (thread_uuid.as_u128() & 0xFFFF_FFFF) as u32;
-            (
-                timestamp.format("%Y-%m-%dT%H-%M-%S").to_string(),
-                short_hash_seed,
-            )
+            (timestamp.to_rollout_filename_timestamp(), short_hash_seed)
         }
         Err(_) => {
             let mut short_hash_seed = 0u32;
@@ -194,7 +192,7 @@ fn rollout_summary_file_stem_from_parts(
                     .wrapping_add(u32::from(byte));
             }
             (
-                source_updated_at.format("%Y-%m-%dT%H-%M-%S").to_string(),
+                source_updated_at.to_rollout_filename_timestamp(),
                 short_hash_seed,
             )
         }

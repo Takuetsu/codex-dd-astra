@@ -1,9 +1,7 @@
 use crate::clock_format::ClockFormat;
-use chrono::DateTime;
-use chrono::Local;
-use chrono::Utc;
 use codex_app_server_protocol::RateLimitResetCreditStatus;
 use codex_app_server_protocol::RateLimitResetCreditsSummary;
+use codex_protocol::timestamp::Timestamp;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(super) struct ResetCreditOption {
@@ -33,13 +31,13 @@ pub(super) fn reset_credit_options(
         .take(detail_limit)
         .map(|credit| {
             let expiration = match credit.expires_at {
-                Some(expires_at) => DateTime::<Utc>::from_timestamp(expires_at, 0)
+                Some(expires_at) => Timestamp::from_timestamp(expires_at, 0)
+                    .and_then(Timestamp::local)
                     .map(|expires_at| {
-                        let expires_at = expires_at.with_timezone(&Local);
                         format!(
                             "Expires {} on {}",
-                            expires_at.format(clock_format.time_format()),
-                            expires_at.format("%-d %b %Y")
+                            expires_at.strftime(clock_format.time_format()),
+                            expires_at.strftime("%-d %b %Y")
                         )
                     })
                     .unwrap_or_else(|| "Expiration unavailable".to_string()),

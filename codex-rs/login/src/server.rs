@@ -11,6 +11,7 @@
 //! This module therefore keeps the user-facing error path and the structured-log path separate.
 //! Returned `io::Error` values still carry the detail needed by CLI/browser callers, while
 //! structured logs only emit explicitly reviewed fields plus redacted URL/error values.
+use codex_protocol::timestamp::Timestamp;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Write;
@@ -54,7 +55,6 @@ use crate::success_page::compose_success_url;
 use crate::success_page::jwt_auth_claims;
 use crate::token_data::TokenData;
 use crate::token_data::parse_chatgpt_jwt_claims;
-use chrono::Utc;
 use codex_config::types::AuthCredentialsStoreMode;
 use codex_http_client::ClientRouteClass;
 use codex_http_client::HttpClient;
@@ -863,7 +863,7 @@ pub(crate) async fn persist_tokens_async(
                 auth_mode: Some(AuthMode::Chatgpt),
                 openai_api_key: api_key,
                 tokens: Some(tokens),
-                last_refresh: Some(Utc::now()),
+                last_refresh: Some(Timestamp::now()),
                 agent_identity: None,
                 personal_access_token: None,
                 bedrock_api_key: None,

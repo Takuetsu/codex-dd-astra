@@ -1,11 +1,10 @@
 //! Host capabilities needed by a board without depending on codex-core.
 
 use crate::PostPreview;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::AgentPath;
 use codex_protocol::ThreadId;
 use codex_protocol::error::Result;
+use codex_protocol::timestamp::Timestamp;
 use futures::future::BoxFuture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -28,7 +27,7 @@ pub trait MessageBoardHost: Send + Sync {
 
     fn resolve_agent(&self, path: AgentPath) -> BoxFuture<'_, Result<ThreadId>>;
 
-    fn current_time(&self, caller: ThreadId) -> BoxFuture<'_, Result<DateTime<Utc>>>;
+    fn current_time(&self, caller: ThreadId) -> BoxFuture<'_, Result<Timestamp>>;
 
     /// Push metadata and a bounded preview. Full content is retrieved through bounded reads.
     fn notify(

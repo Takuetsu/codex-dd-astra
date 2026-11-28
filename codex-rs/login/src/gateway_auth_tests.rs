@@ -1,11 +1,11 @@
 //! Exercises gateway authorization, credential recovery, and persistence across manager lifetimes.
 
+use codex_protocol::timestamp::Timestamp;
 use std::collections::HashMap;
 use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
 use codex_keyring_store::tests::MockKeyringStore;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -109,7 +109,7 @@ async fn reloads_replaced_credentials_without_a_cached_refresh_token() {
         &client,
         "cached-access-token",
         /*refresh_token*/ None,
-        Utc::now().timestamp() + 3_600,
+        Timestamp::now().timestamp() + 3_600,
     );
 
     assert_eq!(
@@ -123,7 +123,7 @@ async fn reloads_replaced_credentials_without_a_cached_refresh_token() {
         &client,
         "external-login",
         /*refresh_token*/ None,
-        Utc::now().timestamp() + 3_600,
+        Timestamp::now().timestamp() + 3_600,
     );
     assert_eq!(
         client
@@ -155,7 +155,7 @@ async fn expired_tokens_refresh_once_when_the_response_omits_rotation_and_expiry
         &client,
         "expired-access-token",
         Some("original-refresh"),
-        Utc::now().timestamp() - 1,
+        Timestamp::now().timestamp() - 1,
     );
 
     let other = GatewayAuthManager::new(
@@ -205,7 +205,7 @@ async fn different_configurations_refresh_under_the_same_store_lock() {
             manager,
             "expired-access",
             Some(refresh_token),
-            Utc::now().timestamp() - 1,
+            Timestamp::now().timestamp() - 1,
         );
     }
 
@@ -282,7 +282,7 @@ async fn rejected_token_refresh_is_shared_and_late_rejections_reuse_the_latest_t
         &client,
         "access-a",
         Some("refresh-a"),
-        Utc::now().timestamp() + 3_600,
+        Timestamp::now().timestamp() + 3_600,
     );
     assert_eq!(
         client.resolve_access_token().await.expect("initial token"),
@@ -316,8 +316,8 @@ async fn rejected_token_refresh_is_shared_and_late_rejections_reuse_the_latest_t
 #[tokio::test]
 async fn refresh_does_not_reuse_expired_or_rejected_persisted_replacements() {
     for (rejected_access_token, expires_at) in [
-        ("access-a", Utc::now().timestamp() - 1),
-        ("access-b", Utc::now().timestamp() + 3_600),
+        ("access-a", Timestamp::now().timestamp() - 1),
+        ("access-b", Timestamp::now().timestamp() + 3_600),
     ] {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -334,7 +334,7 @@ async fn refresh_does_not_reuse_expired_or_rejected_persisted_replacements() {
             &client,
             "access-a",
             Some("refresh-a"),
-            Utc::now().timestamp() + 3_600,
+            Timestamp::now().timestamp() + 3_600,
         );
         assert_eq!(
             client.resolve_access_token().await.expect("cached A"),
@@ -383,7 +383,7 @@ async fn token_endpoint_failures_do_not_expose_refresh_tokens() {
         &client,
         "expired-access-token",
         Some(refresh_token),
-        Utc::now().timestamp() - 1,
+        Timestamp::now().timestamp() - 1,
     );
 
     let error = client
@@ -443,7 +443,7 @@ async fn query_credentials_are_not_exposed_by_echoed_errors_or_truncated_request
             &manager,
             "old-access",
             Some("old-refresh"),
-            Utc::now().timestamp() - 1,
+            Timestamp::now().timestamp() - 1,
         );
         let message = manager
             .resolve_access_token()
@@ -620,7 +620,7 @@ async fn token_grants_reject_redirects_without_sending_credentials_to_the_target
                     &client,
                     "original-access",
                     Some("original-refresh"),
-                    Utc::now().timestamp() - 1,
+                    Timestamp::now().timestamp() - 1,
                 );
                 client
                     .refresh_access_token("original-access")
@@ -781,7 +781,7 @@ async fn cancelled_refresh_still_records_rotated_or_rejected_credentials() {
             &manager,
             "old-access",
             Some("old-refresh"),
-            Utc::now().timestamp() + 3600,
+            Timestamp::now().timestamp() + 3600,
         );
         let caller = manager.clone();
         let task = tokio::spawn(async move { caller.refresh_access_token("old-access").await });
@@ -847,7 +847,7 @@ async fn only_explicit_refresh_grant_rejections_request_reauthorization() {
             &manager,
             "old-access",
             Some("old-refresh"),
-            Utc::now().timestamp() - 1,
+            Timestamp::now().timestamp() - 1,
         );
         let mut cached = Arc::clone(&manager.state.cached_token).lock_owned().await;
         let result = manager
@@ -882,7 +882,7 @@ async fn invalid_grant_recovers_external_credentials_with_a_bounded_retry() {
             &manager,
             "old-access",
             Some("old-refresh"),
-            Utc::now().timestamp() - 1,
+            Timestamp::now().timestamp() - 1,
         );
         let writer = manager.clone();
         Mock::given(method("POST"))
@@ -892,7 +892,7 @@ async fn invalid_grant_recovers_external_credentials_with_a_bounded_retry() {
                     .save_token(&StoredToken {
                         access_token: "external-access".to_string(),
                         refresh_token: Some("external-refresh".to_string()),
-                        expires_at: retry_status.map(|_| Utc::now().timestamp() - 1),
+                        expires_at: retry_status.map(|_| Timestamp::now().timestamp() - 1),
                     })
                     .expect("external client persists rotation");
                 ResponseTemplate::new(/*s*/ 400).set_body_json(json!({"error": "invalid_grant"}))
@@ -1003,7 +1003,7 @@ async fn malformed_token_response_keeps_credentials_and_omits_decoder_secrets() 
         &manager,
         "old-access",
         Some("old-refresh"),
-        Utc::now().timestamp() - 1,
+        Timestamp::now().timestamp() - 1,
     );
     let before = serde_json::to_value(manager.load_token().expect("initial token"))
         .expect("stored credential");
@@ -1043,7 +1043,7 @@ async fn failed_save_retains_rotation_without_overwriting_a_new_external_login()
             &manager,
             "old-access",
             Some("old-refresh"),
-            Utc::now().timestamp() - 1,
+            Timestamp::now().timestamp() - 1,
         );
         let before = serde_json::to_value(manager.load_token().expect("initial token"))
             .expect("stored credential");
@@ -1116,7 +1116,7 @@ async fn failed_save_retains_rotation_without_overwriting_a_new_external_login()
                 .pending
                 .as_mut()
                 .expect("pending rotation")
-                .expires_at = Some(Utc::now().timestamp() - 1);
+                .expires_at = Some(Timestamp::now().timestamp() - 1);
         }
         let expected = match recovery {
             Recovery::ExternalLogin => {

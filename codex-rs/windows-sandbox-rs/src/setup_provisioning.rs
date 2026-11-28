@@ -161,7 +161,7 @@ enum DaclInheritance {
 }
 
 fn log_line(log: &mut dyn Write, msg: &str) -> Result<()> {
-    let ts = chrono::Utc::now().to_rfc3339();
+    let ts = crate::logging::provisioning_timestamp(jiff::Timestamp::now());
     writeln!(log, "[{ts}] {msg}").map_err(|err| {
         anyhow::Error::new(SetupFailure::new(
             SetupErrorCode::HelperLogFailed,
@@ -489,7 +489,7 @@ pub fn main() -> Result<()> {
                 let _ = writeln!(
                     f,
                     "[{}] top-level error: {}",
-                    chrono::Utc::now().to_rfc3339(),
+                    crate::logging::provisioning_timestamp(jiff::Timestamp::now()),
                     e
                 );
             }

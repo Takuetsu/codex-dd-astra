@@ -8,8 +8,6 @@ use crate::http_client_selector::HttpClientSelector;
 use crate::loader::plugin_app_declarations_from_value;
 use crate::store::PLUGINS_CACHE_DIR;
 use crate::store::PluginStore;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_app_server_protocol::JSONRPCErrorError;
 use codex_app_server_protocol::PluginAuthPolicy;
 use codex_app_server_protocol::PluginAvailability;
@@ -32,6 +30,7 @@ use codex_plugin::PluginCapabilitySummary;
 use codex_plugin::PluginId;
 use codex_plugin::app_connector_ids_from_declarations;
 use codex_plugin::prompt_safe_plugin_description;
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_absolute_path::AbsolutePathBuf;
 use http::Method;
 use http::StatusCode;
@@ -242,7 +241,7 @@ pub struct RemoteInstalledPlugin {
     pub version: Option<String>,
     pub name: String,
     pub canonical_app_id: Option<String>,
-    pub installed_at: Option<DateTime<Utc>>,
+    pub installed_at: Option<Timestamp>,
     pub enabled: bool,
     pub install_policy: PluginInstallPolicy,
     pub install_policy_source: Option<PluginInstallPolicySource>,
@@ -264,7 +263,7 @@ pub struct RemotePluginSummary {
     pub name: String,
     pub share_context: Option<RemotePluginShareContext>,
     pub installed: bool,
-    pub installed_at: Option<DateTime<Utc>>,
+    pub installed_at: Option<Timestamp>,
     pub enabled: bool,
     pub install_policy: PluginInstallPolicy,
     pub install_policy_source: Option<PluginInstallPolicySource>,
@@ -766,7 +765,7 @@ struct RemotePluginInstalledItem {
     #[serde(flatten)]
     plugin: RemotePluginDirectoryItem,
     #[serde(default)]
-    installed_at: Option<DateTime<Utc>>,
+    installed_at: Option<Timestamp>,
     enabled: bool,
     #[serde(default)]
     disabled_skill_names: Vec<String>,

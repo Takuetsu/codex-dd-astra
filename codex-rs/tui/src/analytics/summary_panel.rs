@@ -10,6 +10,7 @@ use crate::line_truncation::truncate_line_with_ellipsis_if_overflow as truncate;
 use crate::wrapping::RtOptions;
 use crate::wrapping::word_wrap_lines;
 use codex_backend_client::ProfileInvocationKind;
+use jiff::civil::Date;
 use ratatui::style::Styled;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
@@ -261,10 +262,10 @@ impl AnalyticsView {
             if let Some(date) = metadata
                 .stats_as_of
                 .as_deref()
-                .and_then(|date| chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").ok())
+                .and_then(|date| Date::strptime("%Y-%m-%d", date).ok())
             {
                 lines.push(
-                    format!("Statistics as of {}", date.format("%b %-d, %Y"))
+                    format!("Statistics as of {}", date.strftime("%b %-d, %Y"))
                         .set_style(secondary_style())
                         .into(),
                 );

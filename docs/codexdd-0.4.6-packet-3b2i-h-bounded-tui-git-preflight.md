@@ -30,12 +30,12 @@ In the TUI, `preflight_mechanical_target` used `Command::output()` for read-only
 
 **PASS (focused 3B.2i-h); exact candidate `b5c99d3d4af3828f3c590ea3122e9d4a0b4cdde3`.** [GitHub Actions run #42878341161](https://github.com/Takuetsu/codex-dd-astra/actions/runs/42878341161) completed successfully. Source-contract preflight and Rustfmt passed before Windows tests. Windows job `130048575651` executed and passed exactly four focused regression selectors:
 
-| Selector | Observed native Windows result |
-| --- | --- |
-| `codexdd_046_3b2p_stalled_git_process_is_bounded_and_reaped` | 1 passed; 0 failed; 0 ignored |
-| `codexdd_046_3b2n_real_app_server_candidate_and_cold_resume` | 1 passed; 0 failed; 0 ignored |
-| `codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant` | 1 passed; 0 failed; 0 ignored |
-| `codexdd_046_3b2r_stalled_tui_git_child_is_bounded_and_reaped` | 1 passed; 0 failed; 0 ignored |
+| Selector                                                                       | Observed native Windows result |
+| ------------------------------------------------------------------------------ | ------------------------------ |
+| `codexdd_046_3b2p_stalled_git_process_is_bounded_and_reaped`                   | 1 passed; 0 failed; 0 ignored  |
+| `codexdd_046_3b2n_real_app_server_candidate_and_cold_resume`                   | 1 passed; 0 failed; 0 ignored  |
+| `codexdd_046_3b2q_embedded_resume_reconciles_only_authorized_clean_descendant` | 1 passed; 0 failed; 0 ignored  |
+| `codexdd_046_3b2r_stalled_tui_git_child_is_bounded_and_reaped`                 | 1 passed; 0 failed; 0 ignored  |
 
 The new 3B.2r filter additionally enumerated exactly one test before executing it. Windows TUI 3B.1 broader compile/regression job was **skipped by design**, not counted as PASS. The preceding `c5eea24f` and `5411cc80` Rustfmt failures were corrected in this green source; those red results are historical and do not confer acceptance. Changes to this evidence file alone need no additional Rust or Windows CI.
 

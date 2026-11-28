@@ -5,6 +5,7 @@ use crate::analytics::models::AccountKind;
 use codex_config::types::KeybindingSpec;
 use codex_config::types::KeybindingsSpec;
 use codex_config::types::TuiKeymap;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -67,9 +68,7 @@ fn vim_plan_navigation_preserves_independent_windows_and_collapses_old_details()
         fixture::view(AccountKind::Consumer),
     ];
     for view in &mut views {
-        let as_of = "2026-09-02T12:00:00Z"
-            .parse::<chrono::DateTime<chrono::Utc>>()
-            .unwrap();
+        let as_of = "2026-09-02T12:00:00Z".parse::<Timestamp>().unwrap();
         view.plan.enabled = true;
         view.plan.report = Load::Ready(plan::Report {
             as_of,
@@ -78,9 +77,9 @@ fn vim_plan_navigation_preserves_independent_windows_and_collapses_old_details()
             approximate: false,
             periods: std::array::from_fn(|window| {
                 let length = if window == 0 {
-                    chrono::Duration::hours(/*hours*/ 5)
+                    time::Duration::hours(/*hours*/ 5)
                 } else {
-                    chrono::Duration::days(/*days*/ 7)
+                    time::Duration::days(/*days*/ 7)
                 };
                 (0..2)
                     .map(|index| plan::Period {

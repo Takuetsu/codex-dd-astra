@@ -1,6 +1,7 @@
 //! Private analytics display types, independent of the app-server wire protocol.
 
 use codex_protocol::account::PlanType;
+use jiff::civil::Date;
 
 /// Billing families match the App's consumer, business, and workspace scopes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,7 +86,7 @@ pub(crate) struct AccountAnalyticsHistory {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct AccountAnalyticsDay {
     /// Source reporting date; display formatting belongs to the UI.
-    pub(crate) date: chrono::NaiveDate,
+    pub(crate) date: Date,
     /// Full daily denominator, including non-task usage when grouped by task start.
     pub(crate) total: f64,
     pub(crate) values: Vec<AccountAnalyticsValue>,

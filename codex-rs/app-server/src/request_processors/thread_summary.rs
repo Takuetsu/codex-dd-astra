@@ -1,9 +1,7 @@
 use super::*;
-#[cfg(test)]
-use chrono::DateTime;
-#[cfg(test)]
-use chrono::Utc;
 use codex_protocol::config_types::MultiAgentMode;
+#[cfg(test)]
+use codex_protocol::timestamp::Timestamp;
 
 #[cfg(test)]
 pub(crate) async fn read_summary_from_rollout(
@@ -196,12 +194,8 @@ pub(crate) fn thread_settings_from_config_snapshot(
 }
 
 #[cfg(test)]
-fn parse_datetime(timestamp: Option<&str>) -> Option<DateTime<Utc>> {
-    timestamp.and_then(|ts| {
-        chrono::DateTime::parse_from_rfc3339(ts)
-            .ok()
-            .map(|dt| dt.with_timezone(&chrono::Utc))
-    })
+fn parse_datetime(timestamp: Option<&str>) -> Option<Timestamp> {
+    timestamp.and_then(|ts| Timestamp::parse_from_rfc3339(ts).ok())
 }
 
 #[cfg(test)]
@@ -211,7 +205,7 @@ async fn read_updated_at(path: &Path, created_at: Option<&str>) -> Option<String
         .ok()
         .and_then(|meta| meta.modified().ok())
         .map(|modified| {
-            let updated_at: DateTime<Utc> = modified.into();
+            let updated_at: Timestamp = modified.into();
             updated_at.to_rfc3339_opts(SecondsFormat::Millis, true)
         });
     updated_at.or_else(|| created_at.map(str::to_string))

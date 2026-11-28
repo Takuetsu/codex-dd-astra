@@ -13,7 +13,7 @@ use super::render::parts;
 use crate::analytics::models::AccountAnalyticsDay;
 use crate::analytics::models::AccountAnalyticsUnit;
 use crate::analytics::models::AccountAnalyticsValue;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::Line;
@@ -22,7 +22,7 @@ use unicode_width::UnicodeWidthStr;
 
 /// Share the chart's scale with the selected-day summary, including signed values.
 pub(super) fn peak(
-    days: &[(NaiveDate, Option<&AccountAnalyticsDay>)],
+    days: &[(Date, Option<&AccountAnalyticsDay>)],
     categories: &[AccountAnalyticsValue],
 ) -> f64 {
     days.iter()
@@ -86,7 +86,7 @@ pub(super) struct Chart {
 
 /// Render a calendar selection; the cursor must index days and dimensions fit the terminal.
 pub(super) fn chart(
-    days: &[(NaiveDate, Option<&AccountAnalyticsDay>)],
+    days: &[(Date, Option<&AccountAnalyticsDay>)],
     categories: &[AccountAnalyticsValue],
     cursor: usize,
     width: usize,
@@ -152,7 +152,7 @@ pub(super) fn chart(
 
 /// Shared inputs for painting and annotations; all phases use the same calendar geometry.
 struct Renderer<'a> {
-    days: &'a [(NaiveDate, Option<&'a AccountAnalyticsDay>)],
+    days: &'a [(Date, Option<&'a AccountAnalyticsDay>)],
     values: Vec<[f64; 4]>,
     cursor: usize,
     peak: f64,

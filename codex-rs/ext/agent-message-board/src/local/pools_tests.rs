@@ -17,7 +17,7 @@ impl MessageBoardHost for UnusedHost {
         unreachable!("pool tests do not invoke host capabilities")
     }
 
-    fn current_time(&self, _caller: ThreadId) -> BoxFuture<'_, Result<DateTime<Utc>>> {
+    fn current_time(&self, _caller: ThreadId) -> BoxFuture<'_, Result<Timestamp>> {
         unreachable!("pool tests do not invoke host capabilities")
     }
 

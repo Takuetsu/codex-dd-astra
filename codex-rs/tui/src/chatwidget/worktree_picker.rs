@@ -10,6 +10,7 @@ use crate::worktree_browser::Action;
 use crate::worktree_browser::Entry;
 use crate::worktree_browser::Owner;
 use crate::worktree_browser::Request;
+use codex_protocol::timestamp::Timestamp;
 
 const BROWSER_VIEW_ID: &str = "managed-worktrees";
 
@@ -242,7 +243,7 @@ impl ChatWidget {
                                     "{status}updated {} · {}",
                                     worktree_updated_ago(
                                         thread.updated_at,
-                                        chrono::Utc::now().timestamp()
+                                        Timestamp::now().timestamp()
                                     ),
                                     entry.cwd.display()
                                 ),

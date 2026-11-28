@@ -34,18 +34,19 @@ async fn backend_banner_presentation_and_cta_do_not_imply_recovery() {
             json!([{"action":"notify_owner","label":"Notify owner"}]),
         );
         if presentation == Some("inline") {
-            use chrono::Timelike;
             chat.clock_format = crate::clock_format::ClockFormat::TwelveHour;
             let banner = response.rate_limit_upsell.as_mut().unwrap();
             banner["description"] =
                 json!("Your usage resets at {time}. Ask your owner for credits.");
             banner["reset_at"] = json!(
-                chrono::Local::now()
-                    .with_hour(17)
-                    .unwrap()
-                    .with_minute(30)
+                jiff::Zoned::now()
+                    .with()
+                    .hour(17)
+                    .minute(30)
+                    .build()
                     .unwrap()
                     .timestamp()
+                    .as_second()
             );
         }
         chat.update_backend_banner(&response);

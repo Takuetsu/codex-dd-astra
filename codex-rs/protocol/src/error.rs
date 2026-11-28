@@ -11,10 +11,8 @@ use crate::protocol::MisalignmentErrorDetails;
 use crate::protocol::RateLimitReachedType;
 use crate::protocol::RateLimitSnapshot;
 use crate::protocol::TruncationPolicy;
-use chrono::DateTime;
-use chrono::Datelike;
-use chrono::Local;
-use chrono::Utc;
+use crate::timestamp::Timestamp;
+
 use codex_async_utils::CancelErr;
 use codex_async_utils::backoff;
 use codex_http_client::HttpError;
@@ -690,7 +688,7 @@ impl std::fmt::Display for RetryLimitReachedError {
 #[derive(Debug)]
 pub struct UsageLimitReachedError {
     pub plan_type: Option<PlanType>,
-    pub resets_at: Option<DateTime<Utc>>,
+    pub resets_at: Option<Timestamp>,
     /// Server-selected window responsible for the limit, in minutes.
     pub limit_window_minutes: Option<u16>,
     pub rate_limits: Option<Box<RateLimitSnapshot>>,
@@ -805,7 +803,7 @@ impl std::fmt::Display for UsageLimitReachedError {
     }
 }
 
-fn retry_suffix(resets_at: Option<&DateTime<Utc>>) -> String {
+fn retry_suffix(resets_at: Option<&Timestamp>) -> String {
     if let Some(resets_at) = resets_at {
         let formatted = format_retry_timestamp(resets_at);
         format!(" Try again at {formatted}.")
@@ -814,7 +812,7 @@ fn retry_suffix(resets_at: Option<&DateTime<Utc>>) -> String {
     }
 }
 
-fn retry_suffix_after_or(resets_at: Option<&DateTime<Utc>>) -> String {
+fn retry_suffix_after_or(resets_at: Option<&Timestamp>) -> String {
     if let Some(resets_at) = resets_at {
         let formatted = format_retry_timestamp(resets_at);
         format!(" or try again at {formatted}.")
@@ -823,15 +821,19 @@ fn retry_suffix_after_or(resets_at: Option<&DateTime<Utc>>) -> String {
     }
 }
 
-fn format_retry_timestamp(resets_at: &DateTime<Utc>) -> String {
-    let local_reset = resets_at.with_timezone(&Local);
-    let local_now = now_for_retry().with_timezone(&Local);
-    if local_reset.date_naive() == local_now.date_naive() {
-        local_reset.format("%-I:%M %p").to_string()
+fn format_retry_timestamp(resets_at: &Timestamp) -> String {
+    let Some(local_reset) = resets_at.local() else {
+        return resets_at.to_rfc3339();
+    };
+    if now_for_retry()
+        .local()
+        .is_some_and(|now| local_reset.date() == now.date())
+    {
+        local_reset.strftime("%-I:%M %p").to_string()
     } else {
-        let suffix = day_suffix(local_reset.day());
+        let suffix = day_suffix(local_reset.day() as u32);
         local_reset
-            .format(&format!("%b %-d{suffix}, %Y %-I:%M %p"))
+            .strftime(&format!("%b %-d{suffix}, %Y %-I:%M %p"))
             .to_string()
     }
 }
@@ -850,18 +852,18 @@ fn day_suffix(day: u32) -> &'static str {
 
 #[cfg(test)]
 thread_local! {
-    static NOW_OVERRIDE: std::cell::RefCell<Option<DateTime<Utc>>> =
+    static NOW_OVERRIDE: std::cell::RefCell<Option<Timestamp>> =
         const { std::cell::RefCell::new(None) };
 }
 
-fn now_for_retry() -> DateTime<Utc> {
+fn now_for_retry() -> Timestamp {
     #[cfg(test)]
     {
         if let Some(now) = NOW_OVERRIDE.with(|cell| *cell.borrow()) {
             return now;
         }
     }
-    Utc::now()
+    Timestamp::now()
 }
 
 #[derive(Debug)]

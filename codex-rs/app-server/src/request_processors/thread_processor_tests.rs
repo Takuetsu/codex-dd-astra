@@ -96,6 +96,7 @@ mod background_terminal_pagination_tests {
 }
 
 mod thread_processor_behavior_tests {
+    use codex_protocol::timestamp::Timestamp;
     async fn forked_from_id_from_rollout(path: &Path) -> Option<String> {
         codex_core::read_session_meta_line(path)
             .await
@@ -108,8 +109,6 @@ mod thread_processor_behavior_tests {
     use crate::outgoing_message::OutgoingEnvelope;
     use crate::outgoing_message::OutgoingMessage;
     use anyhow::Result;
-    use chrono::DateTime;
-    use chrono::Utc;
     use codex_app_server_protocol::ServerRequestPayload;
     use codex_app_server_protocol::ThreadItem;
     use codex_app_server_protocol::ToolRequestUserInputParams;
@@ -454,9 +453,9 @@ mod thread_processor_behavior_tests {
     #[test]
     fn summary_from_stored_thread_preserves_millisecond_precision() {
         let created_at =
-            DateTime::parse_from_rfc3339("2025-01-02T03:04:05.678Z").expect("valid timestamp");
+            Timestamp::parse_from_rfc3339("2025-01-02T03:04:05.678Z").expect("valid timestamp");
         let updated_at =
-            DateTime::parse_from_rfc3339("2025-01-02T03:04:06.789Z").expect("valid timestamp");
+            Timestamp::parse_from_rfc3339("2025-01-02T03:04:06.789Z").expect("valid timestamp");
         let thread_id =
             ThreadId::from_string("00000000-0000-0000-0000-000000000123").expect("valid thread");
         let stored_thread = StoredThread {
@@ -471,9 +470,9 @@ mod thread_processor_behavior_tests {
             model_provider: "openai".to_string(),
             model: None,
             reasoning_effort: None,
-            created_at: created_at.with_timezone(&Utc),
-            updated_at: updated_at.with_timezone(&Utc),
-            recency_at: updated_at.with_timezone(&Utc),
+            created_at: created_at,
+            updated_at: updated_at,
+            recency_at: updated_at,
             archived_at: None,
             section: None,
             section_position: None,
@@ -731,7 +730,7 @@ mod thread_processor_behavior_tests {
         let mut builder = ThreadMetadataBuilder::new(
             thread_id,
             PathBuf::from("/tmp/rollout.jsonl"),
-            Utc::now(),
+            Timestamp::now(),
             codex_protocol::protocol::SessionSource::default(),
         );
         builder.model_provider = Some("mock_provider".to_string());
@@ -745,10 +744,8 @@ mod thread_processor_behavior_tests {
     fn summary_from_thread_metadata_formats_protocol_timestamps_as_seconds() -> Result<()> {
         let mut metadata =
             test_thread_metadata(/*model*/ None, /*reasoning_effort*/ None)?;
-        metadata.created_at =
-            DateTime::parse_from_rfc3339("2025-09-05T16:53:11.123Z")?.with_timezone(&Utc);
-        metadata.updated_at =
-            DateTime::parse_from_rfc3339("2025-09-05T16:53:12.456Z")?.with_timezone(&Utc);
+        metadata.created_at = Timestamp::parse_from_rfc3339("2025-09-05T16:53:11.123Z")?;
+        metadata.updated_at = Timestamp::parse_from_rfc3339("2025-09-05T16:53:12.456Z")?;
 
         let summary = summary_from_thread_metadata(&metadata);
 
@@ -955,7 +952,7 @@ mod thread_processor_behavior_tests {
         };
 
         fs::write(&path, format!("{}\n", serde_json::to_string(&line)?))?;
-        let parsed = chrono::DateTime::parse_from_rfc3339(&timestamp)?.with_timezone(&Utc);
+        let parsed = Timestamp::parse_from_rfc3339(&timestamp)?;
         let times = FileTimes::new().set_modified(parsed.into());
         std::fs::OpenOptions::new()
             .append(true)

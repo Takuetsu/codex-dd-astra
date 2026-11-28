@@ -5,6 +5,7 @@
 //! history-facing `/status` surface.
 
 use super::*;
+use codex_protocol::timestamp::Timestamp;
 
 impl ChatWidget {
     /// Update the status indicator header and details.
@@ -254,7 +255,7 @@ impl ChatWidget {
             self.forked_from,
             rate_limit_snapshots.as_slice(),
             self.plan_type,
-            Local::now(),
+            Timestamp::now(),
             self.model_display_name(),
             collaboration_mode,
             reasoning_effort_override,
@@ -316,7 +317,7 @@ impl ChatWidget {
             .values()
             .cloned()
             .collect();
-        let now = Local::now();
+        let now = Timestamp::now();
         let mut remaining = Vec::with_capacity(self.refreshing_status_outputs.len());
         let mut updated_any = false;
         for (pending_request_id, handle) in self.refreshing_status_outputs.drain(..) {

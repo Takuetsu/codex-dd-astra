@@ -9,8 +9,6 @@ use crate::config::Config;
 use crate::context::AgentMessageBoardNotification;
 use crate::context::ContextualUserFragment;
 use crate::tools::MULTI_AGENT_V2_NAMESPACE_DESCRIPTION;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_agent_message_board_client::AccessToken;
 use codex_agent_message_board_client::RemoteAgentMessageBoard;
 use codex_agent_message_board_extension::AgentMessageBoard;
@@ -30,6 +28,7 @@ use codex_protocol::error::CodexErr;
 use codex_protocol::error::CodexErrorDetails;
 use codex_protocol::error::Result;
 use codex_protocol::protocol::InterAgentCommunication;
+use codex_protocol::timestamp::Timestamp;
 use futures::future::BoxFuture;
 use std::sync::Arc;
 use std::sync::Weak;
@@ -187,7 +186,7 @@ impl MessageBoardHost for LocalBoardHost {
         })
     }
 
-    fn current_time(&self, caller: ThreadId) -> BoxFuture<'_, Result<DateTime<Utc>>> {
+    fn current_time(&self, caller: ThreadId) -> BoxFuture<'_, Result<Timestamp>> {
         Box::pin(async move {
             let actor = self.actor(caller).await?;
             self.registered_path(&actor).await?;

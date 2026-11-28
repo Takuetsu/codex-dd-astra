@@ -21,8 +21,8 @@ use crate::model::epoch_millis_to_datetime;
 use crate::paths::file_modified_time_utc;
 use crate::telemetry::DbKind;
 use crate::telemetry::DbTelemetry;
-use chrono::DateTime;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_history::RolloutItem;
 use codex_protocol::ThreadId;
 use serde_json::Value;
@@ -381,7 +381,7 @@ ON CONFLICT(id) DO NOTHING
     )
     .bind(1_i64)
     .bind(crate::BackfillStatus::Pending.as_str())
-    .bind(Utc::now().timestamp())
+    .bind(Timestamp::now().timestamp())
     .execute(pool)
     .await?;
     Ok(())

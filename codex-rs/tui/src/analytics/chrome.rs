@@ -5,6 +5,7 @@ use super::AnalyticsView;
 use super::controls::Control;
 use super::sections::Section;
 use crate::keymap::ListAction;
+use codex_protocol::timestamp::Timestamp;
 use ratatui::text::Line;
 
 impl AnalyticsView {
@@ -160,11 +161,11 @@ impl AnalyticsView {
             .history
             .ready()
             .and_then(|report| report.updated_at)
-            .and_then(|timestamp| chrono::DateTime::from_timestamp(timestamp, /*nsecs*/ 0))
+            .and_then(|timestamp| Timestamp::from_timestamp(timestamp, /*nsecs*/ 0))
         {
             controls.push(format!(
                 "Report updated {} UTC",
-                updated.format(self.clock_format.date_time_format())
+                crate::clock_format::format_utc(updated, self.clock_format.date_time_format())
             ));
         }
         controls

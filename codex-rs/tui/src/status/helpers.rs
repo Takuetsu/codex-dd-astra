@@ -4,9 +4,8 @@ use crate::legacy_core::config::Config;
 use crate::status::StatusAccountDisplay;
 use crate::text_formatting;
 use crate::width::display_width;
-use chrono::DateTime;
-use chrono::Local;
 use codex_protocol::account::PlanType;
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_path_uri::PathConvention;
 use codex_utils_path_uri::PathUri;
 use std::path::Path;
@@ -168,15 +167,21 @@ pub(crate) fn format_directory_display(directory: &Path, max_width: Option<usize
 }
 
 pub(crate) fn format_reset_timestamp(
-    dt: DateTime<Local>,
-    captured_at: DateTime<Local>,
+    dt: Timestamp,
+    captured_at: Timestamp,
     clock_format: ClockFormat,
 ) -> String {
-    let time = dt.format(clock_format.time_format()).to_string();
-    if dt.date_naive() == captured_at.date_naive() {
-        time
+    let Some(local) = dt.local() else {
+        return dt.to_string();
+    };
+    let time = local.strftime(clock_format.time_format());
+    if captured_at
+        .local()
+        .is_some_and(|captured| local.date() == captured.date())
+    {
+        time.to_string()
     } else {
-        format!("{time} on {}", dt.format("%-d %b"))
+        format!("{time} on {}", local.strftime("%-d %b"))
     }
 }
 

@@ -8,8 +8,6 @@ use std::sync::OnceLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::ThreadId;
 use codex_protocol::models::PermissionProfile;
 use codex_protocol::protocol::AskForApproval;
@@ -18,6 +16,7 @@ use codex_protocol::protocol::SessionMeta;
 use codex_protocol::protocol::SessionMetaLine;
 use codex_protocol::protocol::ThreadHistoryMode;
 use codex_protocol::protocol::ThreadMemoryMode;
+use codex_protocol::timestamp::Timestamp;
 use codex_rollout::RolloutItem;
 use codex_rollout::into_persisted_rollout_items;
 use codex_utils_absolute_path::AbsolutePathBuf;
@@ -66,6 +65,7 @@ mod tests {
     use crate::ThreadSortKey;
     use codex_protocol::models::BaseInstructions;
     use codex_protocol::protocol::SessionSource;
+    use codex_protocol::timestamp::Timestamp;
 
     #[tokio::test]
     async fn deletion_cleans_associated_sqlite_and_shared_memory()
@@ -88,7 +88,7 @@ mod tests {
         let metadata = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             home.path().join("thread.jsonl"),
-            Utc::now(),
+            Timestamp::now(),
             SessionSource::Cli,
         )
         .build("test");
@@ -531,7 +531,7 @@ struct InMemoryThreadStoreState {
     metadata_updates: HashMap<ThreadId, ThreadMetadataPatch>,
     sections: HashMap<ThreadId, String>,
     section_positions: HashMap<ThreadId, i64>,
-    section_entered_at: HashMap<ThreadId, DateTime<Utc>>,
+    section_entered_at: HashMap<ThreadId, Timestamp>,
     names: HashMap<ThreadId, Option<String>>,
     rollout_paths: HashMap<PathBuf, ThreadId>,
 }
@@ -869,7 +869,7 @@ impl InMemoryThreadStore {
         if previous_section.as_deref() != Some(section) {
             state
                 .section_entered_at
-                .insert(params.thread_id, Utc::now());
+                .insert(params.thread_id, Timestamp::now());
             state.sections.insert(params.thread_id, section.to_owned());
         }
         Ok(())
@@ -1121,13 +1121,13 @@ fn stored_thread_from_state(
             .flatten(),
         created_at: metadata
             .and_then(|metadata| metadata.created_at)
-            .unwrap_or_else(Utc::now),
+            .unwrap_or_else(Timestamp::now),
         updated_at: metadata
             .and_then(|metadata| metadata.updated_at)
-            .unwrap_or_else(Utc::now),
+            .unwrap_or_else(Timestamp::now),
         recency_at: metadata
             .and_then(|metadata| metadata.advance_recency_at.or(metadata.updated_at))
-            .unwrap_or_else(Utc::now),
+            .unwrap_or_else(Timestamp::now),
         archived_at: None,
         section: state
             .sections

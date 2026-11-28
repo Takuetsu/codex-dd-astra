@@ -5,12 +5,10 @@
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use chrono::DateTime;
-use chrono::Duration as ChronoDuration;
-use chrono::Utc;
 use codex_config::AbsolutePathBuf;
 use codex_config::CloudConfigBundle;
 use codex_config::CloudConfigBundlePolicyRevision;
+use codex_protocol::timestamp::Timestamp;
 use hmac::Hmac;
 use hmac::Mac;
 use serde::Deserialize;
@@ -22,6 +20,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::NamedTempFile;
 use thiserror::Error;
+use time::Duration as SignedDuration;
 use tokio::fs;
 
 const CLOUD_CONFIG_BUNDLE_CACHE_VERSION: u32 = 1;
@@ -103,7 +102,7 @@ impl CloudConfigBundleCache {
             return Err(CacheLoadStatus::CacheIdentityMismatch);
         }
 
-        if cache_file.signed_payload.expires_at <= Utc::now() {
+        if cache_file.signed_payload.expires_at <= Timestamp::now() {
             return Err(CacheLoadStatus::CacheExpired);
         }
 
@@ -135,10 +134,10 @@ impl CloudConfigBundleCache {
         account_id: Option<String>,
         bundle: CloudConfigBundle,
     ) -> Result<StagedCloudConfigBundleCache, CloudConfigBundleCacheError> {
-        let now = Utc::now();
+        let now = Timestamp::now();
         let expires_at = now
-            .checked_add_signed(
-                ChronoDuration::from_std(CLOUD_CONFIG_BUNDLE_CACHE_TTL)
+            .checked_add(
+                SignedDuration::try_from(CLOUD_CONFIG_BUNDLE_CACHE_TTL)
                     .map_err(|_| CloudConfigBundleCacheError)?,
             )
             .ok_or(CloudConfigBundleCacheError)?;
@@ -237,8 +236,8 @@ pub(super) struct CloudConfigBundleCacheFile {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub(super) struct CloudConfigBundleCacheSignedPayload {
     pub(super) version: u32,
-    pub(super) cached_at: DateTime<Utc>,
-    pub(super) expires_at: DateTime<Utc>,
+    pub(super) cached_at: Timestamp,
+    pub(super) expires_at: Timestamp,
     pub(super) chatgpt_user_id: Option<String>,
     pub(super) account_id: Option<String>,
     pub(super) bundle: CloudConfigBundle,

@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::sync::LazyLock;
 use std::time::Duration;
 use std::time::Instant;
@@ -34,7 +35,7 @@ pub(crate) async fn run_mcp_tool(
     hook_event_json: &str,
     metadata: Option<&Map<String, Value>>,
 ) -> HandlerRunResult {
-    let started_at = chrono::Utc::now().timestamp();
+    let started_at = Timestamp::now().timestamp();
     let started = Instant::now();
     let result = async {
         let hook_event: Value =
@@ -81,7 +82,7 @@ pub(crate) async fn run_mcp_tool(
     };
     HandlerRunResult {
         started_at,
-        completed_at: chrono::Utc::now().timestamp(),
+        completed_at: Timestamp::now().timestamp(),
         duration_ms: started.elapsed().as_millis().try_into().unwrap_or(i64::MAX),
         exit_code,
         stdout,

@@ -1,21 +1,13 @@
 //! Completion metadata rendering, date selection, and muted styling coverage.
 
 use super::*;
-use chrono::NaiveDateTime;
-use chrono::TimeZone;
-use chrono::Timelike;
 use codex_otel::RuntimeMetricTotals;
 use pretty_assertions::assert_eq;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-fn completed_at() -> DateTime<Local> {
-    let datetime = NaiveDateTime::parse_from_str("2000-09-06 14:32:00", "%Y-%m-%d %H:%M:%S")
-        .expect("valid completion time");
-    Local
-        .from_local_datetime(&datetime)
-        .single()
-        .expect("unambiguous completion time")
+fn completed_at() -> Timestamp {
+    crate::clock_format::local_fixture(2000, 9, 6, 14, 32, 0)
 }
 
 #[test]
@@ -34,7 +26,7 @@ fn completion_label_shows_known_durations_including_short_turns() {
     .map(|elapsed_seconds| {
         FinalMessageSeparator::new(elapsed_seconds, /*runtime_metrics*/ None)
             .with_completed_at(completed_at, ClockFormat::TwelveHour)
-            .label(completed_at.date_naive())
+            .label(completed_at.local().unwrap().date())
             .expect("completion label")
     })
     .collect::<Vec<_>>();
@@ -61,7 +53,7 @@ fn worker_completion_footer_shows_total_done_and_stop_time() {
     .with_completed_at(completed_at, ClockFormat::TwelveHour);
 
     assert_eq!(
-        cell.label(completed_at.date_naive()),
+        cell.label(completed_at.local().unwrap().date()),
         Some("TOTAL TIME WORKED: 1h 2m 5s | DONE | 2:32 PM".to_string())
     );
 }
@@ -77,7 +69,7 @@ fn worker_completion_footer_shows_short_total_instead_of_hiding_it() {
     .with_completed_at(completed_at, ClockFormat::TwentyFourHour);
 
     assert_eq!(
-        cell.label(completed_at.date_naive()),
+        cell.label(completed_at.local().unwrap().date()),
         Some("TOTAL TIME WORKED: 12s | DONE | 14:32".to_string())
     );
 }
@@ -90,20 +82,25 @@ fn completion_label_includes_date_when_viewed_on_another_day() {
         /*runtime_metrics*/ None,
     )
     .with_completed_at(completed_at, ClockFormat::TwelveHour);
-    let tomorrow = completed_at.date_naive().succ_opt().expect("next day");
+    let tomorrow = completed_at
+        .local()
+        .unwrap()
+        .date()
+        .tomorrow()
+        .expect("next day");
 
     insta::assert_snapshot!(cell.label(tomorrow).expect("completion label"), @"Worked for 2m 5s • Sep 6 at 2:32 PM");
-    let next_year = tomorrow.with_year(/*year*/ 2001).expect("valid next year");
+    let next_year = tomorrow.with().year(2001).build().expect("valid next year");
     insta::assert_snapshot!(cell.label(next_year).expect("completion label"), @"Worked for 2m 5s • Sep 6, 2000 at 2:32 PM");
 }
 
 #[test]
 fn completion_uses_twelve_hour_time_at_midnight_noon_and_afternoon() {
     let labels = [0, 12, 15].map(|hour| {
-        let completed_at = completed_at().with_hour(hour).expect("valid hour");
+        let completed_at = crate::clock_format::local_fixture(2000, 9, 6, hour, 32, 0);
         FinalMessageSeparator::new(/*elapsed_seconds*/ None, /*runtime_metrics*/ None)
             .with_completed_at(completed_at, ClockFormat::TwelveHour)
-            .label(completed_at.date_naive())
+            .label(completed_at.local().unwrap().date())
             .expect("completion label")
     });
     insta::assert_snapshot!(labels.join("\n"), @"
@@ -115,16 +112,12 @@ fn completion_uses_twelve_hour_time_at_midnight_noon_and_afternoon() {
 
 #[test]
 fn completion_uses_twenty_four_hour_time_with_dates_and_wrapping() {
-    let today = completed_at().date_naive();
-    let tomorrow = today.succ_opt().unwrap();
-    let next_year = today.with_year(/*year*/ 2001).unwrap();
+    let today = completed_at().local().unwrap().date();
+    let tomorrow = today.tomorrow().unwrap();
+    let next_year = today.with().year(2001).build().unwrap();
     let mut labels = Vec::new();
     for hour in [0, 12, 23] {
-        let completed_at = completed_at()
-            .with_hour(hour)
-            .unwrap()
-            .with_minute(/*min*/ 25)
-            .unwrap();
+        let completed_at = crate::clock_format::local_fixture(2000, 9, 6, hour, 25, 0);
         let mut cell = FinalMessageSeparator::new(Some(125), /*runtime_metrics*/ None)
             .with_completed_at(completed_at, ClockFormat::TwentyFourHour);
         for date in [today, tomorrow, next_year] {
@@ -226,7 +219,7 @@ fn completion_rendering_uses_the_captured_display_date() {
     let mut cell =
         FinalMessageSeparator::new(/*elapsed_seconds*/ None, /*runtime_metrics*/ None)
             .with_completed_at(completed_at, ClockFormat::TwelveHour);
-    cell.display_date = completed_at.date_naive();
+    cell.display_date = completed_at.local().unwrap().date();
 
     insta::assert_snapshot!(cell.display_lines(/*width*/ 80)[0].to_string(), @"  2:32 PM");
     assert_eq!(cell.raw_lines(), vec![Line::from("2:32 PM")]);

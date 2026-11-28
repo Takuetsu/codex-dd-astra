@@ -1,6 +1,6 @@
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_protocol::SanitizedGitUrl;
 use codex_protocol::ThreadId;
 use codex_protocol::openai_models::ReasoningEffort;
@@ -49,7 +49,7 @@ pub enum ThreadRelationFilter {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Anchor {
     /// The timestamp component of the anchor.
-    pub ts: DateTime<Utc>,
+    pub ts: Timestamp,
     /// The thread ID component used to disambiguate equal recency timestamps.
     pub id: Option<ThreadId>,
 }
@@ -134,11 +134,11 @@ pub struct ThreadMetadata {
     /// The absolute rollout path on disk.
     pub rollout_path: PathBuf,
     /// The creation timestamp.
-    pub created_at: DateTime<Utc>,
+    pub created_at: Timestamp,
     /// The last update timestamp.
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: Timestamp,
     /// The product recency timestamp.
-    pub recency_at: DateTime<Utc>,
+    pub recency_at: Timestamp,
     /// The session source (stringified enum).
     pub source: String,
     /// Persisted thread history contract selected when this thread was created.
@@ -176,13 +176,13 @@ pub struct ThreadMetadata {
     /// First user message observed for this thread, if any.
     pub first_user_message: Option<String>,
     /// The archive timestamp, if the thread is archived.
-    pub archived_at: Option<DateTime<Utc>>,
+    pub archived_at: Option<Timestamp>,
     /// The user-selected section for this thread, if any.
     pub section: Option<ThreadSection>,
     /// The stable sparse ordering rank within the user-selected section.
     pub section_position: Option<i64>,
     /// The time when the thread most recently entered its current section.
-    pub section_entered_at: Option<DateTime<Utc>>,
+    pub section_entered_at: Option<Timestamp>,
     /// Canonical project assignment owned by app-server, if any.
     pub project_id: Option<String>,
     /// User-selected Daybreak preference, absent until explicitly set.
@@ -209,11 +209,11 @@ pub struct ThreadMetadataBuilder {
     /// The absolute rollout path on disk.
     pub rollout_path: PathBuf,
     /// The creation timestamp.
-    pub created_at: DateTime<Utc>,
+    pub created_at: Timestamp,
     /// The last update timestamp, if known.
-    pub updated_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<Timestamp>,
     /// The product recency timestamp, if known.
-    pub recency_at: Option<DateTime<Utc>>,
+    pub recency_at: Option<Timestamp>,
     /// The session source.
     pub source: SessionSource,
     /// Persisted thread history contract selected when this thread was created.
@@ -237,7 +237,7 @@ pub struct ThreadMetadataBuilder {
     /// The approval mode.
     pub approval_mode: AskForApproval,
     /// The archive timestamp, if the thread is archived.
-    pub archived_at: Option<DateTime<Utc>>,
+    pub archived_at: Option<Timestamp>,
     /// The git commit SHA, if known.
     pub git_sha: Option<String>,
     /// The git branch name, if known.
@@ -251,7 +251,7 @@ impl ThreadMetadataBuilder {
     pub fn new(
         id: ThreadId,
         rollout_path: PathBuf,
-        created_at: DateTime<Utc>,
+        created_at: Timestamp,
         source: SessionSource,
     ) -> Self {
         Self {
@@ -495,7 +495,7 @@ impl ThreadMetadata {
     }
 }
 
-fn canonicalize_datetime(dt: DateTime<Utc>) -> DateTime<Utc> {
+fn canonicalize_datetime(dt: Timestamp) -> Timestamp {
     epoch_millis_to_datetime(datetime_to_epoch_millis(dt)).unwrap_or(dt)
 }
 
@@ -701,7 +701,7 @@ pub(crate) fn anchor_from_item(
         SortKey::CreatedAt => item.created_at,
         SortKey::UpdatedAt => item.updated_at,
         SortKey::RecencyAt => item.recency_at,
-        SortKey::SectionPosition => DateTime::<Utc>::from_timestamp_millis(item.section_position?)?,
+        SortKey::SectionPosition => Timestamp::from_timestamp_millis(item.section_position?)?,
     };
     Some(Anchor {
         ts,
@@ -714,15 +714,15 @@ pub(crate) fn anchor_from_item(
     })
 }
 
-pub(crate) fn datetime_to_epoch_millis(dt: DateTime<Utc>) -> i64 {
+pub(crate) fn datetime_to_epoch_millis(dt: Timestamp) -> i64 {
     dt.timestamp_millis()
 }
 
-pub(crate) fn datetime_to_epoch_seconds(dt: DateTime<Utc>) -> i64 {
+pub(crate) fn datetime_to_epoch_seconds(dt: Timestamp) -> i64 {
     dt.timestamp()
 }
 
-pub(crate) fn epoch_millis_to_datetime(value: i64) -> Result<DateTime<Utc>> {
+pub(crate) fn epoch_millis_to_datetime(value: i64) -> Result<Timestamp> {
     // Values older than 2020 if interpreted as milliseconds are legacy second-precision rows.
     // Convert them in memory so old state DBs keep ordering correctly after new writes use ms.
     const MIN_EPOCH_MILLIS: i64 = 1_577_836_800_000;
@@ -731,12 +731,12 @@ pub(crate) fn epoch_millis_to_datetime(value: i64) -> Result<DateTime<Utc>> {
     } else {
         value
     };
-    DateTime::<Utc>::from_timestamp_millis(millis)
+    Timestamp::from_timestamp_millis(millis)
         .ok_or_else(|| anyhow::anyhow!("invalid unix timestamp millis: {value}"))
 }
 
-pub(crate) fn epoch_seconds_to_datetime(value: i64) -> Result<DateTime<Utc>> {
-    DateTime::<Utc>::from_timestamp(value, 0)
+pub(crate) fn epoch_seconds_to_datetime(value: i64) -> Result<Timestamp> {
+    Timestamp::from_timestamp(value, 0)
         .ok_or_else(|| anyhow::anyhow!("invalid unix timestamp seconds: {value}"))
 }
 
@@ -755,8 +755,8 @@ pub struct BackfillStats {
 mod tests {
     use super::ThreadMetadata;
     use super::ThreadRow;
-    use chrono::DateTime;
-    use chrono::Utc;
+    use codex_protocol::timestamp::Timestamp;
+
     use codex_protocol::SanitizedGitUrl;
     use codex_protocol::ThreadId;
     use codex_protocol::openai_models::ReasoningEffort;
@@ -814,9 +814,9 @@ mod tests {
             id: ThreadId::from_string("00000000-0000-0000-0000-000000000123")
                 .expect("valid thread id"),
             rollout_path: PathBuf::from("/tmp/rollout-123.jsonl"),
-            created_at: DateTime::<Utc>::from_timestamp(1_700_000_000, 0).expect("timestamp"),
-            updated_at: DateTime::<Utc>::from_timestamp(1_700_000_100, 0).expect("timestamp"),
-            recency_at: DateTime::<Utc>::from_timestamp(1_700_000_100, 0).expect("timestamp"),
+            created_at: Timestamp::from_timestamp(1_700_000_000, 0).expect("timestamp"),
+            updated_at: Timestamp::from_timestamp(1_700_000_100, 0).expect("timestamp"),
+            recency_at: Timestamp::from_timestamp(1_700_000_100, 0).expect("timestamp"),
             source: "cli".to_string(),
             history_mode: ThreadHistoryMode::Legacy,
             thread_source: None,

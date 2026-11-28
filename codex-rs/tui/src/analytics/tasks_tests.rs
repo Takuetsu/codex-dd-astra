@@ -2,6 +2,7 @@
 
 use super::super::client::tests::live;
 use super::*;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -65,7 +66,7 @@ async fn consumer_roots_include_paginated_archived_descendants_and_keep_missing_
                         let data = ids.into_iter().map(|id| json!({
                         "id":id, "sessionId":id, "parentThreadId":if id == "unrelated" { None } else if id == "grandchild" { Some("child") } else { ancestor }, "preview":id, "ephemeral":false,
                         "modelProvider":"openai", "createdAt":1788220800_i64,
-                        "updatedAt":chrono::Utc::now().timestamp(), "status":{"type":"idle"},
+                        "updatedAt":Timestamp::now().timestamp(), "status":{"type":"idle"},
                         "cwd":std::env::temp_dir(), "cliVersion":"test", "source":"cli", "turns":[]
                     })).collect::<Vec<_>>();
                         json!({"data":data, "nextCursor":if ancestor == Some("root") && !archived && cursor.is_none() { Some("next") } else { None }})

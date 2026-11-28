@@ -1,7 +1,7 @@
+use codex_protocol::timestamp::Timestamp;
 use std::fs;
 use std::time::Duration;
 
-use chrono::Utc;
 use codex_app_server_protocol::CodexErrorInfo;
 use codex_app_server_protocol::ThreadTimelineEntry;
 use codex_protocol::ThreadId;
@@ -1520,7 +1520,7 @@ async fn store_with_mode(history_mode: ThreadHistoryMode) -> (TempDir, LocalThre
     let mut builder = codex_state::ThreadMetadataBuilder::new(
         thread_id,
         rollout_path,
-        Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     );
     builder.history_mode = history_mode;

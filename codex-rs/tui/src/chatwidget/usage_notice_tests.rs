@@ -5,7 +5,6 @@ use crate::app_event::AppEvent;
 use crate::app_event::RateLimitRefreshOrigin;
 use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
 use crate::tui::FrameRequester;
-use chrono::TimeZone;
 use codex_app_server_protocol::RateLimitReachedType;
 use pretty_assertions::assert_eq;
 
@@ -16,21 +15,18 @@ fn snapshot(used_percent: i32) -> RateLimitSnapshot {
     .unwrap()
 }
 
-fn notice_time() -> DateTime<Local> {
-    Local
-        .with_ymd_and_hms(
-            /*year*/ 2026, /*month*/ 9, /*day*/ 20, /*hour*/ 12,
-            /*min*/ 0, /*sec*/ 0,
-        )
-        .single()
-        .unwrap()
+fn notice_time() -> Timestamp {
+    crate::clock_format::local_fixture(
+        /*year*/ 2026, /*month*/ 9, /*day*/ 20, /*hour*/ 12, /*min*/ 0,
+        /*sec*/ 0,
+    )
 }
 
 #[test]
 fn notice_details_fit_without_truncating_the_warning() {
     let now = notice_time();
     let mut primary = snapshot(/*used_percent*/ 92).primary.unwrap();
-    primary.resets_at = Some((now + chrono::Duration::hours(/*hours*/ 1)).timestamp());
+    primary.resets_at = Some((now + time::Duration::hours(/*hours*/ 1)).timestamp());
     for (name, state, widths) in [
         (
             "usage_notice_widths",
@@ -46,7 +42,7 @@ fn notice_details_fit_without_truncating_the_warning() {
                 secondary: Some(RateLimitWindow {
                     used_percent: 98,
                     window_duration_mins: Some(10080),
-                    resets_at: Some((now + chrono::Duration::days(/*days*/ 1)).timestamp()),
+                    resets_at: Some((now + time::Duration::days(/*days*/ 1)).timestamp()),
                 }),
                 ..Default::default()
             },
@@ -83,7 +79,7 @@ fn notice_shows_only_valid_future_reset_times() {
         (Some(now.timestamp()), ""),
         (Some(i64::MAX), ""),
         (
-            Some((now + chrono::Duration::days(/*days*/ 1)).timestamp()),
+            Some((now + time::Duration::days(/*days*/ 1)).timestamp()),
             " · resets at 12:00 on 21 Sep",
         ),
     ] {

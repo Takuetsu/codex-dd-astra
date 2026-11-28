@@ -1,6 +1,7 @@
 //! Integration coverage for model catalogs supplied through the public cache interface.
 
 use codex_core::TurnInputRequest;
+use codex_protocol::timestamp::Timestamp;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
@@ -8,7 +9,6 @@ use std::sync::atomic::Ordering;
 
 use anyhow::Result;
 use base64::Engine;
-use chrono::Utc;
 use codex_http_client::HttpClientFactory;
 use codex_login::AuthManager;
 use codex_login::CodexAuth;
@@ -115,7 +115,7 @@ impl ModelsCache for TestModelsCache {
                 .entry
                 .clone()
                 .ok_or_else(|| ModelsCacheError::new("cache not found"))?;
-            entry.fetched_at = Utc::now();
+            entry.fetched_at = Timestamp::now();
             self.stored_entries
                 .lock()
                 .expect("stored entries lock should not be poisoned")
@@ -255,7 +255,7 @@ async fn injected_cache_hit_drives_agent_model_selection() -> Result<()> {
     let cache = Arc::new(TestModelsCache {
         entry: Some(ModelsCacheEntry {
             identity: Some("test-provider".to_string()),
-            fetched_at: Utc::now(),
+            fetched_at: Timestamp::now(),
             etag: None,
             client_version: Some(codex_models_manager::client_version_to_whole()),
             models: vec![remote_model(model_slug)],
@@ -376,7 +376,7 @@ async fn account_switch_during_cache_store_preserves_new_catalog_for_next_turn()
     std::fs::write(
         home.path().join("auth.json"),
         serde_json::to_vec(&serde_json::json!({
-            "auth_mode": "chatgpt", "tokens": tokens, "last_refresh": Utc::now(),
+            "auth_mode": "chatgpt", "tokens": tokens, "last_refresh": Timestamp::now(),
         }))?,
     )?;
     auth.reload().await;

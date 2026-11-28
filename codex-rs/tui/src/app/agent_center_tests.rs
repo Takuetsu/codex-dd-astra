@@ -2,6 +2,7 @@
 
 use super::*;
 use assert_matches::assert_matches;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 
 fn screen(view: &AgentsOverviewView, width: u16, height: u16) -> String {
@@ -28,7 +29,7 @@ async fn live_center_columns() {
     let mut app = make_test_app().await;
     let current = ThreadId::from_u128(/*value*/ 42);
     app.primary_thread_id = Some(current);
-    let now = chrono::Utc::now().timestamp();
+    let now = Timestamp::now().timestamp();
     let fixtures = [
         ("Current task", ThreadStatus::Idle, -3600),
         (

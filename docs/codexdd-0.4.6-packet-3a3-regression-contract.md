@@ -15,13 +15,13 @@ There are **25 cases: 21 P0 and four conditional P1**, reviewed against [3A.1 ev
 
 ## 2. Case ownership
 
-| Group | IDs | Required behavior | Next executable owner |
-| --- | --- | --- | --- |
-| P0 A — gate evidence and terminal | A01–A07 (7) | Prevent partial/stale/wrong-worker READY; complete independent validator may emit a trusted READY; preserve bounded terminal recovery and independent QA | 3B.3 and 3C.1; `adaptive_evidence_tests.rs`, `adaptive_trusted_signal.rs` |
-| P0 B — target/role/profile admission | B01–B06 (6) | Milestone-root launch vs nested authorized worktree; wrong repo; missing profile; Repair missing Implementation-only LVO; staged changes; valid Node/Rust preflight | 3B.1–3B.2; `codexdd_validation_tests.rs`, role/registry tests |
-| P0 C — progress/refusal | C01–C05 (5) | One useful recovery or typed block for unchanged infrastructure/setup/policy refusal; continue when new admissible evidence exists; restore digest on resume | 3B.4; `adaptive_controller_tests.rs`, runtime bridge tests |
-| P0 D — bounded non-source tasks | D01–D03 (3) | Actual safe 2-vs-4 benchmark, owned/healthy QA-preview, reject foreign stale PID; never invent source LVO proof | 3D.1; guarded operation and task-kind tests |
-| P1 E/F/G conditional | E01–E02, F01, G01 (4) | In-capacity allocation, over-capacity refusal, supported-backend tool_choice diagnosis and first-assignment guidance | 3D.2, 3D.3, 3C.2 after exact source-matched repro |
+| Group                                | IDs                   | Required behavior                                                                                                                                                   | Next executable owner                                                     |
+| ------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| P0 A — gate evidence and terminal    | A01–A07 (7)           | Prevent partial/stale/wrong-worker READY; complete independent validator may emit a trusted READY; preserve bounded terminal recovery and independent QA            | 3B.3 and 3C.1; `adaptive_evidence_tests.rs`, `adaptive_trusted_signal.rs` |
+| P0 B — target/role/profile admission | B01–B06 (6)           | Milestone-root launch vs nested authorized worktree; wrong repo; missing profile; Repair missing Implementation-only LVO; staged changes; valid Node/Rust preflight | 3B.1–3B.2; `codexdd_validation_tests.rs`, role/registry tests             |
+| P0 C — progress/refusal              | C01–C05 (5)           | One useful recovery or typed block for unchanged infrastructure/setup/policy refusal; continue when new admissible evidence exists; restore digest on resume        | 3B.4; `adaptive_controller_tests.rs`, runtime bridge tests                |
+| P0 D — bounded non-source tasks      | D01–D03 (3)           | Actual safe 2-vs-4 benchmark, owned/healthy QA-preview, reject foreign stale PID; never invent source LVO proof                                                     | 3D.1; guarded operation and task-kind tests                               |
+| P1 E/F/G conditional                 | E01–E02, F01, G01 (4) | In-capacity allocation, over-capacity refusal, supported-backend tool_choice diagnosis and first-assignment guidance                                                | 3D.2, 3D.3, 3C.2 after exact source-matched repro                         |
 
 **P1 exit rule:** E/F/G remain diagnostic/test-contract cases until exact installed/configured support and in-capacity or supported-provider defect are demonstrated. An eight-worker request exceeds the reviewed defaults (V1 six subagent slots; V2 four total threads, including parent). Repair Worker not seeing Implementation-only LVO and malformed header refusal are expected safety boundaries. No automatic cap increase, provider replacement, role relaxation, or blanket fallback.
 
@@ -31,22 +31,22 @@ An admissible source/operations/QA record must be bound to the current authorize
 
 Admission order: **role/scope → task kind → explicitly authorized target SHA/root → profile/tool availability → safe execution → new admissible evidence → remaining prerequisites → trusted native terminal**. Missing profile, policy restriction, provider rejection, capacity shortage and setup problems are typed blocks, not model capability signals, source FAIL, synthetic native validation, or permission to mutate active BREAKWATER/CV worktrees.
 
-On missing native terminal after real proof: preserve exact evidence; allow no more than **one** bounded authorized recovery before typed block. Productive multi-turn work is not subject to an arbitrary global turn limit. A changed digest must mean *new applicable evidence or an authorized phase advance*, not merely a successful command or new prose.
+On missing native terminal after real proof: preserve exact evidence; allow no more than **one** bounded authorized recovery before typed block. Productive multi-turn work is not subject to an arbitrary global turn limit. A changed digest must mean _new applicable evidence or an authorized phase advance_, not merely a successful command or new prose.
 
 ## 4. Provisional numeric acceptance, defined before benchmarking
 
-| Dimension | Required criterion |
-| --- | --- |
-| Deterministic P0 tests | **21/21 applicable P0 fixtures green** on the changed source after corresponding owner packets; all existing safety regressions retained |
-| Safety-critical failures | **0** false full READY, wrong-root validation, foreign-process lifecycle action, manufactured native PASS, or unauthorized role grant in fixture and acceptance testing |
-| Evidence-exhausted loops | At most **one** additional safe recovery after unchanged proof, then exact typed block; **0** unwarranted model-family escalations |
-| P1 conditional | Four diagnostic cases recorded; an unconfirmed backend/capacity hypothesis does **not** become a speculative release feature |
-| Paired end-to-end scenarios | At least **10 comparable paired runs**, same task/authority/profile/resources against ordinary Codex where feasible; use isolated disposable targets |
-| Completion | Target at least **9/10 complete, correctly evidenced CodexDD runs**, and no more than **one fewer completion** than equal-access control per ten paired runs |
-| Cumulative token use | Median paired per-task total tokens **≤1.15×** equal-access control; report all runs, not just successful turns |
-| Wall-clock | Median paired task wall-clock **≤1.20×** equal-access control; include validation and interventions |
-| Operator interventions | Total manual interventions **≤ control** for comparable tasks; separately count setup blockers and explicit owner gates |
-| Data quality | Record source SHA, scope, worker role, native run evidence, actual final disposition, time, tokens, retries, escalations and interventions; no raw secrets/prompts |
+| Dimension                   | Required criterion                                                                                                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deterministic P0 tests      | **21/21 applicable P0 fixtures green** on the changed source after corresponding owner packets; all existing safety regressions retained                                |
+| Safety-critical failures    | **0** false full READY, wrong-root validation, foreign-process lifecycle action, manufactured native PASS, or unauthorized role grant in fixture and acceptance testing |
+| Evidence-exhausted loops    | At most **one** additional safe recovery after unchanged proof, then exact typed block; **0** unwarranted model-family escalations                                      |
+| P1 conditional              | Four diagnostic cases recorded; an unconfirmed backend/capacity hypothesis does **not** become a speculative release feature                                            |
+| Paired end-to-end scenarios | At least **10 comparable paired runs**, same task/authority/profile/resources against ordinary Codex where feasible; use isolated disposable targets                    |
+| Completion                  | Target at least **9/10 complete, correctly evidenced CodexDD runs**, and no more than **one fewer completion** than equal-access control per ten paired runs            |
+| Cumulative token use        | Median paired per-task total tokens **≤1.15×** equal-access control; report all runs, not just successful turns                                                         |
+| Wall-clock                  | Median paired task wall-clock **≤1.20×** equal-access control; include validation and interventions                                                                     |
+| Operator interventions      | Total manual interventions **≤ control** for comparable tasks; separately count setup blockers and explicit owner gates                                                 |
+| Data quality                | Record source SHA, scope, worker role, native run evidence, actual final disposition, time, tokens, retries, escalations and interventions; no raw secrets/prompts      |
 
 These are **provisional no-material-regression targets**, not demonstrated measurements or a waiver. Ten pairs are a small sample, so report individual cases, denominators, failures and uncertainty rather than claiming a statistically proven efficiency gain. If ordinary Codex lacks equal authorized tool access, mark that pair incomparable; do not force a misleading comparison. If a performance criterion is infeasible or the task mix changes, document it and obtain owner review **before** changing the acceptance contract; never waive the zero-false-ready/security rules.
 

@@ -1,6 +1,6 @@
 mod workspace_routing;
 
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
 use http::StatusCode;
 use serde::Deserialize;
 #[cfg(test)]
@@ -824,7 +824,7 @@ impl CodexAuth {
                 refresh_token: "test".to_string(),
                 account_id: Some("account_id".to_string()),
             }),
-            last_refresh: Some(Utc::now()),
+            last_refresh: Some(Timestamp::now()),
             agent_identity: None,
             personal_access_token: None,
             bedrock_api_key: None,
@@ -1617,7 +1617,7 @@ fn persist_tokens(
     if let Some(refresh_token) = refresh_token {
         tokens.refresh_token = refresh_token;
     }
-    auth_dot_json.last_refresh = Some(Utc::now());
+    auth_dot_json.last_refresh = Some(Timestamp::now());
     storage.save(&auth_dot_json)?;
     Ok(auth_dot_json)
 }
@@ -1753,7 +1753,7 @@ impl AuthDotJson {
             auth_mode: Some(AuthMode::ChatgptAuthTokens),
             openai_api_key: None,
             tokens: Some(tokens),
-            last_refresh: Some(Utc::now()),
+            last_refresh: Some(Timestamp::now()),
             agent_identity: None,
             personal_access_token: None,
             bedrock_api_key: None,
@@ -3012,14 +3012,14 @@ impl AuthManager {
             && let Ok(Some(expires_at)) = parse_jwt_expiration(&tokens.access_token)
         {
             return expires_at
-                <= Utc::now()
-                    + chrono::Duration::minutes(CHATGPT_ACCESS_TOKEN_REFRESH_WINDOW_MINUTES);
+                <= Timestamp::now()
+                    + time::Duration::minutes(CHATGPT_ACCESS_TOKEN_REFRESH_WINDOW_MINUTES);
         }
         let last_refresh = match auth_dot_json.last_refresh {
             Some(last_refresh) => last_refresh,
             None => return false,
         };
-        last_refresh < Utc::now() - chrono::Duration::days(TOKEN_REFRESH_INTERVAL)
+        last_refresh < Timestamp::now() - time::Duration::days(TOKEN_REFRESH_INTERVAL)
     }
 
     async fn refresh_external_auth(

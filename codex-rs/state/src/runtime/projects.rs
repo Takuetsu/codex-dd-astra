@@ -1,6 +1,7 @@
 //! Persists projects and assignments, and lists projects with computed member recency.
 //! Listing pagination precedes root hydration; cursor anchors preserve milliseconds and nulls.
 
+use codex_protocol::timestamp::Timestamp;
 use std::collections::BTreeMap;
 
 use sqlx::QueryBuilder;
@@ -178,7 +179,7 @@ impl StateRuntime {
             }
         }
         let id = Uuid::now_v7().to_string();
-        let now = chrono::Utc::now().timestamp_millis();
+        let now = Timestamp::now().timestamp_millis();
         let position = sqlx::query_scalar::<_, Option<i64>>("SELECT MAX(position) FROM projects")
             .fetch_one(&mut *tx)
             .await?
@@ -256,7 +257,7 @@ impl StateRuntime {
             tx.rollback().await?;
             return Ok(Some((current, false)));
         }
-        let now = chrono::Utc::now().timestamp_millis();
+        let now = Timestamp::now().timestamp_millis();
         sqlx::query("UPDATE projects SET name = ?, metadata = ?, updated_at_ms = ? WHERE id = ?")
             .bind(&next_name)
             .bind(serde_json::to_string(&next_metadata)?)
@@ -328,7 +329,7 @@ impl StateRuntime {
                 .await?;
         }
         sqlx::query("UPDATE projects SET updated_at_ms = ? WHERE id = ?")
-            .bind(chrono::Utc::now().timestamp_millis())
+            .bind(Timestamp::now().timestamp_millis())
             .bind(project_id)
             .execute(&mut *tx)
             .await?;

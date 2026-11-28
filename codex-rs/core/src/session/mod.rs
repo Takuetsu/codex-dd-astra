@@ -1,6 +1,7 @@
 pub(crate) mod startup;
 
 use crate::WithTurnExtensionData;
+use codex_protocol::timestamp::Timestamp;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -59,9 +60,6 @@ use crate::turn_metadata::TurnMetadataState;
 use crate::turn_timing::now_unix_timestamp_ms;
 use async_channel::Receiver;
 use async_channel::Sender;
-use chrono::DateTime;
-use chrono::Local;
-use chrono::Utc;
 use codex_analytics::AnalyticsEventsClient;
 use codex_analytics::ImagePreparationFact;
 use codex_analytics::ImagePreparationMetadata;
@@ -5127,15 +5125,19 @@ pub(crate) fn emit_subagent_session_started(
     parent_thread_id: Option<ThreadId>,
     thread_config: ThreadConfigSnapshot,
     subagent_source: SubAgentSource,
-    resumed_created_at: Option<DateTime<Utc>>,
+    resumed_created_at: Option<Timestamp>,
 ) {
     let initialization_mode = if resumed_created_at.is_some() {
         ThreadInitializationMode::Resumed
     } else {
         ThreadInitializationMode::New
     };
-    let created_at =
-        u64::try_from(resumed_created_at.unwrap_or_else(Utc::now).timestamp()).unwrap_or_default();
+    let created_at = u64::try_from(
+        resumed_created_at
+            .unwrap_or_else(Timestamp::now)
+            .timestamp(),
+    )
+    .unwrap_or_default();
     let AppServerClientMetadata {
         client_name,
         client_version,

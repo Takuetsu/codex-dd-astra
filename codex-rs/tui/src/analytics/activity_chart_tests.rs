@@ -13,8 +13,7 @@ fn graph_width(width: u16) -> u16 {
 
 #[test]
 fn duplicate_dates_sum_and_negative_values_clamp() {
-    let today =
-        NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
+    let today = Date::new(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
     let buckets = vec![
         AccountTokenUsageDailyBucket {
             start_date: "2026-05-29".to_string(),
@@ -63,8 +62,7 @@ fn token_activity_view_aliases_parse() {
 
 #[test]
 fn daily_graph_snapshot_uses_distinct_empty_and_active_cells() {
-    let today =
-        NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
+    let today = Date::new(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
     let buckets = vec![
         AccountTokenUsageDailyBucket {
             start_date: "2026-05-25".to_string(),
@@ -101,8 +99,7 @@ fn daily_graph_snapshot_stays_left_aligned_in_wide_terminal() {
     assert_eq!(graph_width(/*width*/ 160), 107);
     assert_eq!(graph_width(/*width*/ u16::MAX), u16::MAX);
 
-    let today =
-        NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
+    let today = Date::new(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
     let lines = chart_lines(TokenActivityView::Daily, &[], today, /*width*/ 160);
     let rendered = [&lines[0], &lines[1], lines.last().expect("legend line")]
         .into_iter()
@@ -119,8 +116,7 @@ fn daily_graph_snapshot_stays_left_aligned_in_wide_terminal() {
 
 #[test]
 fn weekly_graph_snapshot_renders_bar_chart_and_caption() {
-    let today =
-        NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
+    let today = Date::new(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
     let buckets = vec![
         AccountTokenUsageDailyBucket {
             start_date: "2026-05-11".to_string(),
@@ -163,8 +159,7 @@ fn weekly_graph_snapshot_renders_bar_chart_and_caption() {
 
 #[test]
 fn cumulative_graph_snapshot_renders_running_total_bar_chart_and_caption() {
-    let today =
-        NaiveDate::from_ymd_opt(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
+    let today = Date::new(/*year*/ 2026, /*month*/ 5, /*day*/ 29).expect("valid date");
     let buckets = vec![
         AccountTokenUsageDailyBucket {
             start_date: "2026-05-11".to_string(),
@@ -207,7 +202,7 @@ fn cumulative_graph_snapshot_renders_running_total_bar_chart_and_caption() {
 
 #[test]
 fn year_window_ignores_other_dates_and_saturates_extreme_totals() {
-    let today: NaiveDate = "2026-09-09".parse().unwrap();
+    let today: Date = "2026-09-09".parse().unwrap();
     let buckets = [
         ("2025-01-01", 100),
         ("2026-09-10", 100),
@@ -222,7 +217,7 @@ fn year_window_ignores_other_dates_and_saturates_extreme_totals() {
     });
     let values = daily_values(&buckets, today);
     let mut expected = vec![0; CELL_COUNT];
-    let index = (today - chart_start(today)).num_days() as usize;
+    let index = (today - chart_start(today)).get_days() as usize;
     expected[index - 1] = i64::MAX;
     expected[index] = i64::MAX;
     assert_eq!(values, expected);

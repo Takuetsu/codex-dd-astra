@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
@@ -135,7 +136,7 @@ fn json_log_events<'a>(lines: impl IntoIterator<Item = &'a str>) -> Result<Vec<V
             let timestamp = event["timestamp"]
                 .as_str()
                 .with_context(|| format!("JSON log event did not include a timestamp: {line}"))?;
-            chrono::DateTime::parse_from_rfc3339(timestamp).with_context(|| {
+            Timestamp::parse_from_rfc3339(timestamp).with_context(|| {
                 format!("JSON log event timestamp was not RFC 3339: {timestamp}")
             })?;
             Ok(event)

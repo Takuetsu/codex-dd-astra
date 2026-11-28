@@ -2,6 +2,7 @@
 //! only a live completion may fall back to the local clock. Labels are deduplicated per thread.
 
 use super::*;
+use codex_protocol::timestamp::Timestamp;
 
 impl ChatWidget {
     pub(crate) fn completion_cell(
@@ -40,9 +41,8 @@ impl ChatWidget {
 
         let completed_at = turn
             .completed_at
-            .and_then(|timestamp| chrono::DateTime::from_timestamp(timestamp, /*nsecs*/ 0))
-            .map(|timestamp| timestamp.with_timezone(&Local))
-            .or_else(|| replay_kind.is_none().then(Local::now));
+            .and_then(|timestamp| Timestamp::from_timestamp(timestamp, /*nsecs*/ 0))
+            .or_else(|| replay_kind.is_none().then(Timestamp::now));
 
         let worker_done = worker_bound
             && self.adaptive_effort.workflow_terminal.is_some()

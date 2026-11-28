@@ -1,7 +1,5 @@
 //! Versioned service requests reuse board operations; only host identity travels separately.
 
-use chrono::DateTime;
-use chrono::Utc;
 use codex_agent_message_board_extension::ChannelQuery;
 use codex_agent_message_board_extension::CreateChannelRequest;
 use codex_agent_message_board_extension::PostPreview;
@@ -13,6 +11,7 @@ use codex_agent_message_board_extension::SubscriptionRequest;
 use codex_agent_message_board_extension::ThreadQuery;
 use codex_protocol::AgentPath;
 use codex_protocol::ThreadId;
+use codex_protocol::timestamp::Timestamp;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
@@ -61,7 +60,7 @@ pub(crate) struct Registration {
 #[derive(Serialize)]
 pub(crate) struct Call {
     pub(crate) caller: ThreadId,
-    pub(crate) timestamp: Option<DateTime<Utc>>,
+    pub(crate) timestamp: Option<Timestamp>,
     #[serde(flatten)]
     pub(crate) operation: Operation,
 }

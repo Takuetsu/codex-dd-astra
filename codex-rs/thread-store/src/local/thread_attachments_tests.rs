@@ -14,7 +14,8 @@ use crate::ThreadStore;
 use crate::ThreadStoreError;
 use crate::local::test_support::test_config;
 use crate::local::test_support::write_session_file;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_protocol::ThreadId;
 use codex_protocol::protocol::SessionSource;
 use pretty_assertions::assert_eq;
@@ -90,7 +91,7 @@ async fn unloaded_thread_attachments_support_listing_and_removal() {
         let metadata = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             home.path().join(format!("{thread_id}.jsonl")),
-            Utc::now(),
+            Timestamp::now(),
             SessionSource::Cli,
         )
         .build(&config.default_model_provider_id);
@@ -253,7 +254,7 @@ async fn attachment_mutations_wait_for_exclusive_thread_lifecycle_operations() {
     let metadata = codex_state::ThreadMetadataBuilder::new(
         thread_id,
         home.path().join(format!("{thread_id}.jsonl")),
-        Utc::now(),
+        Timestamp::now(),
         SessionSource::Cli,
     )
     .build(&config.default_model_provider_id);
@@ -486,7 +487,7 @@ async fn store_with_attachment_owners(
         let metadata = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             rollout_path.clone(),
-            Utc::now(),
+            Timestamp::now(),
             SessionSource::Cli,
         )
         .build(&config.default_model_provider_id);

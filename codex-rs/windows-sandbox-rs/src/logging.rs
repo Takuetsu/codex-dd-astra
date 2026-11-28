@@ -40,16 +40,32 @@ fn preview(command: &[String]) -> String {
     }
 }
 
-pub fn log_file_path_for_utc_date(base_dir: &Path, date: chrono::NaiveDate) -> PathBuf {
+pub fn log_file_path_for_utc_date(base_dir: &Path, date: jiff::civil::Date) -> PathBuf {
     base_dir.join(format!(
         "{LOG_FILE_PREFIX}.{}.{}",
-        date.format("%Y-%m-%d"),
+        date.strftime("%Y-%m-%d"),
         LOG_FILE_SUFFIX
     ))
 }
 
 pub fn current_log_file_path(base_dir: &Path) -> PathBuf {
-    log_file_path_for_utc_date(base_dir, chrono::Utc::now().date_naive())
+    let utc = jiff::Timestamp::now().to_zoned(jiff::tz::TimeZone::UTC);
+    log_file_path_for_utc_date(base_dir, utc.date())
+}
+
+pub(crate) fn provisioning_timestamp(timestamp: jiff::Timestamp) -> String {
+    let nanos = timestamp.subsec_nanosecond();
+    let precision = if nanos == 0 {
+        0
+    } else if nanos % 1_000_000 == 0 {
+        3
+    } else if nanos % 1_000 == 0 {
+        6
+    } else {
+        9
+    };
+    let utc = timestamp.display_with_offset(jiff::tz::Offset::UTC);
+    format!("{utc:.precision$}")
 }
 
 pub fn current_log_file_path_for_codex_home(codex_home: &Path) -> PathBuf {
@@ -141,7 +157,8 @@ pub fn debug_log(msg: &str, base_dir: Option<&Path>) {
 
 // Unconditional note logging to the daily sandbox log.
 pub fn log_note(msg: &str, base_dir: Option<&Path>) {
-    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let now = jiff::Zoned::now();
+    let ts = now.strftime("%Y-%m-%d %H:%M:%S%.3f");
     append_line(&format!("[{ts} {}] {}", exe_label(), msg), base_dir);
 }
 
@@ -149,6 +166,16 @@ pub fn log_note(msg: &str, base_dir: Option<&Path>) {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn provisioning_timestamp_keeps_utc_offset_and_fractional_precision() {
+        let input = "2025-08-31T18:22:41.5-02:00".parse().unwrap();
+
+        assert_eq!(
+            provisioning_timestamp(input),
+            "2025-08-31T20:22:41.500+00:00",
+        );
+    }
 
     #[test]
     fn setup_log_releases_handles_without_path_fallback() {
@@ -234,7 +261,7 @@ mod tests {
 
     #[test]
     fn log_file_path_for_utc_date_matches_rolling_appender_name() {
-        let date = chrono::NaiveDate::from_ymd_opt(2026, 5, 21).expect("valid date");
+        let date = jiff::civil::date(2026, 5, 21);
 
         assert_eq!(
             log_file_path_for_utc_date(Path::new("logs"), date),

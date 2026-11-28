@@ -1,9 +1,7 @@
+use codex_protocol::timestamp::Timestamp;
 use std::time::Duration;
 use std::time::Instant;
 
-use chrono::DateTime;
-use chrono::NaiveDateTime;
-use chrono::Utc;
 use codex_git_utils::collect_git_info;
 use codex_git_utils::get_git_repo_root;
 use codex_protocol::ThreadId;
@@ -56,7 +54,7 @@ pub(crate) struct PendingThreadMetadataPatch {
 
 impl ThreadMetadataSync {
     pub(crate) async fn for_create(params: &CreateThreadParams) -> Self {
-        let created_at = Utc::now();
+        let created_at = Timestamp::now();
         let cwd = params.metadata.cwd.clone().unwrap_or_default();
         let git_info = if get_git_repo_root(cwd.as_path()).is_some() {
             collect_git_info(cwd.as_path()).await.map(|info| GitInfo {
@@ -194,7 +192,7 @@ impl ThreadMetadataSync {
             thread_updated_at_touch()
         };
         if advances_recency {
-            update.advance_recency_at = Some(Utc::now());
+            update.advance_recency_at = Some(Timestamp::now());
         }
         self.merge_pending_update(Some(update));
         if !affects_metadata
@@ -215,7 +213,7 @@ impl ThreadMetadataSync {
         self.observe_items_with_update(
             items,
             ThreadMetadataPatch {
-                updated_at: Some(Utc::now()),
+                updated_at: Some(Timestamp::now()),
                 ..Default::default()
             },
         )
@@ -397,19 +395,15 @@ fn parse_memory_mode(value: &str) -> Option<ThreadMemoryMode> {
     }
 }
 
-fn parse_session_timestamp(value: &str) -> Option<DateTime<Utc>> {
-    DateTime::parse_from_rfc3339(value)
-        .map(|timestamp| timestamp.with_timezone(&Utc))
-        .or_else(|_| {
-            NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H-%M-%S")
-                .map(|timestamp| DateTime::from_naive_utc_and_offset(timestamp, Utc))
-        })
+fn parse_session_timestamp(value: &str) -> Option<Timestamp> {
+    Timestamp::parse_from_rfc3339(value)
         .ok()
+        .or_else(|| Timestamp::parse_rollout_filename_timestamp(value))
 }
 
 fn thread_updated_at_touch() -> ThreadMetadataPatch {
     ThreadMetadataPatch {
-        updated_at: Some(Utc::now()),
+        updated_at: Some(Timestamp::now()),
         ..Default::default()
     }
 }
@@ -451,6 +445,7 @@ fn git_info_patch_from_observation(git_info: GitInfo) -> GitInfoPatch {
 
 #[cfg(test)]
 mod tests {
+    use codex_protocol::timestamp::Timestamp;
     use std::sync::Arc;
 
     use codex_protocol::config_types::ApprovalsReviewer;
@@ -526,7 +521,7 @@ mod tests {
         let mut metadata = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             Default::default(),
-            Utc::now(),
+            Timestamp::now(),
             SessionSource::SubAgent(SubAgentSource::Other("guardian".to_string())),
         )
         .build("test-provider");
@@ -856,7 +851,7 @@ mod tests {
         let mut metadata = codex_state::ThreadMetadataBuilder::new(
             thread_id,
             Default::default(),
-            Utc::now(),
+            Timestamp::now(),
             SessionSource::Exec,
         )
         .build("test-provider");

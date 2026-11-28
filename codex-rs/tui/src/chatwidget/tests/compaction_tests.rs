@@ -1,4 +1,5 @@
 use super::*;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 
 fn normalize_compaction_snapshot(text: String) -> String {
@@ -12,7 +13,7 @@ fn compaction_started(id: &str) -> ServerNotification {
     ServerNotification::ItemStarted(ItemStartedNotification {
         thread_id: "thread-1".to_string(),
         turn_id: "turn-1".to_string(),
-        started_at_ms: chrono::Utc::now().timestamp_millis(),
+        started_at_ms: Timestamp::now().timestamp_millis(),
         item: AppServerThreadItem::ContextCompaction { id: id.to_string() },
     })
 }

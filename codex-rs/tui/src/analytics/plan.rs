@@ -1,23 +1,22 @@
 //! Historical allowance snapshots, separate from daily usage and current chat allowances.
 //! Period IDs are snapshot-scoped; unknown accounting is never converted to zero.
 use super::data::Load;
-use chrono::DateTime;
-use chrono::Utc;
 use codex_backend_client::PlanLimitBreakdown;
 use codex_backend_client::PlanLimitHistory;
+use codex_protocol::timestamp::Timestamp;
 
 pub(super) struct Period {
     pub id: String,
-    pub start: DateTime<Utc>,
-    pub end: DateTime<Utc>,
+    pub start: Timestamp,
+    pub end: Timestamp,
     pub complete: bool,
     pub used: Option<f64>,
     pub breakdowns: Option<Vec<PlanLimitBreakdown>>,
 }
 
 pub(super) struct Report {
-    pub as_of: DateTime<Utc>,
-    pub coverage_start: Option<DateTime<Utc>>,
+    pub as_of: Timestamp,
+    pub coverage_start: Option<Timestamp>,
     pub coverage_complete: bool,
     pub approximate: bool,
     pub periods: [Vec<Period>; 2],
@@ -26,8 +25,7 @@ pub(super) struct Report {
 impl Report {
     pub(super) fn parse(history: PlanLimitHistory) -> Result<Option<Self>, String> {
         let parse = |value: &str| {
-            DateTime::parse_from_rfc3339(value)
-                .map(|date| date.with_timezone(&Utc))
+            Timestamp::parse_from_rfc3339(value)
                 .map_err(|_| "Invalid plan history timestamp.".to_string())
         };
         let Some(as_of) = history.data_as_of.as_deref().map(parse).transpose()? else {
@@ -88,7 +86,7 @@ pub(super) struct State {
     pub window: usize,
     pub cursor: [usize; 2],
     pub expanded: [Option<String>; 2],
-    snapshot: Option<DateTime<Utc>>,
+    snapshot: Option<Timestamp>,
 }
 
 impl Default for State {

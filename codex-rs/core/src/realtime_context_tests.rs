@@ -8,8 +8,6 @@ use super::build_recent_work_section;
 use super::build_workspace_section_with_user_root;
 use super::format_section;
 use super::format_startup_context_blob;
-use chrono::TimeZone;
-use chrono::Utc;
 use codex_git_utils::GitSha;
 use codex_protocol::ThreadId;
 use codex_protocol::models::ContentItem;
@@ -18,6 +16,7 @@ use codex_protocol::models::ResponseItem;
 use codex_protocol::protocol::AskForApproval;
 use codex_protocol::protocol::GitInfo;
 use codex_protocol::protocol::SessionSource;
+use codex_protocol::timestamp::Timestamp;
 use codex_thread_store::StoredThread;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
@@ -40,18 +39,9 @@ fn stored_thread(cwd: &str, title: &str, first_user_message: &str) -> StoredThre
         model_provider: "test-provider".to_string(),
         model: Some("gpt-5.2".to_string()),
         reasoning_effort: None,
-        created_at: Utc
-            .timestamp_opt(1_709_251_100, 0)
-            .single()
-            .expect("valid timestamp"),
-        updated_at: Utc
-            .timestamp_opt(1_709_251_200, 0)
-            .single()
-            .expect("valid timestamp"),
-        recency_at: Utc
-            .timestamp_opt(1_709_251_200, 0)
-            .single()
-            .expect("valid timestamp"),
+        created_at: Timestamp::from_timestamp(1_709_251_100, 0).expect("valid timestamp"),
+        updated_at: Timestamp::from_timestamp(1_709_251_200, 0).expect("valid timestamp"),
+        recency_at: Timestamp::from_timestamp(1_709_251_200, 0).expect("valid timestamp"),
         archived_at: None,
         project_id: None,
         daybreak_enabled: None,

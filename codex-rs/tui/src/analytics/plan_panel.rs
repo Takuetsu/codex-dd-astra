@@ -109,8 +109,14 @@ impl AnalyticsView {
                     let label = format!(
                         "{} {} – {}{}",
                         if selected { "›" } else { " " },
-                        period.start.format(self.clock_format.date_time_format()),
-                        period.end.format(self.clock_format.date_time_format()),
+                        crate::clock_format::format_utc(
+                            period.start,
+                            self.clock_format.date_time_format()
+                        ),
+                        crate::clock_format::format_utc(
+                            period.end,
+                            self.clock_format.date_time_format()
+                        ),
                         if period.start <= report.as_of && period.end > report.as_of {
                             " *"
                         } else {
@@ -227,7 +233,7 @@ impl AnalyticsView {
             lines.push(
                 format!(
                     "Usage as of {} UTC · * current at last update",
-                    as_of.format(self.clock_format.date_time_format())
+                    crate::clock_format::format_utc(*as_of, self.clock_format.date_time_format())
                 )
                 .dim()
                 .into(),
@@ -236,7 +242,10 @@ impl AnalyticsView {
                 lines.push(
                     format!(
                         "Available since {} UTC",
-                        start.format(self.clock_format.date_time_format())
+                        crate::clock_format::format_utc(
+                            *start,
+                            self.clock_format.date_time_format()
+                        )
                     )
                     .dim()
                     .into(),

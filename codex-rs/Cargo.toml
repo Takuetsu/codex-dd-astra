@@ -349,10 +349,9 @@ bm25 = "2.3.2"
 bytes = "1.10.1"
 caseless = "0.2.2"
 chardetng = "0.1.17"
-chrono = "0.4.43"
 clap = "4"
 clap_complete = "4"
-clatter = { version = "2.2.0", default-features = false, features = [
+clatter = { version = "3.0.0", default-features = false, features = [
     "alloc",
     "getrandom",
     "use-25519",
@@ -399,6 +398,7 @@ indexmap = "2.12.0"
 insta = "1.46.3"
 inventory = "0.3.19"
 itertools = "0.14.0"
+jiff = "=0.2.23"
 jsonptr = { version = "0.7.1", default-features = false }
 jsonwebtoken = "9.3.1"
 keyring = { version = "3.6", default-features = false }
@@ -407,7 +407,7 @@ lazy_static = "1"
 libc = "0.2.182"
 # Keep SQLx's bundled SQLite on a version containing the WAL-reset corruption fix:
 # https://www.sqlite.org/wal.html#the_wal_reset_bug
-libsqlite3-sys = { version = "0.37", default-features = false }
+libsqlite3-sys = { version = "0.39", default-features = false }
 log = "0.4"
 lru = "0.18.2"
 maplit = "1.0.2"
@@ -484,8 +484,7 @@ symphonia = { version = "0.6.0", default-features = false, features = [
 ] }
 socket2 = "0.6.1"
 # Keep SQLx versions in sync; when bumping, audit the SQLite constructor deny list in clippy.toml.
-sqlx = { version = "=0.9.0", default-features = false, features = [
-    "chrono",
+sqlx = { version = "=0.9.1", default-features = false, features = [
     "json",
     "migrate",
     "runtime-tokio",
@@ -495,9 +494,9 @@ sqlx = { version = "=0.9.0", default-features = false, features = [
     "uuid",
 ] }
 # Derives and migration embedding do not need query macros or a host SQLite driver.
-sqlx-macros = { version = "=0.9.0", default-features = false, features = ["derive", "migrate"] }
+sqlx-macros = { version = "=0.9.1", default-features = false, features = ["derive", "migrate"] }
 # Preserve the target driver's query-description support without building it on the host.
-sqlx-sqlite = { version = "=0.9.0", default-features = false, features = ["offline"] }
+sqlx-sqlite = { version = "=0.9.1", default-features = false, features = ["offline"] }
 starlark = { version = "0.14.2", default-features = false }
 strum = "0.27.2"
 strum_macros = "0.28.0"
@@ -551,7 +550,16 @@ whoami = "1.6.1"
 wildmatch = "2.6.1"
 winapi-util = "0.1.11"
 windows-sys = "0.61.2"
-zip = "2.4.2"
+zip = { version = "=9.0.5", default-features = false, features = [
+    "aes-crypto",
+    "bzip2-rs",
+    "deflate64",
+    "deflate",
+    "lzma",
+    "time",
+    "zstd",
+    "xz",
+] }
 zstd = "0.13"
 
 wiremock = "0.6"
@@ -641,6 +649,17 @@ inherits = "test"
 opt-level = 0
 
 [patch.crates-io]
+oauth2 = { path = "../third_party/vendor/oauth2" }
+age = { path = "../third_party/vendor/age" }
+age-core = { path = "../third_party/vendor/age-core" }
+clatter = { path = "../third_party/vendor/clatter" }
+hickory-net = { path = "../third_party/vendor/hickory-net" }
+i18n-config = { path = "../third_party/vendor/i18n-config" }
+keyring = { path = "../third_party/vendor/keyring" }
+rama-dns = { path = "../third_party/vendor/rama-dns" }
+rama-http = { path = "../third_party/vendor/rama-http" }
+rama-http-headers = { path = "../third_party/vendor/rama-http-headers" }
+zip = { path = "../third_party/vendor/zip" }
 # Uncomment to debug local changes.
 # ratatui = { path = "../../ratatui" }
 crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "ed1cdab335221515706178d68495bba2aed1924f" }
@@ -652,3 +671,6 @@ tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev 
 
 [patch."ssh://git@github.com/openai-oss-forks/tungstenite-rs.git"]
 tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }
+
+[patch."https://github.com/modelcontextprotocol/rust-sdk"]
+rmcp = { path = "../third_party/vendor/rmcp" }

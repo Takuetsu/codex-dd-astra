@@ -1,6 +1,5 @@
-use chrono::DateTime;
-use chrono::Utc;
 use codex_protocol::ThreadId;
+use codex_protocol::timestamp::Timestamp;
 use std::path::PathBuf;
 
 use super::ThreadMetadata;
@@ -10,13 +9,13 @@ use super::ThreadMetadata;
 pub struct Stage1Output {
     pub thread_id: ThreadId,
     pub rollout_path: PathBuf,
-    pub source_updated_at: DateTime<Utc>,
+    pub source_updated_at: Timestamp,
     pub raw_memory: String,
     pub rollout_summary: String,
     pub rollout_slug: Option<String>,
     pub cwd: PathBuf,
     pub git_branch: Option<String>,
-    pub generated_at: DateTime<Utc>,
+    pub generated_at: Timestamp,
 }
 
 /// Result of trying to claim a stage-1 memory extraction job.

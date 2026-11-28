@@ -9,7 +9,6 @@
 //! byte-for-byte. Filesystem publishing and SQLite projection intentionally live outside this
 //! module.
 
-use chrono::DateTime;
 use codex_protocol::ThreadId;
 use codex_protocol::items::ReasoningItem;
 use codex_protocol::items::TurnItem;
@@ -20,6 +19,7 @@ use codex_protocol::protocol::ItemCompletedEvent;
 use codex_protocol::protocol::ThreadHistoryMode;
 use codex_protocol::protocol::TurnCompleteEvent;
 use codex_protocol::protocol::TurnStartedEvent;
+use codex_protocol::timestamp::Timestamp;
 use codex_rollout::RolloutItem;
 use codex_rollout::RolloutLine;
 use std::borrow::Cow;
@@ -339,7 +339,7 @@ impl LegacyRolloutCanonicalizer {
         });
         self.known_turn_ids.insert(turn_id.clone());
         self.reasoning = None;
-        let started_at = DateTime::parse_from_rfc3339(timestamp)
+        let started_at = Timestamp::parse_from_rfc3339(timestamp)
             .map_err(migration_error)?
             .timestamp();
         self.write_item(
@@ -382,7 +382,7 @@ impl LegacyRolloutCanonicalizer {
                 error: None,
                 started_at: None,
                 completed_at: Some(
-                    DateTime::parse_from_rfc3339(timestamp)
+                    Timestamp::parse_from_rfc3339(timestamp)
                         .map_err(migration_error)?
                         .timestamp(),
                 ),
@@ -415,7 +415,7 @@ impl LegacyRolloutCanonicalizer {
         turn_id: String,
         item: TurnItem,
     ) -> ThreadStoreResult<()> {
-        let completed_at_ms = DateTime::parse_from_rfc3339(timestamp)
+        let completed_at_ms = Timestamp::parse_from_rfc3339(timestamp)
             .map_err(migration_error)?
             .timestamp_millis();
         self.write_item(

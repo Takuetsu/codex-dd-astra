@@ -7,6 +7,7 @@
 The existing first-nonblank `[adaptive_worker]` parser, immutable assignment preflight and Core native tool and profile admission are already implemented in earlier 3B.2 and 3C.1 packets; this slice must **not** quietly rebind an unbound/locked thread or invent tool availability.
 
 In `ChatWidget::adaptive_effort_status_text` append four bounded, read-only operator diagnostics without changing the existing status fields or any authority:
+
 - **Authorized source:** exact owner-assigned `source_root @ source_sha`, otherwise say no source pin and do not infer one from launcher cwd;
 - **Pending prerequisites:** current gate ledger's unresolved native source profile, independent review and runtime health obligations with `PENDING`/`BLOCKED` labels, or explicit `Not specified by an authorized owner`;
 - **Native tool required:** worker-role-specific Core tool name and explicit caveat that a historical LVO status is **not** proof that a current Core invocation/profile is available;
@@ -26,13 +27,11 @@ Correction: check `Blocked` before native role-specific work, and check explicit
 
 **Historical plan, superseded by 3C.2c:** the exact runner was expanded to enumerate and execute five `codexdd_046_3c2` tests (not three or four), and the App/Core positive packet remained a separate requirement. The scope remains read-only presentation; no new privileged operations manager, source pin bypass, profile override, or owner approval has been introduced. Contextual live Core tool availability can only be established by actual current Core profile execution, never from status history alone.
 
-
 ## 3C.2c — malformed first-assignment status guard
 
 An invalid first user-origin `[adaptive_worker]` header locks the original thread without binding a Worker role. The initial status diagnostics mistakenly told the owner to retry a first-message header in that already locked thread. Status now explicitly preserves the current evidence and directs a fresh Worker thread with a valid first user-origin header. No existing thread is rebound, no history is cleared and no validation authority is created.
 
 Test `codexdd_046_3c2c_locked_invalid_first_assignment_requires_new_worker_thread` verifies the actual parser rejection, locked/unbound state, accurate next action and continued unavailability of privileged Core tools. The focused native Windows job is extended from four to five named 3C.2 status regressions. **Acceptance:** [GitHub Actions #43603946333](https://github.com/Takuetsu/codex-dd-astra/actions/runs/43603946333), immutable tested source `c1e5be2dce8f35e234f5f91442b22239f59cffa2` explicitly enumerated and executed all five 3C.2a/b/c tests: **5 passed / 0 failed / 0 ignored**. The separate 3C.1 App/Core positive acceptance also passed **1/1** in that same job; neither requirement is waived.
-
 
 ## Final 3C.2 diagnostic acceptance
 

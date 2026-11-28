@@ -64,6 +64,8 @@ use codex_protocol::auth::AuthMode;
 use codex_protocol::config_types::AltScreenMode;
 use codex_protocol::config_types::ForcedLoginMethod;
 use codex_protocol::config_types::SandboxMode;
+#[cfg(test)]
+use codex_protocol::timestamp::Timestamp;
 use codex_rollout::StateDbHandle;
 use codex_rollout::state_db;
 use codex_state::log_db;
@@ -2613,8 +2615,7 @@ requires_openai_auth = {requires_openai_auth}
             .to_string(),
         ];
         std::fs::write(&rollout_path, lines.join("\n") + "\n")?;
-        let updated_at =
-            chrono::DateTime::parse_from_rfc3339(meta_rfc3339)?.with_timezone(&chrono::Utc);
+        let updated_at = Timestamp::parse_from_rfc3339(meta_rfc3339)?;
         let times = std::fs::FileTimes::new().set_modified(updated_at.into());
         std::fs::OpenOptions::new()
             .append(true)

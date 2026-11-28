@@ -1,20 +1,20 @@
 use super::*;
-use chrono::TimeDelta;
 use codex_login::AuthHeaders;
 use pretty_assertions::assert_eq;
+use time::Duration;
 
 #[test]
 fn catalog_cache_freshness_honors_ttl() {
-    let now = Utc::now();
+    let now = Timestamp::now();
 
     assert!(!is_fresh(/*fetched_at*/ None, now));
     assert!(is_fresh(Some(now), now));
-    assert!(is_fresh(Some(now - TimeDelta::hours(3)), now,));
+    assert!(is_fresh(Some(now - Duration::hours(3)), now,));
     assert!(!is_fresh(
-        Some(now - TimeDelta::hours(3) - TimeDelta::milliseconds(1)),
+        Some(now - Duration::hours(3) - Duration::milliseconds(1)),
         now,
     ));
-    assert!(!is_fresh(Some(now + TimeDelta::milliseconds(1)), now));
+    assert!(!is_fresh(Some(now + Duration::milliseconds(1)), now));
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn header_auth_does_not_cache_private_catalogs_without_a_stable_identity() {
 
         let insecure_cache = RemotePluginCatalogDiskCache {
             schema_version: REMOTE_PLUGIN_CATALOG_DISK_CACHE_SCHEMA_VERSION,
-            fetched_at: Some(Utc::now()),
+            fetched_at: Some(Timestamp::now()),
             plugins: Vec::new(),
         };
         let contents = serde_json::to_string_pretty(&insecure_cache).expect("serialize cache");

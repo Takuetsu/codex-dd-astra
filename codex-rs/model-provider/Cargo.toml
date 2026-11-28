@@ -14,7 +14,6 @@ workspace = true
 
 [dependencies]
 codex-utils-process = { workspace = true }
-chrono = { workspace = true }
 codex-api = { workspace = true }
 codex-agent-identity = { workspace = true }
 codex-aws-auth = { workspace = true }

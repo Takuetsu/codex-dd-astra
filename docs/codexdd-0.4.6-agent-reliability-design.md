@@ -1,4 +1,5 @@
 # CodexDD 0.4.6 — Agent Reliability & Completion
+
 **Milestone handoff / owner-selected version: 0.4.6 (2026-11-05)**
 
 **State: PLANNED / READY FOR A NEW-THREAD 3A.1 RECONNAISSANCE. NOT IMPLEMENTED, BUILT, MERGED, INSTALLED OR RELEASE-APPROVED.**
@@ -17,7 +18,7 @@ Success means a correctly bound agent can **finish the complete authorized task*
 - Canonical production source branch: `dd/astra-policy-v2` at reconnaissance `b25550dcb2c6e84a84074b603086c9db6f32a63b`, product version file `codex-rs/codexdd-version.txt = 0.4.4`.
 - Reviewed triage-only checkpoint: `dd/codexdd-044-active-agent-stability-triage-20261105` at `8cee2c8a7d6ef7ebfaa65569dcd86b3ad263de41`.
 - **0.4.6 planning/implementation branch:** `dd/codexdd-v0.4.6-agent-reliability`, initially created from the triage-only checkpoint. The new thread **must re-read its live HEAD**; never assume the pre-handoff SHA remains current after planning commits.
-- `0.4.4` is the expected deployed *product family*; actual `codexdd --version`, active binary hash, `/status`, worker role, run origin and app-server transport on Daniel-CL, Doug and Stonks are **not yet verified for the incidents**. Do not conflate GitHub HEAD with the installed runtime.
+- `0.4.4` is the expected deployed _product family_; actual `codexdd --version`, active binary hash, `/status`, worker role, run origin and app-server transport on Daniel-CL, Doug and Stonks are **not yet verified for the incidents**. Do not conflate GitHub HEAD with the installed runtime.
 - Frozen 0.4.5 checkpoint: `a69ce2ee19a50b834bc116246f94940bef8b8806`, [freeze decision](https://github.com/Takuetsu/codex-dd-astra/blob/a69ce2ee19a50b834bc116246f94940bef8b8806/docs/upstream-candidates/codexdd-045-frozen-2026-11-05.md). PRs #83–85 remain draft. 3F.93 3/3 nonrelease real-process tests green; 3F.94 native Windows supervisor 0/2 blocked by job object; 3F.95 TUI test failed to compile, not executed; no 0.4.5 release authority, 13 high-risk holds and 0/109 signoffs. No retry/CI/unfreeze of these workstreams.
 - Canonical, freshest owner incident evidence: [codex-dd — Upcoming Version Backlog](https://docs.google.com/document/d/1vJ617lLax8GFUVWjJaNE2veCfSyjD5OOydBvywWA8iA/edit) (2026-11-04 entries) and [BREAKWATER — CodexDD Operational Guide](https://docs.google.com/document/d/1g9n1a09TmftzxuAYY_C8IQ239My4CGm-SOFg8XSOjgo/edit). Repository source triage: [docs/codexdd-0.4.4-active-agent-stability-triage-2026-11-05.md](codexdd-0.4.4-active-agent-stability-triage-2026-11-05.md). Prior 0.4.4 LVO source evidence: [DD-BL-006 reconnaissance](codexdd-0.4.4-dd-bl-006-reconnaissance.md).
 - Obey [major-phase/numbered-work-packet standard](codexdd-major-phase-work-packet-standard.md), including durable Git checkpoint per packet, small focused validation, and operator-owned promotion.
@@ -27,6 +28,7 @@ Success means a correctly bound agent can **finish the complete authorized task*
 ### P0 / Must ship (all four)
 
 **A — Correct end-to-end completion and evidence-bound terminals (DD-BL-005 / DD-BL-007).**
+
 - A typed prerequisite/gate-state contract distinguishes SOURCE_VALIDATED, RUNTIME_PREPARED, READY_FOR_OWNER_QA, and OWNER_QA_PASS, plus explicit pending/blocked requirements.
 - Bind evidence to **current authorized source SHA, worker identity/role, required command/case/profile, timestamp and task/gate scope**. Older successful `exec-*` or narrower focused test results cannot satisfy a missing full regression or live runtime/preview requirement.
 - An actual requested operational prerequisite (e.g. owned running host, current listener, successful health request on approved ports, valid safe world) is not satisfied by green source-only test output.
@@ -34,17 +36,20 @@ Success means a correctly bound agent can **finish the complete authorized task*
 - If a trusted terminal signal/tool is unavailable or rejected, preserve source/evidence, allow at most one bounded authorized recovery/handoff or yield a typed, actionable blocked result. Do not rerun completed tests merely to obtain a different terminal.
 
 **B — Source/worktree, role and validation tool/profile preflight (DD-BL-006 plus DD-BL-002 regression).**
+
 - Respect the **owner's established Windows launch convention**: launch CodexDD at milestone root (e.g. `D:\bw58`); authoritative target worktree may be nested elsewhere. A child shell's `Set-Location` must not be confused with native CodexDD runtime's process CWD. Resolve explicit owner-authorized target, nearest actual Git root, selected branch/commit, clean/dirty state, approved native profile and tool availability **before** protected MechanicalValidation.
 - Fail closed on absent/mismatched repository/profile, wrong source SHA, incorrect role, or incomplete native runner. Return an actionable `SETUP_BLOCKED` with the expected path and the observed path. **No cross-repository fallback, fake PASS, status coercion, disabled safety policy, or pressure-driven model escalation.**
 - Preserve 0.4.4's protected Implementation-only `run_codexdd_validation` contract; a Repair or independent Validation worker lacking this Implementation-only runner is not automatically a defect. Existing authorized repo-owned official validation commands remain usable when appropriate to the role.
 - Safe read-only Git status/diff and approved bounded Node/Rust validation must remain available without making source-changing commands available in MechanicalValidation. A staged/uncommitted source checkpoint must never be silently destroyed.
 
 **C — Progress-aware continuation and correct error classification (DD-BL-007).**
+
 - Persist a small durable task progress/evidence digest with pending phases and exact source binding. Determine whether each proposed successor has a concrete authorized step or new admissible evidence.
 - No repeated 5–30s no-op turns, stale-evidence restatement, or escalation for missing profile, policy refusal, capacity, unknown provider subtype or setup failure. Exactly one useful safe action or one typed actionable block when evidence is unchanged.
 - Protect legitimate productive implementation/validation multi-turn continuation and independent Worker handoffs; do not impose an arbitrary total turn/time limit that truncates real work.
 
 **D — Bounded task-appropriate operations/benchmark routing (DD-BL-007 product gap).**
+
 - Add only the smallest explicitly authorized, narrowly scoped non-source-changing task route needed for active BREAKWATER operations/QA-preview or safe benchmark tasks. Do not force an Implementation Worker's `mechanical_validation`/LVO `work_packet` when no source was changed and the task calls for service readiness or 2-vs-4-thread benchmark evidence.
 - First verify actual task authority, correct target SHA/worktree, process ownership, allowed approved commands and resource locks. With valid authority, execute existing repo-owned safe operations/benchmark tools through the normal guarded execution path; if implementation of a fully authorized lane would require new privileged managed-service architecture, **return an accurate setup/ownership handoff instead**. No accidental lifecycle operations on another project or stale PID; no elevating shared daemons.
 - This is limited **task classification, safe execution and outcome evidence**, NOT a broad new operations framework or automatic uncontrolled process manager.
@@ -91,20 +96,20 @@ At every packet: scope -> source/provenance read -> narrow change -> cheapest me
 
 ## 6. Test matrix and nonnegotiable safety invariants
 
-| Repro | Expected invariant |
-| --- | --- |
-| Focused 55/55 or 151/151 tests green, required official full gate unrun | No full READY; preserve evidence and pending official command |
-| Source green but required approved preview port not listening | No full READY; setup/operations pending and actual health proof required |
-| Previously valid exec refs from another worker/source SHA | No current source/ops terminal without fresh identity-bound proof |
-| Terminal signal/tool unavailable after real evidence | One bounded useful recovery/typed BLOCKED; never falsify native terminal |
-| Milestone root process CWD but authorized Git worktree nested at different SHA | Preflight binds correct explicit target or typed setup blocker; no fallback to old root |
-| `work_packet` missing / Repair role intentionally lacks LVO | No fabricated product FAIL/PASS; correct role and profile-specific diagnosis |
-| Git staged/uncommitted candidate in mechanical phase | Preserve edits and correct allowed read-only/validation tools; no unsafe mutation |
-| Infra/tool/provider refusal with zero new evidence | No no-op adaptive loop and no capability-family escalation |
-| Safe benchmark requested with no source edit | Actual approved bounded measurement or correct pending-operations explanation; no bogus mechanical source validation |
-| Eight workers requested with unclear supported capacity | Inspect configured limit; one/in-limit succeeds, over-limit typed refusal; no blind raising |
-| Unsupported `tool_choice` for alternate provider | No repeated invalid request; support declared capability or fail closed with actionable diagnosis |
-| Properly bound authorized Worker completes all required source+operations gates | Trusted terminal, fresh independent validation preserved and owner QA still separately pending |
+| Repro                                                                           | Expected invariant                                                                                                   |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Focused 55/55 or 151/151 tests green, required official full gate unrun         | No full READY; preserve evidence and pending official command                                                        |
+| Source green but required approved preview port not listening                   | No full READY; setup/operations pending and actual health proof required                                             |
+| Previously valid exec refs from another worker/source SHA                       | No current source/ops terminal without fresh identity-bound proof                                                    |
+| Terminal signal/tool unavailable after real evidence                            | One bounded useful recovery/typed BLOCKED; never falsify native terminal                                             |
+| Milestone root process CWD but authorized Git worktree nested at different SHA  | Preflight binds correct explicit target or typed setup blocker; no fallback to old root                              |
+| `work_packet` missing / Repair role intentionally lacks LVO                     | No fabricated product FAIL/PASS; correct role and profile-specific diagnosis                                         |
+| Git staged/uncommitted candidate in mechanical phase                            | Preserve edits and correct allowed read-only/validation tools; no unsafe mutation                                    |
+| Infra/tool/provider refusal with zero new evidence                              | No no-op adaptive loop and no capability-family escalation                                                           |
+| Safe benchmark requested with no source edit                                    | Actual approved bounded measurement or correct pending-operations explanation; no bogus mechanical source validation |
+| Eight workers requested with unclear supported capacity                         | Inspect configured limit; one/in-limit succeeds, over-limit typed refusal; no blind raising                          |
+| Unsupported `tool_choice` for alternate provider                                | No repeated invalid request; support declared capability or fail closed with actionable diagnosis                    |
+| Properly bound authorized Worker completes all required source+operations gates | Trusted terminal, fresh independent validation preserved and owner QA still separately pending                       |
 
 For failures, persist source SHA, executable identity, worker role, stage, exact needed evidence/permissions and deterministic classification. Avoid raw secrets; logs remain under safe temp/evidence paths, not active game worktrees. Do not use prior external CI as a substitute for a current exact-head local native gate.
 

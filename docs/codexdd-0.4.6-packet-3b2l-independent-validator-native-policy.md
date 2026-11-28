@@ -35,13 +35,13 @@ Even if all six negative tests pass, a true independent Validator **running a se
 
 Each selector was first listed with `1 test, 0 benchmarks`, then executed and returned `test result: ok. 1 passed; 0 failed`:
 
-| Selector | Native result |
-| --- | --- |
-| `codexdd_046_3b2_native_role_gate_rejects_independent_workers` | 1/1 PASS |
-| `codexdd_046_3b2d_protected_mechanical_requires_core_bound_source` | 1/1 PASS |
-| `codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair` | 1/1 PASS |
-| `codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker` | 1/1 PASS |
-| `adaptive_validation_terminalization_allows_only_trusted_signal_tool` | 1/1 PASS |
-| `codexdd_046_3b2_mechanical_node_rust_commands_remain_bounded` | 1/1 PASS |
+| Selector                                                                           | Native result |
+| ---------------------------------------------------------------------------------- | ------------- |
+| `codexdd_046_3b2_native_role_gate_rejects_independent_workers`                     | 1/1 PASS      |
+| `codexdd_046_3b2d_protected_mechanical_requires_core_bound_source`                 | 1/1 PASS      |
+| `codexdd_046_3b2d_unbound_adaptive_receipt_cannot_authorize_repair`                | 1/1 PASS      |
+| `codexdd_046_3b2_native_preflight_without_git_returns_nonrepairable_setup_blocker` | 1/1 PASS      |
+| `adaptive_validation_terminalization_allows_only_trusted_signal_tool`              | 1/1 PASS      |
+| `codexdd_046_3b2_mechanical_node_rust_commands_remain_bounded`                     | 1/1 PASS      |
 
 **Disposition:** 3B.2l native negative-policy test packet **COMPLETE**. This is real Windows Core policy unit coverage, **not** an independent live Validator process, actual Node profile, direct trusted Worker-to-Core LVO handler call, or full 0.4.6 release gate. No independent Worker role gained Implementation LVO authorization, no game worktree or deployed binary changed, and 0.4.5 remains frozen. Next engineering packet should focus on Core LVO execution/receipt provenance with an authorized disposable repository and a true handoff when available, without staging a fake PASS.

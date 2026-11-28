@@ -3,6 +3,42 @@
 
 use std::sync::OnceLock;
 
+use codex_protocol::timestamp::Timestamp;
+
+pub(crate) fn utc_today() -> jiff::civil::Date {
+    jiff::Timestamp::now()
+        .to_zoned(jiff::tz::TimeZone::UTC)
+        .date()
+}
+
+pub(crate) fn format_utc(timestamp: Timestamp, pattern: &str) -> String {
+    let Some(utc) = timestamp.utc() else {
+        return timestamp.to_string();
+    };
+    if timestamp.nanosecond() >= 1_000_000_000 && pattern.contains("%S") {
+        // Jiff projects a leap second onto the preceding civil second.
+        utc.strftime(&pattern.replace("%S", "60")).to_string()
+    } else {
+        utc.strftime(pattern).to_string()
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn local_fixture(
+    year: i16,
+    month: i8,
+    day: i8,
+    hour: i8,
+    minute: i8,
+    second: i8,
+) -> Timestamp {
+    let civil = jiff::civil::date(year, month, day).at(hour, minute, second, 0);
+    let local = civil
+        .to_zoned(jiff::tz::TimeZone::system())
+        .expect("valid local time");
+    Timestamp::from(std::time::SystemTime::from(local.timestamp()))
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ClockFormat {
     TwelveHour,

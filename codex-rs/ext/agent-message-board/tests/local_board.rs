@@ -5,6 +5,7 @@
     reason = "shared test helpers assert successful operations"
 )]
 
+use codex_protocol::timestamp::Timestamp;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -14,8 +15,6 @@ use std::sync::atomic::AtomicI64;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
-use chrono::DateTime;
-use chrono::Utc;
 use codex_agent_message_board_extension::*;
 use codex_protocol::AgentPath;
 use codex_protocol::SessionId;
@@ -55,12 +54,11 @@ impl MessageBoardHost for Host {
         })
     }
 
-    fn current_time(&self, _caller: ThreadId) -> BoxFuture<'_, Result<DateTime<Utc>>> {
+    fn current_time(&self, _caller: ThreadId) -> BoxFuture<'_, Result<Timestamp>> {
         Box::pin(async move {
-            Ok(DateTime::parse_from_rfc3339("2026-09-18T12:00:00Z")
+            Ok(Timestamp::parse_from_rfc3339("2026-09-18T12:00:00Z")
                 .map_err(|error| CodexErr::Io(std::io::Error::other(error)))?
-                .with_timezone(&Utc)
-                + chrono::Duration::seconds(self.clock.fetch_add(1, Ordering::SeqCst)))
+                + time::Duration::seconds(self.clock.fetch_add(1, Ordering::SeqCst)))
         })
     }
 

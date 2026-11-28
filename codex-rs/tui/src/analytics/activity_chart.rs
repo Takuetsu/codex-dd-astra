@@ -4,9 +4,7 @@ mod palette;
 
 use std::collections::BTreeMap;
 
-use chrono::Datelike;
-use chrono::Duration;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use ratatui::style::Style;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
@@ -55,7 +53,7 @@ impl TokenActivityView {
 pub(super) fn chart_lines(
     view: TokenActivityView,
     buckets: &[codex_backend_client::TokenUsageProfileDailyBucket],
-    today: NaiveDate,
+    today: Date,
     width: u16,
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
@@ -190,16 +188,16 @@ fn bar_caption(view: TokenActivityView, values: &[i64]) -> Line<'static> {
     .into()
 }
 
-fn month_labels(today: NaiveDate, first_column: usize, shown_columns: usize) -> Line<'static> {
+fn month_labels(today: Date, first_column: usize, shown_columns: usize) -> Line<'static> {
     let mut cells = vec![' '; shown_columns * 2 - 1];
     let start = chart_start(today);
     let mut last_end = 0;
     for column in first_column..WEEK_COUNT {
-        let date = start + Duration::days((column * DAY_COUNT) as i64);
+        let date = start + jiff::Span::new().days((column * DAY_COUNT) as i64);
         if date.day() > 7 {
             continue;
         }
-        let label = date.format("%b").to_string();
+        let label = date.strftime("%b").to_string();
         let offset = (column - first_column) * 2;
         if offset < last_end || offset + label.len() > cells.len() {
             continue;
@@ -223,13 +221,13 @@ fn month_labels(today: NaiveDate, first_column: usize, shown_columns: usize) -> 
 /// accumulated and negative token values do not reduce activity.
 fn daily_values(
     buckets: &[codex_backend_client::TokenUsageProfileDailyBucket],
-    today: NaiveDate,
+    today: Date,
 ) -> Vec<i64> {
     let start = chart_start(today);
-    let end = start + Duration::days(CELL_COUNT as i64);
+    let end = start + jiff::Span::new().days(CELL_COUNT as i64);
     let mut by_date = BTreeMap::new();
     for bucket in buckets {
-        let Ok(date) = NaiveDate::parse_from_str(&bucket.start_date, "%Y-%m-%d") else {
+        let Ok(date) = Date::strptime("%Y-%m-%d", &bucket.start_date) else {
             continue;
         };
         if date < start || date >= end || date > today {
@@ -241,7 +239,7 @@ fn daily_values(
     (0..CELL_COUNT)
         .map(|offset| {
             by_date
-                .get(&(start + Duration::days(offset as i64)))
+                .get(&(start + jiff::Span::new().days(offset as i64)))
                 .copied()
                 .unwrap_or(/*default*/ 0)
         })
@@ -305,13 +303,16 @@ fn bar_levels(totals: &[i64]) -> Vec<usize> {
         .collect()
 }
 
-fn chart_start(today: NaiveDate) -> NaiveDate {
-    let week_start = today - Duration::days(i64::from(today.weekday().num_days_from_sunday()));
-    week_start - Duration::weeks((WEEK_COUNT - 1) as i64)
+fn chart_start(today: Date) -> Date {
+    let week_start =
+        today - jiff::Span::new().days(i64::from(today.weekday().to_sunday_zero_offset()));
+    week_start - jiff::Span::new().weeks((WEEK_COUNT - 1) as i64)
 }
 
-fn cell_date(today: NaiveDate, index: usize) -> Option<NaiveDate> {
-    chart_start(today).checked_add_signed(Duration::days(index as i64))
+fn cell_date(today: Date, index: usize) -> Option<Date> {
+    chart_start(today)
+        .checked_add(jiff::Span::new().days(index as i64))
+        .ok()
 }
 
 #[cfg(test)]

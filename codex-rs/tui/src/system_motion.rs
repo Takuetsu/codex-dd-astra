@@ -60,7 +60,7 @@ async fn detect() -> Option<MotionMode> {
         )
         .await
         .ok()?;
-        let value: zbus::zvariant::OwnedValue = proxy
+        let value: zbus::OwnedValue = proxy
             .call("ReadOne", &("org.freedesktop.appearance", "reduced-motion"))
             .await
             .ok()?;

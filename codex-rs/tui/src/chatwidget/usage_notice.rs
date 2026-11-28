@@ -8,12 +8,11 @@ use super::rate_limits::is_approximate_window;
 use super::rate_limits::limit_label_for_window;
 use crate::clock_format::ClockFormat;
 use crate::footer_hint::first_fitting_line;
-use chrono::DateTime;
-use chrono::Local;
 use codex_app_server_protocol::CreditsSnapshot;
 use codex_app_server_protocol::RateLimitSnapshot;
 use codex_app_server_protocol::RateLimitWindow;
 use codex_protocol::account::PlanType;
+use codex_protocol::timestamp::Timestamp;
 use ratatui::text::Line;
 
 #[derive(Default)]
@@ -28,12 +27,7 @@ pub(super) struct UsageNoticeState {
 }
 
 impl UsageNoticeState {
-    fn line(
-        &self,
-        width: u16,
-        now: DateTime<Local>,
-        clock_format: ClockFormat,
-    ) -> Option<Line<'static>> {
+    fn line(&self, width: u16, now: Timestamp, clock_format: ClockFormat) -> Option<Line<'static>> {
         let (window, is_secondary) = self.current()?;
         let label = limit_label_for_window(window.window_duration_mins, is_secondary);
         // Percentages are rounded by the protocol; 100% alone does not prove a hard stop.
@@ -50,16 +44,12 @@ impl UsageNoticeState {
         let summary = format!("⚠ {label} limit: {emphasis}{remaining} left");
         let reset = window
             .resets_at
-            .and_then(|timestamp| DateTime::from_timestamp(timestamp, /*nsecs*/ 0))
+            .and_then(|timestamp| Timestamp::from_timestamp(timestamp, /*nsecs*/ 0))
             .filter(|reset| *reset > now)
             .map(|reset| {
                 format!(
                     " · resets at {}",
-                    crate::status::format_reset_timestamp(
-                        reset.with_timezone(&Local),
-                        now,
-                        clock_format
-                    )
+                    crate::status::format_reset_timestamp(reset, now, clock_format)
                 )
             })
             .unwrap_or_default();
@@ -172,7 +162,7 @@ impl ChatWidget {
             return None;
         }
         self.usage_notice_state
-            .line(width, Local::now(), self.clock_format)
+            .line(width, Timestamp::now(), self.clock_format)
     }
 
     pub(crate) fn start_usage_notice_read(&mut self, request_id: u64) {

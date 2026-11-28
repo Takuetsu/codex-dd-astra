@@ -5,7 +5,6 @@ use crate::cache::ModelsCache;
 use crate::cache::ModelsCacheEntry;
 use crate::cache::ModelsCacheError;
 use crate::cache::ModelsCacheFuture;
-use chrono::Utc;
 use codex_http_client::HttpClientFactory;
 use codex_http_client::OutboundProxyPolicy;
 use codex_login::AuthCredentialsStoreMode;
@@ -19,6 +18,7 @@ use codex_protocol::auth::AuthMode;
 use codex_protocol::error::CodexErr;
 use codex_protocol::openai_models::ModelAccessPrograms;
 use codex_protocol::openai_models::ModelsResponse;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::turn_input::CyberAccessProgram;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -186,7 +186,7 @@ impl ModelsCache for TestModelsCache {
                 let entry = entry
                     .as_mut()
                     .ok_or_else(|| ModelsCacheError::new("cache not found"))?;
-                entry.fetched_at = Utc::now();
+                entry.fetched_at = Timestamp::now();
                 entry.clone()
             };
             self.store(&refreshed).await
@@ -360,7 +360,7 @@ async fn file_cache_implements_models_cache_contract() {
     let client_version = crate::client_version_to_whole();
     let entry = ModelsCacheEntry {
         identity: Some("test-provider".to_string()),
-        fetched_at: Utc::now(),
+        fetched_at: Timestamp::now(),
         etag: Some("file-etag".to_string()),
         client_version: Some(client_version.clone()),
         models: vec![ModelInfo {
@@ -393,7 +393,7 @@ async fn file_cache_refresh_ttl_renews_expired_entry_without_serving_it_stale() 
         DEFAULT_MODEL_CACHE_TTL,
     );
     let client_version = crate::client_version_to_whole();
-    let expired_at = Utc::now() - chrono::Duration::hours(1);
+    let expired_at = Timestamp::now() - time::Duration::hours(1);
     let entry = ModelsCacheEntry {
         identity: Some("test-provider".to_string()),
         fetched_at: expired_at,
@@ -471,7 +471,7 @@ async fn injected_cache_hit_avoids_remote_fetch() {
     let cached_models = vec![remote_model("cached", "Cached", /*priority*/ 0)];
     let cache = TestModelsCache::with_entry(ModelsCacheEntry {
         identity: Some("test-provider".to_string()),
-        fetched_at: Utc::now(),
+        fetched_at: Timestamp::now(),
         etag: Some("cached-etag".to_string()),
         client_version: Some(crate::client_version_to_whole()),
         models: cached_models.clone(),
@@ -560,7 +560,7 @@ async fn injected_cache_write_error_does_not_fail_remote_refresh() {
 #[tokio::test]
 async fn injected_cache_ttl_refresh_preserves_cached_payload() {
     let cached_models = vec![remote_model("cached", "Cached", /*priority*/ 0)];
-    let cached_at = Utc::now() - chrono::Duration::minutes(1);
+    let cached_at = Timestamp::now() - time::Duration::minutes(1);
     let cache = TestModelsCache::with_entry(ModelsCacheEntry {
         identity: Some("test-provider".to_string()),
         fetched_at: cached_at,
@@ -613,7 +613,7 @@ c2ln",
             refresh_token: "test".to_string(),
             account_id: Some("account_id".to_string()),
         }),
-        last_refresh: Some(Utc::now()),
+        last_refresh: Some(Timestamp::now()),
         agent_identity: None,
         personal_access_token: None,
         bedrock_api_key: None,
@@ -1271,7 +1271,7 @@ async fn refresh_available_models_refetches_when_cache_stale() {
 
     // Rewrite cache with an old timestamp so it is treated as stale.
     mutate_file_cache_for_test(codex_home.path(), |cache| {
-        cache.fetched_at = Utc::now() - chrono::Duration::hours(1);
+        cache.fetched_at = Timestamp::now() - time::Duration::hours(1);
     })
     .await;
 

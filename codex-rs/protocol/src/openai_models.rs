@@ -3,11 +3,10 @@
 //! These types are serialized across core, TUI, app-server, and SDK boundaries, so field defaults
 //! are used to preserve compatibility when older payloads omit newly introduced attributes.
 
+use crate::timestamp::Timestamp;
 use std::fmt;
 use std::str::FromStr;
 
-use chrono::DateTime;
-use chrono::Utc;
 use schemars::JsonSchema;
 use schemars::r#gen::SchemaGenerator;
 use schemars::schema::InstanceType;
@@ -216,7 +215,7 @@ pub struct ModelUpgrade {
     )]
     #[schemars(with = "Option<String>")]
     #[ts(type = "string", optional)]
-    pub retirement_at: Option<DateTime<Utc>>,
+    pub retirement_at: Option<Timestamp>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, TS, JsonSchema, PartialEq, Eq)]
@@ -804,12 +803,12 @@ pub struct ModelInfoUpgrade {
     )]
     #[schemars(with = "Option<String>")]
     #[ts(type = "string", optional)]
-    pub retirement_at: Option<DateTime<Utc>>,
+    pub retirement_at: Option<Timestamp>,
 }
 
 fn deserialize_optional_rfc3339_timestamp<'de, D>(
     deserializer: D,
-) -> Result<Option<DateTime<Utc>>, D::Error>
+) -> Result<Option<Timestamp>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -817,8 +816,7 @@ where
     Ok(value
         .as_ref()
         .and_then(serde_json::Value::as_str)
-        .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
-        .map(|value| value.with_timezone(&Utc)))
+        .and_then(|value| Timestamp::parse_from_rfc3339(value).ok()))
 }
 
 impl From<&ModelUpgrade> for ModelInfoUpgrade {
@@ -1700,7 +1698,7 @@ mod tests {
                 .upgrade
                 .as_ref()
                 .and_then(|upgrade| upgrade.retirement_at.as_ref())
-                .map(DateTime::timestamp),
+                .map(Timestamp::timestamp),
             None
         );
 
@@ -1721,7 +1719,7 @@ mod tests {
             null.upgrade
                 .as_ref()
                 .and_then(|upgrade| upgrade.retirement_at.as_ref())
-                .map(DateTime::timestamp),
+                .map(Timestamp::timestamp),
             None
         );
 
@@ -1744,7 +1742,7 @@ mod tests {
                 .upgrade
                 .as_ref()
                 .and_then(|upgrade| upgrade.retirement_at.as_ref())
-                .map(DateTime::timestamp),
+                .map(Timestamp::timestamp),
             Some(1_893_456_000)
         );
 
@@ -1768,7 +1766,7 @@ mod tests {
                 .upgrade
                 .as_ref()
                 .and_then(|upgrade| upgrade.retirement_at.as_ref())
-                .map(DateTime::timestamp),
+                .map(Timestamp::timestamp),
             None
         );
     }

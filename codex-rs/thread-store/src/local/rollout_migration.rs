@@ -8,13 +8,13 @@
 //! recoverable paginated rollout. Once the rollout path is replaced, the durable `.pending`
 //! journal must be enough for a later migration run to finish SQLite recovery safely.
 
+use codex_protocol::timestamp::Timestamp;
 use std::collections::HashMap;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use chrono::DateTime;
 use codex_app_server_protocol::project_rollout_line;
 use codex_protocol::ThreadId;
 use codex_protocol::protocol::InternalSessionSource;
@@ -1148,7 +1148,7 @@ impl LocalThreadStore {
             let ordinal = line
                 .ordinal
                 .ok_or_else(|| migration_error("staged rollout line is missing its ordinal"))?;
-            let fallback_created_at_ms = DateTime::parse_from_rfc3339(&line.timestamp)
+            let fallback_created_at_ms = Timestamp::parse_from_rfc3339(&line.timestamp)
                 .map_err(migration_error)?
                 .timestamp_millis();
             let is_inherited_subagent_history =

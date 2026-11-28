@@ -1,4 +1,5 @@
 use super::*;
+use codex_protocol::timestamp::Timestamp;
 
 impl ChatWidget {
     pub(crate) fn handle_server_notification(
@@ -697,7 +698,7 @@ impl ChatWidget {
             {
                 // Buffered starts reconstruct an in-flight compaction when switching tasks.
                 let elapsed = if replay_kind == Some(ReplayKind::ThreadSnapshot) {
-                    let elapsed_ms = chrono::Utc::now()
+                    let elapsed_ms = Timestamp::now()
                         .timestamp_millis()
                         .saturating_sub(notification.started_at_ms)
                         .max(0);

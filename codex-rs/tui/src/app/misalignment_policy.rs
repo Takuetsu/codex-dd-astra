@@ -9,6 +9,7 @@ use codex_app_server_protocol::ClientRequest;
 use codex_app_server_protocol::TurnStartParams;
 use codex_app_server_protocol::TurnStartResponse;
 use codex_app_server_protocol::UserInput;
+use codex_protocol::timestamp::Timestamp;
 
 impl App {
     pub(super) fn open_misalignment_review(
@@ -172,7 +173,7 @@ impl App {
                     }],
                     responsesapi_client_metadata: Some(HashMap::from([(
                         "misalignment_override".to_string(),
-                        serde_json::json!({"timestamp": chrono::Utc::now().timestamp_millis()})
+                        serde_json::json!({"timestamp": Timestamp::now().timestamp_millis()})
                             .to_string(),
                     )])),
                     ..Default::default()

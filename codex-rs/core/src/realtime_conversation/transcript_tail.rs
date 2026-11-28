@@ -9,6 +9,7 @@ use codex_protocol::protocol::HasLegacyEvent;
 use codex_protocol::protocol::ItemCompletedEvent;
 use codex_protocol::protocol::TurnCompleteEvent;
 use codex_protocol::protocol::TurnStartedEvent;
+use codex_protocol::timestamp::Timestamp;
 use codex_protocol::user_input::UserInput;
 use codex_rollout::RolloutItem;
 use codex_thread_store::PersistContext;
@@ -34,7 +35,7 @@ pub(super) async fn record(session: &Session, text: String) -> std::io::Result<(
         text,
         text_elements: Vec::new(),
     }];
-    let now = chrono::Utc::now();
+    let now = Timestamp::now();
     if recording_turn {
         let started = EventMsg::TurnStarted(TurnStartedEvent {
             turn_attribution: None,

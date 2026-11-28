@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::path::Path;
 
 use futures::StreamExt;
@@ -91,7 +92,7 @@ pub(crate) fn running_summary(handler: &ConfiguredHandler) -> HookRunSummary {
         display_order: handler.display_order,
         status: HookRunStatus::Running,
         status_message: handler.status_message.clone(),
-        started_at: chrono::Utc::now().timestamp(),
+        started_at: Timestamp::now().timestamp(),
         completed_at: None,
         duration_ms: None,
         entries: Vec::new(),

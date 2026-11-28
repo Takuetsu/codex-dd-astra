@@ -5,7 +5,8 @@ use super::StateRuntime;
 use super::prune_by_age_and_size;
 use crate::SqliteConfig;
 use crate::migrations::LOGS_MIGRATOR;
-use chrono::Utc;
+use codex_protocol::timestamp::Timestamp;
+
 use codex_utils_absolute_path::test_support::PathExt;
 use pretty_assertions::assert_eq;
 use sqlx::SqlitePool;
@@ -101,7 +102,7 @@ async fn periodic_cleanup_prunes_without_new_log_writes_or_restart() {
     )
     .await
     .unwrap();
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().timestamp();
     for timestamp in [now - 11 * DAY, now] {
         sqlx::query("INSERT INTO logs (ts, ts_nanos, level, target) VALUES (?, 0, 'INFO', 'test')")
             .bind(timestamp)

@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use chrono::DateTime;
-use chrono::SecondsFormat;
-use chrono::Utc;
 use codex_protocol::ThreadId;
+use codex_protocol::timestamp::SecondsFormat;
+use codex_protocol::timestamp::Timestamp;
 use codex_utils_absolute_path::AbsolutePathBuf;
 use futures::future::BoxFuture;
 use serde::Serialize;
@@ -67,7 +66,7 @@ pub struct HookPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
     #[serde(serialize_with = "serialize_triggered_at")]
-    pub triggered_at: DateTime<Utc>,
+    pub triggered_at: Timestamp,
     pub hook_event: HookEvent,
 }
 
@@ -80,7 +79,7 @@ pub struct HookEventAfterAgent {
     pub last_assistant_message: Option<String>,
 }
 
-fn serialize_triggered_at<S>(value: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_triggered_at<S>(value: &Timestamp, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -98,9 +97,8 @@ pub enum HookEvent {
 
 #[cfg(test)]
 mod tests {
-    use chrono::TimeZone;
-    use chrono::Utc;
     use codex_protocol::ThreadId;
+    use codex_protocol::timestamp::Timestamp;
     use codex_utils_absolute_path::test_support::PathBufExt;
     use codex_utils_absolute_path::test_support::test_path_buf;
     use pretty_assertions::assert_eq;
@@ -119,9 +117,7 @@ mod tests {
             session_id,
             cwd: cwd.clone(),
             client: None,
-            triggered_at: Utc
-                .with_ymd_and_hms(2025, 1, 1, 0, 0, 0)
-                .single()
+            triggered_at: Timestamp::parse_from_rfc3339("2025-01-01T00:00:00Z")
                 .expect("valid timestamp"),
             hook_event: HookEvent::AfterAgent {
                 event: HookEventAfterAgent {

@@ -10,6 +10,7 @@
 Continue CodexDD **0.4.6 — Agent Reliability & Completion**. 0.4.5 is intentionally FROZEN; do not run its workflows, unfreeze its PRs or import its unfinished upstream/daemon/TUI changes.
 
 The 0.4.6 milestone is owner-selected for restoring the usability of active CodexDD agents. Its priority order is:
+
 1. P0: trustworthy end-to-end completion and evidence-bound `ready_for_owner_qa` / `repair_required` terminalization (DD-BL-005/007): no false READY on partial green tests, missing official validation, stale `exec-*` refs or unverified runtime/preview.
 2. P0: correct bound Worker role, milestone-root vs nested Git worktree identity, active candidate SHA, native validation tool/profile readiness, and safe Node/Rust work_packet routing (DD-BL-006).
 3. P0: prevent repeated no-progress adaptive continuations/model escalations on unchanged infrastructure, tool, provider or policy blockers while keeping productive continuations.
@@ -17,6 +18,7 @@ The 0.4.6 milestone is owner-selected for restoring the usability of active Code
 5. P1 conditional: reproduce and fix genuine in-capacity `agent thread limit reached` failures, provider `tool_choice` compatibility errors, and first-turn role-binding/preflight confusion. Do not blindly increase worker limits or change providers.
 
 **Authoritative GitHub planning source:**
+
 - Repo: `Takuetsu/codex-dd-astra`
 - Development branch: `dd/codexdd-v0.4.6-agent-reliability` (refresh live HEAD).
 - Production source baseline: `dd/astra-policy-v2` @ `b25550dcb2c6e84a84074b603086c9db6f32a63b`, version `0.4.4`.

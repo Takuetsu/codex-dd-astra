@@ -11,11 +11,11 @@ use crate::model::Stage1JobClaimOutcome;
 use crate::model::Stage1Output;
 use crate::model::Stage1StartupClaimParams;
 use crate::model::ThreadRow;
-use chrono::DateTime;
-use chrono::Duration;
+
 use sqlx::Executor;
 use sqlx::QueryBuilder;
 use sqlx::Sqlite;
+use time::Duration;
 use uuid::Uuid;
 
 const JOB_KIND_MEMORY_STAGE1: &str = "memory_stage1";
@@ -63,7 +63,7 @@ impl MemoryStore {
             return Ok(0);
         }
 
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let mut tx = self.pool.begin().await?;
         let mut updated_rows = 0;
 
@@ -167,9 +167,10 @@ WHERE kind = ? AND job_key = ?
 
         let worker_id = current_thread_id;
         let current_thread_id = worker_id.to_string();
-        let max_age_cutoff = (Utc::now() - Duration::days(max_age_days.max(0))).timestamp_millis();
+        let max_age_cutoff =
+            (Timestamp::now() - Duration::days(max_age_days.max(0))).timestamp_millis();
         let idle_cutoff =
-            (Utc::now() - Duration::hours(min_rollout_idle_hours.max(0))).timestamp_millis();
+            (Timestamp::now() - Duration::hours(min_rollout_idle_hours.max(0))).timestamp_millis();
 
         let mut builder = QueryBuilder::<Sqlite>::new(
             r#"
@@ -297,7 +298,7 @@ FROM threads
     }
 
     pub(super) async fn delete_thread_memory(&self, thread_id: ThreadId) -> anyhow::Result<()> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let thread_id = thread_id.to_string();
         let mut tx = self.pool.begin().await?;
 
@@ -409,7 +410,7 @@ ORDER BY so.source_updated_at DESC, so.thread_id DESC
             return Ok(0);
         }
 
-        let cutoff = (Utc::now() - Duration::days(max_unused_days.max(0))).timestamp();
+        let cutoff = (Timestamp::now() - Duration::days(max_unused_days.max(0))).timestamp();
         let rows_affected = sqlx::query(
             r#"
 DELETE FROM stage1_outputs
@@ -458,7 +459,7 @@ WHERE thread_id IN (
         if n == 0 {
             return Ok(Vec::new());
         }
-        let cutoff = (Utc::now() - Duration::days(max_unused_days.max(0))).timestamp();
+        let cutoff = (Timestamp::now() - Duration::days(max_unused_days.max(0))).timestamp();
 
         let page_size = n.clamp(1, PHASE2_INPUT_SELECTION_PAGE_SIZE);
         let page_size_i64 = i64::try_from(page_size).unwrap_or(i64::MAX);
@@ -631,7 +632,7 @@ WHERE threads.id = ? AND threads.memory_mode = 'enabled'
         &self,
         thread_id: ThreadId,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let thread_id = thread_id.to_string();
         let selected_for_phase2 = sqlx::query_scalar::<_, i64>(
             r#"
@@ -687,7 +688,7 @@ WHERE id = ? AND memory_mode != 'polluted'
         lease_seconds: i64,
         max_running_jobs: usize,
     ) -> anyhow::Result<Stage1JobClaimOutcome> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let lease_until = now.saturating_add(lease_seconds.max(0));
         let max_running_jobs = max_running_jobs as i64;
         let ownership_token = Uuid::new_v4().to_string();
@@ -875,7 +876,7 @@ WHERE kind = ? AND job_key = ?
         rollout_summary: &str,
         rollout_slug: Option<&str>,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let thread_id = thread_id.to_string();
 
         let mut tx = self.pool.begin().await?;
@@ -952,7 +953,7 @@ WHERE excluded.source_updated_at >= stage1_outputs.source_updated_at
         thread_id: ThreadId,
         ownership_token: &str,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let thread_id = thread_id.to_string();
 
         let mut tx = self.pool.begin().await?;
@@ -1029,7 +1030,7 @@ WHERE thread_id = ?
         failure_reason: &str,
         retry_delay_seconds: i64,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let retry_at = now.saturating_add(retry_delay_seconds.max(0));
         let thread_id = thread_id.to_string();
 
@@ -1089,7 +1090,7 @@ WHERE kind = ? AND job_key = ?
         worker_id: ThreadId,
         lease_seconds: i64,
     ) -> anyhow::Result<Phase2JobClaimOutcome> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let lease_until = now.saturating_add(lease_seconds.max(0));
         let cooldown_cutoff = now.saturating_sub(PHASE2_SUCCESS_COOLDOWN_SECONDS);
         let ownership_token = Uuid::new_v4().to_string();
@@ -1226,7 +1227,7 @@ WHERE kind = ? AND job_key = ?
         ownership_token: &str,
         lease_seconds: i64,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let lease_until = now.saturating_add(lease_seconds.max(0));
         let rows_affected = sqlx::query(
             r#"
@@ -1325,7 +1326,7 @@ WHERE thread_id = ? AND source_updated_at = ?
         failure_reason: &str,
         retry_delay_seconds: i64,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let retry_at = now.saturating_add(retry_delay_seconds.max(0));
         let rows_affected = sqlx::query(
             r#"
@@ -1366,7 +1367,7 @@ WHERE kind = ? AND job_key = ?
         failure_reason: &str,
         retry_delay_seconds: i64,
     ) -> anyhow::Result<bool> {
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let retry_at = now.saturating_add(retry_delay_seconds.max(0));
         let rows_affected = sqlx::query(
             r#"
@@ -1405,7 +1406,7 @@ async fn mark_global_phase2_job_succeeded_row<'e, E>(
 where
     E: Executor<'e, Database = Sqlite>,
 {
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().timestamp();
     let rows_affected = sqlx::query(
         r#"
 UPDATE jobs
@@ -1481,8 +1482,8 @@ fn stage1_output_from_row_and_thread(
     })
 }
 
-fn datetime_from_epoch_seconds(secs: i64) -> anyhow::Result<DateTime<Utc>> {
-    DateTime::<Utc>::from_timestamp(secs, 0)
+fn datetime_from_epoch_seconds(secs: i64) -> anyhow::Result<Timestamp> {
+    Timestamp::from_timestamp(secs, 0)
         .ok_or_else(|| anyhow::anyhow!("invalid unix timestamp: {secs}"))
 }
 
@@ -1724,8 +1725,9 @@ mod tests {
     use crate::model::Phase2JobClaimOutcome;
     use crate::model::Stage1JobClaimOutcome;
     use crate::model::Stage1StartupClaimParams;
-    use chrono::Duration;
-    use chrono::Utc;
+    use codex_protocol::timestamp::Timestamp;
+    use time::Duration;
+
     use codex_protocol::ThreadId;
     use codex_protocol::protocol::ThreadHistoryMode;
     use codex_utils_absolute_path::test_support::PathExt;
@@ -1744,7 +1746,7 @@ mod tests {
 
     async fn age_phase2_success_beyond_cooldown(runtime: &StateRuntime) {
         sqlx::query("UPDATE jobs SET finished_at = ? WHERE kind = ? AND job_key = ?")
-            .bind(Utc::now().timestamp() - PHASE2_SUCCESS_COOLDOWN_SECONDS - 1)
+            .bind(Timestamp::now().timestamp() - PHASE2_SUCCESS_COOLDOWN_SECONDS - 1)
             .bind(JOB_KIND_MEMORY_CONSOLIDATE_GLOBAL)
             .bind(MEMORY_CONSOLIDATION_JOB_KEY)
             .execute(memory_pool(runtime))
@@ -2033,7 +2035,7 @@ mod tests {
         .await
         .expect("initialize runtime");
 
-        let now = Utc::now();
+        let now = Timestamp::now();
         let fresh_at = now - Duration::hours(1);
         let just_under_idle_at = now - Duration::hours(12) + Duration::minutes(1);
         let eligible_idle_at = now - Duration::hours(12) - Duration::minutes(1);
@@ -2126,7 +2128,7 @@ mod tests {
         .await
         .expect("initialize runtime");
 
-        let now = Utc::now();
+        let now = Timestamp::now();
         let eligible_newer_at = now - Duration::hours(13);
         let eligible_older_at = now - Duration::hours(14);
 
@@ -2244,7 +2246,7 @@ mod tests {
         .await
         .expect("initialize runtime");
 
-        let now = Utc::now();
+        let now = Timestamp::now();
         let eligible_at = now - Duration::hours(13);
 
         let current_thread_id =
@@ -2343,7 +2345,7 @@ mod tests {
         .await
         .expect("initialize runtime");
 
-        let now = Utc::now() - Duration::hours(13);
+        let now = Timestamp::now() - Duration::hours(13);
         let worker_id = ThreadId::from_string(&Uuid::new_v4().to_string()).expect("worker id");
         let enabled_thread_id =
             ThreadId::from_string(&Uuid::new_v4().to_string()).expect("enabled thread id");
@@ -2466,7 +2468,7 @@ mod tests {
             .await
             .expect("upsert current");
 
-        let now = Utc::now();
+        let now = Timestamp::now();
         let started_at = now.timestamp();
         let lease_until = started_at + 3600;
         let eligible_at = now - Duration::hours(13);
@@ -2548,7 +2550,7 @@ WHERE kind = 'memory_stage1'
   AND lease_until > ?
             "#,
         )
-        .bind(Utc::now().timestamp())
+        .bind(Timestamp::now().timestamp())
         .fetch_one(memory_pool(&runtime))
         .await
         .expect("count running stage1 jobs")
@@ -2589,14 +2591,14 @@ WHERE kind = 'memory_stage1'
             ThreadId::from_string(&Uuid::new_v4().to_string()).expect("current thread id");
         let mut current =
             test_thread_metadata(&codex_home, current_thread_id, codex_home.join("current"));
-        current.created_at = Utc::now();
-        current.updated_at = Utc::now();
+        current.created_at = Timestamp::now();
+        current.updated_at = Timestamp::now();
         runtime
             .upsert_thread(&current)
             .await
             .expect("upsert current");
 
-        let eligible_at = Utc::now() - Duration::hours(13);
+        let eligible_at = Timestamp::now() - Duration::hours(13);
         for idx in 0..200 {
             let thread_id = ThreadId::from_string(&Uuid::new_v4().to_string()).expect("thread id");
             let mut metadata = test_thread_metadata(
@@ -2746,7 +2748,7 @@ WHERE kind = 'memory_stage1'
             "phase2 success should mark selected stage1 output"
         );
 
-        let before_delete = Utc::now().timestamp();
+        let before_delete = Timestamp::now().timestamp();
         assert_eq!(
             runtime
                 .delete_thread(thread_id)
@@ -4564,7 +4566,7 @@ VALUES (?, ?, ?, ?, ?)
         .await
         .expect("initialize runtime");
 
-        let now = Utc::now();
+        let now = Timestamp::now();
         let owner = ThreadId::from_string(&Uuid::new_v4().to_string()).expect("owner id");
         let thread_a = stable_thread_id("00000000-0000-4000-8000-000000000001");
         let thread_b = stable_thread_id("00000000-0000-4000-8000-000000000002");
@@ -4663,7 +4665,7 @@ VALUES (?, ?, ?, ?, ?)
         .await
         .expect("initialize runtime");
 
-        let now = Utc::now();
+        let now = Timestamp::now();
         let owner = ThreadId::from_string(&Uuid::new_v4().to_string()).expect("owner id");
         let thread_a = stable_thread_id("00000000-0000-4000-8000-000000000001");
         let thread_b = stable_thread_id("00000000-0000-4000-8000-000000000002");
@@ -4875,26 +4877,26 @@ VALUES (?, ?, ?, ?, ?)
                 .expect("upsert thread");
         }
 
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         for (thread_id, source_updated_at, summary) in [
             (
                 stale_unused,
-                now - Duration::days(60).num_seconds(),
+                now - Duration::days(60).whole_seconds(),
                 "stale-unused",
             ),
             (
                 stale_used,
-                now - Duration::days(50).num_seconds(),
+                now - Duration::days(50).whole_seconds(),
                 "stale-used",
             ),
             (
                 stale_selected,
-                now - Duration::days(45).num_seconds(),
+                now - Duration::days(45).whole_seconds(),
                 "stale-selected",
             ),
             (
                 fresh_used,
-                now - Duration::days(10).num_seconds(),
+                now - Duration::days(10).whole_seconds(),
                 "fresh-used",
             ),
         ] {
@@ -4932,7 +4934,7 @@ VALUES (?, ?, ?, ?, ?)
             "UPDATE stage1_outputs SET usage_count = ?, last_usage = ? WHERE thread_id = ?",
         )
         .bind(3_i64)
-        .bind(now - Duration::days(40).num_seconds())
+        .bind(now - Duration::days(40).whole_seconds())
         .bind(stale_used.to_string())
         .execute(memory_pool(&runtime))
         .await
@@ -4948,7 +4950,7 @@ VALUES (?, ?, ?, ?, ?)
             "UPDATE stage1_outputs SET usage_count = ?, last_usage = ? WHERE thread_id = ?",
         )
         .bind(8_i64)
-        .bind(now - Duration::days(2).num_seconds())
+        .bind(now - Duration::days(2).whole_seconds())
         .bind(fresh_used.to_string())
         .execute(memory_pool(&runtime))
         .await
@@ -5016,11 +5018,23 @@ VALUES (?, ?, ?, ?, ?)
                 .expect("upsert thread");
         }
 
-        let now = Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         for (thread_id, source_updated_at, summary) in [
-            (thread_a, now - Duration::days(60).num_seconds(), "stale-a"),
-            (thread_b, now - Duration::days(50).num_seconds(), "stale-b"),
-            (thread_c, now - Duration::days(40).num_seconds(), "stale-c"),
+            (
+                thread_a,
+                now - Duration::days(60).whole_seconds(),
+                "stale-a",
+            ),
+            (
+                thread_b,
+                now - Duration::days(50).whole_seconds(),
+                "stale-b",
+            ),
+            (
+                thread_c,
+                now - Duration::days(40).whole_seconds(),
+                "stale-c",
+            ),
         ] {
             let claim = runtime
                 .try_claim_stage1_job(
@@ -5284,7 +5298,7 @@ VALUES (?, ?, ?, ?, ?)
         };
 
         sqlx::query("UPDATE jobs SET lease_until = ? WHERE kind = ? AND job_key = ?")
-            .bind(Utc::now().timestamp() - 1)
+            .bind(Timestamp::now().timestamp() - 1)
             .bind("memory_consolidate_global")
             .bind("global")
             .execute(memory_pool(&runtime))

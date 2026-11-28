@@ -1,11 +1,11 @@
 use crate::compact::content_items_to_text;
 use crate::event_mapping::is_contextual_user_message_content;
 use crate::session::session::Session;
-use chrono::Utc;
 use codex_exec_server::LOCAL_FS;
 use codex_git_utils::resolve_root_git_project_for_trust;
 use codex_protocol::models::ResponseItem;
 use codex_protocol::models::plaintext_agent_message_content;
+use codex_protocol::timestamp::Timestamp;
 use codex_thread_store::ListThreadsParams;
 use codex_thread_store::SortDirection;
 use codex_thread_store::StoredThread;
@@ -182,12 +182,12 @@ async fn build_recent_work_section(
             .iter()
             .map(|entry| entry.updated_at)
             .max()
-            .unwrap_or_else(Utc::now);
+            .unwrap_or_else(Timestamp::now);
         let right_latest = right_entries
             .iter()
             .map(|entry| entry.updated_at)
             .max()
-            .unwrap_or_else(Utc::now);
+            .unwrap_or_else(Timestamp::now);
         (
             *left_group != current_group,
             Reverse(left_latest),

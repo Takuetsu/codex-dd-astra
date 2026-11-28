@@ -1,4 +1,5 @@
 mod api;
+mod timestamp;
 
 pub use api::ApplyOutcome;
 pub use api::ApplyStatus;
@@ -15,6 +16,7 @@ pub use api::TaskStatus;
 pub use api::TaskSummary;
 pub use api::TaskText;
 pub use api::TurnAttempt;
+pub use timestamp::format_log_timestamp;
 
 mod http;
 pub use http::HttpClient;

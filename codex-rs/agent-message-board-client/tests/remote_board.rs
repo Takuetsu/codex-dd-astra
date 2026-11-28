@@ -1,7 +1,5 @@
 //! Exercise the HTTP adapter's clock, authentication and turn-bound stream.
 
-use chrono::DateTime;
-use chrono::Utc;
 use codex_agent_message_board_client::AccessToken;
 use codex_agent_message_board_client::BoardNotification;
 use codex_agent_message_board_client::RemoteAgentMessageBoard;
@@ -18,6 +16,7 @@ use codex_protocol::SessionId;
 use codex_protocol::ThreadId;
 use codex_protocol::error::CodexErr;
 use codex_protocol::error::CodexErrorDetails;
+use codex_protocol::timestamp::Timestamp;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::HashMap;
@@ -86,7 +85,7 @@ async fn remote_board_preserves_the_host_contract() -> anyhow::Result<()> {
         .mount(&server)
         .await;
     let token = admin.register_members(members).await?;
-    let now: DateTime<Utc> = "2026-09-24T12:00:00Z".parse()?;
+    let now = Timestamp::parse_from_rfc3339("2026-09-24T12:00:00Z")?;
     let clock_available = Arc::new(AtomicBool::new(true));
     let clock = clock_available.clone();
     let client =

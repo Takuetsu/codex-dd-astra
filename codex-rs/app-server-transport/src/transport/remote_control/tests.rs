@@ -37,6 +37,7 @@ use codex_login::save_auth;
 use codex_login::token_data::TokenData;
 use codex_login::token_data::parse_chatgpt_jwt_claims;
 use codex_protocol::auth::AuthMode;
+use codex_protocol::timestamp::Timestamp;
 use codex_state::RemoteControlEnrollmentRecord;
 use codex_state::StateRuntime;
 use codex_utils_absolute_path::test_support::PathExt;
@@ -121,7 +122,7 @@ fn remote_control_auth_dot_json(account_id: Option<&str>) -> AuthDotJson {
             refresh_token: "refresh-token".to_string(),
             account_id: account_id.map(str::to_string),
         }),
-        last_refresh: Some(chrono::Utc::now()),
+        last_refresh: Some(Timestamp::now()),
         agent_identity: None,
         personal_access_token: None,
         bedrock_api_key: None,

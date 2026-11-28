@@ -1,3 +1,4 @@
+use codex_protocol::timestamp::Timestamp;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::ffi::OsString;
@@ -219,7 +220,7 @@ pub(crate) async fn run_command(
     input_json: &str,
     cwd: &Path,
 ) -> HandlerRunResult {
-    let started_at = chrono::Utc::now().timestamp();
+    let started_at = Timestamp::now().timestamp();
     let started = Instant::now();
 
     let mut command = build_command(&runtime.shell, command_line, &runtime.environment, env);
@@ -372,7 +373,7 @@ fn finish_command_run(
     Span::current().record("hook.command_outcome", completion.outcome);
     HandlerRunResult {
         started_at,
-        completed_at: chrono::Utc::now().timestamp(),
+        completed_at: Timestamp::now().timestamp(),
         duration_ms: started.elapsed().as_millis().try_into().unwrap_or(i64::MAX),
         exit_code: completion.exit_code,
         stdout: completion.stdout,

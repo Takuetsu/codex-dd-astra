@@ -1,12 +1,10 @@
 use codex_core::TurnInputRequest;
+use codex_protocol::timestamp::Timestamp;
 use core_test_support::test_codex::local_requests;
 use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::TimeZone;
-use chrono::Utc;
 use codex_core::config::Constrained;
 use codex_login::CodexAuth;
 use codex_models_manager::client_version_to_whole;
@@ -91,7 +89,7 @@ async fn guardian_reused_reviewer_avoids_stale_catalog_lookup() -> Result<()> {
     assert_eq!(initial_models.requests().len(), 1);
     rewrite_cache_timestamp(
         &test.config.codex_home.join(CACHE_FILE),
-        Utc::now() - chrono::Duration::hours(1),
+        Timestamp::now() - time::Duration::hours(1),
     )
     .await?;
     let repeat_models = responses::mount_models_once_with_etag(&server, catalog, ETAG).await;
@@ -190,7 +188,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
         .await;
 
     let cache_path = config.codex_home.join(CACHE_FILE);
-    let stale_time = Utc.timestamp_opt(0, 0).single().expect("valid epoch");
+    let stale_time = Timestamp::from_timestamp(0, 0).expect("valid epoch");
     rewrite_cache_timestamp(&cache_path, stale_time).await?;
 
     // Trigger responses with matching ETag, which should renew the cache TTL without another /models.
@@ -291,7 +289,7 @@ async fn matching_models_etag_does_not_rewrite_recent_cache() -> Result<()> {
         .await;
 
     let cache_path = test.config.codex_home.join(CACHE_FILE);
-    rewrite_cache_timestamp(&cache_path, Utc::now() - chrono::Duration::seconds(60)).await?;
+    rewrite_cache_timestamp(&cache_path, Timestamp::now() - time::Duration::seconds(60)).await?;
     let original_contents = tokio::fs::read(&cache_path).await?;
     let original_modified = tokio::fs::metadata(&cache_path).await?.modified()?;
 
@@ -351,7 +349,7 @@ async fn matching_models_etag_renews_cache_after_half_its_lifetime() -> Result<(
         .await;
 
     let cache_path = test.config.codex_home.join(CACHE_FILE);
-    let fetched_at = Utc::now() - chrono::Duration::seconds(180);
+    let fetched_at = Timestamp::now() - time::Duration::seconds(180);
     rewrite_cache_timestamp(&cache_path, fetched_at).await?;
 
     let response_body = sse(vec![
@@ -408,7 +406,7 @@ async fn uses_cache_when_version_matches() -> Result<()> {
         .with_pre_build_hook(move |home| {
             let mut cache = serde_json::to_value(ModelsCache {
                 identity,
-                fetched_at: Utc::now(),
+                fetched_at: Timestamp::now(),
                 etag: None,
                 client_version: Some(client_version_to_whole()),
                 models: vec![cached_model],
@@ -483,7 +481,7 @@ async fn refreshes_when_cache_version_missing() -> Result<()> {
         .with_pre_build_hook(move |home| {
             let cache = ModelsCache {
                 identity,
-                fetched_at: Utc::now(),
+                fetched_at: Timestamp::now(),
                 etag: None,
                 client_version: None,
                 models: vec![cached_model],
@@ -544,7 +542,7 @@ async fn refreshes_when_cache_version_differs() -> Result<()> {
             let client_version = client_version_to_whole();
             let cache = ModelsCache {
                 identity,
-                fetched_at: Utc::now(),
+                fetched_at: Timestamp::now(),
                 etag: None,
                 client_version: Some(format!("{client_version}-diff")),
                 models: vec![cached_model],
@@ -580,7 +578,7 @@ async fn refreshes_when_cache_version_differs() -> Result<()> {
     Ok(())
 }
 
-async fn rewrite_cache_timestamp(path: &Path, fetched_at: DateTime<Utc>) -> Result<()> {
+async fn rewrite_cache_timestamp(path: &Path, fetched_at: Timestamp) -> Result<()> {
     let mut cache = read_cache(path).await?;
     cache.fetched_at = fetched_at;
     write_cache(path, &cache).await?;
@@ -609,7 +607,7 @@ fn write_cache_sync(path: &Path, cache: &ModelsCache) -> Result<()> {
 struct ModelsCache {
     #[serde(default)]
     identity: Option<String>,
-    fetched_at: DateTime<Utc>,
+    fetched_at: Timestamp,
     #[serde(default)]
     etag: Option<String>,
     #[serde(default)]

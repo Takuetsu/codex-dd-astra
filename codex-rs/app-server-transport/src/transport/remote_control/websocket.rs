@@ -1849,7 +1849,6 @@ mod tests {
     use crate::transport::remote_control::auth::mark_recovery_auth_change_seen;
     use crate::transport::remote_control::protocol::StreamId;
     use crate::transport::remote_control::protocol::normalize_remote_control_url;
-    use chrono::Utc;
     use codex_app_server_protocol::ConfigWarningNotification;
     use codex_app_server_protocol::JSONRPCMessage;
     use codex_app_server_protocol::JSONRPCNotification;
@@ -1865,6 +1864,7 @@ mod tests {
     use codex_login::token_data::TokenData;
     use codex_login::token_data::parse_chatgpt_jwt_claims;
     use codex_protocol::auth::AuthMode;
+    use codex_protocol::timestamp::Timestamp;
     use codex_state::StateRuntime;
     use codex_utils_absolute_path::test_support::PathExt;
     use futures::StreamExt;
@@ -2074,7 +2074,7 @@ mod tests {
                 refresh_token: "refresh-token".to_string(),
                 account_id: Some("account_id".to_string()),
             }),
-            last_refresh: Some(Utc::now()),
+            last_refresh: Some(Timestamp::now()),
             agent_identity: None,
             personal_access_token: None,
             bedrock_api_key: None,

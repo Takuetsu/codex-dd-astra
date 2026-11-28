@@ -430,8 +430,8 @@ fn format_feedback_log_line(
     feedback_log_body: &str,
 ) -> String {
     let nanos = u32::try_from(ts_nanos).unwrap_or(0);
-    let timestamp = match DateTime::<Utc>::from_timestamp(ts, nanos) {
-        Some(dt) => dt.to_rfc3339_opts(chrono::SecondsFormat::Micros, true),
+    let timestamp = match Timestamp::from_timestamp(ts, nanos) {
+        Some(dt) => dt.to_rfc3339_opts(codex_protocol::timestamp::SecondsFormat::Micros, true),
         None => format!("{ts}.{ts_nanos:09}Z"),
     };
     let mut line = format!("{timestamp} {level:>5} {feedback_log_body}");
@@ -515,7 +515,8 @@ mod tests {
     use crate::LogEntry;
     use crate::LogQuery;
     use crate::migrations::LOGS_MIGRATOR;
-    use chrono::Utc;
+    use codex_protocol::timestamp::Timestamp;
+
     use codex_utils_absolute_path::test_support::PathExt;
     use pretty_assertions::assert_eq;
     use sqlx::SqlitePool;
@@ -542,7 +543,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_use_dedicated_log_database() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -604,7 +605,7 @@ mod tests {
         sqlx::query(
             "INSERT INTO logs (ts, ts_nanos, level, target, message, module_path, file, line, thread_id, process_uuid, estimated_bytes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
-        .bind(Utc::now().timestamp())
+        .bind(Timestamp::now().timestamp())
         .bind(0_i64)
         .bind("INFO")
         .bind("cli")
@@ -728,7 +729,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_logs_with_search_matches_rendered_body_substring() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -785,7 +786,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_logs_filters_level_set_without_rewriting_stored_level() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -874,7 +875,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_old_rows_when_thread_exceeds_size_limit() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -932,7 +933,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_single_thread_row_when_it_exceeds_size_limit() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -974,7 +975,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_threadless_rows_per_process_uuid_only() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1047,7 +1048,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_single_threadless_process_row_when_it_exceeds_size_limit() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1089,7 +1090,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_threadless_rows_with_null_process_uuid() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1161,7 +1162,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_single_threadless_null_process_row_when_it_exceeds_limit() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1203,7 +1204,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_old_rows_when_thread_exceeds_row_limit() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1250,7 +1251,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_old_threadless_rows_when_process_exceeds_row_limit() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1301,7 +1302,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_logs_prunes_old_threadless_null_process_rows_when_row_limit_exceeded() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1352,7 +1353,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_feedback_logs_returns_newest_lines_within_limit_in_order() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1431,7 +1432,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_feedback_logs_excludes_oversized_newest_row() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1485,7 +1486,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_feedback_logs_includes_threadless_rows_from_same_process() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1587,7 +1588,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_feedback_logs_excludes_threadless_rows_from_prior_processes() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1689,7 +1690,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_feedback_logs_keeps_newest_suffix_across_thread_and_threadless_logs() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),
@@ -1768,7 +1769,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_feedback_logs_for_threads_merges_requested_threads_and_threadless_rows() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().timestamp();
         let codex_home = unique_temp_dir();
         let runtime = StateRuntime::init(
             crate::SqliteConfig::new_for_testing(codex_home.as_path().abs()),

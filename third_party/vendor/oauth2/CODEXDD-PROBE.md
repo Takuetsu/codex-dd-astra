@@ -1,0 +1,7 @@
+# OAuth2 Chrono-removal probe
+
+This isolated checkpoint applies the source changes from OAuth2 upstream PR 355 at `e58e7c2d2b889b45e51f844247c3281e7a2f8f86` to published oauth2 5.0.0 (crate SHA-256 `51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d`). This is an unmerged upstream proposal with a Rust API change in timestamp-returning introspection methods. Codex's pinned RMCP transport and OAuth client compiled with this proposal. Daniel-CL `cargo test --locked -p codex-rmcp-client --lib oauth` passed 127 tests with one ignored. That result covers the tested Codex call sites. Chrono remains in other parts of the workspace.
+
+The combined proof also applies RMCP upstream PR 1474 at `9043cdfa8694d83bf506c2f3eb0313ec173edd7e` to the existing SDK pin `3e636cab26c013eca5131103c03d20237f12c4df`. The normalized SDK archive SHA-256 was `1927ab1094e78bd8ce344e8ecf084d296a9798068e89985a8430de02c2248404`. Retains the existing pinned Git proc macro. The workspace's defaults-disabled RMCP dependency keeps the optional Chrono feature off.
+
+The OAuth2 compatibility adapter preserves signed floor behavior for fractional pre-epoch NumericDate values. The targeted standalone serialization regression passed. The final combined probe passed 127 Codex OAuth tests with one ignored. The all-feature tree contains no active Chrono edge from OAuth2, RMCP, or Schemars. Workspace, Rama, and SQLx paths remain in this probe.

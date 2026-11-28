@@ -28,7 +28,7 @@ async fn cloud_list_only_allows_trusted_credential_destinations() -> Result<()> 
                 "refresh_token": "synthetic-cloud-refresh-token",
                 "account_id": "synthetic-cloud-account",
             },
-            "last_refresh": chrono::Utc::now(),
+            "last_refresh": codex_protocol::timestamp::Timestamp::now(),
         }))?,
     )?;
 

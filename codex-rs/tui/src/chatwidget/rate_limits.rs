@@ -3,6 +3,7 @@
 use super::*;
 use crate::adaptive_budget::AdaptiveBudgetMode;
 use crate::adaptive_budget::assess_budget;
+use codex_protocol::timestamp::Timestamp;
 pub(super) const WORKSPACE_NUDGE_VIEW_ID: &str = "workspace-usage-nudge";
 use crate::bottom_pane::ActionableBanner;
 use crate::model_catalog::LUNA_RESERVE_MODEL;
@@ -289,7 +290,7 @@ impl ChatWidget {
                 self.adaptive_effort.budget_mode = assess_budget(
                     snapshot.primary.as_ref(),
                     snapshot.secondary.as_ref(),
-                    chrono::Utc::now().timestamp(),
+                    Timestamp::now().timestamp(),
                 )
                 .mode;
             }
@@ -391,7 +392,7 @@ impl ChatWidget {
                 let display = rate_limit_snapshot_display_for_limit(
                     &snapshot,
                     limit_label,
-                    Local::now(),
+                    Timestamp::now(),
                     self.clock_format,
                 );
                 self.rate_limit_snapshots_by_limit_id

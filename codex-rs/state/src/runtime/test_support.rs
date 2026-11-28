@@ -1,8 +1,4 @@
 #[cfg(test)]
-use chrono::DateTime;
-#[cfg(test)]
-use chrono::Utc;
-#[cfg(test)]
 use codex_protocol::ThreadId;
 #[cfg(test)]
 use codex_protocol::openai_models::ReasoningEffort;
@@ -12,6 +8,8 @@ use codex_protocol::protocol::AskForApproval;
 use codex_protocol::protocol::SandboxPolicy;
 #[cfg(test)]
 use codex_protocol::protocol::ThreadHistoryMode;
+#[cfg(test)]
+use codex_protocol::timestamp::Timestamp;
 #[cfg(test)]
 use std::path::Path;
 #[cfg(test)]
@@ -43,7 +41,7 @@ pub(super) fn test_thread_metadata(
     thread_id: ThreadId,
     cwd: PathBuf,
 ) -> ThreadMetadata {
-    let now = DateTime::<Utc>::from_timestamp(1_700_000_000, 0).expect("timestamp");
+    let now = Timestamp::from_timestamp(1_700_000_000, 0).expect("timestamp");
     ThreadMetadata {
         creator_user_id: None,
         creator_account_id: None,

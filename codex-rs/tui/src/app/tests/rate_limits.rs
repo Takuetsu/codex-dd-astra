@@ -9,6 +9,7 @@ use codex_app_server_protocol::RateLimitReachedType;
 use codex_app_server_protocol::RateLimitResetCreditsSummary;
 use codex_app_server_protocol::RateLimitSnapshot;
 use codex_app_server_protocol::RateLimitWindow;
+use codex_protocol::timestamp::Timestamp;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use pretty_assertions::assert_eq;
@@ -560,7 +561,7 @@ async fn backend_banner_reads_ignore_older_completions() -> Result<()> {
 #[tokio::test]
 async fn account_usage_drives_adaptive_budget_mode_without_sparse_update_override() {
     let (mut app, _app_event_rx, _op_rx) = make_test_app_with_channels().await;
-    let now = chrono::Utc::now().timestamp();
+    let now = Timestamp::now().timestamp();
 
     let mut surplus = rate_limit_snapshot(
         /*used_percent*/ 10,

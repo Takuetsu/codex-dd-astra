@@ -1,0 +1,56 @@
+# CodexDD security backports
+
+These source overlays retain the original upstream licenses and identify local revisions in the Cargo lockfile. The security, licensing, and source policies apply unchanged.
+
+## Rama DNS and Hickory transport
+
+- Base: [rama-dns 0.3.0-alpha.4](https://crates.io/crates/rama-dns/0.3.0-alpha.4), source revision `4733273a10a791762e2b7727850032b0c9b8536d`, crate SHA-256 `e340fef2799277e204260b17af01bc23604712092eacd6defe40167f304baed8`.
+- Upstream adapter: [Rama 0.3.0 Hickory client](https://github.com/plabayo/rama/blob/1e094e455b9fa29d7ad4bc5d597139934cb73978/rama-dns/src/client/hickory.rs). The overlay adapts construction and A, AAAA, and TXT record access to the published Hickory API while retaining the existing Rama DNS trait and system resolver routing.
+- Security fix: published [Hickory 0.26.2](https://github.com/hickory-dns/hickory-dns/releases/tag/v0.26.2) replaces both affected 0.25 crates. It addresses RUSTSEC-2026-0487, -0489, -0490, -0491, -0504, -0505, -0511, -0512, -0514, -0530, -0531, -0532, -0549, -0550, and -0551.
+- Policy compatibility: [hickory-net 0.26.4](https://crates.io/crates/hickory-net/0.26.4), source revision `12fd043e6b3a7d56c5a53170ed0e7c6517cb96aa`, crate SHA-256 `ea9b43710d47761c90da994eeec7e1bee50095f2b4bcdfd42acd67ca5f814e47`. Explicit futures replace the banned async trait macro in the socket and timer traits. Request handling, certificate verification and DNSSEC code stay upstream.
+- Removal: switch to a supported Rama release that works with the repository Rust and SQLite time constraints and resolves an advisory-clean, policy-compliant Hickory graph. Retest system DNS, proxy routing and TLS.
+- Daniel-CL validation: 310 proxy tests passed on both the overlay and the exact PR #89 baseline. Cargo-deny 0.19.0 with all features removed the 15 advisories and reported zero ban, license and source errors. Bazel module refresh and the network-proxy dependency query passed.
+
+## ZIP bzip2 backend selection
+
+- Base: [zip 9.0.5](https://crates.io/crates/zip/9.0.5), source revision `0123ed144cfa7d672dae78b79a034d8900f9aaeb`, crate SHA-256 `6e04976da629d3b04204ba8105b396a193af8ad2583b2c79bfb3ab8af580a11e`. This retains the published fixes for RUSTSEC-2026-0367, -0368, -0369, -0429, -0545, and -0548.
+- Upstream backend support: [zip2 PR 685](https://github.com/zip-rs/zip2/pull/685) uses the existing `bzip2-sys` backend with the `bzip2-rs` feature. The local manifest makes the dependency feature reference weak because the same list already enables the dependency explicitly. This prevents activating ZIP's unrelated default bzip2 feature and removes `libbz2-rs-sys` from the locked graph. No codec or archive handling source changed.
+- Daniel-CL validation: 16 plugin startup tests passed, including a bzip2 archive extraction regression. The all-features Linux-target license scan found zero errors, and the Bazel plugin dependency query passed.
+- Removal: switch to a patched release whose supported bzip2 feature resolves the approved backend alone. Recheck the full compression list, the Linux lock graph and the archive tests.
+
+## Localization TOML parser
+
+- Base: [i18n-config 0.4.8](https://crates.io/crates/i18n-config/0.4.8), source revision `ae88dc79fda061e1bbf96b8d8e8fe8d23f1e52e7`, crate SHA-256 `3e06b90c8a0d252e203c94344b21e35a30f3a3a85dc7db5af8f8df9f3e0c63ef`.
+- [Upstream commit 2ce7b1d](https://github.com/kellpossible/cargo-i18n/commit/2ce7b1dfe9a8cc224288bf50cbc2a67a6de863c4) replaces both parser calls and their error type with `toml`. This overlay applies those three changes and uses the compatible `toml` already locked in the workspace. This removes the dependency affected by RUSTSEC-2026-0374, an unmaintained-library advisory.
+- Daniel-CL validation: all nine secrets tests passed and the lockfile and all-feature audit confirm `basic-toml` is absent. The Bazel dependency query passed. The separately pinned Linux cargo-deny 0.19.0 license scan also passed after ZIP's backend adjustment.
+- Removal: replace the overlay with the published upstream parser migration and rerun the secrets tests and full dependency policy.
+
+## Linux credential store and D-Bus
+
+- Base: [keyring 3.6.3](https://crates.io/crates/keyring/3.6.3), source revision `315cbdf6c6a9153d8c9f88b56568f29862d3e39d`, crate SHA-256 `eebcc3aff044e5944a8fbaf69eb277d11986064cba30c468730e8b9909fb551c`.
+- The manifest overlay adopts published [secret-service 6.0.0](https://crates.io/crates/secret-service/6.0.0) and [zbus 6.5.0](https://crates.io/crates/zbus/6.5.0) for the existing asynchronous backend. The TUI and typed error checks also use the published versions. The lockfile no longer contains the crates affected by RUSTSEC-2026-0370, -0371, and -0372. Credential lookup, storage attributes and fallback behavior keep their original implementation.
+- Validation: four Windows and six locked Linux credential-store tests passed. In a private Linux D-Bus session, keyring 3.6.3 wrote an isolated test credential, the overlay read and updated it, and the baseline read and deleted it. The full policy still reports only unrelated advisory errors.
+- Removal: adopt a release that can use maintained D-Bus crates while retaining platform storage behavior. Repeat the old-to-new and new-to-old credential checks before dropping the overlay.
+
+## Constant-time cryptographic dependency migration
+
+- Advisory: [RUSTSEC-2026-0387](https://rustsec.org/advisories/RUSTSEC-2026-0387.html). The locked graph now selects only published `crypto-bigint` 0.7.11. The repair preserves the upstream implementation of each primitive.
+- age and age-core: [upstream revision](https://github.com/str4d/rage/commit/b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f) `b5b68c4f4f7ea5c368bc060f6fe0237549c3a13f`, downloaded archive SHA-256 `1bb1c505467817032d205f2aafeddd6a948ee1827f33b07f1ae14fa94fb76523`. Cargo-normalized build sources identify the repository overlays as `0.12.1+codexdd.1` and `0.12.0+codexdd.1`. The upstream tree resolves published HPKE 0.14.1 and P-256 0.14. Corresponding generated crate checksums are `302867692b8e46cc4a1f1988252cddb533041a102ce63525ccfcc9a5354caee7` and `23aa6a0b2a24faa2657561c99f8de7b96426d7fdc11d4b14deb88cacd24a7835`.
+- Clatter: [upstream revision](https://github.com/jmlepisto/clatter/commit/9a8d15c4f80d5911ca0403aa22e0de99ea59df08) `9a8d15c4f80d5911ca0403aa22e0de99ea59df08`, downloaded archive SHA-256 `b51f331cf380269293f6b5d828b528703d6d4cc0b48d65d931b10e0f2f3ed620`. The overlay identifies the upstream 3.0 baseline as `3.0.0+codexdd.1` and uses the upstream RustCrypto ML-KEM path.
+- Published migrations: user verification uses P-256 0.14. Voice-host uses RTC and WebRTC 0.21.1. The adapter migrates settings, samples and interceptor routing using the existing repository source port from `0888904572` and keeps the capture and playout tests on the updated APIs.
+- Daniel-CL validation: 9 secrets tests and 13 user-verification tests passed, including SPKI signature verification. An isolated scrypt fixture was readable in both directions across old and new age. A disposable native Linux container with GStreamer 1.28.2 passed 57 voice-host unit tests with one ignored. Direct Windows Cargo voice-host validation requires the native audio SDK and pkg-config. The Bazel dependency query passed.
+- Removal: adopt published age and Clatter versions that resolve the patched cryptographic graph. Verify old ciphertext, challenge signatures and voice transport before removing the overlays.
+
+## OAuth2 and RMCP timestamp dependencies
+
+- OAuth2 base: [oauth2 5.0.0](https://crates.io/crates/oauth2/5.0.0), crate SHA-256 `51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d`. The overlay uses the Jiff migration from [OAuth2 PR 355](https://github.com/ramosbugs/oauth2-rs/pull/355) at `e58e7c2d2b889b45e51f844247c3281e7a2f8f86`. A NumericDate adapter retains Chrono's signed floor semantics for fractional pre-epoch timestamps. The published Rust API will need a major version change for its timestamp-returning methods.
+- RMCP base: the existing [SDK pin](https://github.com/modelcontextprotocol/rust-sdk/commit/3e636cab26c013eca5131103c03d20237f12c4df) `3e636cab26c013eca5131103c03d20237f12c4df`, normalized package SHA-256 `1927ab1094e78bd8ce344e8ecf084d296a9798068e89985a8430de02c2248404`. The overlay takes the clock and optional Chrono feature changes from [RMCP PR 1474](https://github.com/modelcontextprotocol/rust-sdk/pull/1474) at `9043cdfa8694d83bf506c2f3eb0313ec173edd7e` and retains the pinned macro source. Codex leaves the optional Chrono feature disabled.
+- Validation: the integration passed 127 focused OAuth tests with one ignored. The isolated pre-epoch NumericDate regression passed. The SQLx feature change keeps the existing schema and integer timestamp storage and was covered by the SQLite migration suite.
+- Removal: adopt released OAuth2 and RMCP versions with maintained timestamp dependencies after verifying the Codex PKCE, refresh, and persisted credential tests. Preserve the NumericDate rounding contract when dropping the local codec.
+
+## Rama HTTP timestamp dependencies
+
+- Base: `rama-http` and `rama-http-headers` 0.3.0-alpha.4, both from upstream revision `4733273a10a791762e2b7727850032b0c9b8536d`. Published crate SHA-256 values are `453d60af031e23af2d48995e41b17023f6150044738680508b63671f8d7417dd` and `9d74fe0cd9bd4440827dc6dc0f504cf66065396532e798891dee2c1b740b2285`, respectively. The overlays are identified as `0.3.0-alpha.4+codexdd.1`.
+- The adaptation of [Rama PR 853](https://github.com/plabayo/rama/pull/853) at `3bc53326ad24b747eec1d7ec416f2ad95f0b4f7f` uses Jiff with the pinned Rama HTTP API. It removes Rama's dependency on Chrono, which is subject to the maintenance advisory [RUSTSEC-2026-0543](https://rustsec.org/advisories/RUSTSEC-2026-0543.html). The HAR and header codecs retain existing UTC offset spellings and fractional precision. The legacy RFC 850 parser and formatter retain their baseline behavior.
+- Daniel-CL validation: 312 network-proxy tests passed, including HAR and robots header compatibility fixtures. Bazel module resolution and the network-proxy dependency query passed. The unchanged all-features cargo-deny gate reported only the remaining first-party Chrono dependency.
+- Removal: adopt a published Rama release with the Jiff migration that satisfies CodexDD's dependency constraints. Run the proxy, header and HAR compatibility tests and the full dependency policy before removing the overlays.

@@ -15,6 +15,7 @@ use crate::analytics::models::AccountAnalyticsUnit;
 use crate::analytics::models::AccountAnalyticsValue;
 use crate::analytics::sections::Section;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
+use codex_protocol::timestamp::Timestamp;
 use ratatui::style::Styled;
 use ratatui::style::Stylize;
 use ratatui::text::Line;
@@ -27,7 +28,7 @@ impl AnalyticsView {
         let date = self
             .section_date_range(section)
             .start()
-            .iter_days()
+            .series(jiff::Span::new().days(1))
             .nth(day_index);
         history.data.iter().any(|day| {
             date.is_some_and(|date| day.date == date)
@@ -66,7 +67,7 @@ impl AnalyticsView {
         // At most 30 daily slots; index by date if report ranges grow.
         let days = range
             .start()
-            .iter_days()
+            .series(jiff::Span::new().days(1))
             .take_while(|date| date <= range.end())
             .map(|date| {
                 let day = history.data.iter().find(|day| day.date == date);
@@ -74,7 +75,7 @@ impl AnalyticsView {
             })
             .collect::<Vec<_>>();
         let cursor = self.sections[section].cursor.min(days.len() - 1);
-        let selected_date = days[cursor].0.format("%b %-d").to_string();
+        let selected_date = days[cursor].0.strftime("%b %-d").to_string();
         let day = days[cursor].1;
         let expanded = self.zoomed && self.sections[section].detail.is_some();
         let colors = series_colors();
@@ -333,12 +334,12 @@ impl AnalyticsView {
         if !self.zoomed
             && let Some(updated) = history
                 .updated_at
-                .and_then(|value| chrono::DateTime::from_timestamp(value, /*nsecs*/ 0))
+                .and_then(|value| Timestamp::from_timestamp(value, /*nsecs*/ 0))
         {
             lines.push(
                 format!(
                     "Updated {} UTC",
-                    updated.format(self.clock_format.date_time_format())
+                    crate::clock_format::format_utc(updated, self.clock_format.date_time_format())
                 )
                 .set_style(secondary_style())
                 .into(),
