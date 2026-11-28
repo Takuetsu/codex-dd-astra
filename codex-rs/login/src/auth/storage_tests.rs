@@ -633,8 +633,13 @@ mod errors;
 
 #[test]
 fn persisted_auth_refresh_timestamp_keeps_existing_utc_format() {
-    let auth: AuthDotJson =
-        serde_json::from_str(r#"{"last_refresh":"2025-08-31T18:22:41.5-02:00"}"#).unwrap();
-    let persisted = serde_json::to_value(auth).unwrap();
-    assert_eq!(persisted["last_refresh"], "2025-08-31T20:22:41.500Z");
+    for (input, expected) in [
+        ("2025-08-31T18:22:41.5-02:00", "2025-08-31T20:22:41.500Z"),
+        ("2025-08-31T18:22:41.5-0200", "2025-08-31T20:22:41.500Z"),
+        ("2025-08-31T20:22:41.5 UTC", "2025-08-31T20:22:41.500Z"),
+    ] {
+        let auth: AuthDotJson = serde_json::from_value(json!({"last_refresh": input})).unwrap();
+        let persisted = serde_json::to_value(auth).unwrap();
+        assert_eq!(persisted["last_refresh"], expected);
+    }
 }

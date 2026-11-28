@@ -9,10 +9,14 @@ use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Sub;
 use std::time::SystemTime;
+use time::Date;
 use time::Duration;
+use time::Month;
 use time::OffsetDateTime;
 use time::PrimitiveDateTime;
+use time::Time;
 use time::UtcDateTime;
+use time::UtcOffset;
 use time::format_description::well_known::Rfc3339;
 use time::macros::format_description;
 
@@ -129,6 +133,15 @@ impl Timestamp {
         if !matches!(value.as_bytes().get(10), Some(b'T' | b't' | b' ')) {
             return Err(InvalidTimestamp);
         }
+        let normalized;
+        let value = if let Some((prefix, offset)) = value.rsplit_once('−')
+            && offset.len() == 5
+        {
+            normalized = format!("{prefix}-{offset}");
+            &normalized
+        } else {
+            value
+        };
         Self::parse_second(value, |value| {
             OffsetDateTime::parse(value, &Rfc3339)
                 .ok()
@@ -185,19 +198,14 @@ impl Timestamp {
     }
 
     fn from_utc(date: UtcDateTime) -> Self {
-        Self::checked_from_utc(date).expect("timestamp outside the supported calendar range")
+        let Some(timestamp) = Self::checked_from_utc(date) else {
+            panic!("timestamp outside the supported calendar range");
+        };
+        timestamp
     }
 
     fn checked_from_utc(date: UtcDateTime) -> Option<Self> {
-        if !(MIN_YEAR..=MAX_YEAR).contains(&date.year()) {
-            return None;
-        }
-        Some(Self {
-            second: date
-                .replace_nanosecond(0)
-                .expect("zero nanoseconds is valid"),
-            nanos: date.nanosecond(),
-        })
+        Self::from_timestamp(date.unix_timestamp(), date.nanosecond())
     }
 
     fn parse_second(value: &str, parse: impl FnOnce(&str) -> Option<UtcDateTime>) -> Option<Self> {
@@ -225,9 +233,7 @@ impl Timestamp {
     }
 
     fn regular_time(self) -> UtcDateTime {
-        self.second
-            .replace_nanosecond(self.fractional_nanos())
-            .expect("fractional nanoseconds are less than one second")
+        self.second + Duration::nanoseconds(i64::from(self.fractional_nanos()))
     }
 
     fn unix_timestamp_nanos(self) -> i128 {
@@ -279,8 +285,98 @@ impl std::str::FromStr for Timestamp {
     type Err = InvalidTimestamp;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        Self::parse_from_rfc3339(value)
+        parse_legacy_timestamp(value).ok_or(InvalidTimestamp)
     }
+}
+
+// The previous Serde codec used Chrono's relaxed FromStr grammar. Keep this
+// separate from the explicitly RFC 3339 parsing used for protocol fields.
+fn parse_legacy_timestamp(value: &str) -> Option<Timestamp> {
+    let value = value.trim_start();
+    let (year, rest) = match value.as_bytes().first()? {
+        b'+' | b'-' => {
+            let (magnitude, rest) = take_digits(&value[1..], usize::MAX)?;
+            let magnitude: i32 = magnitude.parse().ok()?;
+            let year = if value.starts_with('-') {
+                -magnitude
+            } else {
+                magnitude
+            };
+            (year, rest)
+        }
+        _ => {
+            let (year, rest) = take_digits(value, 4)?;
+            (year.parse().ok()?, rest)
+        }
+    };
+    if !(MIN_YEAR..=MAX_YEAR).contains(&year) {
+        return None;
+    }
+    let (month, rest) = take_component(rest.trim_start().strip_prefix('-')?)?;
+    let (day, rest) = take_component(rest.trim_start().strip_prefix('-')?)?;
+    let (hour, rest) = take_component(rest.strip_prefix(['T', 't', ' '])?)?;
+    let (minute, rest) = take_component(rest.trim_start().strip_prefix(':')?)?;
+    let (second, rest) = take_component(rest.trim_start().strip_prefix(':')?)?;
+    let (nanos, rest) = match rest.strip_prefix('.') {
+        Some(fraction) => {
+            let (digits, rest) = take_digits(fraction, usize::MAX)?;
+            let precision = digits.len().min(9);
+            let nanos = digits[..precision].parse::<u32>().ok()? * 10u32.pow(9 - precision as u32);
+            (nanos, rest)
+        }
+        None => (0, rest),
+    };
+    let offset = parse_legacy_offset(rest.trim())?;
+    let date = Date::from_calendar_date(year, Month::try_from(month).ok()?, day).ok()?;
+    let leap = second == 60;
+    let time = Time::from_hms(hour, minute, if leap { 59 } else { second }).ok()?;
+    let utc = date
+        .with_time(time)
+        .assume_offset(offset)
+        .checked_to_utc()?;
+    Timestamp::from_timestamp(
+        utc.unix_timestamp(),
+        nanos + u32::from(leap) * NANOS_PER_SECOND,
+    )
+}
+
+fn take_digits(value: &str, limit: usize) -> Option<(&str, &str)> {
+    let len = value
+        .bytes()
+        .take(limit)
+        .take_while(u8::is_ascii_digit)
+        .count();
+    (len != 0).then(|| value.split_at(len))
+}
+
+fn take_component(value: &str) -> Option<(u8, &str)> {
+    let (digits, rest) = take_digits(value.trim_start(), 2)?;
+    Some((digits.parse().ok()?, rest))
+}
+
+fn parse_legacy_offset(value: &str) -> Option<UtcOffset> {
+    if value.eq_ignore_ascii_case("z") || value.eq_ignore_ascii_case("utc") {
+        return Some(UtcOffset::UTC);
+    }
+    let (sign, rest) = if let Some(rest) = value.strip_prefix('+') {
+        (1, rest)
+    } else {
+        (-1, value.strip_prefix(['-', '−'])?)
+    };
+    let (hours, rest) = take_digits(rest, 2)?;
+    let (minutes, rest) = take_digits(
+        rest.trim_start_matches(|c: char| c == ':' || c.is_whitespace()),
+        2,
+    )?;
+    if hours.len() != 2 || minutes.len() != 2 || !rest.is_empty() {
+        return None;
+    }
+    let hours: i8 = hours.parse().ok()?;
+    let minutes: i8 = minutes.parse().ok()?;
+    if hours >= 24 {
+        return None;
+    }
+    UtcOffset::from_hms(sign * hours, sign * minutes, 0).ok()
 }
 
 impl From<SystemTime> for Timestamp {
@@ -315,7 +411,10 @@ impl Add<Duration> for Timestamp {
     type Output = Self;
 
     fn add(self, duration: Duration) -> Self {
-        self.checked_add(duration).expect("timestamp overflow")
+        let Some(timestamp) = self.checked_add(duration) else {
+            panic!("timestamp overflow");
+        };
+        timestamp
     }
 }
 
@@ -329,7 +428,10 @@ impl Sub<Duration> for Timestamp {
     type Output = Self;
 
     fn sub(self, duration: Duration) -> Self {
-        self.checked_sub(duration).expect("timestamp overflow")
+        let Some(timestamp) = self.checked_sub(duration) else {
+            panic!("timestamp overflow");
+        };
+        timestamp
     }
 }
 
@@ -356,7 +458,7 @@ impl Serialize for Timestamp {
 impl<'de> Deserialize<'de> for Timestamp {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = std::borrow::Cow::<str>::deserialize(deserializer)?;
-        Self::parse_from_rfc3339(&value).map_err(serde::de::Error::custom)
+        value.parse().map_err(serde::de::Error::custom)
     }
 }
 
@@ -408,6 +510,61 @@ mod tests {
         );
         let legacy = Timestamp::parse_rollout_filename_timestamp("2026-11-25T17-00-00").unwrap();
         assert_eq!(legacy.to_rfc3339(), "2026-11-25T17:00:00+00:00");
+    }
+
+    #[test]
+    fn timestamp_deserialization_preserves_legacy_spellings() {
+        // Expected UTC encodings captured from the pinned Chrono 0.4.43 codec.
+        for (input, expected) in [
+            ("2026-11-25T17:00:00+0000", "2026-11-25T17:00:00Z"),
+            ("2026-11-25T17:00:00 UTC", "2026-11-25T17:00:00Z"),
+            ("2026-11-25T17:00:00utc", "2026-11-25T17:00:00Z"),
+            (
+                " 2026- 1-2t3: 4:5.1234567899 −02 : 30 ",
+                "2026-01-02T05:34:05.123456789Z",
+            ),
+            ("2017-1-1 5: 29:60.5+0530", "2016-12-31T23:59:60.500Z"),
+            ("+10000-1-1T0:0:0Z", "+10000-01-01T00:00:00Z"),
+            ("-00001-01-01T00:00:00Z", "-0001-01-01T00:00:00Z"),
+            ("-262143-01-01T00:00:00Z", "-262143-01-01T00:00:00Z"),
+            (
+                "+262142-12-31T23:59:59.999999999Z",
+                "+262142-12-31T23:59:59.999999999Z",
+            ),
+        ] {
+            let timestamp: Timestamp = serde_json::from_value(serde_json::json!(input)).unwrap();
+            let encoded = serde_json::to_value(timestamp).unwrap();
+            assert_eq!(encoded, expected, "{input}");
+            assert_eq!(
+                serde_json::from_value::<Timestamp>(encoded).unwrap(),
+                timestamp
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_timestamp_parser_rejects_invalid_spellings() {
+        for input in [
+            "10000-01-01T00:00:00Z",
+            "+262143-01-01T00:00:00Z",
+            "2026-02-29T17:00:00Z",
+            "2026-11-25T17:00:61Z",
+            "2026-11-25T17:00:00.Z",
+            "2026-11-25T17:00:00+01",
+            "2026-11-25T17:00:00+24:00",
+            "2026-11-25T17:00:00+01:60",
+            "2026-11-25T17:00:00UTCextra",
+        ] {
+            assert!(input.parse::<Timestamp>().is_err(), "{input}");
+        }
+        assert!(Timestamp::parse_from_rfc3339("2026-11-25T17:00:00UTC").is_err());
+    }
+
+    #[test]
+    fn rfc3339_preserves_the_legacy_unicode_offset_minus() {
+        let timestamp = Timestamp::parse_from_rfc3339("2026-11-25T14:30:00−02:30").unwrap();
+        assert_eq!(timestamp.to_string(), "2026-11-25T17:00:00Z");
+        assert!(Timestamp::parse_from_rfc3339("2026−11-25T17:00:00Z").is_err());
     }
 
     #[test]
